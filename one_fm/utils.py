@@ -52,7 +52,9 @@ from one_fm.processor import sendemail
 from one_fm.one_fm.payroll_utils import get_user_list_by_role
 from one_fm.operations.doctype.operations_shift.operations_shift import get_shift_supervisor
 from one_fm.api import api
-
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
 
 
 def get_common_email_args(doc):
@@ -3697,4 +3699,109 @@ def is_holiday(employee, date=None, raise_exception=True):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Error while validating Holiday")
         return False, ""
+    
+    
+def get_google_credentials():
+
+    GOOGLE_CREDENTIALS_FILE_PATH = "/home/oyedele-yusuff/Downloads/client_secret_100533397615-6sa5frh4hekdeu2irl765g1mn3cipeid.apps.googleusercontent.com (3).json"
+
+    # Load OAuth credentials from the JSON file
+    with open(GOOGLE_CREDENTIALS_FILE_PATH, 'r') as file:
+        google_credentials = json.load(file)
+
+    client_id = google_credentials['web']['client_id']
+    client_secret = google_credentials['web']['client_secret']
+    token_uri = google_credentials['web']['token_uri']
+
+    refresh_token = get_oauth_refresh_token()
+
+    credentials = Credentials(
+        None,
+        client_id=client_id,
+        client_secret=client_secret,
+        refresh_token=refresh_token,
+        token_uri=token_uri
+    )
+    
+    return credentials
+
+
+def get_oauth_refresh_token():
+    SCOPES = ['https://www.googleapis.com/auth/gmail.settings.basic']
+    CREDENTIALS_JSON = "/home/oyedele-yusuff/Downloads/client_secret_100533397615-6sa5frh4hekdeu2irl765g1mn3cipeid.apps.googleusercontent.com (3).json"
+    
+    flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_JSON, SCOPES)
+
+    credentials = flow.run_local_server(port=0)
+
+    print(f"Refresh Token: {credentials.refresh_token}")
+
+    return credentials.refresh_token
+
+
+def set_out_of_office(employee_email, start_date, end_date, custom_reliever_name, custom_reliever, employee_name):
+    try:
+        credentials = get_google_credentials()
+        service = build('gmail', 'v1', credentials=credentials)
+
+        start_date_rfc3339 = start_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+        end_date_rfc3339 = end_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+
+        vacation_settings = {
+            "enableAutoReply": True,
+            "responseSubject": f"{employee_name} is Currently On Leave",
+            "responseBodyPlainText": f"Thank you for reaching out. I am currently on vacation and will be unavailable from {start_date} to {end_date}. For urgent matters, please contact {custom_reliever_name} at {custom_reliever}. If still unresolved, I will respond to your message upon my return.",
+            "restrictToContacts": False,
+            "restrictToDomain": False,
+            "startTime": int(datetime.strptime(start_date_rfc3339, '%Y-%m-%dT%H:%M:%SZ').timestamp() * 1000),
+            "endTime": int(datetime.strptime(end_date_rfc3339, '%Y-%m-%dT%H:%M:%SZ').timestamp() * 1000)
+        }
+
+        service.users().settings().updateVacation(userId='me', body=vacation_settings).execute()
+        frappe.msgprint(f"Out-of-office set for {employee_email} from {start_date} to {end_date}.")
+    except Exception as e:
+        frappe.log_error(str(e), "Failed to set out-of-office")
+        
+
+def disable_out_of_office(employee_email):
+    try:
+        credentials = get_google_credentials()
+        service = build('gmail', 'v1', credentials=credentials)
+
+        vacation_settings = {
+            "enableAutoReply": False
+        }
+
+        service.users().settings().updateVacation(userId='me', body=vacation_settings).execute()
+        frappe.msgprint(f"Out-of-office disabled for {employee_email}.")
+    except Exception as e:
+        frappe.log_error(str(e), "Failed to disable out-of-office")
+
+
+def set_out_of_office_for_leaves():
+    today = datetime.now().date()
+    
+    # Query Leave records
+    leaves = frappe.get_all('Leave Application', filters=[
+        ['from_date', '<=', today], ['to_date', '>=', today], ['status', '=', 'Approved']
+    ], fields=['employee.company_email', 'from_date', 'to_date', 'custom_reliever_name', 'custom_reliever_.user_id', 'employee.employee_name'])
+
+    for leave in leaves:
+        employee_email = leave['company_email']
+        from_date = leave['from_date']
+        to_date = leave['to_date']
+        custom_reliever_name = leave['custom_reliever_name']
+        custom_reliever = leave['user_id']
+        employee_name = leave['employee_name']
+
+        if employee_email:
+
+            # If today's date matches the start date, set out-of-office
+            if today == from_date:
+                set_out_of_office(employee_email, from_date, to_date, custom_reliever_name, custom_reliever, employee_name)
+
+            # If today's date matches the end date, disable out-of-office
+            if today == to_date:
+                disable_out_of_office(employee_email)
+
                     

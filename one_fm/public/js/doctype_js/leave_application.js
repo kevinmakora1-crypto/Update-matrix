@@ -53,7 +53,7 @@ frappe.ui.form.on("Leave Application", {
                                 // Close the dialog and save the form
                                 dialog.hide();
                                 frm.save().then(() => {
-                                    frappe.msgprint("New Dates Proposed successfully");
+                                    frappe.msgprint("New dates proposed successfully");
                 
                                     // Call the server-side method to send the email
                                     frappe.call({

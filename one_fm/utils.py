@@ -3702,39 +3702,56 @@ def is_holiday(employee, date=None, raise_exception=True):
     
     
 def get_google_credentials():
+    from frappe.utils.password import get_decrypted_password 
 
-    GOOGLE_CREDENTIALS_FILE_PATH = "/home/oyedele-yusuff/Downloads/client_secret_100533397615-6sa5frh4hekdeu2irl765g1mn3cipeid.apps.googleusercontent.com (3).json"
+    google_credentials = frappe.get_doc('API Integration', 'Google Cloud Platform')
+    
+    api_parameters = google_credentials.api_parameter
 
-    # Load OAuth credentials from the JSON file
-    with open(GOOGLE_CREDENTIALS_FILE_PATH, 'r') as file:
-        google_credentials = json.load(file)
-
-    client_id = google_credentials['web']['client_id']
-    client_secret = google_credentials['web']['client_secret']
-    token_uri = google_credentials['web']['token_uri']
-
-    refresh_token = get_oauth_refresh_token()
+    cred = {api_parameter.parameter: get_decrypted_password('API Parameter', api_parameter.name, 'value') for api_parameter in api_parameters}
 
     credentials = Credentials(
         None,
-        client_id=client_id,
-        client_secret=client_secret,
-        refresh_token=refresh_token,
-        token_uri=token_uri
+        client_id=cred.get("client_id"),
+        client_secret=cred.get("client_secret"),
+        refresh_token=cred.get("refresh_token"),
+        token_uri=cred.get("token_uri")
     )
     
     return credentials
 
 
 def get_oauth_refresh_token():
-    SCOPES = ['https://www.googleapis.com/auth/gmail.settings.basic']
-    CREDENTIALS_JSON = "/home/oyedele-yusuff/Downloads/client_secret_100533397615-6sa5frh4hekdeu2irl765g1mn3cipeid.apps.googleusercontent.com (3).json"
+    from frappe.utils.password import get_decrypted_password 
+    google_credentials = frappe.get_doc('API Integration', 'Google Cloud Platform')
     
-    flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_JSON, SCOPES)
-
+    cred_params = {param.parameter: get_decrypted_password('API Parameter', param.name, 'value') for param in google_credentials.api_parameter}
+    
+    required_params = ['client_id', 'client_secret', 'redirect_uris']
+    for param in required_params:
+        if param not in cred_params:
+            raise ValueError(f"Missing required parameter: {param}")
+    
+    SCOPES = ['https://www.googleapis.com/auth/gmail.settings.basic']
+    client_config = {
+        "web": {
+            "client_id": cred_params["client_id"],
+            "client_secret": cred_params["client_secret"],
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "redirect_uris": cred_params["redirect_uris"].split(',') 
+        }
+    }
+    
+    flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
     credentials = flow.run_local_server(port=0)
 
-    print(f"Refresh Token: {credentials.refresh_token}")
+    for api_parameter in google_credentials.api_parameter:
+        if api_parameter.parameter == 'refresh_token':
+            api_parameter.value = credentials.refresh_token
+    
+    google_credentials.save()
+    frappe.db.commit()
 
     return credentials.refresh_token
 

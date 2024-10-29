@@ -3651,7 +3651,7 @@ def send_work_anniversary_reminders():
 
 def set_employee_status_to_vacation():
     # Get today's date
-    current_date = today()
+    current_date = getdate(today())
 
     # Fetch approved leave applications where `from_date` is today or earlier, along with the employee's status
     leave_applications = frappe.get_all('Leave Application', 
@@ -3676,11 +3676,11 @@ def set_employee_status_to_vacation():
         from_date = leave['from_date']
         to_date =  leave['to_date']
 
-        if current_date == from_date and status == "Active":
+        if current_date == getdate(from_date) and status == "Active":
             frappe.db.set_value('Employee', employee, 'status', 'Vacation')
             employees_set_to_vacation += 1
 
-        elif current_date == add_days(to_date, 1) and status == "Vacation":
+        elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":
             frappe.db.set_value('Employee', employee, 'status', 'Active')
             employees_set_to_active += 1
 

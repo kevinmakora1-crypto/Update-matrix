@@ -76,6 +76,15 @@ frappe.ui.form.on("Leave Application", {
             });
             dialog.show();
         }
+        if (frm.selected_workflow_action === "Accept Proposed Dates") {
+            frm.set_value("from_date", frm.doc.custom_propose_from_date);
+            frm.set_value("to_date", frm.doc.custom_propose_to_date);
+            frm.set_value("total_leave_days", frm.doc.custom_total_propose_leave_days);
+            frm.refresh_field("from_date");
+            frm.refresh_field("to_date");
+            frm.refresh_field("total_leave_days");
+            frappe.msgprint("Leave updated");
+        }
     },  
     refresh: function(frm) {
         // frm.set_intro("Please save the form after adding a new row to the Proof Documents table before attaching the document")

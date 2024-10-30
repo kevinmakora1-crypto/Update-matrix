@@ -789,6 +789,24 @@ class ReassignDocumentToLeaveApplicant:
                 self.reassign_operation_settings(settings=value)
 
 
+@frappe.whitelist()
+def validate_leave_overlap(employee, from_date, to_date, name=None):
+    overlapping_leave = frappe.db.sql("""
+        SELECT name FROM `tabLeave Application`
+        WHERE employee = %(employee)s
+        AND docstatus < 2
+        AND status IN ('Open', 'Approved')
+        AND to_date >= %(from_date)s
+        AND from_date <= %(to_date)s
+        AND name != %(name)s
+    """, {
+        "employee": employee,
+        "from_date": from_date,
+        "to_date": to_date,
+        "name": name
+    }, as_dict=True)
 
-            
+    if overlapping_leave:
+        frappe.throw("Employee {0} has already applied between {1} and {2}".format(name,from_date,to_date))
+    return "valid"
 

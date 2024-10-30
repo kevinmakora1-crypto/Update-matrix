@@ -131,6 +131,7 @@ var handle_propose_new_date_action =frm=>{
                     .then(is_valid => {
                         if (is_valid) {
                             // Set the new dates to the form
+
                             frm.set_value('custom_propose_from_date', from_date);
                             frm.set_value('custom_propose_to_date', to_date);
                             frm.set_value('custom_total_propose_leave_days', total_days);
@@ -246,7 +247,24 @@ var validate_proposeddate = (frm, from_date, to_date, dialog) => {
                         return reject(false);
                     }
                 }
-                resolve(true); 
+                frappe.call({
+                    method: "one_fm.overrides.leave_application.validate_leave_overlap",
+                    args: {
+                        employee: frm.doc.employee,
+                        from_date: from_date,
+                        to_date: to_date,
+                        name: frm.doc.employee_name
+                    },
+                    callback: function(response) {
+                        if (response.message === "valid") {
+                            resolve(true);
+                        } else {
+                            // Show error message if overlap found
+                            frappe.msgprint(response.message, __("Date Validation"));
+                            reject(false);
+                        }
+                    }
+                });
             })
     });
 };

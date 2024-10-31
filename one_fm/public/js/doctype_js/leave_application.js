@@ -11,17 +11,17 @@ frappe.ui.form.on("Leave Application", {
         }
     },  
     refresh: function(frm) {
-        const current_user = frappe.session.user;
-        frappe.db.get_doc('Leave Application', frm.doc.name).then(doc => {
-            if (doc.leave_approver === current_user&&frm.doc.workflow_state === "Pending Approval") {
-                frm.page.actions.find("li:contains('Propose New Date')").hide();
-            frm.add_custom_button("Propose New Date", function() {
-                handle_propose_new_date_action(frm);
-            });
-            }
-        });
         // frm.set_intro("Please save the form after adding a new row to the Proof Documents table before attaching the document")
         if (!frm.is_new()){
+            const current_user = frappe.session.user;
+            frappe.db.get_doc('Leave Application', frm.doc.name).then(doc => {
+                if (doc.leave_approver === current_user&&frm.doc.workflow_state === "Pending Approval") {
+                    frm.page.actions.find("li:contains('Propose New Date')").hide();
+                frm.add_custom_button("Propose New Date", function() {
+                    handle_propose_new_date_action(frm);
+                });
+                }
+            });
             frappe.call({
                 method: 'one_fm.utils.enable_edit_leave_application',
                 args: {

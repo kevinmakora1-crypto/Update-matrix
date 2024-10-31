@@ -11,17 +11,14 @@ frappe.ui.form.on("Leave Application", {
         }
     },  
     refresh: function(frm) {
-        const current_user = frappe.session.user;
-        frappe.db.get_doc('Leave Application', frm.doc.name).then(doc => {
-            if (doc.leave_approver === current_user&&frm.doc.workflow_state === "Pending Approval") {
-                frm.page.actions.find("li:contains('Propose New Date')").hide();
-            frm.add_custom_button("Propose New Date", function() {
-                handle_propose_new_date_action(frm);
-            });
-            }
-        });
         // frm.set_intro("Please save the form after adding a new row to the Proof Documents table before attaching the document")
         if (!frm.is_new()){
+            const current_user = frappe.session.user;
+            if (frm.doc.leave_approver === current_user && frm.doc.workflow_state === "Pending Approval") {
+                frm.add_custom_button("Propose New Date", function() {
+                    handle_propose_new_date_action(frm);
+                });
+            }
             frappe.call({
                 method: 'one_fm.utils.enable_edit_leave_application',
                 args: {
@@ -87,7 +84,6 @@ frappe.ui.form.on("Leave Application", {
 })
 
 var handle_propose_new_date_action =frm=>{  
-        // Create a custom modal using frappe.ui.Dialog
         let dialog = new frappe.ui.Dialog({
             title: 'Confirm New Dates',
             fields: [
@@ -98,7 +94,7 @@ var handle_propose_new_date_action =frm=>{
                     default: frm.doc.custom_propose_from_date, 
                     reqd: 1,
                     change: function() {
-                        calculate_days(frm,dialog); // Trigger calculation when date changes
+                        calculate_days(frm,dialog);
                     }
                 },
                 {
@@ -108,7 +104,7 @@ var handle_propose_new_date_action =frm=>{
                     default: frm.doc.custom_propose_to_date, 
                     reqd: 1,
                     change: function() {
-                        calculate_days(frm,dialog); // Trigger calculation when date changes
+                        calculate_days(frm,dialog);
                     }
                 },
                 {
@@ -116,33 +112,23 @@ var handle_propose_new_date_action =frm=>{
                     fieldname: 'custom_total_propose_leave_days', 
                     label: 'Total Number of proposed Days', 
                     read_only: 1,
-                    default: '0' // Initially set to 0
+                    default: '0' 
                 }
             ],
             primary_action_label: 'Confirm',
             primary_action(values) {
-                // Fetch the new values from the dialog before validation
                 let from_date = values.custom_propose_from_date;
                 let to_date = values.custom_propose_to_date;
                 let total_days = dialog.get_value('custom_total_propose_leave_days');
-            
-                // Validate the proposed dates
                 validate_proposeddate(frm, from_date, to_date, dialog)
                     .then(is_valid => {
                         if (is_valid) {
-                            // Set the new dates to the form
-
                             frm.set_value('custom_propose_from_date', from_date);
                             frm.set_value('custom_propose_to_date', to_date);
                             frm.set_value('custom_total_propose_leave_days', total_days);
-            
-                            // Close the dialog and save the form
                             dialog.hide();
-                            frm.set_value('workflow_state', 'New Dates Proposed');
                             frm.save().then(() => {
                                 frappe.msgprint("New dates proposed successfully");
-            
-                                // Call the server-side method to send the email
                                 frappe.call({
                                     method: "one_fm.overrides.leave_application.send_proposed_date_email",
                                     args: {
@@ -154,8 +140,10 @@ var handle_propose_new_date_action =frm=>{
                                         } else {
                                             frappe.msgprint("Failed to send the email.");
                                         }
+                                        
                                     }
                                 });
+                                frm.reload_doc();
                             });
                         }
                     })

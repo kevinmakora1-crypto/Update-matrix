@@ -423,14 +423,16 @@ class LeaveApplicationOverride(LeaveApplication):
                 frappe.log_error(frappe.get_traceback(),"Error Sending Notification")
 
     def on_cancel(self):
+        from one_fm.utils import disable_out_of_office
+        emp = frappe.get_doc("Employee", self.employee)
         if self.status == "Cancelled"  and self.leave_type == 'Annual Leave' and getdate(self.from_date) <= getdate() <= getdate(self.to_date):
-            emp = frappe.get_doc("Employee", self.employee)
             emp.status = "Active"
             emp.save()
             frappe.db.commit()
         self.create_leave_ledger_entry(submit=False)
         # notify leave applier about cancellation
         self.cancel_attendance()
+        disable_out_of_office(emp.company_email)
 
 
     def validate_attendance_check(self):

@@ -15,7 +15,6 @@ frappe.ui.form.on("Leave Application", {
         if (!frm.is_new()){
             const current_user = frappe.session.user;
             if (frm.doc.leave_approver === current_user && frm.doc.workflow_state === "Pending Approval") {
-                frm.page.actions.find("li:contains('Propose New Date')").hide();
                 frm.add_custom_button("Propose New Date", function() {
                     handle_propose_new_date_action(frm);
                 });

@@ -3818,7 +3818,7 @@ def set_out_of_office_for_leaves():
                 set_out_of_office(employee_email, from_date, to_date, custom_reliever_name, custom_reliever, employee_name)
 
             # If today's date matches the end date, disable out-of-office
-            if today == to_date:
+            if today == add_days(to_date, 1):
                 disable_out_of_office(employee_email)
 
                     

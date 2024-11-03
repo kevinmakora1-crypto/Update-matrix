@@ -506,7 +506,7 @@ class LeaveApplicationOverride(LeaveApplication):
         if not leave_application_operator:
             frappe.throw(_("Leave Application Operator must be set in HR and Payroll Additional Settings"))
 
-        self.default_leave_application_operator = leave_application_operator
+        self.custom_default_leave_application_operator = leave_application_operator
             
 
 

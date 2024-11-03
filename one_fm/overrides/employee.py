@@ -1,5 +1,6 @@
 from itertools import chain
 from json import loads
+import requests
 
 import frappe
 from frappe.utils import getdate, add_days, get_url_to_form, get_url
@@ -553,3 +554,24 @@ def toggle_auto_attendance(employee_names: list | str, status: bool):
     except Exception as e:
         frappe.log_error(title = f"{str(e)}",message = frappe.get_traceback())
         return response(message=str(e), status_code=400)
+
+
+def get_assurance_level_of_employee(doc, method):
+    if doc.one_fm_civil_id:
+        print("samdani")
+        print(doc.one_fm_civil_id)
+        civil_id = doc.one_fm_civil_id
+        url = f"http://192.168.11.13:8080/api/DigitalSigning/CheckMobileIdentity/{civil_id}"
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                print(data)
+                verification_level = data["data"].get("verificationLevel")
+                doc.custom_civil_id_assurance_level = verification_level
+                frappe.msgprint(f"Verification level stored successfully: {verification_level}")
+            else:
+                frappe.msgprint(f"API call failed with status code: {response.status_code}")
+        except Exception as e:
+            frappe.log_error(message=str(e), title="API Call Failed")
+            frappe.msgprint(f"An error occurred while making the API call: {str(e)}")

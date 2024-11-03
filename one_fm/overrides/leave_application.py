@@ -224,6 +224,7 @@ class LeaveApplicationOverride(LeaveApplication):
         if frappe.db.get_value("Leave Type", self.leave_type, "is_optional_leave"):
             self.validate_optional_leave()
         self.validate_applicable_after()
+        self.validate_leave_application_operator()
 
     @frappe.whitelist()
     def update_attendance(self):
@@ -497,6 +498,17 @@ class LeaveApplicationOverride(LeaveApplication):
                     date BETWEEN %s AND %s;
                     ''', (self.employee, self.from_date, self.to_date)
                 )
+
+
+    def validate_leave_application_operator(self):
+        leave_application_operator = frappe.db.get_single_value("HR and Payroll Additional Settings", "default_leave_application_operator")
+
+        if not leave_application_operator:
+            frappe.throw(_("Leave Application Operator must be set in HR and Payroll Additional Settings"))
+
+        self.default_leave_application_operator = leave_application_operator
+            
+
 
 
 def update_attendance_recods(self):

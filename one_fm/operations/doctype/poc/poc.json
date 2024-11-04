@@ -1,4 +1,5 @@
 {
+ "actions": [],
  "creation": "2020-04-28 13:37:45.917741",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -6,6 +7,7 @@
  "field_order": [
   "poc",
   "designation",
+  "visit_frequency",
   "column_break_2",
   "contact_html"
  ],
@@ -31,10 +33,18 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "POC Designation"
+  },
+  {
+   "fieldname": "visit_frequency",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Visit Frequency",
+   "options": "Daily\nWeekly\nBi-Weekly\nMonthly\nQuarterly\nSemi-Annually\nAnnually"
   }
  ],
  "istable": 1,
- "modified": "2020-06-08 12:54:25.594061",
+ "links": [],
+ "modified": "2024-11-04 15:39:09.501517",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "POC",
@@ -43,5 +53,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

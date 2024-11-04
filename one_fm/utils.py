@@ -629,6 +629,8 @@ def notify_employee(doc, method):
 
 @frappe.whitelist()
 def leave_appillication_on_cancel(doc, method):
+    if not doc.custom_reason_for_cancel or len(doc.custom_reason_for_cancel) <= 10 or doc.custom_reason_for_cancel.strip() == "" or len(doc.custom_reason_for_cancel.strip()) < 3:
+        frappe.throw(_("Please ensure to provide a description of the reason."),title=_("Too Short"))
     update_employee_hajj_status(doc, method)
 
 def get_leave_payment_breakdown(leave_type):
@@ -2843,7 +2845,7 @@ def get_doctype_mandatory_fields(doctype):
 	mandatory_fields = []
 	labels = {}
 	employee_fields = []
-	for d in meta.get("fields", {"reqd": 1, "fieldtype":["!=", "Table"], "fieldname":["!=", "naming_series"]}):
+	for d in meta.get("fields", {"reqd": 1, "fieldtype": ["!=", "Table"], "fieldname": ["not in", ["naming_series", "title"]]}):
 		mandatory_fields.append(d.fieldname)
 		labels[d.fieldname] = d.label
 		if d.fieldtype == "Link" and d.options=="Employee":
@@ -3653,38 +3655,42 @@ def send_work_anniversary_reminders():
 
 def set_employee_status_to_vacation():
     # Get today's date
-    current_date = today()
+    current_date = getdate(today())
 
     # Fetch approved leave applications where `from_date` is today or earlier, along with the employee's status
     leave_applications = frappe.get_all('Leave Application', 
         filters={
             'status': 'Approved',
             'from_date': ['<=', current_date],
-            'to_date': ['>', current_date]
+            'to_date': ['>=', current_date]
         },
-        fields=['employee', 'employee.status']  # Fetch employee status directly
+        fields=['employee', 'employee.status', 'from_date', 'to_date']  # Fetch employee status directly
     )
 
     if not leave_applications:
         frappe.log_error(_("No employees found with approved leave applications for today or earlier."))
         return
 
-    # Filter employees who have 'Active' status and are on leave
-    employees_to_set_vacation = [
-        leave['employee'] for leave in leave_applications if leave['status'] == 'Active'
-    ]
+    employees_set_to_vacation = 0
+    employees_set_to_active = 0
 
-    if not employees_to_set_vacation:
-        frappe.log_error(_("No active employees found with approved leave applications for today or earlier."))
-        return
+    for leave in leave_applications:
+        employee = leave['employee']
+        status =  leave['status']
+        from_date = leave['from_date']
+        to_date =  leave['to_date']
 
-    # Update the status of the employees to 'Vacation'
-    for employee in employees_to_set_vacation:
-        frappe.db.set_value('Employee', employee, 'status', 'Vacation')
+        if current_date == getdate(from_date) and status == "Active":
+            frappe.db.set_value('Employee', employee, 'status', 'Vacation')
+            employees_set_to_vacation += 1
+
+        elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":
+            frappe.db.set_value('Employee', employee, 'status', 'Active')
+            employees_set_to_active += 1
 
     frappe.db.commit()
-    frappe.log(_("Employee statuses updated to 'Vacation' for {0} employees.").format(len(employees_to_set_vacation)))
-    
+    frappe.log(_("Employee statuses updated: {0} set to 'Vacation', {1} set to 'Active'.")
+               .format(employees_set_to_vacation, employees_set_to_active))
 
 def is_holiday(employee, date=None, raise_exception=True):
     try:

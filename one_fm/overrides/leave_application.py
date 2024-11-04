@@ -644,6 +644,7 @@ def reassign_to_applicant(employee: str, leave_name: str):
 @frappe.whitelist()
 def send_proposed_date_email(doc_name):
     doc = frappe.get_doc("Leave Application", doc_name)
+    frappe.db.set_value("Leave Application",doc_name,'workflow_state',"New Dates Proposed") 
     employee_info =  frappe.db.get_value("Employee", doc.employee, ["employee_name_in_arabic"], as_dict=1),
     args = frappe._dict({
                     "employee_name_eng" : doc.employee_name,
@@ -791,6 +792,24 @@ class ReassignDocumentToLeaveApplicant:
                 self.reassign_operation_settings(settings=value)
 
 
+@frappe.whitelist()
+def validate_leave_overlap(employee, from_date, to_date, name=None):
+    overlapping_leave = frappe.db.sql("""
+        SELECT name FROM `tabLeave Application`
+        WHERE employee = %(employee)s
+        AND docstatus < 2
+        AND status IN ('Open', 'Approved')
+        AND to_date >= %(from_date)s
+        AND from_date <= %(to_date)s
+        AND name != %(name)s
+    """, {
+        "employee": employee,
+        "from_date": from_date,
+        "to_date": to_date,
+        "name": name
+    }, as_dict=True)
 
-            
+    if overlapping_leave:
+        frappe.throw("Employee {0} has already applied between {1} and {2}".format(name,from_date,to_date))
+    return "valid"
 

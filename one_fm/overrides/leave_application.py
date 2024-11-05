@@ -816,8 +816,8 @@ def validate_leave_overlap(employee, from_date, to_date, name=None):
 @frappe.whitelist()
 def send_cancelled_data_email(doc_name):
     doc = frappe.get_doc("Leave Application", doc_name)
-    employee_info =  frappe.db.get_value("Employee", doc.employee, ["employee_name_in_arabic"], as_dict=1),
-    approver_employee_info =  frappe.db.get_value("Employee", doc.leave_approver_name, ["employee_name_in_arabic"], as_dict=1),
+    employee_info = frappe.db.get_value("Employee", doc.employee, ["employee_name_in_arabic"], as_dict=1)
+    approver_employee_info = frappe.db.get_value("Employee", doc.leave_approver_name, ["employee_name_in_arabic"], as_dict=1)
     args = frappe._dict({
                     "employee_name_eng" : doc.employee_name,
                     "employee_name_arabic" : employee_info[0].get("employee_name_in_arabic"),     

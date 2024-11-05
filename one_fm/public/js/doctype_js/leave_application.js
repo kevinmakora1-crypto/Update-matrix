@@ -24,7 +24,11 @@ frappe.ui.form.on("Leave Application", {
                         ],
                         function(values) {
                             if (!values.reason || values.reason.length <= 10 || values.reason.trim() === "" || values.reason.trim().length < 3) {
-                                frappe.throw("Cancellation reason must be more than 10 characters.", "Validation Error");
+                                frappe.msgprint({
+                                    title: __('Too Short'),
+                                    message: __('Please ensure to provide a description of the reason'),
+                                    indicator: 'red'
+                                });
                             } else {
                                 frappe.dom.freeze();
                                 frm.set_value('custom_reason_for_cancel', values.reason);
@@ -38,11 +42,11 @@ frappe.ui.form.on("Leave Application", {
                                             },
                                             callback: function(response) {
                                                 if (response.message) {
-                                                    frappe.msgprint("Cancellation Notification Mail send successfully.");
+                                                    frappe.msgprint("Cancellation notification email has been sent successfully");
                                                 }
                                             },
                                             error: function(error) {
-                                                frappe.throw(error.message || 'Mail not send.');
+                                                frappe.throw(error.message || 'Failed to send the cancellation notification email. Please try again later');
                                             }
                                         });
                                         resolve();
@@ -51,7 +55,7 @@ frappe.ui.form.on("Leave Application", {
                             }
                         },
                         'Enter Reason',
-                        'Submit'
+                        'Proceed to Leave Cancellatio'
                     );
                 });
             } catch (error) {

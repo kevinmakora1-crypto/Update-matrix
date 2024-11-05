@@ -39,6 +39,7 @@ frappe.ui.form.on("Leave Application", {
                                             method: "one_fm.overrides.leave_application.send_cancelled_data_email",
                                             args: {
                                                 doc_name: frm.doc.name, 
+                                                reason: values.reason
                                             },
                                             callback: function(response) {
                                                 if (response.message) {

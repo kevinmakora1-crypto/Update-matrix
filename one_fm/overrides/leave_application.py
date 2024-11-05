@@ -814,13 +814,13 @@ def validate_leave_overlap(employee, from_date, to_date, name=None):
 
 
 @frappe.whitelist()
-def send_cancelled_data_email(doc_name):
+def send_cancelled_data_email(doc_name,reason):
     doc = frappe.get_doc("Leave Application", doc_name)
     employee_info = frappe.db.get_value("Employee", doc.employee, ["employee_name_in_arabic"], as_dict=1)
     approver_employee_info = frappe.db.get_value("Employee", doc.leave_approver_name, ["employee_name_in_arabic"], as_dict=1)
     args = frappe._dict({
                     "employee_name_eng" : doc.employee_name,
-                    "employee_name_arabic" : employee_info[0].get("employee_name_in_arabic"),     
+                    "employee_name_arabic" : employee_info.get("employee_name_in_arabic"),     
                     "employee_id" : doc.employee,
                     "leave_type_eng" : doc.leave_type,
                     "start_data" : doc.from_date,
@@ -832,9 +832,9 @@ def send_cancelled_data_email(doc_name):
                     "total_suggected_days" : doc.custom_total_propose_leave_days,
                     "status":doc.workflow_state,
                     "leave_approver":doc.leave_approver_name,
-                    "leave_approver_name_ar" : approver_employee_info[0].get("employee_name_in_arabic") if  approver_employee_info[0] is not None else "",
+                    "leave_approver_name_ar" : approver_employee_info.get("employee_name_in_arabic") if  approver_employee_info is not None else "",
                     "cancellation_date":date.today(),
-                    "cancellation_reason" : doc.custom_reason_for_cancel,
+                    "cancellation_reason" : reason,
                 })
     msg = frappe.render_template('one_fm/templates/emails/leave_cancellation_email.html', args)
     sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None

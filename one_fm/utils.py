@@ -3166,11 +3166,9 @@ def get_approver(employee, date=None):
 
 
     if employee_data.site and site_supervisor.get("project"):
-        project = site_supervisor.get("project")
-        if project:
-            project_manager = frappe.db.get_value('Project', project, 'account_manager')
-            if project_manager:
-                return project_manager
+        project_manager = frappe.db.get_value('Project', site_supervisor.get("project"), 'account_manager')
+        if project_manager:
+            return project_manager
 
   
     if not employee_data.shift_working and not employee_data.reports_to:

@@ -3152,11 +3152,11 @@ def get_approver(employee, date=None):
     if employee_data.user_id and has_super_user_role(employee_data.user_id):
         return employee
 
-
+    site_supervisor = dict()
     if employee_data.site:
-        site_supervisor = frappe.db.get_value('Operations Site', employee_data.site, 'account_supervisor')
-        if site_supervisor:
-            return site_supervisor
+        site_supervisor = frappe.db.get_value('Operations Site', employee_data.site, ['account_supervisor', "project"], as_dict=1)
+        if site_supervisor.account_supervisor:
+            return site_supervisor.account_supervisor
 
   
     if employee_data.shift and employee_data.shift_working:
@@ -3165,8 +3165,8 @@ def get_approver(employee, date=None):
             return shift_supervisor
 
 
-    if employee_data.site:
-        project = frappe.db.get_value('Operations Site', employee_data.site, 'project')
+    if employee_data.site and site_supervisor.get("project"):
+        project = site_supervisor.get("project")
         if project:
             project_manager = frappe.db.get_value('Project', project, 'account_manager')
             if project_manager:

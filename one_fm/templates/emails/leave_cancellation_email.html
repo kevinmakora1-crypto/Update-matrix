@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bilingual Email Template (English & Arabic)</title>
+    <style>
+        .subject {
+        text-align: center;
+        margin-bottom: 10px;
+    }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+        .container {
+            display: flex;
+        justify-content: space-between;
+        border: 0px solid #fff;
+        padding: 0;
+        }
+        .header {
+            background-color: #f4f4f4;
+            padding: 10px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .content {
+            margin-top: 20px;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .details {
+            margin-left: 20px;
+        }
+        .footer {
+            margin-top: 30px;
+            font-style: italic;
+        }
+        .arabic {
+            text-align: right;
+            direction: rtl;
+            font-family: 'Arial', sans-serif;
+        }
+        .english {
+            text-align: left;
+            direction: ltr;
+        }
+        .bilingual {
+            display: flex;
+            justify-content: space-between;
+        }
+        .bilingual .english, .bilingual .arabic {
+            width: 48%;
+        }
+    </style>
+</head>
+<body>
+    <div class="subject">
+        <h4 class="english" style="text-align: center;">Subject: Leave Cancellation Notification - {{employee_name_eng}} </h4>
+        <h4 class="arabic" style="text-align: center;"> {{ employee_name_arabic }}- الموضوع: إشعار إلغاء الإجازة</h4>
+    </div>
+            <div class="bilingual">
+                <div class="english">
+                    <p>Dear {{leave_approver}},</p>
+                    <p>Please be informed that {{employee_name_eng}} has submitted a leave cancellation request. Below are the details of the canceled leave:</p>
+                </div>
+                <div class="arabic">
+                    <p> {{leave_approver_name_ar}}عزيزي/عزيزتي</p>
+                    <p>يرجى العلم أن {{employee_name_arabic}} قد قدم طلبًا لإلغاء إجازته. فيما يلي تفاصيل الإجازة الملغاة:
+                    </p>
+                </div>
+            </div> 
+
+            <div class="section bilingual">
+                <div class="english">
+                        <p><strong>Employee Name:</strong>{{employee_name_eng}}</p>
+                        <p><strong>Employee ID:</strong> {{employee_id}}</p>
+                        <p><strong>Leave Type:</strong> {{leave_type_eng}}</p>
+                        <div class="section-title">Original Leave Duration:</div>
+                        <div class="details">
+                        <p><strong>Start Date:</strong> {{start_data}}</p>
+                        <p><strong>End Date:</strong> {{end_date}}</p>
+                        <p><strong>Total Days:</strong> {{total_days}} Days</p>
+                        <p><strong>Date of Application:</strong> {{date_of_application}}</p>
+                        <p><strong>Cancellation Date:</strong> {{cancellation_date}}</p>
+                        <p><strong>Cancellation Reason:</strong> {{cancellation_reason}}</p>
+                    </div>
+                </div>
+                <div class="arabic">
+                        <p><strong>اسم الموظف:</strong> {{ employee_name_arabic if employee_name_arabic else "" }}</p>
+                        <p><strong>رقم الموظف:</strong> {{employee_id}}</p>
+                        <p><strong>نوع الإجازة:</strong> {{_(leave_type_eng, "ar")}}</p>
+                        <div class="section-title">مدة الإجازة الأصلية:</div>
+                        <div class="details">
+                        <p><strong>تاريخ البدء:</strong> {{start_data}}</p>
+                        <p><strong>تاريخ الانتهاء:</strong> {{end_date}}</p>
+                        <p><strong>إجمالي الأيام:</strong> {{total_days}} أيام</p>
+                        <p><strong>تاريخ التقديم:</strong> {{date_of_application}}</p>
+                        <p><strong>تاريخ الإلغاء:</strong> {{cancellation_date}}</p>
+                        <!-- <p><strong>سبب الإلغاء:</strong> {{cancellation_reason}}</p> -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer bilingual">
+                <div class="english">
+                    Thank you, <br/>
+                    One Facilities Management
+                </div>
+                <div class="arabic">
+                    شكراً لك، <br/>
+                    إدارة ون للمرافق
+                </div>
+            </div>
+</body>
+</html>

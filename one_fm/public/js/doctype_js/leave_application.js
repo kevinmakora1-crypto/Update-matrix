@@ -1,5 +1,5 @@
 frappe.ui.form.on("Leave Application", {
-    before_workflow_action: function(frm) {
+    before_workflow_action:async function(frm) {
         if (frm.selected_workflow_action === "Accept Proposed Dates") {
             frm.set_value("from_date", frm.doc.custom_propose_from_date);
             frm.set_value("to_date", frm.doc.custom_propose_to_date);
@@ -9,6 +9,57 @@ frappe.ui.form.on("Leave Application", {
             frm.refresh_field("total_leave_days");
             frappe.msgprint("Leave updated");
         }
+        if (frm.selected_workflow_action == 'Cancel') {
+            try {
+                await new Promise((resolve, reject) => {
+                    frappe.dom.unfreeze();
+                    frappe.prompt(
+                        [
+                            {
+                                label: 'Reason for Cancelling',
+                                fieldname: 'reason',
+                                fieldtype: 'Small Text',
+                                reqd: 1
+                            }
+                        ],
+                        function(values) {
+                            if (!values.reason || values.reason.length <= 10 || values.reason.trim() === "" || values.reason.trim().length < 3) {
+                                frappe.throw("Cancellation reason must be more than 10 characters.", "Validation Error");
+                            } else {
+                                frappe.dom.freeze();
+                                frm.set_value('custom_reason_for_cancel', values.reason);
+                                frm.refresh_field("custom_reason_for_cancel");
+                                frm.save()
+                                    .then(() => {
+                                        frappe.call({
+                                            method: "one_fm.overrides.leave_application.send_cancelled_data_email",
+                                            args: {
+                                                doc_name: frm.doc.name, 
+                                            },
+                                            callback: function(response) {
+                                                if (response.message) {
+                                                    frappe.msgprint("Cancellation Notification Mail send successfully.");
+                                                }
+                                            },
+                                            error: function(error) {
+                                                frappe.throw(error.message || 'Mail not send.');
+                                            }
+                                        });
+                                        resolve();
+                                    })
+                                    .catch(reject);
+                            }
+                        },
+                        'Enter Reason',
+                        'Submit'
+                    );
+                });
+            } catch (error) {
+                frappe.dom.unfreeze();
+                frappe.throw(error?.message || 'Something went wrong in cancelling leave. Try again later');
+            }
+        }
+        
     },  
     refresh: function(frm) {
         // frm.set_intro("Please save the form after adding a new row to the Proof Documents table before attaching the document")

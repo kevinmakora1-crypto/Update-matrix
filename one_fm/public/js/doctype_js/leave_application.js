@@ -55,7 +55,7 @@ frappe.ui.form.on("Leave Application", {
                             }
                         },
                         'Enter Reason',
-                        'Proceed to Leave Cancellatio'
+                        'Proceed to Leave Cancellation'
                     );
                 });
             } catch (error) {

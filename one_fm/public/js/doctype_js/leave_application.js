@@ -32,6 +32,10 @@ frappe.ui.form.on("Leave Application", {
                             } else {
                                 frappe.dom.freeze();
                                 frm.set_value('custom_reason_for_cancel', values.reason);
+                                const today = new Intl.DateTimeFormat('en-CA').format(new Date());
+                                if (new Date(frm.doc.from_date) < new Date(today)) {
+                                    frappe.db.set_value("Employee", frm.doc.employee, "status","Active")
+                                }
                                 frm.refresh_field("custom_reason_for_cancel");
                                 frm.save()
                                     .then(() => {

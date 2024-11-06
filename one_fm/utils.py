@@ -629,8 +629,6 @@ def notify_employee(doc, method):
 
 @frappe.whitelist()
 def leave_appillication_on_cancel(doc, method):
-    if not doc.custom_reason_for_cancel or len(doc.custom_reason_for_cancel) <= 10 or doc.custom_reason_for_cancel.strip() == "" or len(doc.custom_reason_for_cancel.strip()) < 3:
-        frappe.throw(_("Please ensure to provide a description of the reason."),title=_("Too Short"))
     update_employee_hajj_status(doc, method)
 
 def get_leave_payment_breakdown(leave_type):

@@ -3829,7 +3829,7 @@ def set_out_of_office_for_leaves():
             if today == add_days(to_date, 1):
                 disable_out_of_office(employee_email)
 
-@frappe.whitelist()
+
 def update_active_employees_assurance_level():
     today = datetime.now().date()
     employees = frappe.get_all('Employee',filters=[['status','=','Active'],['one_fm_civil_id', '!=', '']],fields=['employee','one_fm_civil_id','custom_civil_id_assurance_level','civil_id_expiry_date'])

@@ -16,7 +16,7 @@ from one_fm.hiring.utils import (
     is_subcontract_employee
 )
 from one_fm.processor import sendemail,send_whatsapp
-from one_fm.utils import get_domain, get_standard_notification_template, get_approver_user
+from one_fm.utils import call_to_get_assurance_level, get_domain, get_standard_notification_template, get_approver_user, update_active_employees_assurance_level
 from six import string_types
 from frappe import _
 from one_fm.operations.doctype.operations_shift.operations_shift import get_supervisor_operations_shifts
@@ -556,22 +556,10 @@ def toggle_auto_attendance(employee_names: list | str, status: bool):
         return response(message=str(e), status_code=400)
 
 
+@frappe.whitelist()
 def get_assurance_level_of_employee(doc, method):
     if doc.one_fm_civil_id:
-        print("samdani")
-        print(doc.one_fm_civil_id)
-        civil_id = doc.one_fm_civil_id
-        url = f"http://192.168.11.13:8080/api/DigitalSigning/CheckMobileIdentity/{civil_id}"
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                print(data)
-                verification_level = data["data"].get("verificationLevel")
-                doc.custom_civil_id_assurance_level = verification_level
-                frappe.msgprint(f"Verification level stored successfully: {verification_level}")
-            else:
-                frappe.msgprint(f"API call failed with status code: {response.status_code}")
-        except Exception as e:
-            frappe.log_error(message=str(e), title="API Call Failed")
-            frappe.msgprint(f"An error occurred while making the API call: {str(e)}")
+        verification_level = call_to_get_assurance_level(doc.one_fm_civil_id)
+        doc.custom_civil_id_assurance_level = verification_level
+        return True
+

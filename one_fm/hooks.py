@@ -560,6 +560,7 @@ scheduler_events = {
 		"one_fm.operations.doctype.contracts.contracts.renew_contracts_by_termination_date",
         "one_fm.developer.doctype.bug_buster.bug_buster.roster_bug_buster",
         'one_fm.utils.set_employee_status_to_vacation',
+        'one_fm.utils.set_out_of_office_for_leaves',
 	],
 	"hourly": [
 		# "one_fm.api.tasks.send_checkin_hourly_reminder",

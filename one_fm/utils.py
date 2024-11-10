@@ -629,6 +629,9 @@ def notify_employee(doc, method):
 
 @frappe.whitelist()
 def leave_appillication_on_cancel(doc, method):
+    today = nowdate()
+    if doc.from_date < today :
+        frappe.db.set_value("Employee",doc.employee, "status","Active")
     update_employee_hajj_status(doc, method)
 
 def get_leave_payment_breakdown(leave_type):

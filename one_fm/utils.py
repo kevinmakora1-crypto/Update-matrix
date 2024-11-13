@@ -2,7 +2,7 @@
 # encoding: utf-8
 from __future__ import unicode_literals
 import os, json, math, pymysql, requests, datetime
-from datetime import timedelta, datetime
+from datetime import date, timedelta, datetime
 from dateutil.relativedelta import relativedelta
 from datetime import datetime
 import pandas as pd
@@ -3832,29 +3832,39 @@ def set_out_of_office_for_leaves():
             if today == add_days(to_date, 1):
                 disable_out_of_office(employee_email)
 
-
+@frappe.whitelist()
 def update_active_employees_assurance_level():
     today = datetime.now().date()
     employees = frappe.get_all('Employee',filters=[['status','=','Active'],['one_fm_civil_id', '!=', '']],fields=['employee','one_fm_civil_id','custom_civil_id_assurance_level','civil_id_expiry_date'])
-    for i in employees:
-        verification_level = None
-        if i.custom_civil_id_assurance_level != 'High':
-            verification_level = call_to_get_assurance_level(i.one_fm_civil_id)
-        elif i.custom_civil_id_assurance_level == 'High' and i.civil_id_expiry_date <= today:
-            verification_level = call_to_get_assurance_level(i.one_fm_civil_id)
-        frappe.db.set_value('Employee', i.employee, 'custom_civil_id_assurance_level', verification_level)
-    frappe.db.commit()
-    return True
+    for employee in employees:
+        if isinstance(employee.get("civil_id_expiry_date"), date):
+            employee["civil_id_expiry_date"] = employee["civil_id_expiry_date"].isoformat()
+    # payload = {"employees": employees}
+    verification_level = call_to_get_assurance_level(employees)
+
+    # for i in employees:
+    #     verification_level = None
+    #     if i.custom_civil_id_assurance_level != 'High':
+    #         verification_level = call_to_get_assurance_level(i.one_fm_civil_id)
+    #     elif i.custom_civil_id_assurance_level == 'High' and i.civil_id_expiry_date <= today:
+    #         verification_level = call_to_get_assurance_level(i.one_fm_civil_id)
+    #     frappe.db.set_value('Employee', i.employee, 'custom_civil_id_assurance_level', verification_level)
+    # frappe.db.commit()
+    return verification_level
         
 
-def call_to_get_assurance_level(civil_id):
-    url = f"http://192.168.11.13:8080/api/DigitalSigning/CheckMobileIdentity/{civil_id}"
+def call_to_get_assurance_level(payload):
+    print("samdani")
+    json=payload
+    print(json)
+    url = f"http://192.168.11.13:8080/api/DigitalSigning/BulkCheckMobileIdentity"
     try:
-        response = requests.get(url)
+        response = requests.post(url, json=payload)
+        print("samdani response ")
+        print(response.status_code)
         if response.status_code == 200:
             data = response.json()
-            verification_level = data["data"].get("verificationLevel")
-            return verification_level
+            return data
     except Exception as e:
             frappe.msgprint(f"An error occurred while making the API call: {str(e)}")
             return response(message=str(e), title="API Call Failed")

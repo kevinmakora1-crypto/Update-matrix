@@ -1,0 +1,74 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-10-29 07:49:29.650675",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "reference_doctype",
+  "based_on",
+  "column_break_vjik",
+  "fieldname",
+  "reference_docname",
+  "docs_section",
+  "doclist"
+ ],
+ "fields": [
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Reference Doctype",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "based_on",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Based on",
+   "options": "\nDocfield\nDocname"
+  },
+  {
+   "fieldname": "column_break_vjik",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.based_on == \"Docfield\"",
+   "fieldname": "fieldname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Fieldname"
+  },
+  {
+   "depends_on": "eval:doc.based_on == \"Docname\"",
+   "fieldname": "reference_docname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Reference Docname"
+  },
+  {
+   "fieldname": "docs_section",
+   "fieldtype": "Section Break",
+   "label": "Docs"
+  },
+  {
+   "fieldname": "doclist",
+   "fieldtype": "JSON",
+   "label": "Doclist",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-10-29 13:04:15.484445",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Reliever Assignment Document",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

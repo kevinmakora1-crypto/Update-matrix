@@ -52,7 +52,9 @@ from one_fm.processor import sendemail
 from one_fm.one_fm.payroll_utils import get_user_list_by_role
 from one_fm.operations.doctype.operations_shift.operations_shift import get_shift_supervisor
 from one_fm.api import api
-
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
 
 
 def get_common_email_args(doc):
@@ -627,8 +629,9 @@ def notify_employee(doc, method):
 
 @frappe.whitelist()
 def leave_appillication_on_cancel(doc, method):
-    if not doc.custom_reason_for_cancel or len(doc.custom_reason_for_cancel) <= 10 or doc.custom_reason_for_cancel.strip() == "" or len(doc.custom_reason_for_cancel.strip()) < 3:
-        frappe.throw(_("Please ensure to provide a description of the reason."),title=_("Too Short"))
+    today = nowdate()
+    if doc.from_date < today :
+        frappe.db.set_value("Employee",doc.employee, "status","Active")
     update_employee_hajj_status(doc, method)
 
 def get_leave_payment_breakdown(leave_type):
@@ -3128,56 +3131,60 @@ def has_super_user_role(user=None):
                 return True
     return False
 
+
 @frappe.whitelist()
-def get_approver(employee, date=False):
-    '''
-        Method to get the line manager employee of an employee with the priority
-        args:
-            employee: name of Employee object
-            date: date in which the shift supervisor working
-        return: employee eference of the line manager or None
-    '''
+def get_approver(employee, date=None):
+    """
+    Method to get the line manager employee for a specified employee.
+    Args:
+        employee: Name of Employee object.
+        date: Date on which the shift supervisor is working.
+    Returns:
+        Reference to the line manager employee or None.
+    """
+    if not frappe.db.exists("Employee", {'name': employee}):
+        frappe.throw(f"Employee {employee} does not exist")
 
-    if not frappe.db.exists("Employee", {'name':employee}):
-        frappe.throw(f"Employee {employee} does not exists")
+ 
+    employee_data = frappe.db.get_value(
+        'Employee', employee, ["user_id", "reports_to", "shift", "site", "shift_working", "employee_name"], as_dict=True
+    )
 
-    employee_field_list = ["user_id", "reports_to", "shift", "site", "shift_working", "employee_name"]
-    employee_data = frappe.db.get_value('Employee', employee, employee_field_list, as_dict=1)
+    if employee_data.reports_to:
+        return employee_data.reports_to
 
-    line_manager = employee_data.reports_to if employee_data.reports_to else None
+  
+    if employee_data.user_id and has_super_user_role(employee_data.user_id):
+        return employee
 
-    if not line_manager:
-        if employee_data.user_id and has_super_user_role(employee_data.user_id):
-            line_manager = employee
+    site_supervisor = dict()
+    if employee_data.site:
+        site_supervisor = frappe.db.get_value('Operations Site', employee_data.site, ['account_supervisor', "project"], as_dict=1)
+        if site_supervisor.account_supervisor:
+            return site_supervisor.account_supervisor
 
-    if not line_manager:
-        if employee_data.shift_working:
-            if employee_data.shift:
-                line_manager = get_shift_supervisor(employee_data.shift, date)
-                if line_manager:
-                    return line_manager
-            if not line_manager and employee_data.site:
-                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'account_supervisor')
-                if not line_manager:
-                    project = frappe.db.get_value('Operations Site', employee_data.site, 'project')
-                    if project:
-                        line_manager = frappe.db.get_value('Project', project, 'account_manager')
-        else:
-            if employee_data.site:
-                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'account_supervisor')
+  
+    if employee_data.shift and employee_data.shift_working:
+        shift_supervisor = get_shift_supervisor(employee_data.shift, date)
+        if shift_supervisor:
+            return shift_supervisor
 
-            if not line_manager and employee_data.shift:
-                line_manager = get_shift_supervisor(employee_data.shift, date)
-            
-            if not line_manager:
-                frappe.msgprint(
-                    _("Please ensure that the Reports To or Operations Site Supervisor is set for {0}, Since the employee is not shift working".format(employee_data.employee_name)),
-                    title= "Missing Data",
-                    indicator="orange",
-                    alert=True
-                )
 
-    return line_manager
+    if employee_data.site and site_supervisor.get("project"):
+        project_manager = frappe.db.get_value('Project', site_supervisor.get("project"), 'account_manager')
+        if project_manager:
+            return project_manager
+
+  
+    if not employee_data.shift_working and not employee_data.reports_to:
+        frappe.msgprint(
+            _("Please set either 'Reports To' or 'Operations Site Supervisor' for {0}. Since the employee is not shift-working.").format(employee_data.employee_name),
+            title="Missing Data",
+            indicator="orange",
+            alert=True
+        )
+
+    return None
 
 
 def get_approver_for_many_employees(supervisor=None):
@@ -3652,6 +3659,7 @@ def send_work_anniversary_reminders():
 
 
 def set_employee_status_to_vacation():
+    from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import assign_responsibilities
     # Get today's date
     current_date = getdate(today())
 
@@ -3662,7 +3670,7 @@ def set_employee_status_to_vacation():
             'from_date': ['<=', current_date],
             'to_date': ['>=', current_date]
         },
-        fields=['employee', 'employee.status', 'from_date', 'to_date']  # Fetch employee status directly
+        fields=['employee', 'employee.status', 'from_date', 'to_date', 'reliever', 'name']  # Fetch employee status directly
     )
 
     if not leave_applications:
@@ -3676,10 +3684,12 @@ def set_employee_status_to_vacation():
         employee = leave['employee']
         status =  leave['status']
         from_date = leave['from_date']
+        leave_application = leave['name']
         to_date =  leave['to_date']
-
+        reliever = leave.get('reliever', None)
         if current_date == getdate(from_date) and status == "Active":
             frappe.db.set_value('Employee', employee, 'status', 'Vacation')
+            if reliever: frappe.enqueue(assign_responsibilities, leave_application=leave_application)
             employees_set_to_vacation += 1
 
         elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":
@@ -3703,4 +3713,126 @@ def is_holiday(employee, date=None, raise_exception=True):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Error while validating Holiday")
         return False, ""
+    
+    
+def get_google_credentials():
+    from frappe.utils.password import get_decrypted_password 
+
+    google_credentials = frappe.get_doc('API Integration', 'Google Cloud Platform')
+    
+    api_parameters = google_credentials.api_parameter
+
+    cred = {api_parameter.parameter: get_decrypted_password('API Parameter', api_parameter.name, 'value') for api_parameter in api_parameters}
+
+    credentials = Credentials(
+        None,
+        client_id=cred.get("client_id"),
+        client_secret=cred.get("client_secret"),
+        refresh_token=cred.get("refresh_token"),
+        token_uri=cred.get("token_uri")
+    )
+    
+    return credentials
+
+
+def get_oauth_refresh_token():
+    from frappe.utils.password import get_decrypted_password 
+    google_credentials = frappe.get_doc('API Integration', 'Google Cloud Platform')
+    
+    cred_params = {param.parameter: get_decrypted_password('API Parameter', param.name, 'value') for param in google_credentials.api_parameter}
+    
+    required_params = ['client_id', 'client_secret', 'redirect_uris']
+    for param in required_params:
+        if param not in cred_params:
+            raise ValueError(f"Missing required parameter: {param}")
+    
+    SCOPES = ['https://www.googleapis.com/auth/gmail.settings.basic']
+    client_config = {
+        "web": {
+            "client_id": cred_params["client_id"],
+            "client_secret": cred_params["client_secret"],
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "redirect_uris": cred_params["redirect_uris"].split(',') 
+        }
+    }
+    
+    flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
+    credentials = flow.run_local_server(port=0)
+
+    for api_parameter in google_credentials.api_parameter:
+        if api_parameter.parameter == 'refresh_token':
+            api_parameter.value = credentials.refresh_token
+    
+    google_credentials.save()
+    frappe.db.commit()
+
+    return credentials.refresh_token
+
+
+def set_out_of_office(employee_email, start_date, end_date, custom_reliever_name, custom_reliever, employee_name):
+    try:
+        credentials = get_google_credentials()
+        service = build('gmail', 'v1', credentials=credentials)
+
+        start_date_rfc3339 = start_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+        end_date_rfc3339 = end_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+
+        vacation_settings = {
+            "enableAutoReply": True,
+            "responseSubject": f"{employee_name} is Currently On Leave",
+            "responseBodyPlainText": f"Thank you for reaching out. I am currently on vacation and will be unavailable from {start_date} to {end_date}. For urgent matters, please contact {custom_reliever_name} at {custom_reliever}. If still unresolved, I will respond to your message upon my return.",
+            "restrictToContacts": False,
+            "restrictToDomain": False,
+            "startTime": int(datetime.strptime(start_date_rfc3339, '%Y-%m-%dT%H:%M:%SZ').timestamp() * 1000),
+            "endTime": int(datetime.strptime(end_date_rfc3339, '%Y-%m-%dT%H:%M:%SZ').timestamp() * 1000)
+        }
+
+        service.users().settings().updateVacation(userId='me', body=vacation_settings).execute()
+        frappe.msgprint(f"Out-of-office set for {employee_email} from {start_date} to {end_date}.")
+    except Exception as e:
+        frappe.log_error(str(e), "Failed to set out-of-office")
+        
+
+def disable_out_of_office(employee_email):
+    try:
+        credentials = get_google_credentials()
+        service = build('gmail', 'v1', credentials=credentials)
+
+        vacation_settings = {
+            "enableAutoReply": False
+        }
+
+        service.users().settings().updateVacation(userId='me', body=vacation_settings).execute()
+        frappe.msgprint(f"Out-of-office disabled for {employee_email}.")
+    except Exception as e:
+        frappe.log_error(str(e), "Failed to disable out-of-office")
+
+
+def set_out_of_office_for_leaves():
+    today = datetime.now().date()
+    
+    # Query Leave records
+    leaves = frappe.get_all('Leave Application', filters=[
+        ['from_date', '<=', today], ['to_date', '>=', today], ['status', '=', 'Approved']
+    ], fields=['employee.company_email', 'from_date', 'to_date', 'custom_reliever_name', 'custom_reliever_.user_id', 'employee.employee_name'])
+
+    for leave in leaves:
+        employee_email = leave['company_email']
+        from_date = leave['from_date']
+        to_date = leave['to_date']
+        custom_reliever_name = leave['custom_reliever_name']
+        custom_reliever = leave['user_id']
+        employee_name = leave['employee_name']
+
+        if employee_email:
+
+            # If today's date matches the start date, set out-of-office
+            if today == from_date:
+                set_out_of_office(employee_email, from_date, to_date, custom_reliever_name, custom_reliever, employee_name)
+
+            # If today's date matches the end date, disable out-of-office
+            if today == add_days(to_date, 1):
+                disable_out_of_office(employee_email)
+
                     

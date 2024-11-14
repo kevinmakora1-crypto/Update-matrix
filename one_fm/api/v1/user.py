@@ -127,9 +127,10 @@ def store_fcm_token(employee_id: str = None , fcm_token: str = None, device_os: 
 
         if not isinstance(employee_id, str):
             return response("Bad Request", 400, None, "employee_id must be of type str.")
-    
-        employee = frappe.get_doc("Employee", {"employee_id": employee_id})
-    
+        try:
+            employee = frappe.get_doc("Employee", {"employee_id": employee_id})
+        except frappe.exceptions.DoesNotExistError as error:
+            employee = frappe.get_doc("Employee", {"name": employee_id})
         if not employee:
             return response("Resource Not Found", 404, None, "No resource found with {employee_id}".format(employee_id = employee_id))
         
@@ -142,3 +143,4 @@ def store_fcm_token(employee_id: str = None , fcm_token: str = None, device_os: 
     except Exception as error:
         frappe.log_error(title="API FCM Token", message=frappe.get_traceback())
         return response("Internal Server Error", 500, None, error)
+    

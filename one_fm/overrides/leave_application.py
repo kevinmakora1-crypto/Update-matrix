@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import date
 
 from frappe import _
-from frappe.utils import get_fullname, nowdate, add_to_date, getdate, date_diff
+from frappe.utils import get_fullname, nowdate, add_to_date, getdate, date_diff, get_url_to_form
 
 from hrms.hr.doctype.leave_application.leave_application import *
 from one_fm.processor import sendemail
@@ -182,6 +182,7 @@ class LeaveApplicationOverride(LeaveApplication):
             translated_status = next(iter(get_translated_status or []), {})
             args["status_in_arabic"] = translated_status.get("translated_text", args.get("status"))
             args["leave_type_in_arabic"] = leave_type_in_arabic if leave_type_in_arabic else self.leave_type
+            args["doc_url"] = get_url_to_form("Leave Application", self.name) 
             email_template = frappe.get_doc("Email Template", template)
             if args.get("status") == "Approved":
                 email_template = frappe.get_doc("Email Template", "Leave Employee Approval Notification")

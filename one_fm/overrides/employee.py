@@ -560,6 +560,7 @@ def toggle_auto_attendance(employee_names: list | str, status: bool):
 def get_assurance_level_of_employee(doc, method):
     if doc.one_fm_civil_id:
         verification_level = call_to_get_assurance_level(doc.one_fm_civil_id)
+        verification_level = verification_level["data"].get("verificationLevel")
         doc.custom_civil_id_assurance_level = verification_level
         return True
 

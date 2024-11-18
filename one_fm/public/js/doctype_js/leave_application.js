@@ -64,13 +64,15 @@ frappe.ui.form.on("Leave Application", {
                 frappe.throw(error?.message || 'Something went wrong in cancelling leave. Try again later');
             }
         }
-        if (frm.selected_workflow_action == "Propose New Dates") {
+        if (frm.selected_workflow_action === "Propose New Dates") {
             try {
                 await new Promise((resolve, reject) => {
-                frappe.dom.unfreeze();
-                handle_propose_new_date_action(frm)});
-            }
-            catch (error) {
+                    frappe.dom.unfreeze();
+                    handle_propose_new_date_action(frm)
+                        .then(resolve)
+                        .catch(reject);
+                });
+            } catch (error) {
                 frappe.dom.unfreeze();
                 frappe.throw(error?.message || 'Something went wrong while proposing new dates. Try again later');
             }
@@ -144,43 +146,41 @@ frappe.ui.form.on("Leave Application", {
     }
 })
 
-var handle_propose_new_date_action =frm=>{  
-        let dialog = new frappe.ui.Dialog({
+async function handle_propose_new_date_action(frm) {
+    return new Promise((resolve, reject) => {
+        const dialog = new frappe.ui.Dialog({
             title: 'Confirm New Dates',
             fields: [
                 {
-                    fieldtype: 'Date', 
-                    fieldname: 'custom_propose_from_date', 
-                    label: 'Proposed From Date', 
-                    default: frm.doc.custom_propose_from_date, 
+                    fieldtype: 'Date',
+                    fieldname: 'custom_propose_from_date',
+                    label: 'Proposed From Date',
+                    default: frm.doc.custom_propose_from_date,
                     reqd: 1,
-                    change: function() {
-                        calculate_days(frm,dialog);
-                    }
+                    change: () => calculate_days(frm, dialog)
                 },
                 {
-                    fieldtype: 'Date', 
-                    fieldname: 'custom_propose_to_date', 
-                    label: 'Proposed To Date', 
-                    default: frm.doc.custom_propose_to_date, 
+                    fieldtype: 'Date',
+                    fieldname: 'custom_propose_to_date',
+                    label: 'Proposed To Date',
+                    default: frm.doc.custom_propose_to_date,
                     reqd: 1,
-                    change: function() {
-                        calculate_days(frm,dialog);
-                    }
+                    change: () => calculate_days(frm, dialog)
                 },
                 {
-                    fieldtype: 'Data', 
-                    fieldname: 'custom_total_propose_leave_days', 
-                    label: 'Total Number of proposed Days', 
+                    fieldtype: 'Data',
+                    fieldname: 'custom_total_propose_leave_days',
+                    label: 'Total Number of Proposed Days',
                     read_only: 1,
-                    default: '0' 
+                    default: '0'
                 }
             ],
             primary_action_label: 'Confirm',
             primary_action(values) {
-                let from_date = values.custom_propose_from_date;
-                let to_date = values.custom_propose_to_date;
-                let total_days = dialog.get_value('custom_total_propose_leave_days');
+                const from_date = values.custom_propose_from_date;
+                const to_date = values.custom_propose_to_date;
+                const total_days = dialog.get_value('custom_total_propose_leave_days');
+
                 validate_proposeddate(frm, from_date, to_date, dialog)
                     .then(is_valid => {
                         if (is_valid) {
@@ -188,17 +188,27 @@ var handle_propose_new_date_action =frm=>{
                             frm.set_value('custom_propose_to_date', to_date);
                             frm.set_value('custom_total_propose_leave_days', total_days);
                             dialog.hide();
-                            frm.set_value('workflow_state',"New Dates Proposed");
-                            frm.save().then(() => {
-                                frappe.msgprint("New dates proposed successfully");
-                                frm.reload_doc();
-                            });
+                            frappe.dom.freeze();
+                            frm.save()
+                                .then(() => {
+                                    frappe.msgprint("New dates proposed successfully");
+                                    resolve(frm.reload_doc());
+                                })
+                                .catch((err) => {
+                                    frappe.throw(err.message || 'Error saving proposed dates');
+                                    reject(err);
+                                });
+                        } else {
+                            reject(new Error('Invalid date selection'));
                         }
                     })
+                    .catch(reject);
             }
         });
         dialog.show();
+    });
 }
+
 
 
 var prefillForm = frm => {

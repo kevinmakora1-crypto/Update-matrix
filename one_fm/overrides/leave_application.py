@@ -109,6 +109,8 @@ class LeaveApplicationOverride(LeaveApplication):
     def validate_applicable_after(self):
         if self.workflow_state == "New Dates Proposed":
             send_proposed_date_email(self.name)
+        if self.workflow_state == "Pending Approval":
+            self.notify_leave_approver()
         if self.leave_type:
             leave_type = frappe.get_doc("Leave Type", self.leave_type)
             if leave_type.applicable_after > 0:
@@ -272,7 +274,7 @@ class LeaveApplicationOverride(LeaveApplication):
         It's a action that takes place on update of Leave Application.
         """
         #If Leave Approver Exist
-        if self.workflow_state == "Open":
+        if self.workflow_state == "Pending Approval":
             try:
                 employee =  frappe.db.get_values("Employee", self.employee, ["employee_name_in_arabic", "employee_id"], as_dict=1)
                 line_manager = frappe.db.get_value("Employee", {"user_id": self.leave_approver}, "employee_name_in_arabic")
@@ -288,41 +290,26 @@ class LeaveApplicationOverride(LeaveApplication):
                     "total_leave_days": self.total_leave_days,
                     "workflow_state": self.workflow_state,
                     "posting_date": self.posting_date,
-                    "base_url": frappe.utils.get_url()
+                    "base_url": frappe.utils.get_url(),
+                    "doc_type":self.doctype,
+                    "doc_name": self.name
                 })
-
-                #Fetch Email Template for Leave Approval. The email template is in HTML format.
                 template = frappe.db.get_single_value('HR Settings', 'leave_approval_notification_template')
                 if not template:
                     frappe.msgprint(_("Please set default template for Leave Approval Notification in HR Settings."))
                     return
                 email_template = frappe.get_doc("Email Template", template)
                 message = frappe.render_template(email_template.response_html, args)
-                if self.proof_documents:
-                    proof_doc = self.proof_documents
-                    for p in proof_doc:
-                        message+=f"<hr><img src='{p.attachments}' height='400'/>"
-                subject = f"Leave Application Submitted for Approval – {self.employee_name}"
-                #send notification
-                sendemail(recipients= [self.leave_approver], subject=subject, message=message,
-                        reference_doctype=self.doctype, reference_name=self.name, attachments = [])
-
-                employee_id = frappe.get_value("Employee", {"user_id":self.leave_approver}, ["name"])
-
-                if self.total_leave_days == 1:
-                    date = "for "+cstr(self.from_date)
-                else:
-                    date = "from "+cstr(self.from_date)+" to "+cstr(self.to_date)
-
-                push_notication_message = self.employee_name+" has applied for "+self.leave_type+" "+date+". Kindly, take action."
-                push_notification_rest_api_for_leave_application(employee_id,"Leave Application", push_notication_message, self.name)
+                subject = f'طلب الإجازة تم تقديمه للموافقة – {employee[0].employee_name_in_arabic}  | Leave Application Submitted for Approval  – {self.employee_name}'
+                sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
+                sendemail(sender=sender, recipients= [self.leave_approver],message=message, subject=subject, delayed=False, is_scheduler_email=False,is_external_mail=True)
             except Exception as e:
                 frappe.log_error(message=frappe.get_traceback(), title="Leave Notification")
 
     def after_insert(self):
         self.assign_to_leave_approver()
         self.update_attachment_name()
-        self.enqueue_notification_method(self.notify_leave_approver)
+        # self.enqueue_notification_method(self.notify_leave_approver)
         self.enqueue_notification_method(self.notify_employee)
         
     def enqueue_notification_method(self,method):

@@ -285,6 +285,10 @@ var validate_proposeddate = (frm, from_date, to_date, dialog) => {
             frappe.throw("Proposed From Date cannot be in the past.");
             return reject(false);
         }
+        if(frm.doc.custom_propose_from_date && frm.doc.custom_propose_from_date == from_date && frm.doc.custom_propose_to_date && frm.doc.custom_propose_to_date == to_date){
+            frappe.throw("Same Date cannot be Proposed.");
+            return reject(false);
+        }
         frappe.db.get_value("Leave Type", frm.doc.leave_type, "one_fm_is_paid_annual_leave")
             .then(res => {
                 if (res.message.one_fm_is_paid_annual_leave && frm.doc.total_leave_days >= 15) {

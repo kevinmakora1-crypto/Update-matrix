@@ -103,6 +103,9 @@ frappe.ui.form.on("Leave Application", {
                 // $('.btn .btn-primary .btn-sm').show();
             }
         }
+        if (frm.doc.status === 'Cancelled' && frm.doc.name.includes('new-leave-application')) {
+            frm.set_value('custom_reason_for_cancel', "");
+        }
         if (frm.doc.status == 'Approved' && frm.doc.__onload && frm.doc.__onload.attendance_not_created){
           frm.add_custom_button(__('Update Attendance'),
             function () {

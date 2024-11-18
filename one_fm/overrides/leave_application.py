@@ -664,17 +664,11 @@ def send_proposed_date_email(doc_name):
                     "doc_type":doc.doctype,
                     "doc_name": doc.name
                 })
-    template = frappe.db.get_single_value('HR Settings', 'leave_approval_notification_template')
-    if not template:
-        frappe.msgprint(_("Please set default template for Leave Approval Notification in HR Settings."))
-        return
-    email_template = frappe.get_doc("Email Template", template)
-    message = frappe.render_template(email_template.response_html, args)
-    subject = "Leave Application – Suggested Adjustment to Leave Dates | الموضوع: طلب الإجازة – اقتراح تعديل تواريخ الإجازة"
+    message = frappe.render_template('one_fm/templates/emails/leave_proposal_status.html', args)
+    subject = "طلب الإجازة – اقتراح تعديل تواريخ الإجازة|Leave Application – Suggested Adjustment to Leave Dates"
     sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
     employee = frappe.db.get_value("Employee", doc.employee, ["personal_email", "company_email","prefered_email"], as_dict=1)
-    # recipient = list({value for value in employee.values() if value is not None})
-    recipient = ["s.shariff@one-fm.com"]
+    recipient = list({value for value in employee.values() if value is not None})
     sendemail(sender=sender, recipients= recipient,
             message=message, subject=subject, delayed=False, is_scheduler_email=False,is_external_mail=True)
 

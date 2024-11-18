@@ -64,17 +64,22 @@ frappe.ui.form.on("Leave Application", {
                 frappe.throw(error?.message || 'Something went wrong in cancelling leave. Try again later');
             }
         }
+        if (frm.selected_workflow_action == "Propose New Dates") {
+            try {
+                await new Promise((resolve, reject) => {
+                frappe.dom.unfreeze();
+                handle_propose_new_date_action(frm)});
+            }
+            catch (error) {
+                frappe.dom.unfreeze();
+                frappe.throw(error?.message || 'Something went wrong while proposing new dates. Try again later');
+            }
+        }
         
     },  
     refresh: function(frm) {
         // frm.set_intro("Please save the form after adding a new row to the Proof Documents table before attaching the document")
         if (!frm.is_new()){
-            const current_user = frappe.session.user;
-            if (frm.doc.leave_approver === current_user && frm.doc.workflow_state === "Pending Approval") {
-                frm.add_custom_button("Propose New Date", function() {
-                    handle_propose_new_date_action(frm);
-                });
-            }
             frappe.call({
                 method: 'one_fm.utils.enable_edit_leave_application',
                 args: {
@@ -183,22 +188,9 @@ var handle_propose_new_date_action =frm=>{
                             frm.set_value('custom_propose_to_date', to_date);
                             frm.set_value('custom_total_propose_leave_days', total_days);
                             dialog.hide();
+                            frm.set_value('workflow_state',"New Dates Proposed");
                             frm.save().then(() => {
                                 frappe.msgprint("New dates proposed successfully");
-                                frappe.call({
-                                    method: "one_fm.overrides.leave_application.send_proposed_date_email",
-                                    args: {
-                                        doc_name: frm.doc.name
-                                    },
-                                    callback: function(response) {
-                                        if (response.message === "success") {
-                                            frappe.msgprint("Email sent successfully.");
-                                        } else {
-                                            frappe.msgprint("Failed to send the email.");
-                                        }
-                                        
-                                    }
-                                });
                                 frm.reload_doc();
                             });
                         }

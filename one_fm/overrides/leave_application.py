@@ -668,9 +668,15 @@ def send_proposed_date_email(doc_name):
 @frappe.whitelist()
 def send_leave_details_email_to_employee(self):
     employee_info = frappe.db.get_value("Employee", self.employee, ["employee_name_in_arabic","personal_email", "company_email","prefered_email"], as_dict=1)
+
+    header_eng = "Leave Application Details – Confirmation"
+    header_arabic = "الموضوع: تفاصيل طلب الإجازة - تأكيد"
+
     args = frappe._dict({
                     "doc_name": self.name,
                     "doc_type": self.doctype,
+                    "header_eng": header_eng,
+                    "header_arabic": header_arabic,
                     "employee_name_eng" : self.employee_name,
                     "employee_name_arabic" : employee_info.get("employee_name_in_arabic") or "",     
                     "employee_id" : self.employee,
@@ -685,7 +691,7 @@ def send_leave_details_email_to_employee(self):
                 })
     sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
     message = frappe.render_template('one_fm/templates/emails/leave_application_details_for_employee.html', args)
-    subject = "الموضوع: تفاصيل طلب الإجازة - تأكيد | Leave Application Details – Confirmation"
+    subject = f"{header_arabic} | {header_eng}"
     recipients = list(set(filter(None, [
         employee_info.get("personal_email"),
         employee_info.get("company_email"),

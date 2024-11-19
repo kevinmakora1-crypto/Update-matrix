@@ -488,6 +488,9 @@ class LeaveApplicationOverride(LeaveApplication):
             self.validate_attendance_check()
         self.clear_employee_schedules()
 
+        # When workflow state changes from 'Draft' to 'Pending Approval'
+        if self.has_value_changed('workflow_state') and self.workflow_state == 'Pending Approval':
+            send_leave_details_email_to_employee(self)
 
     def clear_employee_schedules(self):
         last_doc = self.get_doc_before_save()
@@ -667,6 +670,35 @@ def send_proposed_date_email(doc_name):
     recipient = list({value for value in employee.values() if value is not None})
     sendemail(sender=sender, recipients= recipient,
             message=msg, subject=" Leave Application – Suggested Adjustment to Leave Dates", delayed=False, is_scheduler_email=False,is_external_mail=True)
+
+@frappe.whitelist()
+def send_leave_details_email_to_employee(self):
+    employee_info = frappe.db.get_value("Employee", self.employee, ["employee_name_in_arabic","personal_email", "company_email","prefered_email"], as_dict=1)
+    args = frappe._dict({
+                    "doc_name": self.name,
+                    "doc_type": self.doctype,
+                    "employee_name_eng" : self.employee_name,
+                    "employee_name_arabic" : employee_info.get("employee_name_in_arabic") or "",     
+                    "employee_id" : self.employee,
+                    "leave_type_eng" : self.leave_type,
+                    "from_date" : self.from_date,
+                    "to_date" : self.to_date,
+                    "total_leave_days" : self.total_leave_days,
+                    "date_of_application" : self.posting_date,
+                    "leave_approver" : self.leave_approver_name,
+                    "status":self.workflow_state,
+                    "base_url": frappe.utils.get_url()
+                })
+    sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
+    message = frappe.render_template('one_fm/templates/emails/leave_application_details_for_employee.html', args)
+    subject = "الموضوع: تفاصيل طلب الإجازة - تأكيد | Leave Application Details – Confirmation"
+    recipients = list(set(filter(None, [
+        employee_info.get("personal_email"),
+        employee_info.get("company_email"),
+        employee_info.get("prefered_email"),
+    ])))
+    sendemail(sender=sender, recipients= recipients,
+            message=message, subject=subject, delayed=False, is_scheduler_email=False,is_external_mail=True)
 
 
 class ReassignDutiesToReliever(NotifyAttendanceManagerOnStatusChange):

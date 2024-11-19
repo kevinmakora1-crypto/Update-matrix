@@ -289,16 +289,16 @@ def mark_for_shift_assignment(employee, att_date, roster_type='Basic'):
         )
 
         out_checkins = _out_checkins[0] if _out_checkins else frappe._dict({})
-        
+
         early_exit = 0
         # check if checkin and out exists
         if (out_checkins and in_checkins):
             if (out_checkins.time < in_checkins.time):
                 out_checkins = False # The employee checked in, out, in but not out
-            
+
             early_exit = not frappe.db.exists("Employee Checkin", {"log_type": "IN", "time": [">", out_checkins.time], "shift_assignment": shift_assignment.name}) if out_checkins.early_exit else 0
-            
-    
+
+
         # start checkin
         if in_checkins:
             if ((in_checkins.time - shift_assignment.start_datetime).total_seconds() / (60*60)) > 4:
@@ -315,7 +315,7 @@ def mark_for_shift_assignment(employee, att_date, roster_type='Basic'):
                 comment = ""
                 checkin = in_checkins
                 checkout = out_checkins
-        
+
         create_single_attendance_record(frappe._dict({
             'status': status,
             'comment': comment,
@@ -562,7 +562,7 @@ def mark_daily_attendance(start_date, end_date):
                             "{owner}", "{creation}", "{creation}", "{i.description}"
                         ),"""
 
-        
+
         today = getdate()
         # Mark DayOff Attendance
         #Find Employees with no schedule but have Day Off in the company holiday. Mainly for head office employees
@@ -1079,30 +1079,30 @@ class AttendanceMarking():
 
     def check_early_exit(self, checkin: dict) -> bool:
         """
-            Validates the presence of a checkin record created after the last checkout record if 
+            Validates the presence of a checkin record created after the last checkout record if
             the last checkout record  was set as a early exit
-             
+
         """
         if checkin:
             in_name = checkin.get("in_name")
             out_name = checkin.get("out_name")
             if in_name and out_name:
                 early_exit_doc = frappe.db.get_value(
-                    "Employee Checkin", 
-                    {"name": out_name, "early_exit": 1, "log_type": "OUT"}, 
-                    ["time"], 
+                    "Employee Checkin",
+                    {"name": out_name, "early_exit": 1, "log_type": "OUT"},
+                    ["time"],
                     as_dict=1
                 )
 
                 if early_exit_doc:
                     check = frappe.db.sql(
                         """
-                        SELECT name FROM `tabEmployee Checkin` 
-                        WHERE shift_assignment = %s 
+                        SELECT name FROM `tabEmployee Checkin`
+                        WHERE shift_assignment = %s
                         AND  log_type =  %s
                         AND time > %s
-                        """, 
-                        (checkin.shift_assignment,"IN",early_exit_doc.time), 
+                        """,
+                        (checkin.shift_assignment,"IN",early_exit_doc.time),
                         as_dict=1
                     )
                     return not bool(check)
@@ -1114,6 +1114,11 @@ class AttendanceMarking():
 
 
     def get_checkins(self, shift_assignments):
+
+        if not shift_assignments:
+            return []
+
+        placeholders = ', '.join(['%s'] * len(shift_assignments))
         query = f"""
             SELECT
             ec.name,
@@ -1152,13 +1157,12 @@ class AttendanceMarking():
         FROM
             `tabEmployee Checkin` ec
         WHERE
-            ec.shift_assignment in {shift_assignments}
+            ec.shift_assignment in ({placeholders})
             AND ec.is_replaced = 0
-
         GROUP BY
             ec.shift_assignment;
         """
-        return frappe.db.sql(query, as_dict=1)
+        return frappe.db.sql(query, tuple(shift_assignments), as_dict=1)
 
     def mark_day_off(self):
         days_off = frappe.get_list("Employee Schedule", {

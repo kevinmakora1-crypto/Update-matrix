@@ -3,146 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bilingual Email Template (English & Arabic)</title>
     <style>
-        .subject {
-        text-align: center;
-        margin-bottom: 10px;
-    }
+        /* Import Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300&family=Noto+Naskh+Arabic:wght@400&display=swap');
+
+        /* General Styling */
         body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
+            font-family: 'Readex Pro', sans-serif;
+            font-size: 13px;
+            color: #000;
         }
-        .container {
-            display: flex;
-        justify-content: space-between;
-        border: 0px solid #fff;
-        padding: 0;
-        }
-        .header {
-            background-color: #f4f4f4;
-            padding: 10px;
-            text-align: center;
-            font-size: 20px;
-            font-weight: bold;
-        }
-        .content {
-            margin-top: 20px;
-        }
-        .section {
-            margin-bottom: 20px;
-        }
-        .section-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .details {
-            margin-left: 20px;
-        }
-        .footer {
-            margin-top: 30px;
-            font-style: italic;
-        }
+
         .arabic {
-            text-align: right;
+            font-family: 'Noto Naskh Arabic', sans-serif;
             direction: rtl;
-            font-family: 'Arial', sans-serif;
+            text-align: right;
         }
-        .english {
-            text-align: left;
-            direction: ltr;
+
+        .english, .style {
+            font-family: 'Readex Pro', sans-serif;
         }
-        .bilingual {
-            display: flex;
-            justify-content: space-between;
+
+        /* Table Styling */
+        .whole-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border: 1px solid #ccc;
+            background-color: #fff;
         }
-        .bilingual .english, .bilingual .arabic {
-            width: 48%;
+
+        .table-cell, .table-header {
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        .table-header {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .container {
+            min-height: 100px;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="subject">
-        <h4 class="english" style="text-align: center;">Subject: Leave Application – Suggested Adjustment to Leave Dates</h4>
-        <h4 class="arabic" style="text-align: center;">الموضوع: طلب الإجازة – اقتراح تعديل تواريخ الإجازة</h4>
-    </div>
-            <div class="bilingual">
-                <div class="english">
-                    <p>Dear {{employee_name_eng}},</p>
+    <table class="whole-table">
+        <tr>
+            <th class="table-header">Document Type</th>
+            <td colspan="2" class="table-cell style">{{ doc_type }}</td>
+        </tr>
+        <tr>
+            <th class="table-header">Document Name</th>
+            <td colspan="2" class="table-cell style">{{ doc_name }}</td>
+        </tr>
+        <tr>
+            <th class="table-header">Content</th>
+            <td class="table-cell">
+                <div class="container english">
+                    <p>Dear {{ employee_name }},</p>
                     <p>Due to operational needs, an adjustment to your leave dates has been suggested by your line manager. Below are the details of your application, along with the proposed changes:</p>
-                </div>
-                <div class="arabic">
-                    <p>عزيزي {{ employee_name_arabic if employee_name_arabic else "" }} ،</p>
-                    <p>نظرًا للاحتياجات التشغيلية، تم اقتراح تعديل على تواريخ إجازتك من قبل مديرك المباشر. فيما يلي تفاصيل طلبك مع التغييرات المقترحة:</p>
-                </div>
-            </div> 
-
-            <div class="section bilingual">
-                <div class="english">
-                        <p><strong>Employee Name:</strong>{{employee_name_eng}}</p>
-                        <p><strong>Employee ID:</strong> {{employee_id}}</p>
-                        <p><strong>Leave Type:</strong> {{leave_type_eng}}</p>
-                        <div class="section-title">Original Leave Duration:</div>
-                        <div class="details">
-                        <p><strong>Start Date:</strong> {{start_data}}</p>
-                        <p><strong>End Date:</strong> {{end_date}}</p>
-                        <p><strong>Total Days:</strong> {{total_days}} Days</p>
-                        <p><strong>Date of Application:</strong> {{date_of_application}}</p>
-                        <p><strong>Status:</strong> {{status}}</p>
-                    </div>
-                </div>
-                <div class="arabic">
-                        <p><strong>اسم الموظف:</strong> {{ employee_name_arabic if employee_name_arabic else "" }}</p>
-                        <p><strong>رقم الموظف:</strong> {{employee_id}}</p>
-                        <p><strong>نوع الإجازة:</strong> {{_(leave_type_eng, "ar")}}</p>
-                        <div class="section-title">مدة الإجازة الأصلية:</div>
-                        <div class="details">
-                        <p><strong>تاريخ البدء:</strong> {{start_data}}</p>
-                        <p><strong>تاريخ الانتهاء:</strong> {{end_date}}</p>
-                        <p><strong>إجمالي الأيام:</strong> {{total_days}} أيام</p>
-                        <p><strong>تاريخ التقديم:</strong> {{date_of_application}}</p>
-                        <p><strong>الحالة:</strong> {{_(status, "ar")}}</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section bilingual">
-                <div class="english">
-                    <div class="section-title">Suggested Leave Duration:</div>
-                    <div class="details">
-                        <p><strong>Suggested Start Date:</strong> {{suggested_start_date}}</p>
-                        <p><strong>Suggested End Date:</strong> {{suggested_end_date}}</p>
-                        <p><strong>Total Suggested Days:</strong> {{total_suggected_days}}</p>
-                    </div>
-                </div>
-                <div class="arabic">
-                    <div class="section-title">مدة الإجازة المقترحة:</div>
-                    <div class="details">
-                        <p><strong>تاريخ البدء المقترح:</strong> {{suggested_start_date}}</p>
-                        <p><strong>تاريخ الانتهاء المقترح:</strong> {{suggested_end_date}}</p>
-                        <p><strong>إجمالي الأيام المقترحة:</strong> {{total_suggected_days}}</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bilingual">
-                <div class="english">
+                    <p><strong>Employee Name:</strong> {{ employee_name }}</p>
+                    <p><strong>Employee ID:</strong> {{ employee_id }}</p>
+                    <p><strong>Leave Type:</strong> {{ leave_type }}</p>
+                    <div class="section-title"><strong>Original Leave Duration:</strong></div>
+                    <ul>
+                        <li><strong>Start Date:</strong> {{ from_date }}</li>
+                        <li><strong>End Date:</strong> {{ to_date }}</li>
+                        <li><strong>Total Days:</strong> {{ total_leave_days }} Days</li>
+                        <li><strong>Date of Application:</strong> {{posting_date}}</li>
+                        <li><strong>Status:</strong> {{workflow_state}}</li>
+                    </ul>
+                    <div class="section-title"><strong>Suggested Leave Duration:</strong></div>
+                     <ul>
+                        <li><strong>Suggested Start Date:</strong> {{ suggested_start_date }}</li>
+                        <li><strong>Suggested End Date:</strong> {{ suggested_end_date }}</li>
+                        <li><strong>Total Days:</strong> {{ total_suggected_days }} Days</li>
+                    </ul>
                     <p>Please review the updated dates and confirm whether they are acceptable.</p>
                 </div>
-                <div class="arabic">
+            </td>
+            <td class="table-cell">
+                <div class="container arabic">
+                    <p>عزيزي/عزيزتي {{ employee_name_in_arabic }}،</p>
+                    <p>نظرًا لاحتياجات العمل، تم اقتراح تعديل على تواريخ إجازتك من قبل مديرك المباشر. فيما يلي تفاصيل طلب الإجازة الخاص بك، بالإضافة إلى التعديلات المقترحة:</p>
+                    <p><strong>اسم الموظف:</strong> {{ employee_name_in_arabic }}</p>
+                    <p><strong>رقم الموظف:</strong> {{ employee_id }}</p>
+                    <p><strong>نوع الإجازة:</strong> {{ _(leave_type, "ar") }}</p>
+                    <div class="section-title"><strong>مدة الإجازة الأصلية:</strong></div>
+                    <ul>
+                        <li><strong>تاريخ البدء:</strong> {{ from_date }}</li>
+                        <li><strong>تاريخ الانتهاء:</strong> {{ to_date }}</li>
+                        <li><strong>إجمالي الأيام:</strong> {{ total_leave_days }} أيام</li>
+                        <li><strong>تاريخ التقديم:</strong> {{ posting_date }}</li>
+                        <li><strong>الحالة:</strong> {{ _(workflow_state, "ar") }}</li>
+                    </ul>
+                    <div class="section-title"><strong>مدة الإجازة المقترحة:</strong></div>
+                    <ul>
+                        <li><strong>تاريخ البدء المقترح:</strong> {{ suggested_start_date }}</li>
+                        <li><strong>تاريخ الانتهاء المقترح:</strong> {{ suggested_end_date }}</li>
+                        <li><strong>إجمالي الأيام:</strong> {{ total_suggected_days }} أيام</li>
+                    </ul>
+
+                    
                     <p>يرجى مراجعة التواريخ المحدثة وتأكيد ما إذا كانت مقبولة.</p>
                 </div>
-            </div>
-
-            <div class="footer bilingual">
-                <div class="english">
-                    Thank you, <br/>
-                    One Facilities Management
-                </div>
-                <div class="arabic">
-                    شكراً لك، <br/>
-                    إدارة ون للمرافق
-                </div>
-            </div>
+            </td>
+        </tr>
+        <tr>
+            <th class="table-header">Document Link</th>
+            <td class="table-cell"><a href="{{ base_url }}/app/leave-application/{{ doc_name }}" target="_blank">Click Here</a></td>
+            <td class="table-cell arabic"><a href="{{ base_url }}/app/leave-application/{{ doc_name }}" target="_blank">انقر هنا</a></td>
+        </tr>
+    </table>
 </body>
 </html>

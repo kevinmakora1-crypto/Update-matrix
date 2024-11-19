@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import date
 
 from frappe import _
-from frappe.utils import get_fullname, nowdate, add_to_date, getdate, date_diff, get_url_to_form
+from frappe.utils import get_fullname, nowdate, add_to_date, getdate, date_diff, get_url_to_form, get_date_str
 
 from hrms.hr.doctype.leave_application.leave_application import *
 from one_fm.processor import sendemail
@@ -423,6 +423,7 @@ class LeaveApplicationOverride(LeaveApplication):
         self.create_leave_ledger_entry(submit=False)
         # notify leave applier about cancellation
         self.cancel_attendance()
+        send_leave_cancellation_email_to_leave_approver(self)
         disable_out_of_office(emp.company_email)
 
 
@@ -694,6 +695,44 @@ def send_leave_details_email_to_employee(self):
     sendemail(sender=sender, recipients= recipients,
             message=message, subject=subject, delayed=False, is_scheduler_email=False,is_external_mail=True)
 
+@frappe.whitelist()
+def send_leave_cancellation_email_to_leave_approver(self):
+    employee_info = frappe.db.get_value("Employee", self.employee, ["employee_name_in_arabic"], as_dict=1)
+    approver_info = frappe.db.get_value("Employee", {"user_id": self.leave_approver}, ["employee_name_in_arabic", "prefered_email"], as_dict=1)
+
+    employee_arabic_name = employee_info.get('employee_name_in_arabic') or ""
+    approver_arabic_name = approver_info.get('employee_name_in_arabic') or ""
+
+    header_eng = f"Leave Cancellation Notification – {self.employee_name}"
+    header_arabic = f"الموضوع: إشعار إلغاء الإجازة - {employee_arabic_name}"
+
+    args = frappe._dict({
+                    "doc_name": self.name,
+                    "doc_type": self.doctype,
+                    "header_eng": header_eng,
+                    "header_arabic": header_arabic,
+                    "approver_name_eng" : self.leave_approver_name,
+                    "approver_name_arabic" : approver_arabic_name,
+                    "employee_name_eng" : self.employee_name,
+                    "employee_name_arabic" : employee_arabic_name,     
+                    "employee_id" : self.employee,
+                    "leave_type_eng" : self.leave_type,
+                    "from_date" : self.from_date,
+                    "to_date" : self.to_date,
+                    "total_leave_days" : self.total_leave_days,
+                    "date_of_application" : self.posting_date,
+                    "date_of_cancellation" : get_date_str(getdate(self.modified)),
+                    "reason_of_cancellation" : self.custom_reason_for_cancel,
+                    "doc_link": get_url_to_form("Leave Application", self.name)
+                })
+    
+    sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
+    message = frappe.render_template('one_fm/templates/emails/leave_cancellation_email.html', args)
+    subject = f"{header_arabic} | {header_eng}"
+
+    sendemail(sender=sender, recipients=approver_info.prefered_email,
+            message=message, subject=subject, delayed=False, is_scheduler_email=False,is_external_mail=True)
+
 
 class ReassignDutiesToReliever(NotifyAttendanceManagerOnStatusChange):
 
@@ -839,34 +878,3 @@ def validate_leave_overlap(employee, from_date, to_date, name=None):
     if overlapping_leave:
         frappe.throw("Employee {0} has already applied between {1} and {2}".format(name,from_date,to_date))
     return "valid"
-
-
-@frappe.whitelist()
-def send_cancelled_data_email(doc_name,reason):
-    doc = frappe.get_doc("Leave Application", doc_name)
-    employee_info = frappe.db.get_value("Employee", doc.employee, ["employee_name_in_arabic"], as_dict=1)
-    approver_employee_info = frappe.db.get_value("Employee", doc.leave_approver_name, ["employee_name_in_arabic"], as_dict=1)
-    args = frappe._dict({
-                    "employee_name_eng" : doc.employee_name,
-                    "employee_name_arabic" : employee_info.get("employee_name_in_arabic"),     
-                    "employee_id" : doc.employee,
-                    "leave_type_eng" : doc.leave_type,
-                    "start_data" : doc.from_date,
-                    "end_date" : doc.to_date,
-                    "total_days" : doc.total_leave_days,
-                    "date_of_application" : doc.posting_date,
-                    "suggested_start_date" : doc.custom_propose_from_date,
-                    "suggested_end_date" : doc.custom_propose_to_date,
-                    "total_suggected_days" : doc.custom_total_propose_leave_days,
-                    "status":doc.workflow_state,
-                    "leave_approver":doc.leave_approver_name,
-                    "leave_approver_name_ar" : approver_employee_info.get("employee_name_in_arabic") if  approver_employee_info is not None else "",
-                    "cancellation_date":date.today(),
-                    "cancellation_reason" : reason,
-                })
-    msg = frappe.render_template('one_fm/templates/emails/leave_cancellation_email.html', args)
-    sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
-    recipient = [doc.leave_approver]
-    sendemail(sender=sender, recipients= recipient,
-            message=msg, subject=" Leave Cancellation Notification - "+doc.employee_name, delayed=False, is_scheduler_email=False,is_external_mail=True)
-

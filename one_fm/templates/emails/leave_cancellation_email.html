@@ -3,121 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bilingual Email Template (English & Arabic)</title>
     <style>
-        .subject {
-        text-align: center;
-        margin-bottom: 10px;
-    }
+        /* Import Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300&family=Noto+Naskh+Arabic:wght@400&display=swap');
+
+        /* General Styling */
         body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
+            font-family: 'Readex Pro', sans-serif;
+            font-size: 13px;
+            color: #000;
         }
-        .container {
-            display: flex;
-        justify-content: space-between;
-        border: 0px solid #fff;
-        padding: 0;
-        }
-        .header {
-            background-color: #f4f4f4;
-            padding: 10px;
-            text-align: center;
-            font-size: 20px;
-            font-weight: bold;
-        }
-        .content {
-            margin-top: 20px;
-        }
-        .section {
-            margin-bottom: 20px;
-        }
-        .section-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .details {
-            margin-left: 20px;
-        }
-        .footer {
-            margin-top: 30px;
-            font-style: italic;
-        }
+
         .arabic {
-            text-align: right;
+            font-family: 'Noto Naskh Arabic', sans-serif;
             direction: rtl;
-            font-family: 'Arial', sans-serif;
+            text-align: right;
         }
+
         .english {
-            text-align: left;
-            direction: ltr;
+            font-family: 'Readex Pro', sans-serif;
         }
-        .bilingual {
-            display: flex;
-            justify-content: space-between;
+
+        .header {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            font-style: italic;
+            color: #000;
         }
-        .bilingual .english, .bilingual .arabic {
-            width: 48%;
+
+        /* Table Styling */
+        .core-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+
+        .core-table td, th {
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        .core-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .container {
+            min-height: 100px;
+        }
+
+        .section {
+            margin: 30px 0;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="subject">
-        <h4 class="english" style="text-align: center;">Subject: Leave Cancellation Notification - {{employee_name_eng}} </h4>
-        <h4 class="arabic" style="text-align: center;"> الموضوع: إشعار إلغاء الإجازة –  {{ employee_name_arabic }} </h4>
+    <!-- English Header -->
+    <div class="header english">
+        {{ header_eng }}
     </div>
-            <div class="bilingual">
-                <div class="english">
-                    <p>Dear {{leave_approver}},</p>
-                    <p>Please be informed that {{employee_name_eng}} has submitted a leave cancellation request. Below are the details of the canceled leave:</p>
-                </div>
-                <div class="arabic">
-                    <p> {{leave_approver_name_ar}}عزيزي/عزيزتي</p>
-                    <p>يرجى العلم أن {{employee_name_arabic}} قد قدم طلبًا لإلغاء إجازته. فيما يلي تفاصيل الإجازة الملغاة:
-                    </p>
-                </div>
-            </div> 
+    
+    <!-- Arabic Header -->
+    <div class="header arabic">
+        {{ header_arabic }}
+    </div>
 
-            <div class="section bilingual">
-                <div class="english">
-                        <p><strong>Employee Name:</strong>{{employee_name_eng}}</p>
-                        <p><strong>Employee ID:</strong> {{employee_id}}</p>
-                        <p><strong>Leave Type:</strong> {{leave_type_eng}}</p>
-                        <div class="section-title">Original Leave Duration:</div>
-                        <div class="details">
-                        <p><strong>Start Date:</strong> {{start_data}}</p>
-                        <p><strong>End Date:</strong> {{end_date}}</p>
-                        <p><strong>Total Days:</strong> {{total_days}} Days</p>
-                        <p><strong>Date of Application:</strong> {{date_of_application}}</p>
-                        <p><strong>Cancellation Date:</strong> {{cancellation_date}}</p>
-                        <!-- <p><strong>Cancellation Reason:</strong> {{cancellation_reason}}</p> -->
+    <table class="core-table">
+        <tr>
+            <th>Document Name</th>
+            <td colspan="2">{{ doc_name }}</td>
+        </tr>
+        <tr>
+            <th>Document Type</th>
+            <td colspan="2">{{ doc_type }}</td>
+        </tr>
+        <tr>
+            <th>Content</th>
+            <td>
+                <div class="container english">
+                    <p>Dear {{ approver_name_eng }},</p>
+                    
+                    <p>Please be informed that {{ employee_name_eng }} has submitted a leave cancellation request. Below are the details of the canceled leave:</p>
+
+                    <div class="section">
+                        <div><strong>Employee Name: </strong>{{ employee_name_eng }}</div>
+                        <div><strong>Employee ID: </strong>{{ employee_id }}</div>
+                        <div><strong>Leave Type: </strong>{{ leave_type_eng }}</div>
+                    </div>
+                    
+                    <div class="section">
+                        <strong>Original Leave Duration:</strong>
+                        <ul>
+                            <li><strong>Start Date: </strong>{{ from_date }}</li>
+                            <li><strong>End Date: </strong>{{ to_date }}</li>
+                            <li><strong>Total Days: </strong>{{ total_leave_days }} days</li>
+                        </ul>
+                    </div>
+
+                    <div class="section">
+                        <div><strong>Date of Application: </strong>{{ date_of_application }}</div>
+                        <div><strong>Cancellation Date: </strong>{{ date_of_cancellation }}</div>
+                        <div><strong>Reason for Cancellation: </strong>{{ reason_of_cancellation }}</div>
                     </div>
                 </div>
-                <div class="arabic">
-                        <p><strong>اسم الموظف:</strong> {{ employee_name_arabic if employee_name_arabic else "" }}</p>
-                        <p><strong>رقم الموظف:</strong> {{employee_id}}</p>
-                        <p><strong>نوع الإجازة:</strong> {{_(leave_type_eng, "ar")}}</p>
-                        <div class="section-title">مدة الإجازة الأصلية:</div>
-                        <div class="details">
-                        <p><strong>تاريخ البدء:</strong> {{start_data}}</p>
-                        <p><strong>تاريخ الانتهاء:</strong> {{end_date}}</p>
-                        <p><strong>إجمالي الأيام:</strong> {{total_days}} أيام</p>
-                        <p><strong>تاريخ التقديم:</strong> {{date_of_application}}</p>
-                        <p><strong>تاريخ الإلغاء:</strong> {{cancellation_date}}</p>
-                        <!-- <p><strong>سبب الإلغاء:</strong> {{cancellation_reason}}</p> -->
+            </td>
+            <td>
+                <div class="container arabic">
+                    <p>عزيزي/عزيزتي {{ approver_name_arabic }}،</p>
+
+                    <p>يرجى العلم أن {{ employee_name_arabic }} قد قدم طلبًا لإلغاء إجازته. فيما يلي تفاصيل الإجازة الملغاة:</p>
+
+                    <div class="section">
+                        <div><strong>اسم الموظف: </strong>{{ employee_name_arabic }}</div>
+                        <div><strong>رقم الموظف: </strong>{{ employee_id }}</div>
+                        <div><strong>نوع الإجازة: </strong>{{ _(leave_type_eng, "ar") }}</div>
+                    </div>
+                    
+                    <div class="section">
+                        <strong>مدة الإجازة الأصلية:</strong>
+                        <ul>
+                            <li><strong>تاريخ البدء: </strong>{{ from_date }}</li>
+                            <li><strong>تاريخ الانتهاء:</strong>{{ to_date }}</li>
+                            <li><strong>إجمالي الأيام:</strong>{{ total_leave_days }} أيام</li>
+                        </ul>
+                    </div>
+
+                    <div class="section">
+                        <div><strong>تاريخ تقديم الطلب: </strong>{{ date_of_application }}</div>
+                        <div><strong>تاريخ الإلغاء: </strong>{{ date_of_cancellation }}</div>
+                        <div><strong>سبب الإلغاء: </strong>{{ _(reason_of_cancellation, "ar") }}</div>
                     </div>
                 </div>
-            </div>
-
-            <div class="footer bilingual">
-                <div class="english">
-                    Thank you, <br/>
-                    One Facilities Management
-                </div>
-                <div class="arabic">
-                    شكراً لك، <br/>
-                    إدارة ون للمرافق
-                </div>
-            </div>
+            </td>
+        </tr>
+        <tr>
+            <th>Document Link</th>
+            <td><a href="{{ doc_link }}" target="_blank">Click Here</a></td>
+            <td class="arabic"><a href="{{ doc_link }}" target="_blank">انقر هنا</a></td>
+        </tr>
+    </table>
 </body>
 </html>

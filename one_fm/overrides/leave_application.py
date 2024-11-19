@@ -107,7 +107,9 @@ class LeaveApplicationOverride(LeaveApplication):
         self.db_set('status', 'Approved')
 
     def validate_applicable_after(self):
-        if(self.workflow_state == "Pending Approval"):
+        if self.workflow_state == "New Dates Proposed":
+            send_proposed_date_email(self.name)
+        if self.workflow_state == "Pending Approval":
             self.notify_leave_approver()
         if self.leave_type:
             leave_type = frappe.get_doc("Leave Type", self.leave_type)
@@ -633,7 +635,6 @@ def reassign_to_applicant(employee: str, leave_name: str):
 @frappe.whitelist()
 def send_proposed_date_email(doc_name):
     doc = frappe.get_doc("Leave Application", doc_name)
-    frappe.db.set_value("Leave Application",doc_name,'workflow_state',"New Dates Proposed") 
     employee_info =  frappe.db.get_value("Employee", doc.employee, ["employee_name_in_arabic"], as_dict=1),
     args = frappe._dict({
                     "employee_name_eng" : doc.employee_name,

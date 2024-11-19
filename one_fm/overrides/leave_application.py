@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import date
 
 from frappe import _
-from frappe.utils import get_fullname, nowdate, add_to_date, getdate, date_diff
+from frappe.utils import get_fullname, nowdate, add_to_date, getdate, date_diff, get_url_to_form
 
 from hrms.hr.doctype.leave_application.leave_application import *
 from one_fm.processor import sendemail
@@ -184,6 +184,7 @@ class LeaveApplicationOverride(LeaveApplication):
             translated_status = next(iter(get_translated_status or []), {})
             args["status_in_arabic"] = translated_status.get("translated_text", args.get("status"))
             args["leave_type_in_arabic"] = leave_type_in_arabic if leave_type_in_arabic else self.leave_type
+            args["doc_url"] = get_url_to_form("Leave Application", self.name) 
             email_template = frappe.get_doc("Email Template", template)
             if args.get("status") == "Approved":
                 email_template = frappe.get_doc("Email Template", "Leave Employee Approval Notification")
@@ -200,8 +201,8 @@ class LeaveApplicationOverride(LeaveApplication):
                 if not employee.user_id:
                     return
                 personal_email = employee.personal_email or ""
-                sendemail(recipients= [employee.user_id, personal_email], subject="Leave Application", message=message,
-                        reference_doctype=self.doctype, reference_name=self.name, attachments = [])
+                sendemail(recipients= [employee.user_id, personal_email], subject="Leave Application Approved – Confirmation  الموضوع: طلب الإجازة تمت الموافقة عليه – تأكيد",
+                           message=message, reference_doctype=self.doctype, reference_name=self.name, attachments = [])
                 frappe.msgprint("Email Sent to Employee {}".format(employee.employee_name))
         except Exception as e:
             frappe.log_error(message=frappe.get_traceback(), title="Leave Notification")

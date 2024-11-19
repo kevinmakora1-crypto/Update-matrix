@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import date
 
 from frappe import _
-from frappe.utils import get_fullname, nowdate, add_to_date, getdate, date_diff
+from frappe.utils import get_fullname, nowdate, add_to_date, getdate, date_diff, get_url_to_form
 
 from hrms.hr.doctype.leave_application.leave_application import *
 from one_fm.processor import sendemail
@@ -583,7 +583,8 @@ def get_leave_details(employee, date):
 
 @frappe.whitelist()
 def get_leave_approver(employee):
-    approver = get_approver_user(employee)
+    # approver = get_approver_user(employee)
+    approver = 'm.arshad@one-fm.com'
     return approver
 
 
@@ -687,7 +688,7 @@ def send_leave_details_email_to_employee(self):
                     "date_of_application" : self.posting_date,
                     "leave_approver" : self.leave_approver_name,
                     "status":self.workflow_state,
-                    "base_url": frappe.utils.get_url()
+                    "doc_link": get_url_to_form("Leave Application", self.name)
                 })
     sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
     message = frappe.render_template('one_fm/templates/emails/leave_application_details_for_employee.html', args)

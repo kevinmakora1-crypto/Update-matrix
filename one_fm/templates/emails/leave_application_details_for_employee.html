@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Import Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300&family=Noto+Naskh+Arabic:wght@400&display=swap');
+
+        /* General Styling */
+        body {
+            font-family: 'Readex Pro', sans-serif;
+            font-size: 13px;
+            color: #000;
+        }
+
+        .arabic {
+            font-family: 'Noto Naskh Arabic', sans-serif;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .english {
+            font-family: 'Readex Pro', sans-serif;
+        }
+
+        /* Table Styling */
+        .core-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+
+        .core-table td, th {
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        .core-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .container {
+            min-height: 100px;
+        }
+
+        .section {
+            margin: 30px 0;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <table class="core-table">
+        <tr>
+            <th>Document Name</th>
+            <td colspan="2">{{ doc_name }}</td>
+        </tr>
+        <tr>
+            <th>Document Type</th>
+            <td colspan="2">{{ doc_type }}</td>
+        </tr>
+        <tr>
+            <th>Content</th>
+            <td>
+                <div class="container english">
+                    <p>Dear {{ employee_name_eng }},</p>
+                    
+                    <div class="section">
+                        <p>You have applied for a Leave Application, and the details are below:</p>
+                        <div><strong>Employee Name: </strong>{{ employee_name_eng }}</div>
+                        <div><strong>Employee ID: </strong>{{ employee_id }}</div>
+                        <div><strong>Leave Type: </strong>{{ leave_type_eng }}</div>
+                    </div>
+
+                    <div class="section">
+                        <strong>Leave Duration Request:</strong>
+                        <ul>
+                            <li><strong>Start Date:</strong> {{ from_date }}</li>
+                            <li><strong>End Date:</strong> {{ to_date }}</li>
+                            <li><strong>Total Days:</strong> {{ total_leave_days }} days</li>
+                        </ul>
+                    </div>
+
+                    <div class="section">
+                        <div><strong>Date of Application: </strong>{{ date_of_application }}</div>
+                        <div><strong>Leave Approver: </strong>{{ leave_approver }}</div>
+                        <div><strong>Status: </strong>{{ status }}</div>
+                    </div>
+
+                    <p>Please note that your leave request is currently under review. You will be notified once your leave has been approved or if any further action is required.</p>
+                    <p>If you have any questions or need to make adjustments to your request, please contact your line manager.</p>
+                </div>
+            </td>
+            <td>
+                <div class="container arabic">
+                    <p>عزيزي/عزيزتي {{ employee_name_arabic }}،</p>
+
+                    <div class="section">
+                        <p>لقد قدمت طلب إجازة، والتفاصيل أدناه:</p>
+                        <div><strong>اسم الموظف:</strong> {{ employee_name_arabic }}</div>
+                        <div><strong>رقم الموظف:</strong> {{ employee_id }}</div>
+                        <div><strong>نوع الإجازة:</strong> {{ _(leave_type_eng, "ar") }}</div>
+                    </div>
+
+                    <div class="section">
+                        <strong>مدة الإجازة الأصلية:</strong>
+                        <ul>
+                            <li><strong>تاريخ البدء:</strong> {{ from_date }}</li>
+                            <li><strong>تاريخ الانتهاء:</strong> {{ to_date }}</li>
+                            <li><strong>إجمالي الأيام:</strong> {{ total_leave_days }} أيام</li>
+                        </ul>
+                    </div>
+
+                    <div class="section">
+                        <div><strong>تاريخ التقديم:</strong> {{ date_of_application }}</div>
+                        <div><strong>الموافق:</strong> {{ leave_approver }}</div>
+                        <div><strong>الحالة:</strong> {{ status }}</div>
+                    </div>
+
+                    <p>يرجى ملاحظة أن طلب إجازتك قيد المراجعة حاليًا. ستتلقى إشعارًا بمجرد الموافقة على إجازتك أو إذا كانت هناك حاجة لأي إجراء إضافي.</p>
+                    <p>إذا كان لديك أي أسئلة أو تحتاج إلى إجراء تعديلات على طلبك، يرجى الاتصال بالمدير المباشر الخاص بك.</p>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <th>Document Link</th>
+            <td><a href="{{ doc_link }}" target="_blank">Click Here</a></td>
+            <td class="arabic"><a href="{{ doc_link }}" target="_blank">انقر هنا</a></td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -583,8 +583,7 @@ def get_leave_details(employee, date):
 
 @frappe.whitelist()
 def get_leave_approver(employee):
-    # approver = get_approver_user(employee)
-    approver = 'm.arshad@one-fm.com'
+    approver = get_approver_user(employee)
     return approver
 
 

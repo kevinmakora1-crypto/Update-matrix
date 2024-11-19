@@ -203,7 +203,7 @@ class LeaveApplicationOverride(LeaveApplication):
                 if not employee.user_id:
                     return
                 personal_email = employee.personal_email or ""
-                sendemail(recipients= [employee.user_id, personal_email], subject="Leave Application Approved – Confirmation  الموضوع: طلب الإجازة تمت الموافقة عليه – تأكيد",
+                sendemail(recipients= [employee.user_id, personal_email], subject="ا  طلب الإجازة تمت الموافقة عليه – تأكيد  Leave Application Approved – Confirmation",
                            message=message, reference_doctype=self.doctype, reference_name=self.name, attachments = [])
                 frappe.msgprint("Email Sent to Employee {}".format(employee.employee_name))
         except Exception as e:

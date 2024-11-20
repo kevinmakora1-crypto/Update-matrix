@@ -8392,7 +8392,7 @@
     "parent": "Leave Application",
     "parentfield": "states",
     "parenttype": "Workflow",
-    "state": "Pending Hr",
+    "state": "Pending HR",
     "update_field": null,
     "update_value": null,
     "workflow_builder_id": null
@@ -8489,7 +8489,7 @@
     "condition": "frappe.db.get_value('Employee', doc.employee, 'custom_civil_id_assurance_level') in [\"Low\", \"Medium\"]\n",
     "custom_confirm_message": null,
     "custom_confirm_transition": 0,
-    "next_state": "Pending Hr",
+    "next_state": "Pending HR",
     "parent": "Leave Application",
     "parentfield": "transitions",
     "parenttype": "Workflow",
@@ -8561,7 +8561,7 @@
     "condition": "frappe.db.get_value('Employee', doc.employee, 'custom_civil_id_assurance_level') in [\"Low\", \"Medium\"]",
     "custom_confirm_message": null,
     "custom_confirm_transition": 0,
-    "next_state": "Pending Hr",
+    "next_state": "Pending HR",
     "parent": "Leave Application",
     "parentfield": "transitions",
     "parenttype": "Workflow",
@@ -8621,7 +8621,7 @@
     "parenttype": "Workflow",
     "skip_creation_of_workflow_action": 0,
     "skip_multiple_action": 0,
-    "state": "Pending Hr",
+    "state": "Pending HR",
     "workflow_builder_id": null
    },
    {

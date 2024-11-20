@@ -24,6 +24,14 @@
             font-family: 'Readex Pro', sans-serif;
         }
 
+        .header {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            font-style: italic;
+            color: #000;
+        }
+
         /* Table Styling */
         .core-table {
             width: 100%;
@@ -64,6 +72,16 @@
     </style>
 </head>
 <body>
+    <!-- English Header -->
+    <div class="header english">
+        {{ header_eng }}
+    </div>
+    
+    <!-- Arabic Header -->
+    <div class="header arabic">
+        {{ header_arabic }}
+    </div>
+
     <table class="core-table">
         <tr>
             <th>Document Name</th>

@@ -34,24 +34,7 @@ frappe.ui.form.on("Leave Application", {
                                 frm.set_value('custom_reason_for_cancel', values.reason);
                                 frm.refresh_field("custom_reason_for_cancel");
                                 frm.save()
-                                    .then(() => {
-                                        frappe.call({
-                                            method: "one_fm.overrides.leave_application.send_cancelled_data_email",
-                                            args: {
-                                                doc_name: frm.doc.name, 
-                                                reason: values.reason
-                                            },
-                                            callback: function(response) {
-                                                if (response.message) {
-                                                    frappe.msgprint("Cancellation notification email has been sent successfully");
-                                                }
-                                            },
-                                            error: function(error) {
-                                                frappe.throw(error.message || 'Failed to send the cancellation notification email. Please try again later');
-                                            }
-                                        });
-                                        resolve();
-                                    })
+                                    .then(resolve)
                                     .catch(reject);
                             }
                         },

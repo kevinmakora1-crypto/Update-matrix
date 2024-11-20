@@ -69,16 +69,23 @@
         a:hover {
             text-decoration: underline;
         }
+        .header_arabic {
+            font-family: 'Readex Pro', sans-serif;
+            direction: rtl; 
+        }
+        .header_english{
+            font-family: 'Alexandria', sans-serif;
+        }
     </style>
 </head>
 <body>
     <!-- English Header -->
-    <div class="header english">
+    <div class="header header_english">
         {{ header_eng }}
     </div>
     
     <!-- Arabic Header -->
-    <div class="header arabic">
+    <div class="header header_arabic">
         {{ header_arabic }}
     </div>
 

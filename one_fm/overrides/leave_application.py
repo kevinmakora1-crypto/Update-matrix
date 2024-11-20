@@ -748,7 +748,7 @@ def send_leave_cancellation_email_to_leave_approver(self):
     message = frappe.render_template('one_fm/templates/emails/leave_cancellation_email.html', args)
     subject = f"{header_arabic} | {header_eng}"
 
-    sendemail(sender=sender, recipients=approver_info.prefered_email,
+    sendemail(sender=sender, recipients = list(set(filter(None, [approver_info.get("prefered_email"),]))),
             message=message, subject=subject, delayed=False, is_scheduler_email=False,is_external_mail=True)
 
 

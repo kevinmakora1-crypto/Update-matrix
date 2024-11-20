@@ -302,7 +302,7 @@ class LeaveApplicationOverride(LeaveApplication):
                     return
                 email_template = frappe.get_doc("Email Template", template)
                 message = frappe.render_template(email_template.response_html, args)
-                subject = f'طلب الإجازة تم تقديمه للموافقة – {employee[0].employee_name_in_arabic}  | Leave Application Submitted for Approval  – {self.employee_name}'
+                subject = f'طلب الإجازة تم تقديمه للموافقة – {employee[0].employee_name_in_arabic} | Leave Application Submitted for Approval  – {self.employee_name}'
                 sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
                 sendemail(sender=sender, recipients= [self.leave_approver],message=message, subject=subject, delayed=False, is_scheduler_email=False,is_external_mail=True)
             except Exception as e:

@@ -1373,6 +1373,10 @@ def validate_item(doc, method):
         doc.item_barcode = doc.item_code
     if not doc.parent_item_group:
         doc.parent_item_group = "All Item Groups"
+
+    if doc.subitem_group == "Service":
+        doc.is_stock_item = 0
+        
     doc.description = final_description
     doc.change_request = False
     item_approval_workflow_notification(doc)
@@ -3659,6 +3663,7 @@ def send_work_anniversary_reminders():
 
 
 def set_employee_status_to_vacation():
+    from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import assign_responsibilities
     # Get today's date
     current_date = getdate(today())
 
@@ -3669,7 +3674,7 @@ def set_employee_status_to_vacation():
             'from_date': ['<=', current_date],
             'to_date': ['>=', current_date]
         },
-        fields=['employee', 'employee.status', 'from_date', 'to_date']  # Fetch employee status directly
+        fields=['employee', 'employee.status', 'from_date', 'to_date', 'reliever', 'name']  # Fetch employee status directly
     )
 
     if not leave_applications:
@@ -3683,10 +3688,12 @@ def set_employee_status_to_vacation():
         employee = leave['employee']
         status =  leave['status']
         from_date = leave['from_date']
+        leave_application = leave['name']
         to_date =  leave['to_date']
-
+        reliever = leave.get('reliever', None)
         if current_date == getdate(from_date) and status == "Active":
             frappe.db.set_value('Employee', employee, 'status', 'Vacation')
+            if reliever: frappe.enqueue(assign_responsibilities, leave_application=leave_application)
             employees_set_to_vacation += 1
 
         elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":

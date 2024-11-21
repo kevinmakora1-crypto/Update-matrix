@@ -11,27 +11,43 @@
    "collapsible": 0,
    "collapsible_depends_on": null,
    "columns": 0,
+<<<<<<< HEAD
    "creation": "2024-11-06 10:27:26.011840",
+=======
+   "creation": "2024-10-19 12:05:40.530967",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "default": null,
    "depends_on": null,
    "description": null,
    "docstatus": 0,
    "dt": "Leave Application",
+<<<<<<< HEAD
    "fetch_from": "employee.custom_civil_id_assurance_level",
    "fetch_if_empty": 0,
    "fieldname": "custom_employee_civil_id_assurance_level",
    "fieldtype": "Data",
+=======
+   "fetch_from": null,
+   "fetch_if_empty": 0,
+   "fieldname": "custom_default_leave_application_operator",
+   "fieldtype": "Link",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "hidden": 0,
    "hide_border": 0,
    "hide_days": 0,
    "hide_seconds": 0,
+<<<<<<< HEAD
    "idx": 4,
+=======
+   "idx": 32,
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "ignore_user_permissions": 0,
    "ignore_xss_filter": 0,
    "in_global_search": 0,
    "in_list_view": 0,
    "in_preview": 0,
    "in_standard_filter": 0,
+<<<<<<< HEAD
    "insert_after": "employee_name",
    "is_system_generated": 0,
    "is_virtual": 0,
@@ -46,6 +62,22 @@
    "no_copy": 0,
    "non_negative": 0,
    "options": null,
+=======
+   "insert_after": "status",
+   "is_system_generated": 0,
+   "is_virtual": 0,
+   "label": "Default Leave Application Operator",
+   "length": 0,
+   "link_filters": null,
+   "mandatory_depends_on": null,
+   "modified": "2024-11-03 10:28:17.483784",
+   "modified_by": "Administrator",
+   "module": null,
+   "name": "Leave Application-custom_default_leave_application_operator",
+   "no_copy": 0,
+   "non_negative": 0,
+   "options": "User",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "owner": "Administrator",
    "parent": null,
    "parentfield": null,
@@ -956,7 +988,11 @@
    "field_name": "description",
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:20:13.831199",
+=======
+   "modified": "2024-11-20 16:45:12.477217",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-description-read_only_depends_on",
@@ -982,7 +1018,11 @@
    "field_name": "employee",
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:20:13.848142",
+=======
+   "modified": "2024-11-20 16:45:12.499865",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-employee-ignore_user_permissions",
@@ -1008,7 +1048,11 @@
    "field_name": "employee",
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:20:13.867461",
+=======
+   "modified": "2024-11-20 16:45:12.520489",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-employee-read_only_depends_on",
@@ -1034,7 +1078,11 @@
    "field_name": "follow_via_email",
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:20:13.886929",
+=======
+   "modified": "2024-11-20 16:45:12.544993",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-follow_via_email-default",
@@ -1060,7 +1108,7 @@
    "field_name": "from_date",
    "idx": 0,
    "is_system_generated": 0,
-   "modified": "2024-11-06 10:20:13.903709",
+   "modified": "2024-11-20 16:45:12.569174",
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-from_date-read_only_depends_on",
@@ -1086,7 +1134,11 @@
    "field_name": "half_day",
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:20:13.919794",
+=======
+   "modified": "2024-11-20 16:45:12.591714",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-half_day-read_only_depends_on",
@@ -1104,6 +1156,58 @@
    "_comments": null,
    "_liked_by": null,
    "_user_tags": null,
+   "creation": "2024-11-20 16:35:52.830571",
+   "default_value": null,
+   "doc_type": "Leave Application",
+   "docstatus": 0,
+   "doctype_or_field": "DocField",
+   "field_name": "leave_approver_name",
+   "idx": 0,
+   "is_system_generated": 0,
+   "modified": "2024-11-20 16:35:52.830571",
+   "modified_by": "Administrator",
+   "module": null,
+   "name": "Leave Application-leave_approver_name-fetch_from",
+   "owner": "Administrator",
+   "parent": null,
+   "parentfield": null,
+   "parenttype": null,
+   "property": "fetch_from",
+   "property_type": "Small Text",
+   "row_name": null,
+   "value": "leave_approver.full_name"
+  },
+  {
+   "_assign": null,
+   "_comments": null,
+   "_liked_by": null,
+   "_user_tags": null,
+   "creation": "2024-11-20 16:49:38.847928",
+   "default_value": null,
+   "doc_type": "Leave Application",
+   "docstatus": 0,
+   "doctype_or_field": "DocField",
+   "field_name": "leave_approver_name",
+   "idx": 0,
+   "is_system_generated": 0,
+   "modified": "2024-11-20 16:49:38.847928",
+   "modified_by": "Administrator",
+   "module": null,
+   "name": "Leave Application-leave_approver_name-options",
+   "owner": "Administrator",
+   "parent": null,
+   "parentfield": null,
+   "parenttype": null,
+   "property": "options",
+   "property_type": "Text",
+   "row_name": null,
+   "value": ""
+  },
+  {
+   "_assign": null,
+   "_comments": null,
+   "_liked_by": null,
+   "_user_tags": null,
    "creation": "2023-02-27 20:07:27.577176",
    "default_value": null,
    "doc_type": "Leave Application",
@@ -1112,7 +1216,11 @@
    "field_name": "leave_approver",
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:20:13.937902",
+=======
+   "modified": "2024-11-20 16:45:12.616128",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-leave_approver-default",
@@ -1138,7 +1246,11 @@
    "field_name": "leave_approver",
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:20:13.954055",
+=======
+   "modified": "2024-11-20 16:45:12.643037",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-leave_approver-read_only_depends_on",
@@ -1164,7 +1276,11 @@
    "field_name": "leave_type",
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:20:13.970371",
+=======
+   "modified": "2024-11-20 16:45:12.667966",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-leave_type-read_only_depends_on",
@@ -1182,7 +1298,11 @@
    "_comments": null,
    "_liked_by": null,
    "_user_tags": null,
+<<<<<<< HEAD
    "creation": "2024-11-06 10:27:25.813900",
+=======
+   "creation": "2024-11-20 16:49:38.625312",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "default_value": null,
    "doc_type": "Leave Application",
    "docstatus": 0,
@@ -1190,7 +1310,11 @@
    "field_name": null,
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:27:25.813900",
+=======
+   "modified": "2024-11-20 16:49:38.625312",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-main-field_order",
@@ -1201,7 +1325,11 @@
    "property": "field_order",
    "property_type": "Data",
    "row_name": null,
+<<<<<<< HEAD
    "value": "[\"workflow_state\", \"naming_series\", \"employee\", \"employee_name\", \"employee_civil_id_assurance_level\", \"column_break_4\", \"leave_type\", \"is_proof_document_required\", \"proof_document\", \"proof_documents\", \"company\", \"department\", \"section_break_5\", \"from_date\", \"to_date\", \"half_day\", \"half_day_date\", \"total_leave_days\", \"custom_reason_for_cancel\", \"column_break1\", \"custom_propose_from_date\", \"custom_propose_to_date\", \"custom_total_propose_leave_days\", \"description\", \"leave_balance\", \"section_break_7\", \"leave_approver\", \"leave_approver_name\", \"follow_via_email\", \"column_break_18\", \"posting_date\", \"status\", \"sb_other_details\", \"salary_slip\", \"color\", \"custom_reliever_\", \"custom_reliever_name\", \"column_break_17\", \"letter_head\", \"amended_from\", \"source\", \"custom_section_break_neyf8\", \"custom_reassigned_documents\"]"
+=======
+   "value": "[\"workflow_state\", \"naming_series\", \"employee\", \"employee_name\", \"column_break_4\", \"leave_type\", \"is_proof_document_required\", \"proof_document\", \"proof_documents\", \"company\", \"department\", \"section_break_5\", \"from_date\", \"to_date\", \"half_day\", \"half_day_date\", \"total_leave_days\", \"custom_reason_for_cancel\", \"column_break1\", \"custom_propose_from_date\", \"custom_propose_to_date\", \"custom_total_propose_leave_days\", \"description\", \"leave_balance\", \"section_break_7\", \"leave_approver\", \"leave_approver_name\", \"follow_via_email\", \"column_break_18\", \"posting_date\", \"status\", \"custom_default_leave_application_operator\", \"sb_other_details\", \"salary_slip\", \"color\", \"custom_reliever_\", \"custom_reliever_name\", \"column_break_17\", \"letter_head\", \"amended_from\", \"source\", \"custom_section_break_neyf8\", \"custom_reassigned_documents\"]"
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
   },
   {
    "_assign": null,
@@ -1216,7 +1344,11 @@
    "field_name": null,
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:20:14.005017",
+=======
+   "modified": "2024-11-20 16:45:12.726034",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-main-max_attachments",
@@ -1242,7 +1374,11 @@
    "field_name": "naming_series",
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:20:14.023809",
+=======
+   "modified": "2024-11-20 16:45:12.754158",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-naming_series-options",
@@ -1268,7 +1404,11 @@
    "field_name": "status",
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:20:14.042376",
+=======
+   "modified": "2024-11-20 16:45:12.784638",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-status-read_only",
@@ -1294,7 +1434,11 @@
    "field_name": "status",
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:20:14.066247",
+=======
+   "modified": "2024-11-20 16:45:12.815458",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-status-read_only_depends_on",
@@ -1320,7 +1464,11 @@
    "field_name": "to_date",
    "idx": 0,
    "is_system_generated": 0,
+<<<<<<< HEAD
    "modified": "2024-11-06 10:20:14.091867",
+=======
+   "modified": "2024-11-20 16:45:12.844207",
+>>>>>>> 0ae94aba834d873459bd8531b23fe47adcb9dd25
    "modified_by": "Administrator",
    "module": null,
    "name": "Leave Application-to_date-read_only_depends_on",

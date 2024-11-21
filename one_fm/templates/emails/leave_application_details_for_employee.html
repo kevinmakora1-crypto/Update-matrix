@@ -69,23 +69,16 @@
         a:hover {
             text-decoration: underline;
         }
-        .header_arabic {
-            font-family: 'Readex Pro', sans-serif;
-            direction: rtl; 
-        }
-        .header_english{
-            font-family: 'Alexandria', sans-serif;
-        }
     </style>
 </head>
 <body>
     <!-- English Header -->
-    <div class="header header_english">
+    <div class="header english">
         {{ header_eng }}
     </div>
     
     <!-- Arabic Header -->
-    <div class="header header_arabic">
+    <div class="header arabic">
         {{ header_arabic }}
     </div>
 
@@ -102,58 +95,62 @@
             <th>Content</th>
             <td>
                 <div class="container english">
-                    <p>Dear {{ approver_name_eng }},</p>
+                    <p>Dear {{ employee_name_eng }},</p>
                     
-                    <p>Please be informed that {{ employee_name_eng }} has submitted a leave cancellation request. Below are the details of the canceled leave:</p>
-
                     <div class="section">
+                        <p>You have applied for a Leave Application, and the details are below:</p>
                         <div><strong>Employee Name: </strong>{{ employee_name_eng }}</div>
                         <div><strong>Employee ID: </strong>{{ employee_id }}</div>
                         <div><strong>Leave Type: </strong>{{ leave_type_eng }}</div>
                     </div>
-                    
+
                     <div class="section">
-                        <strong>Original Leave Duration:</strong>
+                        <strong>Leave Duration Request:</strong>
                         <ul>
-                            <li><strong>Start Date: </strong>{{ from_date }}</li>
-                            <li><strong>End Date: </strong>{{ to_date }}</li>
-                            <li><strong>Total Days: </strong>{{ total_leave_days }} days</li>
+                            <li><strong>Start Date:</strong> {{ from_date }}</li>
+                            <li><strong>End Date:</strong> {{ to_date }}</li>
+                            <li><strong>Total Days:</strong> {{ total_leave_days }} days</li>
                         </ul>
                     </div>
 
                     <div class="section">
                         <div><strong>Date of Application: </strong>{{ date_of_application }}</div>
-                        <div><strong>Cancellation Date: </strong>{{ date_of_cancellation }}</div>
-                        <div><strong>Reason for Cancellation: </strong>{{ reason_of_cancellation }}</div>
+                        <div><strong>Leave Approver: </strong>{{ leave_approver }}</div>
+                        <div><strong>Status: </strong>{{ status }}</div>
                     </div>
+
+                    <p>Please note that your leave request is currently under review. You will be notified once your leave has been approved or if any further action is required.</p>
+                    <p>If you have any questions or need to make adjustments to your request, please contact your line manager.</p>
                 </div>
             </td>
             <td>
                 <div class="container arabic">
-                    <p>عزيزي/عزيزتي {{ approver_name_arabic }}،</p>
-
-                    <p>يرجى العلم أن {{ employee_name_arabic }} قد قدم طلبًا لإلغاء إجازته. فيما يلي تفاصيل الإجازة الملغاة:</p>
+                    <p>عزيزي/عزيزتي {{ employee_name_arabic }}،</p>
 
                     <div class="section">
-                        <div><strong>اسم الموظف: </strong>{{ employee_name_arabic }}</div>
-                        <div><strong>رقم الموظف: </strong>{{ employee_id }}</div>
-                        <div><strong>نوع الإجازة: </strong>{{ _(leave_type_eng, "ar") }}</div>
+                        <p>لقد قدمت طلب إجازة، والتفاصيل أدناه:</p>
+                        <div><strong>اسم الموظف:</strong> {{ employee_name_arabic }}</div>
+                        <div><strong>رقم الموظف:</strong> {{ employee_id }}</div>
+                        <div><strong>نوع الإجازة:</strong> {{ _(leave_type_eng, "ar") }}</div>
                     </div>
-                    
+
                     <div class="section">
                         <strong>مدة الإجازة الأصلية:</strong>
                         <ul>
-                            <li><strong>تاريخ البدء: </strong>{{ from_date }}</li>
-                            <li><strong>تاريخ الانتهاء:</strong>{{ to_date }}</li>
-                            <li><strong>إجمالي الأيام:</strong>{{ total_leave_days }} أيام</li>
+                            <li><strong>تاريخ البدء:</strong> {{ from_date }}</li>
+                            <li><strong>تاريخ الانتهاء:</strong> {{ to_date }}</li>
+                            <li><strong>إجمالي الأيام:</strong> {{ total_leave_days }} أيام</li>
                         </ul>
                     </div>
 
                     <div class="section">
-                        <div><strong>تاريخ تقديم الطلب: </strong>{{ date_of_application }}</div>
-                        <div><strong>تاريخ الإلغاء: </strong>{{ date_of_cancellation }}</div>
-                        <div><strong>سبب الإلغاء: </strong>{{ _(reason_of_cancellation, "ar") }}</div>
+                        <div><strong>تاريخ التقديم:</strong> {{ date_of_application }}</div>
+                        <div><strong>الموافق:</strong> {{ leave_approver }}</div>
+                        <div><strong>الحالة:</strong> {{ status }}</div>
                     </div>
+
+                    <p>يرجى ملاحظة أن طلب إجازتك قيد المراجعة حاليًا. ستتلقى إشعارًا بمجرد الموافقة على إجازتك أو إذا كانت هناك حاجة لأي إجراء إضافي.</p>
+                    <p>إذا كان لديك أي أسئلة أو تحتاج إلى إجراء تعديلات على طلبك، يرجى الاتصال بالمدير المباشر الخاص بك.</p>
                 </div>
             </td>
         </tr>

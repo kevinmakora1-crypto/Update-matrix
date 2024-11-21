@@ -107,10 +107,6 @@ class LeaveApplicationOverride(LeaveApplication):
         self.db_set('status', 'Approved')
 
     def validate_applicable_after(self):
-        if self.workflow_state == "New Dates Proposed":
-            send_proposed_date_email(self.name)
-        if self.workflow_state == "Pending Approval":
-            self.notify_leave_approver()
         if self.leave_type:
             leave_type = frappe.get_doc("Leave Type", self.leave_type)
             if leave_type.applicable_after > 0:
@@ -447,6 +443,8 @@ class LeaveApplicationOverride(LeaveApplication):
             frappe.throw("An Error Occured while updating Attendance Checks. Please review the error logs")
 
     def on_update(self):
+        if self.workflow_state == "New Dates Proposed":
+            send_proposed_date_email(self.name)
         if self.status=='Rejected':
             attendance_range = []
             for i in pd.date_range(self.from_date, self.to_date):
@@ -483,6 +481,7 @@ class LeaveApplicationOverride(LeaveApplication):
         # When workflow state changes from 'Draft' to 'Pending Approval'
         if self.has_value_changed('workflow_state') and self.workflow_state == 'Pending Approval':
             send_leave_details_email_to_employee(self)
+            self.notify_leave_approver()
 
     def clear_employee_schedules(self):
         last_doc = self.get_doc_before_save()
@@ -685,6 +684,8 @@ def send_leave_details_email_to_employee(self):
     header_eng = "Leave Application Details – Confirmation"
     header_arabic = "الموضوع: تفاصيل طلب الإجازة - تأكيد"
 
+    line_manager = frappe.db.get_value("Employee", {"user_id": self.leave_approver}, "employee_name_in_arabic")
+
     args = frappe._dict({
                     "doc_name": self.name,
                     "doc_type": self.doctype,
@@ -699,6 +700,7 @@ def send_leave_details_email_to_employee(self):
                     "total_leave_days" : self.total_leave_days,
                     "date_of_application" : self.posting_date,
                     "leave_approver" : self.leave_approver_name,
+                    "leave_approver_in_arabic": line_manager,
                     "status":self.workflow_state,
                     "doc_link": get_url_to_form("Leave Application", self.name)
                 })

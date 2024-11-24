@@ -227,6 +227,7 @@ class LeaveApplicationOverride(LeaveApplication):
             self.validate_optional_leave()
         self.validate_applicable_after()
         self.validate_leave_application_operator()
+        self.reset_status_on_amend()
 
     @frappe.whitelist()
     def update_attendance(self):
@@ -503,6 +504,11 @@ class LeaveApplicationOverride(LeaveApplication):
             frappe.throw(_("Leave Application Operator must be set in HR and Payroll Additional Settings"))
 
         self.custom_default_leave_application_operator = leave_application_operator
+
+
+    def reset_status_on_amend(self):
+        if self.amended_from and self.status == "Cancelled":
+            self.status = "Open" 
             
 
 

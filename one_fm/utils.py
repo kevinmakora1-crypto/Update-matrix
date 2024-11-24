@@ -3879,7 +3879,8 @@ def call_to_get_assurance_level(employees):
     try:
         if isinstance(employees, str):
             url = f"http://168.187.237.44:8080/api/DigitalSigning/CheckMobileIdentity/{employees}"
-            response = requests.get(url)
+            headers = {'accept': 'text/plain'}
+            response = requests.get(url, headers=headers)
         else:
             url = f"http://168.187.237.44:8080/api/DigitalSigning/BulkCheckMobileIdentity"
             response = requests.post(url, json=employees)

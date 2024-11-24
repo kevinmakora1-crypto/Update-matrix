@@ -3878,10 +3878,10 @@ def update_active_employees_assurance_level():
 def call_to_get_assurance_level(employees):
     try:
         if isinstance(employees, str):
-            url = f"http://192.168.11.13:8080/api/DigitalSigning/CheckMobileIdentity/{employees}"
+            url = f"http://168.187.237.44:8080/api/DigitalSigning/CheckMobileIdentity/{employees}"
             response = requests.get(url)
         else:
-            url = f"http://192.168.11.13:8080/api/DigitalSigning/BulkCheckMobileIdentity"
+            url = f"http://168.187.237.44:8080/api/DigitalSigning/BulkCheckMobileIdentity"
             response = requests.post(url, json=employees)
         if response.status_code == 200:
             data = response.json()

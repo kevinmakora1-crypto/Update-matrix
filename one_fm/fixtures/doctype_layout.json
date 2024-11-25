@@ -426,6 +426,13 @@
     "parenttype": "DocType Layout"
    },
    {
+    "fieldname": "custom_civil_id_assurance_level",
+    "label": "Civil ID Assurance Level",
+    "parent": "Employee",
+    "parentfield": "fields",
+    "parenttype": "DocType Layout"
+   },
+   {
     "fieldname": "one_fm_centralized_number",
     "label": "Centralized Number",
     "parent": "Employee",
@@ -741,13 +748,6 @@
     "parenttype": "DocType Layout"
    },
    {
-    "fieldname": "went_to_hajj",
-    "label": "Went to Hajj",
-    "parent": "Employee",
-    "parentfield": "fields",
-    "parenttype": "DocType Layout"
-   },
-   {
     "fieldname": "leave_policy",
     "label": "Leave Policy",
     "parent": "Employee",
@@ -1009,6 +1009,13 @@
    {
     "fieldname": "one_fm_religion",
     "label": "Religion",
+    "parent": "Employee",
+    "parentfield": "fields",
+    "parenttype": "DocType Layout"
+   },
+   {
+    "fieldname": "went_to_hajj",
+    "label": "Went to Hajj",
     "parent": "Employee",
     "parentfield": "fields",
     "parenttype": "DocType Layout"

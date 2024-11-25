@@ -117,7 +117,8 @@ doctype_js = {
     "Task": "public/js/doctype_js/task.js",
     "HD Ticket": "public/js/doctype_js/hd_ticket.js",
     "Appraisal": "public/js/doctype_js/appraisal.js",
-    "Employee Performance Feedback":"public/js/doctype_js/employee_performance_feedback.js"
+    "Employee Performance Feedback":"public/js/doctype_js/employee_performance_feedback.js",
+    "Leave Allocation": "public/js/doctype_js/leave_allocation.js"
 }
 doctype_list_js = {
 	"Job Applicant" : "public/js/doctype_js/job_applicant_list.js",
@@ -225,7 +226,6 @@ doc_events = {
 		"on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",
 		"after_insert": "one_fm.purchase.utils.set_quotation_attachment_in_po",
 		"validate":[
-			"one_fm.purchase.utils.set_po_approver",
 			"one_fm.overrides.purchase_order.validate_purchase_uom"
 		],
 		# 'on_update':"one_fm.purchase.utils.on_update",
@@ -435,6 +435,9 @@ doc_events = {
     "OAuth Bearer Token": {
 		"after_insert": "one_fm.api.doc_methods.oauth_bearer_token.revoke_and_delete_existing_tokens",
 	},
+    "Employee": {
+        "before_save": "one_fm.overrides.employee.get_assurance_level_of_employee"
+    }
 }
 
 standard_portal_menu_items = [
@@ -508,6 +511,7 @@ override_doctype_class = {
 	"Employee Transfer": "one_fm.overrides.employee_transfer.EmployeeTransferOverride",
 	"Holiday List": "one_fm.overrides.holiday_list.HolidayListOverride",
 	"Leave Application": "one_fm.overrides.leave_application.LeaveApplicationOverride",
+    "Leave Allocation": "one_fm.overrides.leave_allocation.LeaveAllocationOverride",
 	"Employee": "one_fm.overrides.employee.EmployeeOverride",
 	"Employee Checkin": "one_fm.overrides.employee_checkin.EmployeeCheckinOverride",
 	"Timesheet": "one_fm.overrides.timesheet.TimesheetOveride",
@@ -553,7 +557,10 @@ scheduler_events = {
   		"one_fm.api.v2.zenquotes.set_cached_quote",
 		"one_fm.operations.doctype.contracts.contracts.send_contract_reminders",
 		"one_fm.operations.doctype.contracts.contracts.renew_contracts_by_termination_date",
-        "one_fm.developer.doctype.bug_buster.bug_buster.roster_bug_buster"
+        "one_fm.developer.doctype.bug_buster.bug_buster.roster_bug_buster",
+        'one_fm.utils.set_employee_status_to_vacation',
+        'one_fm.utils.set_out_of_office_for_leaves',
+        'one_fm.utils.update_active_employees_assurance_level'
 	],
 	"hourly": [
 		# "one_fm.api.tasks.send_checkin_hourly_reminder",
@@ -716,7 +723,7 @@ scheduler_events = {
         "55 12 * * *": [ # mark attendance for previous day mark_for_active_employees at 12:45 pm today
 			'one_fm.overrides.attendance.mark_for_active_employees'
 		],
-		"00 03 * * *": [ # Update Google Sheet
+		"*/15 * * * *": [ # Update Google Sheet. Runs every 15 mins.
 			'one_fm.one_fm.doctype.google_sheet_data_export.exporter.update_google_sheet_daily'
 		],
 		"00 08 * * *": [ # runs at 8:00 am

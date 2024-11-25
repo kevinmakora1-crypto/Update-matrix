@@ -103,8 +103,16 @@ class LeaveApplicationOverride(LeaveApplication):
     def on_submit(self):
         self.close_todo()
         self.close_shifts()
-        return super().on_submit()
-        self.db_set('status', 'Approved')
+        self.validate_back_dated_application()
+        self.update_attendance()
+
+		# notify leave applier about approval
+        if frappe.db.get_single_value("HR Settings", "send_leave_notification"):
+            self.notify_employee()
+        
+        self.create_leave_ledger_entry()
+        self.reload()
+        # self.db_set('status', 'Approved')
 
     def validate_applicable_after(self):
         if self.leave_type:
@@ -421,6 +429,7 @@ class LeaveApplicationOverride(LeaveApplication):
         self.create_leave_ledger_entry(submit=False)
         # notify leave applier about cancellation
         self.cancel_attendance()
+        self.validate_cancel()
         send_leave_cancellation_email_to_leave_approver(self)
         disable_out_of_office(emp.company_email)
 
@@ -509,8 +518,15 @@ class LeaveApplicationOverride(LeaveApplication):
     def reset_status_on_amend(self):
         if self.amended_from and self.status == "Cancelled":
             self.status = "Open" 
-            
 
+    
+    def validate_cancel(self):
+        print(not "System Manager" in frappe.get_roles())
+        print(frappe.get_roles())
+        if (self.workflow_state == "Approved" and self.custom_is_paid and not "System Manager" in frappe.get_roles()):
+            frappe.throw(
+                _("This leave application has been paid and cannot be canceled. Please contact the Administrator.")
+            )
 
 
 def update_attendance_recods(self):

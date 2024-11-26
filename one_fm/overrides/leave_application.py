@@ -521,8 +521,6 @@ class LeaveApplicationOverride(LeaveApplication):
 
     
     def validate_cancel(self):
-        print(not "System Manager" in frappe.get_roles())
-        print(frappe.get_roles())
         if (self.workflow_state == "Approved" and self.custom_is_paid and not "System Manager" in frappe.get_roles()):
             frappe.throw(
                 _("This leave application has been paid and cannot be canceled. Please contact the Administrator.")

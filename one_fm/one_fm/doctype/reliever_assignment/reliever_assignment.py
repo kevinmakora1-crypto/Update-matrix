@@ -3,16 +3,21 @@
 
 import json, time
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.query_builder import DocType
 from frappe.query_builder.functions import Count
-from frappe.utils import now, validate_email_address
+from frappe.utils import now, validate_email_address, getdate
 from pypika.terms import Case
 from one_fm.api.doc_events import get_employee_user_id
 
+
 class RelieverAssignment(Document):
 	def validate(self):
+		self.validate_leave_application()
 		self.set_user_ids()
+
+	def after_insert(self):
 		self.assign_roles()
 		self.assign_reportees()
 		self.assign_todos()
@@ -20,7 +25,21 @@ class RelieverAssignment(Document):
 		self.assign_operations_site()
 		self.assign_routine_tasks()
 		self.get_single_doctypes()
+		self.get_approval_doctypes()
+		# Update status after transferring responsibilities
+		self.update_status("Transferred")
+		self.save()
 
+	def update_status(self, status):
+		self.status = status
+
+	def validate_leave_application(self):
+		leave_application = frappe.get_value("Leave Application", self.leave_application, ["workflow_state", "from_date", "to_date", "custom_reliever_"], as_dict=1)
+
+		if not ( leave_application.workflow_state == "Approved" and 
+			(leave_application.from_date <= getdate() <= leave_application.to_date) and 
+			(leave_application.custom_reliever_ is not None)):
+			frappe.throw(_(f"Reliever Assignment record cannot be created for <b>Leave Application - {self.leave_application}</b>"))
 
 	def set_user_ids(self):
 		self._employee_user_id = get_employee_user_id(self.on_leave_employee)
@@ -240,6 +259,26 @@ class RelieverAssignment(Document):
 					Singles.doctype == record.doctype
 				).run()
 
+
+	def get_approval_doctypes(self):
+		# For now, only Department Approver child table needs to be checked
+		DepartmentApprover = DocType("Department Approver")
+		approvers = (
+			frappe.qb.from_(DepartmentApprover)
+			.select(DepartmentApprover.name, DepartmentApprover.approver, DepartmentApprover.parent, DepartmentApprover.parentfield)
+			.where(
+				(DepartmentApprover.approver == self._employee_user_id)
+			)
+		).run(as_dict=True)
+
+		if len(approvers) > 0:
+			# Log data for reversal
+			self.add_assigned_documents("Department Approver", "Docname", approvers, reference_docname="Department Approver")
+			for approver in approvers: 
+				frappe.qb.update(DepartmentApprover) 	\
+				.set(DepartmentApprover.approver, self._reliever_user_id) \
+				.set(DepartmentApprover.modified, now()) \
+				.where(DepartmentApprover.name == approver.name).run()
 
 
 def assign_responsibilities(leave_application):

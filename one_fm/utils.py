@@ -3876,6 +3876,7 @@ def update_active_employees_assurance_level():
         
 
 def call_to_get_assurance_level(employees):
+    response = None 
     try:
         if isinstance(employees, str):
             url = f"http://168.187.237.44:8080/api/DigitalSigning/CheckMobileIdentity/{employees}"
@@ -3883,13 +3884,18 @@ def call_to_get_assurance_level(employees):
             response = requests.get(url, headers=headers)
         else:
             url = f"http://168.187.237.44:8080/api/DigitalSigning/BulkCheckMobileIdentity"
-            response = requests.post(url, json=employees)
+            headers = {'Content-Type': 'application/json',
+                        'accept': 'text/plain'}
+            response = requests.post(url, headers=headers, json=employees)
         if response.status_code == 200:
             data = response.json()
-            return data["data"]
+            return data.get("data", None)
+        else:
+            frappe.msgprint(f"API call failed with status code {response.status_code}")
+            return None
     except Exception as e:
-            frappe.msgprint(f"An error occurred while making the API call: {str(e)}")
-            return response(message=str(e), title="API Call Failed")
+        frappe.msgprint(f"An error occurred while making the API call: {str(e)}")
+        return {"error": str(e), "title": "API Call Failed"}
 
 
 

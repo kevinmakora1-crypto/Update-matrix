@@ -112,7 +112,6 @@ class LeaveApplicationOverride(LeaveApplication):
         
         self.create_leave_ledger_entry()
         self.reload()
-        # self.db_set('status', 'Approved')
 
     def validate_applicable_after(self):
         if self.leave_type:

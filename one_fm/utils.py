@@ -3884,8 +3884,7 @@ def call_to_get_assurance_level(employees):
             response = requests.get(url, headers=headers)
         else:
             url = f"http://168.187.237.44:8080/api/DigitalSigning/BulkCheckMobileIdentity"
-            headers = {'Content-Type': 'application/json',
-                        'accept': 'text/plain'}
+            headers = {'Content-Type': 'application/json'}
             response = requests.post(url, headers=headers, json=employees)
         if response.status_code == 200:
             data = response.json()

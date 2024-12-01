@@ -3848,6 +3848,7 @@ def set_out_of_office_for_leaves():
             if today == add_days(to_date, 1):
                 disable_out_of_office(employee_email)
 
+
 def update_active_employees_assurance_level():
     today = datetime.now().date()
     condition_1 = frappe.get_all(
@@ -3855,7 +3856,9 @@ def update_active_employees_assurance_level():
     filters=[
         ['status', '=', 'Active'],
         ['one_fm_civil_id', 'not in', ['', 'NONE']],
-        ['custom_civil_id_assurance_level', '!=', 'High']
+        ['custom_civil_id_assurance_level', '!=', 'High'],
+        ['civil_id_expiry_date', 'is', 'set'],
+        ['civil_id_expiry_date', '!=', '']
     ],
     fields=['employee', 'one_fm_civil_id', 'custom_civil_id_assurance_level', 'civil_id_expiry_date']
 )

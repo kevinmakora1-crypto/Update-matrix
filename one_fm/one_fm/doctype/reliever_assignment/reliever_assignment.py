@@ -288,3 +288,174 @@ def assign_responsibilities(leave_application):
 		reliever_assignment.save()
 	except Exception:
 		frappe.log_error(frappe.get_traceback())
+
+
+
+class ReassignRelieverAssignment(Document):
+	def __init__(self,leave_application):
+		self.leave_application = leave_application
+		self.set_user_ids()
+
+	def on_update(self):
+		pass
+
+	def set_user_ids(self):
+		parent_data = frappe.get_doc("Reliever Assignment", self.leave_application)
+		self.on_leave_employee = parent_data.on_leave_employee
+		self.reliever = parent_data.reliever
+		self.on_leave_employee_name = parent_data.on_leave_employee_name
+		self.reliever_name = parent_data.reliever_name
+		self._employee_user_id = get_employee_user_id(self.on_leave_employee)
+		self._reliever_user_id = get_employee_user_id(self.reliever)
+
+	def update_status(self, status):
+		self.status = status
+
+	def reassign_todos(self,data):
+		todos_in_doclist = [name.get('name')for name in json.loads(data.doclist)]
+		ToDo = DocType(data.reference_doctype)
+		frappe.qb.update(ToDo).set(
+				ToDo.allocated_to, self._employee_user_id
+			).where(
+				 (ToDo.name.isin(todos_in_doclist)) 
+   				 & (ToDo.status == "Open")
+			).run()
+		
+	def reassign_roles(self,data):
+		doclist = json.loads(data.doclist)
+		reliver_roles = set(doclist.get("reliever",{}).get("roles",[]))
+		employe_on_leave_roles = set(doclist.get("employee_on_leave",{}).get("roles",[]))
+		reliever_user = frappe.get_doc("User", self._reliever_user_id )
+		roles_to_remove_from_reliver = employe_on_leave_roles - reliver_roles
+		if roles_to_remove_from_reliver:
+			reliever_user.remove_roles(*roles_to_remove_from_reliver)
+		frappe.db.set_value("User", reliver_roles, "role_profile_name", doclist.get("reliever").get("role_profile_name"))
+
+	def reassign_reportees(self,data):
+		Employee = DocType(data.reference_doctype)
+		doclist_to_reassign = [name.get('name') for name in json.loads(data.doclist)]
+		if doclist_to_reassign:
+			(frappe.qb.update(Employee)
+					.set(Employee.reports_to, self.on_leave_employee)\
+					.where(Employee.name.isin(doclist_to_reassign))
+				).run()
+
+	def reassign_projects(self,data):
+		Project = DocType(data.reference_doctype)
+		doclist_to_reassign = [name.get('name')for name in json.loads(data.doclist)]
+		if doclist_to_reassign:
+			frappe.qb.update(Project).set(
+					Project.account_manager, self.on_leave_employee).set(
+					Project.manager_name, self.on_leave_employee_name).set(
+					Project.modified, now()).where(
+						(Project.name.isin(doclist_to_reassign)) &
+						(Project.status == "Open")
+					).run()
+	
+	def reassign_operations_site(self,data):
+		OperationsSite = DocType(data.reference_doctype)
+		doclist_to_reassign = [name.get('name')for name in json.loads(data.doclist)]
+		if doclist_to_reassign:
+			frappe.qb.update(OperationsSite).set(
+					OperationsSite.account_supervisor, self.on_leave_employee).set(
+					OperationsSite.account_supervisor_name, self.on_leave_employee_name).set(
+					OperationsSite.modified, now()).where(
+					OperationsSite.name.isin(doclist_to_reassign))\
+						.where(OperationsSite.status == "Active").run()
+
+	def reassign_routine_tasks(self,data):
+		RoutineTask = DocType(data.reference_doctype)
+		fieldname = data.fieldname
+		doclist_to_reassign = [name.get('name')for name in json.loads(data.doclist)]
+		if doclist_to_reassign and fieldname == "employee":
+			frappe.qb.update(RoutineTask).set(
+					RoutineTask.employee, self.on_leave_employee).set(
+					RoutineTask.employee_name, self.on_leave_employee_name).set(
+					RoutineTask.modified, now()).where(
+					RoutineTask.name.isin(doclist_to_reassign)).run()
+		elif doclist_to_reassign and fieldname == "direct_report_reviewer":
+			frappe.qb.update(RoutineTask).set(
+					RoutineTask.direct_report_reviewer, self.on_leave_employee).set(
+					RoutineTask.direct_report_reviewer_name, self.on_leave_employee_name).set(
+					RoutineTask.modified, now()).where(
+					RoutineTask.name.isin(doclist_to_reassign)
+				).run()
+
+	def reassign_department_approvals(self,data):
+		DepartmentApprover = DocType(data.reference_doctype)
+		doclist_to_reassign = [name.get('name')for name in json.loads(data.doclist)]
+		if doclist_to_reassign:
+			frappe.qb.update(DepartmentApprover) 	\
+				.set(DepartmentApprover.approver, self._employee_user_id) \
+				.set(DepartmentApprover.modified, now()) \
+				.where(DepartmentApprover.name.isin(doclist_to_reassign)).run()
+	
+	def reassign_single_doctype(self,data):
+		Doctype = DocType("DocType")
+		Singles = DocType("Singles")
+		Docfield = DocType("DocField")
+
+		# Get the list of single doctypes which contain Employee/User link field
+		single_doctypes_query = (
+			frappe.qb.from_(Docfield)
+			.left_join(Doctype)
+			.on(Docfield.parent == Doctype.name)
+			.select(Docfield.fieldname)
+			.where(
+				(Doctype.issingle == 1)
+				& (Docfield.parent == Doctype.name)
+				& (Docfield.parenttype == "DocType")
+				& (Docfield.fieldtype == "Link")
+				& (Doctype.issingle == 1)
+				& (Docfield.options.isin(["Employee", "User"]))
+			)
+		)
+
+		# Get rows from tabSingles where doctype is Single and employee/user id of on leave employee is set 
+		assigned_single_doctypes = (
+			frappe.qb.from_(Singles)
+			.select("*", )
+			.where(
+			Singles.field.isin(single_doctypes_query)
+			& Singles.value.isin([self._reliever_user_id, self.reliever])	
+			)	
+		)
+		
+		assigned_records = assigned_single_doctypes.run(as_dict=True)
+		check_values = [list_assign.get('doctype')for list_assign in assigned_records]
+		todos_in_doclist = json.loads(data.doclist).get('doctype')
+		if todos_in_doclist in check_values:
+			pass
+			# frappe.qb.update(Singles).set(
+			# 		Singles.value, record.replaced_with
+			# 	).where(
+			# 		Singles["field"] == record.field
+			# 	).where(
+			# 		Singles.doctype == record.doctype
+			# 	).run()
+	
+	def reassign(self):
+		leave_application = frappe.get_value("Leave Application", self.leave_application, "name")
+		datas = (frappe.qb.from_("Reliever Assignment Document")\
+		.select('*')\
+		.where(frappe.qb.Field('parent')==leave_application)\
+		.where(frappe.qb.Field('parentfield')=='assigned_documents')).run(as_dict=1)
+		for data in datas:
+			if data.reference_doctype == "User":
+				self.reassign_roles(data)
+			elif data.reference_doctype == "Employee":
+				self.reassign_reportees(data)
+			elif data.reference_doctype == "ToDo":
+				self.reassign_todos(data)
+			elif data.reference_doctype == "Project":
+				self.reassign_projects(data)
+			elif data.reference_doctype == "Operations Site":
+				self.reassign_operations_site(data)
+			elif data.reference_doctype == "Routine Task":
+				self.reassign_routine_tasks(data)
+			elif data.reference_doctype == "Department Approver":
+				self.reassign_department_approvals(data)
+			else:
+				self.reassign_single_doctype(data)
+		self.update_status("Reverted")
+

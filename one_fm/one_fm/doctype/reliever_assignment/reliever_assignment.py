@@ -250,7 +250,6 @@ class RelieverAssignment(Document):
 
 				# Log data for reversal
 				self.add_assigned_documents(record.doctype, "Docname", record, reference_docname=record.doctype)
-				
 				frappe.qb.update(Singles).set(
 					Singles.value, record.replaced_with
 				).where(
@@ -296,20 +295,18 @@ class ReassignRelieverAssignment(Document):
 		self.leave_application = leave_application
 		self.set_user_ids()
 
-	def on_update(self):
-		pass
-
 	def set_user_ids(self):
-		parent_data = frappe.get_doc("Reliever Assignment", self.leave_application)
-		self.on_leave_employee = parent_data.on_leave_employee
-		self.reliever = parent_data.reliever
-		self.on_leave_employee_name = parent_data.on_leave_employee_name
-		self.reliever_name = parent_data.reliever_name
+		self.parent_data = frappe.get_doc("Reliever Assignment", self.leave_application)
+		self.on_leave_employee = self.parent_data.on_leave_employee
+		self.reliever = self.parent_data.reliever
+		self.on_leave_employee_name = self.parent_data.on_leave_employee_name
+		self.reliever_name = self.parent_data.reliever_name
 		self._employee_user_id = get_employee_user_id(self.on_leave_employee)
 		self._reliever_user_id = get_employee_user_id(self.reliever)
 
 	def update_status(self, status):
-		self.status = status
+		self.parent_data.status = status
+		self.parent_data.save()
 
 	def reassign_todos(self,data):
 		todos_in_doclist = [name.get('name')for name in json.loads(data.doclist)]
@@ -391,49 +388,17 @@ class ReassignRelieverAssignment(Document):
 				.where(DepartmentApprover.name.isin(doclist_to_reassign)).run()
 	
 	def reassign_single_doctype(self,data):
-		Doctype = DocType("DocType")
 		Singles = DocType("Singles")
-		Docfield = DocType("DocField")
+		record_doc_type = json.loads(data.doclist).get('doctype')
+		record_field = json.loads(data.doclist).get('field')
+		(
+        frappe.qb.update(Singles)
+        .set(Singles.value, self._employee_user_id)
+        .where((Singles.doctype == record_doc_type) & 
+               (Singles.field == record_field))
+    	).run()
+		frappe.clear_cache(doctype=record_doc_type)
 
-		# Get the list of single doctypes which contain Employee/User link field
-		single_doctypes_query = (
-			frappe.qb.from_(Docfield)
-			.left_join(Doctype)
-			.on(Docfield.parent == Doctype.name)
-			.select(Docfield.fieldname)
-			.where(
-				(Doctype.issingle == 1)
-				& (Docfield.parent == Doctype.name)
-				& (Docfield.parenttype == "DocType")
-				& (Docfield.fieldtype == "Link")
-				& (Doctype.issingle == 1)
-				& (Docfield.options.isin(["Employee", "User"]))
-			)
-		)
-
-		# Get rows from tabSingles where doctype is Single and employee/user id of on leave employee is set 
-		assigned_single_doctypes = (
-			frappe.qb.from_(Singles)
-			.select("*", )
-			.where(
-			Singles.field.isin(single_doctypes_query)
-			& Singles.value.isin([self._reliever_user_id, self.reliever])	
-			)	
-		)
-		
-		assigned_records = assigned_single_doctypes.run(as_dict=True)
-		check_values = [list_assign.get('doctype')for list_assign in assigned_records]
-		todos_in_doclist = json.loads(data.doclist).get('doctype')
-		if todos_in_doclist in check_values:
-			pass
-			# frappe.qb.update(Singles).set(
-			# 		Singles.value, record.replaced_with
-			# 	).where(
-			# 		Singles["field"] == record.field
-			# 	).where(
-			# 		Singles.doctype == record.doctype
-			# 	).run()
-	
 	def reassign(self):
 		leave_application = frappe.get_value("Leave Application", self.leave_application, "name")
 		datas = (frappe.qb.from_("Reliever Assignment Document")\

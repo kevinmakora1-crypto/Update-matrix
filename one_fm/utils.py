@@ -3704,10 +3704,6 @@ def set_employee_status_to_vacation():
                 reassign_responsiobility = ReassignRelieverAssignment(leave_application=leave_application)
                 reassign_responsiobility.reassign()
             employees_set_to_active += 1
-        # if reliever:
-        #     # frappe.db.set_value('Employee', employee, 'status', 'Active')
-        #     reassign_responsiobility = ReassignRelieverAssignment(leave_application=leave_application)
-        #     reassign_responsiobility.reassign()
 
     frappe.db.commit()
     frappe.log(_("Employee statuses updated: {0} set to 'Vacation', {1} set to 'Active'.")

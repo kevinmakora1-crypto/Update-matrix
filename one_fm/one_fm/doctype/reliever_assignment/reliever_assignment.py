@@ -320,13 +320,13 @@ class ReassignRelieverAssignment(Document):
 		
 	def reassign_roles(self,data):
 		doclist = json.loads(data.doclist)
-		reliver_roles = set(doclist.get("reliever",{}).get("roles",[]))
+		reliever_roles = set(doclist.get("reliever",{}).get("roles",[]))
 		employe_on_leave_roles = set(doclist.get("employee_on_leave",{}).get("roles",[]))
 		reliever_user = frappe.get_doc("User", self._reliever_user_id )
-		roles_to_remove_from_reliver = employe_on_leave_roles - reliver_roles
+		roles_to_remove_from_reliver = employe_on_leave_roles - reliever_roles
 		if roles_to_remove_from_reliver:
 			reliever_user.remove_roles(*roles_to_remove_from_reliver)
-		frappe.db.set_value("User", reliver_roles, "role_profile_name", doclist.get("reliever").get("role_profile_name"))
+		frappe.db.set_value("User", reliever_roles, "role_profile_name", doclist.get("reliever").get("role_profile_name"))
 
 	def reassign_reportees(self,data):
 		Employee = DocType(data.reference_doctype)
@@ -400,11 +400,7 @@ class ReassignRelieverAssignment(Document):
 		frappe.clear_cache(doctype=record_doc_type)
 
 	def reassign(self):
-		leave_application = frappe.get_value("Leave Application", self.leave_application, "name")
-		datas = (frappe.qb.from_("Reliever Assignment Document")\
-		.select('*')\
-		.where(frappe.qb.Field('parent')==leave_application)\
-		.where(frappe.qb.Field('parentfield')=='assigned_documents')).run(as_dict=1)
+		datas = self.parent_data.as_dict().assigned_documents
 		for data in datas:
 			if data.reference_doctype == "User":
 				self.reassign_roles(data)

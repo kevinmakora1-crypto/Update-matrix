@@ -55,6 +55,7 @@ from one_fm.api import api
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2 import service_account
 
 
 def get_common_email_args(doc):
@@ -3717,67 +3718,26 @@ def is_holiday(employee, date=None, raise_exception=True):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Error while validating Holiday")
         return False, ""
-    
-    
-def get_google_credentials():
-    from frappe.utils.password import get_decrypted_password 
-
-    google_credentials = frappe.get_doc('API Integration', 'Google Cloud Platform')
-    
-    api_parameters = google_credentials.api_parameter
-
-    cred = {api_parameter.parameter: get_decrypted_password('API Parameter', api_parameter.name, 'value') for api_parameter in api_parameters}
-
-    credentials = Credentials(
-        None,
-        client_id=cred.get("client_id"),
-        client_secret=cred.get("client_secret"),
-        refresh_token=cred.get("refresh_token"),
-        token_uri=cred.get("token_uri")
-    )
-    
-    return credentials
 
 
-def get_oauth_refresh_token():
-    from frappe.utils.password import get_decrypted_password 
-    google_credentials = frappe.get_doc('API Integration', 'Google Cloud Platform')
-    
-    cred_params = {param.parameter: get_decrypted_password('API Parameter', param.name, 'value') for param in google_credentials.api_parameter}
-    
-    required_params = ['client_id', 'client_secret', 'redirect_uris']
-    for param in required_params:
-        if param not in cred_params:
-            raise ValueError(f"Missing required parameter: {param}")
-    
-    SCOPES = ['https://www.googleapis.com/auth/gmail.settings.basic']
-    client_config = {
-        "web": {
-            "client_id": cred_params["client_id"],
-            "client_secret": cred_params["client_secret"],
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": cred_params["redirect_uris"].split(',') 
-        }
-    }
-    
-    flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
-    credentials = flow.run_local_server(port=0)
+def get_gmail_service(employee_email):
 
-    for api_parameter in google_credentials.api_parameter:
-        if api_parameter.parameter == 'refresh_token':
-            api_parameter.value = credentials.refresh_token
-    
-    google_credentials.save()
-    frappe.db.commit()
+    credentials_path = frappe.get_site_path('private', 'files', 'gcp.json')
 
-    return credentials.refresh_token
+    with open(credentials_path, 'r') as file:
+        credentials_dict = json.load(file)
+
+    credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=['https://www.googleapis.com/auth/gmail.settings.basic'])
+
+    delegated_credentials = credentials.with_subject(employee_email)
+
+    service = build('gmail', 'v1', credentials=delegated_credentials)
+    return service
 
 
 def set_out_of_office(employee_email, start_date, end_date, custom_reliever_name, custom_reliever, employee_name):
     try:
-        credentials = get_google_credentials()
-        service = build('gmail', 'v1', credentials=credentials)
+        service = get_gmail_service(employee_email)
 
         start_date_rfc3339 = start_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
         end_date_rfc3339 = end_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
@@ -3800,8 +3760,7 @@ def set_out_of_office(employee_email, start_date, end_date, custom_reliever_name
 
 def disable_out_of_office(employee_email):
     try:
-        credentials = get_google_credentials()
-        service = build('gmail', 'v1', credentials=credentials)
+        service = get_gmail_service(employee_email)
 
         vacation_settings = {
             "enableAutoReply": False

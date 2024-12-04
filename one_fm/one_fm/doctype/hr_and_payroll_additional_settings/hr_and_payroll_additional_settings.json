@@ -7,6 +7,7 @@
  "field_order": [
   "hr_settings_section",
   "holiday_compensatory_leave_type",
+  "default_leave_application_operator",
   "auto_generate_employee_id_on_employee_creation",
   "auto_create_erpnext_user_on_employee_creation_using_employee_id",
   "payroll_settings_section",
@@ -293,12 +294,20 @@
    "fieldtype": "Data",
    "label": "Payroll Officer Name",
    "read_only": 1
+  },
+  {
+   "description": "User ID of the HR User in charge of Leave Application",
+   "fieldname": "default_leave_application_operator",
+   "fieldtype": "Link",
+   "label": "Default Leave Application Operator",
+   "options": "User",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-09-05 13:50:32.286435",
+ "modified": "2024-11-03 10:40:39.237085",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "HR and Payroll Additional Settings",

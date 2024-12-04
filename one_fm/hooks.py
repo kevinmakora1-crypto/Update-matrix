@@ -226,7 +226,6 @@ doc_events = {
 		"on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",
 		"after_insert": "one_fm.purchase.utils.set_quotation_attachment_in_po",
 		"validate":[
-			"one_fm.purchase.utils.set_po_approver",
 			"one_fm.overrides.purchase_order.validate_purchase_uom"
 		],
 		# 'on_update':"one_fm.purchase.utils.on_update",
@@ -436,6 +435,9 @@ doc_events = {
     "OAuth Bearer Token": {
 		"after_insert": "one_fm.api.doc_methods.oauth_bearer_token.revoke_and_delete_existing_tokens",
 	},
+    "Employee": {
+        "before_save": "one_fm.overrides.employee.get_assurance_level_of_employee"
+    }
 }
 
 standard_portal_menu_items = [
@@ -558,6 +560,7 @@ scheduler_events = {
         "one_fm.developer.doctype.bug_buster.bug_buster.roster_bug_buster",
         'one_fm.utils.set_employee_status_to_vacation',
         'one_fm.utils.set_out_of_office_for_leaves',
+        'one_fm.utils.update_active_employees_assurance_level'
 	],
 	"hourly": [
 		# "one_fm.api.tasks.send_checkin_hourly_reminder",

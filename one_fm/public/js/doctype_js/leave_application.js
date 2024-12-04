@@ -1,5 +1,5 @@
 frappe.ui.form.on("Leave Application", {
-    before_workflow_action: function(frm) {
+    before_workflow_action:async function(frm) {
         if (frm.selected_workflow_action === "Accept Proposed Dates") {
             frm.set_value("from_date", frm.doc.custom_propose_from_date);
             frm.set_value("to_date", frm.doc.custom_propose_to_date);
@@ -9,16 +9,62 @@ frappe.ui.form.on("Leave Application", {
             frm.refresh_field("total_leave_days");
             frappe.msgprint("Leave updated");
         }
+        if (frm.selected_workflow_action == 'Cancel') {
+            try {
+                await new Promise((resolve, reject) => {
+                    frappe.dom.unfreeze();
+                    frappe.prompt(
+                        [
+                            {
+                                label: 'Reason for Cancelling',
+                                fieldname: 'reason',
+                                fieldtype: 'Small Text',
+                                reqd: 1
+                            }
+                        ],
+                        function(values) {
+                            if (!values.reason || values.reason.length <= 10 || values.reason.trim() === "" || values.reason.trim().length < 3) {
+                                frappe.msgprint({
+                                    title: __('Too Short'),
+                                    message: __('Please ensure to provide a description of the reason'),
+                                    indicator: 'red'
+                                });
+                            } else {
+                                frappe.dom.freeze();
+                                frm.set_value('custom_reason_for_cancel', values.reason);
+                                frm.refresh_field("custom_reason_for_cancel");
+                                frm.save()
+                                    .then(resolve)
+                                    .catch(reject);
+                            }
+                        },
+                        'Enter Reason',
+                        'Proceed to Leave Cancellation'
+                    );
+                });
+            } catch (error) {
+                frappe.dom.unfreeze();
+                frappe.throw(error?.message || 'Something went wrong in cancelling leave. Try again later');
+            }
+        }
+        if (frm.selected_workflow_action === "Propose New Dates") {
+            try {
+                await new Promise((resolve, reject) => {
+                    frappe.dom.unfreeze();
+                    handle_propose_new_date_action(frm)
+                        .then(resolve)
+                        .catch(reject);
+                });
+            } catch (error) {
+                frappe.dom.unfreeze();
+                frappe.throw(error?.message || 'Something went wrong while proposing new dates. Try again later');
+            }
+        }
+        
     },  
     refresh: function(frm) {
         // frm.set_intro("Please save the form after adding a new row to the Proof Documents table before attaching the document")
         if (!frm.is_new()){
-            const current_user = frappe.session.user;
-            if (frm.doc.leave_approver === current_user && frm.doc.workflow_state === "Pending Approval") {
-                frm.add_custom_button("Propose New Date", function() {
-                    handle_propose_new_date_action(frm);
-                });
-            }
             frappe.call({
                 method: 'one_fm.utils.enable_edit_leave_application',
                 args: {
@@ -60,6 +106,7 @@ frappe.ui.form.on("Leave Application", {
             }
           );
         }
+        updateCustomIsPaidVisibility(frm)
     },
     onload: function(frm) {
         $.each(frm.fields_dict, function(fieldname, field) {
@@ -80,46 +127,51 @@ frappe.ui.form.on("Leave Application", {
     },
     custom_reliever_: function(frm){
         validate_reliever(frm);
+    },
+
+
+    leave_type: function(frm) {
+        updateCustomIsPaidVisibility(frm);
     }
+
+
 })
 
-var handle_propose_new_date_action =frm=>{  
-        let dialog = new frappe.ui.Dialog({
+async function handle_propose_new_date_action(frm) {
+    return new Promise((resolve, reject) => {
+        const dialog = new frappe.ui.Dialog({
             title: 'Confirm New Dates',
             fields: [
                 {
-                    fieldtype: 'Date', 
-                    fieldname: 'custom_propose_from_date', 
-                    label: 'Proposed From Date', 
-                    default: frm.doc.custom_propose_from_date, 
+                    fieldtype: 'Date',
+                    fieldname: 'custom_propose_from_date',
+                    label: 'Proposed From Date',
+                    default: frm.doc.custom_propose_from_date,
                     reqd: 1,
-                    change: function() {
-                        calculate_days(frm,dialog);
-                    }
+                    change: () => calculate_days(frm, dialog)
                 },
                 {
-                    fieldtype: 'Date', 
-                    fieldname: 'custom_propose_to_date', 
-                    label: 'Proposed To Date', 
-                    default: frm.doc.custom_propose_to_date, 
+                    fieldtype: 'Date',
+                    fieldname: 'custom_propose_to_date',
+                    label: 'Proposed To Date',
+                    default: frm.doc.custom_propose_to_date,
                     reqd: 1,
-                    change: function() {
-                        calculate_days(frm,dialog);
-                    }
+                    change: () => calculate_days(frm, dialog)
                 },
                 {
-                    fieldtype: 'Data', 
-                    fieldname: 'custom_total_propose_leave_days', 
-                    label: 'Total Number of proposed Days', 
+                    fieldtype: 'Data',
+                    fieldname: 'custom_total_propose_leave_days',
+                    label: 'Total Number of Proposed Days',
                     read_only: 1,
-                    default: '0' 
+                    default: '0'
                 }
             ],
             primary_action_label: 'Confirm',
             primary_action(values) {
-                let from_date = values.custom_propose_from_date;
-                let to_date = values.custom_propose_to_date;
-                let total_days = dialog.get_value('custom_total_propose_leave_days');
+                const from_date = values.custom_propose_from_date;
+                const to_date = values.custom_propose_to_date;
+                const total_days = dialog.get_value('custom_total_propose_leave_days');
+
                 validate_proposeddate(frm, from_date, to_date, dialog)
                     .then(is_valid => {
                         if (is_valid) {
@@ -127,30 +179,27 @@ var handle_propose_new_date_action =frm=>{
                             frm.set_value('custom_propose_to_date', to_date);
                             frm.set_value('custom_total_propose_leave_days', total_days);
                             dialog.hide();
-                            frm.save().then(() => {
-                                frappe.msgprint("New dates proposed successfully");
-                                frappe.call({
-                                    method: "one_fm.overrides.leave_application.send_proposed_date_email",
-                                    args: {
-                                        doc_name: frm.doc.name
-                                    },
-                                    callback: function(response) {
-                                        if (response.message === "success") {
-                                            frappe.msgprint("Email sent successfully.");
-                                        } else {
-                                            frappe.msgprint("Failed to send the email.");
-                                        }
-                                        
-                                    }
+                            frappe.dom.freeze();
+                            frm.save()
+                                .then(() => {
+                                    frappe.msgprint("New dates proposed successfully");
+                                    resolve(frm.reload_doc());
+                                })
+                                .catch((err) => {
+                                    frappe.throw(err.message || 'Error saving proposed dates');
+                                    reject(err);
                                 });
-                                frm.reload_doc();
-                            });
+                        } else {
+                            reject(new Error('Invalid date selection'));
                         }
                     })
+                    .catch(reject);
             }
         });
         dialog.show();
+    });
 }
+
 
 
 var prefillForm = frm => {
@@ -227,6 +276,10 @@ var validate_proposeddate = (frm, from_date, to_date, dialog) => {
             frappe.throw("Proposed From Date cannot be in the past.");
             return reject(false);
         }
+        if(frm.doc.custom_propose_from_date && frm.doc.custom_propose_from_date == from_date && frm.doc.custom_propose_to_date && frm.doc.custom_propose_to_date == to_date){
+            frappe.throw("Same Date cannot be Proposed.");
+            return reject(false);
+        }
         frappe.db.get_value("Leave Type", frm.doc.leave_type, "one_fm_is_paid_annual_leave")
             .then(res => {
                 if (res.message.one_fm_is_paid_annual_leave && frm.doc.total_leave_days >= 15) {
@@ -256,3 +309,21 @@ var validate_proposeddate = (frm, from_date, to_date, dialog) => {
             })
     });
 };
+
+function updateCustomIsPaidVisibility (frm) {
+    if (frm.doc.leave_type) {
+        frappe.db.get_value("Leave Type", frm.doc.leave_type, "one_fm_is_paid_annual_leave")
+            .then(res => {
+                if (res.message) {
+                    const isPaidAnnualLeave = res.message.one_fm_is_paid_annual_leave;
+                    // Show or hide the custom_is_paid field based on the value
+                    frm.set_df_property("custom_is_paid", "hidden", !isPaidAnnualLeave);
+                    frm.refresh_field("custom_is_paid");
+                }
+            });
+    } else {
+        // Hide the field if no leave_type is selected
+        frm.set_df_property("custom_is_paid", "hidden", 1);
+        frm.refresh_field("custom_is_paid");
+    }
+}

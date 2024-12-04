@@ -1,5 +1,6 @@
 from itertools import chain
 from json import loads
+import requests
 
 import frappe
 from frappe.utils import getdate, add_days, get_url_to_form, get_url
@@ -15,7 +16,7 @@ from one_fm.hiring.utils import (
     is_subcontract_employee
 )
 from one_fm.processor import sendemail,send_whatsapp
-from one_fm.utils import get_domain, get_standard_notification_template, get_approver_user
+from one_fm.utils import call_to_get_assurance_level, get_domain, get_standard_notification_template, get_approver_user, update_active_employees_assurance_level
 from six import string_types
 from frappe import _
 from one_fm.operations.doctype.operations_shift.operations_shift import get_supervisor_operations_shifts
@@ -553,3 +554,13 @@ def toggle_auto_attendance(employee_names: list | str, status: bool):
     except Exception as e:
         frappe.log_error(title = f"{str(e)}",message = frappe.get_traceback())
         return response(message=str(e), status_code=400)
+
+
+@frappe.whitelist()
+def get_assurance_level_of_employee(doc, method):
+    if doc.one_fm_civil_id:
+        verification_level = call_to_get_assurance_level(doc.one_fm_civil_id)
+        verification_level = verification_level.get("verificationLevel")
+        doc.custom_civil_id_assurance_level = verification_level
+        return True
+

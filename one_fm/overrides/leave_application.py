@@ -103,8 +103,15 @@ class LeaveApplicationOverride(LeaveApplication):
     def on_submit(self):
         self.close_todo()
         self.close_shifts()
-        return super().on_submit()
-        self.db_set('status', 'Approved')
+        self.validate_back_dated_application()
+        self.update_attendance()
+
+		# notify leave applier about approval
+        if frappe.db.get_single_value("HR Settings", "send_leave_notification"):
+            self.notify_employee()
+        
+        self.create_leave_ledger_entry()
+        self.reload()
 
     def validate_applicable_after(self):
         if self.leave_type:
@@ -227,6 +234,7 @@ class LeaveApplicationOverride(LeaveApplication):
             self.validate_optional_leave()
         self.validate_applicable_after()
         self.validate_leave_application_operator()
+        self.reset_status_on_amend()
 
     @frappe.whitelist()
     def update_attendance(self):
@@ -420,6 +428,7 @@ class LeaveApplicationOverride(LeaveApplication):
         self.create_leave_ledger_entry(submit=False)
         # notify leave applier about cancellation
         self.cancel_attendance()
+        self.validate_cancel()
         send_leave_cancellation_email_to_leave_approver(self)
         disable_out_of_office(emp.company_email)
 
@@ -503,8 +512,18 @@ class LeaveApplicationOverride(LeaveApplication):
             frappe.throw(_("Leave Application Operator must be set in HR and Payroll Additional Settings"))
 
         self.custom_default_leave_application_operator = leave_application_operator
-            
 
+
+    def reset_status_on_amend(self):
+        if self.amended_from and self.status == "Cancelled":
+            self.status = "Open" 
+
+    
+    def validate_cancel(self):
+        if (self.workflow_state == "Approved" and self.custom_is_paid and not "System Manager" in frappe.get_roles()):
+            frappe.throw(
+                _("This leave application has been paid and cannot be canceled. Please contact the Administrator.")
+            )
 
 
 def update_attendance_recods(self):

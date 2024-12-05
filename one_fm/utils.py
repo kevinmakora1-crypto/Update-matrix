@@ -3907,6 +3907,7 @@ def call_to_get_assurance_level(employees):
                         frappe.msgprint(f"API call failed with status code {response.status_code}")
                 except Exception as e:
                         frappe.msgprint(f"API call failed with status code {response.status_code}")
+                        return {"error": str(e), "title": "API call failed"}
             return all_results
     except Exception as e:
         frappe.msgprint(f"An error occurred while making the API call: {str(e)}")

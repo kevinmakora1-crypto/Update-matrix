@@ -3892,13 +3892,22 @@ def call_to_get_assurance_level(employees):
         else:
             url = f"http://168.187.237.44:8080/api/DigitalSigning/BulkCheckMobileIdentity"
             headers = {'Content-Type': 'application/json'}
-            response = requests.post(url, headers=headers, json=employees)
-        if response.status_code == 200:
-            data = response.json()
-            return data.get("data", None)
-        else:
-            frappe.msgprint(f"API call failed with status code {response.status_code}")
-            return None
+            batch_size=500
+            all_results = []
+            for i in range(0, len(employees), batch_size):
+                batch = employees[i:i + batch_size] 
+                try:
+                    response = requests.post(url, headers=headers, json=batch)
+                    if response.status_code == 200:
+                        data = response.json()
+                        batch_result = data.get("data", [])
+                        all_results.extend(batch_result)
+                        frappe.msgprint(f"Batch {i // batch_size + 1} sent successfully.")
+                    else:
+                        frappe.msgprint(f"API call failed with status code {response.status_code}")
+                except Exception as e:
+                        frappe.msgprint(f"API call failed with status code {response.status_code}")
+            return all_results
     except Exception as e:
         frappe.msgprint(f"An error occurred while making the API call: {str(e)}")
         return {"error": str(e), "title": "API Call Failed"}

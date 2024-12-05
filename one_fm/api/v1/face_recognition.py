@@ -1,9 +1,10 @@
 import frappe, ast, base64, time, grpc, json, random, os
 from frappe import _
+
 from one_fm.one_fm.page.face_recognition.face_recognition import (
     update_onboarding_employee, check_existing,
 )
-from one_fm.utils import get_current_shift, is_holiday
+from one_fm.utils import get_current_shift, is_holiday,get_holiday_today
 from one_fm.api.v1.utils import (
     response, verify_via_face_recogniton_service
 )
@@ -232,7 +233,7 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
         if not isinstance(employee_id, str):
             return response("Bad Request", 400, None, "employee must be of type str.")
 
-        employee = frappe.db.get_value("Employee", {"employee_id": employee_id}, ["name", "employee_name", "shift_working"], as_dict=1)
+        employee = frappe.db.get_value("Employee", {"employee_id": employee_id}, ["name", "holiday_list", "employee_name", "shift_working"], as_dict=1)
         if not employee:
             return response("Resource Not Found", 404, None,
                             "No employee found with {employee_id}".format(employee_id=employee_id))
@@ -304,7 +305,12 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
                 if has_day_off(employee.name, date):
                     return response("Resource Not Found", 404, None,
                                     f"Dear {employee.employee_name}, Today is your day off.  Happy Recharging!.")
-
+            if employee.holiday_list:
+                holiday_today = get_holiday_today(str(getdate()))
+                if holiday_today.get(employee.holiday_list):
+                    return response("Resource Not Found", 404, None, "Today is your holiday, have fun.")
+                
+                
             if is_employee_on_leave(employee.name, date):
                 return response("Resource Not Found", 404, None, "You are currently on leave, see you soon!")
 

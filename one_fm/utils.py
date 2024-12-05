@@ -3843,7 +3843,6 @@ def set_out_of_office_for_leaves():
             if today == add_days(to_date, 1):
                 disable_out_of_office(employee_email)
 
-
 def update_active_employees_assurance_level():
     today = datetime.now().date()
     condition_1 = frappe.get_all(
@@ -3889,18 +3888,29 @@ def call_to_get_assurance_level(employees):
             url = f"http://168.187.237.44:8080/api/DigitalSigning/CheckMobileIdentity/{employees}"
             headers = {'accept': 'text/plain'}
             response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("data", None)
         else:
             url = f"http://168.187.237.44:8080/api/DigitalSigning/BulkCheckMobileIdentity"
             headers = {'Content-Type': 'application/json'}
-            response = requests.post(url, headers=headers, json=employees)
-        if response.status_code == 200:
-            data = response.json()
-            return data.get("data", None)
-        else:
-            frappe.msgprint(f"API call failed with status code {response.status_code}")
-            return None
+            batch_size=500
+            all_results = []
+            for i in range(0, len(employees), batch_size):
+                batch = employees[i:i + batch_size] 
+                try:
+                    response = requests.post(url, headers=headers, json=batch)
+                    if response.status_code == 200:
+                        data = response.json()
+                        batch_result = data.get("data", [])
+                        all_results.extend(batch_result)
+                        frappe.msgprint(f"Batch {i} sent successfully.")
+                except Exception as e:
+                        frappe.log_error(frappe.get_traceback(), str(e))
+                        return {"error": str(e), "title": "API call failed"}
+            return all_results
     except Exception as e:
-        frappe.msgprint(f"An error occurred while making the API call: {str(e)}")
+        frappe.log_error(frappe.get_traceback(),f"An error occurred while making the API call: {str(e)}")
         return {"error": str(e), "title": "API Call Failed"}
 
 def background_enqueue_run(report_name, filters=None, user=None):

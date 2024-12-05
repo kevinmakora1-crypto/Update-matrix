@@ -1,0 +1,84 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-12-04 19:04:19.302767",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "reference_doctype",
+  "column_break_okwo",
+  "fieldnames",
+  "link_fieldtype",
+  "column_break_rxnr",
+  "statuses",
+  "status_field"
+ ],
+ "fields": [
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Reference Doctype",
+   "options": "DocType"
+  },
+  {
+   "description": "Comma separated statuses to check. eg. Open, Draft",
+   "fieldname": "statuses",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Statuses"
+  },
+  {
+   "fieldname": "status_field",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Status Field",
+   "options": "status\nworkflow_state"
+  },
+  {
+   "fieldname": "column_break_okwo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Comma separated fieldnames. eg. approver, reports_to",
+   "fieldname": "fieldnames",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Fieldnames"
+  },
+  {
+   "fieldname": "link_fieldtype",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Link Fieldtype",
+   "options": "User\nEmployee"
+  },
+  {
+   "fieldname": "column_break_rxnr",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-12-04 19:10:51.309394",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Reliever Assignment Settings Docs",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

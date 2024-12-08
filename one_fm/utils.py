@@ -3843,7 +3843,8 @@ def set_out_of_office_for_leaves():
             if today == add_days(to_date, 1):
                 disable_out_of_office(employee_email)
 
-def update_active_employees_assurance_level():
+
+def update_assurance_level_task():
     today = datetime.now().date()
     condition_1 = frappe.get_all(
     'Employee',
@@ -3894,7 +3895,7 @@ def call_to_get_assurance_level(employees):
         else:
             url = f"http://168.187.237.44:8080/api/DigitalSigning/BulkCheckMobileIdentity"
             headers = {'Content-Type': 'application/json'}
-            batch_size=500
+            batch_size=200
             all_results = []
             for i in range(0, len(employees), batch_size):
                 batch = employees[i:i + batch_size] 
@@ -3912,6 +3913,16 @@ def call_to_get_assurance_level(employees):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(),f"An error occurred while making the API call: {str(e)}")
         return {"error": str(e), "title": "API Call Failed"}
+
+
+@frappe.whitelist()
+def update_active_employees_assurance_level():
+    frappe.enqueue(update_assurance_level_task,
+        queue='long',
+        timeout=1800
+    )
+    frappe.msgprint("The bulk updating of assurance level  process has been initiated and is running in the background.")
+    return True
 
 def background_enqueue_run(report_name, filters=None, user=None):
 	"""run reports in background"""

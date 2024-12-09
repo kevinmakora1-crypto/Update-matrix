@@ -452,6 +452,7 @@ class LeaveApplicationOverride(LeaveApplication):
             frappe.throw("An Error Occured while updating Attendance Checks. Please review the error logs")
 
     def on_update(self):
+        from one_fm.utils import set_out_of_office
         if self.workflow_state == "New Dates Proposed":
             send_proposed_date_email(self.name)
         if self.status=='Rejected':
@@ -480,6 +481,20 @@ class LeaveApplicationOverride(LeaveApplication):
 
                     frappe.db.commit()
         if self.status == "Approved":
+            today = getdate()
+
+            employee = frappe.get_doc("Employee", self.employee)
+            custom_reliever = frappe.get_doc("Employee", self.custom_reliever_)
+            employee_email = employee.company_email
+            from_date = getdate(self.from_date)
+            to_date = getdate(self.to_date)
+            custom_reliever_name = self.custom_reliever_name
+            custom_reliever = custom_reliever.user_id
+            employee_name = self.employee_name
+
+            if today == from_date:
+                set_out_of_office(employee_email, from_date, to_date, custom_reliever_name, custom_reliever, employee_name)
+
             if getdate(self.from_date) <= getdate() <= getdate(self.to_date):
                 # frappe.db.set_value(), will not call the validate.
                 if self.leave_type !='Sick Leave':
@@ -516,7 +531,9 @@ class LeaveApplicationOverride(LeaveApplication):
 
     def reset_status_on_amend(self):
         if self.amended_from and self.status == "Cancelled":
-            self.status = "Open" 
+            self.status = "Open"
+        elif self.workflow_state == "Approved":
+            self.status = "Approved" 
 
     
     def validate_cancel(self):
@@ -701,7 +718,7 @@ def send_leave_details_email_to_employee(self):
     employee_info = frappe.db.get_value("Employee", self.employee, ["employee_name_in_arabic","personal_email", "company_email","prefered_email"], as_dict=1)
 
     header_eng = "Leave Application Details – Confirmation"
-    header_arabic = "الموضوع: تفاصيل طلب الإجازة - تأكيد"
+    header_arabic = "تفاصيل طلب الإجازة - تأكيد"
 
     line_manager = frappe.db.get_value("Employee", {"user_id": self.leave_approver}, "employee_name_in_arabic")
 
@@ -743,7 +760,7 @@ def send_leave_cancellation_email_to_leave_approver(self):
     approver_arabic_name = approver_info.get('employee_name_in_arabic') or ""
 
     header_eng = f"Leave Cancellation Notification – {self.employee_name}"
-    header_arabic = f"الموضوع: إشعار إلغاء الإجازة - {employee_arabic_name}"
+    header_arabic = f"إشعار إلغاء الإجازة - {employee_arabic_name}"
 
     args = frappe._dict({
                     "doc_name": self.name,

@@ -15,6 +15,7 @@ from one_fm.api.tasks import remove_assignment
 from one_fm.overrides.employee import NotifyAttendanceManagerOnStatusChange
 from one_fm.utils import get_approver_user
 from hrms.hr.utils import get_holidays_for_employee
+from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import ReassignRelieverAssignment
 
 
 def validate_active_staff(doc,event):
@@ -425,6 +426,9 @@ class LeaveApplicationOverride(LeaveApplication):
             emp.status = "Active"
             emp.save()
             frappe.db.commit()
+        if self.custom_reliever_ and frappe.db.exists("Reliever Assignment", {"name": self.name}) :
+            reassign_responsiobility = ReassignRelieverAssignment(leave_application=self.name)
+            reassign_responsiobility.reassign()
         self.create_leave_ledger_entry(submit=False)
         # notify leave applier about cancellation
         self.cancel_attendance()

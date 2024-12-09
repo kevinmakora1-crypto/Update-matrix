@@ -532,6 +532,7 @@ class LeaveApplicationOverride(LeaveApplication):
     def reset_status_on_amend(self):
         if self.amended_from and self.status == "Cancelled":
             self.status = "Open"
+            self.custom_reason_for_cancel = ""
         elif self.workflow_state == "Approved":
             self.status = "Approved" 
 

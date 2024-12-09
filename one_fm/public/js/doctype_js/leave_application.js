@@ -106,6 +106,7 @@ frappe.ui.form.on("Leave Application", {
             }
           );
         }
+        updateCustomIsPaidVisibility(frm)
     },
     onload: function(frm) {
         $.each(frm.fields_dict, function(fieldname, field) {
@@ -126,7 +127,14 @@ frappe.ui.form.on("Leave Application", {
     },
     custom_reliever_: function(frm){
         validate_reliever(frm);
+    },
+
+
+    leave_type: function(frm) {
+        updateCustomIsPaidVisibility(frm);
     }
+
+
 })
 
 async function handle_propose_new_date_action(frm) {
@@ -301,3 +309,21 @@ var validate_proposeddate = (frm, from_date, to_date, dialog) => {
             })
     });
 };
+
+function updateCustomIsPaidVisibility (frm) {
+    if (frm.doc.leave_type) {
+        frappe.db.get_value("Leave Type", frm.doc.leave_type, "one_fm_is_paid_annual_leave")
+            .then(res => {
+                if (res.message) {
+                    const isPaidAnnualLeave = res.message.one_fm_is_paid_annual_leave;
+                    // Show or hide the custom_is_paid field based on the value
+                    frm.set_df_property("custom_is_paid", "hidden", !isPaidAnnualLeave);
+                    frm.refresh_field("custom_is_paid");
+                }
+            });
+    } else {
+        // Hide the field if no leave_type is selected
+        frm.set_df_property("custom_is_paid", "hidden", 1);
+        frm.refresh_field("custom_is_paid");
+    }
+}

@@ -21,6 +21,7 @@ from frappe.utils.user import get_users_with_role
 from frappe.permissions import has_permission
 from frappe.model.workflow import apply_workflow
 from frappe.desk.form import assign_to
+from frappe.desk.query_report import get_report_doc
 from frappe.model.naming import make_autoname
 from deep_translator import GoogleTranslator
 from frappe.utils import (
@@ -55,6 +56,7 @@ from one_fm.api import api
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2 import service_account
 
 
 def get_common_email_args(doc):
@@ -184,7 +186,7 @@ def check_pam_visa_approval_submission_six_half():
 
 
 def check_pam_visa_approval_submission_daily():
-    pam_visas = frappe.db.sql_list("select name from `tabPAM Visa` where pam_visa_approval_submitted=0 and pam_visa_approval_reminder2_start=0 and pam_visa_approval_reminder2_done=0 and pam_visa_approval_status!='No Response' and status='Apporved'")
+    pam_visas = frappe.db.sql_list("select name from `tabPAM Visa` where pam_visa_approval_submitted=0 and pam_visa_approval_reminder2_start=0 and pam_visa_approval_reminder2_done=0 and pam_visa_approval_status!='No Response' and pam_visa_status='Approved'")
 
     for pam_visa in pam_visas:
         pam_visa_doc = frappe.get_doc("PAM Visa", pam_visa)
@@ -927,7 +929,7 @@ def increase_daily_leave_balance():
                     previous_leaves_allocated = difference_in_days * new_leaves_allocated
 
                     if previous_leaves_allocated != allocation.new_leaves_allocated:
-                        allocation.new_leaves_allocated = previous_leaves_allocated + new_leaves_allocated 
+                        allocation.new_leaves_allocated = previous_leaves_allocated + new_leaves_allocated
                     else:
                         allocation.new_leaves_allocated += new_leaves_allocated
 
@@ -948,7 +950,7 @@ def increase_daily_leave_balance():
     except Exception as e:
           frappe.log_error(f"Error processing Leave Allocation {leave_allocation.name}: {str(e)}")
 
-        
+
 def update_leave_ledger_for_paid_annual_leave(allocation, is_carry_forward):
     '''
         Function is used to Update Leave Ledger Entry for Annual Leave Allocation
@@ -1376,7 +1378,7 @@ def validate_item(doc, method):
 
     if doc.subitem_group == "Service":
         doc.is_stock_item = 0
-        
+
     doc.description = final_description
     doc.change_request = False
     item_approval_workflow_notification(doc)
@@ -2768,7 +2770,7 @@ def send_workflow_action_email(doc, recipients):
 def queue_send_workflow_action_email(doc, recipients):
     if recipients and (type(recipients)!=list):
         recipients = [recipients]
-    
+
     workflow = get_workflow_name(doc.get("doctype"))
     next_possible_transitions = get_next_possible_transitions(
         workflow, get_doc_workflow_state(doc), doc
@@ -3149,7 +3151,7 @@ def get_approver(employee, date=None):
     if not frappe.db.exists("Employee", {'name': employee}):
         frappe.throw(f"Employee {employee} does not exist")
 
- 
+
     employee_data = frappe.db.get_value(
         'Employee', employee, ["user_id", "reports_to", "shift", "site", "shift_working", "employee_name"], as_dict=True
     )
@@ -3157,7 +3159,7 @@ def get_approver(employee, date=None):
     if employee_data.reports_to:
         return employee_data.reports_to
 
-  
+
     if employee_data.user_id and has_super_user_role(employee_data.user_id):
         return employee
 
@@ -3167,7 +3169,7 @@ def get_approver(employee, date=None):
         if site_supervisor.account_supervisor:
             return site_supervisor.account_supervisor
 
-  
+
     if employee_data.shift and employee_data.shift_working:
         shift_supervisor = get_shift_supervisor(employee_data.shift, date)
         if shift_supervisor:
@@ -3179,7 +3181,7 @@ def get_approver(employee, date=None):
         if project_manager:
             return project_manager
 
-  
+
     if not employee_data.shift_working and not employee_data.reports_to:
         frappe.msgprint(
             _("Please set either 'Reports To' or 'Operations Site Supervisor' for {0}. Since the employee is not shift-working.").format(employee_data.employee_name),
@@ -3661,20 +3663,19 @@ def send_work_anniversary_reminders():
                     reminder_text = get_work_anniversary_reminder_text(others)
                     send_work_anniversary_reminder(person_email, reminder_text, others, message, sender)
 
-
 def set_employee_status_to_vacation():
-    from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import assign_responsibilities
+    from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import assign_responsibilities ,ReassignRelieverAssignment
     # Get today's date
     current_date = getdate(today())
 
     # Fetch approved leave applications where `from_date` is today or earlier, along with the employee's status
-    leave_applications = frappe.get_all('Leave Application', 
+    leave_applications = frappe.get_all('Leave Application',
         filters={
             'status': 'Approved',
             'from_date': ['<=', current_date],
             'to_date': ['>=', current_date]
         },
-        fields=['employee', 'employee.status', 'from_date', 'to_date', 'reliever', 'name']  # Fetch employee status directly
+        fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']  # Fetch employee status directly
     )
 
     if not leave_applications:
@@ -3684,13 +3685,14 @@ def set_employee_status_to_vacation():
     employees_set_to_vacation = 0
     employees_set_to_active = 0
 
+
     for leave in leave_applications:
         employee = leave['employee']
         status =  leave['status']
         from_date = leave['from_date']
         leave_application = leave['name']
         to_date =  leave['to_date']
-        reliever = leave.get('reliever', None)
+        reliever = leave.get('custom_reliever_', None)
         if current_date == getdate(from_date) and status == "Active":
             frappe.db.set_value('Employee', employee, 'status', 'Vacation')
             if reliever: frappe.enqueue(assign_responsibilities, leave_application=leave_application)
@@ -3698,6 +3700,9 @@ def set_employee_status_to_vacation():
 
         elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":
             frappe.db.set_value('Employee', employee, 'status', 'Active')
+            if reliever and frappe.db.exists("Reliever Assignment", {"name": leave_application}) :
+                reassign_responsiobility = ReassignRelieverAssignment(leave_application=leave_application)
+                reassign_responsiobility.reassign()
             employees_set_to_active += 1
 
     frappe.db.commit()
@@ -3717,67 +3722,29 @@ def is_holiday(employee, date=None, raise_exception=True):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Error while validating Holiday")
         return False, ""
-    
-    
-def get_google_credentials():
-    from frappe.utils.password import get_decrypted_password 
-
-    google_credentials = frappe.get_doc('API Integration', 'Google Cloud Platform')
-    
-    api_parameters = google_credentials.api_parameter
-
-    cred = {api_parameter.parameter: get_decrypted_password('API Parameter', api_parameter.name, 'value') for api_parameter in api_parameters}
-
-    credentials = Credentials(
-        None,
-        client_id=cred.get("client_id"),
-        client_secret=cred.get("client_secret"),
-        refresh_token=cred.get("refresh_token"),
-        token_uri=cred.get("token_uri")
-    )
-    
-    return credentials
 
 
-def get_oauth_refresh_token():
-    from frappe.utils.password import get_decrypted_password 
-    google_credentials = frappe.get_doc('API Integration', 'Google Cloud Platform')
-    
-    cred_params = {param.parameter: get_decrypted_password('API Parameter', param.name, 'value') for param in google_credentials.api_parameter}
-    
-    required_params = ['client_id', 'client_secret', 'redirect_uris']
-    for param in required_params:
-        if param not in cred_params:
-            raise ValueError(f"Missing required parameter: {param}")
-    
-    SCOPES = ['https://www.googleapis.com/auth/gmail.settings.basic']
-    client_config = {
-        "web": {
-            "client_id": cred_params["client_id"],
-            "client_secret": cred_params["client_secret"],
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": cred_params["redirect_uris"].split(',') 
-        }
-    }
-    
-    flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
-    credentials = flow.run_local_server(port=0)
+def get_gmail_service(employee_email):
 
-    for api_parameter in google_credentials.api_parameter:
-        if api_parameter.parameter == 'refresh_token':
-            api_parameter.value = credentials.refresh_token
+    credentials_path = frappe.get_site_path('private', 'files', 'gcp.json')
     
-    google_credentials.save()
-    frappe.db.commit()
+    try:
+        with open(credentials_path, 'r') as file:
+            credentials_dict = json.load(file)
+    except Exception:
+        pass
 
-    return credentials.refresh_token
+    credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=['https://www.googleapis.com/auth/gmail.settings.basic'])
+
+    delegated_credentials = credentials.with_subject(employee_email)
+
+    service = build('gmail', 'v1', credentials=delegated_credentials)
+    return service
 
 
 def set_out_of_office(employee_email, start_date, end_date, custom_reliever_name, custom_reliever, employee_name):
     try:
-        credentials = get_google_credentials()
-        service = build('gmail', 'v1', credentials=credentials)
+        service = get_gmail_service(employee_email)
 
         start_date_rfc3339 = start_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
         end_date_rfc3339 = end_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
@@ -3796,12 +3763,11 @@ def set_out_of_office(employee_email, start_date, end_date, custom_reliever_name
         frappe.msgprint(f"Out-of-office set for {employee_email} from {start_date} to {end_date}.")
     except Exception as e:
         frappe.log_error(str(e), "Failed to set out-of-office")
-        
+
 
 def disable_out_of_office(employee_email):
     try:
-        credentials = get_google_credentials()
-        service = build('gmail', 'v1', credentials=credentials)
+        service = get_gmail_service(employee_email)
 
         vacation_settings = {
             "enableAutoReply": False
@@ -3815,7 +3781,7 @@ def disable_out_of_office(employee_email):
 
 def set_out_of_office_for_leaves():
     today = datetime.now().date()
-    
+
     # Query Leave records
     leaves = frappe.get_all('Leave Application', filters=[
         ['from_date', '<=', today], ['to_date', '>=', today], ['status', '=', 'Approved']
@@ -3839,14 +3805,17 @@ def set_out_of_office_for_leaves():
             if today == add_days(to_date, 1):
                 disable_out_of_office(employee_email)
 
-def update_active_employees_assurance_level():
+
+def update_assurance_level_task():
     today = datetime.now().date()
     condition_1 = frappe.get_all(
     'Employee',
     filters=[
         ['status', '=', 'Active'],
         ['one_fm_civil_id', 'not in', ['', 'NONE']],
-        ['custom_civil_id_assurance_level', '!=', 'High']
+        ['custom_civil_id_assurance_level', '!=', 'High'],
+        ['civil_id_expiry_date', 'is', 'set'],
+        ['civil_id_expiry_date', '!=', '']
     ],
     fields=['employee', 'one_fm_civil_id', 'custom_civil_id_assurance_level', 'civil_id_expiry_date']
 )
@@ -3873,24 +3842,68 @@ def update_active_employees_assurance_level():
             if verification_level:
                 frappe.db.set_value('Employee', employee['employee'], 'custom_civil_id_assurance_level', verification_level)
     return True
-        
+
 
 def call_to_get_assurance_level(employees):
+    response = None
     try:
         if isinstance(employees, str):
             url = f"http://168.187.237.44:8080/api/DigitalSigning/CheckMobileIdentity/{employees}"
             headers = {'accept': 'text/plain'}
             response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("data", None)
         else:
             url = f"http://168.187.237.44:8080/api/DigitalSigning/BulkCheckMobileIdentity"
-            response = requests.post(url, json=employees)
-        if response.status_code == 200:
-            data = response.json()
-            return data["data"]
+            headers = {'Content-Type': 'application/json'}
+            batch_size=200
+            all_results = []
+            for i in range(0, len(employees), batch_size):
+                batch = employees[i:i + batch_size] 
+                try:
+                    response = requests.post(url, headers=headers, json=batch)
+                    if response.status_code == 200:
+                        data = response.json()
+                        batch_result = data.get("data", [])
+                        all_results.extend(batch_result)
+                        frappe.msgprint(f"Batch {i} sent successfully.")
+                except Exception as e:
+                        frappe.log_error(frappe.get_traceback(), str(e))
+                        return {"error": str(e), "title": "API call failed"}
+            return all_results
     except Exception as e:
-            frappe.msgprint(f"An error occurred while making the API call: {str(e)}")
-            return response(message=str(e), title="API Call Failed")
+        frappe.log_error(frappe.get_traceback(),f"An error occurred while making the API call: {str(e)}")
+        return {"error": str(e), "title": "API Call Failed"}
 
 
+@frappe.whitelist()
+def update_active_employees_assurance_level():
+    frappe.enqueue(update_assurance_level_task,
+        queue='long',
+        timeout=1800
+    )
+    frappe.msgprint("The bulk updating of assurance level  process has been initiated and is running in the background.")
+    return True
 
-                    
+def background_enqueue_run(report_name, filters=None, user=None):
+	"""run reports in background"""
+	if not user:
+		user = frappe.session.user
+	report = get_report_doc(report_name)
+	track_instance = \
+		frappe.get_doc({
+			"doctype": "Prepared Report",
+			"report_name": report_name,
+			"filters": json.dumps(json.loads(filters)),
+			"ref_report_doctype": report_name,
+			"report_type": report.report_type,
+			"query": report.query,
+			"module": report.module,
+		})
+	track_instance.insert(ignore_permissions=True)
+	frappe.db.commit()
+	return {
+		"name": track_instance.name,
+		"redirect_url": get_url_to_form("Prepared Report", track_instance.name)
+	}

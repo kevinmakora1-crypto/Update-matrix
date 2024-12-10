@@ -14,9 +14,11 @@ from one_fm.api.doc_events import get_employee_user_id
 
 class RelieverAssignment(Document):
 	def validate(self):
-		self.validate_leave_application()
 		self.set_user_ids()
 
+	def before_insert(self):
+		self.validate_leave_application()
+		
 	def after_insert(self):
 		self.assign_roles()
 		self.assign_reportees()
@@ -96,13 +98,14 @@ class RelieverAssignment(Document):
 
 	def assign_todos(self):
 		ToDo = DocType("ToDo")
+		# Get open todos with reference_type and reference_name
 		open_todos = (
 			frappe.qb.from_(ToDo)
-			.select(ToDo.name)
+			.select(ToDo.name, ToDo.reference_type, ToDo.reference_name)
 			.where(
 				(ToDo.allocated_to == self._employee_user_id)
 				& (ToDo.status == "Open")
-			)
+			).orderby(ToDo.reference_type, order=frappe.qb.asc)
 		).run(as_dict=True)
 
 		if len(open_todos) > 0:
@@ -111,6 +114,68 @@ class RelieverAssignment(Document):
 
 			frappe.qb.update(ToDo).set(ToDo.allocated_to, self._reliever_user_id).set(ToDo.modified, now()).where(
 				ToDo.allocated_to == self._employee_user_id).where(ToDo.status == "Open").run()
+
+			# frappe.enqueue(self.assign_todo_references, todos=open_todos)
+			self.assign_todo_references(open_todos)
+
+	def assign_todo_references(self, todos):
+		# Assign references linked to ToDo if the reference_type is added in Reliever Assignment Settings doctype
+		reliever_assignment_settings = frappe.get_doc("Reliever Assignment Settings")
+	
+		# List of doctypes from Reliever Assignment settings
+		doctypes_list = [doc.reference_doctype for doc in reliever_assignment_settings.documents]
+
+		# Config with fieldnames, fieldtype, statuses, and status_field of each allowed doctype
+		config = frappe._dict({
+				doc.reference_doctype: {
+				"fieldnames": [fieldname.strip() for fieldname in doc.fieldnames.split(",")],
+				"link_fieldtype": doc.link_fieldtype,
+				"statuses_allowed": [status.strip() for status in doc.statuses.split(",")],
+				"status_field": doc.status_field 
+			} for doc in reliever_assignment_settings.documents
+		})
+	
+		# Filtered out todos from all todos	based on reference_type	
+		filtered_todos = [todo for todo in todos if todo.reference_type in doctypes_list]
+
+		for todo in filtered_todos:
+			# Doctype name
+			configuration = config[todo.reference_type]
+			# Allowed statuses e.g Draft, Open
+			status_to_check = configuration["statuses_allowed"]
+			# Status field e.g. workflow_state or status
+			status_field = configuration["status_field"]
+			value_to_replace = self.on_leave_employee if configuration["link_fieldtype"] == "Employee" else self._employee_user_id
+			replaced_with = self.reliever if configuration["link_fieldtype"] == "Employee" else self._reliever_user_id
+			# Fieldnames to check in the doctype
+			fieldnames = configuration["fieldnames"]	
+
+
+			for fieldname in fieldnames:
+				self.add_assigned_documents(todo.reference_type, "Docfield", todo, fieldname=fieldname)
+				# Shift Request uses table multiselect field for approvers
+				if todo.reference_type == "Shift Request":
+					ShiftRequest = DocType("Shift Request")
+					ShiftRequestApprovers = DocType("Shift Request")
+					frappe.qb.update(ShiftRequestApprovers) \
+						.join(ShiftRequest) \
+						.on(ShiftRequest.name == ShiftRequestApprovers.parent) \
+						.set(ShiftRequestApprovers.user, replaced_with) \
+						.set(ShiftRequestApprovers.modified, now()) \
+						.where(ShiftRequestApprovers.parent == todo.reference_name) \
+						.where(ShiftRequestApprovers.parentfield == "custom_shift_approvers") \
+						.where(ShiftRequest.workflow_state.isin(status_to_check)) \
+					.run()
+				else:
+					ReferenceType = DocType(todo.reference_type)
+					for fieldname in fieldnames:
+						frappe.qb.update(ReferenceType) \
+							.set(ReferenceType[fieldname], replaced_with) \
+							.set(ReferenceType.modified, now()) \
+							.where(ReferenceType.name == todo.reference_name) \
+							.where(ReferenceType[fieldname] == value_to_replace) \
+							.where(ReferenceType[status_field].isin(status_to_check)) \
+						.run()
 
 
 	def assign_projects(self):
@@ -392,11 +457,11 @@ class ReassignRelieverAssignment(Document):
 		record_doc_type = json.loads(data.doclist).get('doctype')
 		record_field = json.loads(data.doclist).get('field')
 		(
-        frappe.qb.update(Singles)
-        .set(Singles.value, self._employee_user_id)
-        .where((Singles.doctype == record_doc_type) & 
-               (Singles.field == record_field))
-    	).run()
+		frappe.qb.update(Singles)
+		.set(Singles.value, self._employee_user_id)
+		.where((Singles.doctype == record_doc_type) & 
+			   (Singles.field == record_field))
+		).run()
 		frappe.clear_cache(doctype=record_doc_type)
 
 	def reassign(self):

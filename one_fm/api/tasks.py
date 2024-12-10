@@ -1135,6 +1135,7 @@ def process_overtime_shift(roster, date, time):
 				else:
 					create_overtime_shift_assignment(schedule, date)
 		except Exception as e:
+			frappe.log_error(title="Error Creating Overtime Shift Assignment",message = frappe.get_traceback())
 			continue
 
 def create_overtime_shift_assignment(schedule, date):

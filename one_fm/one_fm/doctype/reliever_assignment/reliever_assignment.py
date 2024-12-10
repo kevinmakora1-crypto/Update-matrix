@@ -296,7 +296,7 @@ class ReassignRelieverAssignment(Document):
 		self.set_user_ids()
 
 	def set_user_ids(self):
-		self.parent_data = frappe.get_doc("Reliever Assignment", self.leave_application)
+		self.parent_data = frappe.db.get_value("Reliever Assignment", self.leave_application, "*")	
 		self.on_leave_employee = self.parent_data.on_leave_employee
 		self.reliever = self.parent_data.reliever
 		self.on_leave_employee_name = self.parent_data.on_leave_employee_name
@@ -305,8 +305,8 @@ class ReassignRelieverAssignment(Document):
 		self._reliever_user_id = get_employee_user_id(self.reliever)
 
 	def update_status(self, status):
-		self.parent_data.status = status
-		self.parent_data.save()
+		frappe.db.set_value("Reliever Assignment", self.leave_application, "status", status)
+		frappe.db.commit()
 
 	def reassign_todos(self,data):
 		todos_in_doclist = [name.get('name')for name in json.loads(data.doclist)]
@@ -400,7 +400,11 @@ class ReassignRelieverAssignment(Document):
 		frappe.clear_cache(doctype=record_doc_type)
 
 	def reassign(self):
-		datas = self.parent_data.as_dict().assigned_documents
+		leave_application = frappe.get_value("Leave Application", self.leave_application, "name")
+		datas = (frappe.qb.from_("Reliever Assignment Document")\
+		.select('*')\
+		.where(frappe.qb.Field('parent')==leave_application)\
+		.where(frappe.qb.Field('parentfield')=='assigned_documents')).run(as_dict=1)
 		for data in datas:
 			if data.reference_doctype == "User":
 				self.reassign_roles(data)

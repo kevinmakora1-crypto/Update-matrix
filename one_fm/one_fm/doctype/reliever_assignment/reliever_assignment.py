@@ -463,7 +463,59 @@ class ReassignRelieverAssignment(Document):
 			   (Singles.field == record_field))
 		).run()
 		frappe.clear_cache(doctype=record_doc_type)
+		
+	def reassign_todos_of_leave_applicant_from_todos(self,datas):
+		start_date = self.parent_data.get("assignment_period_start")
+		end_date = self.parent_data.get("assignment_period_end")
+		ToDo = DocType("ToDo")
+		relievers_todo = (
+          frappe.qb.from_(ToDo)
+          .select("*")
+          .where(
+              (ToDo.allocated_to == self._reliever_user_id)
+              & (ToDo.creation >= start_date)
+              & (ToDo.creation <= end_date)&(ToDo.status == "Open"))
+       	).run(as_dict=True)
+		for reference in relievers_todo:
+			if reference:
+				reference_type = reference["reference_type"]
+				reference_name = reference["reference_name"]
+				todo_to_update = frappe.get_doc(reference_type, {'name': reference_name})
+				if hasattr(todo_to_update, 'employee') and todo_to_update.employee:
+					emp_details = frappe.get_doc('Employee',todo_to_update.employee)
+					if emp_details.reports_to == self.on_leave_employee:
+						if reference.allocated_to is not None:
+							frappe.db.set_value(ToDo, reference.name, 'allocated_to', self._employee_user_id)
+							self.reassign_docs_related_to_todos(reference_type,reference_name)
+	
+	def reassign_docs_related_to_todos(self,reference_type,reference_name):
+		Doctype = frappe.get_doc('Reliever Assignment Settings',{'reference_doctype':reference_type})
+		matching_docs = [doc for doc in Doctype.as_dict().documents if doc.get('reference_doctype') == reference_type]
+		if matching_docs:
+			fieldnames = matching_docs[0]['fieldnames'].split(",")
+			related_doctype = frappe.get_doc(matching_docs[0]['reference_doctype'],{'name':reference_name})
+			for field_name in fieldnames:
+				if hasattr(related_doctype, field_name):
+					current_value = getattr(related_doctype, field_name)
+					if isinstance(current_value, list):
+						for item in current_value:
+							if hasattr(item, 'user') and item.user == self._reliever_user_id:
+								item.user = self._employee_user_id
+								related_doctype.save()
+								if item == self._reliever_user_id:
+									frappe.db.set_value(related_doctype.doctype, related_doctype.name, field_name, self._employee_user_id)
+								elif item == self.reliever_name:
+									frappe.db.set_value(related_doctype.doctype, related_doctype.name, field_name, self.on_leave_employee_name)
+								elif item == self.reliever:
+									frappe.db.set_value(related_doctype.doctype, related_doctype.name, field_name, self.on_leave_employee)
+					elif current_value == self._reliever_user_id:
+						frappe.db.set_value(related_doctype.doctype, related_doctype.name, field_name, self._employee_user_id)
+					elif current_value == self.reliever_name:
+						frappe.db.set_value(related_doctype.doctype, related_doctype.name, field_name, self.on_leave_employee_name)
+					elif current_value == self.reliever:
+						frappe.db.set_value(related_doctype.doctype, related_doctype.name, field_name, self.on_leave_employee)
 
+	
 	def reassign(self):
 		leave_application = frappe.get_value("Leave Application", self.leave_application, "name")
 		datas = (frappe.qb.from_("Reliever Assignment Document")\
@@ -487,5 +539,6 @@ class ReassignRelieverAssignment(Document):
 				self.reassign_department_approvals(data)
 			else:
 				self.reassign_single_doctype(data)
+		self.reassign_todos_of_leave_applicant_from_todos(datas)
 		self.update_status("Reverted")
 

@@ -630,7 +630,7 @@ def notify_employee(doc, method):
         api.push_notification_rest_api_for_leave_application(doc.employee,"Leave Application", message, doc.name)
 
 @frappe.whitelist()
-def leave_appillication_on_cancel(doc, method):
+def leave_application_on_cancel(doc, method):
     today = nowdate()
     if doc.from_date < today :
         frappe.db.set_value("Employee",doc.employee, "status","Active")

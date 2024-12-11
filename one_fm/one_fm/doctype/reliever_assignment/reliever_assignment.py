@@ -169,6 +169,9 @@ class RelieverAssignment(Document):
 				else:
 					ReferenceType = DocType(todo.reference_type)
 					for fieldname in fieldnames:
+						if "name" in fieldname:
+							replaced_with = self.reliever_name
+							value_to_replace =self.on_leave_employee_name 
 						frappe.qb.update(ReferenceType) \
 							.set(ReferenceType[fieldname], replaced_with) \
 							.set(ReferenceType.modified, now()) \
@@ -513,7 +516,7 @@ class ReassignRelieverAssignment(Document):
 			   (Singles.field == record_field))
 		).run()
 		frappe.clear_cache(doctype=record_doc_type)
-			
+
 	def reassign(self):
 		leave_application = frappe.get_value("Leave Application", self.leave_application, "name")
 		datas = (frappe.qb.from_("Reliever Assignment Document")\

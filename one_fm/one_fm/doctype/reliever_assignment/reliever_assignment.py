@@ -513,6 +513,7 @@ class ReassignRelieverAssignment(Document):
 			   (Singles.field == record_field))
 		).run()
 		frappe.clear_cache(doctype=record_doc_type)
+		
 			
 	def reassign(self):
 		leave_application = frappe.get_value("Leave Application", self.leave_application, "name")

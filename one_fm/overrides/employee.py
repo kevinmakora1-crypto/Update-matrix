@@ -566,5 +566,5 @@ def get_assurance_level_of_employee(doc, method):
                 doc.custom_civil_id_assurance_level = verification_level
             return True
     except Exception as e:
-            frappe.log_error(frappe.get_traceback(),f"DSS returned NONE values")
+            frappe.log_error(frappe.get_traceback(),f"DSS returned NONE values,No API key")
 

@@ -152,6 +152,9 @@ class RelieverAssignment(Document):
 
 
 			for fieldname in fieldnames:
+				if "name" in fieldname:
+					replaced_with = self.reliever_name
+					value_to_replace =self.on_leave_employee_name 
 				self.add_assigned_documents(todo.reference_type, "Docfield", todo, fieldname=fieldname)
 				# Shift Request uses table multiselect field for approvers
 				if todo.reference_type == "Shift Request":
@@ -169,9 +172,6 @@ class RelieverAssignment(Document):
 				else:
 					ReferenceType = DocType(todo.reference_type)
 					for fieldname in fieldnames:
-						if "name" in fieldname:
-							replaced_with = self.reliever_name
-							value_to_replace =self.on_leave_employee_name 
 						frappe.qb.update(ReferenceType) \
 							.set(ReferenceType[fieldname], replaced_with) \
 							.set(ReferenceType.modified, now()) \
@@ -265,7 +265,6 @@ class RelieverAssignment(Document):
 			).run()
 
 
-
 	def add_assigned_documents(self, reference_doctype, based_on, doclist, fieldname=None, reference_docname=None):
 		self.append("assigned_documents", {
 			"reference_doctype": reference_doctype,
@@ -357,7 +356,6 @@ def assign_responsibilities(leave_application):
 		frappe.log_error(frappe.get_traceback())
 
 
-
 class ReassignRelieverAssignment(Document):
 	def __init__(self,leave_application):
 		self.leave_application = leave_application
@@ -385,9 +383,9 @@ class ReassignRelieverAssignment(Document):
 				 (ToDo.name.isin(todos_in_doclist)) 
    				 & (ToDo.status == "Open")
 			).run()
-		self.assign_todo_references(data)
+		self.reassign_todo_references(data)
 		
-	def assign_todo_references(self, data):
+	def reassign_todo_references(self, data):
 		reliever_assignment_settings = frappe.get_doc("Reliever Assignment Settings")
 	
 		# Config with fieldnames, fieldtype, statuses, and status_field of each allowed doctype

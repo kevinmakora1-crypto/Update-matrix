@@ -13,7 +13,7 @@ from erpnext.crm.utils import get_open_todos
 from one_fm.api.api import push_notification_rest_api_for_leave_application
 from one_fm.api.tasks import remove_assignment
 from one_fm.overrides.employee import NotifyAttendanceManagerOnStatusChange
-from one_fm.utils import get_approver_user
+from one_fm.utils import get_approver_user, leave_application_on_cancel
 from hrms.hr.utils import get_holidays_for_employee
 from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import ReassignRelieverAssignment
 
@@ -431,6 +431,7 @@ class LeaveApplicationOverride(LeaveApplication):
             reassign_responsiobility.reassign()
         self.create_leave_ledger_entry(submit=False)
         # notify leave applier about cancellation
+        leave_application_on_cancel()
         self.cancel_attendance()
         self.validate_cancel()
         send_leave_cancellation_email_to_leave_approver(self)

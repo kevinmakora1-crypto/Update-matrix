@@ -558,9 +558,13 @@ def toggle_auto_attendance(employee_names: list | str, status: bool):
 
 @frappe.whitelist()
 def get_assurance_level_of_employee(doc, method):
-    if doc.one_fm_civil_id:
-        verification_level = call_to_get_assurance_level(doc.one_fm_civil_id)
-        verification_level = verification_level.get("verificationLevel")
-        doc.custom_civil_id_assurance_level = verification_level
-        return True
+    try:
+        if doc.one_fm_civil_id:
+            verification_level = call_to_get_assurance_level(doc.one_fm_civil_id)
+            if verification_level:
+                verification_level = verification_level.get("verificationLevel")
+                doc.custom_civil_id_assurance_level = verification_level
+            return True
+    except Exception as e:
+            frappe.log_error(frappe.get_traceback(),f"DSS returned NONE values,No API key")
 

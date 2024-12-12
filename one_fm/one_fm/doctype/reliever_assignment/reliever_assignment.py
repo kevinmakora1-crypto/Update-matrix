@@ -565,31 +565,42 @@ class ReassignRelieverAssignment(Document):
 				if emp_details.reports_to == self.on_leave_employee:
 					if reference.allocated_to is not None:
 						frappe.db.set_value(ToDo, reference.name, 'allocated_to', self._employee_user_id)
-						# self.reassign_docs_related_to_todos(reference_type,reference_name)
-	
+						self.reassign_docs_related_to_todos(reference_type,reference_name)
+
+
 	def reassign_docs_related_to_todos(self,reference_type,reference_name):
 		Doctype = frappe.get_doc('Reliever Assignment Settings',{'reference_doctype':reference_type})
-		matching_docs = [doc for doc in Doctype.as_dict().documents if doc.get('reference_doctype') == reference_type]
+		matching_docs = [doc for doc in Doctype.as_dict().documents if doc.get('reference_doctype') == reference_type][0]
 		if matching_docs:
-			fieldnames = matching_docs[0]['fieldnames'].split(",")
-			related_doctype = frappe.get_doc(matching_docs[0]['reference_doctype'],{'name':reference_name})
-			for field_name in fieldnames:
-				if hasattr(related_doctype, field_name):
-					current_value = getattr(related_doctype, field_name)
-					if isinstance(current_value, list):
-						for item in current_value:
-							if hasattr(item, 'user') and item.user == self._reliever_user_id:
-								item.user = self._employee_user_id
-								related_doctype.save()
-							if item == self._reliever_user_id:
-								frappe.db.set_value(related_doctype.doctype, related_doctype.name, field_name, self._employee_user_id)
-							elif item == self.reliever_name:
-								frappe.db.set_value(related_doctype.doctype, related_doctype.name, field_name, self.on_leave_employee_name)
-							elif item == self.reliever:
-								frappe.db.set_value(related_doctype.doctype, related_doctype.name, field_name, self.on_leave_employee)
-					elif current_value == self._reliever_user_id:
-						frappe.db.set_value(related_doctype.doctype, related_doctype.name, field_name, self._employee_user_id)
-					elif current_value == self.reliever_name:
-						frappe.db.set_value(related_doctype.doctype, related_doctype.name, field_name, self.on_leave_employee_name)
-					elif current_value == self.reliever:
-						frappe.db.set_value(related_doctype.doctype, related_doctype.name, field_name, self.on_leave_employee)
+			status_to_check =[matching_docs.statuses]
+			status_field = matching_docs.status_field
+			replaced_with = self.on_leave_employee if matching_docs["link_fieldtype"] == "Employee" else self._employee_user_id
+			value_to_replace = self.reliever if matching_docs["link_fieldtype"] == "Employee" else self._reliever_user_id
+			fieldnames = matching_docs['fieldnames'].split(",")
+			for fieldname in fieldnames:
+				if "name" in fieldname:
+						doc = frappe.get_doc(reference_type,{'name': reference_name})
+						replaced_with = doc.get(fieldname)
+						value_to_replace = self.on_leave_employee_name 
+				if reference_type == "Shift Request":
+					ShiftRequest = DocType("Shift Request")
+					ShiftRequestApprovers = DocType("Shift Request")
+					frappe.qb.update(ShiftRequestApprovers) \
+								.join(ShiftRequest) \
+								.on(ShiftRequest.name == ShiftRequestApprovers.parent) \
+								.set(ShiftRequestApprovers.user, replaced_with) \
+								.set(ShiftRequestApprovers.modified, now()) \
+								.where(ShiftRequestApprovers.parent == reference_name) \
+								.where(ShiftRequestApprovers.parentfield == "custom_shift_approvers") \
+								.where(ShiftRequest.workflow_state.isin(status_to_check)) \
+							.run()
+				else:
+					ReferenceType = DocType(reference_type)
+					for fieldname in fieldnames:
+						frappe.qb.update(ReferenceType) \
+									.set(ReferenceType[fieldname], value_to_replace) \
+									.set(ReferenceType.modified, now()) \
+									.where(ReferenceType.name == reference_name) \
+									.where(ReferenceType[fieldname] == replaced_with) \
+									.where(ReferenceType[status_field].isin(status_to_check)) \
+								.run()

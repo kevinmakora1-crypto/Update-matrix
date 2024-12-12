@@ -554,12 +554,13 @@ class ReassignRelieverAssignment(Document):
           .where(
               (ToDo.allocated_to == self._reliever_user_id)
               & (ToDo.creation >= start_date)
-              & (ToDo.creation <= end_date)&(ToDo.status == "Open")& (ToDo.reference_type.isin(doc_types_to_filter)))
+              & (ToDo.creation <= end_date)&(ToDo.status == "Open"))
 			  ).run(as_dict=True)		
 		for reference in relievers_todo:
 			reference_type = reference["reference_type"]
 			reference_name = reference["reference_name"]
 			todo_to_update = frappe.get_doc(reference_type, {'name': reference_name})
+			print(reference)
 			if hasattr(todo_to_update, 'employee') and todo_to_update.employee:
 				emp_details = frappe.get_doc('Employee',todo_to_update.employee)
 				if emp_details.reports_to == self.on_leave_employee:
@@ -584,15 +585,14 @@ class ReassignRelieverAssignment(Document):
 						value_to_replace = self.on_leave_employee_name 
 				if reference_type == "Shift Request":
 					ShiftRequest = DocType("Shift Request")
-					ShiftRequestApprovers = DocType("Shift Request")
+					ShiftRequestApprovers = DocType("Shift Request Approvers")
 					frappe.qb.update(ShiftRequestApprovers) \
-								.join(ShiftRequest) \
-								.on(ShiftRequest.name == ShiftRequestApprovers.parent) \
-								.set(ShiftRequestApprovers.user, replaced_with) \
-								.set(ShiftRequestApprovers.modified, now()) \
-								.where(ShiftRequestApprovers.parent == reference_name) \
-								.where(ShiftRequestApprovers.parentfield == "custom_shift_approvers") \
-								.where(ShiftRequest.workflow_state.isin(status_to_check)) \
+							.join(ShiftRequest) \
+							.on(ShiftRequest.name == ShiftRequestApprovers.parent) \
+							.set(ShiftRequestApprovers.user, replaced_with) \
+							.where(ShiftRequestApprovers.parent == reference_name) \
+							.where(ShiftRequestApprovers.parentfield == "custom_shift_approvers") \
+							.where(ShiftRequest.workflow_state.isin(status_to_check)) \
 							.run()
 				else:
 					ReferenceType = DocType(reference_type)

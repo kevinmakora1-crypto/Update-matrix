@@ -15,6 +15,7 @@
   "shift_details_section",
   "shift_number",
   "shift_type",
+  "automate_roster",
   "supervisor",
   "supervisor_name",
   "column_break_8",
@@ -58,6 +59,11 @@
    "label": "Shift Type",
    "options": "Shift Type"
   },
+  {
+    "fieldname": "automate_roster",
+    "fieldtype": "Check",
+    "label": "Automate Roster"
+   },
   {
    "fieldname": "section_break_12",
    "fieldtype": "Section Break"

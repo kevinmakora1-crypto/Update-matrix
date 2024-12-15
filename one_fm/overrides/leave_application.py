@@ -429,7 +429,7 @@ class LeaveApplicationOverride(LeaveApplication):
         if self.custom_reliever_ and frappe.db.exists("Reliever Assignment", {"name": self.name}):frappe.enqueue(reassign_responsibilities, leave_application=self.name)
         self.create_leave_ledger_entry(submit=False)
         # notify leave applier about cancellation
-        leave_application_on_cancel()
+        leave_application_on_cancel(self,"on_cancel")
         self.cancel_attendance()
         self.validate_cancel()
         send_leave_cancellation_email_to_leave_approver(self)

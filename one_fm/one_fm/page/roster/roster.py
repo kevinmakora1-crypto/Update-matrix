@@ -16,7 +16,7 @@ from one_fm.utils import query_db_list
 @frappe.whitelist(allow_guest=True)
 def get_staff(assigned=1, employee_id=None, employee_name=None, company=None, project=None, site=None, shift=None, department=None, designation=None):
     date = cstr(add_to_date(nowdate(), days=1))
-    conds = ""
+    conds = "and shift_working = 1 "
 
     if employee_name:
         conds += 'and emp.employee_name="{name}" '.format(name=employee_name)
@@ -90,7 +90,7 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
         master_data, formatted_employee_data, post_count_data, employee_filters= {}, {}, {}, {}
         operations_roles_list = []
         employees = []
-        asa_filters = "em.status = 'Active'  and em.attendance_by_timesheet = '0' "
+        asa_filters = "em.status = 'Active' and em.attendance_by_timesheet = '0' "
         filters = {
             'date': ['between', (start_date, end_date)]
         }
@@ -134,6 +134,7 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
 
         if isOt:
             employee_filters.update({'employee_availability' : 'Working'})
+            employee_filters.update({"employee.shift_working": "1"})
             all_active_employees = frappe.db.sql("SELECT name from `tabEmployee` where status in ('Active','Vacation') and attendance_by_timesheet = '0' ",as_dict =1)
             all_active_employee_ids = [i.name for i in all_active_employees]
             employee_filters.update({'employee':['In',all_active_employee_ids]})

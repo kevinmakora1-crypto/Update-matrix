@@ -431,7 +431,7 @@ class LeaveApplicationOverride(LeaveApplication):
             reassign_responsiobility.reassign()
         self.create_leave_ledger_entry(submit=False)
         # notify leave applier about cancellation
-        leave_application_on_cancel()
+        leave_application_on_cancel(self,"on_cancel")
         self.cancel_attendance()
         self.validate_cancel()
         send_leave_cancellation_email_to_leave_approver(self)

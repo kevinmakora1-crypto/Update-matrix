@@ -153,9 +153,7 @@ class RelieverAssignment(Document):
 			for fieldname in fieldnames:
 				if "name" in fieldname:
 					replaced_with = self.reliever_name
-					# value_to_replace =self.on_leave_employee_name 
-					doc = frappe.get_doc(todo.reference_type,{'name': todo.reference_name})
-					value_to_replace = doc.get(fieldname)
+					value_to_replace =self.on_leave_employee_name 
 				self.add_assigned_documents(todo.reference_type, "Docfield", todo, fieldname=fieldname)
 				# Shift Request uses table multiselect field for approvers
 				if todo.reference_type == "Shift Request":
@@ -578,8 +576,7 @@ class ReassignRelieverAssignment(Document):
 			fieldnames = matching_docs['fieldnames'].split(",")
 			for fieldname in fieldnames:
 				if "name" in fieldname:
-						doc = frappe.get_doc(reference_type,{'name': reference_name})
-						value_to_replace = doc.get(fieldname)
+						value_to_replace = self.reliever_name
 						replaced_with = self.on_leave_employee_name 
 				if reference_type == "Shift Request":
 					ShiftRequest = DocType("Shift Request")

@@ -59,6 +59,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.oauth2 import service_account
 
 
+
 def get_common_email_args(doc):
 	doctype = doc.get("doctype")
 	docname = doc.get("name")
@@ -3663,8 +3664,9 @@ def send_work_anniversary_reminders():
                     reminder_text = get_work_anniversary_reminder_text(others)
                     send_work_anniversary_reminder(person_email, reminder_text, others, message, sender)
 
-def set_employee_status_to_vacation():
+def set_employee_status():
     from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import assign_responsibilities ,reassign_responsibilities
+    from one_fm.overrides.leave_application import reassign_to_applicant,reassign_to_reliever
     # Get today's date
     current_date = getdate(today())
 
@@ -3684,28 +3686,37 @@ def set_employee_status_to_vacation():
 
     employees_set_to_vacation = 0
     employees_set_to_active = 0
+    try:
+        for leave in leave_applications:
+            employee = leave['employee']
+            status =  leave['status']
+            from_date = leave['from_date']
+            leave_application = leave['name']
+            to_date =  leave['to_date']
+            reliever = leave.get('custom_reliever_', None)
+            if current_date == getdate(from_date) and status == "Active":
+                frappe.db.set_value('Employee', employee, 'status', 'Vacation')
+                if reliever: 
+                    frappe.enqueue(reassign_to_applicant(employee=employee, leave_name=leave_application))
+                    frappe.enqueue(assign_responsibilities, leave_application=leave_application)
+                employees_set_to_vacation += 1
+            elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":
+                frappe.db.set_value('Employee', employee, 'status', 'Active')
+                if reliever:
+                    frappe.enqueue(reassign_to_reliever(reliever=reliever, leave_name=leave_application, employee=employee))
+                if reliever and frappe.db.exists("Reliever Assignment", {"name": leave_application}):
+                    frappe.enqueue(reassign_responsibilities, leave_application=leave_application)
+                employees_set_to_active += 1
+
+        frappe.db.commit()
+        frappe.log(_("Employee statuses updated: {0} set to 'Vacation', {1} set to 'Active'.")
+                .format(employees_set_to_vacation, employees_set_to_active))
+    except:
+            frappe.log_error(frappe.get_traceback(), "Error occurred while trying to reassign duties")
 
 
-    for leave in leave_applications:
-        employee = leave['employee']
-        status =  leave['status']
-        from_date = leave['from_date']
-        leave_application = leave['name']
-        to_date =  leave['to_date']
-        reliever = leave.get('custom_reliever_', None)
-        if current_date == getdate(from_date) and status == "Active":
-            frappe.db.set_value('Employee', employee, 'status', 'Vacation')
-            if reliever: frappe.enqueue(assign_responsibilities, leave_application=leave_application)
-            employees_set_to_vacation += 1
-        elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":
-            frappe.db.set_value('Employee', employee, 'status', 'Active')
-            if reliever and frappe.db.exists("Reliever Assignment", {"name": leave_application}):frappe.enqueue(reassign_responsibilities, leave_application=leave_application)
-            employees_set_to_active += 1
 
-    frappe.db.commit()
-    frappe.log(_("Employee statuses updated: {0} set to 'Vacation', {1} set to 'Active'.")
-               .format(employees_set_to_vacation, employees_set_to_active))
-
+    
 def is_holiday(employee, date=None, raise_exception=True):
     try:
         date = today() if not date else date

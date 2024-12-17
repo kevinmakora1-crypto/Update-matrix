@@ -629,44 +629,6 @@ def get_leave_approver(employee):
     return approver
 
 
-@frappe.whitelist()
-def employee_leave_status():
-    """
-    This method is to change the status of employee Doc from Active to Vacation, when Leave starts.
-    It also changes it back to Active when the leave ends.
-    The method is called as a cron job before  assigning shift.
-    """
-    today = getdate()
-    yesterday = add_to_date(today, days=-1)
-
-
-    start_leave = frappe.get_list("Leave Application", {'from_date': today, 'status':'Approved'}, ['employee', "name", "custom_reliever_"])
-    end_leave = frappe.get_list("Leave Application", {'to_date': yesterday, 'status':'Approved'}, ['employee', 'name'])
-
-
-    frappe.enqueue(process_change,start_leave=start_leave,end_leave=end_leave, is_async=True, queue="long")
-
-
-
-def process_change(start_leave, end_leave):
-    change_employee_status(start_leave, "Vacation")
-    change_employee_status(end_leave, "Active")
-
-def change_employee_status(employee_list, status):
-    for e in employee_list:
-        frappe.db.set_value("Employee", e.employee, "status", status)
-        try:
-            if status == "Vacation" and e.custom_reliever_:
-                reassign_to_reliever(reliever=e.custom_reliever_, leave_name=e.name, employee=e.employee)
-
-            if status == "Active" :
-                reassign_to_applicant(employee=e.employee, leave_name=e.name)
-        except:
-            frappe.log_error(frappe.get_traceback(), "Error occurred while trying to reassign duties")
-        
-    frappe.db.commit()
-
-
 def reassign_to_reliever(reliever: str, leave_name: str, employee: str):
     try:
         reliever_employee = frappe.db.get_value("Employee", reliever, ["name", "user_id"], as_dict=1)

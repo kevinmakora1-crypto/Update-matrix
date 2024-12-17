@@ -3844,7 +3844,7 @@ def update_assurance_level_task():
 def call_to_get_assurance_level(employees):
     response = None
     try:
-        api_key = frappe.conf.dss_api_key
+        api_key = frappe.conf.bulbul_api_wrapper_key
         if isinstance(employees, str):
             url = f"http://168.187.237.44:8080/api/DigitalSigning/CheckMobileIdentity/{employees}"
             headers = {'accept': 'text/plain','ApiKey': f'{api_key}'}

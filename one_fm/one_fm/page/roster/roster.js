@@ -3328,7 +3328,7 @@ function dayoff(page) {
 		'title': 'Day Off',
 		'fields': [
 			{ 'label': 'Selected days only', 'fieldname': 'selected_dates', 'fieldtype': 'Check', 'default': 0 },
-			{ 'label': 'Repeat', 'fieldname': 'repeat', 'fieldtype': 'Select', 'depends_on': 'eval:doc.selected_dates==0', 'options': 'Does not repeat\nDaily\nWeekly\nMonthly\nYearly' },
+			{ 'label': 'Repeat', 'fieldname': 'repeat', 'fieldtype': 'Select', 'depends_on': 'eval:doc.selected_dates==0', 'options': 'Does not repeat\nWeekly\nMonthly' },
 			{ 'fieldtype': 'Section Break', 'fieldname': 'sb1', 'depends_on': 'eval:doc.repeat=="Weekly" && doc.selected_dates==0' },
 			{ 'label': 'Sunday', 'fieldname': 'sunday', 'fieldtype': 'Check' },
 			{ 'label': 'Wednesday', 'fieldname': 'wednesday', 'fieldtype': 'Check' },
@@ -3373,16 +3373,8 @@ function dayoff(page) {
 					args["week_days"] = week_days;
 					args["repeat_freq"] = repeat_freq;
 				}
-				else if (repeat == "Daily") {
-					repeat_freq = "Daily";
-					args["repeat_freq"] = repeat_freq;
-				}
 				else if (repeat == "Monthly") {
 					repeat_freq = "Monthly";
-					args["repeat_freq"] = repeat_freq;
-				}
-				else if (repeat == "Yearly") {
-					repeat_freq = "Yearly";
 					args["repeat_freq"] = repeat_freq;
 				}
 			}

@@ -179,7 +179,7 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
             employee_filters.update({'operations_role': operations_role})
         if designation:
             employee_filters.pop('designation', None)
-        reliver = frappe.db.get_list('Employee', fields=['*'], filters={'custom_is_reliever': 1,'department':department})
+        reliever = frappe.db.get_list('Employee', fields=['*'], filters={'custom_is_reliever': 1,'department':department})
         #------------------- Fetch Operations Roles ------------------------#
         operations_roles_list = frappe.db.get_list("Post Schedule", employee_filters, ["distinct operations_role", "post_abbrv"], ignore_permissions=True)
         if operations_role:
@@ -195,7 +195,7 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
 
         #----------------- Get Operations Role count and check fill status -------------------#
         post_map = PostMap(start=start_date,end=end_date,operations_roles_list=operations_roles_list,filters=employee_filters)
-        master_data.update({'operations_roles_data': post_map.template,'reliver':reliver})
+        master_data.update({'operations_roles_data': post_map.template,'reliever':reliever})
         response("Success", 200, master_data)
     except Exception as e:
         # print(frappe.get_traceback())

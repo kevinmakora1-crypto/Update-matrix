@@ -1229,10 +1229,13 @@ let attendance_abbr_map = {
 	'On Leave': 'OL',
 	'On Hold': 'OH'
 };
+
+let reliever_data;
+
 // Renders on get_roster_data function
 function render_roster(res, page, isOt) {
-	let { operations_roles_data, employees_data,reliver,total } = res;
-	console.log(reliver)
+	let { operations_roles_data, employees_data,reliever,total } = res;
+	reliever_data =  reliever
 	page.pagination.total = total;
 	let b1 = performance.now();
 	let $rosterMonth = isOt ? $('.rosterOtMonth') : $('.rosterMonth');
@@ -3401,12 +3404,15 @@ function dayoff(page) {
 		let [employee, date] = i.split("|");
 		employees.push({ employee, date });
 	});
+	let reliever_options = reliever_data.map(item => `${item.name} - ${item.employee_name}`).join("\n");
+
+
 	let date = frappe.datetime.add_days(frappe.datetime.nowdate(), '1');
 	let d = new frappe.ui.Dialog({
 		'title': 'Day Off',
 		'fields': [
 			{ 'label': 'Selected days only', 'fieldname': 'selected_dates', 'fieldtype': 'Check', 'default': 0 },
-			{ 'label': 'Reliver', 'fieldname': 'reliver', 'fieldtype': 'Select', 'options': 'Does not repeat\nWeekly\nMonthly' },
+			{ 'label': 'Reliever', 'fieldname': 'reliever', 'fieldtype': 'Select', 'options': reliever_options },
 			{ 'label': 'Repeat', 'fieldname': 'repeat', 'fieldtype': 'Select', 'depends_on': 'eval:doc.selected_dates==0', 'options': 'Does not repeat\nWeekly\nMonthly' },
 			{ 'fieldtype': 'Section Break', 'fieldname': 'sb1', 'depends_on': 'eval:doc.repeat=="Weekly" && doc.selected_dates==0' },
 			{ 'label': 'Sunday', 'fieldname': 'sunday', 'fieldtype': 'Check' },

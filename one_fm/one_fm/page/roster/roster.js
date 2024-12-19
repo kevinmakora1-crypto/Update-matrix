@@ -3412,7 +3412,7 @@ function dayoff(page) {
 		'title': 'Day Off',
 		'fields': [
 			{ 'label': 'Selected days only', 'fieldname': 'selected_dates', 'fieldtype': 'Check', 'default': 0 },
-			{ 'label': 'Reliever', 'fieldname': 'reliever', 'fieldtype': 'Select', 'options': reliever_options },
+			{ 'label': 'Reliever', 'fieldname': 'selected_reliever', 'fieldtype': 'Select', 'options': reliever_options },
 			{ 'label': 'Repeat', 'fieldname': 'repeat', 'fieldtype': 'Select', 'depends_on': 'eval:doc.selected_dates==0', 'options': 'Does not repeat\nWeekly\nMonthly' },
 			{ 'fieldtype': 'Section Break', 'fieldname': 'sb1', 'depends_on': 'eval:doc.repeat=="Weekly" && doc.selected_dates==0' },
 			{ 'label': 'Sunday', 'fieldname': 'sunday', 'fieldtype': 'Check' },
@@ -3433,8 +3433,9 @@ function dayoff(page) {
 			let week_days = [];
 			let args = {};
 			let repeat_freq = '';
-			let { selected_dates, repeat, sunday, monday, tuesday, wednesday, thursday, friday, saturday, repeat_till, project_end_date } = d.get_values();
+			let { selected_dates,selected_reliever, repeat, sunday, monday, tuesday, wednesday, thursday, friday, saturday, repeat_till, project_end_date } = d.get_values();
 			args["selected_dates"] = selected_dates;
+			args['selected_reliever']=selected_reliever
 			args["employees"] = employees;
 
 			if (selected_dates == 1) {

@@ -1059,7 +1059,7 @@ def set_post_off(post, date, post_off_paid):
 
 
 @frappe.whitelist()
-def dayoff(employees, selected_dates=0, repeat=0, repeat_freq=None, week_days=[], repeat_till=None, project_end_date=None):
+def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_freq=None, week_days=[], repeat_till=None, project_end_date=None):
     """
         Set days of done with sql query for instant response
     """

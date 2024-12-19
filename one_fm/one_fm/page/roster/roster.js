@@ -1231,8 +1231,8 @@ let attendance_abbr_map = {
 };
 // Renders on get_roster_data function
 function render_roster(res, page, isOt) {
-
-	let { operations_roles_data, employees_data, total } = res;
+	let { operations_roles_data, employees_data,reliver,total } = res;
+	console.log(reliver)
 	page.pagination.total = total;
 	let b1 = performance.now();
 	let $rosterMonth = isOt ? $('.rosterOtMonth') : $('.rosterMonth');

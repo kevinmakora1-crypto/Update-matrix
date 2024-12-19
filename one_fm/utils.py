@@ -3857,14 +3857,14 @@ def call_to_get_assurance_level(employees):
     try:
         api_key = frappe.conf.bulbul_api_wrapper_key
         if isinstance(employees, str):
-            url = f"http://168.187.237.44:8080/api/DigitalSigning/CheckMobileIdentity/{employees}"
+            url = f"https://apiwrapper.one-fm.com/api/DigitalSigning/CheckMobileIdentity/{employees}"
             headers = {'accept': 'text/plain','ApiKey': f'{api_key}'}
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 data = response.json()
                 return data.get("data", None)
         else:
-            url = f"http://168.187.237.44:8080/api/DigitalSigning/BulkCheckMobileIdentity"
+            url = f"https://apiwrapper.one-fm.com/api/DigitalSigning/BulkCheckMobileIdentity"
             headers = {'Content-Type': 'application/json','ApiKey': f'{api_key}'}
             batch_size=200
             all_results = []

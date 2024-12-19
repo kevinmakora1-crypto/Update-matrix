@@ -557,7 +557,7 @@ scheduler_events = {
 		"one_fm.operations.doctype.contracts.contracts.send_contract_reminders",
 		"one_fm.operations.doctype.contracts.contracts.renew_contracts_by_termination_date",
         "one_fm.developer.doctype.bug_buster.bug_buster.roster_bug_buster",
-        'one_fm.utils.set_employee_status_to_vacation',
+        'one_fm.utils.set_employee_status',
         'one_fm.utils.set_out_of_office_for_leaves',
         'one_fm.utils.update_active_employees_assurance_level'
 	],
@@ -728,9 +728,6 @@ scheduler_events = {
 		"00 08 * * *": [ # runs at 8:00 am
 			'one_fm.api.doc_methods.payroll_entry.notify_for_open_leave_application',
 			'one_fm.tasks.one_fm.daily.notify_for_employee_docs_expiry'
-		],
-		"05 00 * * *":[
-			'one_fm.overrides.leave_application.employee_leave_status'
 		],
 		"0 * * * *":[ # Creates the missing checkin record per shift, runs every hour
 			"one_fm.one_fm.doctype.missing_checkin.missing_checkin.create_missing_checkin_record",

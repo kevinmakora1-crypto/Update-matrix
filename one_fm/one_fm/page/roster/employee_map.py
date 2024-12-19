@@ -29,6 +29,7 @@ class PostMap():
         filters.update({"post_status": "Planned",'operations_role':['in',self.operation_roles]})
         filters.pop('operations_role')
         self.filters = filters
+        self.reliver = frappe.db.get_all('Employee', filters={'custom_is_reliever': True})
         self.post_schedule_count = frappe.db.get_all("Post Schedule", ['operations_role',"name", "date"], filters, ignore_permissions=True)
         self.start_mapping()
 

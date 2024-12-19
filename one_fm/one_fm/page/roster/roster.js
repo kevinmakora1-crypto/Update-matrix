@@ -3402,13 +3402,11 @@ function dayoff(page) {
 		employees.push({ employee, date });
 	});
 	let date = frappe.datetime.add_days(frappe.datetime.nowdate(), '1');
-	alert()
 	let d = new frappe.ui.Dialog({
 		'title': 'Day Off',
 		'fields': [
 			{ 'label': 'Selected days only', 'fieldname': 'selected_dates', 'fieldtype': 'Check', 'default': 0 },
-			{ 'label': 'Set Reliver', 'fieldname': 'set_reliver', 'fieldtype': 'Check', 'default': 0 },
-			{ 'label': 'Reliver', 'fieldname': 'reliver', 'fieldtype': 'Select', 'depends_on': 'eval:doc.set_reliver==1', 'options': 'Does not repeat\nWeekly\nMonthly' },
+			{ 'label': 'Reliver', 'fieldname': 'reliver', 'fieldtype': 'Select', 'options': 'Does not repeat\nWeekly\nMonthly' },
 			{ 'label': 'Repeat', 'fieldname': 'repeat', 'fieldtype': 'Select', 'depends_on': 'eval:doc.selected_dates==0', 'options': 'Does not repeat\nWeekly\nMonthly' },
 			{ 'fieldtype': 'Section Break', 'fieldname': 'sb1', 'depends_on': 'eval:doc.repeat=="Weekly" && doc.selected_dates==0' },
 			{ 'label': 'Sunday', 'fieldname': 'sunday', 'fieldtype': 'Check' },

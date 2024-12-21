@@ -709,6 +709,15 @@ function bind_events(page) {
 		//let $rosterWeek = $('.rosterWeek');
 		let $postWeek = $('.postWeek');
 		$postMonth.find(".hoverselectclass").on("click", function () {
+            // Loop through all rows and if there is a checked row, unselect all cells in that row.
+            $(this).closest("tbody").children("tr").each(function (i, cell) {
+                const checked_row = $(cell).find('input[name="selectallcheckbox"]:checked');
+                if (checked_row.length > 0) {
+                    $(checked_row).prop('checked', false);
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
+
 			$(this).toggleClass("selectclass");
 			// If the id is not already in the array, add it. If it is, remove it
 
@@ -723,6 +732,15 @@ function bind_events(page) {
 		});
 
 		$postWeek.find(".hoverselectclass").on("click", function () {
+            // Loop through all rows and if there is a checked row, unselect all cells in that row.
+            $(this).closest("tbody").children("tr").each(function (i, cell) {
+                const checked_row = $(cell).find('input[name="selectallcheckbox"]:checked');
+                if (checked_row.length > 0) {
+                    $(checked_row).prop('checked', false);
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
+
 			$(this).toggleClass("selectclass");
 			// If the id is not already in the array, add it. If it is, remove it
 
@@ -736,10 +754,20 @@ function bind_events(page) {
 			}
 		});
 
+
 		//add array on each of data select from calender
 		$rosterMonth.find(".hoverselectclass").on("click", function () {
-			$(this).toggleClass("selectclass");
+           // Loop through all rows and if there is a checked row, unselect all cells in that row.
+           $(this).closest("tbody").children("tr").each(function (i, cell) {
+                const checked_row = $(cell).find('input[name="selectallcheckbox"]:checked');
+                if (checked_row.length > 0) {
+                    $(checked_row).prop('checked', false);
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
 
+            // select cell
+            $(this).toggleClass("selectclass");
 			//Show Day Off and Schedule Leave button if hidden for basic roster
 			if ($(".dayoff").is(":hidden")) {
 				$(".dayoff").show();
@@ -760,7 +788,16 @@ function bind_events(page) {
 		});
 
 		$rosterOtMonth.find(".hoverselectclass").on("click", function () {
-			$(this).toggleClass("selectclass");
+            // Loop through all rows and if there is a checked row, unselect all cells in that row.
+            $(this).closest("tbody").children("tr").each(function (i, cell) {
+                const checked_row = $(cell).find('input[name="selectallcheckbox"]:checked');
+                if (checked_row.length > 0) {
+                    $(checked_row).prop('checked', false);
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
+
+            $(this).toggleClass("selectclass");
 
 			//Hide Day Off and schedule leave button for OT Roster
 			$(".dayoff").hide();
@@ -793,35 +830,44 @@ function bind_events(page) {
 
 		/*on checkbox select change*/
 		$postWeek.find(`input[name="selectallcheckbox"]`).on("change", function () {
-			if ($(this).is(":checked")) {
-				$(this).parent().parent().parent().children("td").children().not("label").each(function (i, v) {
+            let $checked_employee = $(this);
+            let selected_employee = $checked_employee.parent().parent().parent().attr('data-name');
+			if ($checked_employee.is(":checked")) {
+				$checked_employee.parent().parent().parent().children("td").children().not("label").each(function (i, v) {
 					let date = $(v).attr('data-date');
 					if (moment(date).isAfter(moment())) {
 						$(v).addClass("selectclass");
 					}
 				});
-				$(this).parent().parent().parent().children("td").children().not("label").removeClass("hoverselectclass");
+				$checked_employee.parent().parent().parent().children("td").children().not("label").removeClass("hoverselectclass");
 				$(".Postfilterhideshow").removeClass("d-none");
 
 			}
 			else {
-				$(this).parent().parent().parent().children("td").children().not("label").addClass("hoverselectclass");
-				$(this).closest('tr').children("td").children().not("label").each(function (i, v) {
+				$checked_employee.parent().parent().parent().children("td").children().not("label").addClass("hoverselectclass");
+				$checked_employee.closest('tr').children("td").children().not("label").each(function (i, v) {
 					classgrt.splice(classgrt.indexOf($(v).attr('data-selectid')), 1);
 				});
-				$(this).parent().parent().parent().children("td").children().not("label").removeClass("selectclass");
+				$checked_employee.parent().parent().parent().children("td").children().not("label").removeClass("selectclass");
 				$(".Postfilterhideshow").addClass("d-none");
 			}
-			$(".selectclass").map(function () {
+            
+            // Check for rows that are not selected full and unselect cells in that row.
+            $checked_employee.closest("tbody").children("tr").each(function (i, cell) {
+                const unchecked_row = $(cell).find('input[name="selectallcheckbox"]:not(:checked)');
+                if (unchecked_row.length > 0) {
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
 
+			$(".selectclass").map(function () {
 				classgrt.push($(this).attr("data-selectid"));
 				classgrt = [... new Set(classgrt)];
-
 			});
 		});
 		/*on checkbox select change*/
 		$postMonth.find(`input[name="selectallcheckbox"]`).on("change", function () {
-			if ($(this).is(":checked")) {
+          	if ($(this).is(":checked")) {
 				$(this).parent().parent().parent().children("td").children().not("label").each(function (i, v) {
 					let date = $(v).attr('data-date');
 					if (moment(date).isAfter(moment())) {
@@ -839,6 +885,16 @@ function bind_events(page) {
 				$(this).parent().parent().parent().children("td").children().not("label").removeClass("selectclass");
 				$(".Postfilterhideshow").addClass("d-none");
 			}
+
+            // Check for rows that are not selected full and unselect cells in that row.
+            $(this).closest("tbody").children("tr").each(function (i, cell) {
+                const unchecked_row = $(cell).find('input[name="selectallcheckbox"]:not(:checked)');
+                if (unchecked_row.length > 0) {
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
+
+
 			$(".selectclass").map(function () {
 
 			    classgrt.push($(this).attr("data-selectid"));
@@ -880,8 +936,10 @@ function bind_events(page) {
 		// 		// }
 		// 	});
 		// });
-		//on checkbox select change
-		$rosterMonth.find(`input[name="selectallcheckbox"]`).on("change", function () {
+		//on checkbox select change        
+        $rosterMonth.find(`input[name="selectallcheckbox"]`).on("change", function () {
+            let $checked_employee = $(this);
+            let selected_employee = $checked_employee.parent().parent().parent().attr('data-name');
 
 			//Show Day Off and Schedule Leave button if hidden for basic roster
 			if ($(".dayoff").is(":hidden")) {
@@ -891,8 +949,8 @@ function bind_events(page) {
 				$(".scheduleleave").show();
 			}
 
-			if ($(this).is(":checked")) {
-				$(this).closest('tr').children("td").children().not("label").each(function (i, v) {
+			if ($checked_employee.is(":checked")) {
+                $checked_employee.closest('tr').children("td").children().not("label").each(function (i, v) {
 					
 					let [employee, date] = $(v).attr('data-selectid').split('|');
 					classgrt.push($(v).attr('data-selectid'));
@@ -907,12 +965,22 @@ function bind_events(page) {
 				$(".filterhideshow").removeClass("d-none");
 			}
 			else {
-				$(this).closest('tr').children("td").children().not("label").each(function (i, v) {
+				$checked_employee.closest('tr').children("td").children().not("label").each(function (i, v) {
 					classgrt.splice(classgrt.indexOf($(v).attr('data-selectid')), 1);
 				});
-				$(this).closest('tr').children("td").children().not("label").removeClass("selectclass");
+				$checked_employee.closest('tr').children("td").children().not("label").removeClass("selectclass");
 				$(".filterhideshow").addClass("d-none");
 			}
+            
+            // Check for rows that are not selected full and unselect cells in that row.
+            $checked_employee.closest("tbody").children("tr").each(function (i, cell) {
+                const unchecked_row = $(cell).find('input[name="selectallcheckbox"]:not(:checked)');
+                if (unchecked_row.length > 0) {
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });;
+
+
 			$(".selectclass").map(function () {
 
 				classgrt.push($(this).attr("data-selectid"));
@@ -930,7 +998,8 @@ function bind_events(page) {
 			});
 		});
 		$rosterOtMonth.find(`input[name="selectallcheckbox"]`).on("change", function () {
-
+            let $checked_employee = $(this);
+            
 			//Hide Day Off and schedule leave button for OT Roster
 			$(".dayoff").hide();
 			$(".scheduleleave").hide();
@@ -954,6 +1023,15 @@ function bind_events(page) {
 				$(this).closest('tr').children("td").children().not("label").removeClass("selectclass");
 				$(".filterhideshow").addClass("d-none");
 			}
+            
+            // Check for rows that are not selected full and unselect cells in that row.
+            $(this).closest("tbody").children("tr").each(function (i, cell) {
+                const unchecked_row = $(cell).find('input[name="selectallcheckbox"]:not(:checked)');
+                if (unchecked_row.length > 0) {
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
+
 			$(".selectclass").map(function () {
 
 				classgrt.push($(this).attr("data-selectid"));
@@ -3328,7 +3406,7 @@ function dayoff(page) {
 		'title': 'Day Off',
 		'fields': [
 			{ 'label': 'Selected days only', 'fieldname': 'selected_dates', 'fieldtype': 'Check', 'default': 0 },
-			{ 'label': 'Repeat', 'fieldname': 'repeat', 'fieldtype': 'Select', 'depends_on': 'eval:doc.selected_dates==0', 'options': 'Does not repeat\nDaily\nWeekly\nMonthly\nYearly' },
+			{ 'label': 'Repeat', 'fieldname': 'repeat', 'fieldtype': 'Select', 'depends_on': 'eval:doc.selected_dates==0', 'options': 'Does not repeat\nWeekly\nMonthly' },
 			{ 'fieldtype': 'Section Break', 'fieldname': 'sb1', 'depends_on': 'eval:doc.repeat=="Weekly" && doc.selected_dates==0' },
 			{ 'label': 'Sunday', 'fieldname': 'sunday', 'fieldtype': 'Check' },
 			{ 'label': 'Wednesday', 'fieldname': 'wednesday', 'fieldtype': 'Check' },
@@ -3373,16 +3451,8 @@ function dayoff(page) {
 					args["week_days"] = week_days;
 					args["repeat_freq"] = repeat_freq;
 				}
-				else if (repeat == "Daily") {
-					repeat_freq = "Daily";
-					args["repeat_freq"] = repeat_freq;
-				}
 				else if (repeat == "Monthly") {
 					repeat_freq = "Monthly";
-					args["repeat_freq"] = repeat_freq;
-				}
-				else if (repeat == "Yearly") {
-					repeat_freq = "Yearly";
 					args["repeat_freq"] = repeat_freq;
 				}
 			}

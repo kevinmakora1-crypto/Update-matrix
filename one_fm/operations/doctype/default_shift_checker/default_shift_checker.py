@@ -40,6 +40,7 @@ def create_default_shift_checker():
             (Employee.shift_working == 1)
             & (Employee.shift.isnotnull())
             & (Employee.shift != EmployeeSchedule.shift)
+            & (EmployeeSchedule.employee_availability == "Working")
             & (EmployeeSchedule.roster_type == "Basic")
             & (EmployeeSchedule.date[start_date:last_day_of_month])
         )

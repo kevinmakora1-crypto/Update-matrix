@@ -1067,6 +1067,7 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
         creation = now()
         owner = frappe.session.user
         roster_type = "Basic"
+        reliever_id = selected_reliever.split('-')[0]
         id_list = []
         query = """
             INSERT INTO `tabEmployee Schedule` (`name`, `employee`, `date`, `shift`, `site`, `project`, `shift_type`, `employee_availability`,
@@ -1074,7 +1075,12 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
             VALUES
         """
         querycontent = """"""
-
+        rel_emp_query = f"""
+          SELECT *
+          FROM `tabEmployee`
+          WHERE `employee_id` = '{reliever_id}'
+          """
+        rel_emp_query_results = (frappe.db.sql(rel_emp_query, as_dict=True)[0]).name
 
         if not repeat_till and not cint(project_end_date) and not selected_dates:
             frappe.throw(_("Please select either a repeat till date or check the project end date option."))
@@ -1082,6 +1088,7 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
         from one_fm.api.mobile.roster import month_range
         if cint(selected_dates):
             for employee in json.loads(employees):
+                emp = employee['employee']
                 date = employee['date']
                 if getdate(date)>getdate(today()):
                     name = f"{date}_{employee['employee']}_{roster_type}"
@@ -1091,6 +1098,13 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                         '', "Day Off", "", "", "Basic",
                         0, "{owner}", "{owner}", "{creation}", "{creation}"
                     ),"""
+                    emp_query = f"""
+                           SELECT *
+                           FROM `tabEmployee Schedule`
+                           WHERE `employee` = '{emp}' AND `date` = '{date}'
+                           """    
+                    results = frappe.db.sql(emp_query, as_dict=True)[0]
+                    releiver_assignment(results,rel_emp_query_results,date)
         else:
             if repeat and repeat_freq in ["Weekly", "Monthly"]:
                 end_date = None
@@ -1136,8 +1150,6 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                                     '', "Day Off", "", "", "Basic",
                                     0, "{owner}", "{owner}", "{creation}", "{creation}"
                                 ),"""
-                                
-
         if querycontent:
             querycontent = querycontent[:-1]
             query += querycontent
@@ -1161,6 +1173,13 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
         response("success", 200, {'message':'Days Off set successfully.'})
     except Exception as e:
         response("error", 200, None, str(e))
+
+def releiver_assignment(results,rel_emp_query_results,date):
+    employees = {rel_emp_query_results:date}
+    print(results)
+    print(rel_emp_query_results)
+    print(date)
+    schedule_staff(employees, results['shift'], operations_role, otRoster, start_date, project_end_date, keep_days_off=0, request_employee_schedule=0, day_off_ot=None, end_date=None, selected_days_only=0)
 
 
 @frappe.whitelist()

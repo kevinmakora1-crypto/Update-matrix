@@ -1083,6 +1083,8 @@ def dayoff(employees, selected_dates=0, repeat=0, repeat_freq=None, week_days=[]
         if cint(selected_dates):
             for employee in json.loads(employees):
                 date = employee['date']
+                start_date = getdate(date)
+                month_end_date = get_last_day(start_date)
                 if getdate(date)>getdate(today()):
                     name = f"{date}_{employee['employee']}_{roster_type}"
                     id_list.append(name)
@@ -1091,6 +1093,14 @@ def dayoff(employees, selected_dates=0, repeat=0, repeat_freq=None, week_days=[]
                         '', "Day Off", "", "", "Basic",
                         0, "{owner}", "{owner}", "{creation}", "{creation}"
                     ),"""
+                    update_day_off_ot = frappe.db.get_value("Employee Schedule", 
+                    {
+                        "employee": employee["employee"],
+                        "day_off_ot": 1,
+                        "date": ["between", [start_date, month_end_date]],
+                    },)
+                    if update_day_off_ot:
+                        frappe.db.set_value("Employee Schedule", update_day_off_ot, "day_off_ot", 0)
         else:
             if repeat and repeat_freq in ["Weekly", "Monthly"]:
                 end_date = None
@@ -1108,6 +1118,7 @@ def dayoff(employees, selected_dates=0, repeat=0, repeat_freq=None, week_days=[]
                             else:
                                 frappe.throw(_("No contract linked with project {project}".format(project=project)))
                         for date in	pd.date_range(start=employee["date"], end=end_date):
+                            month_end_date = get_last_day(getdate(date))
                             if getdate(date).strftime('%A') in week_days and getdate(date)>getdate(today()):
                                 name = f"{date.date()}_{employee['employee']}_{roster_type}"
                                 id_list.append(name)
@@ -1116,6 +1127,15 @@ def dayoff(employees, selected_dates=0, repeat=0, repeat_freq=None, week_days=[]
                                     '', "Day Off", "", "", "Basic",
                                     0, "{owner}", "{owner}", "{creation}", "{creation}"
                                 ),"""
+                                update_day_off_ot = frappe.db.get_value("Employee Schedule", 
+                                {
+                                    "employee": employee["employee"],
+                                    "day_off_ot": 1,
+                                    "date": ["between", [date.date(), month_end_date]],
+                                },)
+                                if update_day_off_ot:
+                                    frappe.db.set_value("Employee Schedule", update_day_off_ot, "day_off_ot", 0)
+
 
                 elif repeat_freq == "Monthly":
                     for employee in json.loads(employees):
@@ -1128,6 +1148,7 @@ def dayoff(employees, selected_dates=0, repeat=0, repeat_freq=None, week_days=[]
                             else:
                                 frappe.throw(_("No contract linked with project {project}".format(project=project)))
                         for date in	month_range(employee["date"], end_date):
+                            month_end_date = get_last_day(getdate(date))
                             if getdate(date)>getdate(today()):
                                 name = f"{date.date()}_{employee['employee']}_{roster_type}"
                                 id_list.append(name)
@@ -1137,6 +1158,14 @@ def dayoff(employees, selected_dates=0, repeat=0, repeat_freq=None, week_days=[]
                                     0, "{owner}", "{owner}", "{creation}", "{creation}"
                                 ),"""
                                 
+                                update_day_off_ot = frappe.db.get_value("Employee Schedule", 
+                                {
+                                    "employee": employee["employee"],
+                                    "day_off_ot": 1,
+                                    "date": ["between", [date.date(), month_end_date]],
+                                },)
+                                if update_day_off_ot:
+                                    frappe.db.set_value("Employee Schedule", update_day_off_ot, "day_off_ot", 0)
 
         if querycontent:
             querycontent = querycontent[:-1]

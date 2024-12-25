@@ -53,10 +53,10 @@
         "doctype": "Assignment Rule",
         "document_type": "Roster Post Actions",
         "due_date_based_on": null,
-        "field": "site_supervisor_name",
+        "field": "site_supervisor_user",
         "is_assignment_rule_with_workflow": 0,
         "last_user": null,
-        "modified": "2024-12-22 09:34:09.951249",
+        "modified": "2024-12-25 10:44:00.736225",
         "name": "Roster Post Actions - Site Supervisor",
         "priority": 0,
         "rule": "Based on Field",
@@ -631,7 +631,7 @@
   "due_date_based_on": null,
   "field": "site_supervisor_user",
   "is_assignment_rule_with_workflow": 0,
-  "last_user": "",
+"last_user": "",
   "modified": "2024-01-24 18:00:38.952572",
   "name": "Attendance Check Site Supervisor",
   "priority": 1,
@@ -1160,6 +1160,6 @@
         "parenttype": "Assignment Rule"
       }
     ],
-    "users": []
-  }
+  "users": []
+ }
 ]

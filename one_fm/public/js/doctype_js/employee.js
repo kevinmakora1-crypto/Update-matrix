@@ -24,7 +24,15 @@ frappe.ui.form.on('Employee', {
 					freaze_message: __("Running Employee ID Generation Method..")
 				});
 			});
-		}
+		};
+	
+		frm.set_query('custom_operations_role_allocation', function() {
+            return {
+                filters: {
+                    shift: frm.doc.shift || ""
+                }
+            };
+        });
 	},
 	status: function(frm){
 		set_mandatory(frm);
@@ -83,7 +91,14 @@ frappe.ui.form.on('Employee', {
 		if(frm.doc.employee_id){
 			update_employee_id_based_on_residency(frm);
 		}
-	}
+	},
+	shift: function(frm) {
+		if (!frm.doc.shift) {
+            frm.set_value('custom_operations_role_allocation', null);
+        }
+        frm.refresh_field('custom_operations_role_allocation');
+
+    }
 });
 
 
@@ -201,7 +216,7 @@ var yes_no_html_buttons = function(frm, val, html_field, field_name, label) {
 	var $wrapper = frm.fields_dict[html_field].$wrapper;
 	var selected = 'btn-primary';
 	var field_btn_html = field_name+'_btn_html';
-	var field_html = `<div><label class="control-label" style="padding-right: 0px;">${label}</label></div><div>
+	var field_html = `<div><label class="control-label" style="padding-right: 0px;">${label}</label></div><div style="margin-bottom: 10px;">
 		<button class="btn btn-default btn-xs ${val ? selected: ''} ${field_btn_html}" type="button" data='Yes'>Yes</button>
 		<button class="btn btn-default btn-xs ${!val ? selected: ''} ${field_btn_html}" type="button" data='No'>No</button>
 	</div>`;

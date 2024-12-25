@@ -3434,10 +3434,16 @@ function dayoff(page) {
 			let week_days = [];
 			let args = {};
 			let repeat_freq = '';
-			let { selected_dates,selected_reliever, repeat, sunday, monday, tuesday, wednesday, thursday, friday, saturday, repeat_till, project_end_date } = d.get_values();
+			let { selected_dates,set_reliever,selected_reliever, repeat, sunday, monday, tuesday, wednesday, thursday, friday, saturday, repeat_till, project_end_date } = d.get_values();
 			args["selected_dates"] = selected_dates;
-			args['selected_reliever']=selected_reliever
+			args["set_reliever"] = set_reliever;
 			args["employees"] = employees;
+
+			if(set_reliever == 0){
+				args['selected_reliever']=""
+			}else{
+				args['selected_reliever']=selected_reliever
+			}
 
 			if (selected_dates == 1) {
 				args["repeat"] = 0;

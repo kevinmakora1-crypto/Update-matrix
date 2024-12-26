@@ -1230,14 +1230,15 @@ def releiver_roster_assignment(reliver_emp,roster_list):
     employee_list = [reliver_emp]
     otRoster = 'false'
     for roster_data in roster_list:
-        shift = roster_data['shift']
-        operations_role = roster_data['operations_role']
-        start_date = roster_data['start_datetime'].date()
-        end_date = roster_data['end_datetime'].date()
-        date = roster_data['date'].strftime("%Y-%m-%d")
-        employees = [{"employee":reliver_emp,"date":date}]
-        extreme_schedule(employees, shift, operations_role, otRoster, start_date, end_date, keep_days_off, day_off_ot,
-        request_employee_schedule, employee_list,selected_reliever)
+        if roster_data['shift']:
+            shift = roster_data['shift']
+            operations_role = roster_data['operations_role']
+            start_date = roster_data['start_datetime'].date()
+            end_date = roster_data['end_datetime'].date()
+            date = roster_data['date'].strftime("%Y-%m-%d")
+            employees = [{"employee":reliver_emp,"date":date}]
+            extreme_schedule(employees, shift, operations_role, otRoster, start_date, end_date, keep_days_off, day_off_ot,
+            request_employee_schedule, employee_list,selected_reliever)
 
 
 @frappe.whitelist()

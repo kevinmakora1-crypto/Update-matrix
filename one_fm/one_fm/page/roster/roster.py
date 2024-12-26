@@ -392,7 +392,7 @@ def update_roster(key):
 
 
 def extreme_schedule(employees, shift, operations_role, otRoster, start_date, end_date, keep_days_off, day_off_ot,
-    request_employee_schedule, employee_list):
+    request_employee_schedule, employee_list,selected_reliever=None):
     if not employees:
         frappe.throw("Please select employees before rostering")
         return
@@ -1067,7 +1067,7 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
         creation = now()
         owner = frappe.session.user
         roster_type = "Basic"
-        reliever_id = selected_reliever.split('-')[0]
+        
         id_list = []
         query = """
             INSERT INTO `tabEmployee Schedule` (`name`, `employee`, `date`, `shift`, `site`, `project`, `shift_type`, `employee_availability`,
@@ -1075,12 +1075,8 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
             VALUES
         """
         querycontent = """"""
-        rel_emp_query = f"""
-          SELECT *
-          FROM `tabEmployee`
-          WHERE `employee_id` = '{reliever_id}'
-          """
-        rel_emp_query_results = (frappe.db.sql(rel_emp_query, as_dict=True)[0]).name
+        roster_list=[]
+
 
         if not repeat_till and not cint(project_end_date) and not selected_dates:
             frappe.throw(_("Please select either a repeat till date or check the project end date option."))
@@ -1088,9 +1084,17 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
         from one_fm.api.mobile.roster import month_range
         if cint(selected_dates):
             for employee in json.loads(employees):
+                emp = employee['employee']
                 date = employee['date']
                 start_date = getdate(date)
                 month_end_date = get_last_day(start_date)
+                emp_query = f"""
+                       SELECT *
+                       FROM `tabEmployee Schedule`
+                       WHERE `employee` = '{employee['employee']}' AND `date` = '{employee['date']}'
+                   """   
+                roster_data = frappe.db.sql(emp_query, as_dict=True)[0]
+                roster_list.append(roster_data)
                 if getdate(date)>getdate(today()):
                     name = f"{date}_{employee['employee']}_{roster_type}"
                     id_list.append(name)
@@ -1133,6 +1137,13 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                                     '', "Day Off", "", "", "Basic",
                                     0, "{owner}", "{owner}", "{creation}", "{creation}"
                                 ),"""
+                                emp_query = f"""
+                                    SELECT *
+                                    FROM `tabEmployee Schedule`
+                                    WHERE `employee` = '{employee['employee']}' AND `date` = '{employee['date']}'
+                                """   
+                                roster_data = frappe.db.sql(emp_query, as_dict=True)[0]
+                                roster_list.append(roster_data)
                                 update_day_off_ot = frappe.db.get_value("Employee Schedule", 
                                 {
                                     "employee": employee["employee"],
@@ -1141,7 +1152,6 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                                 },)
                                 if update_day_off_ot:
                                     frappe.db.set_value("Employee Schedule", update_day_off_ot, "day_off_ot", 0)
-
 
                 elif repeat_freq == "Monthly":
                     for employee in json.loads(employees):
@@ -1163,7 +1173,13 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                                     '', "Day Off", "", "", "Basic",
                                     0, "{owner}", "{owner}", "{creation}", "{creation}"
                                 ),"""
-                                
+                                emp_query = f"""
+                                    SELECT *
+                                    FROM `tabEmployee Schedule`
+                                    WHERE `employee` = '{employee['employee']}' AND `date` = '{employee['date']}'
+                                """   
+                                roster_data = frappe.db.sql(emp_query, as_dict=True)[0]
+                                roster_list.append(roster_data)
                                 update_day_off_ot = frappe.db.get_value("Employee Schedule", 
                                 {
                                     "employee": employee["employee"],
@@ -1193,16 +1209,36 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
             """
             frappe.db.sql(query, values=[], as_dict=1)
             frappe.db.commit()
+        if selected_reliever:
+            reliever_id = selected_reliever.split('-')[0]
+            rel_emp_query = f"""
+            SELECT *
+            FROM `tabEmployee`
+            WHERE `employee_id` = '{reliever_id}'
+            """
+            rel_emp_query_results = (frappe.db.sql(rel_emp_query, as_dict=True)[0]).name
+            releiver_roster_assignment(rel_emp_query_results,roster_list)
         response("success", 200, {'message':'Days Off set successfully.'})
     except Exception as e:
         response("error", 200, None, str(e))
 
-def releiver_assignment(results,rel_emp_query_results,date):
-    employees = {rel_emp_query_results:date}
-    print(results)
-    print(rel_emp_query_results)
-    print(date)
-    schedule_staff(employees, results['shift'], operations_role, otRoster, start_date, project_end_date, keep_days_off=0, request_employee_schedule=0, day_off_ot=None, end_date=None, selected_days_only=0)
+def releiver_roster_assignment(reliver_emp,roster_list):
+    day_off_ot = 0
+    selected_reliever = reliver_emp
+    request_employee_schedule = 0
+    keep_days_off = 0
+    employee_list = [reliver_emp]
+    otRoster = 'false'
+    for roster_data in roster_list:
+        print(roster_data)
+        shift = roster_data['shift']
+        operations_role = roster_data['operations_role']
+        start_date = roster_data['start_datetime'].date()
+        end_date = roster_data['end_datetime'].date()
+        date = roster_data['date'].strftime("%Y-%m-%d")
+        employees = [{"employee":reliver_emp,"date":date}]
+        extreme_schedule(employees, shift, operations_role, otRoster, start_date, end_date, keep_days_off, day_off_ot,
+        request_employee_schedule, employee_list,selected_reliever)
 
 
 @frappe.whitelist()

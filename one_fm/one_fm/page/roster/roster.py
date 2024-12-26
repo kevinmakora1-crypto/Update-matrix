@@ -1230,7 +1230,6 @@ def releiver_roster_assignment(reliver_emp,roster_list):
     employee_list = [reliver_emp]
     otRoster = 'false'
     for roster_data in roster_list:
-        print(roster_data)
         shift = roster_data['shift']
         operations_role = roster_data['operations_role']
         start_date = roster_data['start_datetime'].date()

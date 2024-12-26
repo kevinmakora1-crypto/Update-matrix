@@ -1077,14 +1077,12 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
         querycontent = """"""
         roster_list=[]
 
-
         if not repeat_till and not cint(project_end_date) and not selected_dates:
             frappe.throw(_("Please select either a repeat till date or check the project end date option."))
 
         from one_fm.api.mobile.roster import month_range
         if cint(selected_dates):
             for employee in json.loads(employees):
-                emp = employee['employee']
                 date = employee['date']
                 start_date = getdate(date)
                 month_end_date = get_last_day(start_date)
@@ -1140,10 +1138,11 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                                 emp_query = f"""
                                     SELECT *
                                     FROM `tabEmployee Schedule`
-                                    WHERE `employee` = '{employee['employee']}' AND `date` = '{employee['date']}'
+                                    WHERE `name` = '{name}'
                                 """   
                                 roster_data = frappe.db.sql(emp_query, as_dict=True)[0]
-                                roster_list.append(roster_data)
+                                if roster_data not in roster_list:
+                                    roster_list.append(roster_data)                                
                                 update_day_off_ot = frappe.db.get_value("Employee Schedule", 
                                 {
                                     "employee": employee["employee"],
@@ -1176,10 +1175,11 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                                 emp_query = f"""
                                     SELECT *
                                     FROM `tabEmployee Schedule`
-                                    WHERE `employee` = '{employee['employee']}' AND `date` = '{employee['date']}'
+                                    WHERE `name` = '{name}'
                                 """   
                                 roster_data = frappe.db.sql(emp_query, as_dict=True)[0]
-                                roster_list.append(roster_data)
+                                if roster_data not in roster_list:
+                                    roster_list.append(roster_data)      
                                 update_day_off_ot = frappe.db.get_value("Employee Schedule", 
                                 {
                                     "employee": employee["employee"],

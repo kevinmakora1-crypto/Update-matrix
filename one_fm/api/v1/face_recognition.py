@@ -96,7 +96,7 @@ def enroll(employee_id: str = None, filename: str = None, video: str = None) -> 
 @frappe.whitelist()
 def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
                             skip_attendance: str = None, latitude: str = None, longitude: str = None,
-                            filename: str = None):
+                            filename: str = None,video: str = None)):
     """This method verifies user checking in/checking out.
 
     Args:
@@ -160,7 +160,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
         if not isinstance(longitude, float):
             return response("Bad Request", 400, None, "longitude must be of type float.")
 
-        video_file = frappe.request.files.get("video_file")
+        video_file = frappe.request.files.get("video_file") or video
         if not video_file:
             return response("Bad Request", 400, None, "Video File is required.")
 

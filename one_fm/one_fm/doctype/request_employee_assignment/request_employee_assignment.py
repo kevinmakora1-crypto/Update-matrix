@@ -39,7 +39,7 @@ def approve_assignment_request(doctype, docname):
 	doc = frappe.get_doc(doctype, docname)
 	if user_employee.name == doc.approver:
 		doc.workflow_state = "Approved"
-		update_employee_assignment(doc.employee, doc.to_project, doc.to_site, doc.to_shift)
+		update_employee_assignment(doc.employee, doc.to_project, doc.to_site, doc.to_shift,  doc.to_is_reliever, doc.to_default_operations_role)
 
 		requestor_user = frappe.db.get_value("Employee", doc.requestor, ["user_id"])
 		link = get_link_to_form(doctype, docname)
@@ -73,10 +73,12 @@ def reject_assignment_request(doctype, docname):
 	else:
 		frappe.throw(_("You cannot take actions for this document"))	
 
-def update_employee_assignment(employee, project, site, shift):
+def update_employee_assignment(employee, project, site, shift, is_reliever, default_operations_role=None):
 	frappe.db.set_value("Employee", employee, "project", val=project)
 	frappe.db.set_value("Employee", employee, "site", val=site)
 	frappe.db.set_value("Employee", employee, "shift", val=shift)
+	frappe.db.set_value("Employee", employee, "custom_operations_role_allocation", val=default_operations_role)
+	frappe.db.set_value("Employee", employee, "custom_is_reliever", val=is_reliever)
 	
 
 @frappe.whitelist()

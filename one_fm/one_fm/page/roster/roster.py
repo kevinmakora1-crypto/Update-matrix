@@ -52,7 +52,7 @@ def get_staff(assigned=1, employee_id=None, employee_name=None, company=None, pr
         select
             distinct emp.name, emp.employee_id, emp.employee_name, emp.image, emp.one_fm_nationality as nationality,
            usr.mobile_no, usr.name as email, emp.designation, emp.department, emp.shift, emp.site,
-         emp.project,opsite.account_supervisor_name as site_supervisor,opshift.supervisor_name as shift_supervisor
+         emp.project,opsite.account_supervisor_name as site_supervisor,opshift.supervisor_name as shift_supervisor, emp.custom_operations_role_allocation, emp.custom_is_reliever
         from `tabEmployee` as emp, `tabUser` as usr,`tabOperations Shift` as opshift,`tabOperations Site` as opsite
         where
         emp.project is not NULL
@@ -1279,7 +1279,7 @@ def get_shift_details_of_employee(emp,date):
 
 
 @frappe.whitelist()
-def assign_staff(employees, shift, request_employee_assignment):
+def assign_staff(employees, shift, request_employee_assignment, custom_is_reliever, custom_operations_role_allocation=None):
     if not employees:
         frappe.throw("Please select employees first")
     validation_logs = []
@@ -1300,12 +1300,12 @@ def assign_staff(employees, shift, request_employee_assignment):
 
             for employee in json.loads(employees):
                 if not cint(request_employee_assignment):
-                    frappe.enqueue(assign_job, employee=employee, shift=shift, site=site, project=project, is_async=True, queue="long")
+                    frappe.enqueue(assign_job, employee=employee, shift=shift, site=site, project=project, custom_operations_role_allocation=custom_operations_role_allocation, custom_is_reliever=custom_is_reliever, is_async=True, queue="long")
                 else:
-                    emp_project, emp_site, emp_shift = frappe.db.get_value("Employee", employee, ["project", "site", "shift"])
+                    emp_project, emp_site, emp_shift, emp_custom_operations_role_allocation, emp_custom_is_reliever = frappe.db.get_value("Employee", employee, ["project", "site", "shift", "custom_operations_role_allocation", "custom_is_reliever"])
                     site, project = frappe.get_value("Operations Shift", shift, ["site", "project"])
-                    if emp_project != project or emp_site != site or emp_shift != shift:
-                        frappe.enqueue(create_request_employee_assignment, employee=employee, from_shift=emp_shift, to_shift=shift, is_async=True, queue="long")
+                    if emp_project != project or emp_site != site or emp_shift != shift or emp_custom_operations_role_allocation != custom_operations_role_allocation or emp_custom_is_reliever != custom_is_reliever:
+                        frappe.enqueue(create_request_employee_assignment, employee=employee, from_shift=emp_shift, to_shift=shift, from_custom_operations_role_allocation=emp_custom_operations_role_allocation, to_custom_operations_role_allocation=custom_operations_role_allocation, from_custom_is_reliever=emp_custom_is_reliever, to_custom_is_reliever=custom_is_reliever, is_async=True, queue="long")
             frappe.enqueue(update_roster, key="staff_view", is_async=True, queue="long")
             end = time.time()
 
@@ -1315,19 +1315,25 @@ def assign_staff(employees, shift, request_employee_assignment):
             frappe.log_error(str(e))
             frappe.throw(_(str(e)))
 
-def create_request_employee_assignment(employee, from_shift, to_shift):
+def create_request_employee_assignment(employee, from_shift, to_shift, from_custom_operations_role_allocation, to_custom_operations_role_allocation, from_custom_is_reliever, to_custom_is_reliever):
     req_ea_doc = frappe.new_doc("Request Employee Assignment")
     req_ea_doc.employee = employee
     req_ea_doc.from_shift = from_shift
     req_ea_doc.to_shift = to_shift
+    req_ea_doc.from_default_operations_role = from_custom_operations_role_allocation
+    req_ea_doc.to_default_operations_role = to_custom_operations_role_allocation
+    req_ea_doc.from_is_reliever = from_custom_is_reliever
+    req_ea_doc.to_is_reliever = to_custom_is_reliever
     req_ea_doc.save(ignore_permissions=True)
 
 
-def assign_job(employee, shift, site, project):
+def assign_job(employee, shift, site, project, custom_operations_role_allocation, custom_is_reliever):
 
     frappe.set_value("Employee", employee, "shift", shift)
     frappe.set_value("Employee", employee, "site", site)
     frappe.set_value("Employee", employee, "project", project)
+    frappe.set_value("Employee", employee, "custom_operations_role_allocation", custom_operations_role_allocation)
+    frappe.set_value("Employee", employee, "custom_is_reliever", custom_is_reliever)
 
 
 @frappe.whitelist(allow_guest=True)

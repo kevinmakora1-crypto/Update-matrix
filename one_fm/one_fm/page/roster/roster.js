@@ -2435,7 +2435,7 @@ function render_staff_list_view(data) {
 	data.forEach(function (employee) {
 
 
-		let { name, employee_id, employee_name, nationality, mobile_no, email, designation, project, site, shift, department,site_supervisor,shift_supervisor } = employee;
+		let { name, employee_id, employee_name, nationality, mobile_no, email, designation, project, site, shift, department,site_supervisor,shift_supervisor,custom_operations_role_allocation,custom_is_reliever } = employee;
 		let row = `
 		<tr>
 			<td>
@@ -2485,6 +2485,12 @@ function render_staff_list_view(data) {
 			</td>
 			<td>
 				${department || 'N/A'}
+			</td>
+			<td>
+				${custom_operations_role_allocation || 'N/A'}
+			</td>
+			<td>
+				${custom_is_reliever ? 'Yes' : 'No'}
 			</td>
 		</tr>`;
 		$staffdatatable.append(row);
@@ -2766,15 +2772,32 @@ function staff_edit_dialog() {
 					}
 				}
 			},
+			{
+				'label': 'Default Operations Role', 'fieldname': 'custom_operations_role_allocation', 'fieldtype': 'Link', 'options': 'Operations Role', 'reqd': 1, get_query: function () {
+					let shift = d.get_value('shift');
+					if (shift) {
+						return {
+							"filters": { shift },
+							"page_len": 9999
+						};
+					}
+				}
+			},
+			
 			{'label': 'Request Employee Assignment', 'fieldname': 'request_employee_assignment', 'fieldtype': 'Check'},
+			{'label': 'Is Reliever', 'fieldname': 'custom_is_reliever', 'fieldtype': 'Check', onchange: function () {
+				let is_reliever = d.get_value('custom_is_reliever');
+				d.set_df_property('custom_operations_role_allocation', 'reqd', !is_reliever);
+			}
+			},
 		],
 		primary_action: function () {
-			let { shift, request_employee_assignment } = d.get_values();
+			let { shift, request_employee_assignment, custom_operations_role_allocation, custom_is_reliever } = d.get_values();
 
 			$('#cover-spin').show(0);
 			frappe.call({
 				method: 'one_fm.one_fm.page.roster.roster.assign_staff',
-				args: { employees, shift, request_employee_assignment},
+				args: { employees, shift, request_employee_assignment, custom_operations_role_allocation, custom_is_reliever},
 				callback: function (r) {
 
 					d.hide();

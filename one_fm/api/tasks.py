@@ -1817,7 +1817,7 @@ def fetch_employees_not_in_checkin():
 		holiday_list_employees = [i.name for i in frappe.db.sql(f"""SELECT name from `tabEmployee` WHERE
 			status = 'Active' AND
 			holiday_list IN {holiday_list_tuple}
-		""")]
+		""")] if holiday_list else []
 		employees_yet_to_checkin = [i for i in employees_yet_to_checkin if not i in holiday_list_employees]
 		
 		employee_details = frappe.db.get_list("Employee", filters={
@@ -2099,7 +2099,7 @@ def initiate_checkin_notification(res):
 	
 	
 	# return all_ended_shifts+all_started_shifts
-
+@frappe.whitelist()
 def run_checkin_reminder():
 	# execute first checkin reminder
 

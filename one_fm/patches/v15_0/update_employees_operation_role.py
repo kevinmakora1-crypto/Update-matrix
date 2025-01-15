@@ -2,7 +2,7 @@ import frappe
 
 @frappe.whitelist()
 def execute():
-    # Fetch all employees and their schedules in a single query
+    # Query to fetch employees and their schedules
     query = """
         SELECT e.name AS employee, e.shift AS current_shift, es.shift AS schedule_shift, es.operations_role
         FROM `tabEmployee` AS e
@@ -28,22 +28,24 @@ def execute():
         if schedule["schedule_shift"] and schedule["current_shift"] == schedule["schedule_shift"]:
             updates.append((schedule["operations_role"], schedule["employee"]))
 
-    # Execute bulk update if there are matching records
+    # Proceed only if there are matching records
     if updates:
-        update_query = """
-            UPDATE `tabEmployee`
-            SET custom_operations_role_allocation = CASE name
-        """
-        update_cases = []
+        # Prepare the CASE statement and employee IDs for the update
+        case_statements = []
         employee_ids = []
         for operations_role, employee_name in updates:
-            update_cases.append(f"WHEN '{employee_name}' THEN '{operations_role}'")
+            case_statements.append(f"WHEN '{employee_name}' THEN '{operations_role}'")
             employee_ids.append(f"'{employee_name}'")
         
-        # Combine the query
-        update_query += " ".join(update_cases) + " END WHERE name IN (" + ", ".join(employee_ids) + ")"
-
+        # Bulk update query
+        update_query = f"""
+            UPDATE `tabEmployee`
+            SET custom_operations_role_allocation = CASE name
+                {' '.join(case_statements)}
+            END
+            WHERE name IN ({', '.join(employee_ids)})
+        """
+        
         # Execute the query
         frappe.db.sql(update_query)
         frappe.db.commit()
-    return results

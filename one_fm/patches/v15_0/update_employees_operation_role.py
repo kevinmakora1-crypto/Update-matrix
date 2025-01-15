@@ -30,20 +30,22 @@ def execute():
 
     # Execute bulk update if there are matching records
     if updates:
-        update_query = """
-            UPDATE `tabEmployee`
-            SET custom_operations_role_allocation = CASE name
-        """
         update_cases = []
         employee_ids = []
         for operations_role, employee_name in updates:
-            update_cases.append(f"WHEN '{employee_name}' THEN '{operations_role}'")
-            employee_ids.append(f"'{employee_name}'")
+            update_cases.append("WHEN %s THEN %s")
+            employee_ids.append(employee_name)  # Add employee name
+            employee_ids.append(operations_role)  # Add corresponding operation role
         
-        # Combine the query
-        update_query += " ".join(update_cases) + " END WHERE name IN (" + ", ".join(employee_ids) + ")"
-
+        # Bulk update query
+        update_query = f"""
+            UPDATE `tabEmployee`
+            SET custom_operations_role_allocation = CASE name
+                {' '.join(update_cases)}
+            END
+            WHERE name IN ({', '.join(['%s'] * len(updates))})
+        """
+        
         # Execute the query
-        frappe.db.sql(update_query)
+        frappe.db.sql(update_query, tuple(employee_ids + [emp[0] for emp in updates]))
         frappe.db.commit()
-    return results

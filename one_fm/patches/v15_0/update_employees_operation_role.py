@@ -31,17 +31,17 @@ def execute():
     # Execute bulk update if there are matching records
     if updates:
         # Prepare the CASE statement and employee IDs for the update
-        case_statements = []
+        update_cases = []
         employee_ids = []
         for operations_role, employee_name in updates:
-            case_statements.append(f"WHEN '{employee_name}' THEN '{operations_role}'")
+            update_cases.append(f"WHEN '{employee_name}' THEN '{operations_role}'")
             employee_ids.append(f"'{employee_name}'")
         
         # Bulk update query
         update_query = f"""
             UPDATE `tabEmployee`
             SET custom_operations_role_allocation = CASE name
-                {' '.join(case_statements)}
+                {' '.join(update_cases)}
             END
             WHERE name IN ({', '.join(employee_ids)})
         """

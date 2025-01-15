@@ -2,7 +2,7 @@ import frappe
 
 @frappe.whitelist()
 def execute():
-    # Query to fetch employees and their schedules
+    # Fetch all employees and their schedules in a single query
     query = """
         SELECT e.name AS employee, e.shift AS current_shift, es.shift AS schedule_shift, es.operations_role
         FROM `tabEmployee` AS e
@@ -28,7 +28,7 @@ def execute():
         if schedule["schedule_shift"] and schedule["current_shift"] == schedule["schedule_shift"]:
             updates.append((schedule["operations_role"], schedule["employee"]))
 
-    # Proceed only if there are matching records
+    # Execute bulk update if there are matching records
     if updates:
         # Prepare the CASE statement and employee IDs for the update
         case_statements = []

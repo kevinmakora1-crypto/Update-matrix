@@ -30,7 +30,6 @@ def execute():
 
     # Execute bulk update if there are matching records
     if updates:
-        # Prepare the CASE statement and employee IDs for the update
         update_cases = []
         employee_ids = []
         for operations_role, employee_name in updates:

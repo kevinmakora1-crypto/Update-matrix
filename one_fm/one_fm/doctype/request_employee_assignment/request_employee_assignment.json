@@ -9,16 +9,12 @@
   "employee_name",
   "sec_br_1",
   "from_shift",
-  "from_default_operations_role",
-  "from_is_reliever",
   "from_site",
   "from_project",
   "approver",
   "approver_name",
   "col_br_1",
   "to_shift",
-  "to_default_operations_role",
-  "to_is_reliever",
   "to_site",
   "to_project",
   "requestor",
@@ -120,30 +116,6 @@
    "fieldtype": "Link",
    "label": "Requestor",
    "options": "Employee"
-  },
-  {
-   "fieldname": "from_default_operations_role",
-   "fieldtype": "Link",
-   "label": "From Default Operations Role",
-   "options": "Operations Role"
-  },
-  {
-   "default": "0",
-   "fieldname": "from_is_reliever",
-   "fieldtype": "Check",
-   "label": "From Is Reliever"
-  },
-  {
-   "fieldname": "to_default_operations_role",
-   "fieldtype": "Link",
-   "label": "To Default Operations Role",
-   "options": "Operations Role"
-  },
-  {
-   "default": "0",
-   "fieldname": "to_is_reliever",
-   "fieldtype": "Check",
-   "label": "To Is Reliever"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -169,6 +141,5 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
  "track_changes": 1
 }

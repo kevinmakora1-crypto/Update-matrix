@@ -1,0 +1,168 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap" rel="stylesheet">
+<style>
+    .subject {
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    h2 {
+        color: #111;
+    }
+    .container {
+        display: flex;
+        justify-content: space-between;
+        border: 0px solid #fff;
+        padding: 0;
+    }
+    .section {
+        width: 50%;
+        box-sizing: border-box;
+        padding: 0;
+    }
+    .english {
+        font-family: Arial, sans-serif;
+        text-align: left;
+    }
+    .arabic {
+        font-family: "Cairo", sans-serif;
+        text-align: right;
+        direction: rtl;
+    }
+    .section p {
+        margin: 5px 0;
+        line-height: 1.6;
+    }
+    .details {
+        font-weight: bold;
+    }
+    ul li {
+        margin-bottom: 5px;
+    }
+    .bordered {
+        border: 0px solid #fff;
+        padding: 10px;
+        min-height: 100px;
+    }
+    .section .bordered {
+        margin: 0;
+    }
+    .row {
+        display: flex;
+    }
+    .row .section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: stretch;
+    }
+    .bordered-flex {
+        flex-grow: 1;
+    }
+</style>
+<div class="">
+    <h2 class="text-center">{%= __("Proof of Work Report") %}</h2>
+    <div class="subject">
+        <table class="table table-borderless">
+            <tr>
+                <td class="english">
+                    <p>
+                        Acknowledgement of receipt of service according to the contract dated .....................<br>
+                        Submitted to the company: ...................................................................<br>
+                        The undersigned hereby approves receipt of the service provided by <br> One Facilities Management Company LLC according to the contract concluded between them<br>
+                    </p>
+                </td>
+                <td class="arabic" style="text-align: right;">
+                    <p>
+                        إقرار باستلام الخدمة طبقاً للعقد المبرم بتاريخ ….. / …/ …….<br>
+                        مقدم إلى الشركة: ………….<br>
+                        يقر الموقع أدناه باستلام الخدمة المقدمة من شركة ون لإدارة المرافق ذ.م.م طبقاً للعقد المبرم بينهما
+                        <br>
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <table class="table table-bordered">
+        <!-- heading -->
+        <thead>
+            <tr>
+            <th> # </th>
+            {% for col in columns %}
+                {% if col.name && col._id !== "_check" %}
+                <th
+                    {% if col.minWidth %}
+                        style="min-width: {{ col.minWidth }}px"
+                    {% endif %}
+                    {% if col.docfield && frappe.model.is_numeric_field(col.docfield) %}
+                        class="text-right"
+                    {% endif %}
+                >
+                    {{ __(col.name) }}</th>
+                {% endif %}
+            {% endfor %}
+            </tr>
+        </thead>
+        <!-- body -->
+        <tbody>
+            {% for row in data %}
+                <tr style="height: 30px">
+                <td {% if row.bold == 1 %} style="font-weight: bold" {% endif %}>
+                    <span> {{ row._index + 1 }} </span>
+                </td>
+                {% for col in columns %}
+                    {% if col.name && col._id !== "_check" %}
+                        {% var value = col.fieldname ? row[col.fieldname] : row[col.id] %}
+                        {% var longest_word = cstr(value).split(' ').reduce((longest, word) => word.length > longest.length ? word : longest, ''); %}
+                        <td {% if row.bold == 1 %} style="font-weight: bold" {% endif %} {% if longest_word.length > 45 %} class="overflow-wrap-anywhere" {% endif %}>
+                            <span {% if col._index == 0 %} style="padding-left: {%= cint(row.indent) * 2 %}em" {% endif %}>
+                                {% format_data = row.is_total_row && ["Currency", "Float"].includes(col.fieldtype) ? data[0] : row %}
+                                {% if (row.is_total_row && col._index == 0) { %}
+                                    {{ __("Total") }}
+                                {% } else { %}
+                                    {{
+                                        col.formatter
+                                            ? col.formatter(row._index, col._index, value, col, format_data, true)
+                                            : col.format
+                                                ? col.format(value, row, col, format_data)
+                                                : col.docfield
+                                                    ? frappe.format(value, col.docfield)
+                                                    : value
+                                    }}
+                                {% } %}
+                            </span>
+                        </td>
+                    {% endif %}
+                {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="subject">
+        <table class="table table-borderless">
+            <tr>
+                <td class="english">  
+                    <p>
+                        Consent to receive the service:
+                        <br><br>
+                        Name:
+                        <br><br>
+                        Signature:__________________<br>
+                        Date:<br>
+                    </p>
+                </td>
+                <td class="arabic" style="text-align: right;">
+                    <p>
+                        الموافقه علر استلام الخدمه:
+                        <br><br>
+                        الاسم:
+                        <br><br>
+                        التوقيع: ____________________<br>
+                        التاريخ:<br>
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <hr>
+</div>

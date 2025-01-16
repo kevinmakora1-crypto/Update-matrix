@@ -1279,7 +1279,7 @@ def get_shift_details_of_employee(emp,date):
 
 
 @frappe.whitelist()
-def assign_staff(employees, shift, request_employee_assignment, custom_is_reliever, custom_operations_role_allocation=None):
+def assign_staff(employees, shift, custom_is_reliever, custom_operations_role_allocation=None, request_employee_assignment=None):
     if not employees:
         frappe.throw("Please select employees first")
     validation_logs = []
@@ -1302,10 +1302,10 @@ def assign_staff(employees, shift, request_employee_assignment, custom_is_reliev
                 if not cint(request_employee_assignment):
                     frappe.enqueue(assign_job, employee=employee, shift=shift, site=site, project=project, custom_operations_role_allocation=custom_operations_role_allocation, custom_is_reliever=custom_is_reliever, is_async=True, queue="long")
                 else:
-                    emp_project, emp_site, emp_shift, emp_custom_operations_role_allocation, emp_custom_is_reliever = frappe.db.get_value("Employee", employee, ["project", "site", "shift", "custom_operations_role_allocation", "custom_is_reliever"])
+                    emp_project, emp_site, emp_shift = frappe.db.get_value("Employee", employee, ["project", "site", "shift"])
                     site, project = frappe.get_value("Operations Shift", shift, ["site", "project"])
-                    if emp_project != project or emp_site != site or emp_shift != shift or emp_custom_operations_role_allocation != custom_operations_role_allocation or emp_custom_is_reliever != custom_is_reliever:
-                        frappe.enqueue(create_request_employee_assignment, employee=employee, from_shift=emp_shift, to_shift=shift, from_custom_operations_role_allocation=emp_custom_operations_role_allocation, to_custom_operations_role_allocation=custom_operations_role_allocation, from_custom_is_reliever=emp_custom_is_reliever, to_custom_is_reliever=custom_is_reliever, is_async=True, queue="long")
+                    if emp_project != project or emp_site != site or emp_shift != shift:
+                        frappe.enqueue(create_request_employee_assignment, employee=employee, from_shift=emp_shift, to_shift=shift, is_async=True, queue="long")
             frappe.enqueue(update_roster, key="staff_view", is_async=True, queue="long")
             end = time.time()
 
@@ -1315,15 +1315,11 @@ def assign_staff(employees, shift, request_employee_assignment, custom_is_reliev
             frappe.log_error(str(e))
             frappe.throw(_(str(e)))
 
-def create_request_employee_assignment(employee, from_shift, to_shift, from_custom_operations_role_allocation, to_custom_operations_role_allocation, from_custom_is_reliever, to_custom_is_reliever):
+def create_request_employee_assignment(employee, from_shift, to_shift):
     req_ea_doc = frappe.new_doc("Request Employee Assignment")
     req_ea_doc.employee = employee
     req_ea_doc.from_shift = from_shift
     req_ea_doc.to_shift = to_shift
-    req_ea_doc.from_default_operations_role = from_custom_operations_role_allocation
-    req_ea_doc.to_default_operations_role = to_custom_operations_role_allocation
-    req_ea_doc.from_is_reliever = from_custom_is_reliever
-    req_ea_doc.to_is_reliever = to_custom_is_reliever
     req_ea_doc.save(ignore_permissions=True)
 
 
@@ -1508,3 +1504,15 @@ def determine_availability(current_date, start_date, total_days, day_off_categor
         return "Working" if day_index < total_days - num_days_off else "Day Off OT"
 
     return "Working"  # Default to working if no category matches
+
+
+@frappe.whitelist()
+def get_employee_details(employee_id):
+    employee = frappe.get_doc("Employee", employee_id)
+    return {
+        "project": employee.project,
+        "site": employee.site,
+        "shift": employee.shift,
+        "custom_is_reliever": employee.custom_is_reliever,
+        "custom_operations_role_allocation": employee.custom_operations_role_allocation
+    }

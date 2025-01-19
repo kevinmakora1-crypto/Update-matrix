@@ -1,11 +1,20 @@
+import json
 import frappe
 from frappe import _
 from frappe.utils import get_fullname
+from bs4 import BeautifulSoup
+from datetime import datetime,timezone
+from google.oauth2 import service_account
 from one_fm.processor import is_user_id_company_prefred_email_in_employee
+from one_fm.utils import get_gmail_service
 
 def validate_todo(doc, method):
 	notify_todo_status_change(doc)
 	set_todo_type_from_refernce_doc(doc)
+
+	
+	create_google_task(doc)
+
 
 def notify_todo_status_change(doc):
 	if doc.is_new():
@@ -52,3 +61,80 @@ def set_todo_type_from_refernce_doc(doc):
 			doc.type = frappe.db.get_value(doc.reference_type, doc.reference_name, 'type')
 		else:
 			doc.type = "Action"
+
+
+# from google.oauth2.credentials import Credentials
+# from google_auth_oauthlib.flow import InstalledAppFlow
+# from googleapiclient.discovery import build
+
+# # Define the scope for Google Tasks API
+# SCOPES = ['https://www.googleapis.com/auth/tasks']
+
+# def authenticate_google_tasks():
+#     """Authenticate and return the Google Tasks service."""
+#     creds = None
+#     # The token.json stores the user's access and refresh tokens
+#     # Create one by authenticating for the first time
+#     try:
+#         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+#     except:
+#         # If no valid credentials, authenticate the user
+#         flow = InstalledAppFlow.from_client_secrets_file('/Users/samdani/Desktop/sample/credentials.json', SCOPES)
+#         creds = flow.run_local_server(port=0)
+#         # Save the credentials for future use
+#         with open('token.json', 'w') as token_file:
+#             token_file.write(creds.to_json())
+
+#     return build('tasks', 'v1', credentials=creds)
+
+
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from frappe import _
+
+# Define the scope for Google Tasks API
+SCOPES = ['https://www.googleapis.com/auth/tasks']
+
+def authenticate_google_tasks(user_email):
+    """Authenticate and return the Google Tasks service for a specific user."""
+    creds = None
+    token_path = frappe.get_site_path('private', 'files', f'{user_email}_token.json')
+
+    try:
+        # Check if credentials exist for the user
+        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+    except:
+        # If no valid credentials, request authorization for the user
+        flow = InstalledAppFlow.from_client_secrets_file('/Users/samdani/Desktop/sample/credentials.json', SCOPES)
+        creds = flow.run_local_server(port=0)
+
+        # Save the credentials for future use
+        with open(token_path, 'w') as token_file:
+            token_file.write(creds.to_json())
+
+    return build('tasks', 'v1', credentials=creds)
+
+
+def create_google_task(doc):
+	employee_email = doc.allocated_to
+	if not employee_email:
+		frappe.throw(_("No assigned user found for this ToDo"))
+	service = get_gmail_service(employee_email)
+	print("samdani")
+	print(service)
+	html_content = doc.description
+	soup = BeautifulSoup(html_content, 'html.parser')
+	task_notes = soup.find('p').get_text()
+	task_title = doc.custom_google_task_title
+	date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
+	due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
+
+	task_body = {
+        'title': task_title,
+        'notes': task_notes,
+        'due': due_date
+    }
+	result = service.tasks().insert(tasklist='@default', body=task_body).execute()
+	print(f"Task created: {result['title']} (ID: {result['id']})")
+	return result

@@ -4,17 +4,16 @@ from frappe import _
 from frappe.utils import get_fullname
 from bs4 import BeautifulSoup
 from datetime import datetime,timezone
-from google.oauth2 import service_account
 from one_fm.processor import is_user_id_company_prefred_email_in_employee
 from one_fm.utils import get_gmail_service
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from frappe import _
 
 def validate_todo(doc, method):
 	notify_todo_status_change(doc)
 	set_todo_type_from_refernce_doc(doc)
-
-	
-	create_google_task(doc)
-
 
 def notify_todo_status_change(doc):
 	if doc.is_new():
@@ -63,36 +62,6 @@ def set_todo_type_from_refernce_doc(doc):
 			doc.type = "Action"
 
 
-# from google.oauth2.credentials import Credentials
-# from google_auth_oauthlib.flow import InstalledAppFlow
-# from googleapiclient.discovery import build
-
-# # Define the scope for Google Tasks API
-# SCOPES = ['https://www.googleapis.com/auth/tasks']
-
-# def authenticate_google_tasks():
-#     """Authenticate and return the Google Tasks service."""
-#     creds = None
-#     # The token.json stores the user's access and refresh tokens
-#     # Create one by authenticating for the first time
-#     try:
-#         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-#     except:
-#         # If no valid credentials, authenticate the user
-#         flow = InstalledAppFlow.from_client_secrets_file('/Users/samdani/Desktop/sample/credentials.json', SCOPES)
-#         creds = flow.run_local_server(port=0)
-#         # Save the credentials for future use
-#         with open('token.json', 'w') as token_file:
-#             token_file.write(creds.to_json())
-
-#     return build('tasks', 'v1', credentials=creds)
-
-
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from frappe import _
-
 # Define the scope for Google Tasks API
 SCOPES = ['https://www.googleapis.com/auth/tasks']
 
@@ -106,7 +75,7 @@ def authenticate_google_tasks(user_email):
         creds = Credentials.from_authorized_user_file(token_path, SCOPES)
     except:
         # If no valid credentials, request authorization for the user
-        flow = InstalledAppFlow.from_client_secrets_file('/Users/samdani/Desktop/sample/credentials.json', SCOPES)
+        flow = InstalledAppFlow.from_client_secrets_file('/Users/samdani/Desktop/sample/sites/onefm.localhost/private/files/credentials.json', SCOPES)
         creds = flow.run_local_server(port=0)
 
         # Save the credentials for future use
@@ -116,13 +85,12 @@ def authenticate_google_tasks(user_email):
     return build('tasks', 'v1', credentials=creds)
 
 
-def create_google_task(doc):
+def create_google_task_on_todo_creation(doc, method):
 	employee_email = doc.allocated_to
 	if not employee_email:
 		frappe.throw(_("No assigned user found for this ToDo"))
-	service = get_gmail_service(employee_email)
-	print("samdani")
-	print(service)
+	
+	service = authenticate_google_tasks(employee_email)
 	html_content = doc.description
 	soup = BeautifulSoup(html_content, 'html.parser')
 	task_notes = soup.find('p').get_text()
@@ -136,5 +104,24 @@ def create_google_task(doc):
         'due': due_date
     }
 	result = service.tasks().insert(tasklist='@default', body=task_body).execute()
+	task_id = result['id']
+	doc.custom_google_task_id = task_id 
+	doc.save()
 	print(f"Task created: {result['title']} (ID: {result['id']})")
 	return result
+
+def update_google_task_on_todo_status_change(doc, method):
+	if doc.custom_google_task_id:
+		employee_email = doc.allocated_to
+		if not employee_email:
+			frappe.throw(_("No assigned user found for this ToDo"))
+		if doc.status == "Open":
+			pass
+		else:
+			service = authenticate_google_tasks(employee_email)
+			task = service.tasks().get(task=doc.custom_google_task_id).execute()
+			task['status'] = 'completed'
+			print("samdaniiii ia ma ")
+			result = service.tasks().update(task=doc.custom_google_task_id, body=task).execute()
+			print(f"Task '{result['title']}' marked as completed.")
+			return result

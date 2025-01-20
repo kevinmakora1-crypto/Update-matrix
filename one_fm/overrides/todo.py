@@ -105,9 +105,9 @@ def update_google_task_on_todo_status_change(doc, method):
 		if not employee_email:
 			frappe.throw(_("No assigned user found for this ToDo"))
 		service = authenticate_google_tasks(employee_email)
+		task = service.tasks().get(tasklist='@default', task=doc.custom_google_task_id).execute()
 		if doc.status == "Open":
 			try:
-				task = service.tasks().get(tasklist='@default', task=doc.custom_google_task_id).execute()
 				task_title = doc.custom_google_task_title
 				html_content = doc.description
 				try:
@@ -120,11 +120,9 @@ def update_google_task_on_todo_status_change(doc, method):
 				task['title'] = task_title
 				task['notes'] = task_notes
 				task['due'] = due_date
-				result = service.tasks().update(tasklist='@default',task=doc.custom_google_task_id, body=task).execute()
 			except:
 				pass
 		else:
-			task = service.tasks().get(tasklist='@default', task=doc.custom_google_task_id).execute()
 			task['status'] = 'completed'
-			result = service.tasks().update(tasklist='@default',task=doc.custom_google_task_id, body=task).execute()
-			return result
+		result = service.tasks().update(tasklist='@default',task=doc.custom_google_task_id, body=task).execute()
+		return result

@@ -10,6 +10,8 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from frappe import _
+from google.oauth2 import service_account
+
 
 def validate_todo(doc, method):
 	notify_todo_status_change(doc)
@@ -61,28 +63,16 @@ def set_todo_type_from_refernce_doc(doc):
 		else:
 			doc.type = "Action"
 
-
-# Define the scope for Google Tasks API
-SCOPES = ['https://www.googleapis.com/auth/tasks']
-
-def authenticate_google_tasks(user_email):
-    """Authenticate and return the Google Tasks service for a specific user."""
-    creds = None
-    token_path = frappe.get_site_path('private', 'files', f'{user_email}_token.json')
-
-    try:
-        # Check if credentials exist for the user
-        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
-    except:
-        # If no valid credentials, request authorization for the user
-        flow = InstalledAppFlow.from_client_secrets_file('/Users/samdani/Desktop/sample/sites/onefm.localhost/private/files/credentials.json', SCOPES)
-        creds = flow.run_local_server(port=0)
-
-        # Save the credentials for future use
-        with open(token_path, 'w') as token_file:
-            token_file.write(creds.to_json())
-
-    return build('tasks', 'v1', credentials=creds)
+def authenticate_google_tasks(employee_email):
+	credentials_path = frappe.get_site_path('private', 'files', 'gcp.json')
+	try:
+		with open(credentials_path, 'r') as file:
+			credentials_dict = json.load(file)
+	except Exception:
+		pass
+	credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=['https://www.googleapis.com/auth/tasks'])
+	delegated_credentials = credentials.with_subject(employee_email)
+	return build('tasks', 'v1', credentials=delegated_credentials)
 
 
 def create_google_task_on_todo_creation(doc, method):
@@ -91,13 +81,16 @@ def create_google_task_on_todo_creation(doc, method):
 		frappe.throw(_("No assigned user found for this ToDo"))
 	
 	service = authenticate_google_tasks(employee_email)
+	
 	html_content = doc.description
 	soup = BeautifulSoup(html_content, 'html.parser')
-	task_notes = soup.find('p').get_text()
+	try:
+		task_notes = soup.find('p').get_text()
+	except:
+		task_notes = html_content
 	task_title = doc.custom_google_task_title
 	date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
 	due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
-
 	task_body = {
         'title': task_title,
         'notes': task_notes,
@@ -107,7 +100,6 @@ def create_google_task_on_todo_creation(doc, method):
 	task_id = result['id']
 	doc.custom_google_task_id = task_id 
 	doc.save()
-	print(f"Task created: {result['title']} (ID: {result['id']})")
 	return result
 
 def update_google_task_on_todo_status_change(doc, method):
@@ -115,13 +107,27 @@ def update_google_task_on_todo_status_change(doc, method):
 		employee_email = doc.allocated_to
 		if not employee_email:
 			frappe.throw(_("No assigned user found for this ToDo"))
+		service = authenticate_google_tasks(employee_email)
 		if doc.status == "Open":
-			pass
+			try:
+				task = service.tasks().get(tasklist='@default', task=doc.custom_google_task_id).execute()
+				task_title = doc.custom_google_task_title
+				html_content = doc.description
+				soup = BeautifulSoup(html_content, 'html.parser')
+				try:
+					task_notes = soup.find('p').get_text()
+				except:
+					task_notes = html_content
+				date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
+				due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
+				task['title'] = task_title
+				task['notes'] = task_notes
+				task['due'] = due_date
+				result = service.tasks().update(tasklist='@default',task=doc.custom_google_task_id, body=task).execute()
+			except:
+				pass
 		else:
-			service = authenticate_google_tasks(employee_email)
-			task = service.tasks().get(task=doc.custom_google_task_id).execute()
+			task = service.tasks().get(tasklist='@default', task=doc.custom_google_task_id).execute()
 			task['status'] = 'completed'
-			print("samdaniiii ia ma ")
-			result = service.tasks().update(task=doc.custom_google_task_id, body=task).execute()
-			print(f"Task '{result['title']}' marked as completed.")
+			result = service.tasks().update(tasklist='@default',task=doc.custom_google_task_id, body=task).execute()
 			return result

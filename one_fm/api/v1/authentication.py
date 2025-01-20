@@ -563,6 +563,9 @@ def user_login(employee_id, password):
 			msg.update({"supervisor": 1})
 		else:
 			msg.update({"supervisor": 0})
+		endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
+		msg['endpoint_state'] = endpoint_state
+  
 		response("success", 200, msg)
 	except frappe.exceptions.AuthenticationError:
 		print('auth eror')

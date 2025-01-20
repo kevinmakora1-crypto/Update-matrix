@@ -1075,7 +1075,7 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
         creation = now()
         owner = frappe.session.user
         roster_type = "Basic"
-        
+
         id_list = []
         query = """
             INSERT INTO `tabEmployee Schedule` (`name`, `employee`, `date`, `shift`, `site`, `project`, `shift_type`, `employee_availability`,
@@ -1098,7 +1098,7 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                        SELECT *
                        FROM `tabEmployee Schedule`
                        WHERE `employee` = '{employee['employee']}' AND `date` = '{employee['date']}'
-                   """   
+                   """
                 try:
                     roster_data = frappe.db.sql(emp_query, as_dict=True)[0]
                 except:
@@ -1112,7 +1112,7 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                         '', "Day Off", "", "", "Basic",
                         0, "{owner}", "{owner}", "{creation}", "{creation}"
                     ),"""
-                    update_day_off_ot = frappe.db.get_value("Employee Schedule", 
+                    update_day_off_ot = frappe.db.get_value("Employee Schedule",
                     {
                         "employee": employee["employee"],
                         "day_off_ot": 1,
@@ -1125,7 +1125,6 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                 end_date = None
                 if repeat_till and not cint(project_end_date):
                     end_date = repeat_till
-
                 if repeat_freq == "Weekly":
                     for employee in json.loads(employees):
                         if cint(project_end_date):
@@ -1150,14 +1149,14 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                                     SELECT *
                                     FROM `tabEmployee Schedule`
                                     WHERE `name` = '{name}'
-                                """  
+                                """
                                 try:
                                     roster_data = frappe.db.sql(emp_query, as_dict=True)[0]
-                                except:    
+                                except:
                                     roster_data = get_shift_details_of_employee(employee['employee'],date.date())
                                 if roster_data not in roster_list:
                                     roster_list.append(roster_data)
-                                update_day_off_ot = frappe.db.get_value("Employee Schedule", 
+                                update_day_off_ot = frappe.db.get_value("Employee Schedule",
                                 {
                                     "employee": employee["employee"],
                                     "day_off_ot": 1,
@@ -1190,15 +1189,15 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                                     SELECT *
                                     FROM `tabEmployee Schedule`
                                     WHERE `name` = '{name}'
-                                """   
+                                """
                                 try:
-                                    roster_data = frappe.db.sql(emp_query, as_dict=True)[0]  
+                                    roster_data = frappe.db.sql(emp_query, as_dict=True)[0]
                                 except:
                                     roster_data = get_shift_details_of_employee(employee['employee'],date.date())
                                 if roster_data not in roster_list:
                                     roster_list.append(roster_data)
-                                    
-                                update_day_off_ot = frappe.db.get_value("Employee Schedule", 
+
+                                update_day_off_ot = frappe.db.get_value("Employee Schedule",
                                 {
                                     "employee": employee["employee"],
                                     "day_off_ot": 1,
@@ -1331,7 +1330,6 @@ def assign_job(employee, shift, site, project, custom_operations_role_allocation
     frappe.set_value("Employee", employee, "custom_operations_role_allocation", custom_operations_role_allocation)
     frappe.set_value("Employee", employee, "custom_is_reliever", custom_is_reliever)
 
-
 @frappe.whitelist(allow_guest=True)
 def search_staff(key, search_term):
     conds = ""
@@ -1361,7 +1359,7 @@ def get_employee_detail(employee_pk):
     if employee_pk:
         pk, employee_id, employee_name, enrolled, cell_number = frappe.db.get_value("Employee", employee_pk, ["name", "employee_id", "employee_name", "enrolled", "cell_number"])
         return {'pk':pk, 'employee_id': employee_id, 'employee_name': employee_name, 'enrolled': enrolled, "cell_number": cell_number}
-    
+
 
 def create_employee_schedule():
     """
@@ -1396,7 +1394,7 @@ def create_employee_schedule():
 
             if not employee.shift or not employee.custom_operations_role_allocation:
                 frappe.log_error(
-                    f"Missing shift or operations role for employee {employee.name}", 
+                    f"Missing shift or operations role for employee {employee.name}",
                     "Employee Schedule Creation Error"
                 )
                 continue
@@ -1406,7 +1404,7 @@ def create_employee_schedule():
 
             if not operations_shift or not operations_role:
                 frappe.log_error(
-                    f"Invalid shift or operations role for employee {employee.name}", 
+                    f"Invalid shift or operations role for employee {employee.name}",
                     "Employee Schedule Creation Error"
                 )
                 continue

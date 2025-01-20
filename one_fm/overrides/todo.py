@@ -5,9 +5,6 @@ from frappe.utils import get_fullname
 from bs4 import BeautifulSoup
 from datetime import datetime,timezone
 from one_fm.processor import is_user_id_company_prefred_email_in_employee
-from one_fm.utils import get_gmail_service
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from frappe import _
 from google.oauth2 import service_account

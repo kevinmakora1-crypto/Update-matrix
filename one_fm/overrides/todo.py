@@ -80,8 +80,8 @@ def create_google_task_on_todo_creation(doc, method):
 	service = authenticate_google_tasks(employee_email)
 	
 	html_content = doc.description
-	soup = BeautifulSoup(html_content, 'html.parser')
 	try:
+		soup = BeautifulSoup(html_content, 'html.parser')
 		task_notes = soup.find('p').get_text()
 	except:
 		task_notes = html_content
@@ -110,11 +110,11 @@ def update_google_task_on_todo_status_change(doc, method):
 				task = service.tasks().get(tasklist='@default', task=doc.custom_google_task_id).execute()
 				task_title = doc.custom_google_task_title
 				html_content = doc.description
-				soup = BeautifulSoup(html_content, 'html.parser')
 				try:
+					soup = BeautifulSoup(html_content, 'html.parser')
 					task_notes = soup.find('p').get_text()
 				except:
-					task_notes = html_content
+					task_notes = doc.description
 				date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
 				due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
 				task['title'] = task_title

@@ -8,7 +8,7 @@ class LeaveAllocationOverride(LeaveAllocation):
         super().validate()
         self.validate_employee_gender_for_maternity()
         self.validate_hajj_leave()
-    
+
     def validate_employee_gender_for_maternity(self):
         employees_gender  = frappe.db.get_value("Employee", self.employee, "gender")
         maternity_check  = frappe.db.get_value("Gender", employees_gender, "custom_maternity_required")
@@ -24,7 +24,7 @@ class LeaveAllocationOverride(LeaveAllocation):
         went_to_hajj = employee_info.get("went_to_hajj")
         if (not religion_check and hajj_leave_check) or (religion_check and went_to_hajj and hajj_leave_check):
             frappe.throw("Hajj leave allocation is only allowed for muslim staff who have not performed hajj before.")
-    
+
     def validate_against_leave_applications(self):
         pass
 
@@ -42,10 +42,10 @@ def update_annual_leave_allocation(name, new_leaves_allocated, from_date, leave_
 
     # Get days passed between today and from_date
     days_passed = getdate() - getdate(from_date)
-    # Calculation = annual leave days mentioned in leave policy / 365 | e.g. 30/365 = 0.082 
+    # Calculation = annual leave days mentioned in leave policy / 365 | e.g. 30/365 = 0.082
     daily_earned_allocation = rounded((annual_leave_allocation / 365), precision=3)
-    
-    # calculation = (daily earned leave * days difference between today and from date) | e.g. 0.082 * 43 days passed 
+
+    # calculation = (daily earned leave * days difference between today and from date) | e.g. 0.082 * 43 days passed
     calculated_leave_allocation =  rounded((daily_earned_allocation * days_passed.days), precision=3)
 
     if flt(new_leaves_allocated) > calculated_leave_allocation:
@@ -64,4 +64,3 @@ def show_notification(title, msg, indicator):
         msg=_(msg),
         indicator=indicator
     )
-        

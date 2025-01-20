@@ -1535,8 +1535,6 @@ def validate_job_applicant(doc, method):
         set_required_documents(doc, method)
     if frappe.session.user != 'Guest' and not doc.one_fm_is_easy_apply:
         validate_mandatory_childs(doc)
-    if doc.one_fm_applicant_status in ["Shortlisted", "Selected"] and doc.status not in ["Rejected"]:
-        create_job_offer_from_job_applicant(doc.name)
     if doc.one_fm_number_of_kids and doc.one_fm_number_of_kids > 0:
         """This part is comparing the number of children with the listed children details in the table and ask user to add all childrens"""
         if doc.one_fm_number_of_kids != len(doc.one_fm_kids_details):
@@ -1724,6 +1722,10 @@ def set_job_applicant_status(doc, method):
                         status = 'Verified - With Exception'
             doc.one_fm_document_verification = status
 
+def on_update_job_applicant(doc, method):
+    if doc.one_fm_applicant_status in ["Selected"] and doc.status not in ["Rejected"]:
+        create_job_offer_from_job_applicant(doc.name)
+
 def create_job_offer_from_job_applicant(job_applicant):
     if not frappe.db.exists('Job Offer', {'job_applicant': job_applicant, 'docstatus': ['<', 2]}):
         job_app = frappe.get_doc('Job Applicant', job_applicant)
@@ -1770,25 +1772,18 @@ def set_salary_details(job_offer, erf):
     job_offer.one_fm_job_offer_total_salary = total_amount
 
 def set_other_benefits_to_terms(job_offer, erf, job_app):
-    # if erf.other_benefits:
-    #     for benefit in erf.other_benefits:
-    #         terms = job_offer.append('offer_terms')
-    #         terms.offer_term = benefit.benefit
-    #         terms.value = 'Company Provided'
-    options = [{'provide_mobile_with_line':'Mobile with Line'}, {'provide_health_insurance':'Health Insurance'},
-        {'provide_company_insurance': 'Company Insurance'}, {'provide_laptop_by_company': 'Personal Laptop'},
-        {'provide_vehicle_by_company': 'Personal Vehicle'}]
+    options = {
+        'provide_mobile_with_line':'Mobile with Line', 'provide_health_insurance':'Health Insurance',
+        'provide_company_insurance': 'Company Insurance', 'provide_laptop_by_company': 'Personal Laptop',
+        'provide_vehicle_by_company': 'Personal Vehicle', 'provide_accommodation_by_company': 'Accommodation',
+        'provide_transportation_by_company': 'Transportation'
+    }
+
     for option in options:
         if erf.get(option):
             terms = job_offer.append('offer_terms')
             terms.offer_term = options[option]
             terms.value = 'Company Provided'
-
-    terms_list = ['Kuwait Visa processing Fees', 'Kuwait Residency Fees', 'Kuwait insurance Fees']
-    for term in terms_list:
-        terms = job_offer.append('offer_terms')
-        terms.offer_term = term
-        terms.value = 'Borne By The Company'
 
     hours = erf.shift_hours if erf.shift_hours else 9
     vacation_days = erf.vacation_days if erf.vacation_days else 30
@@ -3108,6 +3103,56 @@ def get_approver_user(employee):
         return frappe.db.get_value("Employee", approver, "user_id")
     return None
 
+@frappe.whitelist()
+def get_approver(employee, date=False):
+    '''
+        Method to get the line manager employee of an employee with the priority
+        args:
+            employee: name of Employee object
+            date: date in which the shift supervisor working
+        return: employee eference of the line manager or None
+    '''
+
+    if not frappe.db.exists("Employee", {'name':employee}):
+        frappe.throw(f"Employee {employee} does not exists")
+
+    employee_field_list = ["user_id", "reports_to", "shift", "site", "shift_working", "employee_name"]
+    employee_data = frappe.db.get_value('Employee', employee, employee_field_list, as_dict=1)
+
+    line_manager = employee_data.reports_to if employee_data.reports_to else None
+
+    if not line_manager:
+        if employee_data.user_id and has_super_user_role(employee_data.user_id):
+            line_manager = employee
+
+    if not line_manager:
+        if employee_data.shift_working:
+            if employee_data.shift:
+                line_manager = get_shift_supervisor(employee_data.shift, date)
+                if line_manager:
+                    return line_manager
+            if not line_manager and employee_data.site:
+                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'account_supervisor')
+                if not line_manager:
+                    project = frappe.db.get_value('Operations Site', employee_data.site, 'project')
+                    if project:
+                        line_manager = frappe.db.get_value('Project', project, 'account_manager')
+        else:
+            if employee_data.site:
+                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'account_supervisor')
+
+            if not line_manager and employee_data.shift:
+                line_manager = get_shift_supervisor(employee_data.shift, date)
+
+            if not line_manager:
+                frappe.msgprint(
+                    _("Please ensure that the Reports To or Operations Site Supervisor is set for {0}, Since the employee is not shift working".format(employee_data.employee_name)),
+                    title= "Missing Data",
+                    indicator="orange",
+                    alert=True
+                )
+
+    return line_manager
 
 @frappe.whitelist()
 def has_super_user_role(user=None):
@@ -3137,61 +3182,6 @@ def has_super_user_role(user=None):
             if super_user_role and super_user_role in user_roles:
                 return True
     return False
-
-
-@frappe.whitelist()
-def get_approver(employee, date=None):
-    """
-    Method to get the line manager employee for a specified employee.
-    Args:
-        employee: Name of Employee object.
-        date: Date on which the shift supervisor is working.
-    Returns:
-        Reference to the line manager employee or None.
-    """
-    if not frappe.db.exists("Employee", {'name': employee}):
-        frappe.throw(f"Employee {employee} does not exist")
-
-
-    employee_data = frappe.db.get_value(
-        'Employee', employee, ["user_id", "reports_to", "shift", "site", "shift_working", "employee_name"], as_dict=True
-    )
-
-    if employee_data.reports_to:
-        return employee_data.reports_to
-
-
-    if employee_data.user_id and has_super_user_role(employee_data.user_id):
-        return employee
-
-    site_supervisor = dict()
-    if employee_data.site:
-        site_supervisor = frappe.db.get_value('Operations Site', employee_data.site, ['account_supervisor', "project"], as_dict=1)
-        if site_supervisor.account_supervisor:
-            return site_supervisor.account_supervisor
-
-
-    if employee_data.shift and employee_data.shift_working:
-        shift_supervisor = get_shift_supervisor(employee_data.shift, date)
-        if shift_supervisor:
-            return shift_supervisor
-
-
-    if employee_data.site and site_supervisor.get("project"):
-        project_manager = frappe.db.get_value('Project', site_supervisor.get("project"), 'account_manager')
-        if project_manager:
-            return project_manager
-
-
-    if not employee_data.shift_working and not employee_data.reports_to:
-        frappe.msgprint(
-            _("Please set either 'Reports To' or 'Operations Site Supervisor' for {0}. Since the employee is not shift-working.").format(employee_data.employee_name),
-            title="Missing Data",
-            indicator="orange",
-            alert=True
-        )
-
-    return None
 
 
 def get_approver_for_many_employees(supervisor=None):
@@ -3696,7 +3686,7 @@ def set_employee_status():
             reliever = leave.get('custom_reliever_', None)
             if current_date == getdate(from_date) and status == "Active":
                 frappe.db.set_value('Employee', employee, 'status', 'Vacation')
-                if reliever: 
+                if reliever:
                     frappe.enqueue(reassign_to_applicant(employee=employee, leave_name=leave_application))
                     frappe.enqueue(assign_responsibilities, leave_application=leave_application)
                 employees_set_to_vacation += 1
@@ -3716,7 +3706,7 @@ def set_employee_status():
 
 
 
-    
+
 def is_holiday(employee, date=None, raise_exception=True):
     try:
         date = today() if not date else date
@@ -3735,7 +3725,7 @@ def is_holiday(employee, date=None, raise_exception=True):
 def get_gmail_service(employee_email):
 
     credentials_path = frappe.get_site_path('private', 'files', 'gcp.json')
-    
+
     try:
         with open(credentials_path, 'r') as file:
             credentials_dict = json.load(file)
@@ -3869,7 +3859,7 @@ def call_to_get_assurance_level(employees):
             batch_size=200
             all_results = []
             for i in range(0, len(employees), batch_size):
-                batch = employees[i:i + batch_size] 
+                batch = employees[i:i + batch_size]
                 try:
                     response = requests.post(url, headers=headers, json=batch)
                     if response.status_code == 200:

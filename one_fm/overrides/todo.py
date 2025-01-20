@@ -1,7 +1,14 @@
+import json
 import frappe
 from frappe import _
 from frappe.utils import get_fullname
+from bs4 import BeautifulSoup
+from datetime import datetime,timezone
 from one_fm.processor import is_user_id_company_prefred_email_in_employee
+from googleapiclient.discovery import build
+from frappe import _
+from google.oauth2 import service_account
+
 
 def validate_todo(doc, method):
 	notify_todo_status_change(doc)
@@ -52,3 +59,70 @@ def set_todo_type_from_refernce_doc(doc):
 			doc.type = frappe.db.get_value(doc.reference_type, doc.reference_name, 'type')
 		else:
 			doc.type = "Action"
+
+def authenticate_google_tasks(employee_email):
+	credentials_path = frappe.get_site_path('private', 'files', 'gcp.json')
+	try:
+		with open(credentials_path, 'r') as file:
+			credentials_dict = json.load(file)
+	except Exception:
+		pass
+	credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=['https://www.googleapis.com/auth/tasks'])
+	delegated_credentials = credentials.with_subject(employee_email)
+	return build('tasks', 'v1', credentials=delegated_credentials)
+
+
+def create_google_task_on_todo_creation(doc, method):
+	employee_email = doc.allocated_to
+	if not employee_email:
+		frappe.throw(_("No assigned user found for this ToDo"))
+	
+	service = authenticate_google_tasks(employee_email)
+	
+	html_content = doc.description
+	try:
+		soup = BeautifulSoup(html_content, 'html.parser')
+		task_notes = soup.find('p').get_text()
+	except:
+		task_notes = html_content
+	task_title = doc.custom_google_task_title
+	date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
+	due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
+	task_body = {
+        'title': task_title,
+        'notes': task_notes,
+        'due': due_date
+    }
+	result = service.tasks().insert(tasklist='@default', body=task_body).execute()
+	task_id = result['id']
+	doc.custom_google_task_id = task_id 
+	doc.save()
+	return result
+
+def update_google_task_on_todo_status_change(doc, method):
+	if doc.custom_google_task_id:
+		employee_email = doc.allocated_to
+		if not employee_email:
+			frappe.throw(_("No assigned user found for this ToDo"))
+		service = authenticate_google_tasks(employee_email)
+		task = service.tasks().get(tasklist='@default', task=doc.custom_google_task_id).execute()
+		if doc.status == "Open":
+			try:
+				task_title = doc.custom_google_task_title
+				html_content = doc.description
+				try:
+					soup = BeautifulSoup(html_content, 'html.parser')
+					task_notes = soup.find('p').get_text()
+				except:
+					task_notes = doc.description
+				date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
+				due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
+				task['title'] = task_title
+				task['notes'] = task_notes
+				task['due'] = due_date
+			except:
+				pass
+		else:
+			task['status'] = 'completed'
+		result = service.tasks().update(tasklist='@default',task=doc.custom_google_task_id, body=task).execute()
+		return result

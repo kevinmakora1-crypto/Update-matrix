@@ -424,7 +424,9 @@ doc_events = {
 		"after_insert": "one_fm.one_fm.task_assignment_from_email.assign_task_to_user_from_communication_content"
 	},
 	"ToDo": {
-		"validate": "one_fm.overrides.todo.validate_todo"
+		"validate": "one_fm.overrides.todo.validate_todo",
+        "after_insert":"one_fm.overrides.todo.create_google_task_on_todo_creation",
+        "on_update": "one_fm.overrides.todo.update_google_task_on_todo_status_change"
 	},
 	# "Wiki Page": {
 	# 	"after_insert": "one_fm.wiki_chat_bot.main.after_insert_wiki_page"

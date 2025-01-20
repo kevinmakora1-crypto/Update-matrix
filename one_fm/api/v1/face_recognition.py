@@ -56,12 +56,13 @@ def enroll(employee_id: str = None, filename: str = None, video: str = None) -> 
             filename = frappe.session.user+'.mp4'
         
         video_file = frappe.request.files.get("video_file") or video or frappe.request.files.get("video")
-	    
+        endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
         if not video_file:
-            return response("Bad Request", 400, None, "Video File is required.")
+            if endpoint_state:
+                return response("Bad Request", 400, None, "Video File is required.")
         
         # check Face Recognition Endpoint
-        endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
+        
         if endpoint_state:
             if not face_recog_base_url:
                 return response("Bad Request", 400, None, "Face Recognition Service configuration is not available.")
@@ -96,7 +97,7 @@ def enroll(employee_id: str = None, filename: str = None, video: str = None) -> 
 @frappe.whitelist()
 def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
                             skip_attendance: str = None, latitude: str = None, longitude: str = None,
-                            filename: str = None):
+                            filename: str = None,video: str = None):
     """This method verifies user checking in/checking out.
 
     Args:
@@ -139,8 +140,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
         if not longitude:
             return response("Bad Request", 400, None, "longitude required.")
 
-        if not filename:
-            return response("Bad Request", 400, None, "Filename is required.")
+        
 
         if not isinstance(log_type, str):
             return response("Bad Request", 400, None, "log_type must be of type str.")
@@ -159,10 +159,11 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
 
         if not isinstance(longitude, float):
             return response("Bad Request", 400, None, "longitude must be of type float.")
-
-        video_file = frappe.request.files.get("video_file")
+        endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
+        video_file = frappe.request.files.get("video_file") or video
         if not video_file:
-            return response("Bad Request", 400, None, "Video File is required.")
+            if endpoint_state:
+                return response("Bad Request", 400, None, "Video File is required.")
 
         employee = frappe.db.get_value("Employee", {"employee_id": employee_id})
 
@@ -170,7 +171,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
             return response("Resource Not Found", 404, None, "No employee found with {employee_id}".format(employee_id=employee_id))
                 
         # check Face Recognition Endpoint
-        endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
+        
         video_file = frappe.request.files.get("video_file") or frappe.request.files.get("video")
         if not filename:
             filename = frappe.session.user+'.mp4'
@@ -296,6 +297,8 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
                         'one_fm.operations.doctype.checkin_radius_log.checkin_radius_log.create_checkin_radius_log',
                         **{'data': data})
                 result['log_type'] = log_type
+                facial_recognition_endpoint_state  = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
+                result['endpoint_status'] = facial_recognition_endpoint_state
                 return response("Success", 200, result)
 
             elif site:

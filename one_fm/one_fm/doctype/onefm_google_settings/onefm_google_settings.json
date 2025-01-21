@@ -1,0 +1,53 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-01-21 16:52:03.827254",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "google_task_section",
+  "google_task_synchronization_enabled",
+  "sync_google_tasks_btn"
+ ],
+ "fields": [
+  {
+   "fieldname": "google_task_section",
+   "fieldtype": "Section Break",
+   "label": "Google Task"
+  },
+  {
+   "default": "0",
+   "fieldname": "google_task_synchronization_enabled",
+   "fieldtype": "Check",
+   "label": "Google Task Synchronization Enabled"
+  },
+  {
+   "fieldname": "sync_google_tasks_btn",
+   "fieldtype": "Button",
+   "label": "Sync Google Tasks"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-01-21 17:05:01.418119",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "ONEFM Google Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

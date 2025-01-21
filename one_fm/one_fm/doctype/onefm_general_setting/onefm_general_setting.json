@@ -7,6 +7,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "one_fm_tab",
   "mobile_app_version",
   "column_break_xyl05",
   "is_production",
@@ -31,7 +32,11 @@
   "employee_section",
   "employee_master_role",
   "wiki_page_access",
-  "employee_info_access"
+  "employee_info_access",
+  "google_tab",
+  "google_task_section",
+  "google_task_synchronization_enabled",
+  "sync_google_tasks_btn"
  ],
  "fields": [
   {
@@ -183,11 +188,37 @@
    "in_list_view": 1,
    "label": "Default Shift Checker Threshold",
    "reqd": 1
+  },
+  {
+   "fieldname": "one_fm_tab",
+   "fieldtype": "Tab Break",
+   "label": "ONE FM"
+  },
+  {
+   "fieldname": "google_tab",
+   "fieldtype": "Tab Break",
+   "label": "Google"
+  },
+  {
+   "fieldname": "google_task_section",
+   "fieldtype": "Section Break",
+   "label": "Google Task"
+  },
+  {
+   "default": "0",
+   "fieldname": "google_task_synchronization_enabled",
+   "fieldtype": "Check",
+   "label": "Google Task Synchronization Enabled"
+  },
+  {
+   "fieldname": "sync_google_tasks_btn",
+   "fieldtype": "Button",
+   "label": "Sync Google Tasks"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-12-24 13:47:48.740673",
+ "modified": "2025-01-21 18:09:17.133524",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "ONEFM General Setting",

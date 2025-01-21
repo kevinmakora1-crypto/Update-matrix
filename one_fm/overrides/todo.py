@@ -3,7 +3,7 @@ import frappe
 from frappe import _
 from frappe.utils import get_fullname, getdate
 from bs4 import BeautifulSoup
-from datetime import datetime,timezone
+from datetime import datetime,timezone, timedelta
 from one_fm.processor import is_user_id_company_prefred_email_in_employee
 from googleapiclient.discovery import build
 from frappe import _
@@ -161,7 +161,11 @@ def sync_google_tasks_with_todos():
         for user_email in user_emails_having_google_account:
             try:
                 service = get_google_task_service(user_email)
-                results = service.tasks().list(tasklist='@default', showHidden=True, showDeleted=True).execute()
+
+                five_minutes_ago = datetime.now(timezone.utc) - timedelta(minutes=5)
+                updated_min = five_minutes_ago.isoformat()
+
+                results = service.tasks().list(tasklist='@default', showHidden=True, showDeleted=True, updatedMin=updated_min).execute()
                 user_tasks = results.get('items', [])
                 
                 # Append user_email to each google_task for later use in allocated_to field

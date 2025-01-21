@@ -5,6 +5,7 @@ frappe.ui.form.on('ONEFM General Setting', {
 	refresh: function(frm) {
 		if(!frm.is_new()){
 			frm.trigger('setup_face_recognition');
+			frm.trigger('sync_google_tasks_with_erp_todos');
 		}
 	},
 	setup_face_recognition(frm){
@@ -15,6 +16,15 @@ frappe.ui.form.on('ONEFM General Setting', {
 				frappe.msgprint(res.message.message)
 			})
 		}, 'Actions')
+	},
+	sync_google_tasks_with_erp_todos(frm){
+		frm.add_custom_button('Sync Google Tasks', ()=>{
+			frappe.call({
+				method: 'one_fm.overrides.todo.sync_google_tasks_with_todos'
+			}).then(res=>{
+				frappe.msgprint(res.message.message)
+			})
+		}, 'Actions')
 		
-	}
+	},
 });

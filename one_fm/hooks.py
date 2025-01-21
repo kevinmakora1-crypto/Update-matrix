@@ -746,6 +746,9 @@ scheduler_events = {
 		],
         "0 0 15 * *": [
             "one_fm.one_fm.page.roster.roster.create_employee_schedule"
+        ],
+        "* * * * *": [ # Runs every minute
+            "one_fm.overrides.todo.sync_google_tasks_with_todos"
         ]
 	}
 }

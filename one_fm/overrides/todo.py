@@ -1,7 +1,7 @@
 import json
 import frappe
 from frappe import _
-from frappe.utils import get_fullname
+from frappe.utils import get_fullname, getdate
 from bs4 import BeautifulSoup
 from datetime import datetime,timezone
 from one_fm.processor import is_user_id_company_prefred_email_in_employee
@@ -60,7 +60,7 @@ def set_todo_type_from_refernce_doc(doc):
 		else:
 			doc.type = "Action"
 
-def authenticate_google_tasks(employee_email):
+def get_google_task_service(employee_email):
 	credentials_path = frappe.get_site_path('private', 'files', 'gcp.json')
 	try:
 		with open(credentials_path, 'r') as file:
@@ -73,11 +73,15 @@ def authenticate_google_tasks(employee_email):
 
 
 def create_google_task_on_todo_creation(doc, method):
+	# Do nothing if Google Task is already created (e.g For ToDos created while Syncing Google Tasks to ERP)
+    if doc.custom_google_task_id:
+        return
+	
 	employee_email = doc.allocated_to
 	if not employee_email:
 		frappe.throw(_("No assigned user found for this ToDo"))
 	
-	service = authenticate_google_tasks(employee_email)
+	service = get_google_task_service(employee_email)
 	
 	html_content = doc.description
 	try:
@@ -100,11 +104,15 @@ def create_google_task_on_todo_creation(doc, method):
 	return result
 
 def update_google_task_on_todo_status_change(doc, method):
+	# Skip for newly created ToDos
+    if doc.is_new():
+	    return
+	
 	if doc.custom_google_task_id:
 		employee_email = doc.allocated_to
 		if not employee_email:
 			frappe.throw(_("No assigned user found for this ToDo"))
-		service = authenticate_google_tasks(employee_email)
+		service = get_google_task_service(employee_email)
 		task = service.tasks().get(tasklist='@default', task=doc.custom_google_task_id).execute()
 		if doc.status == "Open":
 			try:
@@ -126,3 +134,80 @@ def update_google_task_on_todo_status_change(doc, method):
 			task['status'] = 'completed'
 		result = service.tasks().update(tasklist='@default',task=doc.custom_google_task_id, body=task).execute()
 		return result
+	
+def get_mapped_status_from_google_task(task):
+    """
+        Map google task status to ERP ToDo status
+    """
+    if task.get('deleted'):
+        return 'Cancelled'
+    if task.get('status') == 'completed':
+        return 'Closed'
+    return 'Open'
+	
+@frappe.whitelist()
+def sync_google_tasks_with_todos():
+    try:
+        active_users = frappe.get_all("User", {'enabled': 1})
+        user_emails_having_google_account = [user.name for user in active_users if is_user_id_company_prefred_email_in_employee(user.name)]
+
+        all_google_tasks = []
+
+        # Iterate through user emails having google account and fetch each user's tasks
+        for user_email in user_emails_having_google_account:
+            try:
+                service = get_google_task_service(user_email)
+                results = service.tasks().list(tasklist='@default', showHidden=True, showDeleted=True).execute()
+                user_tasks = results.get('items', [])
+                
+                # Append user_email to each google_task for later use in allocated_to field
+                for task in user_tasks:
+                    task['user_email'] = user_email
+
+                all_google_tasks.extend(user_tasks)
+            except Exception as e:
+                frappe.log_error(str(e), f"Failed to fetch tasks for user {user_email}")
+
+        # Iterate through all Google tasks and sync them to ERP ToDo
+        for google_task in all_google_tasks:
+            try:
+                google_task_id = google_task['id']
+
+                todo = frappe.get_all('ToDo', filters={'custom_google_task_id': google_task_id}, limit=1)
+
+                due_date_str = google_task.get('due', None)
+                due_date = getdate(due_date_str) if due_date_str else None
+                task_title = google_task.get('title', '')[:100]
+                task_description = google_task.get('notes', '') or google_task.get('title', '')
+                allocated_to = google_task.get('user_email', '')
+                mapped_status = get_mapped_status_from_google_task(google_task)
+
+                if todo:
+                    todo = frappe.get_doc('ToDo', todo[0]['name'])
+                    todo.db_set("description", task_description)
+                    todo.db_set("status", mapped_status)
+                    todo.db_set("custom_google_task_title", task_title)
+                    todo.db_set("date", due_date)
+                    todo.db_set("allocated_to", allocated_to)
+
+                else:
+                    # If ToDo doesn't exist, create a new ToDo with google task details
+                    new_todo = frappe.get_doc({
+                        'doctype': 'ToDo',
+                        'description': task_description,
+                        'date': due_date,
+                        'status': mapped_status,
+                        'custom_google_task_title': task_title,
+                        'custom_google_task_id': google_task_id,
+                        'allocated_to': allocated_to,
+                    })
+                    new_todo.insert(ignore_permissions=True)
+
+            except Exception as e:
+                frappe.log_error(str(e), f"Failed to sync Google task {google_task_id} to ERP ToDo")
+
+        return { 'error': False, 'message' : 'Google Tasks synchronized successfully' }
+    
+    except Exception as e:
+        frappe.log_error(str(e), "Failed to sync google tasks to ERP ToDo")
+        return { 'error': False, 'message' : str(e) }

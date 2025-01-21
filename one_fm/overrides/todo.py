@@ -120,6 +120,7 @@ def update_google_task_on_todo_status_change(doc, method):
 				task['title'] = task_title
 				task['notes'] = task_notes
 				task['due'] = due_date
+				task['status'] = 'needsAction'
 			except:
 				pass
 		else:

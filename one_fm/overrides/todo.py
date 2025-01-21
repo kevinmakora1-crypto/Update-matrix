@@ -159,13 +159,13 @@ def sync_google_tasks_with_todos():
         batch_size = 5
         for i in range(0, len(user_emails_having_google_account), batch_size):
             batch_user_emails = user_emails_having_google_account[i:i+batch_size]
-            frappe.enqueue(sync_google_tasks_for_users, user_emails=batch_user_emails, is_async=True, queue="long", timeout=3000)
+            frappe.enqueue(sync_google_tasks_for_users, user_emails=batch_user_emails, is_async=True)
 
         return { 'error': False, 'message' : 'Google Tasks synchronized successfully' }
     
     except Exception as e:
         frappe.log_error(str(e), "Failed to sync google tasks to ERP ToDo")
-        return { 'error': False, 'message' : str(e) }
+        return { 'error': True, 'message' : str(e) }
     
 
 def sync_google_tasks_for_users(user_emails=[]):

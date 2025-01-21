@@ -16,5 +16,5 @@ frappe.ui.form.on('ONEFM General Setting', {
 			})
 		}, 'Actions')
 		
-	},
+	}
 });

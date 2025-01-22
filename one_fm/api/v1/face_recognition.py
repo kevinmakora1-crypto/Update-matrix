@@ -33,7 +33,7 @@ def base64_to_mp4(base64_string):
 
     with open(video_path, 'wb') as mp4_file:
         mp4_file.write(video_data)
-    
+
 
 @frappe.whitelist()
 def enroll(employee_id: str = None, filename: str = None, video: str = None) -> dict:
@@ -53,36 +53,37 @@ def enroll(employee_id: str = None, filename: str = None, video: str = None) -> 
     try:
         if not employee_id:
             return response("Bad Request", 400, None, "employee_id required.")
-        
+
         if not filename:
             filename = frappe.session.user+'.mp4'
-        
+
         video_file = frappe.request.files.get("video_file") or video or frappe.request.files.get("video")
-	    
-        if not video_file:
-            return response("Bad Request", 400, None, "Video File is required.")
-        
-        # check Face Recognition Endpoint
         endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
+        if not video_file:
+            if endpoint_state:
+                return response("Bad Request", 400, None, "Video File is required.")
+
+        # check Face Recognition Endpoint
+
         if endpoint_state:
             if not face_recog_base_url:
                 return response("Bad Request", 400, None, "Face Recognition Service configuration is not available.")
             status, message = verify_via_face_recogniton_service(url=face_recog_base_url + "enroll", data={"username": frappe.session.user, "filename": filename}, files={"video_file": video_file})
         else:
             status, message = True, 'Successful'
-            
-        
+
+
         doc = frappe.get_doc("Employee", {"employee_id": employee_id})
         if not doc:
             return response("Resource Not Found", 404, None, "No employee found with {employee_id}".format(employee_id=employee_id))
-        
-        
-            
+
+
+
         if not status:
             return response("Bad Request", 400, None, message)
-        
+
         # Set a context flag to indicate an API update (It will affect in 'Employee' validate method)
-        frappe.flags.allow_enrollment_update = True        
+        frappe.flags.allow_enrollment_update = True
         doc.enrolled = 1
         doc.save(ignore_permissions=True)
         update_onboarding_employee(doc)
@@ -98,8 +99,7 @@ def enroll(employee_id: str = None, filename: str = None, video: str = None) -> 
 @frappe.whitelist()
 def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
                             skip_attendance: str = None, latitude: str = None, longitude: str = None,
-                            filename: str = None
-                            ):
+                            filename: str = None,video: str = None):
     """This method verifies user checking in/checking out.
 
     Args:
@@ -159,16 +159,17 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
 
         if not isinstance(longitude, float):
             return response("Bad Request", 400, None, "longitude must be of type float.")
-
-        video_file = frappe.request.files.get("video_file")
+        endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
+        video_file = frappe.request.files.get("video_file") or video
         if not video_file:
-            return response("Bad Request", 400, None, "Video File is required.")
+            if endpoint_state:
+                return response("Bad Request", 400, None, "Video File is required.")
 
         employee = frappe.db.get_value("Employee", {"employee_id": employee_id})
 
         if not employee:
             return response("Resource Not Found", 404, None, "No employee found with {employee_id}".format(employee_id=employee_id))
-        right_now = now_datetime() 
+        right_now = now_datetime()
 
         if log_type == "IN":
             shift_type = frappe.db.sql(f""" select shift_type from `tabShift Assignment` where employee = '{employee}' order by creation desc limit 1 """, as_dict=1)[0]
@@ -178,7 +179,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
             if right_now.time() < time_threshold:
                 return response("Bad Request", 400, None, f" Oops! You can't check in right now. Your check-in time is {val_in_shift_type['begin_check_in_before_shift_start_time']} minutes before you start your shift." + "\U0001F612")
         # check Face Recognition Endpoint
-        endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
+
         video_file = frappe.request.files.get("video_file") or frappe.request.files.get("video")
         if not filename:
             filename = frappe.session.user+'.mp4'
@@ -190,12 +191,12 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
                 }, files={"video_file": video_file})
         else:
             status, message = True, 'Successful'
-            
+
         if not status:
             return response("Bad Request", 400, None, message)
         doc = create_checkin_log(employee, log_type, skip_attendance, latitude, longitude, "Mobile App")
         return response("Success", 201, doc, None)
-    
+
     except Exception as error:
         frappe.log_error(frappe.get_traceback(), 'Verify Checkin')
         return response("Internal Server Error", 500, None, error)
@@ -304,6 +305,8 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
                         'one_fm.operations.doctype.checkin_radius_log.checkin_radius_log.create_checkin_radius_log',
                         **{'data': data})
                 result['log_type'] = log_type
+                facial_recognition_endpoint_state  = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
+                result['endpoint_status'] = facial_recognition_endpoint_state
                 return response("Success", 200, result)
 
             elif site:
@@ -318,8 +321,8 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
                 holiday_today = get_holiday_today(str(getdate()))
                 if holiday_today.get(employee.holiday_list):
                     return response("Resource Not Found", 404, None, "Today is your holiday, have fun.")
-                
-                
+
+
             if is_employee_on_leave(employee.name, date):
                 return response("Resource Not Found", 404, None, "You are currently on leave, see you soon!")
 
@@ -464,4 +467,3 @@ def checkin_list(employee_id, from_date, to_date):
         return response("success", 200, checkins)
     except Exception as e:
         return response("error", 500, None, str(e))
-    

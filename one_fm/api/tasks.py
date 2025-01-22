@@ -2101,7 +2101,7 @@ def initiate_checkin_notification(res):
 	
 	
 	# return all_ended_shifts+all_started_shifts
-
+@frappe.whitelist()
 def run_checkin_reminder():
 	# execute first checkin reminder
 

@@ -4,7 +4,7 @@ from frappe import _
 from frappe.utils import get_fullname, get_url_to_form, getdate
 from bs4 import BeautifulSoup
 from datetime import datetime,timezone, timedelta
-from one_fm.processor import is_user_id_company_prefred_email_in_employee
+from one_fm.processor import is_user_id_company_prefred_email_in_employee, sendemail
 from googleapiclient.discovery import build
 from frappe import _
 from google.oauth2 import service_account
@@ -265,3 +265,33 @@ def sync_google_tasks_for_users(user_emails=[]):
 
         except Exception as e:
             frappe.log_error(str(e), f"Failed to sync Google task {google_task_id} to ERP ToDo")
+
+
+@frappe.whitelist()
+def send_email_on_todo_created(self,doc):
+    user_id = frappe.session.user
+    user_email = frappe.db.get_value("User", user_id, "email")
+    if user_email == doc.allocated_to:
+        return
+    sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
+    recipients = [doc.allocated_to]
+    task_title = doc.custom_google_task_title
+    task_notes = create_description_for_google_todo(doc)
+    date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
+    due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
+    if doc.status == "Open":
+        status = 'needsAction'
+    else:
+        status = 'completed'
+    source = doc.custom_source
+    message = f'''
+		Google Task ID : {task_title}
+		Title : {task_title}
+		Description : {task_notes}
+		Due Date : {due_date}
+		Status : {status}
+		Task has been Created via : {source}
+	'''
+    subject = f'''Task has been Created via  {source} '''
+    sendemail(sender=sender, recipients= recipients,
+            message=message, subject=subject, delayed=False, is_scheduler_email=False,is_external_mail=True)

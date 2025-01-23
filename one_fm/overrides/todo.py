@@ -69,20 +69,20 @@ def get_google_task_service(employee_email):
         pass
     credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=['https://www.googleapis.com/auth/tasks'])
     delegated_credentials = credentials.with_subject(employee_email)
-    return build('tasks', 'v1', credentials=delegated_credentials)
-
-
-def create_google_task_on_todo_creation(doc, method):
-    # Do nothing if Google Task is already created (e.g For ToDos created while Syncing Google Tasks to ERP)
-    if doc.custom_google_task_id:
-        return
+    return build('tasks', 'v1', credentials=delegated_credentials)\
     
+def create_google_task_on_todo_creation(doc, method):
+    frappe.enqueue(create_google_task_on_todo_creation_in_erp(doc=doc, method=method),is_async=True)
+
+def create_google_task_on_todo_creation_in_erp(doc, method):
     employee_email = doc.allocated_to
     if not employee_email:
         frappe.throw(_("No assigned user found for this ToDo"))
-    
     service = get_google_task_service(employee_email)
-    
+    task_exists = check_google_task_exists(service, doc.custom_google_task_id)
+    if task_exists:
+        return
+
     html_content = doc.description
     try:
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -103,6 +103,21 @@ def create_google_task_on_todo_creation(doc, method):
     doc.save()
     return result
 
+def check_google_task_exists(service, task_id):
+    try:
+        # Get all task lists
+        tasklists = service.tasklists().list().execute()
+        for tasklist in tasklists.get('items', []):
+            # Fetch tasks in the current task list
+            tasks = service.tasks().list(tasklist=tasklist['id']).execute()
+            # Check if the task_id exists in the tasks
+            if any(task['id'] == task_id for task in tasks.get('items', [])):
+                return True
+    except Exception as e:
+        frappe.throw(_("Error while checking tasks: {e}"))
+    return False
+
+
 def update_google_task_on_todo_status_change(doc, method):
     # Skip for newly created ToDos
     if doc.is_new():
@@ -116,7 +131,7 @@ def update_google_task_on_todo_status_change(doc, method):
         try:
             task = service.tasks().get(tasklist='@default', task=doc.custom_google_task_id).execute()
         except:
-            task = create_google_task_on_todo_creation(doc, method)
+            task = create_google_task_on_todo_creation_in_erp(doc, method)
         if doc.status == "Open":
             try:
                 task_title = doc.custom_google_task_title

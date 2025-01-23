@@ -1,7 +1,7 @@
 import json
 import frappe
 from frappe import _
-from frappe.utils import get_fullname, getdate
+from frappe.utils import get_fullname, get_url_to_form, getdate
 from bs4 import BeautifulSoup
 from datetime import datetime,timezone, timedelta
 from one_fm.processor import is_user_id_company_prefred_email_in_employee
@@ -82,13 +82,7 @@ def create_google_task_on_todo_creation_in_erp(doc, method):
     task_exists = check_google_task_exists(service, doc.custom_google_task_id)
     if task_exists:
         return
-
-    html_content = doc.description
-    try:
-        soup = BeautifulSoup(html_content, 'html.parser')
-        task_notes = soup.find('p').get_text()
-    except:
-        task_notes = html_content
+    task_notes = create_description_for_google_todo(doc)
     task_title = doc.custom_google_task_title
     date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
     due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
@@ -117,6 +111,43 @@ def check_google_task_exists(service, task_id):
         frappe.throw(_("Error while checking tasks: {e}"))
     return False
 
+def create_description_for_google_todo(doc):
+    task_notes = ""
+    try:
+        task_notes = convert_html_to_plain_text( doc.description)
+    except:
+        task_notes = doc.description
+    if doc.reference_type and doc.reference_name:
+        todo_reference = get_url_to_form("Todo", doc.name) if doc.name else ""
+        todo_doc_type = doc.reference_type if doc.reference_type else ""
+        todo_reference_link = get_url_to_form(todo_doc_type, doc.reference_name) if doc.reference_name else ""
+        task_notes +=f"""
+		ToDo Reference: {todo_reference}
+		Reference DocType: {todo_doc_type}
+		Reference Name: {todo_reference_link}
+		"""
+    return task_notes
+
+def convert_html_to_plain_text(html_content):
+    try:
+        soup = BeautifulSoup(html_content, 'html.parser')
+
+        paragraphs = [p.get_text(strip=True) for p in soup.find_all('p') if p.get_text(strip=True)]
+        text_output = "\n".join(paragraphs)
+
+        table = soup.find('table')
+        if table:
+            rows = table.find_all('tr')
+            table_content = "\n".join(
+                f"{' : '.join(td.get_text(strip=True) for td in row.find_all('td'))}" for row in rows
+            )
+            text_output += "\n\nDetails:\n" + table_content +"\n"
+
+        return text_output
+    except Exception as e:
+        print(f"Error converting HTML to plain text: {e}")
+        return "Failed to parse content."
+
 
 def update_google_task_on_todo_status_change(doc, method):
     # Skip for newly created ToDos
@@ -132,23 +163,15 @@ def update_google_task_on_todo_status_change(doc, method):
             task = service.tasks().get(tasklist='@default', task=doc.custom_google_task_id).execute()
         except:
             task = create_google_task_on_todo_creation_in_erp(doc, method)
+        task_title = doc.custom_google_task_title
+        task_notes = create_description_for_google_todo(doc)
+        date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
+        due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
+        task['title'] = task_title
+        task['notes'] = task_notes
+        task['due'] = due_date
         if doc.status == "Open":
-            try:
-                task_title = doc.custom_google_task_title
-                html_content = doc.description
-                try:
-                    soup = BeautifulSoup(html_content, 'html.parser')
-                    task_notes = soup.find('p').get_text()
-                except:
-                    task_notes = doc.description
-                date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
-                due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
-                task['title'] = task_title
-                task['notes'] = task_notes
-                task['due'] = due_date
-                task['status'] = 'needsAction'
-            except:
-                pass
+            task['status'] = 'needsAction'
         else:
             task['status'] = 'completed'
         result = service.tasks().update(tasklist='@default',task=doc.custom_google_task_id, body=task).execute()

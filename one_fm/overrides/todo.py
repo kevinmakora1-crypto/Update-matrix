@@ -95,6 +95,7 @@ def create_google_task_on_todo_creation_in_erp(doc, method):
     task_id = result['id']
     doc.custom_google_task_id = task_id 
     doc.save()
+    send_email_on_todo_created(doc)
     return result
 
 def check_google_task_exists(service, task_id):
@@ -241,6 +242,7 @@ def sync_google_tasks_for_users(user_emails=[]):
             task_description = google_task.get('notes', '') or google_task.get('title', '')
             allocated_to = google_task.get('user_email', '')
             mapped_status = get_mapped_status_from_google_task(google_task)
+            custom_source = 'Google Task'
 
             if todo:
                 todo = frappe.get_doc('ToDo', todo[0]['name'])
@@ -249,7 +251,7 @@ def sync_google_tasks_for_users(user_emails=[]):
                 todo.db_set("custom_google_task_title", task_title)
                 todo.db_set("date", due_date)
                 todo.db_set("allocated_to", allocated_to)
-
+                todo.db_set("custom_source", custom_source)
             else:
                 # If ToDo doesn't exist, create a new ToDo with google task details
                 new_todo = frappe.get_doc({
@@ -260,6 +262,7 @@ def sync_google_tasks_for_users(user_emails=[]):
                     'custom_google_task_title': task_title,
                     'custom_google_task_id': google_task_id,
                     'allocated_to': allocated_to,
+                    'custom_source':custom_source
                 })
                 new_todo.insert(ignore_permissions=True)
 
@@ -268,13 +271,14 @@ def sync_google_tasks_for_users(user_emails=[]):
 
 
 @frappe.whitelist()
-def send_email_on_todo_created(self,doc):
+def send_email_on_todo_created(doc):
     user_id = frappe.session.user
     user_email = frappe.db.get_value("User", user_id, "email")
     if user_email == doc.allocated_to:
         return
     sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
     recipients = [doc.allocated_to]
+    task_id = doc.custom_google_task_id
     task_title = doc.custom_google_task_title
     task_notes = create_description_for_google_todo(doc)
     date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
@@ -285,7 +289,7 @@ def send_email_on_todo_created(self,doc):
         status = 'completed'
     source = doc.custom_source
     message = f'''
-		Google Task ID : {task_title}
+		Google Task ID : {task_id}
 		Title : {task_title}
 		Description : {task_notes}
 		Due Date : {due_date}

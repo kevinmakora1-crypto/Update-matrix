@@ -278,24 +278,25 @@ def send_email_on_todo_created(doc):
         return
     sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
     recipients = [doc.allocated_to]
-    task_id = doc.custom_google_task_id
-    task_title = doc.custom_google_task_title
-    task_notes = create_description_for_google_todo(doc)
-    date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
-    due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
-    if doc.status == "Open":
-        status = 'needsAction'
-    else:
-        status = 'completed'
-    source = doc.custom_source
-    message = f'''
-		Google Task ID : {task_id}
-		Title : {task_title}
-		Description : {task_notes}
-		Due Date : {due_date}
-		Status : {status}
-		Task has been Created via : {source}
-	'''
-    subject = f'''Task has been Created via  {source} '''
+    if doc.reference_type and doc.reference_name:
+        todo_reference = get_url_to_form("Todo", doc.name) if doc.name else ""
+        todo_doc_type = doc.reference_type if doc.reference_type else ""
+        todo_reference_link = get_url_to_form(todo_doc_type, doc.reference_name) if doc.reference_name else ""
+    args = frappe._dict({
+                    "task_id": doc.custom_google_task_id,
+                    "source": doc.custom_source,
+                    "task_title": doc.custom_google_task_title,
+                    "name":doc.name,
+                    "todo_reference": todo_reference,
+                    "todo_doc_type":todo_doc_type,
+                    "description":doc.description,
+                    "reference_name":doc.reference_name,
+                    "todo_reference_link":todo_reference_link,
+                    "due_date":doc.date,
+                    "status" : doc.status,
+                })
+    
+    message = frappe.render_template('one_fm/templates/emails/email_notification_on_task_creation.html', args)
+    subject = f'''A Task has been Created via {doc.custom_source} by {user_id}'''
     sendemail(sender=sender, recipients= recipients,
             message=message, subject=subject, delayed=False, is_scheduler_email=False,is_external_mail=True)

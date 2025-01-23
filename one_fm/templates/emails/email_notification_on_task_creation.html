@@ -1,0 +1,63 @@
+<style>
+    table {
+      font-family: Arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    
+    th, .notify td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    
+    th {
+      background-color: #f2f2f2;
+      color: #333;
+      width: 30%;
+      text-align: left;
+    }
+    
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    
+    tr:hover {
+      background-color: #ddd;
+    }
+    
+    </style>
+    
+    
+    <table>
+      <tbody class="notify">
+        <tr>
+          <th>Task ID</th>
+          <td>{{ task_id }}</td>
+        </tr>
+        <tr>
+          <th>Task Title</th>
+          <td>{{ task_title }}</td>
+        </tr>
+        <tr>
+          <th>Description</th>
+          <td>{{ description }}
+            Reference DocType: {{todo_doc_type}}<br>
+            ToDo Reference: <a href={{ doc_url }}>TODO</a><br>
+            Reference Name: <a href={{ todo_reference_link }}>{{reference_name}}</a></td>
+          </td>
+        </tr>
+        <tr>
+            <th>Due Date</th>
+            <td>{{ due_date }}</td>
+        </tr>
+        <tr>
+          <th>Status</th>
+          <td>{{ status }}</td>
+        </tr>
+        <tr>
+          <th>The Task was created via</th>
+          <td>{{ source }}</td>
+        </tr>
+      </tbody>
+    </table>
+    

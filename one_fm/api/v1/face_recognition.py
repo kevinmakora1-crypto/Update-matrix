@@ -84,8 +84,9 @@ def enroll(employee_id: str = None, filename: str = None, video: str = None) -> 
 
         # Set a context flag to indicate an API update (It will affect in 'Employee' validate method)
         frappe.flags.allow_enrollment_update = True
-        doc.enrolled = 1
-        doc.save(ignore_permissions=True)
+        
+        doc.db_set('enrolled',1)
+        
         update_onboarding_employee(doc)
         frappe.db.commit()
 

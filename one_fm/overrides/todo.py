@@ -60,6 +60,9 @@ def set_todo_type_from_refernce_doc(doc):
         else:
             doc.type = "Action"
 
+def is_google_task_synchronization_enabled():
+    return frappe.db.get_single_value("ONEFM General Setting", "google_task_synchronization_enabled")
+
 def get_google_task_service(employee_email):
     credentials_path = frappe.get_site_path('private', 'files', 'gcp.json')
     try:
@@ -72,6 +75,10 @@ def get_google_task_service(employee_email):
     return build('tasks', 'v1', credentials=delegated_credentials)\
     
 def create_google_task_on_todo_creation(doc, method):
+    # Skip if general trigger is not enabled
+    if not is_google_task_synchronization_enabled():
+        return
+    
     frappe.enqueue(create_google_task_on_todo_creation_in_erp(doc=doc, method=method),is_async=True)
 
 def create_google_task_on_todo_creation_in_erp(doc, method):
@@ -154,6 +161,10 @@ def update_google_task_on_todo_status_change(doc, method):
     if doc.is_new():
         return
     
+    # Skip if general trigger is not enabled
+    if not is_google_task_synchronization_enabled():
+        return
+    
     if doc.custom_google_task_id:
         employee_email = doc.allocated_to
         if not employee_email:
@@ -190,6 +201,10 @@ def get_mapped_status_from_google_task(task):
 @frappe.whitelist()
 def sync_google_tasks_with_todos():
     try:
+        # Skip if general trigger is not enabled
+        if not is_google_task_synchronization_enabled():
+            return
+
         active_users = frappe.get_all("User", {'enabled': 1})
         user_emails_having_google_account = [user.name for user in active_users if is_user_id_company_prefred_email_in_employee(user.name)]
 

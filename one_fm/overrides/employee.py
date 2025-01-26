@@ -84,6 +84,8 @@ class EmployeeOverride(EmployeeMaster):
 
     def before_save(self):
         self.assign_role_profile_based_on_designation()
+        get_assurance_level_of_employee(self)
+        
 
     def after_insert(self):
         employee_after_insert(self, method=None)
@@ -557,7 +559,7 @@ def toggle_auto_attendance(employee_names: list | str, status: bool):
 
 
 @frappe.whitelist()
-def get_assurance_level_of_employee(doc, method):
+def get_assurance_level_of_employee(doc):
     if doc.one_fm_civil_id:
         verification_level = call_to_get_assurance_level(doc.one_fm_civil_id)
         verification_level = verification_level.get("verificationLevel")

@@ -434,10 +434,7 @@ doc_events = {
 	# }
     "OAuth Bearer Token": {
 		"after_insert": "one_fm.api.doc_methods.oauth_bearer_token.revoke_and_delete_existing_tokens",
-	},
-    "Employee": {
-        "before_save": "one_fm.overrides.employee.get_assurance_level_of_employee"
-    }
+	}
 }
 
 standard_portal_menu_items = [

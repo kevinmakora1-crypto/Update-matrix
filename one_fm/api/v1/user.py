@@ -134,9 +134,10 @@ def store_fcm_token(employee_id: str = None , fcm_token: str = None, device_os: 
         if not employee:
             return response("Resource Not Found", 404, None, "No resource found with {employee_id}".format(employee_id = employee_id))
         
-        employee.fcm_token = fcm_token
-        employee.device_os = device_os
-        employee.save()
+        
+        employee.db_set('device_os',device_os)
+        employee.db_set('fcm_token',fcm_token)
+       
         frappe.db.commit()
         return response("Success", 201, employee.as_dict())
 

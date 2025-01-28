@@ -74,11 +74,16 @@ def get_google_task_service(employee_email):
     delegated_credentials = credentials.with_subject(employee_email)
     return build('tasks', 'v1', credentials=delegated_credentials)\
     
+def before_save(doc,method):
+    previous_doc = doc.get_doc_before_save()
+    if previous_doc:
+        service = get_google_task_service(previous_doc.allocated_to)
+        return service
+
 def create_google_task_on_todo_creation(doc, method):
     # Skip if general trigger is not enabled
     if not is_google_task_synchronization_enabled():
         return
-    
     frappe.enqueue(create_google_task_on_todo_creation_in_erp(doc=doc, method=method),is_async=True)
 
 def create_google_task_on_todo_creation_in_erp(doc, method):
@@ -86,9 +91,10 @@ def create_google_task_on_todo_creation_in_erp(doc, method):
     if not employee_email:
         frappe.throw(_("No assigned user found for this ToDo"))
     service = get_google_task_service(employee_email)
-    task_exists = check_google_task_exists(service, doc.custom_google_task_id)
-    if task_exists:
-        return
+    if method=="on_update":
+        pev_emp_email_service = before_save(doc,method)
+        if doc.custom_google_task_id:
+            check_google_task_exists(doc.custom_google_task_id,pev_emp_email_service)
     task_notes = create_description_for_google_todo(doc)
     task_title = doc.custom_google_task_title
     date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
@@ -105,19 +111,12 @@ def create_google_task_on_todo_creation_in_erp(doc, method):
     send_email_on_todo_created(doc)
     return result
 
-def check_google_task_exists(service, task_id):
-    try:
-        # Get all task lists
-        tasklists = service.tasklists().list().execute()
-        for tasklist in tasklists.get('items', []):
-            # Fetch tasks in the current task list
-            tasks = service.tasks().list(tasklist=tasklist['id']).execute()
-            # Check if the task_id exists in the tasks
-            if any(task['id'] == task_id for task in tasks.get('items', [])):
-                return True
-    except Exception as e:
-        frappe.throw(_("Error while checking tasks: {e}"))
-    return False
+def check_google_task_exists(task_id,pev_emp_service=None):
+    if pev_emp_service:
+        task = pev_emp_service.tasks().get(tasklist='@default', task=task_id).execute()
+        task['status'] = 'completed'
+        result = pev_emp_service.tasks().update(tasklist='@default',task=task_id, body=task).execute()
+
 
 def create_description_for_google_todo(doc):
     task_notes = ""
@@ -153,7 +152,7 @@ def convert_html_to_plain_text(html_content):
 
         return text_output
     except Exception as e:
-        print(f"Error converting HTML to plain text: {e}")
+        frappe.log_error(str(e), f"Error converting HTML to plain text")
         return "Failed to parse content."
 
 

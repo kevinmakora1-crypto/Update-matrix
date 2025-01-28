@@ -425,6 +425,7 @@ doc_events = {
 	},
 	"ToDo": {
 		"validate": "one_fm.overrides.todo.validate_todo",
+        "before_save":"one_fm.overrides.todo.before_save",
         "after_insert":"one_fm.overrides.todo.create_google_task_on_todo_creation",
         "on_update": "one_fm.overrides.todo.update_google_task_on_todo_status_change"
 	},

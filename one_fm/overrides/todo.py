@@ -152,7 +152,7 @@ def convert_html_to_plain_text(html_content):
 
         return text_output
     except Exception as e:
-        print(f"Error converting HTML to plain text: {e}")
+        frappe.log_error(str(e), f"Error converting HTML to plain text")
         return "Failed to parse content."
 
 

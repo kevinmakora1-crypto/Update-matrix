@@ -161,7 +161,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
         if not isinstance(longitude, float):
             return response("Bad Request", 400, None, "longitude must be of type float.")
         endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
-        video_file = frappe.request.files.get("video_file") or video
+        video_file = frappe.request.files.get("video_file") or video or frappe.request.files.get("video")
         if not video_file:
             if endpoint_state:
                 return response("Bad Request", 400, None, "Video File is required.")
@@ -180,8 +180,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
             if right_now.time() < time_threshold:
                 return response("Bad Request", 400, None, f" Oops! You can't check in right now. Your check-in time is {val_in_shift_type['begin_check_in_before_shift_start_time']} minutes before you start your shift." + "\U0001F612")
         # check Face Recognition Endpoint
-
-        video_file = frappe.request.files.get("video_file") or frappe.request.files.get("video")
+        
         if not filename:
             filename = frappe.session.user+'.mp4'
         if endpoint_state:

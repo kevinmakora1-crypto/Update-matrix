@@ -139,7 +139,7 @@ def get_leave_balance(employee_id: str = None, leave_type: str = None) -> dict:
             return response("Resource Not Found", 404, None, "No employee found with {employee_id}".format(employee_id=employee_id))
 
         allocation_records = get_leave_details(employee, today)
-        print(allocation_records)
+        
         leave_type = leave_type.title()
         if allocation_records["leave_allocation"]:
             if leave_type:

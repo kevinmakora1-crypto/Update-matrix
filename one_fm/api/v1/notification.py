@@ -44,7 +44,7 @@ def get_notification_list(employee_id: str = None) -> dict:
         result = []
         
         if not notification_list or len(notification_list) == 0:
-            return response("Resource not found", 404, None, "No notifications found for user {employee_id}".format(employee_id=employee_id))
+            return response("Success", 200, [{"title": "No notifications found for user {employee_id}".format(employee_id=employee_id)}])
         
         for notification in notification_list:
             notify = {

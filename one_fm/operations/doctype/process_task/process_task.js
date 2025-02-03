@@ -82,12 +82,6 @@ var set_task_and_auto_repeat = function(frm) {
 };
 
 var set_filters = function(frm) {
-	frm.set_query("erp_document", function() {
-		return {
-			query: "one_fm.operations.doctype.process_task.process_task.filter_routine_document",
-			filters: {'parent': frm.doc.process_name}
-		}
-	});
 
 	frm.set_query("task_type", function() {
 		return {

@@ -57,7 +57,7 @@
    "reqd": 1
   },
   {
-   "depends_on": "is_erp_process",
+   "depends_on": "is_erp_task",
    "fieldname": "erp_document",
    "fieldtype": "Link",
    "label": "ERP Document",
@@ -278,7 +278,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-02 22:14:18.185119",
+ "modified": "2025-02-03 12:50:04.815516",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process Task",

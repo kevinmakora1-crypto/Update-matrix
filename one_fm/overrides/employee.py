@@ -183,8 +183,8 @@ class EmployeeOverride(EmployeeMaster):
                         cell_number = self.cell_number
                 content_variables= {
 	                    	'1':context.first_name,
-                            '2':self.get_doc_before_save().employee_id,
-                            '3':self.employee_id,
+                            '2':self.get_doc_before_save().employee_id or '',
+                            '3':self.employee_id or '',
                     	}
                 send_whatsapp(sender_id=cell_number,template_name='employee_id_change', content_variables=content_variables)
         except:

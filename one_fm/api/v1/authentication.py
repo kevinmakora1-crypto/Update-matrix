@@ -596,7 +596,7 @@ def enrollment_status(employee_id: str):
 			if (employee.status in ['Left', 'Court Case']):
 				return response("error", 404, {}, f"Employee is not active")
 			elif (not employee.user_id):
-				return response("error", 404, {}, f"Employee no active user account or login email.")
+				return response("error", 404, {}, f"Employee doesn't have active user associated with")
 			else:
 				return response("success", 200, {
 					"enrolled": employee.enrolled,
@@ -604,6 +604,6 @@ def enrollment_status(employee_id: str):
 					"employee_name":employee.employee_name},
 				)
 		else:
-			return response("error", 404, {}, f"Employee ID {employee_id} not not found")
+			return response("error", 404, {}, f"Employee ID {employee_id} not found")
 	except Exception as e:
 		return response("error", 500, {}, str(e))

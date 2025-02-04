@@ -61,7 +61,7 @@ def notify_for_employee_docs_expiry():
             ])
         )
 
-        send_employee_doc_expiry_notification(get_employees_by_expiry(), recipients)
+        send_employee_doc_expiry_notification(get_employees_by_expiry_doc(), recipients)
 
     except Exception as e:
         frappe.log_error(str(e), 'Employee Docs Expiry')

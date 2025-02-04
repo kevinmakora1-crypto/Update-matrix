@@ -146,8 +146,10 @@ def forgot_password(employee_id: str = None, otp_source: str = None, is_new: int
 
 	if not isinstance(otp_source, str):
 		return response("Bad Request", 400, None, "OTP source must be of type str.")
+	
+	formatted_otp_source = otp_source.lower()
 
-	if otp_source.lower() not in ["sms", "email", "whatsapp"]:
+	if formatted_otp_source not in ["sms", "email", "whatsapp"]:
 		return response("Bad Request", 400, None, "Invalid OTP source. OTP source must be either 'sms', 'email' or 'whatsapp'.")
 	
 	try:
@@ -156,18 +158,26 @@ def forgot_password(employee_id: str = None, otp_source: str = None, is_new: int
 		if not employee_user_id:
 			return response("Bad Request", 404, None, "No user ID found for employee ID {employee_id}.".format(employee_id=employee_id))
 		
+		# Check for phone number if otp source is 'sms' or 'whatsapp'
+		if formatted_otp_source in ("sms", "whatsapp"):
+			target_user = frappe.db.get_value('User', employee_user_id, ['phone', 'mobile_no'], as_dict=1)
+			phone = target_user.mobile_no or target_user.phone
+
+			if not phone:
+				return response("Bad Request", 400, None, "No phone number found for user {user}.".format(user=employee_user_id))
+		
 		otp_secret = get_otpsecret_for_(employee_user_id)
 		token = int(pyotp.TOTP(otp_secret).now())
 		tmp_id = frappe.generate_hash(length=8)
 		cache_2fa_data(employee_user_id, token, otp_secret, tmp_id)
 		
-		if otp_source.lower() == "sms":
+		if formatted_otp_source == "sms":
 			verification_obj = process_2fa_for_sms(employee_user_id, token, otp_secret)
 			
-		elif otp_source.lower() == "email":
+		elif formatted_otp_source == "email":
 			verification_obj = process_2fa_for_email(employee_user_id, token, otp_secret)
 			
-		elif otp_source.lower() == "whatsapp":
+		elif formatted_otp_source == "whatsapp":
 			verification_obj = process_2fa_for_whatsapp(employee_user_id, token, otp_secret)
 		
 		password_token = frappe.get_doc({

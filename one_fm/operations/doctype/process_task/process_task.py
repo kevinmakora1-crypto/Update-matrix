@@ -8,7 +8,7 @@ from frappe.desk.form.assign_to import add as add_assignment, DuplicateToDoError
 from frappe import _
 from one_fm.overrides.assignment_rule import get_assignment_rule_description
 
-class RoutineTask(Document):
+class ProcessTask(Document):
 	def validate(self):
 		self.validate_dates()
 
@@ -23,7 +23,7 @@ class RoutineTask(Document):
 
 	@frappe.whitelist()
 	def set_task_and_auto_repeat(self):
-		task = self.set_task_for_routine_task()
+		task = self.set_task_for_process_task()
 		if task:
 			self.assign_employee_to_task(task)
 			self.set_auto_repeat_for_task(task)
@@ -89,7 +89,7 @@ class RoutineTask(Document):
 			auto_repeat.save(ignore_permissions=True)
 			self.db_set('auto_repeat_reference', auto_repeat.name)
 
-	def set_task_for_routine_task(self):
+	def set_task_for_process_task(self):
 		if self.task and not self.task_reference:
 			task = frappe.new_doc('Task')
 			task.subject = (self.task[slice(78)]+"...") if len(self.task) > 80 else self.task
@@ -109,56 +109,57 @@ class RoutineTask(Document):
 		self.update_assignment_rule_for_doc_in_process()
 
 	def update_assignment_rule_for_doc_in_process(self):
-		if self.is_erp_process and self.process_name and self.employee_user:
+		if self.is_erp_task and self.process_name and self.employee_user:
 			# Get routine task process to get the documents linked with the routine task
-			rt_process = frappe.get_doc('Routine Task Process', self.process_name)
+			rt_process = frappe.get_doc('Process', self.process_name)
 			document_names = False
 			common_assignment_rule_linked_docs = []
 			# Iterate the documents list linked with the routine task process to update the assignment rule
-			for erp_doc in rt_process.erp_document:
-				'''
-					Check if assignment rule exists without routine task link for the document,
-					do not create the assignment rule linked with routine task for the document.
-				'''
-				if frappe.db.exists('Assignment Rule', {'document_type': erp_doc.routine_task_document, 'custom_routine_task': ['is', 'not set']}):
-					common_assignment_rule_linked_docs.append(erp_doc.routine_task_document)
-					continue
+			if hasattr(rt_process, 'erp_document'):
+				for erp_doc in rt_process.erp_document:
+					'''
+						Check if assignment rule exists without routine task link for the document,
+						do not create the assignment rule linked with routine task for the document.
+					'''
+					if frappe.db.exists('Assignment Rule', {'document_type': erp_doc.process_task_document, 'custom_process_task': ['is', 'not set']}):
+						common_assignment_rule_linked_docs.append(erp_doc.process_task_document)
+						continue
 
-				if document_names:
-					document_names += ", "+erp_doc.routine_task_document
-				else:
-					document_names = erp_doc.routine_task_document
-				# Check if assignment rule exists for the routine task and the document
-				assignment_rule_exists = frappe.db.exists('Assignment Rule', {'document_type': erp_doc.routine_task_document, 'custom_routine_task': self.name})
-				assignment_rule = False
-				'''
-					If assignment rule exists with the filters and employee got changed in the routine task,
-					then get the assignment rule object and set the users linked in assignment rule to null
-				'''
-				if assignment_rule_exists and self.has_value_changed("employee"):
-					assignment_rule = frappe.get_doc('Assignment Rule', assignment_rule_exists)
-					assignment_rule.users = []
-				# If no assignment rule exists for the filters, create new assignment rule object
-				else:
-					assignment_rule = frappe.new_doc('Assignment Rule')
-					assignment_rule.name = "{0}-{1}".format(self.name, erp_doc.routine_task_document)
-					assignment_rule.document_type = erp_doc.routine_task_document
-					assignment_rule.description = get_assignment_rule_description(erp_doc.routine_task_document)
-					assignment_rule.assign_condition = 'docstatus == 0'
-					assignment_rule.rule = 'Round Robin'
-					assignment_rule.custom_routine_task = self.name
+					if document_names:
+						document_names += ", "+erp_doc.process_task_document
+					else:
+						document_names = erp_doc.process_task_document
+					# Check if assignment rule exists for the routine task and the document
+					assignment_rule_exists = frappe.db.exists('Assignment Rule', {'document_type': erp_doc.process_task_document, 'custom_process_task': self.name})
+					assignment_rule = False
+					'''
+						If assignment rule exists with the filters and employee got changed in the routine task,
+						then get the assignment rule object and set the users linked in assignment rule to null
+					'''
+					if assignment_rule_exists and self.has_value_changed("employee"):
+						assignment_rule = frappe.get_doc('Assignment Rule', assignment_rule_exists)
+						assignment_rule.users = []
+					# If no assignment rule exists for the filters, create new assignment rule object
+					else:
+						assignment_rule = frappe.new_doc('Assignment Rule')
+						assignment_rule.name = "{0}-{1}".format(self.name, erp_doc.process_task_document)
+						assignment_rule.document_type = erp_doc.process_task_document
+						assignment_rule.description = get_assignment_rule_description(erp_doc.process_task_document)
+						assignment_rule.assign_condition = 'docstatus == 0'
+						assignment_rule.rule = 'Round Robin'
+						assignment_rule.custom_process_task = self.name
 
-					days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-					for day in days:
-						assignment_days = assignment_rule.append('assignment_days')
-						assignment_days.day = day
+						days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+						for day in days:
+							assignment_days = assignment_rule.append('assignment_days')
+							assignment_days.day = day
 
-				# If assignment rule object exists, set user of employee selected in the routine task as the users of assignment rule and save it.
-				if assignment_rule:
-					users = assignment_rule.append('users')
-					users.user = self.employee_user
-					assignment_rule.save(ignore_permissions=True)
-					frappe.msgprint(_("Assignment rules are Updated for the document(s): {0}".format(document_names)), alert=True, indicator='green')
+					# If assignment rule object exists, set user of employee selected in the routine task as the users of assignment rule and save it.
+					if assignment_rule:
+						users = assignment_rule.append('users')
+						users.user = self.employee_user
+						assignment_rule.save(ignore_permissions=True)
+						frappe.msgprint(_("Assignment rules are Updated for the document(s): {0}".format(document_names)), alert=True, indicator='green')
 
 			# Notify the user by msg print about the assignment rule not linked with routine task
 			if common_assignment_rule_linked_docs and len(common_assignment_rule_linked_docs) > 0:
@@ -173,7 +174,7 @@ def filter_routine_document(doctype, txt, searchfield, start, page_len, filters)
 		from
 			`tabRoutine Task Document`
 		where
-			parenttype='Routine Task Process' and parent=%(parent)s and routine_task_document like %(txt)s
+			parenttype='Process' and parent=%(parent)s and routine_task_document like %(txt)s
 			limit %(start)s, %(page_len)s
 	"""
 	return frappe.db.sql(query,

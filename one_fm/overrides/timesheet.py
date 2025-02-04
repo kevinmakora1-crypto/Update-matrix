@@ -22,16 +22,13 @@ class TimesheetOveride(Timesheet):
         self.validate_start_date()
 
     def validate_start_date(self):
-        if frappe.session.user != "Administrator":
-            start_date = getdate(self.start_date)
-            if start_date > getdate():
-                frappe.throw(_("Please note that Timesheets cannot be created for a future date"), title="Invalid Start Date")
-            if start_date < getdate():
-                if self.is_new():
-                    msg = _("Please note that Timesheets cannot be created for a past date")
-                else:
-                    msg = _("Please note that Timesheets cannot be updated for a past date")
-                frappe.throw(msg, title="Invalid Start Date")
+        if frappe.session.user == "Administrator":
+            return
+
+        today = get_datetime_in_timezone("Asia/Kuwait").date()
+
+        if self.has_value_changed("start_date") and getdate(self.start_date) != today:
+            frappe.throw(_("Please note that timesheet should not be of past/future date"),title="Invalid Start Date")
 
     def before_save(self):
         if not self.is_new():

@@ -748,7 +748,7 @@ def update_day_off_ot(attendances):
 
 def mark_open_timesheet_and_create_attendance():
     the_date = add_days(getdate(), -1)
-    employee_list = frappe.db.get_list("Employee", filters={"status": "Active", "attendance_by_timesheet": 1}, pluck="name")
+    employee_list = frappe.db.get_list("Employee", filters={"status": "Active", "attendance_by_timesheet": 1}, fields=["name"])
     timesheets = frappe.db.get_list("Timesheet", {'workflow_state':'Pending Approval',
         'start_date': the_date},)
 

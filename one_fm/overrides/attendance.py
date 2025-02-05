@@ -760,7 +760,7 @@ def mark_open_timesheet_and_create_attendance():
 
     present_employees = frappe.db.get_list("Timesheet", filters={"start_date": the_date, "workflow_state": "Approved"}, pluck="employee")
     for obj in employee_list:
-        status, message = is_holiday(employee=obj)
+        status, message = is_holiday(employee=obj,date=the_date)
         if obj not in present_employees:
             att = frappe.new_doc("Attendance")
             att.employee = obj

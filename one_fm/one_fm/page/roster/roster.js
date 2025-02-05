@@ -416,7 +416,8 @@ function load_js(page) {
 				d.show();
 			}
 			else{
-				frappe.throw(_("Insufficient permissions to Edit Post."));
+				frappe.throw(frappe._("Insufficient permissions to Edit Post."));
+
 			}
 		});
 

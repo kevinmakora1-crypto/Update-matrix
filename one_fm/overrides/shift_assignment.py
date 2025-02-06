@@ -75,21 +75,15 @@ class ShiftAssignmentOverride(ShiftAssignment):
                 The last log_type if a checkin recod exist for the shift assignment
                 Else return False
         """
+        employee = frappe.get_value("Employee", self.employee, "employee")
         checkin = frappe.db.get_list(
-            "Employee Checkin",
-            filters={
-                "employee":self.employee,
-                "shift_assignment":self.name,
-                "shift_actual_start":self.start_datetime,
-                "shift_actual_end":self.end_datetime,
-                "roster_type":self.roster_type
-            },
-            fields="log_type",
-            order_by="actual_time DESC"
-        )
-        if checkin and len(checkin) > 0:
-            return checkin[0].log_type
-        return False
+                "Employee Checkin",
+                filters={"employee": employee},
+                fields=["log_type", "time", "shift_assignment"],
+                order_by="time desc",
+                limit=1,
+            )
+        return checkin
 
     def get_next_checkin_log_type(self):
         """
@@ -99,10 +93,37 @@ class ShiftAssignmentOverride(ShiftAssignment):
                 The last log_type if a checkin recod exist for the shift assignment
                 Else return IN
         """
-        last_log_type = self.get_last_checkin_log_type()
-        if last_log_type and last_log_type == "IN":
+        employee = frappe.get_value("Employee", self.employee, "employee")
+
+        last_check_log= self.get_last_checkin_log_type()
+        now_date = now_datetime().strftime("%Y-%m-%d")
+
+        current_shift = frappe.db.get_list(
+            "Shift Assignment",
+            filters={
+                "employee": employee,  
+                "status": "Active",    
+                "docstatus": 1,  
+                "start_date": ["<=", now_date],
+                "end_date": [">=", now_date]
+            },
+            fields=["name", "shift_type", "start_datetime", "end_datetime"]
+        )
+        shift = current_shift[0]
+        
+        # If no previous entry, show Check-in button
+        if not last_check_log:
+            return "IN"
+
+        last_log = last_check_log[0]
+
+        # If the last log was a Check-in and the shift has not changed → Show Check-out
+        if last_log["log_type"] == "IN" and last_log["shift_assignment"] == shift["name"]:
             return "OUT"
+
+        # If last log was a Check-out or the shift changed → Show Check-in
         return "IN"
+        
 
 def has_overlapping_timings(self) -> bool:
     """

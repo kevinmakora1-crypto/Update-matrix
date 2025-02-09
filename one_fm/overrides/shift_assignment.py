@@ -2,6 +2,7 @@ import frappe
 from frappe.utils import add_days, now, today, now_datetime
 from datetime import datetime, timedelta
 from hrms.hr.doctype.shift_assignment.shift_assignment import *
+from one_fm.api.v1.utils import response
 
 
 class ShiftAssignmentOverride(ShiftAssignment):
@@ -98,23 +99,26 @@ class ShiftAssignmentOverride(ShiftAssignment):
         last_check_log= self.get_last_checkin_log_type()
         now_date = now_datetime().strftime("%Y-%m-%d")
 
-        current_shift = frappe.db.get_list(
-            "Shift Assignment",
-            filters={
-                "employee": employee,  
-                "status": "Active",    
-                "docstatus": 1,  
-                "start_date": ["<=", now_date],
-                "end_date": [">=", now_date]
-            },
-            fields=["name", "shift_type", "start_datetime", "end_datetime"]
-        )
-        shift = current_shift[0]
-        
+        current_shift = frappe.db.get_value(
+                "Shift Assignment",
+                filters={
+                    "employee": employee,  
+                    "status": "Active",    
+                    "docstatus": 1,  
+                    "start_date": now_date
+                },
+                fieldname=["name", "shift_type", "start_datetime", "end_datetime"],
+                as_dict=True
+            )
+
+        if current_shift:
+            shift = current_shift
+        else:
+            return response("Resource Not Found", 404, None, "User not assigned to a shift.")
+
         # If no previous entry, show Check-in button
         if not last_check_log:
             return "IN"
-
         last_log = last_check_log[0]
 
         # If the last log was a Check-in and the shift has not changed → Show Check-out

@@ -3458,7 +3458,7 @@ def get_current_shift_for_checkin(employee):
                         return frappe.get_doc("Shift Assignment", last_checkin.shift_assignment)
     except:
         frappe.log_error(frappe.get_traceback(), "Issue while returning shift (Employee Checkin)")
-        ...
+        pass
 
     sql = f"""
         SELECT * FROM `tabShift Assignment`

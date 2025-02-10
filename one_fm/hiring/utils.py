@@ -820,6 +820,7 @@ def change_applicant_erf(job_applicant, old_erf, new_erf):
 		job_applicant_obj.project = new_erf_obj.project
 		job_applicant_obj.one_fm_hiring_method = new_erf_obj.hiring_method
 		job_applicant_obj.interview_round = new_erf_obj.interview_round
+		job_applicant_obj.flags.ignore_mandatory = True
 		job_applicant_obj.save(ignore_permissions=True)
 		job_offer = frappe.db.exists('Job Offer', {'job_applicant': job_applicant, 'docstatus': ['<', 2]})
 		if job_offer:

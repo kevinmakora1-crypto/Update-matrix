@@ -3418,8 +3418,6 @@ def get_current_shift(employee):
     shift = frappe.db.sql(sql, as_dict=1)
     if shift: # shift was checked in between start and end time
         return frappe.get_doc("Shift Assignment", shift[0])
-    
-    
     else: # we look right and left (right for next shift)
         dt = datetime.strptime(now(), '%Y-%m-%d %H:%M:%S.%f')
         curtime_plus_1 = dt + timedelta(hours=1)

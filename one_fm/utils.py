@@ -3418,6 +3418,8 @@ def get_current_shift(employee):
     shift = frappe.db.sql(sql, as_dict=1)
     if shift: # shift was checked in between start and end time
         return frappe.get_doc("Shift Assignment", shift[0])
+    
+    
     else: # we look right and left (right for next shift)
         dt = datetime.strptime(now(), '%Y-%m-%d %H:%M:%S.%f')
         curtime_plus_1 = dt + timedelta(hours=1)
@@ -3440,6 +3442,70 @@ def get_current_shift(employee):
             if shift: # shift was checked 1hr in the past
                 return frappe.get_doc("Shift Assignment", shift[0])
     return False
+
+
+
+
+@frappe.whitelist()
+def get_current_shift_for_checkin(employee):
+    """
+        Get current shift employee should be logged into
+    """
+    try:
+        last_checkin = frappe.db.get_list("Employee Checkin", filters={"employee": employee}, order_by="actual_time DESC", page_length=1, fields=["shift_type", "shift_assignment", "log_type", "shift_actual_end"])
+        if last_checkin:
+            last_checkin = last_checkin[0]
+            if last_checkin.log_type == "IN":
+                time_to_checkout = frappe.db.get_value("Shift Type", last_checkin.shift_type, "allow_check_out_after_shift_end_time")
+                if time_to_checkout:
+                    if now_datetime() < (last_checkin.shift_actual_end + timedelta(minutes=time_to_checkout)):
+                        return frappe.get_doc("Shift Assignment", last_checkin.shift_assignment)
+    except:
+        frappe.log_error(frappe.get_traceback(), "Issue while returning shift (Employee Checkin)")
+        ...
+
+    sql = f"""
+        SELECT * FROM `tabShift Assignment`
+        WHERE employee="{employee}" AND status="Active" AND docstatus=1 AND
+        ('{now()}' BETWEEN start_datetime AND end_datetime)
+    """
+    shift = frappe.db.sql(sql, as_dict=1)
+
+    if shift: # shift was checked in between start and end time
+        return frappe.get_doc("Shift Assignment", shift[0])
+    
+    
+    else: # we look right and left (right for next shift)
+        dt = datetime.strptime(now(), '%Y-%m-%d %H:%M:%S.%f')
+        curtime_plus_1 = dt + timedelta(hours=1)
+        sql = f"""
+            SELECT * FROM `tabShift Assignment`
+            WHERE employee="{employee}" AND status="Active" AND docstatus=1 AND
+            ('{curtime_plus_1}' BETWEEN start_datetime AND end_datetime)
+        """
+        shift = frappe.db.sql(sql, as_dict=1)
+        if shift: # shift was checked 1hr ahead
+            return frappe.get_doc("Shift Assignment", shift[0])
+        else:
+            curtime_plus_1 = dt + timedelta(hours=-1)
+            sql = f"""
+                SELECT * FROM `tabShift Assignment`
+                WHERE employee="{employee}" AND status="Active" AND docstatus=1 AND
+                ('{curtime_plus_1}' BETWEEN start_datetime AND end_datetime)
+            """
+            shift = frappe.db.sql(sql, as_dict=1)
+            if shift: # shift was checked 1hr in the past
+                return frappe.get_doc("Shift Assignment", shift[0])
+    return False
+
+
+
+
+
+
+
+
+
 
 
 @frappe.whitelist()

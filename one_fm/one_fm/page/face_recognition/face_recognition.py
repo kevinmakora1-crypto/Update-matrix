@@ -20,9 +20,11 @@ from one_fm.api.v2.zenquotes import fetch_quote
 
 # setup channel for face recognition
 face_recognition_service_url = frappe.local.conf.face_recognition_service_url
-channels = [
-	grpc.secure_channel(i, grpc.ssl_channel_credentials()) for i in face_recognition_service_url
-]
+# channels = [
+# 	grpc.secure_channel(i, grpc.ssl_channel_credentials()) for i in face_recognition_service_url
+# ]
+
+channels = list()
 
 # setup stub for face recognition
 stubs = [

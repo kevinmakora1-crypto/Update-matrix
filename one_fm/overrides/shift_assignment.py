@@ -108,11 +108,11 @@ def has_overlapping_timings(self) -> bool:
 
         ORDER BY end_datetime DESC
     """, as_dict=1)
-    if existing_shift:
-        shift=existing_shift[0]
-        frappe.throw(f"""
-            Employee <b>{shift.employee} - {shift.employee_name}</b> already has an active Shift <b><a href='/app/shift-assignment/{shift.name}'>{shift.shift_type}: {shift.name}</a></b> that overlaps within this period.
-        """)
-        return True
+    # if existing_shift:
+    #     shift=existing_shift[0]
+    #     frappe.throw(f"""
+    #         Employee <b>{shift.employee} - {shift.employee_name}</b> already has an active Shift <b><a href='/app/shift-assignment/{shift.name}'>{shift.shift_type}: {shift.name}</a></b> that overlaps within this period.
+    #     """)
+    #     return True
     return False
 	

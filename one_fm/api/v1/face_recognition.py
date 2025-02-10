@@ -3,7 +3,7 @@ from frappe import _
 from one_fm.one_fm.page.face_recognition.face_recognition import (
     update_onboarding_employee, check_existing,
 )
-from one_fm.utils import get_current_shift
+from one_fm.utils import get_current_shift, get_current_shift_for_checkin
 from one_fm.api.v1.utils import (
     response, verify_via_face_recogniton_service
 )
@@ -245,7 +245,7 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
         if not employee:
             return response("Resource Not Found", 404, None, "No employee found with {employee_id}".format(employee_id=employee_id))
 
-        shift = get_current_shift(employee)
+        shift = get_current_shift_for_checkin(employee)
         date = cstr(getdate())
         
         site, location = None, None
@@ -255,7 +255,7 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
                 return response("Resource Not Found", 404, None, "Your are outside shift hours")
             
             log_type = shift.check_existing_checking()
-            if log_type=='IN':
+            if log_type =='IN':
                 if shift.after_4hrs():
                     # check if hrs has passed since shift start. Here we can also allow those who checked out tp checkin by checkin if OUT exist for same shift
                     return response("Resource Not Found", 404, None, "You are 4 or more hours late, you cannot checkin at this time.")
@@ -304,6 +304,8 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
         distance = float(haversine(result.latitude, result.longitude, latitude, longitude))
         if distance > float(result.geofence_radius):
             result['user_within_geofence_radius'] = False
+
+        result['user_within_geofence_radius'] = True
 
         result['site_name'] = site
         if shift:

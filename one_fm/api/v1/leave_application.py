@@ -210,11 +210,7 @@ def get_leave_types(employee_id: str = None) -> dict:
 @frappe.whitelist()
 def get_employees_list():
     employees = frappe.get_all("Employee",fields=["employee","employee_name","employee_id"],filters={"status": "Active"})
-    print(employees)
-    employee_list = {}
-    for employee in employees:
-        employee_list[employee.employee] = f'{employee.employee_name}-[{employee.employee} ]-[{employee.employee_id}]'
-    return response("Success", 200, employee_list)
+    return response("Success", 200, employees)
 
 
 @frappe.whitelist()

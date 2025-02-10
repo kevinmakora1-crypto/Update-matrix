@@ -3442,8 +3442,6 @@ def get_current_shift(employee):
     return False
 
 
-
-
 @frappe.whitelist()
 def get_current_shift_for_checkin(employee):
     """
@@ -3495,15 +3493,6 @@ def get_current_shift_for_checkin(employee):
             if shift: # shift was checked 1hr in the past
                 return frappe.get_doc("Shift Assignment", shift[0])
     return False
-
-
-
-
-
-
-
-
-
 
 
 @frappe.whitelist()

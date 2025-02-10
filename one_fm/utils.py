@@ -1693,7 +1693,7 @@ def set_job_applicant_status(doc, method):
             doc.one_fm_document_verification = status
 
 def on_update_job_applicant(doc, method):
-    if doc.one_fm_applicant_status in {"Selected"} and doc.status not in {"Rejected"}:
+    if doc.one_fm_applicant_status in ["Selected"] and doc.status not in ["Rejected"]:
         create_job_offer_from_job_applicant(doc.name)
 
 def create_job_offer_from_job_applicant(job_applicant):
@@ -1705,7 +1705,6 @@ def create_job_offer_from_job_applicant(job_applicant):
             frappe.throw(_("Number of days off cannot be more than a Week!"))
         elif job_app.day_off_category == "Monthly" and frappe.utils.cint(job_app.number_of_days_off) > 30:
             frappe.throw(_("Number of days off cannot be more than a Month!"))
-
         job_offer = frappe.new_doc('Job Offer')
         job_offer.job_applicant = job_app.name
         job_offer.employment_type = job_app.employment_type
@@ -1714,7 +1713,6 @@ def create_job_offer_from_job_applicant(job_applicant):
         job_offer.number_of_days_off = job_app.number_of_days_off
         job_offer.designation = job_app.designation
         job_offer.offer_date = today()
-
         if job_app.one_fm_erf:
             erf = frappe.get_doc('ERF', job_app.one_fm_erf)
             set_erf_details(job_offer, erf, job_app)
@@ -1724,14 +1722,11 @@ def set_erf_details(job_offer, erf, job_app):
     job_offer.erf = erf.name
     if not job_offer.designation:
         job_offer.designation = erf.designation
-
     job_offer.one_fm_provide_accommodation_by_company = erf.provide_accommodation_by_company
     job_offer.one_fm_provide_transportation_by_company = erf.provide_transportation_by_company
     job_offer.reports_to = erf.reports_to
     job_offer.shift_working = erf.shift_working
     job_offer.operations_shift = erf.operations_shift
-
-
     set_salary_details(job_offer, erf)
     set_other_benefits_to_terms(job_offer, erf, job_app)
 

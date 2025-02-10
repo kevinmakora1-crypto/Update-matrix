@@ -154,7 +154,6 @@ def notify_hr_manager_about_local_transfer() -> None:
 	if production_domain() and is_scheduler_emails_enabled():
 		NotifyLocalTransfer().notify_hr_manager_recruiter()
 
-
 class NotifyLocalTransfer:
 
 	def __init__(self) -> None:

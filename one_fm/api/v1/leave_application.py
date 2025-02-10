@@ -207,10 +207,15 @@ def get_leave_types(employee_id: str = None) -> dict:
         return response("Internal Server Error", 500, None, error)
 
 
+@frappe.whitelist()
+def get_employees_list():
+    employees = frappe.get_all("Employee",fields=["employee","employee_name","employee_id"],filters={"status": "Active"})
+    return response("Success", 200, employees)
+
 
 @frappe.whitelist()
 def create_new_leave_application(employee_id: str = None, from_date: str = None, 
-    to_date: str = None, leave_type: str = None, reason: str = None, proof_document = {}) -> dict:
+    to_date: str = None, leave_type: str = None, reason: str = None, proof_document = {},reliever:str=None) -> dict:
     """[summary]
     Args:
         employee (str): Employee record name.
@@ -303,19 +308,20 @@ def create_new_leave_application(employee_id: str = None, from_date: str = None,
             file_ext = "." + attachment_name.split(".")[-1]
             content = base64.b64decode(attachment)
             filename = hashlib.md5((attachment_name + str(datetime.datetime.now())).encode('utf-8')).hexdigest() + file_ext
-            doc = new_leave_application(employee, from_date, to_date, leave_type, "Open", reason, leave_approver, {
+            # reliever_data = frappe.get_value("Employee", {"employee": reliever})
+            doc = new_leave_application(employee, from_date, to_date, leave_type, "Open", reason, leave_approver,reliever, {
                 'attachment_name':attachment_name,
                 'attachment_hashed_name':filename,
                 'attachment_file':content
             })
         else:
-            doc = new_leave_application(employee, from_date, to_date, leave_type, "Open", reason, leave_approver)
+            doc = new_leave_application(employee, from_date, to_date, leave_type, "Open", reason, leave_approver,reliever)
         return response("Success", 201, doc)
     except Exception as error:
         frappe.log_error(message=frappe.get_traceback(), title='Leave API')
         return response("Internal Server Error", 500, None, error)
     
-def new_leave_application(employee: str, from_date: str,to_date: str,leave_type: str,status:str, reason: str,leave_approver: str, attachments = {}) -> dict:
+def new_leave_application(employee: str, from_date: str,to_date: str,leave_type: str,status:str, reason: str,leave_approver: str,reliever:str, attachments = {}) -> dict:
     leave = frappe.new_doc("Leave Application")
     leave.employee=employee
     leave.leave_type=leave_type
@@ -326,6 +332,8 @@ def new_leave_application(employee: str, from_date: str,to_date: str,leave_type:
     leave.follow_via_email=1
     leave.status=status
     leave.leave_approver = leave_approver
+    leave.custom_reliever_ = reliever
+
     leave.leave_approver_name = frappe.db.get_value("User", leave_approver, 'full_name')
     leave.save(ignore_permissions=True)
     if attachments:

@@ -57,6 +57,7 @@
   {
    "fieldname": "shift_supervisor",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Shift Supervisor",
    "options": "Employee"
   },
@@ -121,7 +122,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-24 09:49:23.206286",
+ "modified": "2025-02-09 12:23:52.923918",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Default Shift Checker",

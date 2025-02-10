@@ -18,7 +18,7 @@ class DefaultShiftChecker(Document):
 def create_default_shift_checker():
     start_date = getdate()
     last_day_of_month = get_last_day(start_date)
-    
+
     threshold =  frappe.db.get_single_value("ONEFM General Setting", "default_shift_checker_threshold")
 
     Employee = DocType("Employee")
@@ -38,6 +38,7 @@ def create_default_shift_checker():
         )
         .where(
             (Employee.shift_working == 1)
+            & (Employee.custom_is_reliever != 1)
             & (Employee.shift.isnotnull())
             & (Employee.shift != EmployeeSchedule.shift)
             & (EmployeeSchedule.employee_availability == "Working")

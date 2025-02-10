@@ -13,15 +13,15 @@ from frappe.utils import cint, cstr, getdate
 def get_user_details(employee_id: str = None):
     try:
         if not employee_id:
-            return response("Bad Request", 400, None, "employee_id required.")
+            return response("Bad Request", 400, None, "Employee ID is required.")
 
         if not isinstance(employee_id, str):
-            return response("Bad Request", 400, None, "employee_id must be of type str.")
+            return response("Bad Request", 400, None, "Invalid Employee ID format. Please enter a valid value.")
 
         employee = frappe.get_doc("Employee", {"employee_id": employee_id})
 
         if not employee:
-            return response("Resource Not Found", 404, None, "No employee found with {employee_id}".format(employee_id=employee_id))
+            return response("Resource Not Found", 404, None, "No employee record found for {employee_id}".format(employee_id=employee_id))
 
         user = frappe.get_doc("User", employee.user_id)
 
@@ -44,16 +44,16 @@ def get_user_details(employee_id: str = None):
 def change_user_profile_image(employee_id: str = None, image: str = None):
 
     if not employee_id:
-        return response("Bad Request", 400, None, "user_id required.")
+        return response("Bad Request", 400, None, "Employee ID is required.")
 
     if not isinstance(employee_id, str):
-        return response("Bad Request", 400, None, "user_id must be of type str.")
+        return response("Bad Request", 400, None, "Invalid Employee ID format. Please enter a valid value.")
 
     if not image:
-        return response("Bad Request", 400, None, "image required.")
+        return response("Bad Request", 400, None, "Image required.")
 
     if not isinstance(image, str):
-        return response("Bad Request", 400, None, "image must be of type str.")
+        return response("Bad Request", 400, None, "Invalid image format. Please enter a valid value.")
     
     content = base64.b64decode(image)
     filename = hashlib.md5((employee_id + str(datetime.datetime.now())).encode('utf-8')).hexdigest() + ".png"
@@ -69,12 +69,12 @@ def change_user_profile_image(employee_id: str = None, image: str = None):
         employee_user = frappe.db.get_value("Employee", {"employee_id": employee_id}, ["user_id"])
 
         if not employee_user:
-            return response("Resource Not Found", 404, None, "No user found with {employee_id}".format(employee_id=employee_id))
+            return response("Resource Not Found", 404, None, "No employee record found for {employee_id}".format(employee_id=employee_id))
 
         user = frappe.get_doc("User", employee_user)
 
         if not user:
-            return response("Resource Not Found", 404, None, "No user found with {user_id}".format(user_id = employee_id))
+            return response("Resource Not Found", 404, None, "No user record found for {employee_id}".format(employee_id=employee_id))
 
         user_image = upload_file(user, "user_image", filename, attachment_path, content, is_private=False)
         user.user_image = user_image.file_url
@@ -105,7 +105,7 @@ def get_user_roles(employee_id: str = None):
         employee_user = frappe.db.get_value("Employee", {"employee_id": employee_id}, ["user_id"])
 
         if not employee_user:
-            return response("Resource Not Found", 404, None, "No user found with {employee_id}".format(employee_id=employee_id))
+            return response("Resource Not Found", 404, None, "No employee record found with {employee_id}".format(employee_id=employee_id))
         
         user_roles = frappe.get_roles(employee_user)
         
@@ -117,22 +117,22 @@ def get_user_roles(employee_id: str = None):
 def store_fcm_token(employee_id: str = None , fcm_token: str = None, device_os: str = None):
     try:
         if not employee_id:
-            return response("Bad Request", 400, None, "employee_id required.")
+            return response("Bad Request", 400, None, "Employee ID is required.")
 
         if not fcm_token:
-            return response("Bad Request", 400, None, "fcm_token required.")
+            return response("Bad Request", 400, None, "FCM token required.")
 
         if not device_os:
-            return response("Bad Request", 400, None, "device_os required.")
+            return response("Bad Request", 400, None, "Device OS required.")
 
         if not isinstance(employee_id, str):
-            return response("Bad Request", 400, None, "employee_id must be of type str.")
+            return response("Bad Request", 400, None, "Invalid Employee ID format. Please enter a valid value.")
         try:
             employee = frappe.get_doc("Employee", {"employee_id": employee_id})
         except frappe.exceptions.DoesNotExistError as error:
             employee = frappe.get_doc("Employee", {"name": employee_id})
         if not employee:
-            return response("Resource Not Found", 404, None, "No resource found with {employee_id}".format(employee_id = employee_id))
+            return response("Resource Not Found", 404, None, "No employee record found with {employee_id}".format(employee_id=employee_id))
         
         
         employee.db_set('device_os',device_os)

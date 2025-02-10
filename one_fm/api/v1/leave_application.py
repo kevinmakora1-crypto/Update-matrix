@@ -34,13 +34,13 @@ def get_leave_detail(employee_id: str = None, leave_id: str = None) -> dict:
     """
     try:
         if not employee_id:
-            return response("Bad Request", 400, None, "employee_id required.")
+            return response("Bad Request", 400, None, "Please enter your Employee ID.")
 
         if not isinstance(employee_id, str):
-            return response("Bad Request", 400, None, "employee_id must be of type str.")
+            return response("Bad Request", 400, None, "Invalid Employee ID format. Please enter a valid value.")
 
         if leave_id and not isinstance(leave_id, str):
-            return response("Bad Request", 400, None, "leave_id must be of type str.")
+            return response("Bad Request", 400, None, "Invalid Leave ID format. Please enter a valid value.")
 
         employee = frappe.db.get_value("Employee", {'employee_id':employee_id})
 
@@ -119,16 +119,16 @@ def get_leave_balance(employee_id: str = None, leave_type: str = None) -> dict:
         }
     """
     if not employee_id:
-        return response("Bad Request", 400, None, "employee_id required.")
+        return response("Bad Request", 400, None, "No employee record found for {employee_id}".format(employee_id=employee_id))
 
     # if not leave_type:
     #     return response("Bad Request", 400, None, "leave_type required.")
 
     if not isinstance(employee_id, str):
-        return response("Bad Request", 400, None, "employee_id must be of type str.")
+        return response("Bad Request", 400, None, "Invalid Employee ID format. Please enter a valid value.")
 
     if not isinstance(leave_type, str):
-        return response("Bad Request", 400, None, "leave_type must be of type str.")
+        return response("Bad Request", 400, None, "Invalid leave type. Please select a valid value.")
 
     today=date.today()
 
@@ -136,7 +136,7 @@ def get_leave_balance(employee_id: str = None, leave_type: str = None) -> dict:
         employee = frappe.db.get_value("Employee", {"employee_id": employee_id})
 
         if not employee:
-            return response("Resource Not Found", 404, None, "No employee found with {employee_id}".format(employee_id=employee_id))
+            return response("Resource Not Found", 404, None, "No employee record found for {employee_id}".format(employee_id=employee_id))
 
         allocation_records = get_leave_details(employee, today)
         
@@ -154,7 +154,7 @@ def get_leave_balance(employee_id: str = None, leave_type: str = None) -> dict:
                 leave_balance = allocation_records['leave_allocation']
                 return response("Success", 200, leave_balance)
         else:
-            return response("Resource Not Found", 404, None, "No allocated to {employee}".format(
+            return response("Resource Not Found", 404, None, "No leave allocation found for {employee}".format(
                 employee=employee_id))
 
     except Exception as error:
@@ -177,16 +177,16 @@ def get_leave_types(employee_id: str = None) -> dict:
     """
 
     if not employee_id:
-        return response("Bad Request", 400, None, "employee_id required.")
+        return response("Bad Request", 400, None, "Employee ID is required.")
 
     if not isinstance(employee_id, str):
-        return response("Bad Request", 400, None, "employee_id must be of type str")
+        return response("Bad Request", 400, None, "Invalid Employee ID format. Please enter a valid value.")
 
     try:
         employee = frappe.db.get_value("Employee", {"employee_id": employee_id})
 
         if not employee:
-            return response("Resource Not Found", 404, None, "No employee found with {employee_id}".format(employee_id=employee_id))
+            return response("Resource Not Found", 404, None, "No employee record found for {employee_id}".format(employee_id=employee_id))
 
         leave_types_set = set()
         leave_type_list = frappe.get_list("Leave Allocation", {"employee": employee}, 'leave_type')
@@ -228,51 +228,51 @@ def create_new_leave_application(employee_id: str = None, from_date: str = None,
     """
     try:
         if not employee_id:
-            return response("Bad Request", 400, None, "employee_id required.")
+            return response("Bad Request", 400, None, "Employee ID is required.")
 
         if not from_date:
-            return response("Bad Request", 400, None, "from_date required.")
+            return response("Bad Request", 400, None, "From date is required.")
 
         if not to_date:
-            return response("Bad Request", 400, None, "to_date required.")
+            return response("Bad Request", 400, None, "To date is required.")
 
         if not leave_type:
-            return response("Bad Request", 400, None, "leave_type required.")
+            return response("Bad Request", 400, None, "Leave type is required.")
 
         if not reason:
-            return response("Bad Request", 400, None, "reason required.")
+            return response("Bad Request", 400, None, "Reason is required.")
 
         if not isinstance(employee_id, str):
-            return response("Bad Request", 400, None, "employee_id must be of type str")
+            return response("Bad Request", 400, None, "Invalid Employee ID format. Please enter a valid value.")
 
         if not isinstance(from_date, str):
-            return response("Bad Request", 400, None, "from_date must be of type str.")
+            return response("Bad Request", 400, None, "Invalid From date. Please enter a valid value.")
 
         if not validate_date(from_date):
-            return response("Bad Request", 400, None, "from_date must be of format yyyy-mm-dd.")
+            return response("Bad Request", 400, None, "From date must be of the format yyyy-mm-dd.")
 
         if not validate_date(to_date):
-            return response("Bad Request", 400, None, "to_date must be of format yyyy-mm-dd.")
+            return response("Bad Request", 400, None, "To date must be of the format yyyy-mm-dd.")
 
         if not isinstance(to_date, str):
-            return response("Bad Request", 400, None, "to_date must be of type str.")
+            return response("Bad Request", 400, None, "Invalid To date. Please enter a valid value.")
 
         if not isinstance(leave_type, str):
-            return response("Bad Request", 400, None, "leave_type must be of type str.")
+            return response("Bad Request", 400, None, "Invalid leave type. Please enter a valid value.")
 
         if not isinstance(reason, str):
-            return response("Bad Request", 400, None, "reason must be of type str.")
+            return response("Bad Request", 400, None, "Invalid reason format. Please enter a valid value.")
 
         if proof_document_required_for_leave_type(leave_type) and not proof_document:
-            return response("Bad Request", 400, None, "Leave type requires a proof_document.")
+            return response("Bad Request", 400, None, "Proof document required for {leave_type}".format(leave_type=leave_type))
 
         if not check_if_backdate_allowed(leave_type, from_date):
-            return response("Bad Request", 400, None, "You are not allowed to apply for later or previous date.")
+            return response("Bad Request", 400, None, "You are not allowed to apply for a previous date.")
         
 
         employee = frappe.db.get_value("Employee", {"employee_id": employee_id})
         if not employee:
-            return response("Resource Not Found", 404, None, "No employee found with {employee_id}".format(employee_id=employee_id))
+            return response("Resource Not Found", 404, None, "No employee record found for {employee_id}".format(employee_id=employee_id))
 
         leave_approver = frappe.db.get_value("Employee", get_approver(employee), "user_id")
         if not leave_approver:
@@ -298,7 +298,7 @@ def create_new_leave_application(employee_id: str = None, from_date: str = None,
                 attachment = proof_doc_json.get('attachment')
                 attachment_name = proof_doc_json.get('attachment_name')
             if not attachment or not attachment_name:
-                return response('Bad Request', 400, {}, "proof_document key requires attachment and attachment_name")
+                return response('Bad Request', 400, {}, "Proof document key requires attachment and attachment name.")
 
             file_ext = "." + attachment_name.split(".")[-1]
             content = base64.b64decode(attachment)
@@ -373,9 +373,9 @@ def leave_approver_action(leave_id: str,status: str) -> dict:
                 doc.db_set('workflow_state', 'Rejected')
                 doc.reload()
             else:
-                return response("error", 400, {}, "expected Approved or Rejected")
+                return response("error", 400, {}, "Expected Approved or Rejected")
         else:
-            return response("error", 404, {}, f"Leave ID {leave_id} not found")
+            return response("error", 404, {}, f"Leave ID: {leave_id} not found")
         doc.submit()
         frappe.db.commit()
         return response("Success", 201, doc)
@@ -396,7 +396,7 @@ def leave_application_list(
             return response("error", 400, {}, "Employee ID is required.")
         employee = frappe.get_value("Employee", {"employee_id": employee_id}, ["name", "user_id"], as_dict=1)
         if not employee:
-            return response("error", 404, {}, "Employee not found.")
+            return response("error", 404, {}, "No employee record found for {employee_id}".format(employee_id=employee_id))
         
         if not(from_date and to_date):
             posting_date = ["BETWEEN", [add_months(getdate(), -2), getdate()]]
@@ -469,4 +469,4 @@ def fetch_proof_document(file_name: str, docname: str, doctype: str) -> dict:
     except Exception as e:
         frappe.log_error(frappe.get_traceback())
         frappe.respond_as_web_page(_("Error"), e , http_status_code=417)
-        return response("Bad Request", 404, None, "Unable to fetch data")
+        return response("Bad Request", 404, None, "Unable to fetch proof document")

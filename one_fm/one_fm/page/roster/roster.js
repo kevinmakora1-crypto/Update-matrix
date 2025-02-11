@@ -410,10 +410,9 @@ function load_js(page) {
 								if (r.status_code == 200) {
 									frappe.msgprint(r.data.message);
 					
-									// Hide msgprint after 3 seconds
 									setTimeout(() => {
 										frappe.hide_msgprint();
-									}, 3000);
+									}, 4000);
 								}
 							},
 							freeze: true,

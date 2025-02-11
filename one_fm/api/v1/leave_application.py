@@ -336,6 +336,10 @@ def new_leave_application(employee: str, from_date: str,to_date: str,leave_type:
 
     leave.leave_approver_name = frappe.db.get_value("User", leave_approver, 'full_name')
     leave.save(ignore_permissions=True)
+    if reliever:
+        leave.workflow_state = "Pending Reliever"
+    else:
+        leave.workflow_state = "Pending Approval"
     if attachments:
         _file = upload_file(leave, "", attachments['attachment_hashed_name'], "", attachments['attachment_file'], is_private=True)
         leave.append('proof_documents', {'description':attachments['attachment_name'], 

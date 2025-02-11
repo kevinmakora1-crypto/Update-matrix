@@ -3023,14 +3023,26 @@ function unschedule_staff(page) {
 		'title': 'Unschedule Staff',
 		'fields': [
 			{
-				'label': 'Start Date', 'fieldname': 'start_date', 'fieldtype': 'Date', 'reqd': 1, 'default': date, onchange: function () {
+				'label': 'Selected Days Only', 'fieldname': 'selected_days_only', 'fieldtype': 'Check', 'default': 0, onchange: function () {
+					let val = d.get_value('selected_days_only');
+					if (val) {
+						d.set_value('start_date', '');
+						d.set_value('never_end', 0);
+						d.set_value('select_end', 0);
+						d.set_value('end_date', '');
+					}
+				}
+			},
+			{ 'fieldtype': 'Section Break', 'depends_on': "eval:doc.selected_days_only == 0" },
+			{
+				'label': 'Start Date', 'fieldname': 'start_date', 'fieldtype': 'Date', 'reqd': 1, 'mandatory_depends_on': "eval:doc.selected_days_only == 0", 'default': date, onchange: function () {
 					let start_date = d.get_value('start_date');
 					if (start_date && moment(start_date).isSameOrBefore(moment(frappe.datetime.nowdate()))) {
 						frappe.throw(__("Start Date cannot be before today."));
 					}
 				}
 			},
-			{ 'fieldtype': 'Section Break' },
+			{ 'fieldtype': 'Section Break', 'depends_on': "eval:doc.selected_days_only == 0" },
 			{
 				'label': 'Never End', 'fieldname': 'never_end', 'fieldtype': 'Check', onchange: function () {
 					let val = d.get_value('never_end');
@@ -3064,7 +3076,7 @@ function unschedule_staff(page) {
 		],
 		primary_action: function () {
 			$('#cover-spin').show(0);
-			let { start_date, end_date, never_end } = d.get_values();
+			let { selected_days_only, start_date, end_date, never_end } = d.get_values();
 			let element = get_wrapper_element();
 			if (element == ".rosterOtMonth") {
 				otRoster = true;
@@ -3075,7 +3087,7 @@ function unschedule_staff(page) {
 			frappe.call({
 				method: "one_fm.one_fm.page.roster.roster.unschedule_staff",
 				type: "POST",
-				args: { employees,otRoster, start_date, end_date, never_end },
+				args: { employees, otRoster, start_date, end_date, never_end, selected_days_only },
 				callback: function(res) {
 					// code snippet
 					d.hide();

@@ -691,8 +691,13 @@ function setup_topbar_events(page) {
 
 		unschedule_staff(page);
 	});
+
 	$('.dayoff').on('click', function () {
 		dayoff(page);
+	});
+
+	$('.clear_selection').on('click', function () {
+		clear_selection(page);
 	});
 }
 
@@ -3326,6 +3331,20 @@ function schedule_change_post(page) {
 	});
 	d.show();
 }
+
+function clear_selection(page) {
+	classgrt = [];
+	classgrtw = [];
+
+	$(".filterhideshow").addClass("d-none");
+	$(".Postfilterhideshow").addClass("d-none");
+	
+	$("#calenderviewtable tbody").find("tr").each(function (i, row) {
+		$(row).find("input[type='checkbox']").prop("checked", false); // Uncheck the employee checkbox
+		$(row).find("div").removeClass("selectclass"); // Remove days selections
+	});
+}
+
 function update_roster_view(element, page) {
 	page[element](page);
 	frappe.realtime.on("roster_view", function (output) {

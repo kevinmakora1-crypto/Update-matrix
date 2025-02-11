@@ -31,7 +31,7 @@ def base64_to_mp4(base64_string):
 
     with open(video_path, 'wb') as mp4_file:
         mp4_file.write(video_data)
-    
+
 
 @frappe.whitelist()
 def enroll(employee_id: str = None, filename: str = None, video: str = None) -> dict:
@@ -51,15 +51,15 @@ def enroll(employee_id: str = None, filename: str = None, video: str = None) -> 
     try:
         if not employee_id:
             return response("Bad Request", 400, None, "employee_id required.")
-        
+
         if not filename:
             filename = frappe.session.user+'.mp4'
-        
+
         video_file = frappe.request.files.get("video_file") or video or frappe.request.files.get("video")
-	    
+
         if not video_file:
             return response("Bad Request", 400, None, "Video File is required.")
-        
+
         # check Face Recognition Endpoint
         endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
         if endpoint_state:
@@ -68,19 +68,19 @@ def enroll(employee_id: str = None, filename: str = None, video: str = None) -> 
             status, message = verify_via_face_recogniton_service(url=face_recog_base_url + "enroll", data={"username": frappe.session.user, "filename": filename}, files={"video_file": video_file})
         else:
             status, message = True, 'Successful'
-            
-        
+
+
         doc = frappe.get_doc("Employee", {"employee_id": employee_id})
         if not doc:
             return response("Resource Not Found", 404, None, "No employee found with {employee_id}".format(employee_id=employee_id))
-        
-        
-            
+
+
+
         if not status:
             return response("Bad Request", 400, None, message)
-        
+
         # Set a context flag to indicate an API update (It will affect in 'Employee' validate method)
-        frappe.flags.allow_enrollment_update = True        
+        frappe.flags.allow_enrollment_update = True
         doc.enrolled = 1
         doc.save(ignore_permissions=True)
         update_onboarding_employee(doc)
@@ -168,7 +168,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
 
         if not employee:
             return response("Resource Not Found", 404, None, "No employee found with {employee_id}".format(employee_id=employee_id))
-                
+
         # check Face Recognition Endpoint
         endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
         video_file = frappe.request.files.get("video_file") or frappe.request.files.get("video")
@@ -182,12 +182,12 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,
                 }, files={"video_file": video_file})
         else:
             status, message = True, 'Successful'
-            
+
         if not status:
             return response("Bad Request", 400, None, message)
         doc = create_checkin_log(employee, log_type, skip_attendance, latitude, longitude, "Mobile App")
         return response("Success", 201, doc, None)
-    
+
     except Exception as error:
         frappe.log_error(frappe.get_traceback(), 'Verify Checkin')
         return response("Internal Server Error", 500, None, error)
@@ -451,4 +451,3 @@ def checkin_list(employee_id, from_date, to_date):
         return response("success", 200, checkins)
     except Exception as e:
         return response("error", 500, None, str(e))
-    

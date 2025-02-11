@@ -778,8 +778,6 @@ def unschedule_staff(employees, otRoster,start_date=None, end_date=None, never_e
 
         employees = json.loads(employees)
 
-        print("="*200, employees)
-
         if not employees:
             response("Error", 400, None, {'message':'Employees must be selected.'})
 

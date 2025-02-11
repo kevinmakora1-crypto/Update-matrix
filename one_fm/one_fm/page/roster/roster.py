@@ -1,3 +1,4 @@
+from copy import deepcopy
 from pandas.core.indexes.datetimes import date_range
 from datetime import datetime
 from one_fm.one_fm.page.roster.employee_map  import CreateMap,PostMap
@@ -247,7 +248,10 @@ def get_post_view(start_date, end_date,  project=None, site=None, shift=None, op
     if operations_role:
         filters.update({'post_template': operations_role})
     post_total = len(frappe.db.get_list("Operations Post", filters))
-    post_list = frappe.db.get_list("Operations Post", filters, "name", order_by="name asc", limit_start=limit_start, limit_page_length=limit_page_length)
+
+    post_filters = deepcopy(filters)
+    post_filters.update(dict(status="Active"))
+    post_list = frappe.db.get_list("Operations Post", post_filters , "name", order_by="name asc", limit_start=limit_start, limit_page_length=limit_page_length)
     fields = ['name', 'post', 'operations_role','date', 'post_status', 'site', 'shift', 'project']
 
     filters.pop('post_template', None)
@@ -820,6 +824,7 @@ def edit_post(posts, values):
 
     args = frappe._dict(json.loads(values))
 
+
     if args.post_status == "Plan Post":
         if args.plan_end_date and cint(args.project_end_date):
             frappe.throw(_("Cannot set both project end date and custom end date!"))
@@ -827,7 +832,7 @@ def edit_post(posts, values):
         if not args.plan_end_date and not cint(args.project_end_date):
             frappe.throw(_("Please set an end date!"))
 
-        frappe.enqueue(plan_post, posts=posts, args=args, is_async=True, queue='long')
+        frappe.enqueue(plan_post, posts=posts, args=args, is_async=True, queue='long', at_front=True)
 
 
 
@@ -838,7 +843,7 @@ def edit_post(posts, values):
         if not args.cancel_end_date and not cint(args.project_end_date):
             frappe.throw(_("Please set an end date!"))
 
-        frappe.enqueue(cancel_post,posts=posts, args=args, is_async=True, queue='long')
+        frappe.enqueue(cancel_post,posts=posts, args=args, is_async=True, queue='long', at_front=True)
 
 
 
@@ -850,7 +855,7 @@ def edit_post(posts, values):
         if not args.suspend_to_date and not cint(args.project_end_date):
             frappe.throw(_("Please set an end date!"))
 
-        frappe.enqueue(suspend_post, posts=posts, args=args, is_async=True, queue='long')
+        frappe.enqueue(suspend_post, posts=posts, args=args, is_async=True, queue='long', at_front=True)
 
 
 
@@ -865,9 +870,11 @@ def edit_post(posts, values):
         if args.repeat == "Does not repeat" and cint(args.project_end_date):
             frappe.throw(_("Cannot set both project end date and choose 'Does not repeat' option!"))
 
-        frappe.enqueue(post_off, posts=posts, args=args, is_async=True, queue='long')
+        frappe.enqueue(post_off, posts=posts, args=args, is_async=True, queue='long', at_front=True)
 
     frappe.enqueue(update_roster, key="staff_view", is_async=True, queue='long')
+    return response("Success", 200, {'message': 'Your request is being processed in the background.'})
+
 
 def plan_post(posts, args):
     """ This function sets the post status to planned provided a post, start date and an end date """

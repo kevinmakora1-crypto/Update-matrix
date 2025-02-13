@@ -61,6 +61,10 @@ frappe.ui.form.on('Employee', {
 	onload: function(frm) {
         frm.trigger('mandatory_reports_to');
 		is_employee_master(frm);
+		frm.trigger('check_religion_for_hajj');
+    },
+	one_fm_religion: function(frm) {
+        frm.trigger('check_religion_for_hajj');
     },
 	designation: function(frm) {
 		frm.trigger('mandatory_reports_to');
@@ -74,6 +78,17 @@ frappe.ui.form.on('Employee', {
         } else {
             frm.set_df_property("reports_to", "reqd", 1);
         }
+	},
+	check_religion_for_hajj: function(frm) {
+		frappe.db.get_value('Religion', frm.doc.one_fm_religion, 'custom_hajj_check_required')
+			.then(r => {
+				if (r.message && r.message.custom_hajj_check_required) {
+					frm.set_df_property('went_to_hajj', 'read_only', 0);
+				} else {
+					frm.set_df_property('went_to_hajj', 'read_only', 1);
+					frm.set_value('went_to_hajj', 0);
+				}
+			});
 	},
 	under_company_residency: function(frm){
 		if(frm.doc.employee_id){
@@ -224,7 +239,7 @@ var yes_no_html_buttons = function(frm, val, html_field, field_name, label) {
 	var $wrapper = frm.fields_dict[html_field].$wrapper;
 	var selected = 'btn-primary';
 	var field_btn_html = field_name+'_btn_html';
-	var field_html = `<div><label class="control-label" style="padding-right: 0px;">${label}</label></div><div>
+	var field_html = `<div><label class="control-label" style="padding-right: 0px;">${label}</label></div><div style="margin-bottom: 10px;">
 		<button class="btn btn-default btn-xs ${val ? selected: ''} ${field_btn_html}" type="button" data='Yes'>Yes</button>
 		<button class="btn btn-default btn-xs ${!val ? selected: ''} ${field_btn_html}" type="button" data='No'>No</button>
 	</div>`;

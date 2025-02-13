@@ -2,7 +2,7 @@
 # encoding: utf-8
 from __future__ import unicode_literals
 import os, json, math, pymysql, requests, datetime
-from datetime import timedelta, datetime
+from datetime import date, timedelta, datetime
 from dateutil.relativedelta import relativedelta
 from datetime import datetime
 import pandas as pd
@@ -53,6 +53,10 @@ from one_fm.processor import sendemail
 from one_fm.one_fm.payroll_utils import get_user_list_by_role
 from one_fm.operations.doctype.operations_shift.operations_shift import get_shift_supervisor
 from one_fm.api import api
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2 import service_account
 
 
 
@@ -627,7 +631,10 @@ def notify_employee(doc, method):
         api.push_notification_rest_api_for_leave_application(doc.employee,"Leave Application", message, doc.name)
 
 @frappe.whitelist()
-def leave_appillication_on_cancel(doc, method):
+def leave_application_on_cancel(doc, method):
+    today = nowdate()
+    if doc.from_date < today :
+        frappe.db.set_value("Employee",doc.employee, "status","Active")
     update_employee_hajj_status(doc, method)
 
 def get_leave_payment_breakdown(leave_type):
@@ -899,26 +906,51 @@ def increase_daily_leave_balance():
     '''
 
     # Get List of Leave Allocation for today of a Leave Type (having Is Paid Annual Leave marekd True)
-    allocation_list = get_paid_annual_leave_allocation_list()
+    try:
+        allocation_list = get_paid_annual_leave_allocation_list()
 
-    # Iterate Allocation List to increment Allocation
-    for leave_allocation in allocation_list:
-        # Get Allocation object from allocation list
-        allocation = frappe.get_doc("Leave Allocation", leave_allocation.name)
+        # Iterate Allocation List to increment Allocation
+        for leave_allocation in allocation_list:
+            try:
+                # Get Allocation object from allocation list
+                allocation = frappe.get_doc("Leave Allocation", leave_allocation.name)
 
-        # Get Leave Type object from allocation list
-        leave_type = frappe.get_doc("Leave Type", leave_allocation.leave_type)
+                # Get Leave Type object from allocation list
+                leave_type = frappe.get_doc("Leave Type", leave_allocation.leave_type)
 
-        # If True, then calculate new_leaves_allocated and update to the Leave Allocation
-        if is_employee_allowed_to_avail_increment_existing_allocation(allocation, leave_type):
-            # Get Number of Leave Allocated for the allocation of an employee
-            new_leaves_allocated = get_new_leave_allocated_for_annual_paid_leave(allocation, leave_type)
-            if new_leaves_allocated:
-                allocation.new_leaves_allocated = allocation.new_leaves_allocated+new_leaves_allocated
-                allocation.total_leaves_allocated = allocation.new_leaves_allocated+allocation.unused_leaves
-                allocation.save()
-                # Update Leave Ledger to reflect the Leave Allocation
-                update_leave_ledger_for_paid_annual_leave(allocation, leave_type.is_carry_forward)
+                # Get Number of Leave Allocated for the allocation of an employee
+                new_leaves_allocated = get_new_leave_allocated_for_annual_paid_leave(allocation, leave_type)
+                if new_leaves_allocated:
+
+                    current_date = getdate(nowdate())
+                    # Calculate the difference in days between the current date and the allocation start date
+                    difference_in_days = (current_date - allocation.from_date).days
+
+                    # Calculate the previous leaves based on the number of days and new leaves allocated
+                    previous_leaves_allocated = difference_in_days * new_leaves_allocated
+
+                    if previous_leaves_allocated != allocation.new_leaves_allocated:
+                        allocation.new_leaves_allocated = previous_leaves_allocated + new_leaves_allocated
+                    else:
+                        allocation.new_leaves_allocated += new_leaves_allocated
+
+                    allocation.total_leaves_allocated = allocation.new_leaves_allocated + allocation.unused_leaves
+                    allocation.save(ignore_permissions=True)
+                    allocation.submit()
+                    frappe.db.commit()
+                    # Update Leave Ledger to reflect the Leave Allocation
+                    update_leave_ledger_for_paid_annual_leave(allocation, leave_type.is_carry_forward)
+
+            except Exception as e:
+                try:
+                    frappe.log_error(f"Error processing Leave Allocation {leave_allocation.name}: {str(e)}")
+                except Exception as log_error:
+                    print(f"Logging failed for Leave Allocation {leave_allocation.name}: {str(log_error)}")
+                continue
+
+    except Exception as e:
+          frappe.log_error(f"Error processing Leave Allocation {leave_allocation.name}: {str(e)}")
+
 
 def update_leave_ledger_for_paid_annual_leave(allocation, is_carry_forward):
     '''
@@ -951,10 +983,8 @@ def get_new_leave_allocated_for_annual_paid_leave(allocation, leave_type):
     new_leaves_allocated = 0
 
     # Fetch employee annual leave allocation from employee
-    employee_annual_leave = frappe.db.get_value('Employee', allocation.employee, 'annual_leave_balance')
-    if employee_annual_leave and employee_annual_leave <= 0:
-        # Fetch employee annual leave allocation from company defaults
-        employee_annual_leave = frappe.db.get_value('Company', {"name": frappe.defaults.get_user_default("company")}, 'default_annual_leave_balance')
+    employee_annual_leave = frappe.db.get_value('Company', {"name": frappe.defaults.get_user_default("company")}, 'default_annual_leave_balance')
+
 
     # calculate daily allocation factor
     if employee_annual_leave > 0:
@@ -991,7 +1021,7 @@ def get_paid_annual_leave_allocation_list(date=False):
         return: List of Leave Allocation
     '''
     if not date:
-        date = add_to_date(getdate(nowdate()),days=2)
+        date = getdate(nowdate())
     # Get List of Paid Annual Leave Allocation for a date of a Leave Type (having Is Paid Annual Leave marekd True)
     query = """
         select
@@ -3153,6 +3183,7 @@ def has_super_user_role(user=None):
                 return True
     return False
 
+
 def get_approver_for_many_employees(supervisor=None):
     """
         Get document approver for employee by
@@ -3409,117 +3440,44 @@ def custom_validate_interviewer(self):
 def get_current_shift(employee):
     """
         Get current shift employee should be logged into
-    """
-    sql = f"""
-        SELECT * FROM `tabShift Assignment`
-        WHERE employee="{employee}" AND status="Active" AND docstatus=1 AND
-        ('{now()}' BETWEEN start_datetime AND end_datetime)
-    """
-    shift = frappe.db.sql(sql, as_dict=1)
-    if shift: # shift was checked in between start and end time
-        return frappe.get_doc("Shift Assignment", shift[0])
-    else: # we look right and left (right for next shift)
-        dt = datetime.strptime(now(), '%Y-%m-%d %H:%M:%S.%f')
-        curtime_plus_1 = dt + timedelta(hours=1)
-        sql = f"""
-            SELECT * FROM `tabShift Assignment`
-            WHERE employee="{employee}" AND status="Active" AND docstatus=1 AND
-            ('{curtime_plus_1}' BETWEEN start_datetime AND end_datetime)
-        """
-        shift = frappe.db.sql(sql, as_dict=1)
-        if shift: # shift was checked 1hr ahead
-            return frappe.get_doc("Shift Assignment", shift[0])
-        else:
-            curtime_plus_1 = dt + timedelta(hours=-1)
-            sql = f"""
-                SELECT * FROM `tabShift Assignment`
-                WHERE employee="{employee}" AND status="Active" AND docstatus=1 AND
-                ('{curtime_plus_1}' BETWEEN start_datetime AND end_datetime)
-            """
-            shift = frappe.db.sql(sql, as_dict=1)
-            if shift: # shift was checked 1hr in the past
-                return frappe.get_doc("Shift Assignment", shift[0])
-    return False
-
-
-@frappe.whitelist()
-def get_current_shift_for_checkin(employee):
-    """
-        Get current shift employee should be logged into
+        This Method Checks if Employee has a shift and is within the checkin Range.
+        args:
+			employee: Employee ID
+		return dict (type, data)
     """
     try:
-        last_checkin = frappe.db.get_list("Employee Checkin", filters={"employee": employee}, order_by="actual_time DESC", page_length=1, fields=["shift_type", "shift_assignment", "log_type", "shift_actual_end"])
-        if last_checkin:
-            last_checkin = last_checkin[0]
-            if last_checkin.log_type == "IN":
-                time_to_checkout = frappe.db.get_value("Shift Type", last_checkin.shift_type, "allow_check_out_after_shift_end_time")
-                if time_to_checkout:
-                    if now_datetime() < (last_checkin.shift_actual_end + timedelta(minutes=time_to_checkout)):
-                        return frappe.get_doc("Shift Assignment", last_checkin.shift_assignment)
-    except:
-        frappe.log_error(frappe.get_traceback(), "Issue while returning shift (Employee Checkin)")
-        pass
-
-    sql = f"""
-        SELECT * FROM `tabShift Assignment`
-        WHERE employee="{employee}" AND status="Active" AND docstatus=1 AND
-        ('{now()}' BETWEEN start_datetime AND end_datetime)
-    """
-    shift = frappe.db.sql(sql, as_dict=1)
-
-    if shift: # shift was checked in between start and end time
-        return frappe.get_doc("Shift Assignment", shift[0])
-    
-    
-    else: # we look right and left (right for next shift)
-        dt = datetime.strptime(now(), '%Y-%m-%d %H:%M:%S.%f')
-        curtime_plus_1 = dt + timedelta(hours=1)
+        nowtime = now_datetime()
         sql = f"""
-            SELECT * FROM `tabShift Assignment`
-            WHERE employee="{employee}" AND status="Active" AND docstatus=1 AND
-            ('{curtime_plus_1}' BETWEEN start_datetime AND end_datetime)
-        """
-        shift = frappe.db.sql(sql, as_dict=1)
-        if shift: # shift was checked 1hr ahead
-            return frappe.get_doc("Shift Assignment", shift[0])
-        else:
-            curtime_plus_1 = dt + timedelta(hours=-1)
-            sql = f"""
-                SELECT * FROM `tabShift Assignment`
-                WHERE employee="{employee}" AND status="Active" AND docstatus=1 AND
-                ('{curtime_plus_1}' BETWEEN start_datetime AND end_datetime)
+            SELECT sa.*,
+                DATE_SUB(sa.start_datetime, INTERVAL st.begin_check_in_before_shift_start_time MINUTE) as checkin_time,
+                DATE_ADD(sa.end_datetime, INTERVAL st.allow_check_out_after_shift_end_time MINUTE) as checkout_time
+            FROM `tabShift Assignment` sa
+            JOIN `tabShift Type` st ON sa.shift_type = st.name
+            WHERE sa.employee="{employee}"
+            AND sa.status="Active"
+            AND sa.docstatus=1
+            AND (DATE('{nowtime}') = sa.start_date
+                OR DATE_ADD(DATE('{nowtime}'), INTERVAL 1 DAY) = sa.start_date
+                OR DATE('{nowtime}') = sa.end_date)
             """
-            shift = frappe.db.sql(sql, as_dict=1)
-            if shift: # shift was checked 1hr in the past
-                return frappe.get_doc("Shift Assignment", shift[0])
-    return False
 
-
-@frappe.whitelist()
-def check_existing_checking(shift):
-    """API to determine the applicable Log type.
-    The api checks employee's last lcheckin log type. and determine what next log type needs to be
-    Returns:
-        True: The log in was "IN", so his next Log Type should be "OUT".
-        False: either no log type or last log type is "OUT", so his next Ltg Type should be "IN".
-    """
-    checkin = frappe.db.get_list("Employee Checkin", filters={
-        'employee':shift.employee, 'shift_assignment':shift.name,
-        'shift_actual_start':shift.start_datetime,
-        'shift_actual_end':shift.end_datetime,
-        'roster_type':shift.roster_type
-        },
-        fields='log_type',
-        order_by="actual_time DESC"
-    )
-    if checkin:
-        # #For Check IN
-        if checkin[0].log_type=='OUT':
-            return "IN"
-        #For Check OUT
-        else:
-            return "OUT"
-    return "IN"
+        shift = frappe.db.sql(sql, as_dict=1)
+        if shift: # shift was checked in between start and end time
+            data = frappe.get_doc("Shift Assignment", shift[0].name)
+            if shift[0].checkin_time > nowtime:
+                minutes = int((shift[0].checkin_time - nowtime).total_seconds() / 60)
+                return {"type":"Early", "data": data, "time": minutes}
+            elif shift[0].checkout_time < nowtime:
+                minutes = int((nowtime - shift[0].checkout_time).total_seconds() / 60)
+                return {"type":"Late", "data": data, "time": minutes}
+            elif shift[0].checkin_time <= nowtime <= shift[0].checkout_time:
+                return {"type":"On Time", "data": data, "time": 0}
+            else:
+                return False
+        return False
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Error while getting current shift")
+        return False
 
 @frappe.whitelist()
 def check_existing():
@@ -3532,21 +3490,23 @@ def check_existing():
     employee = frappe.get_value("Employee", {"user_id": frappe.session.user})
     if not employee:
         return response("Employee not found", 404, None, "Employee not found")
-    curr_shift = get_current_shift(employee)
+    shift_exists = get_current_shift(employee)
+    if shift_exists['type'] == "On Time":
+        curr_shift = shift_exists['data']
     if not curr_shift:
         return response("Employee not found", 404, None, "Employee not found")
-    log_type = check_existing_checking(curr_shift)
+    log_type = curr_shift.get_next_checkin_log_type()
     if log_type=='IN':
         return response("success", 200, True, "")
     return response("success", 200, False, "")
 
-def fetch_attendance_manager_user_obj() -> str:
-    attendance_manager = frappe.get_doc("ONEFM General Setting").get("attendance_manager")
+def fetch_attendance_manager_user() -> str:
+    attendance_manager = frappe.db.get_single_value("ONEFM General Setting", "attendance_manager")
     if attendance_manager:
         attendance_manager_user = frappe.db.get_value("Employee", {"name": attendance_manager}, "user_id")
-        return attendance_manager_user
+        if attendance_manager_user:
+            return attendance_manager_user
     return ""
-
 
 def custom_toggle_notifications(user: str, enable: bool = False):
     try:
@@ -3694,6 +3654,236 @@ def send_work_anniversary_reminders():
                     reminder_text = get_work_anniversary_reminder_text(others)
                     send_work_anniversary_reminder(person_email, reminder_text, others, message, sender)
 
+def set_employee_status():
+    from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import assign_responsibilities ,reassign_responsibilities
+    from one_fm.overrides.leave_application import reassign_to_applicant,reassign_to_reliever
+    # Get today's date
+    current_date = getdate(today())
+
+    # Fetch approved leave applications where `from_date` is today or earlier, along with the employee's status
+    leave_applications = frappe.get_all('Leave Application',
+        filters={
+            'status': 'Approved',
+            'from_date': ['<=', current_date],
+            'to_date': ['>=', current_date]
+        },
+        fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']  # Fetch employee status directly
+    )
+
+    if not leave_applications:
+        frappe.log_error(_("No employees found with approved leave applications for today or earlier."))
+        return
+
+    employees_set_to_vacation = 0
+    employees_set_to_active = 0
+    try:
+        for leave in leave_applications:
+            employee = leave['employee']
+            status =  leave['status']
+            from_date = leave['from_date']
+            leave_application = leave['name']
+            to_date =  leave['to_date']
+            reliever = leave.get('custom_reliever_', None)
+            if current_date == getdate(from_date) and status == "Active":
+                frappe.db.set_value('Employee', employee, 'status', 'Vacation')
+                if reliever:
+                    frappe.enqueue(reassign_to_applicant(employee=employee, leave_name=leave_application))
+                    frappe.enqueue(assign_responsibilities, leave_application=leave_application)
+                employees_set_to_vacation += 1
+            elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":
+                frappe.db.set_value('Employee', employee, 'status', 'Active')
+                if reliever:
+                    frappe.enqueue(reassign_to_reliever(reliever=reliever, leave_name=leave_application, employee=employee))
+                if reliever and frappe.db.exists("Reliever Assignment", {"name": leave_application}):
+                    frappe.enqueue(reassign_responsibilities, leave_application=leave_application)
+                employees_set_to_active += 1
+
+        frappe.db.commit()
+        frappe.log(_("Employee statuses updated: {0} set to 'Vacation', {1} set to 'Active'.")
+                .format(employees_set_to_vacation, employees_set_to_active))
+    except:
+            frappe.log_error(frappe.get_traceback(), "Error occurred while trying to reassign duties")
+
+
+
+
+def is_holiday(employee, date=None, raise_exception=True):
+    try:
+        date = today() if not date else date
+        holiday_list = get_holiday_list_for_employee(employee.name, raise_exception)
+        if not holiday_list:
+            return False, ""
+        holidays = frappe.db.get_value("Holiday", {"parent": holiday_list, "holiday_date": date}, ["weekly_off"], as_dict=1)
+        if holidays:
+            return (True, f"Dear {employee.employee_name}, Today is your day off.  Happy Recharging!.") if holidays.weekly_off else (True, "Today is your holiday, have fun")
+        return False, ""
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Error while validating Holiday")
+        return False, ""
+
+
+def get_gmail_service(employee_email):
+
+    credentials_path = frappe.get_site_path('private', 'files', 'gcp.json')
+
+    try:
+        with open(credentials_path, 'r') as file:
+            credentials_dict = json.load(file)
+    except Exception:
+        pass
+
+    credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=['https://www.googleapis.com/auth/gmail.settings.basic'])
+
+    delegated_credentials = credentials.with_subject(employee_email)
+
+    service = build('gmail', 'v1', credentials=delegated_credentials)
+    return service
+
+
+def set_out_of_office(employee_email, start_date, end_date, custom_reliever_name, custom_reliever, employee_name):
+    try:
+        service = get_gmail_service(employee_email)
+
+        start_date_rfc3339 = start_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+        end_date_rfc3339 = end_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+
+        vacation_settings = {
+            "enableAutoReply": True,
+            "responseSubject": f"{employee_name} is Currently On Leave",
+            "responseBodyPlainText": f"Thank you for reaching out. I am currently on vacation and will be unavailable from {start_date} to {end_date}. For urgent matters, please contact {custom_reliever_name} at {custom_reliever}. If still unresolved, I will respond to your message upon my return.",
+            "restrictToContacts": False,
+            "restrictToDomain": False,
+            "startTime": int(datetime.strptime(start_date_rfc3339, '%Y-%m-%dT%H:%M:%SZ').timestamp() * 1000),
+            "endTime": int(datetime.strptime(end_date_rfc3339, '%Y-%m-%dT%H:%M:%SZ').timestamp() * 1000)
+        }
+
+        service.users().settings().updateVacation(userId='me', body=vacation_settings).execute()
+        frappe.msgprint(f"Out-of-office set for {employee_email} from {start_date} to {end_date}.")
+    except Exception as e:
+        frappe.log_error(str(e), "Failed to set out-of-office")
+
+
+def disable_out_of_office(employee_email):
+    try:
+        service = get_gmail_service(employee_email)
+
+        vacation_settings = {
+            "enableAutoReply": False
+        }
+
+        service.users().settings().updateVacation(userId='me', body=vacation_settings).execute()
+        frappe.msgprint(f"Out-of-office disabled for {employee_email}.")
+    except Exception as e:
+        frappe.log_error(str(e), "Failed to disable out-of-office")
+
+
+def set_out_of_office_for_leaves():
+    today = datetime.now().date()
+
+    # Query Leave records
+    leaves = frappe.get_all('Leave Application', filters=[
+        ['from_date', '<=', today], ['to_date', '>=', today], ['status', '=', 'Approved']
+    ], fields=['employee.company_email', 'from_date', 'to_date', 'custom_reliever_name', 'custom_reliever_.user_id', 'employee.employee_name'])
+
+    for leave in leaves:
+        employee_email = leave['company_email']
+        from_date = leave['from_date']
+        to_date = leave['to_date']
+        custom_reliever_name = leave['custom_reliever_name']
+        custom_reliever = leave['user_id']
+        employee_name = leave['employee_name']
+
+        if employee_email:
+
+            # If today's date matches the start date, set out-of-office
+            if today == from_date:
+                set_out_of_office(employee_email, from_date, to_date, custom_reliever_name, custom_reliever, employee_name)
+
+            # If today's date matches the end date, disable out-of-office
+            if today == add_days(to_date, 1):
+                disable_out_of_office(employee_email)
+
+
+def update_assurance_level_task():
+    today = datetime.now().date()
+    condition_1 = frappe.get_all(
+    'Employee',
+    filters=[
+        ['status', '=', 'Active'],
+        ['one_fm_civil_id', 'not in', ['', 'NONE']],
+        ['custom_civil_id_assurance_level', '!=', 'High'],
+        ['civil_id_expiry_date', 'is', 'set'],
+        ['civil_id_expiry_date', '!=', '']
+    ],
+    fields=['employee', 'one_fm_civil_id', 'custom_civil_id_assurance_level', 'civil_id_expiry_date']
+)
+    condition_2 = frappe.get_all(
+    'Employee',
+    filters=[
+        ['status', '=', 'Active'],
+        ['one_fm_civil_id', 'not in', ['', 'NONE']],
+        ['custom_civil_id_assurance_level', '=', 'High'],
+        ['civil_id_expiry_date', '<=', today]
+    ],
+    fields=['employee', 'one_fm_civil_id', 'custom_civil_id_assurance_level', 'civil_id_expiry_date']
+)
+    employees = condition_1 + condition_2
+
+    for employee in employees:
+        expiry_date = employee.get("civil_id_expiry_date")
+        if isinstance(expiry_date, date):
+            employee["civil_id_expiry_date"] = expiry_date.isoformat()
+    verification_level = call_to_get_assurance_level(employees)
+    verification_dict = {ver['employee']: ver['customCivilIdAssuranceLevel'] for ver in verification_level}
+    for employee in employees:
+            verification_level = verification_dict.get(employee['employee'])
+            if verification_level:
+                frappe.db.set_value('Employee', employee['employee'], 'custom_civil_id_assurance_level', verification_level)
+    return True
+
+
+def call_to_get_assurance_level(employees):
+    response = None
+    try:
+        api_key = frappe.conf.bulbul_api_wrapper_key
+        if isinstance(employees, str):
+            url = f"https://apiwrapper.one-fm.com/api/DigitalSigning/CheckMobileIdentity/{employees}"
+            headers = {'accept': 'text/plain','ApiKey': f'{api_key}'}
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("data", None)
+        else:
+            url = f"https://apiwrapper.one-fm.com/api/DigitalSigning/BulkCheckMobileIdentity"
+            headers = {'Content-Type': 'application/json','ApiKey': f'{api_key}'}
+            batch_size=200
+            all_results = []
+            for i in range(0, len(employees), batch_size):
+                batch = employees[i:i + batch_size]
+                try:
+                    response = requests.post(url, headers=headers, json=batch)
+                    if response.status_code == 200:
+                        data = response.json()
+                        batch_result = data.get("data", [])
+                        all_results.extend(batch_result)
+                        frappe.msgprint(f"Batch {i} sent successfully.")
+                except Exception as e:
+                        frappe.log_error(frappe.get_traceback(), str(e))
+                        return {"error": str(e), "title": "API call failed"}
+            return all_results
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(),f"An error occurred while making the API call: {str(e)}")
+        return {"error": str(e), "title": "API Call Failed"}
+
+
+@frappe.whitelist()
+def update_active_employees_assurance_level():
+    frappe.enqueue(update_assurance_level_task,
+        queue='long',
+        timeout=1800
+    )
+    frappe.msgprint("The bulk updating of assurance level  process has been initiated and is running in the background.")
+    return True
 
 def background_enqueue_run(report_name, filters=None, user=None):
 	"""run reports in background"""

@@ -857,7 +857,7 @@ function bind_events(page) {
 				$checked_employee.parent().parent().parent().children("td").children().not("label").removeClass("selectclass");
 				$(".Postfilterhideshow").addClass("d-none");
 			}
-            
+
             // Check for rows that are not selected full and unselect cells in that row.
             $checked_employee.closest("tbody").children("tr").each(function (i, cell) {
                 const unchecked_row = $(cell).find('input[name="selectallcheckbox"]:not(:checked)');
@@ -942,7 +942,7 @@ function bind_events(page) {
 		// 		// }
 		// 	});
 		// });
-		//on checkbox select change        
+		//on checkbox select change
         $rosterMonth.find(`input[name="selectallcheckbox"]`).on("change", function () {
             let $checked_employee = $(this);
             let selected_employee = $checked_employee.parent().parent().parent().attr('data-name');
@@ -957,12 +957,12 @@ function bind_events(page) {
 
 			if ($checked_employee.is(":checked")) {
                 $checked_employee.closest('tr').children("td").children().not("label").each(function (i, v) {
-					
+
 					let [employee, date] = $(v).attr('data-selectid').split('|');
 					classgrt.push($(v).attr('data-selectid'));
 					var r = Date.parse(date)
-					
-					
+
+
 					if (moment(date).isAfter(moment())) {
 						$(v).addClass("selectclass");
 					}
@@ -977,7 +977,7 @@ function bind_events(page) {
 				$checked_employee.closest('tr').children("td").children().not("label").removeClass("selectclass");
 				$(".filterhideshow").addClass("d-none");
 			}
-            
+
             // Check for rows that are not selected full and unselect cells in that row.
             $checked_employee.closest("tbody").children("tr").each(function (i, cell) {
                 const unchecked_row = $(cell).find('input[name="selectallcheckbox"]:not(:checked)');
@@ -1005,7 +1005,7 @@ function bind_events(page) {
 		});
 		$rosterOtMonth.find(`input[name="selectallcheckbox"]`).on("change", function () {
             let $checked_employee = $(this);
-            
+
 			//Hide Day Off and schedule leave button for OT Roster
 			$(".dayoff").hide();
 			$(".scheduleleave").hide();
@@ -1014,7 +1014,7 @@ function bind_events(page) {
 
 					let [employee, date] = $(v).attr('data-selectid').split('|');
 					var r = Date.parse(date)
-					
+
 					if (moment(date).isAfter(moment())) {
 						$(v).addClass("selectclass");
 					}
@@ -1029,7 +1029,7 @@ function bind_events(page) {
 				$(this).closest('tr').children("td").children().not("label").removeClass("selectclass");
 				$(".filterhideshow").addClass("d-none");
 			}
-            
+
             // Check for rows that are not selected full and unselect cells in that row.
             $(this).closest("tbody").children("tr").each(function (i, cell) {
                 const unchecked_row = $(cell).find('input[name="selectallcheckbox"]:not(:checked)');
@@ -1188,7 +1188,7 @@ function get_roster_data(page, isOt) {
 			method: "one_fm.one_fm.page.roster.roster.get_roster_view", //dotted path to server method
 			type: "POST",
 			args: { start_date, end_date, employee_search_id, employee_search_name, project, site,
-				shift, department, operations_role, designation, relievers, isOt, limit_start, limit_page_length 
+				shift, department, operations_role, designation, relievers, isOt, limit_start, limit_page_length
 			},
 			callback: function(res) {
 				// code snippet
@@ -2441,7 +2441,7 @@ function render_staff_list_view(data) {
 	data.forEach(function (employee) {
 
 
-		let { name, employee_id, employee_name, nationality, mobile_no, email, designation, project, site, shift, department,site_supervisor,shift_supervisor } = employee;
+		let { name, employee_id, employee_name, nationality, mobile_no, email, designation, project, site, shift, department,site_supervisor,shift_supervisor,custom_operations_role_allocation,custom_is_reliever } = employee;
 		let row = `
 		<tr>
 			<td>
@@ -2491,6 +2491,12 @@ function render_staff_list_view(data) {
 			</td>
 			<td>
 				${department || 'N/A'}
+			</td>
+			<td>
+				${custom_operations_role_allocation || 'N/A'}
+			</td>
+			<td>
+				${custom_is_reliever ? 'Yes' : 'No'}
 			</td>
 		</tr>`;
 		$staffdatatable.append(row);
@@ -3538,16 +3544,8 @@ function dayoff(page) {
 					args["week_days"] = week_days;
 					args["repeat_freq"] = repeat_freq;
 				}
-				else if (repeat == "Daily") {
-					repeat_freq = "Daily";
-					args["repeat_freq"] = repeat_freq;
-				}
 				else if (repeat == "Monthly") {
 					repeat_freq = "Monthly";
-					args["repeat_freq"] = repeat_freq;
-				}
-				else if (repeat == "Yearly") {
-					repeat_freq = "Yearly";
 					args["repeat_freq"] = repeat_freq;
 				}
 			}

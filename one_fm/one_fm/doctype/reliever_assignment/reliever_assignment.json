@@ -1,0 +1,161 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:leave_application",
+ "creation": "2024-10-29 07:06:44.888238",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "leave_details_section",
+  "leave_application",
+  "assignment_period_start",
+  "assignment_period_end",
+  "status",
+  "column_break_yubw",
+  "on_leave_employee",
+  "on_leave_employee_name",
+  "reliever",
+  "reliever_name",
+  "section_break_plav",
+  "assigned_documents"
+ ],
+ "fields": [
+  {
+   "fieldname": "leave_details_section",
+   "fieldtype": "Section Break",
+   "label": "Leave Details"
+  },
+  {
+   "fieldname": "leave_application",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Leave Application",
+   "options": "Leave Application",
+   "unique": 1
+  },
+  {
+   "fetch_from": "leave_application.from_date",
+   "fetch_if_empty": 1,
+   "fieldname": "assignment_period_start",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Assignment Period Start",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "leave_application.to_date",
+   "fetch_if_empty": 1,
+   "fieldname": "assignment_period_end",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Assignment Period End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_yubw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "leave_application.employee",
+   "fetch_if_empty": 1,
+   "fieldname": "on_leave_employee",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "On Leave Employee",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "leave_application.employee_name",
+   "fetch_if_empty": 1,
+   "fieldname": "on_leave_employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "On Leave Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "leave_application.custom_reliever_",
+   "fetch_if_empty": 1,
+   "fieldname": "reliever",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Reliever",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "leave_application.custom_reliever_name",
+   "fetch_if_empty": 1,
+   "fieldname": "reliever_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Reliever Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_plav",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "assigned_documents",
+   "fieldtype": "Table",
+   "label": "Assigned Documents",
+   "options": "Reliever Assignment Document",
+   "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nTransferred\nReverted",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Leave Application",
+   "link_fieldname": "name"
+  }
+ ],
+ "modified": "2024-11-25 07:03:47.799466",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Reliever Assignment",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "color": "Orange",
+   "title": "Pending"
+  },
+  {
+   "color": "Green",
+   "title": "Transferred"
+  },
+  {
+   "color": "Blue",
+   "title": "Reverted"
+  }
+ ]
+}

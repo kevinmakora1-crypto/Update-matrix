@@ -406,6 +406,14 @@ function load_js(page) {
 								$('#cover-spin').hide();
 								let element = get_wrapper_element().slice(1);
 								page[element](page);
+
+								if (r.status_code == 200) {
+									frappe.msgprint(r.data.message);
+					
+									setTimeout(() => {
+										frappe.hide_msgprint();
+									}, 4000);
+								}
 							},
 							freeze: true,
 							freeze_message: __('Editing Post....')

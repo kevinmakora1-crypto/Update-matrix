@@ -63,25 +63,27 @@ def accommodation_contact_update(doc, method):
 
 
 def validate_contact(doc, method):
-	if doc.has_value_changed("first_name") or doc.has_value_changed("last_name"):
-		
-		base_name = f"{doc.first_name or ''} {doc.last_name or ''}".strip()
+	if getattr(doc, "_doc_before_save", None):
+		if doc.has_value_changed("first_name") or doc.has_value_changed("last_name"):
+			
+			base_name = f"{doc.first_name or ''} {doc.last_name or ''}".strip()
 
-		if base_name and base_name != doc.name:
-			new_name = make_unique_name(base_name)
+			if base_name and base_name != doc.name:
+				new_name = make_unique_name(base_name)
 
-			if new_name != doc.name:
-				frappe.rename_doc("Contact", doc.name, new_name, force=True)
-				doc.name = new_name
-				doc.db_set("last_name", doc.last_name)
-				doc.db_set("first_name", doc.first_name)
+				if new_name != doc.name:
+					frappe.rename_doc("Contact", doc.name, new_name, force=True)
+					doc.name = new_name
+					doc.db_set("last_name", doc.last_name)
+					doc.db_set("first_name", doc.first_name)
 
-				# Notify frontend to redirect to the new URL
-				frappe.msgprint(
-					_("The contact has been renamed. Redirecting to the new page..."),
-					indicator="green"
-				)
-				frappe.local.response["location"] = frappe.utils.get_url(f"/app/contact/{new_name}")
+					frappe.db.commit()
+					# Notify frontend to redirect to the new URL
+					frappe.msgprint(
+						_("The contact has been renamed. Redirecting to the new page..."),
+						indicator="green"
+					)
+					frappe.local.response["location"] = frappe.utils.get_url(f"/app/contact/{new_name}")
 
 
 def make_unique_name(base_name, count=0):

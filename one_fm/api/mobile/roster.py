@@ -396,7 +396,8 @@ def get_assigned_shifts(employee_id, project=None, site=None):
 		return []
 
 	except Exception as e:
-		return frappe.utils.response.report_error(e.http_status_code)
+		frappe.log_error(frappe.traceback(), str(e))
+		return frappe.utils.response.report_error(str(e))
 
 
 @frappe.whitelist()

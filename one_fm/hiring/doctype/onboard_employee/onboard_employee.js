@@ -116,6 +116,7 @@ frappe.ui.form.on('Onboard Employee', {
 					}
 				}
 			});
+			set_operations_shift(frm);
 		}
 	},
 	btn_create_bank_account: function(frm) {

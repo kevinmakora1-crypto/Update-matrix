@@ -490,6 +490,7 @@ def create_onboarding_from_job_offer(job_offer):
 			o_employee.reports_to = job_offer.reports_to
 			o_employee.date_of_joining = job_offer.estimated_date_of_joining
 			o_employee.employment_type = job_offer.employment_type
+			o_employee.operations_shift = job_offer.operations_shift
 			for d in fields:
 				o_employee.set(d, job_offer.get(d))
 			for od in one_fm_fields:

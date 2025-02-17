@@ -90,8 +90,10 @@ def create_roster_post_actions():
     end_date = add_to_date(start_date, days=14)
 
     operations_roles_not_filled_set = set()
+    operations_roles_over_filled_set = set()
 
     list_of_dict_of_operations_roles_not_filled = []
+    list_of_dict_of_operations_roles_over_filled = []
     
     
     # Fetch post schedules in the date range that are active
@@ -132,13 +134,16 @@ def create_roster_post_actions():
                 # else:
                 #     operations_roles_not_filled_set.add(ps.operations_role)
                 #     list_of_dict_of_operations_roles_not_filled.append(ps)
-           
+        if len([es for es in employee_schedules if es.date == ps.date and es.shift == ps.shift and es.operations_role == ps.operations_role]) > 1:
+            operations_roles_over_filled_set.add(ps.operations_role)
+            list_of_dict_of_operations_roles_over_filled.append(ps)
 
 
     # Convert set to tuple for passing it in the sql query as a parameter
     operations_roles_not_filled = tuple(operations_roles_not_filled_set)
+    operations_roles_over_filled = tuple(operations_roles_over_filled_set)
     
-    if not operations_roles_not_filled:
+    if not operations_roles_not_filled and not operations_roles_over_filled:
         return
 
     #Fetch supervisor and post types in his/her shift
@@ -149,7 +154,7 @@ def create_roster_post_actions():
             join `tabEmployee` sv on sh.supervisor=sv.employee
             where ps.operations_role in {operations_roles}
             AND sh.status='Active' AND sv.status='Active'
-            group by sv.employee""".format(operations_roles=operations_roles_not_filled))
+            group by sv.employee""".format(operations_roles=operations_roles_not_filled+ operations_roles_over_filled))
 
 
     # For each supervisor, create post actions to fill post type specifying the post types not filled
@@ -161,10 +166,19 @@ def create_roster_post_actions():
             operations_roles = res[1].split(",")
 
             check_list = []
+            check_list_over_filled = []
+            second_check_list = []
+            second_check_list_over_filled = []
             second_check_list = []
             for val in list_of_dict_of_operations_roles_not_filled:
                 if val["operations_role"] in operations_roles and val["shift"] in shift_dict[supervisor]:
                     check_list.append(val)
+            
+            # Check for overfilled post types
+            for val in list_of_dict_of_operations_roles_over_filled:
+                if val["operations_role"] in operations_roles and val["shift"] in shift_dict[supervisor]:
+                    check_list_over_filled.append(val)
+
 
             for item in check_list:
                 for second_item in second_check_list:
@@ -175,6 +189,16 @@ def create_roster_post_actions():
                 
                 second_check_list.append(item)
                 check_list.remove(item)
+            
+            # Process overfilled post types
+            for item in check_list_over_filled:
+                for second_item in second_check_list_over_filled:
+                    if (item["date"] == second_item["date"]) and (item["shift"] == second_item["shift"]) and (item["operations_role"] == second_item["operations_role"]):
+                        second_item["quantity"] = second_item["quantity"] + 1
+                        break
+                item.update({"quantity": 1})
+                second_check_list_over_filled.append(item)
+                check_list_over_filled.remove(item)
 
             if second_check_list and len(second_check_list) > 0:
                 roster_post_actions_doc = frappe.new_doc("Roster Post Actions")
@@ -187,6 +211,14 @@ def create_roster_post_actions():
 
                 for obj in second_check_list:
                     roster_post_actions_doc.append('operations_roles_not_filled', {
+                        'operations_role': obj.get("operations_role"),
+                        "operations_shift": obj.get("shift"),
+                        "date": obj.get("date"),
+                        "quantity": obj.get("quantity") if obj.get("quantity") else 1
+                    })
+                
+                for obj in second_check_list_over_filled:
+                    roster_post_actions_doc.append('custom_overfilled_posts', {
                         'operations_role': obj.get("operations_role"),
                         "operations_shift": obj.get("shift"),
                         "date": obj.get("date"),

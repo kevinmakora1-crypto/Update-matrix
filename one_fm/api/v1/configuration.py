@@ -73,8 +73,15 @@ def app_service() -> dict:
 		}
 	"""
 	try:
+		employee_id = frappe.db.get_value("Employee", {"user_id":frappe.session.user}, ["name", "attendance_by_timesheet"], as_dict=1)
+		filters = {}
+		if employee_id.attendance_by_timesheet:
+			filters["assign_to_timesheet_employees"] = 1
+		else:
+			filters["assign_to_non_timesheet_employees"] = 1
+
 		app_service = frappe.db.get_all("App Service", 
-			filters={},
+			filters=filters,
 			fields=["name", "icon", "status", "service_group"])
 		return response("Success", 200, app_service)
 	except Exception as error:
@@ -96,13 +103,20 @@ def user_app_service() -> dict:
 	"""
 	try:
 		if not frappe.db.exists("User App Service", {"user":frappe.session.user}):
-			employee_id = frappe.db.get_value("Employee", {"user_id":frappe.session.user}, "name")
+			employee_id = frappe.db.get_value("Employee", {"user_id":frappe.session.user}, ["name", "attendance_by_timesheet"], as_dict=1)
+			filters = {"auto_assign": 1}
+			if employee_id.attendance_by_timesheet:
+				filters["assign_to_timesheet_employees"] = 1
+			else:
+				filters["assign_to_non_timesheet_employees"] = 1
+
 			auto_assign_services = frappe.db.get_list("App Service", 
-				filters={"auto_assign":1},
+				filters=filters,
 			)
+
 			frappe.get_doc({
 				"doctype": "User App Service",
-				"employee": employee_id,
+				"employee": employee_id.name,
 				"user":frappe.session.user,
 				"service_detail": [{"service":i.name} for i in auto_assign_services]
             }).insert(ignore_permissions=True)

@@ -218,7 +218,7 @@ def create_roster_post_actions():
                     })
                 
                 for obj in second_check_list_over_filled:
-                    roster_post_actions_doc.append('custom_overfilled_posts', {
+                    roster_post_actions_doc.append('overfilled_posts', {
                         'operations_role': obj.get("operations_role"),
                         "operations_shift": obj.get("shift"),
                         "date": obj.get("date"),

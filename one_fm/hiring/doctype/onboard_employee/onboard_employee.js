@@ -16,6 +16,7 @@ frappe.ui.form.on('Onboard Employee', {
 		create_custom_buttons(frm);
 		filterDefaultShift(frm);
 		set_shift_working_btn(frm);
+		set_operations_shift(frm);
 		if(frm.doc.duty_commencement_status == "Applicant Signed and Uploaded" && !frm.doc.employee && !frm.doc.company_email){
 			frm.scroll_to_field('company_email');
 		}
@@ -115,6 +116,7 @@ frappe.ui.form.on('Onboard Employee', {
 					}
 				}
 			});
+			set_operations_shift(frm);
 		}
 	},
 	btn_create_bank_account: function(frm) {
@@ -149,6 +151,16 @@ frappe.ui.form.on('Onboard Employee', {
 });
 
 
+const set_operations_shift = (frm) => {
+    if (frm.doc.job_offer && !frm.doc.attendance_by_timesheet && !frm.doc.operations_shift) {
+        frappe.db.get_value('Job Offer', { name: frm.doc.job_offer }, 'operations_shift')
+            .then((r) => {
+                if (r.message?.operations_shift) {
+                    frm.set_value('operations_shift', r.message.operations_shift);
+                }
+            });
+    }
+};
 
 
 var calculate_g2g_and_residency_total = function(frm) {

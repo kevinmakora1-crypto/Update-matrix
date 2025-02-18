@@ -208,10 +208,30 @@ def get_leave_types(employee_id: str = None) -> dict:
 
 
 @frappe.whitelist()
-def get_employees_list():
-    employees = frappe.get_all("Employee",fields=["employee","employee_name","employee_id"],filters={"status": "Active"})
-    return response("Success", 200, employees)
+def get_employees_role_to_display_reliever_field(employee_id: str = None)-> dict:
+    try:
+        employee = frappe.get_value("Employee", {"employee_id": employee_id}, ["name", "user_id"], as_dict=1)
+        super_user_role = frappe.db.get_single_value("ONEFM General Setting", "super_user_role")
+        user_roles = frappe.get_roles(employee.user_id)
+        if (employee.reports_to or (super_user_role in user_roles)):
+            return response("Success", 200, True)
+        return response("Success", 200, False)
+    except Exception as error:
+        return response("Internal Server Error", 500, None, error)
 
+
+
+@frappe.whitelist()
+def get_employees_list():
+    super_user_role = frappe.db.get_single_value("ONEFM General Setting", "super_user_role")
+    users_with_role = frappe.get_all("Has Role",filters={"role": super_user_role, "parenttype": "User"},fields=["parent as user_name"])
+    user_names = [user["user_name"] for user in users_with_role]
+    employees_with_role = frappe.get_all("Employee",filters={"status": "Active", "user_id": ["in", user_names]},fields=["employee_id", "employee_name", "designation","employee"])
+    employees = frappe.get_all("Employee",filters={"status": "Active","reports_to": ["is", "set"]},fields=["employee_id", "employee_name", "designation","employee"])
+    for employee in employees_with_role:
+        if employee not in employees:
+            employees.append(employee)
+    return response("Success", 200, employees)
 
 @frappe.whitelist()
 def create_new_leave_application(employee_id: str = None, from_date: str = None, 
@@ -308,7 +328,6 @@ def create_new_leave_application(employee_id: str = None, from_date: str = None,
             file_ext = "." + attachment_name.split(".")[-1]
             content = base64.b64decode(attachment)
             filename = hashlib.md5((attachment_name + str(datetime.datetime.now())).encode('utf-8')).hexdigest() + file_ext
-            # reliever_data = frappe.get_value("Employee", {"employee": reliever})
             doc = new_leave_application(employee, from_date, to_date, leave_type, "Open", reason, leave_approver,reliever, {
                 'attachment_name':attachment_name,
                 'attachment_hashed_name':filename,

@@ -93,8 +93,13 @@
    "label": "Attendance By Client"
   }
  ],
- "links": [],
- "modified": "2023-07-17 10:29:18.020108",
+ "links": [
+  {
+   "link_doctype": "Operations Post",
+   "link_fieldname": "post_template"
+  }
+ ],
+ "modified": "2025-02-16 17:10:57.197761",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Operations Role",

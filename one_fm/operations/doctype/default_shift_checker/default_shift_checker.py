@@ -34,8 +34,6 @@ class DefaultShiftChecker(Document):
         self.db_set("status", "Completed")
 
 
-
-@frappe.whitelist(allow_guest=True)
 def create_default_shift_checker():
     start_date = getdate()
     last_day_of_month = get_last_day(start_date)

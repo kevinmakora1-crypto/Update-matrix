@@ -84,8 +84,8 @@ class EmployeeOverride(EmployeeMaster):
 
     def before_save(self):
         self.assign_role_profile_based_on_designation()
-        get_assurance_level_of_employee(self)
-        
+        # get_assurance_level_of_employee(self)
+
 
     def after_insert(self):
         employee_after_insert(self, method=None)
@@ -565,4 +565,3 @@ def get_assurance_level_of_employee(doc):
         verification_level = verification_level.get("verificationLevel")
         doc.custom_civil_id_assurance_level = verification_level
         return True
-

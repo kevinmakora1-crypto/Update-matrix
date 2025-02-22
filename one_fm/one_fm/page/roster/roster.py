@@ -1521,3 +1521,41 @@ def get_employee_details(employee_id):
         "custom_is_reliever": employee.custom_is_reliever,
         "custom_operations_role_allocation": employee.custom_operations_role_allocation
     }
+
+
+@frappe.whitelist()
+def bulk_employee_record_update(updates):
+    """
+    Bulk update Employee records in Frappe.
+    
+    Args:
+        updates (list): A list of dictionaries containing employee update data.
+                        Each dictionary must include 'name' (Employee ID) and 
+                        other fields to update.
+                        
+    Returns:
+        dict: Success message with number of records updated.
+    """
+    updates = frappe.parse_json(updates)
+    if not isinstance(updates, list):
+        frappe.throw("Invalid data format. Expected a list of updates.")
+
+    updated_records = []
+
+    for update in updates:
+        employee_id = update.pop("name", None)
+        if not employee_id:
+            continue 
+
+        try:
+            frappe.db.set_value("Employee", employee_id, update)
+            updated_records.append(employee_id)
+        except Exception as e:
+            frappe.log_error(f"Failed to update Employee {employee_id}: {str(e)}")
+
+    frappe.db.commit()
+
+    return {
+        "message": f"Successfully updated {len(updated_records)} employee(s).",
+        "updated": updated_records
+    }

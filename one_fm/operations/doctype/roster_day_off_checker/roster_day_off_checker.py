@@ -39,7 +39,6 @@ def check_roster_day_off():
 		Employee = frappe.qb.DocType('Employee')
 		employees = frappe.db.sql( frappe.qb.from_(Employee).select("*").where((Employee.status=="Active") & (Employee.shift_working == 1)), as_dict=1)
 
-
 		roster_day_off_data = []
 
 		for employee in employees:
@@ -89,9 +88,11 @@ def validate_offs(employee):
 	start_date = None
 	end_date = None
 	today = getdate()
+
 	if employee.day_off_category == "Monthly":
 		start_date = get_first_day(today)
 		end_date = get_last_day(today)
+	
 	elif employee.day_off_category == "Weekly":
 		start_date = get_first_day_of_week(today)
 		end_date = get_last_day_of_week(today)
@@ -127,7 +128,7 @@ def validate_offs(employee):
 
 
 
-		if employee.number_of_days_off != (off_days+ot_days):
+		if employee.number_of_days_off != (off_days + ot_days):
 			day_off_diff = ''
 			if off_days > employee.number_of_days_off and not ot_days:
 				day_off_diff = f"{off_days-employee.number_of_days_off} day(s) off scheduled more, please reduce by {off_days-employee.number_of_days_off}"
@@ -139,6 +140,7 @@ def validate_offs(employee):
 				day_off_diff = f"{ot_days-employee.number_of_days_off} day(s) off OT scheduled more, please schedule {ot_days-employee.number_of_days_off} day off OT less"
 			elif (ot_days and off_days):
 				day_off_diff = f"{ot_days} OT and {off_days} day(s) off scheduled, actual day off should be {employee.number_of_days_off}"
+
 
 			start_date_split = str(start_date).split('-')
 			end_date_split = str(end_date).split('-')
@@ -155,9 +157,9 @@ def validate_offs(employee):
 				"number_of_days_off": employee.number_of_days_off
 			})
 
-
+	
 		# If off_days > 0, get the shift and site supervisor based on their shift(s) in the start and end dates.  
-		if len(datalist) > 0 and off_days > 0:
+		if len(datalist) > 0 and off_days >= 0:
 			site_shift_data = frappe.db.sql( frappe.qb.from_(EmployeeSchedule)
 				.select(EmployeeSchedule.shift, OperationsShift.site)
 				.left_join(OperationsShift)
@@ -179,7 +181,7 @@ def validate_offs(employee):
 
 
 		# If ot_days > 0, get the shift and site supervisor based on their shift(s) in the start and end dates.  
-		if len(datalist) > 0 and ot_days > 0:
+		if len(datalist) > 0 and ot_days >= 0:
 			site_shift_data = frappe.db.sql( frappe.qb.from_(EmployeeSchedule)
 				.select(EmployeeSchedule.shift, OperationsShift.site)
 				.left_join(OperationsShift)
@@ -187,9 +189,11 @@ def validate_offs(employee):
 				.where(employee_name & employee_schedule_date & (EmployeeSchedule.shift != "") & (EmployeeSchedule.day_off_ot == 1))
 				.groupby(EmployeeSchedule.shift),
 			as_dict=1)
+
 			for shift in site_shift_data:
 				site_supervisor = frappe.db.get_value("Operations Site", shift.site, "account_supervisor")
 				shift_supervisor = get_shift_supervisor(shift.shift)
+
 
 				if len(supervisors_to_notify) == 0:
 					supervisors_to_notify.append({"shift_supervisor" :shift_supervisor, "site_supervisor": site_supervisor})

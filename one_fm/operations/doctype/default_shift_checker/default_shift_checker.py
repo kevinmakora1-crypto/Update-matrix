@@ -53,7 +53,8 @@ def create_default_shift_checker():
             Employee.site.as_("default_site")
         )
         .where(
-            (Employee.shift_working == 1)
+            (Employee.status == "Active")
+            & (Employee.shift_working == 1)
             & (Employee.custom_is_reliever != 1)
             & (Employee.shift.isnotnull())
             & (Employee.shift != EmployeeSchedule.shift)

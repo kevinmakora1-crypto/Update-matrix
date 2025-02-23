@@ -3355,7 +3355,7 @@ async function updateEmployeeDefaults(employees, data) {
     // Bulk fetch all employees' details in a single query
     let fetchedEmployees = await frappe.db.get_list("Employee", {
         filters: [["name", "in", uniqueEmployeeIDs]],
-        fields: ["name", "shift", "custom_operations_role_allocation", "custom_is_reliever", "project", "site"],
+        fields: ["name", "employee_name", "shift", "custom_operations_role_allocation", "custom_is_reliever", "project", "site"],
         limit_page_length: uniqueEmployeeIDs.length // Fetch all in one call
     });
 
@@ -3364,6 +3364,7 @@ async function updateEmployeeDefaults(employees, data) {
         if (!emp.custom_is_reliever && (emp.shift !== data.shift || emp.custom_operations_role_allocation !== data.operations_role)) {
             employees_to_update.push({
                 employee: emp.name,
+				employee_name: emp.employee_name,
                 current_shift: emp.shift,
                 new_shift: data.shift,
                 current_role: emp.custom_operations_role_allocation,
@@ -3375,31 +3376,31 @@ async function updateEmployeeDefaults(employees, data) {
 
     if (employees_to_update.length > 0) {
         let table_html = `
-            <div style="max-height: 300px; overflow-y: auto;">
-                <table style="border-collapse: collapse; width: 100%;">
-                    <thead>
-                        <tr>
-                            <th style="border: 1px solid #ddd; padding: 8px;">Employee ID</th>
-                            <th style="border: 1px solid #ddd; padding: 8px;">Current Shift</th>
-                            <th style="border: 1px solid #ddd; padding: 8px;">New Shift</th>
-                            <th style="border: 1px solid #ddd; padding: 8px;">Current Role</th>
-                            <th style="border: 1px solid #ddd; padding: 8px;">New Role</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
+			<div style="max-height: 300px; overflow-y: auto;">
+				<table style="border-collapse: collapse; width: 100%; text-align: left;">
+					<thead>
+						<tr style="background-color: #f8f9fa;">
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">Employee Name</th>
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">Current Shift</th>
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">New Shift</th>
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">Current Role</th>
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">New Role</th>
+						</tr>
+					</thead>
+					<tbody>`;
 
-        employees_to_update.forEach(emp => {
-            table_html += `
-                <tr>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${emp.employee}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${emp.current_shift || 'Not Set'}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${emp.new_shift || 'Not Set'}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${emp.current_role || 'Not Set'}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${emp.new_role || 'Not Set'}</td>
-                </tr>`;
-        });
+		employees_to_update.forEach(emp => {
+			table_html += `
+				<tr>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.employee_name}</td>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.current_shift || 'Not Set'}</td>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.new_shift || 'Not Set'}</td>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.current_role || 'Not Set'}</td>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.new_role || 'Not Set'}</td>
+				</tr>`;
+		});
 
-        table_html += `</tbody></table></div>`;
+		table_html += `</tbody></table></div>`;
 
 		frappe.confirm(
 			`Hey, you just rostered these employees to shifts or roles different from their defaults. Would you like to update their default shift or role?<br>${table_html}`,

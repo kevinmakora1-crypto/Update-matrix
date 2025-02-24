@@ -363,8 +363,7 @@ def send_token_via_email(user, token, otp_secret, otp_issuer, subject=None, mess
 		'subject': subject,
 		'message': message,
 		'header': [_('Verfication Code'), 'blue'],
-		'delayed': False,
-		'retry':3
+		'delayed': False
 	}
 
 	enqueue(method=sendemail, queue='short', timeout=300, event=None,

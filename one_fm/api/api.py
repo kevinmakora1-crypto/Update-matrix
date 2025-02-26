@@ -255,7 +255,7 @@ def push_notification_rest_api_for_lms(user_id, message):
     It is a rest API that sends request to frappe.get_site_config().get("firebase_api")
     """
     try:
-        frappe.log_error(title = "FROM LMS",message="FROM LMS")
+        
         employee_id = frappe.get_value("Employee",{'user_id':user_id},'name')
         if employee_id:
 

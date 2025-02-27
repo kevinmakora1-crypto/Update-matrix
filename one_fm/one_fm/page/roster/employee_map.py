@@ -154,30 +154,62 @@ class CreateMap():
         # self.schedule_query = f"""SELECT  es.employee, es.employee_name, es.date, es.operations_role, es.post_abbrv,  es.shift, roster_type, es.employee_availability, es.day_off_ot
         # from `tabEmployee Schedule`es  where {self.str_filter} and es.employee in {self.employees} group by es.employee order by date asc, es.employee_name asc """
 
-        #Noticed the trailing comma in a tuple is raising a SQL error, using this conditional to create the fetch query based on the employee
-        if len(employees)==1:
-            self.schedule_query  = f"""SELECT  es.employee, es.employee_name, es.date, es.operations_role, es.post_abbrv, \
-            es.shift, es.start_datetime, es.end_datetime, es.roster_type, es.employee_availability, es.day_off_ot, es.project from `tabEmployee Schedule`es  where \
-                es.employee in  ('{employees[0].employee}') and {self.str_filter} order by es.employee """
-            self.attendance_query = f"SELECT at.status, at.leave_type, at.leave_application,  at.attendance_date,at.employee,at.employee_name, at.operations_shift, osh.start_time, osh.end_time from `tabAttendance`at left join `tabOperations Shift` osh on at.operations_shift=osh.name where at.employee in ('{employees[0].employee}')  and at.attendance_date between '{self.start}' and '{self.end}' and at.docstatus = 1 AND at.roster_type='{self.roster_type}' order by at.employee """
-            self.employee_query = f"SELECT name,employee_id,relieving_date, employee_name,day_off_category,number_of_days_off from `tabEmployee` where name in ('{employees[0].employee}') and shift_working = '1' order by employee_name"
+        # Construct the employee list for the SQL IN clause
+        employee_list = [emp.employee for emp in employees]
+
+        # Handle single employee case to avoid trailing comma in the tuple
+        if len(employee_list) == 1:
+            employee_tuple = f"('{employee_list[0]}')"  # Format as ('HR-EMP-00081')
         else:
-            self.schedule_query  = f"SELECT  es.employee, es.employee_name, es.date, es.operations_role, es.post_abbrv, \
-                es.shift,  es.start_datetime, es.end_datetime, es.roster_type, es.employee_availability, es.day_off_ot, es.project from `tabEmployee Schedule`es  where \
-                    es.employee in {self.employees} and {self.str_filter}   order by es.employee "
-            self.attendance_query = f"SELECT at.status,at.leave_type,at.leave_application, at.attendance_date,at.employee,at.employee_name, at.operations_shift, osh.start_time, osh.end_time from `tabAttendance`at  left join `tabOperations Shift` osh on at.operations_shift=osh.name where at.employee in {self.employees}  and at.attendance_date between '{self.start}' and '{self.end}' and at.docstatus = 1 AND at.roster_type='{self.roster_type}' order by at.employee "
+            employee_tuple = tuple(employee_list)  # Format as ('HR-EMP-00081', 'HR-EMP-00082')
 
-            self.employee_query = f"SELECT name, employee_id,relieving_date, employee_name,day_off_category,number_of_days_off from `tabEmployee` where name in {self.employees} and shift_working = '1' order by employee_name"
+        # Construct the queries
+        self.schedule_query = f"""
+            SELECT es.employee, es.employee_name, es.date, es.operations_role, es.post_abbrv, 
+                es.shift, es.start_datetime, es.end_datetime, es.roster_type, es.employee_availability, 
+                es.day_off_ot, es.project 
+            FROM `tabEmployee Schedule` es 
+            WHERE es.employee IN {employee_tuple} 
+            AND {self.str_filter} 
+            ORDER BY es.employee
+        """
 
+        self.attendance_query = f"""
+            SELECT at.status, at.leave_type, at.leave_application, at.attendance_date, at.employee, 
+                at.employee_name, at.operations_shift, osh.start_time, osh.end_time 
+            FROM `tabAttendance` at 
+            LEFT JOIN `tabOperations Shift` osh ON at.operations_shift = osh.name 
+            WHERE at.employee IN {employee_tuple} 
+            AND at.attendance_date BETWEEN '{self.start}' AND '{self.end}' 
+            AND at.docstatus = 1 
+            AND at.roster_type = '{self.roster_type}' 
+            ORDER BY at.employee
+        """
+
+        self.employee_query = f"""
+            SELECT name, employee_id, relieving_date, employee_name, day_off_category, number_of_days_off 
+            FROM `tabEmployee` 
+            WHERE name IN {employee_tuple} 
+            AND shift_working = '1' 
+            ORDER BY employee_name
+        """
 
         self.schedule_set = frappe.db.sql(self.schedule_query,as_dict=1) if self.employees else []
         self.attendance_set = frappe.db.sql(self.attendance_query,as_dict=1) if self.employees else []
+
         if self.isOt:
-            self.leave_attendance = frappe.db.sql(f"SELECT at.status,at.leave_type,at.leave_application,\
-                at.attendance_date,at.employee,at.employee_name, at.operations_shift from `tabAttendance`at\
-                where at.status = 'On Leave' and  at.employee in {self.employees}  and at.attendance_date between '{self.start}' and '{self.end}'\
-                and at.docstatus = 1 order by at.employee ",as_dict = 1)
+            self.leave_attendance = frappe.db.sql(f"""
+                SELECT at.status, at.leave_type, at.leave_application,
+                    at.attendance_date, at.employee, at.employee_name, at.operations_shift 
+                FROM `tabAttendance` at
+                WHERE at.status = 'On Leave' 
+                AND at.employee IN {employee_tuple} 
+                AND at.attendance_date BETWEEN '{self.start}' AND '{self.end}' 
+                AND at.docstatus = 1 
+                ORDER BY at.employee
+            """, as_dict=1)
             self.attendance_set +=self.leave_attendance
+            
         self.employee_set = frappe.db.sql(self.employee_query,as_dict=1) if self.employees else []
         self.start_mapping()
 

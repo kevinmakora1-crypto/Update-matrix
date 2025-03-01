@@ -27,6 +27,8 @@ class MOM(Document):
 		if self.issues == "Yes" and len(self.action) < 1:
 			frappe.throw(_("Please add Action taken to the table."))
 
+		self.validate_poc_and_general_attendance()
+
 	def create_poc_check(self):
 		"""
 			Create a POC Check if all the rows in the attendees table in a MOM record are not checked as attended
@@ -97,6 +99,10 @@ class MOM(Document):
 
 			frappe.db.commit()
      
+	def validate_poc_and_general_attendance(self):
+
+		if not self.attendees or not self.general_attendance:
+			frappe.throw(_("At least one POC or General Attendance must be marked present."))
    
 
 @frappe.whitelist()

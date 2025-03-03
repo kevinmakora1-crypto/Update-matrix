@@ -516,6 +516,7 @@ override_doctype_class = {
     "Interview Feedback": "one_fm.overrides.interview_feedback.InterviewFeedbackOverride",
     "Leave Allocation": "one_fm.overrides.leave_allocation.LeaveAllocationOverride",
     "Interview": "one_fm.overrides.interview.InterviewOverride",
+    "Purchase Order": "one_fm.overrides.purchase_order.PurchaseOrderOverride",
 
     # "User": "one_fm.overrides.user.UserOverride"
 }

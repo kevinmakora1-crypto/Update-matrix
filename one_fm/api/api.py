@@ -247,4 +247,35 @@ def push_notification_rest_api_for_leave_application(employee_id, title, body, l
         return v1_api.utils.response("success", 200, {'response': str(res)})
     except Exception as e:
         return v1_api.utils.response("error", 500, {}, str(e))
-    
+
+@frappe.whitelist(allow_guest=True)
+def push_notification_rest_api_for_lms(user_id, message):
+    """ 
+    This function is used to send notification through Firebase Cloud Message. 
+    It is a rest API that sends request to frappe.get_site_config().get("firebase_api")
+    """
+    try:
+        
+        employee_id = frappe.get_value("Employee",{'user_id':user_id},'name')
+        if employee_id:
+
+            initialize_firebase()
+            title = "You have been Enrolled!"
+            employee_data = frappe.db.get_value("Employee", employee_id, ["fcm_token", "device_os"],as_dict=1)
+            deviceToken = employee_data.fcm_token
+            device_os = employee_data.device_os
+
+            #Body in json form defining a message payload to send through API. 
+            # The parameter defers based on OS. Hence Body is designed based on the OS of the device.
+            message = messaging.Message(
+                notification=messaging.Notification(
+                    title=title,
+                    body=message
+                ),
+                token=deviceToken
+            )
+            res = messaging.send(message)
+            return v1_api.utils.response("success", 200, {'response': str(res)})
+    except Exception as e:
+        frappe.log_error(title = "Error Sending  Push notification for LMS",message= frappe.get_traceback())
+        return v1_api.utils.response("error", 500, {}, str(e))

@@ -18,7 +18,8 @@
   "site_supervisor_name",
   "site_supervisor_user",
   "section_break_12",
-  "operations_roles_not_filled"
+  "operations_roles_not_filled",
+  "overfilled_posts"
  ],
  "fields": [
   {
@@ -115,11 +116,17 @@
    "hidden": 1,
    "label": "Site Supervisor User",
    "options": "User"
+  },
+  {
+   "fieldname": "overfilled_posts",
+   "fieldtype": "Table",
+   "label": "Post Types OverFilled",
+   "options": "Post Types OverFilled"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-25 10:42:25.120191",
+ "modified": "2025-02-18 09:04:55.840709",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Roster Post Actions",

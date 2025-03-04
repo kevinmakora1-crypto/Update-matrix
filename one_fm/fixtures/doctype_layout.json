@@ -643,13 +643,6 @@
     "parenttype": "DocType Layout"
    },
    {
-    "fieldname": "one_fm_provide_accommodation_by_company",
-    "label": "Provide Accommodation by Company",
-    "parent": "Employee",
-    "parentfield": "fields",
-    "parenttype": "DocType Layout"
-   },
-   {
     "fieldname": "current_address",
     "label": "Current Address",
     "parent": "Employee",
@@ -1422,6 +1415,13 @@
    {
     "fieldname": "one_fm_erf",
     "label": "ERF",
+    "parent": "Employee",
+    "parentfield": "fields",
+    "parenttype": "DocType Layout"
+   },
+   {
+    "fieldname": "one_fm_provide_accommodation_by_company",
+    "label": "Provide Accommodation by Company",
     "parent": "Employee",
     "parentfield": "fields",
     "parenttype": "DocType Layout"

@@ -774,21 +774,22 @@ def schedule_leave(employees, leave_type, start_date, end_date):
         return frappe.utils.response.report_error(e.http_status_code)
 
 @frappe.whitelist(allow_guest=True)
-def unschedule_staff(employees, otRoster,start_date, end_date=None, never_end=0):
+def unschedule_staff(employees, otRoster,start_date=None, end_date=None, never_end=0, selected_days_only=0):
     try:
-        if otRoster == 'true':
-            roster_type = "Over-Time"
-        else:
-            roster_type = "Basic"
-        _start_date = getdate(start_date)
-        if end_date:
-            stop_date = getdate(end_date)
-        else: stop_date = None
-        delete_list = []
+        roster_type = "Over-Time" if otRoster == 'true' else "Basic"
+        _start_date = getdate(start_date) if start_date else None
+        stop_date = getdate(end_date) if end_date else None
+
         employees = json.loads(employees)
+
         if not employees:
             response("Error", 400, None, {'message':'Employees must be selected.'})
-        employees = [i for i in employees if getdate(i['date'])>=_start_date]
+
+        if not selected_days_only and not _start_date:
+            frappe.throw("Must provide a start date if selected days are not targetted")
+        
+        if _start_date:
+            employees = [i for i in employees if getdate(i['date'])>=_start_date]
 
         if end_date:
             employees = [i for i in employees if getdate(i['date'])<=stop_date]
@@ -1520,4 +1521,42 @@ def get_employee_details(employee_id):
         "shift": employee.shift,
         "custom_is_reliever": employee.custom_is_reliever,
         "custom_operations_role_allocation": employee.custom_operations_role_allocation
+    }
+
+
+@frappe.whitelist()
+def bulk_employee_record_update(updates):
+    """
+    Bulk update Employee records in Frappe.
+    
+    Args:
+        updates (list): A list of dictionaries containing employee update data.
+                        Each dictionary must include 'name' (Employee ID) and 
+                        other fields to update.
+                        
+    Returns:
+        dict: Success message with number of records updated.
+    """
+    updates = frappe.parse_json(updates)
+    if not isinstance(updates, list):
+        frappe.throw("Invalid data format. Expected a list of updates.")
+
+    updated_records = []
+
+    for update in updates:
+        employee_id = update.pop("name", None)
+        if not employee_id:
+            continue 
+
+        try:
+            frappe.db.set_value("Employee", employee_id, update)
+            updated_records.append(employee_id)
+        except Exception as e:
+            frappe.log_error(f"Failed to update Employee {employee_id}: {str(e)}")
+
+    frappe.db.commit()
+
+    return {
+        "message": f"Successfully updated {len(updated_records)} employee(s).",
+        "updated": updated_records
     }

@@ -36,7 +36,8 @@
    "fieldname": "sale_item",
    "fieldtype": "Link",
    "label": "Sale Item",
-   "options": "Item"
+   "options": "Item",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_2",
@@ -99,7 +100,7 @@
    "link_fieldname": "post_template"
   }
  ],
- "modified": "2025-02-16 17:10:57.197761",
+ "modified": "2025-03-02 14:30:08.454369",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Operations Role",

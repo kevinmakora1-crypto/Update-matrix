@@ -3333,12 +3333,98 @@ function schedule_change_post(page) {
 					let element = get_wrapper_element().slice(1);
 					update_roster_view(element, page);
 					$(".filterhideshow").addClass("d-none");
+
+					if (!("_server_messages" in res)) {
+						updateEmployeeDefaults(employees, data);
+					}
+
 				}
 			});
 		}
 	});
 	d.show();
 }
+
+
+async function updateEmployeeDefaults(employees, data) {
+    let employees_to_update = [];
+
+   // Use a Map to store only unique employee records
+   let uniqueEmployeeIDs = [...new Set(employees.map(emp => emp.employee))];
+
+    // Bulk fetch all employees' details in a single query
+    let fetchedEmployees = await frappe.db.get_list("Employee", {
+        filters: [["name", "in", uniqueEmployeeIDs]],
+        fields: ["name", "employee_name", "shift", "custom_operations_role_allocation", "custom_is_reliever", "project", "site"],
+        limit_page_length: uniqueEmployeeIDs.length // Fetch all in one call
+    });
+
+    // Process fetched employees
+    fetchedEmployees.forEach(emp => {
+        if (!emp.custom_is_reliever && (emp.shift !== data.shift || emp.custom_operations_role_allocation !== data.operations_role)) {
+            employees_to_update.push({
+                employee: emp.name,
+				employee_name: emp.employee_name,
+                current_shift: emp.shift,
+                new_shift: data.shift,
+                current_role: emp.custom_operations_role_allocation,
+                new_role: data.operations_role
+            });
+        }
+    });
+
+
+    if (employees_to_update.length > 0) {
+        let table_html = `
+			<div style="max-height: 300px; overflow-y: auto;">
+				<table style="border-collapse: collapse; width: 100%; text-align: left;">
+					<thead>
+						<tr style="background-color: #f8f9fa;">
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">Employee Name</th>
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">Current Shift</th>
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">New Shift</th>
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">Current Role</th>
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">New Role</th>
+						</tr>
+					</thead>
+					<tbody>`;
+
+		employees_to_update.forEach(emp => {
+			table_html += `
+				<tr>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.employee_name}</td>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.current_shift || 'Not Set'}</td>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.new_shift || 'Not Set'}</td>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.current_role || 'Not Set'}</td>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.new_role || 'Not Set'}</td>
+				</tr>`;
+		});
+
+		table_html += `</tbody></table></div>`;
+
+		frappe.confirm(
+			`Hey, you just rostered these employees to shifts or roles different from their defaults. Would you like to update their default shift or role?<br>${table_html}`,
+			async () => {
+				// Batch update in a single request
+				await frappe.call({
+					method: "one_fm.one_fm.page.roster.roster.bulk_employee_record_update",
+					args: {
+						updates: employees_to_update.map(emp => ({
+							name: emp.employee,
+							shift: emp.new_shift,
+							custom_operations_role_allocation: emp.new_role,
+							project: data.project,
+							site: data.site
+						}))
+					},
+					freeze: true,
+					freeze_message: "Updating employee defaults..."
+				});
+			}
+		);
+    }
+}
+
 
 function clear_selection(page) {
 	classgrt = [];

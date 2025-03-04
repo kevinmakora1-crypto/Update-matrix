@@ -774,21 +774,22 @@ def schedule_leave(employees, leave_type, start_date, end_date):
         return frappe.utils.response.report_error(e.http_status_code)
 
 @frappe.whitelist(allow_guest=True)
-def unschedule_staff(employees, otRoster,start_date, end_date=None, never_end=0):
+def unschedule_staff(employees, otRoster,start_date=None, end_date=None, never_end=0, selected_days_only=0):
     try:
-        if otRoster == 'true':
-            roster_type = "Over-Time"
-        else:
-            roster_type = "Basic"
-        _start_date = getdate(start_date)
-        if end_date:
-            stop_date = getdate(end_date)
-        else: stop_date = None
-        delete_list = []
+        roster_type = "Over-Time" if otRoster == 'true' else "Basic"
+        _start_date = getdate(start_date) if start_date else None
+        stop_date = getdate(end_date) if end_date else None
+
         employees = json.loads(employees)
+
         if not employees:
             response("Error", 400, None, {'message':'Employees must be selected.'})
-        employees = [i for i in employees if getdate(i['date'])>=_start_date]
+
+        if not selected_days_only and not _start_date:
+            frappe.throw("Must provide a start date if selected days are not targetted")
+        
+        if _start_date:
+            employees = [i for i in employees if getdate(i['date'])>=_start_date]
 
         if end_date:
             employees = [i for i in employees if getdate(i['date'])<=stop_date]

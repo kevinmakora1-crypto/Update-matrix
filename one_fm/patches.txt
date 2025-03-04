@@ -99,4 +99,5 @@ one_fm.patches.v15_0.populate_project_type_task
 one_fm.patches.v15_0.update_employees_operation_role
 one_fm.patches.v15_0.update_operations_shift_status
 one_fm.patches.v15_0.update_job_offer_and_onboard_employee_document
+one_fm.patches.v15_0.update_accomodation_in_employee
 one_fm.patches.v15_0.update_erf_in_job_offer_2

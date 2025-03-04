@@ -511,3 +511,23 @@ def toggle_auto_attendance(employee_names: list | str, status: bool):
     except Exception as e:
         frappe.log_error(title = f"{str(e)}",message = frappe.get_traceback())
         return response(message=str(e), status_code=400)
+
+
+
+@frappe.whitelist()
+def fetch_accomodation_name(name: str):
+    try:
+        accomodation = frappe.db.sql("""
+            SELECT a.accommodation 
+            FROM `tabAccommodation Checkin Checkout` acc
+            JOIN `tabAccommodation` a ON a.name = acc.accommodation 
+            WHERE acc.employee = %s 
+            AND acc.type = 'IN' 
+            ORDER BY acc.creation DESC 
+            LIMIT 1
+        """, (name,), as_dict=True)
+        return response(message="Success", status_code=200, data=dict(accomodation=accomodation[0].get("accommodation", "") if accomodation else ""))
+    except Exception as e:
+        frappe.log_error(title = f"{str(e)}", message = frappe.get_traceback())
+        return response(message=str(e), status_code=400)
+

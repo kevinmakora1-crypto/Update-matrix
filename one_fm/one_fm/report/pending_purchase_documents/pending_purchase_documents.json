@@ -10,7 +10,7 @@
  "is_standard": "Yes",
  "letter_head": "ONEFM",
  "letterhead": null,
- "modified": "2025-02-27 12:29:49.907287",
+ "modified": "2025-03-03 15:22:25.719408",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Pending Purchase Documents",
@@ -20,6 +20,13 @@
  "reference_report": "Pending Purchase Documents",
  "report_name": "Pending Purchase Documents",
  "report_type": "Script Report",
- "roles": [],
+ "roles": [
+  {
+   "role": "Purchase User"
+  },
+  {
+   "role": "Purchase Officer"
+  }
+ ],
  "timeout": 0
 }

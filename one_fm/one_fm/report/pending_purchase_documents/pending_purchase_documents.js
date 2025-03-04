@@ -32,8 +32,7 @@ frappe.query_reports["Pending Purchase Documents"] = {
             "fieldname": "purchase_order_status",
             "label": __("PO Status"),
             "fieldtype": "Select",
-            "default": "Draft",
-            "options": "Draft\nOn Hold\nTo Receive and Bill\nTo Bill\nTo Receive\nCompleted\nCancelled\nClosed\nDelivered",
+            "options": "\nDraft\nOn Hold\nTo Receive and Bill\nTo Bill\nTo Receive\nCompleted\nCancelled\nClosed\nDelivered",
             "reqd": 0,
         },
     ]

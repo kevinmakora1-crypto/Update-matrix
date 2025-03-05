@@ -3843,20 +3843,23 @@ def update_assurance_level_task():
                 frappe.db.set_value('Employee', employee['employee'], 'custom_civil_id_assurance_level', verification_level)
     return True
 
-
 def call_to_get_assurance_level(employees):
     response = None
     try:
+        api_key = frappe.conf.bulbul_api_wrapper_key
         if isinstance(employees, str):
-            url = f"http://168.187.237.44:8080/api/DigitalSigning/CheckMobileIdentity/{employees}"
-            headers = {'accept': 'text/plain'}
+            url = f"https://staging-apiwrapper.one-fm.com/api/DigitalSigning/CheckMobileIdentity/{employees}"
+            headers = {'accept': 'text/plain','ApiKey': f'{api_key}'}
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 data = response.json()
                 return data.get("data", None)
+            else:
+                frappe.log_error(frappe.get_traceback(), response.json())
+                return {"error": response.status_code, "title": response.json()}
         else:
-            url = f"http://168.187.237.44:8080/api/DigitalSigning/BulkCheckMobileIdentity"
-            headers = {'Content-Type': 'application/json'}
+            url = f"https://staging-apiwrapper.one-fm.com/api/DigitalSigning/BulkCheckMobileIdentity"
+            headers = {'Content-Type': 'application/json','ApiKey': f'{api_key}'}
             batch_size=200
             all_results = []
             for i in range(0, len(employees), batch_size):
@@ -3868,6 +3871,9 @@ def call_to_get_assurance_level(employees):
                         batch_result = data.get("data", [])
                         all_results.extend(batch_result)
                         frappe.msgprint(f"Batch {i} sent successfully.")
+                    else:
+                        frappe.log_error(frappe.get_traceback(), response.json())
+                        return {"error": response.status_code, "title": response.json()}
                 except Exception as e:
                         frappe.log_error(frappe.get_traceback(), str(e))
                         return {"error": str(e), "title": "API call failed"}

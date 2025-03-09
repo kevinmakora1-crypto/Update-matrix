@@ -833,7 +833,7 @@ def edit_post(posts, values):
         if not args.plan_end_date and not cint(args.project_end_date):
             frappe.throw(_("Please set an end date!"))
 
-        frappe.enqueue(plan_post, posts=posts, args=args, is_async=True, queue='long', at_front=True)
+        frappe.enqueue(plan_post, posts=posts, args=args, is_async=True, queue='long', at_front=True, timeout=3600)
 
 
 
@@ -844,7 +844,7 @@ def edit_post(posts, values):
         if not args.cancel_end_date and not cint(args.project_end_date):
             frappe.throw(_("Please set an end date!"))
 
-        frappe.enqueue(cancel_post,posts=posts, args=args, is_async=True, queue='long', at_front=True)
+        frappe.enqueue(cancel_post,posts=posts, args=args, is_async=True, queue='long', at_front=True, timeout=3600)
 
 
 
@@ -856,7 +856,7 @@ def edit_post(posts, values):
         if not args.suspend_to_date and not cint(args.project_end_date):
             frappe.throw(_("Please set an end date!"))
 
-        frappe.enqueue(suspend_post, posts=posts, args=args, is_async=True, queue='long', at_front=True)
+        frappe.enqueue(suspend_post, posts=posts, args=args, is_async=True, queue='long', at_front=True, timeout=3600)
 
 
 
@@ -871,9 +871,9 @@ def edit_post(posts, values):
         if args.repeat == "Does not repeat" and cint(args.project_end_date):
             frappe.throw(_("Cannot set both project end date and choose 'Does not repeat' option!"))
 
-        frappe.enqueue(post_off, posts=posts, args=args, is_async=True, queue='long', at_front=True)
+        frappe.enqueue(post_off, posts=posts, args=args, is_async=True, queue='long', at_front=True, timeout=3600)
 
-    frappe.enqueue(update_roster, key="staff_view", is_async=True, queue='long')
+    frappe.enqueue(update_roster, key="staff_view", is_async=True, queue='long', timeout=3600)
     return response("Success", 200, {'message': 'Your request is being processed in the background.'})
 
 

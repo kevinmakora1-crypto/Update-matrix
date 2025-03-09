@@ -119,7 +119,7 @@ class JobOfferOverride(JobOffer):
                 frappe.throw(_(msg.format("<b>Onboarding Officer</b>")))
             assign_to_onboarding_officer(self)
 
-        if self.workflow_state == 'Accepted' and self.get_onload('onboard_employee') is not None:
+        if self.workflow_state == 'Accepted' and self.get_onload('onboard_employee'):
             close_all_assignments(self.doctype, self.name)
 
         # Set offer accepted date

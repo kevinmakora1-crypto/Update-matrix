@@ -80,6 +80,7 @@ class PostSchedulerChecker(Document):
 					filters={
 						'project': self.project,
 						'post_template': ['in', roles],
+						"status": "Active"
 					}
 				)
 				if not roles:

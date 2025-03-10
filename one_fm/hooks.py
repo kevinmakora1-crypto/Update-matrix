@@ -778,41 +778,41 @@ fixtures = [
 	{
 		"dt": "Property Setter"
 	},
-	{
-		"dt": "Workflow State"
-	},
-	{
-		"dt": "Workflow Action Master"
-	},
-	{
-		"dt": "Workflow"
-	},
-	{
-		"dt": "Role",
-		"filters": [["name", "in",["Operations Manager", "Shift Supervisor", "Site Supervisor", "Projects Manager", "HR Supervisor", "Attendance Manager"]]]
-	},
-	{
-		"dt": "Assignment Rule",
-		"filters": [["name", "in",
-			[
-				"RFM Approver", "Shift Permission Approver", "Attendance Check Reports To",
-				"Attendance Check Site Supervisor", "Attendance Check Shift Supervisor", "Subcontract Staff Request",
-				"Purchase Order Approver Action", "Purchase Order Finance Manager Action", "Purchase Order Purchase Manager Action"
-			]
-		]]
-	},
-	{
-		"dt": "Email Template"
-	},
-	{
-		"doctype": "DocType Layout",
-		"filters": {
-			"name": ("in", (
-					"Employee",
-				)
-			)
-		}
-	}
+	# {
+	# 	"dt": "Workflow State"
+	# },
+	# {
+	# 	"dt": "Workflow Action Master"
+	# },
+	# {
+	# 	"dt": "Workflow"
+	# },
+	# {
+	# 	"dt": "Role",
+	# 	"filters": [["name", "in",["Operations Manager", "Shift Supervisor", "Site Supervisor", "Projects Manager", "HR Supervisor", "Attendance Manager"]]]
+	# },
+	# {
+	# 	"dt": "Assignment Rule",
+	# 	"filters": [["name", "in",
+	# 		[
+	# 			"RFM Approver", "Shift Permission Approver", "Attendance Check Reports To",
+	# 			"Attendance Check Site Supervisor", "Attendance Check Shift Supervisor", "Subcontract Staff Request",
+	# 			"Purchase Order Approver Action", "Purchase Order Finance Manager Action", "Purchase Order Purchase Manager Action"
+	# 		]
+	# 	]]
+	# },
+	# {
+	# 	"dt": "Email Template"
+	# },
+	# {
+	# 	"doctype": "DocType Layout",
+	# 	"filters": {
+	# 		"name": ("in", (
+	# 				"Employee",
+	# 			)
+	# 		)
+	# 	}
+	# }
 ]
 
 # before_tests = "one_fm.install.before_tests"

@@ -258,6 +258,9 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
             elif shift_details['type'] == "Late":
                 return response("Resource Not Found", 404, None,
                                 f"You are checking out too late. Check-out was allowed until {shift_details['time']} minutes ago.")
+            elif shift_details['type'] == "Upcoming":
+                return response("Resource Not Found", 404, None,
+                                f"You are upcoming shift in next {shift_details['time']} minutes.")
             elif shift_details['type'] == "On Time":
                 shift = shift_details['data']  # Return the object of Shift Assignment
 
@@ -448,6 +451,7 @@ def get_shift_request_site_location(employee, date, log_type):
                 as_dict=True
             )
     return None
+
 @frappe.whitelist()
 def checkin_list(employee_id, from_date, to_date):
     """

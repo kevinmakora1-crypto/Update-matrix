@@ -101,7 +101,7 @@ class MOM(Document):
      
 	def validate_poc_and_general_attendance(self):
 
-		if not self.attendees or not self.general_attendance:
+		if not self.attendees and not self.general_attendance:
 			frappe.throw(_("At least one POC or General Attendance must be marked present."))
    
 

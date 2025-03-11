@@ -23,10 +23,6 @@ class RequestforPurchase(Document):
 
 	def on_submit(self):
 		self.assign_purchase_officer()
-		self.update_rfm()
-
-	def on_cancel(self):
-		self.update_rfm(is_cancel=True)
 
 	def assign_purchase_officer(self):
 		purchase_officers = get_users_with_role_permitted_to_doctype('Purchase Officer', self.doctype)
@@ -90,53 +86,6 @@ class RequestforPurchase(Document):
 		create_notification_log(subject, message, [rfm.requested_by], rfm)
 		self.db_set('notified_the_rfm_requester', True)
 		frappe.msgprint(_("Notification sent to RFM Requester"))
-
-
-	def update_rfm(self, is_cancel: bool = False):
-		if self.request_for_material:
-			
-			filters = {"request_for_material": self.request_for_material}
-			if is_cancel:
-				filters["name"] = ["!=", self.name]  # Exclude canceled RFP
-			
-			request_for_purchase = frappe.db.get_list(
-				"Request for Purchase",
-				filters=filters,
-				pluck="name"
-			)
-
-			for obj in self.items:
-				# Sum the purchased quantities from remaining RFPs
-				item_qty = frappe.db.get_list(
-					"Request for Purchase Item",
-					{
-						"parent": ["IN", request_for_purchase],
-						"item_code": obj.item_code,
-						"parentfield": "items",
-					},
-					pluck="qty"
-				)
-
-				self.update_purchased_qty(
-					new_qty=sum(item_qty),  
-					rfm=self.request_for_material,
-					item_code=obj.item_code
-				)
-
-				
-	@staticmethod
-	def update_purchased_qty(new_qty: int, rfm: str, item_code:str):
-		frappe.db.sql(
-            """
-            UPDATE `tabRequest for Material Item`
-            SET purchased_qty = %s
-            WHERE parenttype = 'Request for Material'
-            AND parent = %s
-            AND item_code = %s
-            """,
-            (new_qty, rfm, item_code),
-        )
-
 
 def create_notification_log(subject, message, for_users, reference_doc):
 	if 'Administrator' in for_users:

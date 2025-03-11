@@ -94,27 +94,8 @@ class ShiftAssignmentOverride(ShiftAssignment):
                 The last log_type if a checkin recod exist for the shift assignment
                 Else return IN
         """
-        employee = frappe.get_value("Employee", self.employee, "employee")
 
         last_check_log= self.get_last_checkin_log_type()
-        now_date = now_datetime().strftime("%Y-%m-%d")
-
-        current_shift = frappe.db.get_value(
-                "Shift Assignment",
-                filters={
-                    "employee": employee,  
-                    "status": "Active",    
-                    "docstatus": 1,  
-                    "start_date": now_date
-                },
-                fieldname=["name", "shift_type", "start_datetime", "end_datetime"],
-                as_dict=True
-            )
-
-        if current_shift:
-            shift = current_shift
-        else:
-            return response("Resource Not Found", 404, None, "User not assigned to a shift.")
 
         # If no previous entry, show Check-in button
         if not last_check_log:
@@ -122,7 +103,7 @@ class ShiftAssignmentOverride(ShiftAssignment):
         last_log = last_check_log[0]
 
         # If the last log was a Check-in and the shift has not changed → Show Check-out
-        if last_log["log_type"] == "IN" and last_log["shift_assignment"] == shift["name"]:
+        if last_log["log_type"] == "IN" and last_log["shift_assignment"] == self.name:
             return "OUT"
 
         # If last log was a Check-out or the shift changed → Show Check-in

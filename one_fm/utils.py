@@ -3470,9 +3470,23 @@ def get_current_shift(employee):
             current_shift = None
             for i, shift in enumerate(shifts):
                 # Check if the shift is currently active
-                if shift.checkin_time <= nowtime <= shift.checkout_time:
+                checkin = frappe.db.get_list(
+                            "Employee Checkin",
+                            filters={"employee": employee,"shift_assignment":shift.name},
+                            fields=["log_type", "time", "shift_assignment"],
+                            order_by="time desc",
+                            limit=1,
+                        )
+                if checkin:
+                    if checkin[0].log_type == 'OUT':
+                           continue
+                    elif shift.checkin_time <= nowtime <= shift.checkout_time:
+                        current_shift = shift  # This is the active shift
+                        break  # Stop looping after finding the current shift
+                else:
                     current_shift = shift  # This is the active shift
                     break  # Stop looping after finding the current shift
+                    
 
             if current_shift:
                 # If a current shift is found, return its details

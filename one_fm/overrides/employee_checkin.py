@@ -85,8 +85,7 @@ class EmployeeCheckinOverride(EmployeeCheckin):
 			frappe.db.commit()
 			self.reload()
 			# if not (self.shift_assignment and self.shift_type and self.operations_shift and self.shift_actual_start and self.shift_actual_end):
-			frappe.enqueue(after_insert_background, employee_checkin=self.name)
-
+			frappe.enqueue(after_insert_background,employee_checkin=self.name,current_shift =self.shift_assignment )
 			if self.log_type == "IN":
 				frappe.enqueue(notify_supervisor_about_late_entry, checkin=self)
 		except Exception as e:
@@ -112,13 +111,12 @@ def exists_checkin(current_shift_assignment, checkin_name, log_type="IN"):
 
 	return False
 
-def after_insert_background(employee_checkin):
+def after_insert_background(employee_checkin,current_shift):
 	self = frappe.get_doc("Employee Checkin", employee_checkin)
 	try:
 		# update shift if not exists
-		curr_shift = get_current_shift(self.employee)
+		curr_shift = current_shift
 		if curr_shift:
-			curr_shift = curr_shift['data']
 			shift_type = frappe.db.sql(f"""SELECT * FROM `tabShift Type` WHERE name='{curr_shift.shift_type}' """, as_dict=1)[0]
 			# calculate entry
 			early_exit = 0

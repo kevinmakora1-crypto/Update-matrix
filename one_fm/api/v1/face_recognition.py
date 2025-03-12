@@ -262,7 +262,7 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
                                 f"You are checking out too late. Check-out was allowed until {shift_details['time']} minutes ago.")
             elif shift_details['type'] == "Upcoming":
                 return response("Resource Not Found", 404, None,
-                                f"You are upcoming shift in next {shift_details['time']} minutes.")
+                                f"Check-in for your shift starts in {shift_details['time']} minutes.")
             elif shift_details['type'] == "On Time":
                 shift = shift_details['data']  # Return the object of Shift Assignment
 

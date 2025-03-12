@@ -22,6 +22,7 @@
   "column_break_6",
   "site",
   "project",
+  "exclude_from_default_shift_checker",
   "attendance_status_section",
   "attended_status",
   "roster_type",
@@ -192,10 +193,17 @@
   {
    "fieldname": "column_break_d2pic",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "If set to True, all Employees allocated under this project will not be considered in Default Shift Checker.",
+   "fieldname": "exclude_from_default_shift_checker",
+   "fieldtype": "Check",
+   "label": "Exclude from Default Shift Checker"
   }
  ],
  "links": [],
- "modified": "2024-05-31 10:39:39.670488",
+ "modified": "2025-03-12 12:58:37.229143",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Employee Schedule",

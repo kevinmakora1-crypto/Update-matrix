@@ -3483,7 +3483,7 @@ def get_current_shift(employee):
                     elif shift.checkin_time <= nowtime <= shift.checkout_time:
                         current_shift = shift  # This is the active shift
                         break  # Stop looping after finding the current shift
-                else:
+                elif shift.checkin_time <= nowtime <= shift.checkout_time:
                     current_shift = shift  # This is the active shift
                     break  # Stop looping after finding the current shift
                     

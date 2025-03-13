@@ -98,10 +98,11 @@ class MOM(Document):
 				})
 
 			frappe.db.commit()
-     
-	def validate_poc_and_general_attendance(self):
 
-		if not self.attendees and not self.general_attendance:
+
+	def validate_poc_and_general_attendance(self):
+		is_attended = any(obj.attended_meeting for obj in self.attendees) or any(obj.attended_meeting for obj in self.general_attendance)
+		if not is_attended:
 			frappe.throw(_("At least one POC or General Attendance must be marked present."))
    
 

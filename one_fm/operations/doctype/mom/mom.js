@@ -69,9 +69,21 @@ frappe.ui.form.on('MOM', {
 				frappe.throw("You are not allowed to create MOM for Non-External Projects")
 			}
 		}
+		validate_poc_general_attendance_attended(frm);
 	}
+	
 
 });
+
+
+var validate_poc_general_attendance_attended = (frm) => {
+	const isAttended = frm.doc.attendees.some(obj => obj.attended_meeting) || frm.doc.general_attendance.some(obj => obj.attended_meeting);
+	
+	if (!isAttended) {
+		frappe.throw(__("At least one POC or General Attendance must be marked present."));
+	}
+
+}
 
 
 

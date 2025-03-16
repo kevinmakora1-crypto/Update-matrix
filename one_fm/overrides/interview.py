@@ -49,11 +49,6 @@ def update_interview_rounds_in_job_applicant(doc, method):
 
 
 class InterviewOverride(Interview):
-    def validate(self):
-        if self.custom_hiring_method == "A la carte Recruitment":
-            self.from_time = None
-            self.to_time = None
-
     def show_job_applicant_update_dialog(self):
         job_applicant_status = self.get_job_applicant_status()
         if not job_applicant_status:

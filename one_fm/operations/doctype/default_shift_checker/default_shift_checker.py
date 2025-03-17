@@ -42,11 +42,14 @@ def create_default_shift_checker():
 
     Employee = DocType("Employee")
     EmployeeSchedule = DocType("Employee Schedule")
+    Project = DocType("Project")
 
     query = (
         frappe.qb.from_(Employee)
         .join(EmployeeSchedule)
         .on(Employee.name == EmployeeSchedule.employee)
+        .left_join(Project)
+        .on(Employee.project == Project.name)
         .select(
             Employee.name.as_("employee"),
             Employee.shift.as_("default_shift"),
@@ -61,6 +64,7 @@ def create_default_shift_checker():
             & (EmployeeSchedule.employee_availability == "Working")
             & (EmployeeSchedule.roster_type == "Basic")
             & (EmployeeSchedule.date[start_date:last_day_of_month])
+            & (Project.custom_exclude_from_default_shift_checker != 1) 
         )
         .groupby(Employee.name)
         .having(Count(EmployeeSchedule.shift) > threshold)

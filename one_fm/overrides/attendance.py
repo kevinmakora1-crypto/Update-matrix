@@ -1034,7 +1034,7 @@ class AttendanceMarking():
                 if checkins: # check for work hours
                     # start checkin
                     for i in checkins:
-                        if i.earliest_time: # maybe record retrived incorrectly
+                        if i.earliest_time and isinstance(i.shift_actual_start, datetime): # maybe record retrived incorrectly
                             if not frappe.db.exists("Attendance", {
                                 'employee':i.employee,
                                 'attendance_date':i.shift_actual_start.date(),

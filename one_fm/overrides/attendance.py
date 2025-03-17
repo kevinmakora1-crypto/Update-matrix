@@ -760,19 +760,27 @@ def mark_open_timesheet_and_create_attendance():
 
     present_employees = frappe.db.get_list("Timesheet", filters={"start_date": the_date, "workflow_state": "Approved"}, pluck="employee")
     for obj in employee_list:
-        status, message = is_holiday(employee=obj,date=the_date)
-        if obj.name not in present_employees:
-            att = frappe.new_doc("Attendance")
-            att.employee = obj.name
-            att.attendance_date = the_date
-            att.status = "Absent" if not status else "Day Off"
-            att.working_hours = 0
-            att.reference_doctype = "Timesheet"
-            try:
-                att.insert(ignore_permissions=True)
-                att.submit()
-            except Exception as e:
-                frappe.log_error(frappe.get_traceback(), "TImesheet Attendance Marking")
+        attendance_status = None
+        status, message,weekly_off = is_holiday(employee=obj,date=the_date,include_weekly_off=True)
+        if not status:
+            attendance_status = "Absent"
+        else:
+            if weekly_off:
+                attendance_status = "Day Off"
+            #Holidays are marked for all staff in mark daily attendance
+        if attendance_status:
+            if obj.name not in present_employees:
+                att = frappe.new_doc("Attendance")
+                att.employee = obj.name
+                att.attendance_date = the_date
+                att.status = attendance_status
+                att.working_hours = 0
+                att.reference_doctype = "Timesheet"
+                try:
+                    att.insert(ignore_permissions=True)
+                    att.submit()
+                except Exception as e:
+                    frappe.log_error(frappe.get_traceback(), "TImesheet Attendance Marking")
     frappe.db.commit()
 
 

@@ -3735,19 +3735,20 @@ def set_employee_status_to_vacation():
     frappe.log(_("Employee statuses updated: {0} set to 'Vacation', {1} set to 'Active'.")
                .format(employees_set_to_vacation, employees_set_to_active))
 
-def is_holiday(employee, date=None, raise_exception=True):
+def is_holiday(employee, date=None, raise_exception=True,include_weekly_off = False):
     try:
         date = today() if not date else date
         holiday_list = get_holiday_list_for_employee(employee.name, raise_exception)
         if not holiday_list:
-            return False, ""
+            return ((False,"",None) if include_weekly_off else (False, ""))
         holidays = frappe.db.get_value("Holiday", {"parent": holiday_list, "holiday_date": date}, ["weekly_off"], as_dict=1)
         if holidays:
-            return (True, f"Dear {employee.employee_name}, Today is your day off.  Happy Recharging!.") if holidays.weekly_off else (True, "Today is your holiday, have fun")
-        return False, ""
+            message = f"Dear {employee.employee_name}, Today is your day off.  Happy Recharging!." if holidays.weekly_off else "Today is your holiday, have fun"
+            return ((True, message,holidays.weekly_off) if include_weekly_off else (True, message))
+        return ((False,"",None) if include_weekly_off else (False, ""))
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Error while validating Holiday")
-        return False, ""
+        return ((False,"",None) if include_weekly_off else (False, ""))
 
 
 def get_gmail_service(employee_email):

@@ -2,6 +2,9 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Operations Shift', {
+	onload: function (frm) {
+		frm.__previous_shift_type = frm.doc.shift_type
+	},
 	refresh: function(frm) {
 		if(!frm.doc.__islocal){
 			frm.add_custom_button(
@@ -193,5 +196,30 @@ frappe.ui.form.on('Operations Shift', {
 				}
 			);
 		}
+	},
+	shift_type: function (frm) {
+		if (frm.__is_updating_shift_type) return;
+	
+		frm.__is_updating_shift_type = true;
+	
+		frappe.confirm(
+			__('The Shift Type Change will reflect to the existing Employee Schedules and Shift Assignment starting from today. Are you sure you want to update Shift Type?'),
+			() => {
+				frm.__is_updating_shift_type = false;
+			},
+			() => {
+				// Ensure operations execute sequentially, reducing unintended re-triggers
+				frappe.run_serially([
+					() => frm.set_value('shift_type', frm.__previous_shift_type),
+					() => frm.refresh_field('shift_type'),
+					() => {
+						setTimeout(() => {
+							frm.__is_updating_shift_type = false;
+						}, 100);
+					}
+				]);
+			}
+		);
 	}
+	
 });

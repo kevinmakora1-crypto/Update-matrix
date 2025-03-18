@@ -8,7 +8,7 @@ from datetime import timedelta
 from frappe.model.document import Document
 from frappe import _
 from frappe.model.rename_doc import rename_doc
-from frappe.utils import cstr, get_datetime, today, formatdate, getdate
+from frappe.utils import cstr, get_datetime, today, formatdate, getdate, add_days, get_time
 
 class OperationsShift(Document):
 	def autoname(self):
@@ -100,8 +100,11 @@ class OperationsShift(Document):
 			return
 		
 		if self.has_value_changed('shift_type'):
-			frappe.enqueue(update_employee_schedule_shift_type, is_async=True, queue='long', operations_shift=self.name, new_shift_type=self.shift_type, new_start_time=self.start_time, new_end_time=self.end_time)
-			frappe.enqueue(update_shift_assignment_shift_type, is_async=True, queue='long', operations_shift=self.name, new_shift_type=self.shift_type, new_start_time=self.start_time, new_end_time=self.end_time)
+			start_time = get_time(self.start_time)
+			end_time = get_time(self.end_time)
+
+			frappe.enqueue(update_employee_schedule_shift_type, is_async=True, queue='long', operations_shift=self.name, new_shift_type=self.shift_type, new_start_time=start_time, new_end_time=end_time)
+			frappe.enqueue(update_shift_assignment_shift_type, is_async=True, queue='long', operations_shift=self.name, new_shift_type=self.shift_type, new_start_time=start_time, new_end_time=end_time)
 
 
 def queue_operation_role_inactive(operations_role_list):
@@ -220,10 +223,16 @@ def update_employee_schedule_shift_type(operations_shift, new_shift_type, new_st
 	employee_schedules = frappe.get_all("Employee Schedule", filters={"shift": operations_shift, "date": [">=", today()]}, fields=["name", "date"])
 
 	for schedule in employee_schedules:
-		frappe.db.set_value("Employee Schedule", schedule.name, {"shift_type": new_shift_type, "start_datetime": f"{schedule.date} {new_start_time}", "end_datetime": f"{schedule.date} {new_end_time}"})
+		start_date_time = f"{schedule.date} {new_start_time}"
+		end_date_time = f"{add_days(schedule.date, 1) if new_start_time > new_end_time else schedule.date} {new_end_time}"
+
+		frappe.db.set_value("Employee Schedule", schedule.name, {"shift_type": new_shift_type, "start_datetime": start_date_time, "end_datetime": end_date_time})
 
 def update_shift_assignment_shift_type(operations_shift, new_shift_type, new_start_time, new_end_time):
 	shift_assignments = frappe.get_all("Shift Assignment", filters={"shift": operations_shift, "start_date": [">=", today()]}, fields=["name", "start_date", "end_date", "shift_classification"])
 
 	for assignment in shift_assignments:
-		frappe.db.set_value("Shift Assignment", assignment.name, {"shift_type": new_shift_type, "start_datetime": f"{assignment.start_date} {new_start_time}", "end_datetime": f"{assignment.end_date or assignment.start_date} {new_end_time}", "shift_classification": assignment.shift_classification})
+		start_date_time = f"{assignment.start_date} {new_start_time}"
+		end_date_time = f"{add_days(assignment.end_date, 1) if new_start_time > new_end_time else assignment.end_date} {new_end_time}" if assignment.end_date else ""
+
+		frappe.db.set_value("Shift Assignment", assignment.name, {"shift_type": new_shift_type, "start_datetime": start_date_time, "end_datetime": end_date_time, "shift_classification": assignment.shift_classification})

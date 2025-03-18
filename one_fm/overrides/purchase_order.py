@@ -1,6 +1,45 @@
 import frappe
 from frappe import _
 
+from erpnext.buying.doctype.purchase_order.purchase_order import PurchaseOrder
+from frappe.utils import nowdate
+
+
+
+def set_workflow_states(doc,old_doc):
+    """Sets approval dates based on workflow state changes."""
+    current_workflow_state = doc.workflow_state
+
+    # If the workflow state didn't change, no action is needed
+    if old_doc.workflow_state == current_workflow_state:
+        return
+
+    # Mapping workflow states to custom field names
+    workflow_mapping = {
+        "Pending Purchase Manager": "custom_purchase_officer_approval_date",
+        "Pending Finance Approver": "custom_purchase_manager_approval_date",
+    }
+
+    # Set approval dates based on current workflow state
+    if current_workflow_state in workflow_mapping:
+        doc.db_set(workflow_mapping[current_workflow_state],nowdate())
+
+
+
+def on_update(doc, event):
+    """Handles the update event for the Purchase Order document."""
+    #Check if workflow_state was changed, if it wasn't then we return,
+    old_doc = doc.get_doc_before_save()
+    if not old_doc:
+        return
+    if old_doc.workflow_state == doc.workflow_state:
+        return
+    # Check if both dates are present; if so, no action is needed.
+    if doc.custom_purchase_officer_approval_date and doc.custom_purchase_manager_approval_date:
+        return
+    set_workflow_states(doc,old_doc)
+    
+    
 def validate_purchase_uom(doc, method):
     for item in doc.items:
         query = """
@@ -42,3 +81,57 @@ def filter_purchase_uoms(doctype, txt, searchfield, start, page_len, filters):
 			'txt': "%%%s%%" % txt
 		}
 	)
+
+
+
+class PurchaseOrderOverride(PurchaseOrder):  
+
+    def on_submit(self):
+        self.update_rfp()
+
+    def on_update_after_submit(self):
+        self.update_rfp_after_submit()
+
+    def on_cancel(self):
+        self.update_rfp(is_cancel=True)
+
+    def update_rfp(self, is_cancel: bool = False):
+        if self.one_fm_request_for_purchase:
+            for obj in self.items:
+                purchased_quantity = frappe.db.get_value(
+                    "Request for Purchase Item",
+                    {
+                        "parent": self.one_fm_request_for_purchase,
+                        "parentfield": "items",
+                        "parenttype": "Request for Purchase",
+                        "item_code": obj.item_code,
+                    },
+                    "purchased_quantity"
+                ) or 0 
+                new_qty = (purchased_quantity - obj.qty) if is_cancel else (purchased_quantity + obj.qty)
+                self.update_purchased_qty(new_qty=new_qty, rfp=self.one_fm_request_for_purchase, item_code=obj.item_code)
+
+
+
+    def update_rfp_after_submit(self):
+        if self.one_fm_request_for_purchase:
+            purchase_orders = frappe.db.get_list("Purchase Order", filters={"one_fm_request_for_purchase": self.one_fm_request_for_purchase,"name": ["not in", [self.name]]}, pluck='name')
+            for obj in self.items:
+                item_qty = frappe.db.get_list("Purchase Order Item", {"parent": ["IN", purchase_orders], "item_code": obj.item_code, 
+                                                                      'parentfield': 'items',}, pluck="qty")
+                self.update_purchased_qty(new_qty=sum(item_qty), rfp=self.one_fm_request_for_purchase, item_code=obj.item_code)
+
+
+    @staticmethod
+    def update_purchased_qty(new_qty: int, rfp: str, item_code:str):
+        frappe.db.sql(
+            """
+            UPDATE `tabRequest for Purchase Item`
+            SET purchased_quantity = %s
+            WHERE parenttype = 'Request for Purchase'
+            AND parent = %s
+            AND item_code = %s
+            """,
+            (new_qty, rfp, item_code),
+        )
+                

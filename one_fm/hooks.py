@@ -32,7 +32,6 @@ app_include_js = [
 		"/assets/one_fm/js/maps.js",
 		"/assets/one_fm/js/desk.js",
         "/assets/one_fm/js/showdown.min.js",
-        "purchase.bundle.js",
 		"/assets/one_fm/js/form_overrides/workflow_override.js",
         "text_editor.bundle.js"
 ]
@@ -118,7 +117,8 @@ doctype_js = {
     "HD Ticket": "public/js/doctype_js/hd_ticket.js",
     "Appraisal": "public/js/doctype_js/appraisal.js",
     "Employee Performance Feedback":"public/js/doctype_js/employee_performance_feedback.js",
-    "Leave Allocation": "public/js/doctype_js/leave_allocation.js"
+    "Leave Allocation": "public/js/doctype_js/leave_allocation.js",
+    "Contact": "public/js/doctype_js/contact.js"
 }
 doctype_list_js = {
 	"Job Applicant" : "public/js/doctype_js/job_applicant_list.js",
@@ -228,7 +228,7 @@ doc_events = {
 		"validate":[
 			"one_fm.overrides.purchase_order.validate_purchase_uom"
 		],
-		# 'on_update':"one_fm.purchase.utils.on_update",
+		'on_update':"one_fm.overrides.purchase_order.on_update",
 		"on_update_after_submit": "one_fm.purchase.utils.set_po_letter_head"
 	},
 	"Leave Application": {
@@ -238,9 +238,7 @@ doc_events = {
 			"one_fm.utils.validate_hajj_leave",
 			"one_fm.one_fm.hr_utils.validate_leave_proof_document_requirement",
 			"one_fm.overrides.leave_application.validate_active_staff"
-		],
-		"on_cancel": "one_fm.utils.leave_appillication_on_cancel",
-
+		]
 	},
 	"Leave Type": {
 		"validate": "one_fm.utils.validate_leave_type_for_one_fm_paid_leave"
@@ -250,7 +248,7 @@ doc_events = {
 		"after_insert":[
       					"one_fm.overrides.hd_ticket.send_google_chat_notification",
                   		"one_fm.overrides.hd_ticket.notify_ticket_raiser_of_receipt"
-                    	], 
+                    	],
 		"on_change": "one_fm.overrides.hd_ticket.notify_issue_raiser_about_priority",
 		"on_update": "one_fm.overrides.hd_ticket.apply_ticket_escalation"
 	},
@@ -263,7 +261,11 @@ doc_events = {
 	"Job Applicant": {
 		"validate": "one_fm.utils.validate_job_applicant",
 		"onload": "one_fm.utils.validate_pam_file_number_and_pam_designation",
-		"on_update": "one_fm.one_fm.utils.send_notification_to_grd_or_recruiter"
+		"on_update": [
+			"one_fm.one_fm.utils.send_notification_to_grd_or_recruiter",
+			"one_fm.utils.on_update_job_applicant"
+		]
+
 	},
 	"Warehouse": {
 		"autoname": "one_fm.utils.warehouse_naming_series",
@@ -307,7 +309,8 @@ doc_events = {
 		]
 	},
 	"Contact": {
-		"on_update": "one_fm.accommodation.doctype.accommodation.accommodation.accommodation_contact_update"
+		"on_update": "one_fm.accommodation.doctype.accommodation.accommodation.accommodation_contact_update",
+        "validate": "one_fm.accommodation.doctype.accommodation.accommodation.validate_contact",
 	},
 	"Project": {
 		"validate": [
@@ -377,7 +380,7 @@ doc_events = {
 		"after_insert": [
 			"one_fm.utils.assign_issue",
 			"one_fm.api.doc_methods.issue.notify_issue_raiser"
-			
+
 		],
     "on_update": "one_fm.utils.notify_on_close",
 	},
@@ -420,7 +423,10 @@ doc_events = {
 		"after_insert": "one_fm.one_fm.task_assignment_from_email.assign_task_to_user_from_communication_content"
 	},
 	"ToDo": {
-		"validate": "one_fm.overrides.todo.validate_todo"
+		"validate": "one_fm.overrides.todo.validate_todo",
+        "before_save":"one_fm.overrides.todo.before_save",
+        "after_insert":"one_fm.overrides.todo.create_google_task_on_todo_creation",
+        "on_update": "one_fm.overrides.todo.update_google_task_on_todo_status_change"
 	},
 	# "Wiki Page": {
 	# 	"after_insert": "one_fm.wiki_chat_bot.main.after_insert_wiki_page"
@@ -523,7 +529,10 @@ override_doctype_class = {
     "Payroll Entry": "one_fm.overrides.payroll_entry.PayrollEntryOverride",
     "Salary Slip": "one_fm.overrides.salary_slip.SalarySlipOverride",
     "Interview Feedback": "one_fm.overrides.interview_feedback.InterviewFeedbackOverride",
-    
+    "Leave Allocation": "one_fm.overrides.leave_allocation.LeaveAllocationOverride",
+    "Interview": "one_fm.overrides.interview.InterviewOverride",
+    "Purchase Order": "one_fm.overrides.purchase_order.PurchaseOrderOverride",
+
     # "User": "one_fm.overrides.user.UserOverride"
 }
 
@@ -556,7 +565,7 @@ scheduler_events = {
 		"one_fm.operations.doctype.contracts.contracts.send_contract_reminders",
 		"one_fm.operations.doctype.contracts.contracts.renew_contracts_by_termination_date",
         "one_fm.developer.doctype.bug_buster.bug_buster.roster_bug_buster",
-        'one_fm.utils.set_employee_status_to_vacation',
+        'one_fm.utils.set_employee_status',
         'one_fm.utils.set_out_of_office_for_leaves',
         'one_fm.utils.update_active_employees_assurance_level'
 	],
@@ -632,7 +641,8 @@ scheduler_events = {
 		"10 4 * * *": [ #“At 04:10.”
 			'one_fm.utils.check_grp_operator_submission_four',
 			'one_fm.operations.doctype.post_scheduler_checker.post_scheduler_checker.schedule_roster_checker',
-			'one_fm.operations.doctype.roster_day_off_checker.roster_day_off_checker.generate_checker'
+			'one_fm.operations.doctype.roster_day_off_checker.roster_day_off_checker.generate_checker',
+            'one_fm.operations.doctype.default_shift_checker.default_shift_checker.create_default_shift_checker'
 		],
 		"30 4 * * *": [
 			'one_fm.utils.check_grp_operator_submission_four_half'
@@ -728,13 +738,16 @@ scheduler_events = {
 			'one_fm.api.doc_methods.payroll_entry.notify_for_open_leave_application',
 			'one_fm.tasks.one_fm.daily.notify_for_employee_docs_expiry'
 		],
-		"05 00 * * *":[
-			'one_fm.overrides.leave_application.employee_leave_status'
-		],
 		"0 * * * *":[ # Creates the missing checkin record per shift, runs every hour
 			"one_fm.one_fm.doctype.missing_checkin.missing_checkin.create_missing_checkin_record",
 			"one_fm.api.tasks.notify_approver_about_pending_shift_request"
-		]
+		],
+        "0 0 15 * *": [
+            "one_fm.one_fm.page.roster.roster.create_employee_schedule"
+        ],
+        "*/5 * * * *": [ # Runs every 5 minutes
+            "one_fm.overrides.todo.sync_google_tasks_with_todos"
+        ]
 	}
 }
 

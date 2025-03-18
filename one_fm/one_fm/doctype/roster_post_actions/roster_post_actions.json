@@ -16,8 +16,10 @@
   "action_type",
   "site_supervisor",
   "site_supervisor_name",
+  "site_supervisor_user",
   "section_break_12",
-  "operations_roles_not_filled"
+  "operations_roles_not_filled",
+  "overfilled_posts"
  ],
  "fields": [
   {
@@ -105,11 +107,26 @@
   {
    "fieldname": "section_break_12",
    "fieldtype": "Section Break"
+  },
+  {
+   "fetch_from": "site_supervisor.user_id",
+   "fetch_if_empty": 1,
+   "fieldname": "site_supervisor_user",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Site Supervisor User",
+   "options": "User"
+  },
+  {
+   "fieldname": "overfilled_posts",
+   "fieldtype": "Table",
+   "label": "Post Types OverFilled",
+   "options": "Post Types OverFilled"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-08 01:13:52.146240",
+ "modified": "2025-02-18 09:04:55.840709",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Roster Post Actions",

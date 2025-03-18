@@ -84,9 +84,9 @@ def enroll(employee_id: str = None, filename: str = None, video: str = None) -> 
 
         # Set a context flag to indicate an API update (It will affect in 'Employee' validate method)
         frappe.flags.allow_enrollment_update = True
-        
+
         doc.db_set('enrolled',1)
-        
+
         update_onboarding_employee(doc)
         frappe.db.commit()
 
@@ -181,7 +181,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,shift:
             if right_now.time() < time_threshold:
                 return response("Bad Request", 400, None, f" Oops! You can't check in right now. Your check-in time is {val_in_shift_type['begin_check_in_before_shift_start_time']} minutes before you start your shift." + "\U0001F612")
         # check Face Recognition Endpoint
-        
+
         if not filename:
             filename = frappe.session.user+'.mp4'
         if endpoint_state:

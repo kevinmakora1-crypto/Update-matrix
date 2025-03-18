@@ -13,8 +13,9 @@ from erpnext.crm.utils import get_open_todos
 from one_fm.api.api import push_notification_rest_api_for_leave_application
 from one_fm.api.tasks import remove_assignment
 from one_fm.overrides.employee import NotifyAttendanceManagerOnStatusChange
-from one_fm.utils import get_approver_user
+from one_fm.utils import get_approver_user, leave_application_on_cancel
 from hrms.hr.utils import get_holidays_for_employee
+from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import ReassignRelieverAssignment, reassign_responsibilities
 
 
 def validate_active_staff(doc,event):
@@ -425,8 +426,10 @@ class LeaveApplicationOverride(LeaveApplication):
             emp.status = "Active"
             emp.save()
             frappe.db.commit()
+        if self.custom_reliever_ and frappe.db.exists("Reliever Assignment", {"name": self.name}):frappe.enqueue(reassign_responsibilities, leave_application=self.name)
         self.create_leave_ledger_entry(submit=False)
         # notify leave applier about cancellation
+        leave_application_on_cancel(self,"on_cancel")
         self.cancel_attendance()
         self.validate_cancel()
         send_leave_cancellation_email_to_leave_approver(self)
@@ -532,6 +535,7 @@ class LeaveApplicationOverride(LeaveApplication):
     def reset_status_on_amend(self):
         if self.amended_from and self.status == "Cancelled":
             self.status = "Open"
+            self.custom_reason_for_cancel = ""
         elif self.workflow_state == "Approved":
             self.status = "Approved" 
 
@@ -623,44 +627,6 @@ def get_leave_details(employee, date):
 def get_leave_approver(employee):
     approver = get_approver_user(employee)
     return approver
-
-
-@frappe.whitelist()
-def employee_leave_status():
-    """
-    This method is to change the status of employee Doc from Active to Vacation, when Leave starts.
-    It also changes it back to Active when the leave ends.
-    The method is called as a cron job before  assigning shift.
-    """
-    today = getdate()
-    yesterday = add_to_date(today, days=-1)
-
-
-    start_leave = frappe.get_list("Leave Application", {'from_date': today, 'status':'Approved'}, ['employee', "name", "custom_reliever_"])
-    end_leave = frappe.get_list("Leave Application", {'to_date': yesterday, 'status':'Approved'}, ['employee', 'name'])
-
-
-    frappe.enqueue(process_change,start_leave=start_leave,end_leave=end_leave, is_async=True, queue="long")
-
-
-
-def process_change(start_leave, end_leave):
-    change_employee_status(start_leave, "Vacation")
-    change_employee_status(end_leave, "Active")
-
-def change_employee_status(employee_list, status):
-    for e in employee_list:
-        frappe.db.set_value("Employee", e.employee, "status", status)
-        try:
-            if status == "Vacation" and e.custom_reliever_:
-                reassign_to_reliever(reliever=e.custom_reliever_, leave_name=e.name, employee=e.employee)
-
-            if status == "Active" :
-                reassign_to_applicant(employee=e.employee, leave_name=e.name)
-        except:
-            frappe.log_error(frappe.get_traceback(), "Error occurred while trying to reassign duties")
-        
-    frappe.db.commit()
 
 
 def reassign_to_reliever(reliever: str, leave_name: str, employee: str):

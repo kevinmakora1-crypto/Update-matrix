@@ -490,6 +490,7 @@ def create_onboarding_from_job_offer(job_offer):
 			o_employee.reports_to = job_offer.reports_to
 			o_employee.date_of_joining = job_offer.estimated_date_of_joining
 			o_employee.employment_type = job_offer.employment_type
+			o_employee.operations_shift = job_offer.operations_shift
 			for d in fields:
 				o_employee.set(d, job_offer.get(d))
 			for od in one_fm_fields:
@@ -670,7 +671,7 @@ def update_onboarding_doc_workflow_sate(doc):
 
 @frappe.whitelist()
 def get_interview_question_set(interview_round):
-	return frappe.get_all('Interview Questions', filters ={'parent': interview_round}, fields=['questions', 'answer', 'weight'])
+	return frappe.get_all('Interview Questions', filters ={'parent': interview_round}, fields=['questions', 'answer', 'weight'], order_by="idx")
 
 @frappe.whitelist()
 def get_interview_skill_and_question_set(interview_round, interviewer=False, interview_name=False):
@@ -820,6 +821,7 @@ def change_applicant_erf(job_applicant, old_erf, new_erf):
 		job_applicant_obj.project = new_erf_obj.project
 		job_applicant_obj.one_fm_hiring_method = new_erf_obj.hiring_method
 		job_applicant_obj.interview_round = new_erf_obj.interview_round
+		job_applicant_obj.flags.ignore_mandatory = True
 		job_applicant_obj.save(ignore_permissions=True)
 		job_offer = frappe.db.exists('Job Offer', {'job_applicant': job_applicant, 'docstatus': ['<', 2]})
 		if job_offer:

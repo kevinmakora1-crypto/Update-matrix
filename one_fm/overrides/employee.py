@@ -185,8 +185,8 @@ class EmployeeOverride(EmployeeMaster):
                         cell_number = self.cell_number
                 content_variables= {
 	                    	'1':context.first_name,
-                            '2':self.get_doc_before_save().employee_id,
-                            '3':self.employee_id,
+                            '2':self.get_doc_before_save().employee_id or '',
+                            '3':self.employee_id or '',
                     	}
                 send_whatsapp(sender_id=cell_number,template_name='employee_id_change', content_variables=content_variables)
         except:
@@ -558,10 +558,33 @@ def toggle_auto_attendance(employee_names: list | str, status: bool):
         return response(message=str(e), status_code=400)
 
 
+
 @frappe.whitelist()
-def get_assurance_level_of_employee(doc):
-    if doc.one_fm_civil_id:
-        verification_level = call_to_get_assurance_level(doc.one_fm_civil_id)
-        verification_level = verification_level.get("verificationLevel")
-        doc.custom_civil_id_assurance_level = verification_level
-        return True
+def fetch_accomodation_name(name: str):
+    try:
+        accomodation = frappe.db.sql("""
+            SELECT a.accommodation
+            FROM `tabAccommodation Checkin Checkout` acc
+            JOIN `tabAccommodation` a ON a.name = acc.accommodation
+            WHERE acc.employee = %s
+            AND acc.type = 'IN'
+            ORDER BY acc.creation DESC
+            LIMIT 1
+        """, (name,), as_dict=True)
+        return response(message="Success", status_code=200, data=dict(accomodation=accomodation[0].get("accommodation", "") if accomodation else ""))
+    except Exception as e:
+        frappe.log_error(title = f"{str(e)}", message = frappe.get_traceback())
+        return response(message=str(e), status_code=400)
+
+
+@frappe.whitelist()
+def get_assurance_level_of_employee(doc, method):
+    try:
+        if doc.one_fm_civil_id:
+            verification_level = call_to_get_assurance_level(doc.one_fm_civil_id)
+            if verification_level:
+                verification_level = verification_level.get("verificationLevel")
+                doc.custom_civil_id_assurance_level = verification_level
+            return True
+    except Exception as e:
+            frappe.log_error(frappe.get_traceback(),f"DSS returned NONE values,No API key")

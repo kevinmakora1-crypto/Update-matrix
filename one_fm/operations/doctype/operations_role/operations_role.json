@@ -36,7 +36,8 @@
    "fieldname": "sale_item",
    "fieldtype": "Link",
    "label": "Sale Item",
-   "options": "Item"
+   "options": "Item",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_2",
@@ -93,8 +94,13 @@
    "label": "Attendance By Client"
   }
  ],
- "links": [],
- "modified": "2023-07-17 10:29:18.020108",
+ "links": [
+  {
+   "link_doctype": "Operations Post",
+   "link_fieldname": "post_template"
+  }
+ ],
+ "modified": "2025-03-02 14:30:08.454369",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Operations Role",

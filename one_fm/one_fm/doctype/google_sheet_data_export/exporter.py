@@ -53,6 +53,8 @@ def export_data(
 		filters=filters,
 		method=parent_doctype,
 	)
+
+
 	exporter = DataExporter(
 		doctype=doctype,
 		parent_doctype=parent_doctype,
@@ -103,9 +105,9 @@ class DataExporter:
 		self.service = api["service"]
 		self.drive_api = api["drive_api"]
 		self.credentials = api["credentials"]
-		
+
 		self.prepare_args()
-	
+
 	def initialize_service(self):
 		#initialize Google Sheet Service
 		SERVICE_ACCOUNT_FILE = os.getcwd()+"/"+cstr(frappe.local.site) + frappe.local.conf.google_sheet
@@ -142,7 +144,7 @@ class DataExporter:
 			self.child_doctypes = []
 			for df in frappe.get_meta(self.doctype).get_table_fields():
 				self.child_doctypes.append(dict(doctype=df.options, parentfield=df.fieldname))
-		
+
 		if not self.sheet_name:
 			self.sheet_name = 'sheet1'
 
@@ -157,14 +159,14 @@ class DataExporter:
 		self.columns = []
 
 		self.build_field_columns(self.doctype)
-		
+
 		if self.all_doctypes:
 			for d in self.child_doctypes:
 				if (
 					self.select_columns and self.select_columns.get(d["doctype"], None)
 				) or not self.select_columns:
 					self.build_field_columns(d["doctype"], d["parentfield"])
-	
+
 		self.column = self.labelrow
 		values = self.add_data()
 
@@ -172,13 +174,13 @@ class DataExporter:
 			frappe.msgprint(
 				_("No Data"), _("There is no data to be exported"), indicator_color="orange"
 			)
-		
+
 		if not self.link:
 			self.create()
 		sheet = self.build_connection_with_sheet()
 		if not sheet:
-			frappe.msgprint(frappe._("We do not have access to this sheet. Kindly, share your sheet with the following:<br><br> <b>{0}</b>").format(str(self.client_id)), 
-					indicator="red", 
+			frappe.msgprint(frappe._("We do not have access to this sheet. Kindly, share your sheet with the following:<br><br> <b>{0}</b>").format(str(self.client_id)),
+					indicator="red",
 					title = "Warning")
 		else:
 			if not self.check_if_sheet_exist(sheet):
@@ -285,6 +287,7 @@ class DataExporter:
 		self.data = frappe.get_list(
 			self.doctype, fields=["*"], filters=self.filters, limit_page_length=None, order_by=order_by
 		)
+
 		cell_colour = []
 		row_index = 0
 		for doc in self.data:
@@ -295,18 +298,21 @@ class DataExporter:
 			if self.all_doctypes:
 				# add child tables
 				for c in self.child_doctypes:
-					child_doctype_table = DocType(c["doctype"])
-					data_row = (
-						frappe.qb.from_(child_doctype_table)
-						.select("*")
-						.where(child_doctype_table.parent == doc.name)
-						.where(child_doctype_table.parentfield == c["parentfield"])
-						.where(child_doctype_table.parenttype == self.doctype)
-						.orderby(child_doctype_table.idx)
-					)
-					for ci, child in enumerate(data_row.run(as_dict=True)):
-						self.add_data_row(rows, c["doctype"], c["parentfield"], child, ci, cell_colour, row_index)
-			
+					if self.select_columns.get(c.get("doctype")):
+						child_doctype_table = DocType(c["doctype"])
+						data_row = (
+							frappe.qb.from_(child_doctype_table)
+							.select("*")
+							.where(child_doctype_table.parent == doc.name)
+							.where(child_doctype_table.parentfield == c["parentfield"])
+							.where(child_doctype_table.parenttype == self.doctype)
+							.orderby(child_doctype_table.idx)
+						)
+						for ci, child in enumerate(data_row.run(as_dict=True)):
+							if ci > 0:
+								self.add_data_row(rows, self.doctype, None, doc, ci, cell_colour, row_index)
+							self.add_data_row(rows, c["doctype"], c["parentfield"], child, ci, cell_colour, row_index)
+
 			for row in rows:
 				data.append(row)
 			row_index += 1
@@ -336,7 +342,7 @@ class DataExporter:
 				else:
 					row[_column_start_end.start + i] = value
 
-		
+
 	def _append_name_column(self, dt=None):
 		self.append_field_column(
 			frappe._dict(
@@ -405,7 +411,7 @@ class DataExporter:
 			}
 		request = service.spreadsheets().create(body=spreadsheet).execute()
 
-		#Grant Permission 
+		#Grant Permission
 		permission = drive_api.permissions().create(
 					fileId=request["spreadsheetId"],
 					body=domain_permission,
@@ -417,7 +423,7 @@ class DataExporter:
 		service = self.service
 		try:
 			# sheet_metadata = service.spreadsheets().get(spreadsheetId=self.google_sheet_id).execute()
-			
+
 			sheets = sheet_metadata.get('sheets', '')
 			sheetNames = []
 			for i in range(len(sheets)):
@@ -451,8 +457,8 @@ class DataExporter:
 		except Exception as e:
 			frappe.log_error(e)
 
-	
-			
+
+
 	def update_sheet(self, values):
 		"""Shows basic usage of the Sheets API.
 		Prints values from a sample spreadsheet.
@@ -463,22 +469,22 @@ class DataExporter:
 			no_of_row = len(values)
 			no_of_col = len(self.column)
 			ranges = self.sheet_name+ "!A1:" + get_column_identifier(no_of_col+1)+ str(no_of_row)
-			
+
 
 			# clear sheet
-			
-			service.spreadsheets().values().clear(spreadsheetId=self.google_sheet_id, 
+
+			service.spreadsheets().values().clear(spreadsheetId=self.google_sheet_id,
 				range='{0}'.format(self.sheet_name), body={}).execute()
 
 			# add new value
 			result = service.spreadsheets().values().update(
 						spreadsheetId=self.google_sheet_id, range=ranges,valueInputOption="USER_ENTERED", body={"values":values}).execute()
 
-			
-			# request = service.spreadsheets().values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID, range="Country!A1:B22").execute()
-			
 
-			
+			# request = service.spreadsheets().values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID, range="Country!A1:B22").execute()
+
+
+
 			return result
 		except HttpError as err:
 			frappe.log_error(title="Error Updating Google Sheet",message = err)
@@ -492,19 +498,19 @@ class DataExporter:
 		# get spreadsheet details
 		service = self.service
 		client = gspread.authorize(self.credentials)
-		spreadsheet = client.open_by_key(self.google_sheet_id)	
+		spreadsheet = client.open_by_key(self.google_sheet_id)
 
 		# get list of worksheets
 		# sheet = service.spreadsheets().get(spreadsheetId=self.google_sheet_id, ranges=[], includeGridData=False).execute()
 		sheets= sheet['sheets']
-		
+
 		# define sheetId of the give sheet name
 		sheetId = None
 		for sheet in sheets:
 			properties = sheet['properties']
 			if properties['title'] == self.sheet_name:
 				sheetId = properties['sheetId']
-		
+
 		if sheetId:
 			# clear sheet design
 			spreadsheet.batch_update({
@@ -520,7 +526,7 @@ class DataExporter:
 				]
 			}
 			)
-			
+
 			# Add font colour to cell
 			if self.cell_colour:
 				batch_update_spreadsheet_request_body = {
@@ -567,7 +573,7 @@ def update_google_sheet_daily():
 	for e in list_of_export:
 		doc = frappe.get_doc("Google Sheet Data Export",e.name)
 
-		frappe.enqueue(export_data, 
+		frappe.enqueue(export_data,
 			doctype= doc.reference_doctype,
 			select_columns= doc.field_cache,
 			filters= doc.filter_cache,
@@ -575,7 +581,7 @@ def update_google_sheet_daily():
 			link= doc.link,
 			google_sheet_id= doc.google_sheet_id,
 			sheet_name= doc.sheet_name,
-			owner= doc.owner, 
+			owner= doc.owner,
 			client_id= doc.client_id,
 			is_async=True, queue="long", timeout=9000)
 
@@ -619,7 +625,7 @@ def export_from_excel():
 
 	# Define range based on Excel data dimensions
 	range_ = f"{sheet_name}!A1:{chr(65 + data.shape[1] - 1)}{data.shape[0] + 1}"
-	
+
 	body_data = {
 		'values': [headers] + data.values.tolist()
 	}

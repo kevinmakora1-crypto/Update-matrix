@@ -10,8 +10,8 @@ frappe.pages['roster'].on_page_load = function (wrapper) {
 	load_js(page);
 
 	$(".mobile-edit").on("click", function () {
-        ;
-    })
+		;
+	})
 
 
 };
@@ -20,8 +20,8 @@ frappe.pages['roster'].on_page_load = function (wrapper) {
 function load_js(page) {
 	$(this).scrollTop(0);
 
-    window.clickcount = 0;
-    window.employees_list = [];
+	window.clickcount = 0;
+	window.employees_list = [];
 	window.isMonth = 1;
 	window.classgrtw = [];
 	window.classgrt = [];
@@ -406,6 +406,14 @@ function load_js(page) {
 								$('#cover-spin').hide();
 								let element = get_wrapper_element().slice(1);
 								page[element](page);
+
+								if (r.status_code == 200) {
+									frappe.msgprint(r.data.message);
+					
+									setTimeout(() => {
+										frappe.hide_msgprint();
+									}, 4000);
+								}
 							},
 							freeze: true,
 							freeze_message: __('Editing Post....')
@@ -416,7 +424,8 @@ function load_js(page) {
 				d.show();
 			}
 			else{
-				frappe.throw(_("Insufficient permissions to Edit Post."));
+				frappe.throw(frappe._("Insufficient permissions to Edit Post."));
+
 			}
 		});
 
@@ -690,8 +699,13 @@ function setup_topbar_events(page) {
 
 		unschedule_staff(page);
 	});
+
 	$('.dayoff').on('click', function () {
 		dayoff(page);
+	});
+
+	$('.clear_selection').on('click', function () {
+		clear_selection(page);
 	});
 }
 
@@ -709,6 +723,15 @@ function bind_events(page) {
 		//let $rosterWeek = $('.rosterWeek');
 		let $postWeek = $('.postWeek');
 		$postMonth.find(".hoverselectclass").on("click", function () {
+            // Loop through all rows and if there is a checked row, unselect all cells in that row.
+            $(this).closest("tbody").children("tr").each(function (i, cell) {
+                const checked_row = $(cell).find('input[name="selectallcheckbox"]:checked');
+                if (checked_row.length > 0) {
+                    $(checked_row).prop('checked', false);
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
+
 			$(this).toggleClass("selectclass");
 			// If the id is not already in the array, add it. If it is, remove it
 
@@ -723,6 +746,15 @@ function bind_events(page) {
 		});
 
 		$postWeek.find(".hoverselectclass").on("click", function () {
+            // Loop through all rows and if there is a checked row, unselect all cells in that row.
+            $(this).closest("tbody").children("tr").each(function (i, cell) {
+                const checked_row = $(cell).find('input[name="selectallcheckbox"]:checked');
+                if (checked_row.length > 0) {
+                    $(checked_row).prop('checked', false);
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
+
 			$(this).toggleClass("selectclass");
 			// If the id is not already in the array, add it. If it is, remove it
 
@@ -736,10 +768,20 @@ function bind_events(page) {
 			}
 		});
 
+
 		//add array on each of data select from calender
 		$rosterMonth.find(".hoverselectclass").on("click", function () {
-			$(this).toggleClass("selectclass");
+           // Loop through all rows and if there is a checked row, unselect all cells in that row.
+           $(this).closest("tbody").children("tr").each(function (i, cell) {
+                const checked_row = $(cell).find('input[name="selectallcheckbox"]:checked');
+                if (checked_row.length > 0) {
+                    $(checked_row).prop('checked', false);
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
 
+            // select cell
+            $(this).toggleClass("selectclass");
 			//Show Day Off and Schedule Leave button if hidden for basic roster
 			if ($(".dayoff").is(":hidden")) {
 				$(".dayoff").show();
@@ -760,7 +802,16 @@ function bind_events(page) {
 		});
 
 		$rosterOtMonth.find(".hoverselectclass").on("click", function () {
-			$(this).toggleClass("selectclass");
+            // Loop through all rows and if there is a checked row, unselect all cells in that row.
+            $(this).closest("tbody").children("tr").each(function (i, cell) {
+                const checked_row = $(cell).find('input[name="selectallcheckbox"]:checked');
+                if (checked_row.length > 0) {
+                    $(checked_row).prop('checked', false);
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
+
+            $(this).toggleClass("selectclass");
 
 			//Hide Day Off and schedule leave button for OT Roster
 			$(".dayoff").hide();
@@ -793,35 +844,44 @@ function bind_events(page) {
 
 		/*on checkbox select change*/
 		$postWeek.find(`input[name="selectallcheckbox"]`).on("change", function () {
-			if ($(this).is(":checked")) {
-				$(this).parent().parent().parent().children("td").children().not("label").each(function (i, v) {
+            let $checked_employee = $(this);
+            let selected_employee = $checked_employee.parent().parent().parent().attr('data-name');
+			if ($checked_employee.is(":checked")) {
+				$checked_employee.parent().parent().parent().children("td").children().not("label").each(function (i, v) {
 					let date = $(v).attr('data-date');
 					if (moment(date).isAfter(moment())) {
 						$(v).addClass("selectclass");
 					}
 				});
-				$(this).parent().parent().parent().children("td").children().not("label").removeClass("hoverselectclass");
+				$checked_employee.parent().parent().parent().children("td").children().not("label").removeClass("hoverselectclass");
 				$(".Postfilterhideshow").removeClass("d-none");
 
 			}
 			else {
-				$(this).parent().parent().parent().children("td").children().not("label").addClass("hoverselectclass");
-				$(this).closest('tr').children("td").children().not("label").each(function (i, v) {
+				$checked_employee.parent().parent().parent().children("td").children().not("label").addClass("hoverselectclass");
+				$checked_employee.closest('tr').children("td").children().not("label").each(function (i, v) {
 					classgrt.splice(classgrt.indexOf($(v).attr('data-selectid')), 1);
 				});
-				$(this).parent().parent().parent().children("td").children().not("label").removeClass("selectclass");
+				$checked_employee.parent().parent().parent().children("td").children().not("label").removeClass("selectclass");
 				$(".Postfilterhideshow").addClass("d-none");
 			}
-			$(".selectclass").map(function () {
 
+            // Check for rows that are not selected full and unselect cells in that row.
+            $checked_employee.closest("tbody").children("tr").each(function (i, cell) {
+                const unchecked_row = $(cell).find('input[name="selectallcheckbox"]:not(:checked)');
+                if (unchecked_row.length > 0) {
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
+
+			$(".selectclass").map(function () {
 				classgrt.push($(this).attr("data-selectid"));
 				classgrt = [... new Set(classgrt)];
-
 			});
 		});
 		/*on checkbox select change*/
 		$postMonth.find(`input[name="selectallcheckbox"]`).on("change", function () {
-			if ($(this).is(":checked")) {
+          	if ($(this).is(":checked")) {
 				$(this).parent().parent().parent().children("td").children().not("label").each(function (i, v) {
 					let date = $(v).attr('data-date');
 					if (moment(date).isAfter(moment())) {
@@ -839,9 +899,19 @@ function bind_events(page) {
 				$(this).parent().parent().parent().children("td").children().not("label").removeClass("selectclass");
 				$(".Postfilterhideshow").addClass("d-none");
 			}
+
+            // Check for rows that are not selected full and unselect cells in that row.
+            $(this).closest("tbody").children("tr").each(function (i, cell) {
+                const unchecked_row = $(cell).find('input[name="selectallcheckbox"]:not(:checked)');
+                if (unchecked_row.length > 0) {
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
+
+
 			$(".selectclass").map(function () {
 
-			    classgrt.push($(this).attr("data-selectid"));
+				classgrt.push($(this).attr("data-selectid"));
 				classgrt = [... new Set(classgrt)];
 			});
 		});
@@ -881,7 +951,9 @@ function bind_events(page) {
 		// 	});
 		// });
 		//on checkbox select change
-		$rosterMonth.find(`input[name="selectallcheckbox"]`).on("change", function () {
+        $rosterMonth.find(`input[name="selectallcheckbox"]`).on("change", function () {
+            let $checked_employee = $(this);
+            let selected_employee = $checked_employee.parent().parent().parent().attr('data-name');
 
 			//Show Day Off and Schedule Leave button if hidden for basic roster
 			if ($(".dayoff").is(":hidden")) {
@@ -891,14 +963,14 @@ function bind_events(page) {
 				$(".scheduleleave").show();
 			}
 
-			if ($(this).is(":checked")) {
-				$(this).closest('tr').children("td").children().not("label").each(function (i, v) {
-					
+			if ($checked_employee.is(":checked")) {
+                $checked_employee.closest('tr').children("td").children().not("label").each(function (i, v) {
+
 					let [employee, date] = $(v).attr('data-selectid').split('|');
 					classgrt.push($(v).attr('data-selectid'));
 					var r = Date.parse(date)
-					
-					
+
+
 					if (moment(date).isAfter(moment())) {
 						$(v).addClass("selectclass");
 					}
@@ -907,12 +979,22 @@ function bind_events(page) {
 				$(".filterhideshow").removeClass("d-none");
 			}
 			else {
-				$(this).closest('tr').children("td").children().not("label").each(function (i, v) {
+				$checked_employee.closest('tr').children("td").children().not("label").each(function (i, v) {
 					classgrt.splice(classgrt.indexOf($(v).attr('data-selectid')), 1);
 				});
-				$(this).closest('tr').children("td").children().not("label").removeClass("selectclass");
+				$checked_employee.closest('tr').children("td").children().not("label").removeClass("selectclass");
 				$(".filterhideshow").addClass("d-none");
 			}
+
+            // Check for rows that are not selected full and unselect cells in that row.
+            $checked_employee.closest("tbody").children("tr").each(function (i, cell) {
+                const unchecked_row = $(cell).find('input[name="selectallcheckbox"]:not(:checked)');
+                if (unchecked_row.length > 0) {
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });;
+
+
 			$(".selectclass").map(function () {
 
 				classgrt.push($(this).attr("data-selectid"));
@@ -930,6 +1012,7 @@ function bind_events(page) {
 			});
 		});
 		$rosterOtMonth.find(`input[name="selectallcheckbox"]`).on("change", function () {
+            let $checked_employee = $(this);
 
 			//Hide Day Off and schedule leave button for OT Roster
 			$(".dayoff").hide();
@@ -939,7 +1022,7 @@ function bind_events(page) {
 
 					let [employee, date] = $(v).attr('data-selectid').split('|');
 					var r = Date.parse(date)
-					
+
 					if (moment(date).isAfter(moment())) {
 						$(v).addClass("selectclass");
 					}
@@ -954,6 +1037,15 @@ function bind_events(page) {
 				$(this).closest('tr').children("td").children().not("label").removeClass("selectclass");
 				$(".filterhideshow").addClass("d-none");
 			}
+
+            // Check for rows that are not selected full and unselect cells in that row.
+            $(this).closest("tbody").children("tr").each(function (i, cell) {
+                const unchecked_row = $(cell).find('input[name="selectallcheckbox"]:not(:checked)');
+                if (unchecked_row.length > 0) {
+                    $(cell).find("div").removeClass("selectclass");
+                }
+            });
+
 			$(".selectclass").map(function () {
 
 				classgrt.push($(this).attr("data-selectid"));
@@ -999,24 +1091,24 @@ function bind_events(page) {
 	window.employees_list = [];
 	bind_search_bar_event(page);
 
-    // manage employee selection
+	// manage employee selection
 
 	$('.checkboxcontainer.simplecheckbox').click((e)=>{
-	    if(window.clickcount>0){
-	        window.clickcount = 0;
-	    } else {
-	        let employee = e.target.parentNode.parentNode.parentNode.getAttributeNode('data-name').value;
-            if(window.employees_list.includes(employee)){
-                window.employees_list = window.employees_list.filter(function(value, index, arr){
-                    return value != employee;
-                });
-            } else {
-                window.employees_list.push(employee);
-            }
-            window.clickcount = window.clickcount + 1
-	    }
+		if(window.clickcount>0){
+			window.clickcount = 0;
+		} else {
+			let employee = e.target.parentNode.parentNode.parentNode.getAttributeNode('data-name').value;
+			if(window.employees_list.includes(employee)){
+				window.employees_list = window.employees_list.filter(function(value, index, arr){
+					return value != employee;
+				});
+			} else {
+				window.employees_list.push(employee);
+			}
+			window.clickcount = window.clickcount + 1
+		}
 
-    })
+	})
 }
 
 function bind_search_bar_event(page) {
@@ -1095,16 +1187,16 @@ function get_roster_data(page, isOt) {
 		employee_search_id = page.employee_search_id;
 	}
 	let {start_date, end_date} = page;
-	let { project, site, shift, department, operations_role, designation } = page.filters;
+	let { project, site, shift, department, operations_role, designation, relievers } = page.filters;
 	let { limit_start, limit_page_length } = page.pagination;
-	if (project || site || shift || department || operations_role || designation){
+	if (project || site || shift || department || operations_role || designation || relievers){
 
 		$('#cover-spin').show(0);
 		frappe.call({
 			method: "one_fm.one_fm.page.roster.roster.get_roster_view", //dotted path to server method
 			type: "POST",
 			args: { start_date, end_date, employee_search_id, employee_search_name, project, site,
-				shift, department, operations_role, designation, isOt, limit_start, limit_page_length
+				shift, department, operations_role, designation, relievers, isOt, limit_start, limit_page_length
 			},
 			callback: function(res) {
 				// code snippet
@@ -1151,10 +1243,13 @@ let attendance_abbr_map = {
 	'On Leave': 'OL',
 	'On Hold': 'OH'
 };
+
+let reliever_data;
+
 // Renders on get_roster_data function
 function render_roster(res, page, isOt) {
-
-	let { operations_roles_data, employees_data, total } = res;
+	let { operations_roles_data, employees_data,reliever,total } = res;
+	reliever_data =  reliever
 	page.pagination.total = total;
 	let b1 = performance.now();
 	let $rosterMonth = isOt ? $('.rosterOtMonth') : $('.rosterMonth');
@@ -1804,6 +1899,7 @@ function setup_filters(page) {
 			get_departments(page);
 			get_operations_posts(page);
 			get_designations(page);
+			get_relievers(page);
 		})
 		.then(r => {
 			get_roster_data(page);
@@ -1950,6 +2046,21 @@ function get_designations(page){
 		.catch(e => {
 			;
 		})
+}
+function get_relievers(page){
+	let parent = $('[data-page-route="roster"] #rosteringrelieverselect');
+	let reliever_data = [
+		{'id': 'True', 'text': 'Relievers Only'},
+		{'id': 'False', 'text': 'Non Relievers Only'},
+	];
+	parent.select2({ data: reliever_data });
+	$(parent).on('select2:select', function (e) {
+		page.filters.relievers = $(this).val();
+		let element = get_wrapper_element().slice(1);
+
+		page[element](page);
+	});
+
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2338,7 +2449,7 @@ function render_staff_list_view(data) {
 	data.forEach(function (employee) {
 
 
-		let { name, employee_id, employee_name, nationality, mobile_no, email, designation, project, site, shift, department,site_supervisor,shift_supervisor } = employee;
+		let { name, employee_id, employee_name, nationality, mobile_no, email, designation, project, site, shift, department,site_supervisor,shift_supervisor,custom_operations_role_allocation,custom_is_reliever } = employee;
 		let row = `
 		<tr>
 			<td>
@@ -2388,6 +2499,12 @@ function render_staff_list_view(data) {
 			</td>
 			<td>
 				${department || 'N/A'}
+			</td>
+			<td>
+				${custom_operations_role_allocation || 'N/A'}
+			</td>
+			<td>
+				${custom_is_reliever ? 'Yes' : 'No'}
 			</td>
 		</tr>`;
 		$staffdatatable.append(row);
@@ -2520,7 +2637,8 @@ function setup_staff_filters(page) {
 		designation: '',
 		operations_role: '',
 		employee_search_name: '',
-		employee_search_id: ''
+		employee_search_id: '',
+		relievers: ''
 	};
 	let pagination = {
 		limit_start: 0,
@@ -2668,15 +2786,30 @@ function staff_edit_dialog() {
 					}
 				}
 			},
-			{'label': 'Request Employee Assignment', 'fieldname': 'request_employee_assignment', 'fieldtype': 'Check'},
+			{'label': 'Is Reliever', 'fieldname': 'custom_is_reliever', 'fieldtype': 'Check', onchange: function () {
+				let is_reliever = d.get_value('custom_is_reliever');
+				d.set_df_property('custom_operations_role_allocation', 'reqd', !is_reliever);
+			}
+			},
+			{
+				'label': 'Default Operations Role', 'fieldname': 'custom_operations_role_allocation', 'fieldtype': 'Link', 'options': 'Operations Role', 'reqd': 1, get_query: function () {
+					let shift = d.get_value('shift');
+					if (shift) {
+						return {
+							"filters": { shift },
+							"page_len": 9999
+						};
+					}
+				}
+			}
 		],
 		primary_action: function () {
-			let { shift, request_employee_assignment } = d.get_values();
+			let { shift, custom_operations_role_allocation, custom_is_reliever } = d.get_values();
 
 			$('#cover-spin').show(0);
 			frappe.call({
 				method: 'one_fm.one_fm.page.roster.roster.assign_staff',
-				args: { employees, shift, request_employee_assignment},
+				args: { employees, shift, custom_operations_role_allocation, custom_is_reliever},
 				callback: function (r) {
 
 					d.hide();
@@ -2690,6 +2823,26 @@ function staff_edit_dialog() {
 			});
 		}
 	});
+
+	// Pre-populate if only one employee is selected
+	if (employees.length === 1) {
+		frappe.call({
+			method: 'one_fm.one_fm.page.roster.roster.get_employee_details',
+			args: { employee_id: employees[0] },
+			callback: function (r) {
+				if (r.message) {
+					let employee_details = r.message;
+					// Populate fields
+					d.set_value('project', employee_details.project);
+					d.set_value('site', employee_details.site);
+					d.set_value('shift', employee_details.shift);
+					d.set_value('custom_is_reliever', employee_details.custom_is_reliever);
+					d.set_value('custom_operations_role_allocation', employee_details.custom_operations_role_allocation);
+				}
+			}
+		});
+	}
+
 	d.show();
 }
 
@@ -2889,14 +3042,26 @@ function unschedule_staff(page) {
 		'title': 'Unschedule Staff',
 		'fields': [
 			{
-				'label': 'Start Date', 'fieldname': 'start_date', 'fieldtype': 'Date', 'reqd': 1, 'default': date, onchange: function () {
+				'label': 'Selected Days Only', 'fieldname': 'selected_days_only', 'fieldtype': 'Check', 'default': 0, onchange: function () {
+					let val = d.get_value('selected_days_only');
+					if (val) {
+						d.set_value('start_date', '');
+						d.set_value('never_end', 0);
+						d.set_value('select_end', 0);
+						d.set_value('end_date', '');
+					}
+				}
+			},
+			{ 'fieldtype': 'Section Break', 'depends_on': "eval:doc.selected_days_only == 0" },
+			{
+				'label': 'Start Date', 'fieldname': 'start_date', 'fieldtype': 'Date', 'reqd': 1, 'mandatory_depends_on': "eval:doc.selected_days_only == 0", 'default': date, onchange: function () {
 					let start_date = d.get_value('start_date');
 					if (start_date && moment(start_date).isSameOrBefore(moment(frappe.datetime.nowdate()))) {
 						frappe.throw(__("Start Date cannot be before today."));
 					}
 				}
 			},
-			{ 'fieldtype': 'Section Break' },
+			{ 'fieldtype': 'Section Break', 'depends_on': "eval:doc.selected_days_only == 0" },
 			{
 				'label': 'Never End', 'fieldname': 'never_end', 'fieldtype': 'Check', onchange: function () {
 					let val = d.get_value('never_end');
@@ -2930,7 +3095,7 @@ function unschedule_staff(page) {
 		],
 		primary_action: function () {
 			$('#cover-spin').show(0);
-			let { start_date, end_date, never_end } = d.get_values();
+			let { selected_days_only, start_date, end_date, never_end } = d.get_values();
 			let element = get_wrapper_element();
 			if (element == ".rosterOtMonth") {
 				otRoster = true;
@@ -2941,7 +3106,7 @@ function unschedule_staff(page) {
 			frappe.call({
 				method: "one_fm.one_fm.page.roster.roster.unschedule_staff",
 				type: "POST",
-				args: { employees,otRoster, start_date, end_date, never_end },
+				args: { employees, otRoster, start_date, end_date, never_end, selected_days_only },
 				callback: function(res) {
 					// code snippet
 					d.hide();
@@ -3169,7 +3334,7 @@ function schedule_change_post(page) {
 			}
 
 			if (!employees){
-			    frappe.throw(__('Please select employees to roster.'))
+				frappe.throw(__('Please select employees to roster.'))
 			}
 			// update fields
 			if(!data.project_end_date){data.project_end_date=0}
@@ -3186,12 +3351,112 @@ function schedule_change_post(page) {
 					let element = get_wrapper_element().slice(1);
 					update_roster_view(element, page);
 					$(".filterhideshow").addClass("d-none");
+
+					if (!("_server_messages" in res)) {
+						updateEmployeeDefaults(employees, data);
+					}
+
 				}
 			});
 		}
 	});
 	d.show();
 }
+
+
+async function updateEmployeeDefaults(employees, data) {
+    let employees_to_update = [];
+
+   // Use a Map to store only unique employee records
+   let uniqueEmployeeIDs = [...new Set(employees.map(emp => emp.employee))];
+
+    // Bulk fetch all employees' details in a single query
+    let fetchedEmployees = await frappe.db.get_list("Employee", {
+        filters: [["name", "in", uniqueEmployeeIDs]],
+        fields: ["name", "employee_name", "shift", "custom_operations_role_allocation", "custom_is_reliever", "project", "site"],
+        limit_page_length: uniqueEmployeeIDs.length // Fetch all in one call
+    });
+
+    // Process fetched employees
+    fetchedEmployees.forEach(emp => {
+        if (!emp.custom_is_reliever && (emp.shift !== data.shift || emp.custom_operations_role_allocation !== data.operations_role)) {
+            employees_to_update.push({
+                employee: emp.name,
+				employee_name: emp.employee_name,
+                current_shift: emp.shift,
+                new_shift: data.shift,
+                current_role: emp.custom_operations_role_allocation,
+                new_role: data.operations_role
+            });
+        }
+    });
+
+
+    if (employees_to_update.length > 0) {
+        let table_html = `
+			<div style="max-height: 300px; overflow-y: auto;">
+				<table style="border-collapse: collapse; width: 100%; text-align: left;">
+					<thead>
+						<tr style="background-color: #f8f9fa;">
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">Employee Name</th>
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">Current Shift</th>
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">New Shift</th>
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">Current Role</th>
+							<th style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">New Role</th>
+						</tr>
+					</thead>
+					<tbody>`;
+
+		employees_to_update.forEach(emp => {
+			table_html += `
+				<tr>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.employee_name}</td>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.current_shift || 'Not Set'}</td>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.new_shift || 'Not Set'}</td>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.current_role || 'Not Set'}</td>
+					<td style="border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top;">${emp.new_role || 'Not Set'}</td>
+				</tr>`;
+		});
+
+		table_html += `</tbody></table></div>`;
+
+		frappe.confirm(
+			`Hey, you just rostered these employees to shifts or roles different from their defaults. Would you like to update their default shift or role?<br>${table_html}`,
+			async () => {
+				// Batch update in a single request
+				await frappe.call({
+					method: "one_fm.one_fm.page.roster.roster.bulk_employee_record_update",
+					args: {
+						updates: employees_to_update.map(emp => ({
+							name: emp.employee,
+							shift: emp.new_shift,
+							custom_operations_role_allocation: emp.new_role,
+							project: data.project,
+							site: data.site
+						}))
+					},
+					freeze: true,
+					freeze_message: "Updating employee defaults..."
+				});
+			}
+		);
+    }
+}
+
+
+function clear_selection(page) {
+	classgrt = [];
+	classgrtw = [];
+
+	$(".filterhideshow").addClass("d-none");
+	$(".Postfilterhideshow").addClass("d-none");
+	
+	$("#calenderviewtable tbody").find("tr").each(function (i, row) {
+		$(row).find("input[type='checkbox']").prop("checked", false); // Uncheck the employee checkbox
+		$(row).find("div").removeClass("selectclass"); // Remove days selections
+	});
+}
+
 function update_roster_view(element, page) {
 	page[element](page);
 	frappe.realtime.on("roster_view", function (output) {
@@ -3323,12 +3588,17 @@ function dayoff(page) {
 		let [employee, date] = i.split("|");
 		employees.push({ employee, date });
 	});
+	let reliever_options = reliever_data.map(item => `${item.employee_id} - ${item.employee_name}`).join("\n");
+
+
 	let date = frappe.datetime.add_days(frappe.datetime.nowdate(), '1');
 	let d = new frappe.ui.Dialog({
 		'title': 'Day Off',
 		'fields': [
 			{ 'label': 'Selected days only', 'fieldname': 'selected_dates', 'fieldtype': 'Check', 'default': 0 },
-			{ 'label': 'Repeat', 'fieldname': 'repeat', 'fieldtype': 'Select', 'depends_on': 'eval:doc.selected_dates==0', 'options': 'Does not repeat\nDaily\nWeekly\nMonthly\nYearly' },
+			{ 'label': 'Set Reliever', 'fieldname': 'set_reliever', 'fieldtype': 'Check', 'default': 0 },
+			{ 'label': 'Reliever', 'fieldname': 'selected_reliever', 'fieldtype': 'Select', 'options': reliever_options,'depends_on': 'eval:doc.set_reliever==1' },
+			{ 'label': 'Repeat', 'fieldname': 'repeat', 'fieldtype': 'Select', 'depends_on': 'eval:doc.selected_dates==0', 'options': 'Does not repeat\nWeekly\nMonthly' },
 			{ 'fieldtype': 'Section Break', 'fieldname': 'sb1', 'depends_on': 'eval:doc.repeat=="Weekly" && doc.selected_dates==0' },
 			{ 'label': 'Sunday', 'fieldname': 'sunday', 'fieldtype': 'Check' },
 			{ 'label': 'Wednesday', 'fieldname': 'wednesday', 'fieldtype': 'Check' },
@@ -3348,9 +3618,16 @@ function dayoff(page) {
 			let week_days = [];
 			let args = {};
 			let repeat_freq = '';
-			let { selected_dates, repeat, sunday, monday, tuesday, wednesday, thursday, friday, saturday, repeat_till, project_end_date } = d.get_values();
+			let { selected_dates,set_reliever,selected_reliever, repeat, sunday, monday, tuesday, wednesday, thursday, friday, saturday, repeat_till, project_end_date } = d.get_values();
 			args["selected_dates"] = selected_dates;
+			args["set_reliever"] = set_reliever;
 			args["employees"] = employees;
+
+			if(set_reliever == 0){
+				args['selected_reliever']=""
+			}else{
+				args['selected_reliever']=selected_reliever
+			}
 
 			if (selected_dates == 1) {
 				args["repeat"] = 0;
@@ -3373,16 +3650,8 @@ function dayoff(page) {
 					args["week_days"] = week_days;
 					args["repeat_freq"] = repeat_freq;
 				}
-				else if (repeat == "Daily") {
-					repeat_freq = "Daily";
-					args["repeat_freq"] = repeat_freq;
-				}
 				else if (repeat == "Monthly") {
 					repeat_freq = "Monthly";
-					args["repeat_freq"] = repeat_freq;
-				}
-				else if (repeat == "Yearly") {
-					repeat_freq = "Yearly";
 					args["repeat_freq"] = repeat_freq;
 				}
 			}
@@ -3407,185 +3676,185 @@ function dayoff(page) {
 
 // Edit mobile number
 function editMobileNumber(){
-    employees_pk = $(".datatablecjeckbox:checked").map(function () {
-        return $(this).attr("data-employee-id");
-    }).get();
+	employees_pk = $(".datatablecjeckbox:checked").map(function () {
+		return $(this).attr("data-employee-id");
+	}).get();
 	const table_fields = [
-        {
-            fieldname: "employee", fieldtype: "Link",
-            in_list_view: 1, label: "Employee",
-            options: "Employee", reqd: 1
-        },
-        {
-            fieldname: "employee_id", fieldtype: "Data",
-            in_list_view: 1, label: "Employee ID", reqd:1,
-            read_only: 1, depends_on: "employee",
-            fetch_from: "employee.employee_id"
-        },
-        {
-            fieldname: "employee_name", fieldtype: "Data",
-            in_list_view: 1, label: "Name", reqd:1,
-            read_only: 1, depends_on: "employee",
-            fetch_from: "employee.employee_name"
-        }
-    ];
+		{
+			fieldname: "employee", fieldtype: "Link",
+			in_list_view: 1, label: "Employee",
+			options: "Employee", reqd: 1
+		},
+		{
+			fieldname: "employee_id", fieldtype: "Data",
+			in_list_view: 1, label: "Employee ID", reqd:1,
+			read_only: 1, depends_on: "employee",
+			fetch_from: "employee.employee_id"
+		},
+		{
+			fieldname: "employee_name", fieldtype: "Data",
+			in_list_view: 1, label: "Name", reqd:1,
+			read_only: 1, depends_on: "employee",
+			fetch_from: "employee.employee_name"
+		}
+	];
 
-    let d = new frappe.ui.Dialog({
-        title: 'Enter details',
-        fields: [
-            {
-                label: 'First Name',
-                fieldname: 'first_name',
-                fieldtype: 'Data'
-            },
-            {
-                label: 'Last Name',
-                fieldname: 'last_name',
-                fieldtype: 'Data'
-            },
-            {
-                fieldname: "employees",
-                fieldtype: "Table",
-                label: "Employees",
+	let d = new frappe.ui.Dialog({
+		title: 'Enter details',
+		fields: [
+			{
+				label: 'First Name',
+				fieldname: 'first_name',
+				fieldtype: 'Data'
+			},
+			{
+				label: 'Last Name',
+				fieldname: 'last_name',
+				fieldtype: 'Data'
+			},
+			{
+				fieldname: "employees",
+				fieldtype: "Table",
+				label: "Employees",
 //                cannot_add_rows: true,
-                cannot_delete_rows: true,
-                in_place_edit: true,
-                reqd: 1,
-                data: [],
-                fields: table_fields
-            }
-        ],
-        primary_action_label: 'Submit',
-        primary_action(values) {
+				cannot_delete_rows: true,
+				in_place_edit: true,
+				reqd: 1,
+				data: [],
+				fields: table_fields
+			}
+		],
+		primary_action_label: 'Submit',
+		primary_action(values) {
 
-            d.hide();
-        }
-    });
+			d.hide();
+		}
+	});
 
-    d.show();
+	d.show();
 
-    employees_pk.forEach((item, i) => {
-        d.fields_dict.employees.df.data.push(
-            { employee: item}
-        );
-    });
-    d.fields_dict.employees.grid.refresh();
+	employees_pk.forEach((item, i) => {
+		d.fields_dict.employees.df.data.push(
+			{ employee: item}
+		);
+	});
+	d.fields_dict.employees.grid.refresh();
 }
 
 
 function editSingleEmployeeData(){
-    let d = new frappe.ui.Dialog({
-        title: 'Update Employee Record',
-        fields: [
-            {
-                label: 'Employee',
-                fieldname: 'employee',
-                fieldtype: 'Link',
-                options: "Employee",
-                reqd:1,
-                ignore_user_permissions: 1,
-                change: function (x) {
-                    employee_pk = d.fields_dict.employee.value;
-                    if(employee_pk){
-                    frappe.xcall('one_fm.one_fm.page.roster.roster.get_employee_detail', { employee_pk })
-                        .then(res => {
-                            d.fields_dict.employee_id.value = res.employee_id;
-                            d.fields_dict.employee_name.value = res.employee_name;
-                            d.fields_dict.enrolled.value = res.enrolled;
-                            d.fields_dict.cell_number.value = res.cell_number;
-                            d.fields_dict.employee_id.refresh();
-                            d.fields_dict.employee_name.refresh();
-                            d.fields_dict.enrolled.refresh();
-                            d.fields_dict.cell_number.refresh();
-                        });
+	let d = new frappe.ui.Dialog({
+		title: 'Update Employee Record',
+		fields: [
+			{
+				label: 'Employee',
+				fieldname: 'employee',
+				fieldtype: 'Link',
+				options: "Employee",
+				reqd:1,
+				ignore_user_permissions: 1,
+				change: function (x) {
+					employee_pk = d.fields_dict.employee.value;
+					if(employee_pk){
+					frappe.xcall('one_fm.one_fm.page.roster.roster.get_employee_detail', { employee_pk })
+						.then(res => {
+							d.fields_dict.employee_id.value = res.employee_id;
+							d.fields_dict.employee_name.value = res.employee_name;
+							d.fields_dict.enrolled.value = res.enrolled;
+							d.fields_dict.cell_number.value = res.cell_number;
+							d.fields_dict.employee_id.refresh();
+							d.fields_dict.employee_name.refresh();
+							d.fields_dict.enrolled.refresh();
+							d.fields_dict.cell_number.refresh();
+						});
 
-                    }
-                }
-            },
-            {
-                label: 'Employee ID',
-                fieldname: 'employee_id',
-                fieldtype: 'Data',
-                depends_on: 'employee',
-                read_only: 1
-            },
-            {
-                label: 'Employee Name',
-                fieldname: 'employee_name',
-                fieldtype: 'Data',
-                depends_on: 'employee',
-                read_only: 1
-            },
+					}
+				}
+			},
+			{
+				label: 'Employee ID',
+				fieldname: 'employee_id',
+				fieldtype: 'Data',
+				depends_on: 'employee',
+				read_only: 1
+			},
+			{
+				label: 'Employee Name',
+				fieldname: 'employee_name',
+				fieldtype: 'Data',
+				depends_on: 'employee',
+				read_only: 1
+			},
 
-            {
-               fieldname: "column_break0",
-               fieldtype: "Column Break"
-            },
-            {
-                label: 'Phone Number',
-                fieldname: 'cell_number',
-                fieldtype: 'Data',
-                depends_on: 'employee',
-                read_only: 1
-            },
-            {
-                label: 'Enrolled',
-                fieldname: 'enrolled',
-                fieldtype: 'Data',
-                depends_on: 'employee',
-                read_only: 1
-            },
-            {
-                label: '<i style="color:red">Action</i>',
-                fieldname: 'action_type',
-                fieldtype: 'Select',
-                depends_on: 'employee',
-                options: ["Update Phone Number", "Reset Enrollment"],
-                reqd: 1,
-            },
-            {
-                label: 'New Phone Number',
-                fieldname: 'new_phone_number',
-                fieldtype: 'Data',
-                depends_on: "eval:doc.action_type=='Update Phone Number'",
-                options: ""
-            },
+			{
+			   fieldname: "column_break0",
+			   fieldtype: "Column Break"
+			},
+			{
+				label: 'Phone Number',
+				fieldname: 'cell_number',
+				fieldtype: 'Data',
+				depends_on: 'employee',
+				read_only: 1
+			},
+			{
+				label: 'Enrolled',
+				fieldname: 'enrolled',
+				fieldtype: 'Data',
+				depends_on: 'employee',
+				read_only: 1
+			},
+			{
+				label: '<i style="color:red">Action</i>',
+				fieldname: 'action_type',
+				fieldtype: 'Select',
+				depends_on: 'employee',
+				options: ["Update Phone Number", "Reset Enrollment"],
+				reqd: 1,
+			},
+			{
+				label: 'New Phone Number',
+				fieldname: 'new_phone_number',
+				fieldtype: 'Data',
+				depends_on: "eval:doc.action_type=='Update Phone Number'",
+				options: ""
+			},
 
-        ],
-        primary_action_label: 'Submit',
-        primary_action(values) {
-            // action to perform if Yes is selected
-            d.hide();
-            makeCall(values);
-        }
-    });
+		],
+		primary_action_label: 'Submit',
+		primary_action(values) {
+			// action to perform if Yes is selected
+			d.hide();
+			makeCall(values);
+		}
+	});
 
-    d.show();
+	d.show();
 }
 
 
 function makeCall(argsObject){
-    frappe.confirm('Are you sure you want to proceed?',
-        () => {
-            let postvalue = {employee_id: argsObject.employee_id};
-            if (argsObject.action_type === 'Update Phone Number') {
-                postvalue.field = 'cell_number';
-                postvalue.value = argsObject.new_phone_number;
-            } else {
-                postvalue.field = 'enrolled';
-                postvalue.value = 0;
-            }
-            frappe.call({
-                method: "one_fm.api.v1.utils.update_employee", //dotted path to server method
-                args: postvalue,
-                callback: function(r) {
-                    // code snippet
-                    frappe.msgprint(r.message);
-                }
-            });
-        }, () => {
-            // action to perform if No is selected
-    })
+	frappe.confirm('Are you sure you want to proceed?',
+		() => {
+			let postvalue = {employee_id: argsObject.employee_id};
+			if (argsObject.action_type === 'Update Phone Number') {
+				postvalue.field = 'cell_number';
+				postvalue.value = argsObject.new_phone_number;
+			} else {
+				postvalue.field = 'enrolled';
+				postvalue.value = 0;
+			}
+			frappe.call({
+				method: "one_fm.api.v1.utils.update_employee", //dotted path to server method
+				args: postvalue,
+				callback: function(r) {
+					// code snippet
+					frappe.msgprint(r.message);
+				}
+			});
+		}, () => {
+			// action to perform if No is selected
+	})
 }
 
 

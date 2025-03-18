@@ -8,7 +8,7 @@ from frappe.utils import nowdate, add_to_date, cstr, cint, getdate, get_link_to_
 from one_fm.processor import sendemail
 from frappe.permissions import get_doctype_roles
 import datetime
-from datetime import timedelta
+from datetime import timedelta, datetime
 from collections import OrderedDict
 
 class RosterEmployeeActions(Document):
@@ -93,9 +93,12 @@ def create_roster_employee_actions():
 			roster_employee_actions.supervisor = supervisor.shift_supervisor
 			roster_employee_actions.site_supervisor = site_supervisor
 			for employee in employees:
+				sorted_dates = sorted(
+                [datetime.strptime(date.strip(), "%Y-%m-%d") for date in employees_not_rostered.get(employee, [])]
+            )
 				roster_employee_actions.append('employees_not_rostered', {
 					'employee': employee,
-					"missing_dates": ", ".join(employees_not_rostered.get(employee))
+					"missing_dates": ", ".join([date.strftime("%Y-%m-%d") for date in sorted_dates])
 				})
 			roster_employee_actions.save()
 		except Exception as e:
@@ -151,7 +154,8 @@ def get_shift_working_active_employees(start_date, end_date):
 
 	active_employees = frappe.db.sql("""
 		select
-			employee
+			employee,
+			relieving_date
 		from
 			`tabEmployee`
 		where
@@ -159,11 +163,11 @@ def get_shift_working_active_employees(start_date, end_date):
 			and
 			shift_working = 1
 	""", as_dict=1)
-
 	return [
 		(employee.employee, (start_date + timedelta(days=x)).strftime('%Y-%m-%d'))
 		for employee in active_employees
 		for x in range((end_date - start_date).days + 1)
+		if employee.relieving_date is None or (start_date + timedelta(days=x)) < employee.relieving_date
 	]
 
 def get_rostered_employees(start_date, end_date):
@@ -206,18 +210,23 @@ def get_employees_on_leave_in_period(start_date, end_date):
 		Eg: [('HR-EMP-00002', '2024-04-08')] Considerring HR-EMP-00002 is leave on '2024-04-08'
 	"""
 
+
 	leaves = frappe.db.sql(f"""
-		select
+		SELECT 
 			employee, from_date, to_date
-        from
+		FROM 
 			`tabLeave Application`
-        where
-			from_date >= '{start_date}'
-			and
-			to_date <= '{end_date}'
-			and
-			status = 'Open'
-    """, as_dict=True)
+		WHERE 
+			(from_date >= '{start_date}' AND to_date <= '{end_date}' AND status IN ('Open', 'Approved'))
+			OR 
+			name IN (
+				SELECT DISTINCT leave_application 
+				FROM `tabAttendance` 
+				WHERE attendance_date >= '{start_date}'
+				AND attendance_date <= '{end_date}' 
+				AND status = 'On Leave'
+			)
+	""", as_dict=True)
 
 	return [
 		(leave.employee, (leave.from_date + timedelta(days=x)).strftime('%Y-%m-%d'))

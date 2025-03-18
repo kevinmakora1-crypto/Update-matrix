@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import json
 
 import frappe
 from frappe import _
@@ -9,6 +10,8 @@ from one_fm.processor import sendemail
 from one_fm.utils import is_scheduler_emails_enabled
 
 from one_fm.utils import production_domain
+from hrms.hr.doctype.job_applicant.job_applicant import create_interview as hrms_create_interview
+
 
 class JobApplicantOverride(JobApplicant):
 
@@ -201,3 +204,14 @@ class NotifyLocalTransfer:
 						sendemail(recipients=receivers, subject=title, content=msg)
 		except:
 			frappe.log_error(frappe.get_traceback(), "Error while sending notification of local transfer")
+
+
+@frappe.whitelist()
+def create_interview(doc,interview_round):
+	interview = hrms_create_interview(doc, interview_round)
+	if json.loads(doc)["one_fm_hiring_method"]  == "A la carte Recruitment":
+		interview.custom_hiring_method = json.loads(doc)["one_fm_hiring_method"]
+		interview.from_time = None
+		interview.to_time = None
+	return interview
+	

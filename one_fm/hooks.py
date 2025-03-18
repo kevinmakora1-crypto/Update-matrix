@@ -851,7 +851,9 @@ override_whitelisted_methods = {
     "frappe.desk.form.load.get_docinfo": "one_fm.permissions.get_docinfo",
 	"erpnext.controllers.accounts_controller.update_child_qty_rate":"one_fm.overrides.accounts_controller.update_child_qty_rate",
 	"hrms.hr.doctype.goal.goal.get_children":"one_fm.overrides.goal.get_childrens",
-    "hrms.payroll.doctype.payroll_entry.payroll_entry.get_start_end_dates": "one_fm.overrides.payroll_entry.get_start_end_dates"
+    "hrms.payroll.doctype.payroll_entry.payroll_entry.get_start_end_dates": "one_fm.overrides.payroll_entry.get_start_end_dates",
+    "hrms.hr.doctype.job_applicant.job_applicant.create_interview": "one_fm.overrides.job_applicant.create_interview"
+
 }
 
 

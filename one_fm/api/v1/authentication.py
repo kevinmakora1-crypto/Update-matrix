@@ -604,7 +604,7 @@ def enrollment_status(employee_id: str):
 		employee = frappe.db.get_value(
 			'Employee', 
 			{'employee_id':employee_id} 
-			,['status', 'enrolled', 'registered', 'employee_name', 'user_id'], as_dict=1)
+			,['status', 'enrolled', 'registered', 'employee_name', 'user_id','one_fm_first_name_in_arabic'], as_dict=1)
 		if employee:
 			if (employee.status in ['Left', 'Court Case']):
 				return response("error", 404, {}, f"Employee is not active")
@@ -614,7 +614,8 @@ def enrollment_status(employee_id: str):
 				return response("success", 200, {
 					"enrolled": employee.enrolled,
 					"registered": employee.registered, 
-					"employee_name":employee.employee_name},
+					"employee_name":employee.employee_name,
+					"employee_name_ar":employee.one_fm_first_name_in_arabic},
 				)
 		else:
 			return response("error", 404, {}, f"Employee ID {employee_id} does not exist")

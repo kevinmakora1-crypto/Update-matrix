@@ -54,6 +54,10 @@ def app_service_group() -> dict:
 		app_service_groups = frappe.db.get_all("App Service Group", 
 			filters={},
 			fields=["name", "icon", "status"])
+		for service in app_service_groups:
+			service["name_ar"] = frappe.get_value("Translation", 
+                                               {"source_text": service["name"], "language": 'ar'}, 
+                                               "translated_text") or _(service["name"])
 		return response("Success", 200, app_service_groups)
 	except Exception as error:
 		frappe.log_error(title="Configuration:App Service Group", message=frappe.get_traceback())
@@ -86,6 +90,13 @@ def app_service() -> dict:
 		app_service = frappe.db.get_all("App Service", 
 			filters=filters,
 			fields=["name", "icon", "status", "service_group"])
+		for service in app_service:
+			service["name_ar"] = frappe.get_value("Translation", 
+                                               {"source_text": service["name"], "language": 'ar'}, 
+                                               "translated_text") or _(service["name"])
+			service["service_group_ar"] = frappe.get_value("Translation", 
+                                               {"source_text": service["service_group"], "language": 'ar'}, 
+                                               "translated_text") or _(service["service_group"])
 		return response("Success", 200, app_service)
 	except Exception as error:
 		frappe.log_error(title="Configuration:App Service", message=frappe.get_traceback())

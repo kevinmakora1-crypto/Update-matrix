@@ -23,6 +23,9 @@ def get_user_app_service():
 		"employee": user_app_service.employee,
 		"service_detail": [{
 			"service":i.service,
+			"service_ar": frappe.get_value("Translation", 
+                                               {"source_text": i.service, "language": 'ar'}, 
+                                               "translated_text") or _(i.service),
 			"service_status":i.service_status,
 			"service_icon":i.service_icon,
 			"auto_assign":i.auto_assign,

@@ -159,6 +159,14 @@ def update_create_user_app_service(service_detail):
 		service_detail_type = type(service_detail)
 		if (service_detail_type!=list):
 			service_detail = json.loads(service_detail)
+		for service in service_detail:
+			source_text = frappe.get_value(
+				"Translation", 
+				{"translated_text": service["service"], "language": "ar"}, 
+				"source_text"
+			)
+			if source_text:
+				service["service"] = source_text
 		if not frappe.db.exists("User App Service", {"user":frappe.session.user}):
 			employee_id = frappe.db.get_value("Employee", {"user_id":frappe.session.user}, "name")
 			frappe.get_doc({

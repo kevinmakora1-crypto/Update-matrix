@@ -467,7 +467,7 @@ def checkin_list(employee_id, from_date, to_date):
             "employee": employee,
             "time": ["BETWEEN", [f"{from_date} 00:00:00", f"{to_date} 23:59:59"]]
             },
-            fields=["name", "employee_name", "time", "log_type"],
+            fields=["name", "employee_name", "time", "log_type","employee.employee_name_in_arabic"],
             order_by="time DESC"
         )
         return response("success", 200, checkins)

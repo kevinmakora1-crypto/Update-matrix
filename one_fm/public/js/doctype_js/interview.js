@@ -152,8 +152,7 @@ frappe.ui.form.on('Interview', {
 			label: __('Name')
 		}];
 
-	}
-
+	},
 });
 
 var remove_custom_button_from_mobile_view = function(frm, label) {

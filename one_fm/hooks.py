@@ -376,7 +376,6 @@ doc_events = {
 	},
 	"Interview": {
 		"validate": "one_fm.overrides.interview.update_interview_rounds_in_job_applicant",
-        "after_insert": "one_fm.overrides.interview.update_from_to_date_null",
 	},
 	"Issue": {
 		"after_insert": [

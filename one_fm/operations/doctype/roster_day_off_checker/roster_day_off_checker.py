@@ -37,7 +37,7 @@ def check_roster_day_off():
 	# Create record with this info
 	try:
 		Employee = frappe.qb.DocType('Employee')
-		employees = frappe.db.sql( frappe.qb.from_(Employee).select("*").where((Employee.status=="Active") & (Employee.shift_working == 1) & (Employee.name == 'HR-EMP-02085')), as_dict=1)
+		employees = frappe.db.sql( frappe.qb.from_(Employee).select("*").where((Employee.status=="Active") & (Employee.shift_working == 1)), as_dict=1)
 
 		roster_day_off_data = []
 
@@ -47,7 +47,6 @@ def check_roster_day_off():
 		
 		roster_day_off_data.sort(key=lambda x: (x["shift_supervisor"] is not None, x["shift_supervisor"]), reverse=True)
 
-		print(roster_day_off_data, "\n" * 80, groupby(roster_day_off_data, key=lambda k: (k["shift_supervisor"], k["site_supervisor"])))
 
 		for key, data in groupby(roster_day_off_data, key=lambda k: (k["shift_supervisor"], k["site_supervisor"])):
 			# create record

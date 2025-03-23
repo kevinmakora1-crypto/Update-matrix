@@ -219,8 +219,27 @@ def sync_google_tasks_with_todos():
     except Exception as e:
         frappe.log_error(str(e), "Failed to sync google tasks to ERP ToDo")
         return { 'error': True, 'message' : str(e) }
-    
 
+
+@frappe.whitelist()
+def sync_my_google_tasks_with_todos():
+    try:
+        logged_in_user = frappe.session.user
+
+        # Skip if general trigger is not enabled
+        if not is_google_task_synchronization_enabled() or logged_in_user == "Administrator":
+            return
+        
+        sync_google_tasks_for_users(user_emails=[logged_in_user])
+
+        return { 'error': False, 'message' : 'My Google Tasks synchronized successfully' }
+    
+    except Exception as e:
+        frappe.log_error(str(e), "Failed to sync google tasks to ERP ToDo")
+        return { 'error': True, 'message' : str(e) }
+
+
+@frappe.whitelist()
 def sync_google_tasks_for_users(user_emails=[]):
     all_google_tasks = []
 
@@ -229,8 +248,8 @@ def sync_google_tasks_for_users(user_emails=[]):
         try:
             service = get_google_task_service(user_email)
 
-            ten_minutes_ago = datetime.now(timezone.utc) - timedelta(minutes=10)
-            updated_min = ten_minutes_ago.isoformat()
+            five_minutes_ago = datetime.now(timezone.utc) - timedelta(minutes=5)
+            updated_min = five_minutes_ago.isoformat()
 
             results = service.tasks().list(tasklist='@default', showHidden=True, showDeleted=True, updatedMin=updated_min).execute()
             user_tasks = results.get('items', [])

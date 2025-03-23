@@ -47,6 +47,7 @@ def check_roster_day_off():
 		
 		roster_day_off_data.sort(key=lambda x: (x["shift_supervisor"] is not None, x["shift_supervisor"]), reverse=True)
 
+
 		for key, data in groupby(roster_day_off_data, key=lambda k: (k["shift_supervisor"], k["site_supervisor"])):
 			# create record
 			shift_supervisor = key[0]

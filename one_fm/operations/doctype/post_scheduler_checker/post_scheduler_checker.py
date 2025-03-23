@@ -142,7 +142,8 @@ class PostSchedulerChecker(Document):
 			first_day = getdate(get_first_day(current_date))
 
 def schedule_roster_checker():
-	for row in frappe.db.get_list("Contracts"):
+	active_projects = frappe.db.get_list("Project", filters={"is_active": "Yes"}, pluck="name")
+	for row in frappe.db.get_list("Contracts", filters={"project": ["IN", active_projects]}):
 		try:
 			doc = frappe.get_doc({"doctype":"Post Scheduler Checker", 'contract': row.name}).insert(ignore_permissions=True)
 		except Exception as e:

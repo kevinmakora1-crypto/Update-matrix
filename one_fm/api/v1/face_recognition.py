@@ -45,7 +45,7 @@ def enroll(employee_id: str = None, filename: str = None, video: str = None) -> 
     Returns:
         response (dict): {
             message (str): Brief message indicating the response,
-			status_code (int): Status code of response.
+            status_code (int): Status code of response.
             data (dict): Enrollment status,
             error (str): Any error handled.
         }
@@ -161,20 +161,22 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,shift:
 
         if not isinstance(longitude, float):
             return response("Bad Request", 400, None, "Longitude must be of type float.")
+
         endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
+        employee = frappe.db.get_value("Employee", {"employee_id": employee_id}, ["name", "custom_enable_face_recognition"], as_dict=1)
+
         video_file = frappe.request.files.get("video_file") or video or frappe.request.files.get("video")
         if not video_file:
-            if endpoint_state:
+            if endpoint_state and employee.custom_enable_face_recognition:
                 return response("Bad Request", 400, None, "Video File is required.")
 
-        employee = frappe.db.get_value("Employee", {"employee_id": employee_id})
 
-        if not employee:
+        if not employee.name:
             return response("Resource Not Found", 404, None, "No employee record found with {employee_id}".format(employee_id=employee_id))
         right_now = now_datetime()
 
         if log_type == "IN":
-            shift_type = frappe.db.sql(f""" select shift_type from `tabShift Assignment` where employee = '{employee}' order by creation desc limit 1 """, as_dict=1)[0]
+            shift_type = frappe.db.sql(f""" select shift_type from `tabShift Assignment` where employee = '{employee.name}' order by creation desc limit 1 """, as_dict=1)[0]
             val_in_shift_type = frappe.db.sql(f""" select begin_check_in_before_shift_start_time, start_time, late_entry_grace_period, working_hours_threshold_for_absent from `tabShift Type` where name = '{shift_type["shift_type"]}' """, as_dict=1)[0]
             time_threshold = datetime.strptime(str(val_in_shift_type["start_time"] - timedelta(minutes=val_in_shift_type["begin_check_in_before_shift_start_time"])), "%H:%M:%S").time()
 
@@ -184,7 +186,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,shift:
 
         if not filename:
             filename = frappe.session.user+'.mp4'
-        if endpoint_state:
+        if endpoint_state and employee.custom_enable_face_recognition:
             if not face_recog_base_url:
                 return response("Bad Request", 400, None, "Face Recognition Service configuration is not available.")
             status, message = verify_via_face_recogniton_service(url=face_recog_base_url + "verify", data={
@@ -195,7 +197,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,shift:
 
         if not status:
             return response("Bad Request", 400, None, message)
-        doc = create_checkin_log(employee, log_type, skip_attendance, latitude, longitude,current_shift, "Mobile App")
+        doc = create_checkin_log(employee.name, log_type, skip_attendance, latitude, longitude,current_shift, "Mobile App")
         return response("Success", 201, doc, None)
 
     except Exception as error:

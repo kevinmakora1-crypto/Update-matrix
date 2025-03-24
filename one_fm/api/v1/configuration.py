@@ -23,6 +23,9 @@ def get_user_app_service():
 		"employee": user_app_service.employee,
 		"service_detail": [{
 			"service":i.service,
+			"service_ar": frappe.get_value("Translation", 
+                                               {"source_text": i.service, "language": 'ar'}, 
+                                               "translated_text") or _(i.service),
 			"service_status":i.service_status,
 			"service_icon":i.service_icon,
 			"auto_assign":i.auto_assign,
@@ -51,6 +54,10 @@ def app_service_group() -> dict:
 		app_service_groups = frappe.db.get_all("App Service Group", 
 			filters={},
 			fields=["name", "icon", "status"])
+		for service in app_service_groups:
+			service["name_ar"] = frappe.get_value("Translation", 
+                                               {"source_text": service["name"], "language": 'ar'}, 
+                                               "translated_text") or _(service["name"])
 		return response("Success", 200, app_service_groups)
 	except Exception as error:
 		frappe.log_error(title="Configuration:App Service Group", message=frappe.get_traceback())
@@ -73,9 +80,23 @@ def app_service() -> dict:
 		}
 	"""
 	try:
+		employee_id = frappe.db.get_value("Employee", {"user_id":frappe.session.user}, ["name", "attendance_by_timesheet"], as_dict=1)
+		filters = {}
+		if employee_id.attendance_by_timesheet:
+			filters["assign_to_timesheet_employees"] = 1
+		else:
+			filters["assign_to_non_timesheet_employees"] = 1
+
 		app_service = frappe.db.get_all("App Service", 
-			filters={},
+			filters=filters,
 			fields=["name", "icon", "status", "service_group"])
+		for service in app_service:
+			service["name_ar"] = frappe.get_value("Translation", 
+                                               {"source_text": service["name"], "language": 'ar'}, 
+                                               "translated_text") or _(service["name"])
+			service["service_group_ar"] = frappe.get_value("Translation", 
+                                               {"source_text": service["service_group"], "language": 'ar'}, 
+                                               "translated_text") or _(service["service_group"])
 		return response("Success", 200, app_service)
 	except Exception as error:
 		frappe.log_error(title="Configuration:App Service", message=frappe.get_traceback())
@@ -96,13 +117,20 @@ def user_app_service() -> dict:
 	"""
 	try:
 		if not frappe.db.exists("User App Service", {"user":frappe.session.user}):
-			employee_id = frappe.db.get_value("Employee", {"user_id":frappe.session.user}, "name")
+			employee_id = frappe.db.get_value("Employee", {"user_id":frappe.session.user}, ["name", "attendance_by_timesheet"], as_dict=1)
+			filters = {"auto_assign": 1}
+			if employee_id.attendance_by_timesheet:
+				filters["assign_to_timesheet_employees"] = 1
+			else:
+				filters["assign_to_non_timesheet_employees"] = 1
+
 			auto_assign_services = frappe.db.get_list("App Service", 
-				filters={"auto_assign":1},
+				filters=filters,
 			)
+
 			frappe.get_doc({
 				"doctype": "User App Service",
-				"employee": employee_id,
+				"employee": employee_id.name,
 				"user":frappe.session.user,
 				"service_detail": [{"service":i.name} for i in auto_assign_services]
             }).insert(ignore_permissions=True)
@@ -131,6 +159,14 @@ def update_create_user_app_service(service_detail):
 		service_detail_type = type(service_detail)
 		if (service_detail_type!=list):
 			service_detail = json.loads(service_detail)
+		for service in service_detail:
+			source_text = frappe.get_value(
+				"Translation", 
+				{"translated_text": service["service"], "language": "ar"}, 
+				"source_text"
+			)
+			if source_text:
+				service["service"] = source_text
 		if not frappe.db.exists("User App Service", {"user":frappe.session.user}):
 			employee_id = frappe.db.get_value("Employee", {"user_id":frappe.session.user}, "name")
 			frappe.get_doc({

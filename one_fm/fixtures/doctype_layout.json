@@ -426,6 +426,13 @@
     "parenttype": "DocType Layout"
    },
    {
+    "fieldname": "custom_civil_id_assurance_level",
+    "label": "Civil ID Assurance Level",
+    "parent": "Employee",
+    "parentfield": "fields",
+    "parenttype": "DocType Layout"
+   },
+   {
     "fieldname": "one_fm_centralized_number",
     "label": "Centralized Number",
     "parent": "Employee",
@@ -643,6 +650,13 @@
     "parenttype": "DocType Layout"
    },
    {
+    "fieldname": "one_fm_provide_accommodation_by_company",
+    "label": "Provide Accommodation by Company",
+    "parent": "Employee",
+    "parentfield": "fields",
+    "parenttype": "DocType Layout"
+   },
+   {
     "fieldname": "current_address",
     "label": "Current Address",
     "parent": "Employee",
@@ -736,13 +750,6 @@
    {
     "fieldname": "annual_leave_balance",
     "label": "Annual Leave Balance",
-    "parent": "Employee",
-    "parentfield": "fields",
-    "parenttype": "DocType Layout"
-   },
-   {
-    "fieldname": "went_to_hajj",
-    "label": "Went to Hajj",
     "parent": "Employee",
     "parentfield": "fields",
     "parenttype": "DocType Layout"
@@ -1023,6 +1030,13 @@
    {
     "fieldname": "one_fm_religion",
     "label": "Religion",
+    "parent": "Employee",
+    "parentfield": "fields",
+    "parenttype": "DocType Layout"
+   },
+   {
+    "fieldname": "went_to_hajj",
+    "label": "Went to Hajj",
     "parent": "Employee",
     "parentfield": "fields",
     "parenttype": "DocType Layout"
@@ -1415,13 +1429,6 @@
    {
     "fieldname": "one_fm_erf",
     "label": "ERF",
-    "parent": "Employee",
-    "parentfield": "fields",
-    "parenttype": "DocType Layout"
-   },
-   {
-    "fieldname": "one_fm_provide_accommodation_by_company",
-    "label": "Provide Accommodation by Company",
     "parent": "Employee",
     "parentfield": "fields",
     "parenttype": "DocType Layout"

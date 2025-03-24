@@ -53,7 +53,7 @@ def get_staff(assigned=1, employee_id=None, employee_name=None, company=None, pr
         select
             distinct emp.name, emp.employee_id, emp.employee_name, emp.image, emp.one_fm_nationality as nationality,
            usr.mobile_no, usr.name as email, emp.designation, emp.department, emp.shift, emp.site,
-         emp.project,opsite.account_supervisor_name as site_supervisor,opshift.supervisor_name as shift_supervisor
+         emp.project,opsite.account_supervisor_name as site_supervisor,opshift.supervisor_name as shift_supervisor, emp.custom_operations_role_allocation, emp.custom_is_reliever
         from `tabEmployee` as emp, `tabUser` as usr,`tabOperations Shift` as opshift,`tabOperations Site` as opsite
         where
         emp.project is not NULL

@@ -1,5 +1,6 @@
 from itertools import chain
 from json import loads
+import requests
 
 import frappe
 from frappe.utils import getdate, add_days, get_url_to_form, get_url
@@ -15,7 +16,7 @@ from one_fm.hiring.utils import (
     is_subcontract_employee
 )
 from one_fm.processor import sendemail,send_whatsapp
-from one_fm.utils import get_domain, get_standard_notification_template, get_approver_user
+from one_fm.utils import call_to_get_assurance_level, get_domain, get_standard_notification_template, get_approver_user, update_active_employees_assurance_level
 from six import string_types
 from frappe import _
 from one_fm.operations.doctype.operations_shift.operations_shift import get_supervisor_operations_shifts
@@ -83,6 +84,8 @@ class EmployeeOverride(EmployeeMaster):
 
     def before_save(self):
         self.assign_role_profile_based_on_designation()
+        # get_assurance_level_of_employee(self)
+
 
     def after_insert(self):
         employee_after_insert(self, method=None)
@@ -493,6 +496,48 @@ class StatusChangeVaccumValidate(NotifyAttendanceManagerOnStatusChange):
 
             return self._message
 
+def has_day_off(employee, date):
+    """
+        Checks if an employee has a scheduled day off on a specific date.
+        Args:
+            employee (str): The name of the employee to check for a day off.
+            date (str): The date for which to check if the employee has a scheduled day off.
+                        Format: "YYYY-MM-DD"
+        Returns:
+            bool: True if the employee has a scheduled day off on the given date, False otherwise.
+    """
+    if frappe.db.exists(
+        "Employee Schedule",
+        {
+            "employee":employee,
+            "date":date,
+            "employee_availability":"Day Off"
+        }
+    ):
+        return True
+    return False
+
+def is_employee_on_leave(employee, date):
+    """
+        Checks if an employee is on leave on a specific date.
+        Args:
+            employee (str): The name of the employee to check for leave.
+            date (str): The date for which to check if the employee is on leave.
+                        Format: "YYYY-MM-DD"
+        Returns:
+            bool: True if the employee is on leave on the given date, False otherwise.
+    """
+    if frappe.db.exists(
+        "Attendance",
+        {
+            "status": "On Leave",
+            "docstatus": 1,
+            "employee": employee,
+            "attendance_date": date
+        }
+    ):
+        return True
+    return False
 
 
 
@@ -511,3 +556,35 @@ def toggle_auto_attendance(employee_names: list | str, status: bool):
     except Exception as e:
         frappe.log_error(title = f"{str(e)}",message = frappe.get_traceback())
         return response(message=str(e), status_code=400)
+
+
+
+@frappe.whitelist()
+def fetch_accomodation_name(name: str):
+    try:
+        accomodation = frappe.db.sql("""
+            SELECT a.accommodation
+            FROM `tabAccommodation Checkin Checkout` acc
+            JOIN `tabAccommodation` a ON a.name = acc.accommodation
+            WHERE acc.employee = %s
+            AND acc.type = 'IN'
+            ORDER BY acc.creation DESC
+            LIMIT 1
+        """, (name,), as_dict=True)
+        return response(message="Success", status_code=200, data=dict(accomodation=accomodation[0].get("accommodation", "") if accomodation else ""))
+    except Exception as e:
+        frappe.log_error(title = f"{str(e)}", message = frappe.get_traceback())
+        return response(message=str(e), status_code=400)
+
+
+@frappe.whitelist()
+def get_assurance_level_of_employee(doc, method):
+    try:
+        if doc.one_fm_civil_id:
+            verification_level = call_to_get_assurance_level(doc.one_fm_civil_id)
+            if verification_level:
+                verification_level = verification_level.get("verificationLevel")
+                doc.custom_civil_id_assurance_level = verification_level
+            return True
+    except Exception as e:
+            frappe.log_error(frappe.get_traceback(),f"DSS returned NONE values,No API key")

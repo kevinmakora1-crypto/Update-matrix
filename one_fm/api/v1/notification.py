@@ -26,10 +26,10 @@ def get_notification_list(employee_id: str = None) -> dict:
     """
     try:
         if not employee_id:
-            return response("Bad Request", 400, None, "employee_id required.")
+            return response("Bad Request", 400, None, "Employee ID is required")
 
         if not isinstance(employee_id, str):
-            return response("Bad Request", 400, None, "employee_id must be of type str.")
+            return response("Bad Request", 400, None, "Invalid Employee ID format. Please enter a valid value.")
 
         site = frappe.local.conf.app_url
 
@@ -44,7 +44,7 @@ def get_notification_list(employee_id: str = None) -> dict:
         result = []
         
         if not notification_list or len(notification_list) == 0:
-            return response("Resource not found", 404, None, "No notifications found for user {employee_id}".format(employee_id=employee_id))
+            return response("Success", 200, [{"title": "No notifications found for user {employee_id}".format(employee_id=employee_id)}])
         
         for notification in notification_list:
             notify = {

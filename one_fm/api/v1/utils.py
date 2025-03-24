@@ -1,6 +1,5 @@
-import frappe, requests
+import frappe, datetime, requests
 from frappe.utils import getdate, cint, cstr, random_string, now_datetime
-from one_fm.utils import get_current_shift
 
 def response(message, status_code, data=None, error=None):
     """This method generates a response for an API call with appropriate data and status code.
@@ -202,6 +201,13 @@ def get_employee_by_id(employee_id):
     except Exception as e:
         frappe._dict({'status': False, 'message': str(e), 'http_status_code':500})
 
+
+
+@frappe.whitelist()
+def log_error_via_api(traceback: str, message: str, medium: str):
+    frappe.log_error(title=f"Error from {medium} -- {frappe.session.user}", message=f"{traceback} -- {message}")
+    return response(message="Error Logged Successfully", status_code=201)
+
 @frappe.whitelist()
 def google_map_api():
     try:
@@ -212,6 +218,8 @@ def google_map_api():
     
 
 def verify_via_face_recogniton_service(url: str, data: dict, files: dict) -> tuple:
+    decrypt_video = 1 if type(files.get('video_file'))==str else 0
+    data['decrypt_video'] = decrypt_video
     res = requests.post(url=url, data=data, files=files)
     if res.status_code == 200:
         api_response = res.json()

@@ -2,10 +2,11 @@ import frappe
 from frappe.utils import add_days, now, today, now_datetime
 from datetime import datetime, timedelta
 from hrms.hr.doctype.shift_assignment.shift_assignment import *
+from one_fm.api.v1.utils import response
 
 
 class ShiftAssignmentOverride(ShiftAssignment):
-        
+
     def validate(self):
         self.set_datetime()
         super(ShiftAssignmentOverride, self).validate()
@@ -25,7 +26,7 @@ class ShiftAssignmentOverride(ShiftAssignment):
         self.set_datetime()
         if not frappe.db.exists("Employee", {'name':self.employee, 'status':'Active'}):
             frappe.throw(f"{self.employee} - {self.employee_name} is not active and cannot be assigned to a shift")
-        
+
     def set_datetime(self):
         if self.shift_type:
             shift = frappe.get_doc("Shift Type", self.shift_type)
@@ -48,7 +49,7 @@ class ShiftAssignmentOverride(ShiftAssignment):
             'start':start_cutoff,
             'end':end_cutoff,
         })
-    
+
     def can_checkin_out(self):
         """
             Check if user can checkin or our based on earliest and latest in or out.
@@ -57,7 +58,7 @@ class ShiftAssignmentOverride(ShiftAssignment):
         if ((now_datetime() < cutoff.start) or (now_datetime() > cutoff.end)):
             return False
         return True
-    
+
     def after_4hrs(self):
         """
             Check if checkin time has exceeded 4hrs, which mean employee is late.
@@ -68,41 +69,59 @@ class ShiftAssignmentOverride(ShiftAssignment):
             return True
         return False
 
-    def check_existing_checking(self):
-        """API to determine the applicable Log type.
-        The api checks employee's last lcheckin log type. and determine what next log type needs to be
-        Returns:
-            True: The log in was "IN", so his next Log Type should be "OUT".
-            False: either no log type or last log type is "OUT", so his next Ltg Type should be "IN".
+    def get_last_checkin_log_type(self):
         """
-        checkin = frappe.db.get_list("Employee Checkin", filters={
-            'employee':self.employee, 'shift_assignment':self.name,
-            'roster_type':self.roster_type
-            }, 
-            fields='log_type',
-            order_by="actual_time DESC"
-        )
-        if checkin:
-            # #For Check IN
-            if checkin[0].log_type=='OUT':
-                return "IN"
-            #For Check OUT
-            else:
-                return "OUT"
+            The method checks employee's last checkin log type
+            Returns:
+                The last log_type if a checkin recod exist for the shift assignment
+                Else return False
+        """
+        employee = frappe.get_value("Employee", self.employee, "employee")
+        checkin = frappe.db.get_list(
+                "Employee Checkin",
+                filters={"employee": employee},
+                fields=["log_type", "time", "shift_assignment"],
+                order_by="time desc",
+                limit=1,
+            )
+        return checkin
+
+    def get_next_checkin_log_type(self):
+        """
+            Method to determine the applicable Log type.
+            The method checks employee's last lcheckin log type. and determine what next log type needs to be
+            Returns:
+                The last log_type if a checkin recod exist for the shift assignment
+                Else return IN
+        """
+
+        last_check_log= self.get_last_checkin_log_type()
+
+        # If no previous entry, show Check-in button
+        if not last_check_log:
+            return "IN"
+        last_log = last_check_log[0]
+
+        # If the last log was a Check-in and the shift has not changed → Show Check-out
+        if last_log["log_type"] == "IN" and last_log["shift_assignment"] == self.name:
+            return "OUT"
+
+        # If last log was a Check-out or the shift changed → Show Check-in
         return "IN"
+        
 
 def has_overlapping_timings(self) -> bool:
     """
     Accepts two shift types and checks whether their timings are overlapping
     """
-    if datetime.strptime(str(self.start_datetime), '%Y-%m-%d %H:%M:%S').date()>datetime.strptime(today(), '%Y-%m-%d').date():
+    if datetime.strptime(str(self.start_datetime), '%Y-%m-%d %H:%M:%S').date() > datetime.strptime(today(), '%Y-%m-%d').date():
         frappe.throw(f"Shift cannot be created for date greater than today. Today is {today()}, you requested {self.start_date}")
 
     existing_shift = frappe.db.sql(f"""
         SELECT * FROM `tabShift Assignment` WHERE
         employee="{self.employee}" AND status='Active' AND docstatus=1 AND (
         (start_datetime BETWEEN '{self.start_datetime}' AND '{self.end_datetime}')
-        OR 
+        OR
         (end_datetime BETWEEN '{self.start_datetime}' AND '{self.end_datetime}')
         )
 
@@ -115,4 +134,3 @@ def has_overlapping_timings(self) -> bool:
         """)
         return True
     return False
-	

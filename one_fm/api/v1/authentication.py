@@ -49,28 +49,28 @@ def login(client_id: str = None, grant_type: str = None, employee_id: str = None
 		}
 	"""
 	if not client_id:
-		return response("Bad Request", 400, None, "client_id is required!.")
+		return response("Bad Request", 400, None, "Client ID is missing. Please enter a valid Client ID.")
 	
 	if not grant_type:
-		return response("Bad Request", 400, None, "grant_type is required!")
+		return response("Bad Request", 400, None, "Grant type is missing. Please specify the grant type.")
 	
 	if not employee_id:
-		return response("Bad Request", 400, None, "Employee ID is required!")
+		return response("Bad Request", 400, None, "Please enter your Employee ID.")
 	
 	if not password:
-		return response("Bad Request", 400, None, "Password is required!")
+		return response("Bad Request", 400, None, "Please enter your password.")
 
 	if not isinstance(client_id, str):
-		return response("Bad Request", 400, None, "client_id must be of type str!")
+		return response("Bad Request", 400, None, "Invalid Client ID format.")
 	
 	if not isinstance(grant_type, str):
-		return response("Bad Request", 400, None, "grant_type must be of type str!")
+		return response("Bad Request", 400, None, "Invalid grant type format.")
 	
 	if not isinstance(employee_id, str):
-		return response("Bad Request", 400, None, "employee_id must be of type str!")
+		return response("Bad Request", 400, None, "Invalid Employee ID format. Please enter a valid value.")
 
 	if not isinstance(password, str):
-		return response("Bad Request", 400, None, "password must be of type str!")
+		return response("Bad Request", 400, None, "Invalid password format. Please enter a valid value.")
 
 	
 	try:
@@ -78,21 +78,21 @@ def login(client_id: str = None, grant_type: str = None, employee_id: str = None
 		username =  frappe.db.get_value("Employee", {'employee_id': employee_id}, 'user_id')
 		
 		if not username:
-			return response("Unauthorized", 401, None, "Invalid employee ID")
+			return response("Unauthorized", 401, None, "Employee ID not found. Please check and try again.")
 		
 		args = {
-            'client_id': client_id,
-            'grant_type': grant_type,
-            'username': username,
-            'password': password
-        }
+			'client_id': client_id,
+			'grant_type': grant_type,
+			'username': username,
+			'password': password
+		}
 		headers = {'Accept': 'application/json'}
 		session = requests.Session()
 		auth_api = site + "api/method/frappe.integrations.oauth2.get_token"
 		auth_api_response = session.post(
-            auth_api,
-            data=args, headers=headers
-        )
+			auth_api,
+			data=args, headers=headers
+		)
 
 		if auth_api_response.status_code == 200:
 			
@@ -136,38 +136,48 @@ def forgot_password(employee_id: str = None, otp_source: str = None, is_new: int
 	"""
 
 	if not employee_id:
-		return response("Bad Request", 400, None, "Employee ID required.")
+		return response("Bad Request", 400, None, "Please enter your Employee ID.")
 
 	if not otp_source:
-		return response("Bad Request", 400, None, "OTP source required.")
+		return response("Bad Request", 400, None, "Please select an OTP source (SMS, Email, or WhatsApp).")
 
 	if not isinstance(employee_id, str):
-		return response("Bad Request", 400, None, "Employee ID must be of type str.")
+		return response("Bad Request", 400, None, "Invalid Employee ID format. Please enter a valid value.")
 
 	if not isinstance(otp_source, str):
-		return response("Bad Request", 400, None, "OTP source must be of type str.")
+		return response("Bad Request", 400, None, "Invalid OTP source format. Please select a valid option.")
+	
+	formatted_otp_source = otp_source.lower()
 
-	if otp_source.lower() not in ["sms", "email", "whatsapp"]:
+	if formatted_otp_source not in ["sms", "email", "whatsapp"]:
 		return response("Bad Request", 400, None, "Invalid OTP source. OTP source must be either 'sms', 'email' or 'whatsapp'.")
 	
 	try:
 		employee_user_id =  frappe.get_value("Employee", {'employee_id': employee_id}, 'user_id')
 		
 		if not employee_user_id:
-			return response("Bad Request", 404, None, "No user ID found for employee ID {employee_id}.".format(employee_id=employee_id))
+			return response("Bad Request", 404, None, "No account found for employee ID {employee_id}. Please check and try again.".format(employee_id=employee_id))
+		
+		# Check for phone number if otp source is 'sms' or 'whatsapp'
+		if formatted_otp_source in ("sms", "whatsapp"):
+			target_user = frappe.db.get_value('User', employee_user_id, ['phone', 'mobile_no'], as_dict=1)
+			phone = target_user.mobile_no or target_user.phone
+
+			if not phone:
+				return response("Bad Request", 400, None, "No phone number found for user {user}.".format(user=employee_user_id))
 		
 		otp_secret = get_otpsecret_for_(employee_user_id)
 		token = int(pyotp.TOTP(otp_secret).now())
 		tmp_id = frappe.generate_hash(length=8)
 		cache_2fa_data(employee_user_id, token, otp_secret, tmp_id)
 		
-		if otp_source.lower() == "sms":
+		if formatted_otp_source == "sms":
 			verification_obj = process_2fa_for_sms(employee_user_id, token, otp_secret)
 			
-		elif otp_source.lower() == "email":
+		elif formatted_otp_source == "email":
 			verification_obj = process_2fa_for_email(employee_user_id, token, otp_secret)
 			
-		elif otp_source.lower() == "whatsapp":
+		elif formatted_otp_source == "whatsapp":
 			verification_obj = process_2fa_for_whatsapp(employee_user_id, token, otp_secret)
 		
 		password_token = frappe.get_doc({
@@ -217,11 +227,11 @@ def verify_otp(otp, temp_id):
 			frappe.db.set_value("Password Reset Token", {"temp_id":temp_id}, "status", "Active")
 			return response ("success", 200, {
 				"password_token":password_token.name,
-				"message":"OTP verified Successfully !"})
+				"message":"OTP verified successfully!"})
 		frappe.db.set_value("Password Reset Token", {"temp_id":temp_id}, "status", "Revoked")
-		return response("Error", 400, {}, "invalid OTP")
+		return response("Error", 400, {}, "Incorrect OTP. Please check and enter the correct code.")
 	except Exception as e:
-		response("Error", 500, {}, str(e) or "OTP Verification Failed!")
+		response("Error", 500, {}, str(e) or "OTP verification failed!")
 
 
 @frappe.whitelist(allow_guest=True)
@@ -241,16 +251,16 @@ def change_password(employee_id, new_password, password_token):
 			as_dict=1
 		)
 		if (employee_user!=password_token_info.user):
-			return response ("Error", 400, {}, "Invalid password reset user does not match.")
+			return response ("Error", 400, {}, "Password reset failed. The user details do not match.")
 		elif password_token_info.status != "Active":
-			return response ("Error", 400, {}, "Password token has expired.")
+			return response ("Error", 400, {}, "Your password reset token has expired. Please request a new one.")
 
 		_update_password(employee_user, new_password)
 		frappe.db.set_value("Password Reset Token", password_token, "status", "Revoked")
 		if password_token_info.new_password:
 			frappe.db.set_value("Employee", {"employee_id":employee_id}, "registered", 1)
 		return response ("Success", 200, {
-			"message": "Password Reset Successful, please login to continue."
+			"message": "Password reset successful! Please login with your new password."
 		}, "")
 	except Exception as e:
 		frappe.log_error(title="API Change password", message=frappe.get_traceback())
@@ -293,27 +303,28 @@ def cache_2fa_data(user, token, otp_secret, tmp_id):
 		frappe.cache().expire("{0}{1}".format(tmp_id, k), expiry_time)
 
 def process_2fa_for_whatsapp(user, token, otp_secret):
-    '''Process sms method for 2fa.'''
-    phone = frappe.db.get_value('User', user, ['phone', 'mobile_no'], as_dict=1)
-    phone = phone.mobile_no or phone.phone
-    status = send_token_via_whatsapp(otp_secret, token=token, phone_no=phone)
-    verification_obj = {
-        'token_delivery': status,
-        'prompt': status and 'Enter verification code sent to {}'.format(phone[:4] + '******' + phone[-3:]),
-        'method': 'SMS',
-        'setup': status
-    }
-    return verification_obj
+	'''Process sms method for 2fa.'''
+	phone = frappe.db.get_value('User', user, ['phone', 'mobile_no'], as_dict=1)
+	phone = phone.mobile_no or phone.phone
+	status = send_token_via_whatsapp(otp_secret, token=token, phone_no=phone)
+	verification_obj = {
+		'token_delivery': status,
+		'prompt': status and 'Enter verification code sent to {}'.format(phone[:4] + '******' + phone[-3:]),
+		'method': 'SMS',
+		'setup': status
+	}
+	return verification_obj
 
 def send_token_via_whatsapp(otpsecret, token=None, phone_no=None):
   
-    hotp = pyotp.HOTP(otpsecret)
-    content_variables= {
-	                    	'1': hotp.at(int(token))
-                    	}
-    message = send_whatsapp(sender_id=phone_no,template_name='authentication_code', content_variables=content_variables)
+	hotp = pyotp.HOTP(otpsecret)
 
-    return True
+	content_variables= {
+		'1': hotp.at(int(token))
+	}
+	message = send_whatsapp(sender_id=phone_no,template_name='authentication_code', content_variables=content_variables)
+
+	return True
 
 def process_2fa_for_email(user, token, otp_secret, method='Email'):
 	otp_issuer = frappe.db.get_value('System Settings', 'System Settings', 'otp_issuer_name')
@@ -352,8 +363,7 @@ def send_token_via_email(user, token, otp_secret, otp_issuer, subject=None, mess
 		'subject': subject,
 		'message': message,
 		'header': [_('Verfication Code'), 'blue'],
-		'delayed': False,
-		'retry':3
+		'delayed': False
 	}
 
 	enqueue(method=sendemail, queue='short', timeout=300, event=None,
@@ -374,10 +384,10 @@ def validate_employee_id(employee_id=None):
 	client_id
 	"""
 	if employee_id is None:
-		return response("Employee ID cannot be None", 401, None, "Employee ID is required !")
-	doc = frappe.get_doc("Employee",{ "employee_id": employee_id})
+		return response("Employee ID missing", 401, None, "Employee ID is required.")
+	doc = frappe.get_doc("Employee", {"employee_id": employee_id})
 	if not doc:
-		return response("Employee Not Found", 404, None, "Employee ID of an active Employee is required")
+		return response("Employee not found", 404, None, "No account found for Employee ID.")
 	registration_status = frappe.db.get_value("User", doc.user_id, "last_password_reset_date")
 	client_id = frappe.db.get_value("OAuth Client", {"app_name": "OneFM" }, "client_id")
 	data = {
@@ -412,14 +422,14 @@ def fetch_employee_checkin_list(from_date=None, to_date=None, limit=20, page_num
 	try:
 		user_id = frappe.session.user
 		if user_id is None:
-			return response("Invalid authentication Credentials", 400, None, "Valid Authentication credentials is Required !")
+			return response("Invalid authentication credentials", 400, None, "Invalid authentication credentials")
 		employee = frappe.get_doc("Employee", {"user_id": user_id})
 		if employee is None:
-			return response("The user_Id doesnt belong to an employee", 400)
+			return response("No account found for Employee ID", 400)
 		if not isinstance(page_number, int):
-			return response("Invalid page number", 400, None, "Page Number must be an Integer !")
+			return response("Invalid page number", 400, None, "Page number must be an integer value.")
 		if not isinstance(limit, int):
-			return response("Invalid Data Type ! ", 400, None, "Enter an integer! ")
+			return response("Invalid page limit", 400, None, "Page limit must be an integer value.")
 		if from_date is not None and to_date is None:
 			to_date = from_date 
 		if from_date is not None:
@@ -434,13 +444,13 @@ def fetch_employee_checkin_list(from_date=None, to_date=None, limit=20, page_num
 				to_date = None
 		if from_date and to_date:
 			if from_date > to_date:
-				return response("Bad request", 400, None, "From_date cannot be greater than to date")
+				return response("Bad request", 400, None, "From date cannot be greater than To date")
 		check_list = frappe.db.get_list("Employee Checkin", filters={"employee": employee.name, "time": ["between", (from_date, to_date)]}, fields=["name", "time", "log_type"])
 		if len(check_list) < 1:
-			return response("No check in for this employee in this time range !", 200)
+			return response("No check-ins found in the selected date range", 200)
 		no_of_pages = len(check_list) // limit if len(check_list) % limit == 0 and len(check_list) // limit > 0 else (len(check_list) // limit) + 1
 		if page_number > no_of_pages or page_number < 1:
-			return response("Page not found !", 404, None, f"Enter a page number within 1 - {no_of_pages}")
+			return response("Page not found", 404, None, f"Enter a page number within 1 - {no_of_pages}")
 		end = page_number * limit
 		check_in = check_list[(end - limit): end]
 		data = {
@@ -449,7 +459,7 @@ def fetch_employee_checkin_list(from_date=None, to_date=None, limit=20, page_num
 			"data": check_in,
 			"number of checkin": len(check_list)
 		}
-		return response("Successfully Retrieved !", 200, data)
+		return response("Success", 200, data)
 	except Exception as e:
 		frappe.log_error(title="API Authentication", message=frappe.get_traceback())
 		response("Internal Server Error", 500, None, str(e))
@@ -467,12 +477,12 @@ def new_forgot_password(employee_id=None):
 	
 	"""
 	if not employee_id:
-		return response("Bad Request", 400, None, "Employee ID required.")
+		return response("Bad Request", 400, None, "Employee ID is required. Please enter your Employee ID.")
 
 	employee_user_id =  frappe.get_value("Employee", {'employee_id': employee_id}, 'user_id')
 	
 	if not employee_user_id:
-		return response("Bad Request", 404, None, "No user ID found for employee ID {employee_id}.".format(employee_id=employee_id))
+		return response("Bad Request", 404, None, "No account found for Employee ID {employee_id}. Please check and try again.".format(employee_id=employee_id))
 
 	return response("success", 200, {"employee_user_id": employee_user_id})
 
@@ -541,7 +551,7 @@ def user_login(employee_id, password):
 	try:
 		username =  frappe.db.get_value("Employee", {'employee_id': employee_id}, 'user_id')
 		if not username:
-			return response("Unauthorized", 401, None, "Invalid employee ID")
+			return response("Bad Request", 400, None,  "No account found for Employee ID {employee_id}. Please check and try again.".format(employee_id=employee_id))
 		auth = frappe.auth.LoginManager()
 		auth.authenticate(user=username, pwd=password)
 		auth.post_login()
@@ -563,6 +573,9 @@ def user_login(employee_id, password):
 			msg.update({"supervisor": 1})
 		else:
 			msg.update({"supervisor": 0})
+		endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
+		msg['endpoint_state'] = endpoint_state
+  
 		response("success", 200, msg)
 	except frappe.exceptions.AuthenticationError:
 		print('auth eror')
@@ -582,7 +595,7 @@ def enrollment_status(employee_id: str):
 
 	returns
 	success message
-	enrroled - True/False
+	enrolled - True/False
 	
 	"""
 	try:
@@ -591,19 +604,20 @@ def enrollment_status(employee_id: str):
 		employee = frappe.db.get_value(
 			'Employee', 
 			{'employee_id':employee_id} 
-			,['status', 'enrolled', 'registered', 'employee_name', 'user_id'], as_dict=1)
+			,['status', 'enrolled', 'registered', 'employee_name', 'user_id','employee_name_in_arabic'], as_dict=1)
 		if employee:
 			if (employee.status in ['Left', 'Court Case']):
 				return response("error", 404, {}, f"Employee is not active")
 			elif (not employee.user_id):
-				return response("error", 404, {}, f"Employee no active user account or login email.")
+				return response("error", 404, {}, f"No active user account or login email found for {employee_id}".format(employee_id=employee_id))
 			else:
 				return response("success", 200, {
 					"enrolled": employee.enrolled,
 					"registered": employee.registered, 
-					"employee_name":employee.employee_name},
+					"employee_name":employee.employee_name,
+					"employee_name_ar":employee.employee_name_in_arabic},
 				)
 		else:
-			return response("error", 404, {}, f"Employee ID {employee_id} not not found")
+			return response("error", 404, {}, f"Employee ID {employee_id} does not exist")
 	except Exception as e:
 		return response("error", 500, {}, str(e))

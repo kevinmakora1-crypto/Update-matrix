@@ -218,6 +218,8 @@ def google_map_api():
     
 
 def verify_via_face_recogniton_service(url: str, data: dict, files: dict) -> tuple:
+    decrypt_video = 1 if type(files.get('video_file'))==str else 0
+    data['decrypt_video'] = decrypt_video
     res = requests.post(url=url, data=data, files=files)
     if res.status_code == 200:
         api_response = res.json()

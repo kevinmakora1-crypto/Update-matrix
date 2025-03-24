@@ -1135,6 +1135,7 @@ def process_overtime_shift(roster, date, time):
 				else:
 					create_overtime_shift_assignment(schedule, date)
 		except Exception as e:
+			frappe.log_error(title="Error Creating Overtime Shift Assignment",message = frappe.get_traceback())
 			continue
 
 def create_overtime_shift_assignment(schedule, date):
@@ -1814,10 +1815,11 @@ def fetch_employees_not_in_checkin():
 		# holiday list
 		holiday_list = [i for i,j in get_holiday_today(cur_date).items()]
 		holiday_list_tuple = str(tuple(holiday_list)).replace(',)', ')')
+		
 		holiday_list_employees = [i.name for i in frappe.db.sql(f"""SELECT name from `tabEmployee` WHERE
 			status = 'Active' AND
 			holiday_list IN {holiday_list_tuple}
-		""")]
+		""", as_dict=1)] if holiday_list else []
 		employees_yet_to_checkin = [i for i in employees_yet_to_checkin if not i in holiday_list_employees]
 		
 		employee_details = frappe.db.get_list("Employee", filters={
@@ -2099,7 +2101,7 @@ def initiate_checkin_notification(res):
 	
 	
 	# return all_ended_shifts+all_started_shifts
-
+@frappe.whitelist()
 def run_checkin_reminder():
 	# execute first checkin reminder
 

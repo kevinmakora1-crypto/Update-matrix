@@ -3438,13 +3438,6 @@ def custom_validate_interviewer(self):
 
 @frappe.whitelist()
 def get_current_shift(employee):
-    """
-        Get current shift employee should be logged into
-        This Method Checks if Employee has a shift and is within the checkin Range.
-        args:
-			employee: Employee ID
-		return dict (type, data)
-    """
     try:
         nowtime = now_datetime()
         sql = f"""
@@ -3459,25 +3452,58 @@ def get_current_shift(employee):
             AND (DATE('{nowtime}') = sa.start_date
                 OR DATE_ADD(DATE('{nowtime}'), INTERVAL 1 DAY) = sa.start_date
                 OR DATE('{nowtime}') = sa.end_date)
+            ORDER BY sa.start_datetime ASC
             """
 
-        shift = frappe.db.sql(sql, as_dict=1)
-        if shift: # shift was checked in between start and end time
-            data = frappe.get_doc("Shift Assignment", shift[0].name)
-            if shift[0].checkin_time > nowtime:
-                minutes = int((shift[0].checkin_time - nowtime).total_seconds() / 60)
-                return {"type":"Early", "data": data, "time": minutes}
-            elif shift[0].checkout_time < nowtime:
-                minutes = int((nowtime - shift[0].checkout_time).total_seconds() / 60)
-                return {"type":"Late", "data": data, "time": minutes}
-            elif shift[0].checkin_time <= nowtime <= shift[0].checkout_time:
-                return {"type":"On Time", "data": data, "time": 0}
-            else:
-                return False
+        shifts = frappe.db.sql(sql, as_dict=1)
+        if shifts:
+             # Find the current shift
+            current_shift = None
+            for i, shift in enumerate(shifts):
+                # Check if the shift is currently active
+                checkin = frappe.db.get_list(
+                            "Employee Checkin",
+                            filters={"employee": employee,"shift_assignment":shift.name},
+                            fields=["log_type", "time", "shift_assignment"],
+                            order_by="time desc",
+                            limit=1,
+                        )
+                if checkin:
+                    if checkin[0].log_type == 'OUT':
+                           continue
+                    elif shift.checkin_time <= nowtime <= shift.checkout_time:
+                        current_shift = shift  # This is the active shift
+                        break  # Stop looping after finding the current shift
+                elif shift.checkin_time <= nowtime <= shift.checkout_time:
+                    current_shift = shift  # This is the active shift
+                    break  # Stop looping after finding the current shift
+
+
+            if current_shift:
+                # If a current shift is found, return its details
+                data = frappe.get_doc("Shift Assignment", current_shift.name)
+                if current_shift.checkin_time > nowtime:
+                    minutes = int((current_shift.checkin_time - nowtime).total_seconds() / 60)
+                    return{"type": "Early", "data": data, "time": minutes}
+                elif current_shift.checkout_time < nowtime:
+                    minutes = int((nowtime - current_shift.checkout_time).total_seconds() / 60)
+                    return{"type": "Late", "data": data, "time": minutes}
+                elif current_shift.checkin_time <= nowtime <= current_shift.checkout_time:
+                    return {"type": "On Time", "data": data, "time": 0}
+
+             # If no active shift is found, check if the next shift is about to start
+            for shift in shifts:
+                if shift.checkin_time > nowtime:  # Next shift starting in the future
+                    data = frappe.get_doc("Shift Assignment", shift.name)
+                    minutes = int((shift.checkin_time - nowtime).total_seconds() / 60)
+                    return {"type": "Upcoming", "data": data, "time": minutes}
+            return False
         return False
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Error while getting current shift")
         return False
+
+
 
 @frappe.whitelist()
 def check_existing():
@@ -3707,19 +3733,20 @@ def set_employee_status():
 
 
 
-def is_holiday(employee, date=None, raise_exception=True):
+def is_holiday(employee, date=None, raise_exception=True,include_weekly_off = False):
     try:
         date = today() if not date else date
         holiday_list = get_holiday_list_for_employee(employee.name, raise_exception)
         if not holiday_list:
-            return False, ""
+            return ((False,"",None) if include_weekly_off else (False, ""))
         holidays = frappe.db.get_value("Holiday", {"parent": holiday_list, "holiday_date": date}, ["weekly_off"], as_dict=1)
         if holidays:
-            return (True, f"Dear {employee.employee_name}, Today is your day off.  Happy Recharging!.") if holidays.weekly_off else (True, "Today is your holiday, have fun")
-        return False, ""
+            message = f"Dear {employee.employee_name}, Today is your day off.  Happy Recharging!." if holidays.weekly_off else "Today is your holiday, have fun"
+            return ((True, message,holidays.weekly_off) if include_weekly_off else (True, message))
+        return ((False,"",None) if include_weekly_off else (False, ""))
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Error while validating Holiday")
-        return False, ""
+        return ((False,"",None) if include_weekly_off else (False, ""))
 
 
 def get_gmail_service(employee_email):
@@ -3841,20 +3868,22 @@ def update_assurance_level_task():
                 frappe.db.set_value('Employee', employee['employee'], 'custom_civil_id_assurance_level', verification_level)
     return True
 
-
 def call_to_get_assurance_level(employees):
     response = None
     try:
         api_key = frappe.conf.bulbul_api_wrapper_key
         if isinstance(employees, str):
-            url = f"https://apiwrapper.one-fm.com/api/DigitalSigning/CheckMobileIdentity/{employees}"
+            url = f"https://staging-apiwrapper.one-fm.com/api/DigitalSigning/CheckMobileIdentity/{employees}"
             headers = {'accept': 'text/plain','ApiKey': f'{api_key}'}
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 data = response.json()
                 return data.get("data", None)
+            else:
+                frappe.log_error(frappe.get_traceback(), response.json())
+                return {"error": response.status_code, "title": response.json()}
         else:
-            url = f"https://apiwrapper.one-fm.com/api/DigitalSigning/BulkCheckMobileIdentity"
+            url = f"https://staging-apiwrapper.one-fm.com/api/DigitalSigning/BulkCheckMobileIdentity"
             headers = {'Content-Type': 'application/json','ApiKey': f'{api_key}'}
             batch_size=200
             all_results = []
@@ -3867,6 +3896,9 @@ def call_to_get_assurance_level(employees):
                         batch_result = data.get("data", [])
                         all_results.extend(batch_result)
                         frappe.msgprint(f"Batch {i} sent successfully.")
+                    else:
+                        frappe.log_error(frappe.get_traceback(), response.json())
+                        return {"error": response.status_code, "title": response.json()}
                 except Exception as e:
                         frappe.log_error(frappe.get_traceback(), str(e))
                         return {"error": str(e), "title": "API call failed"}

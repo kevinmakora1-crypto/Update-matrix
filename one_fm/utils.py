@@ -3517,6 +3517,9 @@ def check_existing():
     if not employee:
         return response("Employee not found", 404, None, "Employee not found")
     shift_exists = get_current_shift(employee)
+    if not shift_exists:
+        return response("Resource Not Found", 404, None, "No Active Shift Found")
+    
     if shift_exists['type'] == "On Time":
         curr_shift = shift_exists['data']
     if not curr_shift:

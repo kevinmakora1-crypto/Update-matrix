@@ -122,7 +122,10 @@ class ShiftPermission(Document):
 			if self.assigned_shift:
 				if self.log_type == "IN":
 					if self.arrival_time:
-						date_time = datetime.strptime(self.date + " " + self.arrival_time, '%Y-%m-%d %H:%M:%S')
+
+						date_str = frappe.utils.get_date_str(self.date)
+						arrival_time_str = str(self.arrival_time)
+						date_time = datetime.strptime(date_str + " " + arrival_time_str, '%Y-%m-%d %H:%M:%S')
 						frappe.db.sql("""
 										UPDATE `tabShift Assignment`
 										SET start_datetime = %s

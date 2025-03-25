@@ -65,14 +65,16 @@ def is_google_task_synchronization_enabled():
 
 def get_google_task_service(employee_email):
     credentials_path = frappe.get_site_path('private', 'files', 'gcp.json')
+    credentials_dict = None
     try:
         with open(credentials_path, 'r') as file:
             credentials_dict = json.load(file)
-    except Exception:
-        pass
+    except Exception as e:
+        frappe.log_error(f"Error reading Google credentials: {str(e)}")
+        return
     credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=['https://www.googleapis.com/auth/tasks'])
     delegated_credentials = credentials.with_subject(employee_email)
-    return build('tasks', 'v1', credentials=delegated_credentials)\
+    return build('tasks', 'v1', credentials=delegated_credentials)
     
 def before_save(doc,method):
     previous_doc = doc.get_doc_before_save()

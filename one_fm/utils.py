@@ -3750,14 +3750,14 @@ def is_holiday(employee, date=None, raise_exception=True,include_weekly_off = Fa
 
 
 def get_gmail_service(employee_email):
-
     credentials_path = frappe.get_site_path('private', 'files', 'gcp.json')
-
+    credentials_dict = None
     try:
         with open(credentials_path, 'r') as file:
             credentials_dict = json.load(file)
-    except Exception:
-        pass
+    except Exception as e:
+        frappe.log_error(f"Error reading Google credentials: {str(e)}")
+        return
 
     credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=['https://www.googleapis.com/auth/gmail.settings.basic'])
 

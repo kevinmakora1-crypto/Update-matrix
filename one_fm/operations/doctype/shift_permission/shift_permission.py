@@ -2,7 +2,7 @@
 # Copyright (c) 2020, omar jaber and contributors
 # For license information, please see license.txt
 from __future__ import unicode_literals
-from datetime import datetime
+from datetime import datetime, date
 import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate, format_date
@@ -122,7 +122,13 @@ class ShiftPermission(Document):
 			if self.assigned_shift:
 				if self.log_type == "IN":
 					if self.arrival_time:
-						date_time = datetime.strptime(self.date + " " + self.arrival_time, '%Y-%m-%d %H:%M:%S')
+						if isinstance(self.date, date):
+							date_str = self.date.strftime('%Y-%m-%d')
+						else:
+							date_str = str(self.date)  # Assume it's already a string
+
+						arrival_time_str = str(self.arrival_time)
+						date_time = datetime.strptime(date_str + " " + arrival_time_str, '%Y-%m-%d %H:%M:%S')
 						frappe.db.sql("""
 										UPDATE `tabShift Assignment`
 										SET start_datetime = %s

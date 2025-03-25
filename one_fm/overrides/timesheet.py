@@ -6,7 +6,7 @@ from calendar import monthrange
 from hrms.overrides.employee_timesheet import *
 from frappe import _
 from one_fm.processor import sendemail
-from one_fm.utils import send_workflow_action_email, get_approver_user, get_approver
+from one_fm.utils import send_workflow_action_email, get_approver_user
 
 
 class TimesheetOveride(Timesheet):
@@ -59,7 +59,7 @@ class TimesheetOveride(Timesheet):
             send_workflow_action_email(self, [self.approver])
             message = "The timesheet {0} of {1}, Open for your Approval".format(self.name, self.employee_name)
             create_notification_log("Pending - Workflow Action on Timesheet", message, [self.approver], self)
-        
+
 
     def on_submit(self):
         self.validate_mandatory_fields()
@@ -126,10 +126,8 @@ class TimesheetOveride(Timesheet):
         if frappe.session.user not in [self.approver, "Administrator"]:
             frappe.throw(_("Only Approver can Approve/Reject the timesheet"))
 
-    
-
     def assign_unassign(self) -> None:
-        previous_doc = self.get_doc_before_save() if not self.is_new() else self    
+        previous_doc = self.get_doc_before_save() if not self.is_new() else self
         if previous_doc.workflow_state != self.workflow_state:
             self.delete_todo()
             if self.workflow_state in {"Draft",  "Pending Approval"}:
@@ -139,17 +137,17 @@ class TimesheetOveride(Timesheet):
                     'assign_to': [self.owner if self.workflow_state == "Draft" else self.approver],
                     'description': (_(self.fetch_description()))
                 })
-                
+
 
     def delete_todo(self):
         return frappe.db.sql("""
-            DELETE FROM `tabToDo` 
+            DELETE FROM `tabToDo`
             WHERE reference_type = %s AND reference_name = %s
         """, (self.doctype, self.name))
 
-            
+
     def fetch_description(self):
-        return f""" 
+        return f"""
             <p>Here is to inform you that the following { self.doctype }({ self.name }) requires your attention/action.
             <br>
             The details of the request are as follows:
@@ -162,7 +160,7 @@ class TimesheetOveride(Timesheet):
                     </tr>
                 </thead>
             <tbody>
-            
+
                 <tr>
                     <td style="padding: 10px;">Employee</td>
                     <td style="padding: 10px;">{ self.employee }</td>
@@ -170,12 +168,6 @@ class TimesheetOveride(Timesheet):
                 </tbody></table><p></p>
 
         """
-
-@frappe.whitelist()
-def fetch_approver(employee):
-    approver = get_approver(employee)
-    if approver:
-        return frappe.get_value("Employee", approver, ["user_id"])
 
 def timesheet_automation(start_date=None,end_date=None,project=None):
     filters = {
@@ -333,8 +325,3 @@ def create_notification_log(subject, message, for_users, reference_doc):
 		# If notification log type is Alert then it will not send email for the log
 		doc.type = 'Alert'
 		doc.insert(ignore_permissions=True)
-
-
-
-
-

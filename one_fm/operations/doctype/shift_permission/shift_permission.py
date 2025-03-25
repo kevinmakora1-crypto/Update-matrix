@@ -122,11 +122,8 @@ class ShiftPermission(Document):
 			if self.assigned_shift:
 				if self.log_type == "IN":
 					if self.arrival_time:
-						if isinstance(self.date, date):
-							date_str = self.date.strftime('%Y-%m-%d')
-						else:
-							date_str = str(self.date)  # Assume it's already a string
 
+						date_str = frappe.utils.get_date_str(self.date)
 						arrival_time_str = str(self.arrival_time)
 						date_time = datetime.strptime(date_str + " " + arrival_time_str, '%Y-%m-%d %H:%M:%S')
 						frappe.db.sql("""

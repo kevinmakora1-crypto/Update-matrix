@@ -32,7 +32,7 @@ from frappe.utils import (
 )
 from frappe.workflow.doctype.workflow_action.workflow_action import (
     get_email_template, deduplicate_actions, get_next_possible_transitions,
-    get_doc_workflow_state, get_workflow_name, get_workflow_action_url,
+    get_doc_workflow_state, get_workflow_name, get_workflow_action_url,get_confirm_workflow_action_url,
     get_users_next_action_data as _get_users_next_action_data
 )
 
@@ -2742,7 +2742,7 @@ def get_users_next_action_data(transitions, doc, recipients):
 				frappe._dict(
 					{
 						"action_name": transition.action,
-						"action_link": get_workflow_action_url(transition.action, doc, user),
+						"action_link": get_confirm_workflow_action_url(doc,transition.action, user),
 					}
 				)
 			)

@@ -228,7 +228,7 @@ def sync_my_google_tasks_with_todos():
 
         # Skip if general trigger is not enabled
         if not is_google_task_synchronization_enabled() or logged_in_user == "Administrator":
-            return
+            return { 'error': True, 'message' : "You are not allowed to sync google tasks" }
         
         sync_google_tasks_for_users(user_emails=[logged_in_user])
 

@@ -3453,7 +3453,6 @@ def get_current_shift(employee):
             AND '{nowtime}' >= DATE_SUB(sa.start_datetime, INTERVAL st.begin_check_in_before_shift_start_time MINUTE)
             AND '{nowtime}' <= DATE_ADD(sa.end_datetime, INTERVAL st.allow_check_out_after_shift_end_time MINUTE)
             ORDER BY sa.start_datetime ASC
-            checkout_time DESC
             """
 
         shifts = frappe.db.sql(sql, as_dict=1)

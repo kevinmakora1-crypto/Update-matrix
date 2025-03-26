@@ -39,7 +39,7 @@ class ShiftPermission(Document):
 		attendance = frappe.db.exists('Attendance',{'attendance_date': self.date, 'employee': self.employee, 'docstatus': 1})
 		if attendance:
 			frappe.throw(_('There is an Attendance {0} exists for the Employee {1} on {2}'.format(attendance, self.emp_name, format_date(self.date))), exc=ExistAttendance)
-	
+
 	def on_update(self):
 		self.update_shift_assignment_checkin()
 		self.assign_to_owner()
@@ -59,7 +59,7 @@ class ShiftPermission(Document):
 		date = getdate(self.date).strftime('%d-%m-%Y')
 		if self.docstatus==0 and frappe.db.exists("Shift Permission", {
 			"employee": self.employee, "date":self.date, "assigned_shift": self.assigned_shift,
-			"workflow_state":"Pending Approver", 'name':['!=', self.name]
+			"workflow_state":"Pending Approver", 'name':['!=', self.name], 'log_type': self.log_type
 			}):
 			frappe.throw(_("{employee} has already applied for permission on {date}.".format(employee=self.emp_name,date=date)))
 
@@ -171,11 +171,11 @@ class ShiftPermission(Document):
 					'assign_to': [self.owner],
 					'description': (_(f"Shift Permission: {self.name} has been returned to Draft. Please check and review."))
 				})
-			
+
 			if self.workflow_state == "Pending Approver" and self.get_doc_before_save().workflow_state == "Draft":
 				# Remove doc owner's assignment
 				remove(self.doctype, self.name, self.owner, ignore_permissions=False)
-		
+
 @frappe.whitelist()
 def fetch_approver(employee, date=None):
 	if employee:
@@ -192,12 +192,12 @@ def fetch_approver(employee, date=None):
 		if employee_shift and len(employee_shift) > 0:
 			approver = get_approver(employee)
 			return {
-				'shift_assignment':employee_shift[0].name, 
-				'approver':approver, 
-				'shift':employee_shift[0].shift, 
+				'shift_assignment':employee_shift[0].name,
+				'approver':approver,
+				'shift':employee_shift[0].shift,
 				'shift_type':employee_shift[0].shift_type
 			}
-	
+
 	frappe.throw("No shift assigned to {employee}".format(employee=employee))
 
 

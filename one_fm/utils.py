@@ -3443,40 +3443,53 @@ def get_current_shift(employee):
         sql = f"""
             SELECT sa.*,
                 DATE_SUB(sa.start_datetime, INTERVAL st.begin_check_in_before_shift_start_time MINUTE) as checkin_time,
-                DATE_ADD(sa.end_datetime, INTERVAL st.allow_check_out_after_shift_end_time MINUTE) as checkout_time
+                DATE_ADD(sa.end_datetime, INTERVAL st.allow_check_out_after_shift_end_time MINUTE) as checkout_time,
+                sa.end_datetime as actual_end_time
             FROM `tabShift Assignment` sa
             JOIN `tabShift Type` st ON sa.shift_type = st.name
             WHERE sa.employee="{employee}"
             AND sa.status="Active"
             AND sa.docstatus=1
-            AND (DATE('{nowtime}') = sa.start_date
-                OR DATE_ADD(DATE('{nowtime}'), INTERVAL 1 DAY) = sa.start_date
-                OR DATE('{nowtime}') = sa.end_date)
+            AND '{nowtime}' >= DATE_SUB(sa.start_datetime, INTERVAL st.begin_check_in_before_shift_start_time MINUTE)
+            AND '{nowtime}' <= DATE_ADD(sa.end_datetime, INTERVAL st.allow_check_out_after_shift_end_time MINUTE)
             ORDER BY sa.start_datetime ASC
+            checkout_time DESC
             """
 
         shifts = frappe.db.sql(sql, as_dict=1)
         if shifts:
              # Find the current shift
             current_shift = None
-            for i, shift in enumerate(shifts):
+            for shift in shifts:
                 # Check if the shift is currently active
                 checkin = frappe.db.get_list(
-                            "Employee Checkin",
-                            filters={"employee": employee,"shift_assignment":shift.name},
-                            fields=["log_type", "time", "shift_assignment"],
-                            order_by="time desc",
-                            limit=1,
-                        )
+                    "Employee Checkin",
+                    filters={"employee": employee, "shift_assignment":shift.name },
+                    fields=["log_type", "time", "shift_assignment"],
+                    order_by="time desc",
+                    limit=1,
+                )
+                
                 if checkin:
-                    if checkin[0].log_type == 'OUT':
-                           continue
-                    elif shift.checkin_time <= nowtime <= shift.checkout_time:
-                        current_shift = shift  # This is the active shift
-                        break  # Stop looping after finding the current shift
-                elif shift.checkin_time <= nowtime <= shift.checkout_time:
-                    current_shift = shift  # This is the active shift
-                    break  # Stop looping after finding the current shift
+                    last_log = checkin[0]
+                    # CASE 1: Last log is IN → Shift is active
+                    if last_log.log_type == "IN":
+                        if shift.checkin_time <= nowtime <= shift.checkout_time:
+                            current_shift = shift
+                            break
+                    # CASE 2: Last log is OUT → Only skip if within grace period
+                    elif last_log.log_type == "OUT":
+                        # Check if OUT happened during grace period
+                        if shift.actual_end_time <= last_log.time <= shift.checkout_time:
+                            continue  # Skip this shift, check next one
+                        else:
+                            current_shift = shift
+                            break
+                else:
+                    # Allow checkin if within window
+                    if shift.checkin_time <= nowtime <= shift.checkout_time:
+                        current_shift = shift
+                        break
 
 
             if current_shift:

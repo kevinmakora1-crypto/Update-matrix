@@ -3706,7 +3706,7 @@ def set_employee_status():
         filters={
             'status': 'Approved',
             'from_date': ['<=', current_date],
-            'to_date': ['>=', current_date]
+            'to_date': ['>=', add_days(current_date, -1)],
         },
         fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']  # Fetch employee status directly
     )

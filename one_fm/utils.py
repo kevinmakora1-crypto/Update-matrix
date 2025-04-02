@@ -3687,14 +3687,14 @@ def set_employee_status():
     from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import assign_responsibilities ,reassign_responsibilities
     from one_fm.overrides.leave_application import reassign_to_applicant,reassign_to_reliever
     # Get today's date
-    current_date = getdate(today())
+    current_date = getdate('03-04-2025')
 
     # Fetch approved leave applications where `from_date` is today or earlier, along with the employee's status
     leave_applications = frappe.get_all('Leave Application',
         filters={
             'status': 'Approved',
             'from_date': ['<=', current_date],
-            'to_date': ['>=', current_date]
+            'to_date': ['>=', add_days(current_date, -1)],
         },
         fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']  # Fetch employee status directly
     )

@@ -107,3 +107,4 @@ one_fm.patches.v15_0.update_erf_in_job_offer_2
 one_fm.patches.v15_0.update_historical_rfp_purchased_quantity
 one_fm.patches.v15_0.update_expired_contracts
 one_fm.patches.v15_0.update_timesheet_workflow_state
+one_fm.patches.v15_0.fix_stale_leave_application_employee_status

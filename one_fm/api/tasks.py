@@ -1700,21 +1700,20 @@ def is_same_time(dt1, dt2):
 # Notifications reminder
 def fetch_employees_not_in_checkin():
 	"""
-	This method fetch list of employees yet to checkin or have shift permission,
+	This method fetch list of employees yet to checkin/checkout or have shift permission,
 	attendance request, shift request, leave application based on log_type and
-	if their shift start or end falls withing the current hour
+	if their shift start or end falls within the past 1 hour
 	"""
 	if not production_domain():
 		return
 	# if not frappe.db.get_single_value('HR and Payroll Additional Settings', 'remind_employee_checkin_checkout') and not production_domain():
 	# 	return
 
-	cur_hour = now_datetime().time().hour
-	cur_date = str(getdate())
 	cur_datetime = now_datetime()
+	cur_date = str(getdate())
 
-	target_start_time = f"{cur_hour}:00:00"
-	target_end_time = f"{cur_hour}:59:59"
+	target_start_datetime_str = (cur_datetime - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S") # 1 hour before current time
+	target_end_datetime_str = cur_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 	return_data = []
 	log_types = ['IN', 'OUT']
@@ -1732,7 +1731,7 @@ def fetch_employees_not_in_checkin():
 			RIGHT JOIN `tabShift Type` st ON sa.shift_type = st.name
 			RIGHT JOIN `tabOperations Shift` os ON sa.shift = os.name
 			RIGHT JOIN `tabOperations Site` osi ON sa.site = osi.name
-			WHERE sa.start_datetime BETWEEN '{cur_date} {target_start_time}' AND '{cur_date} {target_end_time}'
+			WHERE {'sa.start_datetime' if log_type=='IN' else 'sa.end_datetime'} BETWEEN '{target_start_datetime_str}' AND '{target_end_datetime_str}'
 			AND sa.status = 'Active' 
 			AND sa.docstatus = 1
 		""", as_dict=1)

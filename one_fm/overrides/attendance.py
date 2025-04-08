@@ -294,9 +294,11 @@ def mark_for_shift_assignment(employee, att_date, roster_type='Basic'):
         # check if checkin and out exists
         if (out_checkins and in_checkins):
             if (out_checkins.time < in_checkins.time):
+                early_exit  = not frappe.db.exists("Employee Checkin", {"log_type": "IN", "time": [">", out_checkins.time], "shift_assignment": shift_assignment.name}) if out_checkins.early_exit else 0
                 out_checkins = False # The employee checked in, out, in but not out
-
-            early_exit = not frappe.db.exists("Employee Checkin", {"log_type": "IN", "time": [">", out_checkins.time], "shift_assignment": shift_assignment.name}) if out_checkins.early_exit else 0
+                
+            if out_checkins:
+                early_exit = not frappe.db.exists("Employee Checkin", {"log_type": "IN", "time": [">", out_checkins.time], "shift_assignment": shift_assignment.name}) if out_checkins.early_exit else 0
 
 
         # start checkin

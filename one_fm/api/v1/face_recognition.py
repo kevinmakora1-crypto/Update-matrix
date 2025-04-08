@@ -173,14 +173,25 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,shift:
         
         right_now = now_datetime()
         if log_type == "IN":
-            shift_type = frappe.db.sql(f""" select shift_type from `tabShift Assignment` where employee = '{employee.name}' order by creation desc limit 1 """, as_dict=1)[0]
-            val_in_shift_type = frappe.db.sql(f""" select begin_check_in_before_shift_start_time, start_time, late_entry_grace_period, working_hours_threshold_for_absent from `tabShift Type` where name = '{shift_type["shift_type"]}' """, as_dict=1)[0]
-            time_threshold = datetime.strptime(str(val_in_shift_type["start_time"] - timedelta(minutes=val_in_shift_type["begin_check_in_before_shift_start_time"])), "%H:%M:%S").time()
-
-            if right_now.time() < time_threshold:
-                return response("Bad Request", 400, None, f" Oops! You can't check in right now. Your check-in time is {val_in_shift_type['begin_check_in_before_shift_start_time']} minutes before you start your shift." + "\U0001F612")
+            shift_info = frappe.db.sql(f"""
+                SELECT 
+                    sa.start_datetime, 
+                    st.begin_check_in_before_shift_start_time 
+                FROM 
+                    `tabShift Assignment` sa
+                JOIN 
+                    `tabShift Type` st ON sa.shift_type = st.name
+                WHERE 
+                    sa.employee = '{employee}' 
+                ORDER BY 
+                    sa.creation DESC 
+                LIMIT 1
+            """, as_dict=1)[0]
+            shift_actual_start = shift_info.start_datetime - timedelta(minutes=shift_info.begin_check_in_before_shift_start_time)
+            if right_now < shift_actual_start:
+                return response("Bad Request", 400, None, f" Oops! You can't check in right now. Your check-in time is {shift_info.begin_check_in_before_shift_start_time} minutes before you start your shift." + "\U0001F612")
         # check Face Recognition Endpoint
-
+        
         if not filename:
             filename = frappe.session.user+'.mp4'
         if endpoint_state and employee.custom_enable_face_recognition:

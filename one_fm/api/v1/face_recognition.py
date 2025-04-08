@@ -1,16 +1,13 @@
-import frappe, ast, base64, time, grpc, json, random, os
+import frappe, base64, os
 from frappe import _
 
-from one_fm.one_fm.page.face_recognition.face_recognition import (
-    update_onboarding_employee, check_existing,
-)
-from datetime import timedelta, datetime
+from one_fm.one_fm.page.face_recognition.face_recognition import update_onboarding_employee
+from datetime import timedelta
 from one_fm.utils import get_current_shift, is_holiday,get_holiday_today
 from one_fm.api.v1.utils import (
     response, verify_via_face_recogniton_service
 )
 from frappe.utils import cstr, getdate,now_datetime
-from one_fm.proto import facial_recognition_pb2, facial_recognition_pb2_grpc, enroll_pb2, enroll_pb2_grpc
 from one_fm.api.doc_events import haversine
 from one_fm.overrides.employee import has_day_off, is_employee_on_leave
 
@@ -45,7 +42,7 @@ def enroll(employee_id: str = None, filename: str = None, video: str = None) -> 
     Returns:
         response (dict): {
             message (str): Brief message indicating the response,
-			status_code (int): Status code of response.
+            status_code (int): Status code of response.
             data (dict): Enrollment status,
             error (str): Any error handled.
         }
@@ -171,15 +168,26 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,shift:
 
         if not employee:
             return response("Resource Not Found", 404, None, "No employee record found with {employee_id}".format(employee_id=employee_id))
+        
         right_now = now_datetime()
-
         if log_type == "IN":
-            shift_type = frappe.db.sql(f""" select shift_type from `tabShift Assignment` where employee = '{employee}' order by creation desc limit 1 """, as_dict=1)[0]
-            val_in_shift_type = frappe.db.sql(f""" select begin_check_in_before_shift_start_time, start_time, late_entry_grace_period, working_hours_threshold_for_absent from `tabShift Type` where name = '{shift_type["shift_type"]}' """, as_dict=1)[0]
-            time_threshold = datetime.strptime(str(val_in_shift_type["start_time"] - timedelta(minutes=val_in_shift_type["begin_check_in_before_shift_start_time"])), "%H:%M:%S").time()
-
-            if right_now.time() < time_threshold:
-                return response("Bad Request", 400, None, f" Oops! You can't check in right now. Your check-in time is {val_in_shift_type['begin_check_in_before_shift_start_time']} minutes before you start your shift." + "\U0001F612")
+            shift_info = frappe.db.sql(f"""
+                SELECT 
+                    sa.start_datetime, 
+                    st.begin_check_in_before_shift_start_time 
+                FROM 
+                    `tabShift Assignment` sa
+                JOIN 
+                    `tabShift Type` st ON sa.shift_type = st.name
+                WHERE 
+                    sa.employee = '{employee}' 
+                ORDER BY 
+                    sa.creation DESC 
+                LIMIT 1
+            """, as_dict=1)[0]
+            shift_actual_start = shift_info.start_datetime - timedelta(minutes=shift_info.begin_check_in_before_shift_start_time)
+            if right_now < shift_actual_start:
+                return response("Bad Request", 400, None, f" Oops! You can't check in right now. Your check-in time is {shift_info.begin_check_in_before_shift_start_time} minutes before you start your shift." + "\U0001F612")
         # check Face Recognition Endpoint
 
         if not filename:

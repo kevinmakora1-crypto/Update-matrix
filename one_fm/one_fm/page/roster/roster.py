@@ -918,7 +918,7 @@ def plan_post(posts, args):
     )
 
     # Create a set for quick lookup
-    existing_schedules_set = {(s["post"], cstr(s["date"])) for s in existing_schedules}
+    existing_schedules_set = {(s["post"], cstr(s["date"])): s['name'] for s in existing_schedules}
 
     creation = now()
     owner = frappe.session.user
@@ -929,8 +929,9 @@ def plan_post(posts, args):
     project = ''
     previous_post = ''
     insert_post = False
+    delete_post = False
 
-    query = """
+    insert_query = """
         Insert Into
             `tabPost Schedule`
             (
@@ -955,10 +956,12 @@ def plan_post(posts, args):
             date_str = cstr(date.date())
             if (post, date_str) in existing_schedules_set:
                 # Instead of deleting one by one, collect for batch deletion
-                frappe.db.delete("Post Schedule", {"post": post, "date": date_str})
+                if not delete_post:
+                    delete_post = []
+                delete_post.append(existing_schedules_set[(post, date_str)]) # Storing the existing Post Schedule names
 
             name = f"{post}_{date_str}"
-            query += f"""
+            insert_query += f"""
                 (
                     "{name}", "{post}", "{operations_role}", "{post_abbrv}", "{shift}", "{site}",
                     "{project}", "{date_str}", "Planned", "{owner}", "{owner}", "{creation}", "{creation}"
@@ -966,9 +969,9 @@ def plan_post(posts, args):
 
             insert_post = True
 
-    query = query[:-1] # To remove the last ,
+    insert_query = insert_query[:-1] # To remove the last ,
 
-    query += f"""
+    insert_query += f"""
         On Duplicate Key Update
         modified_by = Values(modified_by),
         modified = "{creation}",
@@ -981,8 +984,10 @@ def plan_post(posts, args):
         date= Values(date)
     """
 
-    if  insert_post:
-        frappe.db.sql(query, values=[], as_dict=1)
+    if insert_post:
+        if delete_post:
+            frappe.db.delete('Post Schedule', {'name': ["in", delete_post]})
+        frappe.db.sql(insert_query, values=[], as_dict=1)
         frappe.db.commit()
 
 def get_post_details(post):

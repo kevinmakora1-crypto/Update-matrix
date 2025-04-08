@@ -832,7 +832,8 @@ def edit_post(posts, values):
         if not args.plan_end_date and not cint(args.project_end_date):
             frappe.throw(_("Please set an end date!"))
 
-        frappe.enqueue(plan_post, posts=posts, args=args, is_async=True, queue='long', at_front=True, timeout=3600)
+        plan_post(posts, args)
+        return response("Success", 200, {'message': 'Post Planned Successfully'})
 
     elif args.post_status == "Cancel Post":
         if args.cancel_end_date and cint(args.project_end_date):
@@ -917,18 +918,89 @@ def plan_post(posts, args):
     )
 
     # Create a set for quick lookup
-    existing_schedules_set = {(s["post"], cstr(s["date"])) for s in existing_schedules}
+    existing_schedules_set = {(s["post"], cstr(s["date"])): s['name'] for s in existing_schedules}
+
+    creation = now()
+    owner = frappe.session.user
+    operations_role = ''
+    shift = ''
+    post_abbrv = ''
+    site = ''
+    project = ''
+    previous_post = ''
+    insert_post = False
+    delete_post = False
+
+    insert_query = """
+        Insert Into
+            `tabPost Schedule`
+            (
+                `name`, `post`, `operations_role`, `post_abbrv`, `shift`, `site`,
+                `project`, `date`, `post_status`, `owner`, `modified_by`, `creation`, `modified`
+            )
+        Values
+    """
 
     for post in unique_posts_list:
+        if previous_post != post:
+            previous_post = post
+            post_details=get_post_details(post)
+            if post_details:
+                operations_role = post_details['post_template']
+                shift = post_details['site_shift']
+                post_abbrv = post_details['post_abbrv']
+                site = post_details['site']
+                project = post_details['project']
+
         for date in pd.date_range(start=args.plan_from_date, end=end_date):
             date_str = cstr(date.date())
             if (post, date_str) in existing_schedules_set:
                 # Instead of deleting one by one, collect for batch deletion
-                frappe.db.delete("Post Schedule", {"post": post, "date": date_str})
+                if not delete_post:
+                    delete_post = []
+                delete_post.append(existing_schedules_set[(post, date_str)]) # Storing the existing Post Schedule names
 
-            post_schedule = {"doctype": "Post Schedule", "post": post, "date": date_str, "post_status": "Planned"}
-            frappe.get_doc(post_schedule).insert()
+            name = f"{post}_{date_str}"
+            insert_query += f"""
+                (
+                    "{name}", "{post}", "{operations_role}", "{post_abbrv}", "{shift}", "{site}",
+                    "{project}", "{date_str}", "Planned", "{owner}", "{owner}", "{creation}", "{creation}"
+                ),"""
+
+            insert_post = True
+
+    insert_query = insert_query[:-1] # To remove the last ,
+
+    insert_query += f"""
+        On Duplicate Key Update
+        modified_by = Values(modified_by),
+        modified = "{creation}",
+        operations_role = Values(operations_role),
+        post_abbrv = Values(post_abbrv),
+        shift = Values(shift),
+        project = Values(project),
+        site = Values(site),
+        post_status = "Planned",
+        date= Values(date)
+    """
+
+    if insert_post:
+        if delete_post:
+            frappe.db.delete('Post Schedule', {'name': ["in", delete_post]})
+        frappe.db.sql(insert_query, values=[], as_dict=1)
         frappe.db.commit()
+
+def get_post_details(post):
+    post_details=frappe.db.get_value(
+        'Operations Post',
+        post,
+        ['post_template', 'site_shift', 'site', 'project'],
+        as_dict=True
+    )
+    if post_details:
+        post_details['post_abbrv'] = frappe.db.get_value('Operations Role', post_details['post_template'], ['post_abbrv'])
+        return post_details
+    return False
 
 def cancel_post(posts, args):
     end_date = None

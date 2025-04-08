@@ -32,7 +32,7 @@ from frappe.utils import (
 )
 from frappe.workflow.doctype.workflow_action.workflow_action import (
     get_email_template, deduplicate_actions, get_next_possible_transitions,
-    get_doc_workflow_state, get_workflow_name, get_workflow_action_url,
+    get_doc_workflow_state, get_workflow_name, get_workflow_action_url,get_confirm_workflow_action_url,
     get_users_next_action_data as _get_users_next_action_data
 )
 
@@ -2742,7 +2742,7 @@ def get_users_next_action_data(transitions, doc, recipients):
 				frappe._dict(
 					{
 						"action_name": transition.action,
-						"action_link": get_workflow_action_url(transition.action, doc, user),
+						"action_link": get_confirm_workflow_action_url(doc,transition.action, user),
 					}
 				)
 			)
@@ -3443,15 +3443,15 @@ def get_current_shift(employee):
         sql = f"""
             SELECT sa.*,
                 DATE_SUB(sa.start_datetime, INTERVAL st.begin_check_in_before_shift_start_time MINUTE) as checkin_time,
-                DATE_ADD(sa.end_datetime, INTERVAL st.allow_check_out_after_shift_end_time MINUTE) as checkout_time
+                DATE_ADD(sa.end_datetime, INTERVAL st.allow_check_out_after_shift_end_time MINUTE) as checkout_time,
+                sa.end_datetime as actual_end_time
             FROM `tabShift Assignment` sa
             JOIN `tabShift Type` st ON sa.shift_type = st.name
             WHERE sa.employee="{employee}"
             AND sa.status="Active"
             AND sa.docstatus=1
-            AND (DATE('{nowtime}') = sa.start_date
-                OR DATE_ADD(DATE('{nowtime}'), INTERVAL 1 DAY) = sa.start_date
-                OR DATE('{nowtime}') = sa.end_date)
+            AND '{nowtime}' >= DATE_SUB(sa.start_datetime, INTERVAL st.begin_check_in_before_shift_start_time MINUTE)
+            AND '{nowtime}' <= DATE_ADD(sa.end_datetime, INTERVAL st.allow_check_out_after_shift_end_time MINUTE)
             ORDER BY sa.start_datetime ASC
             """
 
@@ -3459,24 +3459,36 @@ def get_current_shift(employee):
         if shifts:
              # Find the current shift
             current_shift = None
-            for i, shift in enumerate(shifts):
+            for shift in shifts:
                 # Check if the shift is currently active
                 checkin = frappe.db.get_list(
-                            "Employee Checkin",
-                            filters={"employee": employee,"shift_assignment":shift.name},
-                            fields=["log_type", "time", "shift_assignment"],
-                            order_by="time desc",
-                            limit=1,
-                        )
+                    "Employee Checkin",
+                    filters={"employee": employee, "shift_assignment":shift.name },
+                    fields=["log_type", "time", "shift_assignment"],
+                    order_by="time desc",
+                    limit=1,
+                )
+                
                 if checkin:
-                    if checkin[0].log_type == 'OUT':
-                           continue
-                    elif shift.checkin_time <= nowtime <= shift.checkout_time:
-                        current_shift = shift  # This is the active shift
-                        break  # Stop looping after finding the current shift
-                elif shift.checkin_time <= nowtime <= shift.checkout_time:
-                    current_shift = shift  # This is the active shift
-                    break  # Stop looping after finding the current shift
+                    last_log = checkin[0]
+                    # CASE 1: Last log is IN → Shift is active
+                    if last_log.log_type == "IN":
+                        if shift.checkin_time <= nowtime <= shift.checkout_time:
+                            current_shift = shift
+                            break
+                    # CASE 2: Last log is OUT → Only skip if within grace period
+                    elif last_log.log_type == "OUT":
+                        # Check if OUT happened during grace period
+                        if shift.actual_end_time <= last_log.time <= shift.checkout_time:
+                            continue  # Skip this shift, check next one
+                        else:
+                            current_shift = shift
+                            break
+                else:
+                    # Allow checkin if within window
+                    if shift.checkin_time <= nowtime <= shift.checkout_time:
+                        current_shift = shift
+                        break
 
 
             if current_shift:
@@ -3517,6 +3529,9 @@ def check_existing():
     if not employee:
         return response("Employee not found", 404, None, "Employee not found")
     shift_exists = get_current_shift(employee)
+    if not shift_exists:
+        return response("Resource Not Found", 404, None, "No Active Shift Found")
+    
     if shift_exists['type'] == "On Time":
         curr_shift = shift_exists['data']
     if not curr_shift:
@@ -3691,7 +3706,7 @@ def set_employee_status():
         filters={
             'status': 'Approved',
             'from_date': ['<=', current_date],
-            'to_date': ['>=', current_date]
+            'to_date': ['>=', add_days(current_date, -1)],
         },
         fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']  # Fetch employee status directly
     )
@@ -3750,14 +3765,14 @@ def is_holiday(employee, date=None, raise_exception=True,include_weekly_off = Fa
 
 
 def get_gmail_service(employee_email):
-
     credentials_path = frappe.get_site_path('private', 'files', 'gcp.json')
-
+    credentials_dict = None
     try:
         with open(credentials_path, 'r') as file:
             credentials_dict = json.load(file)
-    except Exception:
-        pass
+    except Exception as e:
+        frappe.log_error(f"Error reading Google credentials: {str(e)}")
+        return
 
     credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=['https://www.googleapis.com/auth/gmail.settings.basic'])
 

@@ -139,7 +139,7 @@ class LeaveApplicationOverride(LeaveApplication):
         super_user_role = frappe.db.get_single_value("ONEFM General Setting", "super_user_role")
         user_roles = frappe.get_roles(employee.user_id)
         # If Reports to set or Super user role, then reliever is mandatory
-        if (employee.reports_to or (super_user_role in user_roles)) and not self.custom_reliever_:
+        if (self.leave_type == 'Annual Leave' and (employee.reports_to or (super_user_role in user_roles)) and not self.custom_reliever_):
             frappe.throw(msg=_("Please ensure that a Reliever is set"), title=_("No Reliever set"))
 
     def close_shifts(self):
@@ -486,17 +486,18 @@ class LeaveApplicationOverride(LeaveApplication):
         if self.status == "Approved":
             today = getdate()
 
-            employee = frappe.get_doc("Employee", self.employee)
-            custom_reliever = frappe.get_doc("Employee", self.custom_reliever_)
-            employee_email = employee.company_email
-            from_date = getdate(self.from_date)
-            to_date = getdate(self.to_date)
-            custom_reliever_name = self.custom_reliever_name
-            custom_reliever = custom_reliever.user_id
-            employee_name = self.employee_name
+            if self.custom_reliever_:
+                employee = frappe.get_doc("Employee", self.employee)
+                custom_reliever = frappe.get_doc("Employee", self.custom_reliever_)
+                employee_email = employee.company_email
+                from_date = getdate(self.from_date)
+                to_date = getdate(self.to_date)
+                custom_reliever_name = self.custom_reliever_name
+                custom_reliever = custom_reliever.user_id
+                employee_name = self.employee_name
 
-            if today == from_date:
-                set_out_of_office(employee_email, from_date, to_date, custom_reliever_name, custom_reliever, employee_name)
+                if today == from_date:
+                    set_out_of_office(employee_email, from_date, to_date, custom_reliever_name, custom_reliever, employee_name)
 
             if getdate(self.from_date) <= getdate() <= getdate(self.to_date):
                 # frappe.db.set_value(), will not call the validate.

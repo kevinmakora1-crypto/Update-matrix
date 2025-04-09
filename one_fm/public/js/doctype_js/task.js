@@ -10,17 +10,17 @@ const USER_PERMS = {
 
 frappe.ui.form.on("Task", {
     status(frm) {
-        if (frm.doc.status == "Pending Review") {
+        if (frm.doc.status == "Pending Review" || frm.doc.status == "Completed") {
             // Set completed_by from the first person in the 'assign_to' field
-            if (frm.doc.custom_assigned_to) {
+            if (frm.doc.custom_assigned_to.length > 0) {
                 frm.set_value("completed_by", frm.doc.custom_assigned_to[0]["user"]);
+            }
+            else{
+                frm.set_value("completed_by", "");
             }
 
             // Set completed_on as today's date
             frm.set_value("completed_on", frappe.datetime.get_today());
-        }
-        else{
-            frm.set_value("completed_by", "");
         }
     },
     refresh: function (frm) {

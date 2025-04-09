@@ -19,6 +19,9 @@ frappe.ui.form.on("Task", {
             // Set completed_on as today's date
             frm.set_value("completed_on", frappe.datetime.get_today());
         }
+        else{
+            frm.set_value("completed_by", "");
+        }
     },
     refresh: function (frm) {
         set_perms(frm);  

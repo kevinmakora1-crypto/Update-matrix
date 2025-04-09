@@ -19,13 +19,14 @@ class PostSchedulerChecker(Document):
 	def validate(self):
 		if not self.check_date:
 			self.check_date = getdate()
-		self.fill_items()
 		self.__get_shift_supervisor()
 		self.get_site_supervisor()
-		if not self.items:
-			frappe.throw('No issues found.')
+
 
 	def after_insert(self):
+		self.fill_items()
+		if not self.items:
+			frappe.throw('No issues found.')
 		frappe.db.commit()
 
 	def __get_shift_supervisor(self):

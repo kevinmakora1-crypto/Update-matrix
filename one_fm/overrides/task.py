@@ -15,6 +15,12 @@ def validate_task(doc, method):
     if not doc.is_new():
         sync_assign_to_field(doc)
 
+    assignees = get_assignments({'doctype': doc.doctype,'name': doc.name})
+    if doc.status == "Pending Review":
+        if assignees:  # Ensure there are assignments before removing
+            for assignee in assignees:
+                remove_assignment(doc.doctype, doc.name, assignee.owner)
+
     roles = get_user_roles()
     is_manager = is_project_manager(doc.project) if doc.project else False
     if "Projects User" in roles and "Projects Manager" not in roles and not is_manager and (doc.project or doc.owner != frappe.session.user):

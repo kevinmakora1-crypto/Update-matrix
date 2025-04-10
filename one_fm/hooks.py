@@ -748,6 +748,9 @@ scheduler_events = {
         ],
         "*/5 * * * *": [ # Runs every 5 minutes
             "one_fm.overrides.todo.sync_google_tasks_with_todos"
+        ],
+         "* * * * *": [ # Runs every minute
+            "one_fm.operations.doctype.process_task.process_task.run_process_task"
         ]
 	}
 }

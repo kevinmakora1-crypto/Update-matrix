@@ -14,7 +14,7 @@ def validate_task(doc, method):
     # When new doc is added, then sync field after insert
     if not doc.is_new():
         sync_assign_to_field(doc)
-        check_completed_by_and_completed_on(doc,method)
+    check_completed_by_and_completed_on(doc,method)
 
     roles = get_user_roles()
     is_manager = is_project_manager(doc.project) if doc.project else False
@@ -23,7 +23,6 @@ def validate_task(doc, method):
 
 def after_task_insert(doc, method):
     sync_assign_to_field(doc)
-    check_completed_by_and_completed_on(doc,method)
 
 
 def check_completed_by_and_completed_on(doc, method):
@@ -33,7 +32,6 @@ def check_completed_by_and_completed_on(doc, method):
         if doc.custom_assigned_to:
             if not doc.completed_by or doc.completed_by!=doc.custom_assigned_to[0].user:
                 doc.completed_by = doc.custom_assigned_to[0].user
-        doc.db_update()
 
 def validate_updated_fields(doc):
     if doc.has_value_changed('status'):

@@ -9,7 +9,7 @@ const USER_PERMS = {
 }
 
 frappe.ui.form.on("Task", {
-    status(frm) {
+    status:function (frm) {
         if (frm.doc.status == "Pending Review" || frm.doc.status == "Completed") {
             // Set completed_by from the first person in the 'assign_to' field
             if (frm.doc.custom_assigned_to.length > 0) {

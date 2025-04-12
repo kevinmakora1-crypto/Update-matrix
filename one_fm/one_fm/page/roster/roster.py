@@ -2,7 +2,10 @@ from copy import deepcopy
 from pandas.core.indexes.datetimes import date_range
 from datetime import datetime
 from one_fm.one_fm.page.roster.employee_map  import CreateMap,PostMap
-from frappe.utils import nowdate, add_to_date, cstr, cint, getdate, now, get_datetime, today, add_days, add_months, get_first_day, get_last_day, date_diff
+from frappe.utils import (
+    nowdate, add_to_date, cstr, cint, getdate, now, get_datetime, today, add_days, add_months,
+    get_first_day, get_last_day, date_diff, get_last_day
+)
 import pandas as pd, numpy as np
 from frappe import _
 import json, multiprocessing, os, time, itertools, frappe
@@ -857,13 +860,14 @@ def edit_post(posts, values):
         if args.repeat_till and cint(args.project_end_date):
             frappe.throw(_("Cannot set both project end date and custom end date!"))
 
-        if not args.repeat_till and not cint(args.project_end_date):
+        if args.repeat != "Does not repeat" and not args.repeat_till and not cint(args.project_end_date):
             frappe.throw(_("Please set an end date!"))
 
         if args.repeat == "Does not repeat" and cint(args.project_end_date):
             frappe.throw(_("Cannot set both project end date and choose 'Does not repeat' option!"))
 
-        frappe.enqueue(post_off, posts=posts, args=args, is_async=True, queue='long', at_front=True, timeout=3600)
+        post_off(posts=posts, args=args)
+        return response("Success", 200, {'message': 'Post Off Marked Successfully'})
 
     frappe.enqueue(update_roster, key="staff_view", is_async=True, queue='long', timeout=3600)
     return response("Success", 200, {'message': 'Your request is being processed in the background.'})
@@ -990,18 +994,6 @@ def plan_post(posts, args):
         frappe.db.sql(insert_query, values=[], as_dict=1)
         frappe.db.commit()
 
-def get_post_details(post):
-    post_details=frappe.db.get_value(
-        'Operations Post',
-        post,
-        ['post_template', 'site_shift', 'site', 'project'],
-        as_dict=True
-    )
-    if post_details:
-        post_details['post_abbrv'] = frappe.db.get_value('Operations Role', post_details['post_template'], ['post_abbrv'])
-        return post_details
-    return False
-
 def cancel_post(posts, args):
     end_date = None
 
@@ -1062,87 +1054,198 @@ def suspend_post(posts, args):
     frappe.db.commit()
 
 def post_off(posts, args):
+    if args.repeat:
+        posts = json.loads(posts)
+        # Extract unique posts
+        unique_posts_list = list(set(post['post'] for post in posts))
+
+        # Fetch all projects linked to posts
+        post_projects = get_post_porjects(unique_posts_list)
+
+        end_date = get_post_schedule_end_date(args, unique_posts_list, post_projects)
+        if not end_date:
+            frappe.throw(_("No end date specified."))
+
+        # Collect all dates and posts for bulk processing
+        existing_schedules = get_existing_post_schedules(args, end_date, unique_posts_list)
+
+        # Create a set for quick lookup
+        existing_schedules_set = {(s["post"], cstr(s["date"])): s['name'] for s in existing_schedules}
+
+        insert_post_schedule(args, unique_posts_list, existing_schedules_set, end_date, posts)
+
+def get_post_porjects(unique_posts_list):
+    return {
+        p["name"]: p["project"] for p in frappe.get_all(
+            "Operations Post",
+            filters={"name": ["in", unique_posts_list]},
+            fields=["name", "project"]
+        )
+    }
+
+def get_post_schedule_end_date(args, unique_posts_list, post_projects={}):
+    end_date = args.repeat_till if args.repeat_till and not cint(args.project_end_date) else None
+
+    if args.repeat == 'Does not repeat':
+        end_date = get_last_day(args.plan_from_date)
+
+    # If project_end_date is set, get contract end dates in bulk
+    if cint(args.project_end_date) and post_projects and not args.plan_end_date:
+        project_names = list(post_projects.values())
+        contract_end_dates = frappe.get_all(
+            "Contracts",
+            filters={"project": ["in", project_names]},
+            fields=["project", "end_date"],
+            as_list=True
+        )
+        contract_map = dict(contract_end_dates)
+        for post in unique_posts_list:
+            project = post_projects.get(post)
+            if project:
+                end_date = contract_map.get(project)
+                if not end_date:
+                    frappe.throw(_("No end date set for contract linked to project {0}".format(project)))
+
+    return end_date
+
+def get_existing_post_schedules(args, end_date, unique_posts_list):
+    return frappe.get_all(
+        "Post Schedule",
+        filters={
+            "date": ["between", [args.plan_from_date, end_date]],
+            "post": ["in", unique_posts_list]
+        },
+        fields=["name", "post", "date"]
+    )
+
+def insert_post_schedule(args, unique_posts_list, existing_schedules_set, end_date, posts):
     from one_fm.api.mobile.roster import month_range
-    post_off_paid = args.post_off_paid
+    creation = now()
+    owner = frappe.session.user
+    post_details = {'post_template': '', 'site_shift': '', 'site': '', 'project': '', 'post_abbrv': ''}
+    previous_post = ''
+    insert_post = False
+    delete_post = False
+    week_days = get_week_days(args)
+    post_date_map = {}
+    if args.repeat in ['Monthly', 'Yearly', 'Does not repeat']:
+        post_date_map = get_post_date_map(unique_posts_list, posts)
 
+    insert_query = get_insert_post_schedule_query_prefix()
 
-    if args.repeat == "Does not repeat":
-        for post in json.loads(posts):
-            set_post_off(post["post"], post["date"], post_off_paid)
-    else:
-        if args.repeat and args.repeat in ["Daily", "Weekly", "Monthly", "Yearly"]:
-            end_date = None
+    for post in unique_posts_list:
+        if previous_post != post:
+            previous_post = post
+            post_details=get_post_details(post)
 
-            if args.repeat_till and not cint(args.project_end_date):
-                end_date = args.repeat_till
+        if args.repeat in ['Monthly', 'Yearly', 'Does not repeat']:
+            for post_date in post_date_map[post]:
+                if args.repeat == 'Monthly':
+                    for date in	month_range(post_date, end_date):
+                        date_str = cstr(date.date())
+                        delete_post = get_delete_posts(post, date_str, existing_schedules_set, delete_post)
+                        insert_query += get_insert_post_schedule_query(post, date_str, post_details, args, owner, creation)
+                        insert_post = True
+                elif args.repeat == 'Yearly':
+                    for date in	pd.date_range(post_date, end=end_date, freq=pd.DateOffset(years=1)):
+                        date_str = cstr(date.date())
+                        delete_post = get_delete_posts(post, date_str, existing_schedules_set, delete_post)
+                        insert_query += get_insert_post_schedule_query(post, date_str, post_details, args, owner, creation)
+                        insert_post = True
+                elif args.repeat == 'Does not repeat':
+                    delete_post = get_delete_posts(post, post_date, existing_schedules_set, delete_post)
+                    insert_query += get_insert_post_schedule_query(post, post_date, post_details, args, owner, creation)
+                    insert_post = True
 
-            if args.repeat == "Daily":
-                for post in json.loads(posts):
-                    if cint(args.project_end_date) and not args.repeat_till:
-                        project = frappe.db.get_value("Operations Post", post["post"], ["project"])
-                        if frappe.db.exists("Contracts", {'project': project}):
-                            contract, end_date = frappe.db.get_value("Contracts", {'project': project}, ["name", "end_date"])
-                            if not end_date:
-                                frappe.throw(_("No end date set for contract {contract}".format(contract=contract)))
-                        else:
-                            frappe.throw(_("No contract linked with project {project}".format(project=project)))
+        if args.repeat in ['Daily', 'Weekly']:
+            for date in	pd.date_range(start=args.plan_from_date, end=end_date):
+                if args.repeat == 'Weekly' and getdate(date).strftime('%A') not in week_days: # Execute the post schedule for selected week days only
+                    continue
+                date_str = cstr(date.date())
+                delete_post = get_delete_posts(post, date_str, existing_schedules_set, delete_post)
+                insert_query += get_insert_post_schedule_query(post, date_str, post_details, args, owner, creation)
+                insert_post = True
 
-                    for date in	pd.date_range(start=post["date"], end=end_date):
-                        set_post_off(post["post"], cstr(date.date()), post_off_paid)
+    if insert_post:
+        insert_query = get_insert_post_schedule_query_tail_end(insert_query, creation)
+        if delete_post:
+            frappe.db.delete('Post Schedule', {'name': ["in", delete_post]})
+        frappe.db.sql(insert_query, values=[], as_dict=1)
+        frappe.db.commit()
 
-            elif args.repeat == "Weekly":
-                week_days = []
-                if args.sunday: week_days.append("Sunday")
-                if args.monday: week_days.append("Monday")
-                if args.tuesday: week_days.append("Tuesday")
-                if args.wednesday: week_days.append("Wednesday")
-                if args.thursday: week_days.append("Thursday")
-                if args.friday: week_days.append("Friday")
-                if args.saturday: week_days.append("Saturday")
-                for post in json.loads(posts):
-                    if cint(args.project_end_date) and not args.repeat_till:
-                        project = frappe.db.get_value("Operations Post", post["post"], ["project"])
-                        if frappe.db.exists("Contracts", {'project': project}):
-                            contract, end_date = frappe.db.get_value("Contracts", {'project': project}, ["name", "end_date"])
-                            if not end_date:
-                                frappe.throw(_("No end date set for contract {contract}".format(contract=contract)))
-                        else:
-                            frappe.throw(_("No contract linked with project {project}".format(project=project)))
+def get_week_days(args):
+    week_days = []
+    if args.repeat == "Weekly":
+        if args.sunday: week_days.append("Sunday")
+        if args.monday: week_days.append("Monday")
+        if args.tuesday: week_days.append("Tuesday")
+        if args.wednesday: week_days.append("Wednesday")
+        if args.thursday: week_days.append("Thursday")
+        if args.friday: week_days.append("Friday")
+        if args.saturday: week_days.append("Saturday")
+    return week_days
 
-                    for date in	pd.date_range(start=post["date"], end=end_date):
-                        if getdate(date).strftime('%A') in week_days:
-                            set_post_off(post["post"], cstr(date.date()), post_off_paid)
+def get_post_date_map(unique_posts_list, posts):
+    post_date_map = {}
+    for post_name in unique_posts_list:
+        post_date_map[post_name] = [p['date'] for p in posts if p['post'] == post_name]
+    return post_date_map
 
-            elif args.repeat == "Monthly":
-                for post in json.loads(posts):
-                    if cint(args.project_end_date) and not args.repeat_till:
-                        project = frappe.db.get_value("Operations Post", post["post"], ["project"])
-                        if frappe.db.exists("Contracts", {'project': project}):
-                            contract, end_date = frappe.db.get_value("Contracts", {'project': project}, ["name", "end_date"])
-                            if not end_date:
-                                frappe.throw(_("No end date set for contract {contract}".format(contract=contract)))
-                        else:
-                            frappe.throw(_("No contract linked with project {project}".format(project=project)))
+def get_insert_post_schedule_query_prefix():
+    return """
+        Insert Into
+            `tabPost Schedule`
+            (
+                `name`, `post`, `operations_role`, `post_abbrv`, `shift`, `site`,
+                `project`, `paid`, `date`, `post_status`, `owner`, `modified_by`, `creation`, `modified`
+            )
+        Values
+    """
 
-                    for date in	month_range(post["date"], end_date):
-                        set_post_off(post["post"], cstr(date.date()), post_off_paid)
+def get_post_details(post):
+    post_details=frappe.db.get_value(
+        'Operations Post',
+        post,
+        ['post_template', 'site_shift', 'site', 'project'],
+        as_dict=True
+    )
+    if post_details:
+        post_details['post_abbrv'] = frappe.db.get_value('Operations Role', post_details['post_template'], ['post_abbrv'])
+        return post_details
+    return {'post_template': '', 'site_shift': '', 'site': '', 'project': '', 'post_abbrv': ''}
 
-            elif args.repeat == "Yearly":
-                for post in json.loads(posts):
-                    if cint(args.project_end_date) and not args.repeat_till:
-                        project = frappe.db.get_value("Operations Post", post["post"], ["project"])
-                        if frappe.db.exists("Contracts", {'project': project}):
-                            contract, end_date = frappe.db.get_value("Contracts", {'project': project}, ["name", "end_date"])
-                            if not end_date:
-                                frappe.throw(_("No end date set for contract {contract}".format(contract=contract)))
-                        else:
-                            frappe.throw(_("No contract linked with project {project}".format(project=project)))
+def get_delete_posts(post, date_str, existing_schedules_set, delete_post=[]):
+    if (post, date_str) in existing_schedules_set:
+        # Instead of deleting one by one, collect for batch deletion
+        if not delete_post:
+            delete_post = []
+        delete_post.append(existing_schedules_set[(post, date_str)]) # Storing the existing Post Schedule names
+    return delete_post
 
-                    for date in	pd.date_range(start=post["date"], end=end_date, freq=pd.DateOffset(years=1)):
-                        set_post_off(post["post"], cstr(date.date()), post_off_paid)
-    frappe.db.commit()
+def get_insert_post_schedule_query(post, date_str, post_details, args, owner, creation):
+    name = f"{post}_{date_str}"
+    return f"""
+        (
+            "{name}", "{post}", "{post_details.post_template}", "{post_details.post_abbrv}",
+            "{post_details.site_shift}", "{post_details.site}", "{post_details.project}",
+            "{args.post_off_paid}", "{date_str}", "Post Off", "{owner}", "{owner}", "{creation}", "{creation}"
+        ),"""
 
-
+def get_insert_post_schedule_query_tail_end(insert_query, creation):
+    insert_query = insert_query[:-1] # To remove the last ,
+    insert_query += f"""
+        On Duplicate Key Update
+        modified_by = Values(modified_by),
+        modified = "{creation}",
+        operations_role = Values(operations_role),
+        post_abbrv = Values(post_abbrv),
+        shift = Values(shift),
+        project = Values(project),
+        site = Values(site),
+        post_status = "Post Off",
+        date= Values(date)
+    """
+    return insert_query
 
 def delete_existing_post_schedules(date,post):
     try:
@@ -1151,23 +1254,6 @@ def delete_existing_post_schedules(date,post):
         frappe.db.commit()
     except:
         frappe.log_error("Error Deleting Post Schedules",frappe.get_traceback())
-
-
-def set_post_off(post, date, post_off_paid):
-    if frappe.db.exists("Post Schedule", {"date": date, "post": post}):
-        #Delete existing post schedules
-        # doc = frappe.get_doc("Post Schedule", {"date": date, "post": post})
-        delete_existing_post_schedules(date,post)
-
-    doc = frappe.new_doc("Post Schedule")
-    doc.post = post
-    doc.date = date
-    doc.paid = post_off_paid
-
-    doc.post_status = "Post Off"
-    doc.save()
-
-
 
 @frappe.whitelist()
 def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_freq=None, week_days=[], repeat_till=None, project_end_date=None):

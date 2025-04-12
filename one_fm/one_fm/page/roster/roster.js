@@ -235,13 +235,7 @@ function load_js(page) {
 							label: 'Plan From Date',
 							fieldname: 'plan_from_date',
 							fieldtype: 'Date',
-							default: date,
-							onchange: function () {
-								let plan_from_date = d.get_value('plan_from_date');
-								if (plan_from_date && moment(plan_from_date).isBefore(moment(frappe.datetime.nowdate()))) {
-									frappe.throw(__("Plan From Date cannot be before today."));
-								}
-							}
+							default: date
 						},
 						{
 							label: 'Plan Till Date',
@@ -409,7 +403,7 @@ function load_js(page) {
 
 								if (r.status_code == 200) {
 									frappe.msgprint(r.data.message);
-					
+
 									setTimeout(() => {
 										frappe.hide_msgprint();
 									}, 4000);
@@ -3450,7 +3444,7 @@ function clear_selection(page) {
 
 	$(".filterhideshow").addClass("d-none");
 	$(".Postfilterhideshow").addClass("d-none");
-	
+
 	$("#calenderviewtable tbody").find("tr").each(function (i, row) {
 		$(row).find("input[type='checkbox']").prop("checked", false); // Uncheck the employee checkbox
 		$(row).find("div").removeClass("selectclass"); // Remove days selections

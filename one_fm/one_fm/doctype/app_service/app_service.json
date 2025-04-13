@@ -10,7 +10,9 @@
   "icon",
   "column_break_iidf",
   "status",
-  "auto_assign"
+  "auto_assign",
+  "assign_to_timesheet_employees",
+  "assign_to_non_timesheet_employees"
  ],
  "fields": [
   {
@@ -54,10 +56,22 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Auto Assign"
+  },
+  {
+   "default": "0",
+   "fieldname": "assign_to_timesheet_employees",
+   "fieldtype": "Check",
+   "label": "Assign to timesheet employees"
+  },
+  {
+   "default": "0",
+   "fieldname": "assign_to_non_timesheet_employees",
+   "fieldtype": "Check",
+   "label": "Assign to non timesheet employees"
   }
  ],
  "links": [],
- "modified": "2024-04-26 00:02:30.868707",
+ "modified": "2025-02-18 09:53:30.765357",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "App Service",

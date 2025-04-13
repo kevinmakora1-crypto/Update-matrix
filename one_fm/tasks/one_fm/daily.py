@@ -61,7 +61,7 @@ def notify_for_employee_docs_expiry():
             ])
         )
 
-        send_employee_doc_expiry_notification(get_employees_by_expiry(), recipients)
+        send_employee_doc_expiry_notification(get_employees_by_expiry_doc(), recipients)
 
     except Exception as e:
         frappe.log_error(str(e), 'Employee Docs Expiry')
@@ -91,7 +91,7 @@ def send_employee_doc_expiry_notification(employees_by_expiry, recipients):
         for employee in employees_by_expiry[expiring_doc]:
             subject = f"Document Expiry - {employee['employee_name']}"
             header = f"{employee['employee_name']}'s {expiring_doc} is about to expire."
-            message = f"Dear Onboarding Officer,<br><br>The following employee's {expiring_doc} is expiring on {target_expiry_date}:<br><br>Employee Name: {employee['employee_name']}<br>Employee ID: {employee['name']}<br><br>Kindly take the necessary action."
+            message = f"Dear Onboarding Officer,<br><br>The following employee's {expiring_doc} is expiring on {str(add_days(today(), 30))}:<br><br>Employee Name: {employee['employee_name']}<br>Employee ID: {employee['name']}<br><br>Kindly take the necessary action."
             doc_link = get_url_to_form("Employee", employee['name'])
             for recipient in recipients:
                 create_employee_doc_expiry_notification_log(subject, message, employee['name'], recipient)

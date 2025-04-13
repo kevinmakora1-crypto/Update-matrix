@@ -20,7 +20,8 @@ class EmployeeSchedule(Document):
 			frappe.throw(f"{self.employee} - {self.employee_name} is not active and cannot be scheduled.")
 
 	def on_update(self):
-		if self.get_doc_before_save().employee_availability != "Day Off" and self.employee_availability == "Day Off":
+		previous_doc =  self.get_doc_before_save()
+		if previous_doc and previous_doc.employee_availability != "Day Off" and self.employee_availability == "Day Off":
 			start_date = self.date
 			end_date = get_last_day(start_date)
 			employee_schedule = frappe.get_value("Employee Schedule",

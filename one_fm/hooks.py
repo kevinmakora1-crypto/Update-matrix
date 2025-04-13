@@ -32,7 +32,6 @@ app_include_js = [
 		"/assets/one_fm/js/maps.js",
 		"/assets/one_fm/js/desk.js",
         "/assets/one_fm/js/showdown.min.js",
-        "purchase.bundle.js",
 		"/assets/one_fm/js/form_overrides/workflow_override.js",
         "text_editor.bundle.js"
 ]
@@ -229,7 +228,7 @@ doc_events = {
 		"validate":[
 			"one_fm.overrides.purchase_order.validate_purchase_uom"
 		],
-		# 'on_update':"one_fm.purchase.utils.on_update",
+		'on_update':"one_fm.overrides.purchase_order.on_update",
 		"on_update_after_submit": "one_fm.purchase.utils.set_po_letter_head"
 	},
 	"Leave Application": {
@@ -376,6 +375,7 @@ doc_events = {
 	},
 	"Interview": {
 		"validate": "one_fm.overrides.interview.update_interview_rounds_in_job_applicant",
+        "after_insert": "one_fm.overrides.interview.update_from_to_date_null",
 	},
 	"Issue": {
 		"after_insert": [
@@ -441,10 +441,7 @@ doc_events = {
 	# }
     "OAuth Bearer Token": {
 		"after_insert": "one_fm.api.doc_methods.oauth_bearer_token.revoke_and_delete_existing_tokens",
-	},
-    "Employee": {
-        "before_save": "one_fm.overrides.employee.get_assurance_level_of_employee"
-    }
+	}
 }
 
 standard_portal_menu_items = [
@@ -535,6 +532,7 @@ override_doctype_class = {
     "Interview Feedback": "one_fm.overrides.interview_feedback.InterviewFeedbackOverride",
     "Leave Allocation": "one_fm.overrides.leave_allocation.LeaveAllocationOverride",
     "Interview": "one_fm.overrides.interview.InterviewOverride",
+    "Purchase Order": "one_fm.overrides.purchase_order.PurchaseOrderOverride",
 
     # "User": "one_fm.overrides.user.UserOverride"
 }
@@ -750,6 +748,9 @@ scheduler_events = {
         ],
         "*/5 * * * *": [ # Runs every 5 minutes
             "one_fm.overrides.todo.sync_google_tasks_with_todos"
+        ],
+         "* * * * *": [ # Runs every minute
+            "one_fm.operations.doctype.process_task.process_task.run_process_task"
         ]
 	}
 }
@@ -850,7 +851,9 @@ override_whitelisted_methods = {
     "frappe.desk.form.load.get_docinfo": "one_fm.permissions.get_docinfo",
 	"erpnext.controllers.accounts_controller.update_child_qty_rate":"one_fm.overrides.accounts_controller.update_child_qty_rate",
 	"hrms.hr.doctype.goal.goal.get_children":"one_fm.overrides.goal.get_childrens",
-    "hrms.payroll.doctype.payroll_entry.payroll_entry.get_start_end_dates": "one_fm.overrides.payroll_entry.get_start_end_dates"
+    "hrms.payroll.doctype.payroll_entry.payroll_entry.get_start_end_dates": "one_fm.overrides.payroll_entry.get_start_end_dates",
+    "hrms.hr.doctype.job_applicant.job_applicant.create_interview": "one_fm.overrides.job_applicant.create_interview"
+
 }
 
 

@@ -26,7 +26,6 @@
   {
    "fieldname": "post",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Post",
    "options": "Operations Post"
@@ -125,7 +124,7 @@
   }
  ],
  "links": [],
- "modified": "2023-05-31 23:35:20.337186",
+ "modified": "2025-04-08 08:29:11.882051",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Post Schedule",

@@ -79,7 +79,6 @@ one_fm.patches.v15_0.delete_employment_type_field_from_job_opening
 one_fm.patches.v15_0.migrate_data_for_job_offer_term_templates
 one_fm.patches.v15_0.delete_offer_term_templates_field
 one_fm.patches.v15_0.replicate_issue_types_to_hd_ticket_types
-# one_fm.patches.v15_0.update_timesheet_workflow_sate
 one_fm.patches.v15_0.delete_duplicate_leave_attendance
 one_fm.patches.v15_0.update_subcontract_doc
 one_fm.patches.v15_0.update_shift_permission_workflow
@@ -101,3 +100,12 @@ one_fm.patches.v15_0.update_erf_for_job_offer
 one_fm.patches.v15_0.update_employees_operation_role
 one_fm.patches.v15_0.populate_project_type_task
 one_fm.patches.v15_0.update_employees_operation_role
+one_fm.patches.v15_0.update_operations_shift_status
+one_fm.patches.v15_0.update_job_offer_and_onboard_employee_document
+one_fm.patches.v15_0.update_accomodation_in_employee
+one_fm.patches.v15_0.update_erf_in_job_offer_2
+one_fm.patches.v15_0.update_historical_rfp_purchased_quantity
+one_fm.patches.v15_0.update_expired_contracts
+one_fm.patches.v15_0.update_timesheet_workflow_state
+one_fm.patches.v15_0.fix_stale_leave_application_employee_status
+one_fm.patches.v15_0.update_leave_application_workflow_state

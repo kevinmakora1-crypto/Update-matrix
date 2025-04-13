@@ -14,6 +14,7 @@ def get_valuation_rate_(
     company=None,
     raise_error_if_no_rate=True,
     batch_no=None,
+    serial_and_batch_bundle=None,
 ):
 
     if not company:

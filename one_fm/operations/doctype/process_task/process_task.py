@@ -193,3 +193,10 @@ def day_of_the_frequency(frequency, date):
 	if frequency == 'Weekly':
 		return week_map[getdate(date).weekday()]
 	return 1
+
+
+def run_process_task(process_task):
+	"""
+		Function to run the process task
+	"""
+	pass

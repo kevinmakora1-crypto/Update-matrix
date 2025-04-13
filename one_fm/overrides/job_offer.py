@@ -107,6 +107,7 @@ class JobOfferOverride(JobOffer):
             )
 
     def on_update_after_submit(self):
+        self.onload()
         self.validate_job_offer_mandatory_fields()
         if self.workflow_state == 'Submit to Onboarding Officer':
             msg = "Please select {0} to Accept the Offer and Process Onboard"
@@ -119,6 +120,7 @@ class JobOfferOverride(JobOffer):
             assign_to_onboarding_officer(self)
         if self.workflow_state == 'Accepted' and self.get_onload('onboard_employee'):
             close_all_assignments(self.doctype, self.name)
+
         # Set offer accepted date
         if self.workflow_state == 'Submit to Onboarding Officer' and not self.one_fm_offer_accepted_date:
             self.one_fm_offer_accepted_date = nowdate()

@@ -1,40 +1,26 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2024-12-20 10:58:49.275676",
+ "creation": "2025-02-17 23:05:26.787232",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "employee",
-  "column_break_sulr",
-  "employee_name",
-  "column_break_pbsg",
+  "operations_shift",
+  "column_break_aepi",
   "count"
  ],
  "fields": [
   {
-   "fieldname": "employee",
+   "fieldname": "operations_shift",
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Employee",
-   "options": "Employee"
+   "label": "Operations Shift",
+   "options": "Operations Shift"
   },
   {
-   "fieldname": "column_break_sulr",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "employee.employee_name",
-   "fieldname": "employee_name",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Employee Name"
-  },
-  {
-   "fieldname": "column_break_pbsg",
+   "fieldname": "column_break_aepi",
    "fieldtype": "Column Break"
   },
   {
@@ -48,10 +34,10 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-12-20 11:00:07.869155",
+ "modified": "2025-02-17 23:10:49.636630",
  "modified_by": "Administrator",
  "module": "Operations",
- "name": "Default Shift Checker Employee",
+ "name": "Default Shift Checker Shift",
  "owner": "Administrator",
  "permissions": [],
  "sort_field": "modified",

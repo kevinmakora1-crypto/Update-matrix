@@ -90,6 +90,11 @@ def create_google_task_on_todo_creation(doc, method):
 
 def create_google_task_on_todo_creation_in_erp(doc, method):
     employee_email = doc.allocated_to
+    
+    # If task is already created then avoiding recreating it
+    if doc.custom_google_task_id:
+        return
+    
     if not employee_email:
         frappe.throw(_("No assigned user found for this ToDo"))
     service = get_google_task_service(employee_email)
@@ -131,6 +136,8 @@ def create_description_for_google_todo(doc):
         todo_doc_type = doc.reference_type if doc.reference_type else ""
         todo_reference_link = get_url_to_form(todo_doc_type, doc.reference_name) if doc.reference_name else ""
         task_notes +=f"""
+        Hey you cant update this task on Google Task, Close the task in ERPNext
+        
 		ToDo Reference: {todo_reference}
 		Reference DocType: {todo_doc_type}
 		Reference Name: {todo_reference_link}
@@ -269,7 +276,7 @@ def sync_google_tasks_for_users(user_emails=[]):
         try:
             google_task_id = google_task['id']
 
-            todo = frappe.get_all('ToDo', filters={'custom_google_task_id': google_task_id}, limit=1)
+            todos = frappe.get_all('ToDo', filters={'custom_google_task_id': google_task_id}, limit=1)
 
             due_date_str = google_task.get('due', None)
             due_date = getdate(due_date_str) if due_date_str else None
@@ -277,16 +284,28 @@ def sync_google_tasks_for_users(user_emails=[]):
             task_description = google_task.get('notes', '') or google_task.get('title', '')
             allocated_to = google_task.get('user_email', '')
             mapped_status = get_mapped_status_from_google_task(google_task)
-            custom_source = 'Google Task'
 
-            if todo:
-                todo = frappe.get_doc('ToDo', todo[0]['name'])
+            if todos:
+                # If ToDo already exists
+                todo = frappe.get_doc('ToDo', todos[0]['name'])
                 todo.db_set("description", task_description)
-                todo.db_set("status", mapped_status)
                 todo.db_set("custom_google_task_title", task_title)
                 todo.db_set("date", due_date)
                 todo.db_set("allocated_to", allocated_to)
-                todo.db_set("custom_source", custom_source)
+
+                # If status doesnot match
+                if mapped_status != todo.status:
+                    # If ToDo has any reference then it shouldn't be closed by Google Task
+                    if todo.reference_type and mapped_status == 'Closed':
+                        service = get_google_task_service(allocated_to)
+                        payload = { 
+                            **google_task,
+                            'title': f'[Hey!! You cant do that, Close the task in ERPNext] - {task_title}',
+                            'status': 'needsAction' 
+                        }
+                        service.tasks().update(tasklist='@default',task=google_task_id, body=payload).execute()
+                    else:
+                        todo.db_set("status", mapped_status)
             else:
                 # If ToDo doesn't exist, create a new ToDo with google task details
                 new_todo = frappe.get_doc({
@@ -297,7 +316,7 @@ def sync_google_tasks_for_users(user_emails=[]):
                     'custom_google_task_title': task_title,
                     'custom_google_task_id': google_task_id,
                     'allocated_to': allocated_to,
-                    'custom_source':custom_source
+                    'custom_source': 'Google Task'
                 })
                 new_todo.insert(ignore_permissions=True)
 

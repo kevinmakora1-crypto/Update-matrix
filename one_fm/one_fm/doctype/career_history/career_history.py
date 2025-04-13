@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from frappe import _
-from frappe.utils import getdate, month_diff, today, now, get_link_to_form
+from frappe.utils import getdate, month_diff, today, now, get_link_to_form,nowdate
 from one_fm.utils import validate_applicant_overseas_transferable
 
 class OverlapError(frappe.ValidationError): pass
@@ -15,6 +15,10 @@ class CareerHistory(Document):
 		update_interview_and_feedback(self)
 
 	def validate(self):
+		if not self.validated_by_recruiter_on:
+			frappe.throw("You can only submit Career History once 'Validate by Recruiter On' is set.")
+		elif getdate(self.validated_by_recruiter_on) > getdate(nowdate()):
+				frappe.throw("Validate by Recruiter On cannot be future date.")
 		self.validate_with_applicant()
 		if self.career_history_company and self.calculate_promotions_and_experience_automatically:
 			self.calculate_promotions_and_experience()

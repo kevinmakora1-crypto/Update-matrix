@@ -9902,5 +9902,21 @@
   "property_type": "Time",
   "row_name": null,
   "value": null
+ },
+ {
+  "default_value": null,
+  "doc_type": "Assignment Rule",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "rule",
+  "is_system_generated": 0,
+  "modified": "2025-04-13 21:42:25.403420",
+  "module": null,
+  "name": "Assignment Rule-rule-options",
+  "property": "options",
+  "property_type": "Select",
+  "row_name": null,
+  "value": "Round Robin\nLoad Balancing\nBased on Field\nBased on Process Task"
  }
 ]

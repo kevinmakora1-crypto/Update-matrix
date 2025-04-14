@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+
 from frappe.desk.form.assign_to import add as add_assignment, DuplicateToDoError
 from frappe import _
 from datetime import datetime,timedelta
@@ -317,50 +318,98 @@ def run_process_task():
 	"""
 		Function to run the process task
 	"""
-	run_cron_process_task()
+	run_cron_based_process_tasks()
 
 
-def is_today_last_day(today):
-	tomorrow = today + timedelta(days=1)
-	if int(today.month) == int(tomorrow.month):
-		return False
-	return True
+def run_scheduled_process_tasks():
+	today = getdate()
+	weekday = today.strftime('%A')  # e.g., 'Monday'
+	day_of_month = today.day
+	last_day_of_month = calendar.monthrange(today.year, today.month)[1]
 
-def run_cron_process_task():
-	"""Trigger all the Task creating process tasks for the day for cron based process tasks"""
-	try:
-		time_now = datetime.now()
-		today = datetime.today()
-		all_processes = frappe.db.sql("""
-						SELECT 
-							*
-						FROM 
-							`tabProcess Task` 
-						WHERE 
-							frequency = 'Cron'
-						AND is_erp_task = 0 
-						AND task_type = 'Routine'
-						AND (
-							(end_date IS NOT NULL AND DATE(%s) BETWEEN DATE(start_date) AND DATE(end_date))
-							OR
-							(end_date IS NULL AND DATE(%s) >= DATE(start_date))
-						)
-					""", ( today, today), as_dict=True)
-		if all_processes:
-			task_docs_to_be_created = []
-			for one in all_processes:
-				last_executed =  one.get('last_execution') or datetime.min
-				try:
-					cron_time = croniter(one.get('cron_format'), time_now).get_prev(datetime)
-					can_execute = time_now >= cron_time and cron_time > get_datetime(last_executed)
-					if can_execute:
-						task_docs_to_be_created.append(one)
-				except Exception as e:
-					frappe.log_error(message = frappe.get_traceback(), title = f"Process Task - Cron Error for {one.name}")
-					continue
-			create_tasks_for(task_docs_to_be_created)
-	except:
-		frappe.log_error(title = "Error Creating Task",message=frappe.get_traceback())
-			
-	
-	
+	tasks = frappe.get_all("Process Task", filters={
+		"is_active": 1,
+		"task_type": "Routine",
+		"is_erp_task": 1,
+		"is_automated": 1,
+		"frequency": ["in", ["Daily", "Weekly", "Monthly"]]
+	}, fields=["name", "method", "frequency", "repeat_on_last_day", "repeat_on_day"])
+
+	for task in tasks:
+		doc = frappe.get_doc("Process Task", task.name)
+
+		if not task.method:
+			frappe.logger().info(f"[Process Task] Skipping {task.name} - No method defined")
+			continue
+
+		method_path = frappe.get_value("Method", task.method, "method")
+		if not method_path:
+			frappe.logger().info(f"[Process Task] Skipping {task.name} - Method path not found in Method doctype")
+			continue
+
+		should_run = False
+
+		if task.frequency == "Daily":
+			should_run = True
+
+		elif task.frequency == "Weekly":
+			repeat_days = [d.day for d in doc.repeat_on_days]
+			if weekday in repeat_days:
+				should_run = True
+
+		elif task.frequency == "Monthly":
+			if task.repeat_on_last_day and day_of_month == last_day_of_month:
+				should_run = True
+			elif task.repeat_on_day and day_of_month == task.repeat_on_day:
+				should_run = True
+
+		if should_run:
+			try:
+				method_to_call = frappe.get_attr(method_path)
+				enqueue(method_to_call, queue='default', timeout=600)
+				frappe.logger().info(f"[Process Task] Ran {task.method} for {task.name}")
+			except Exception as e:
+				frappe.logger().error(f"[Process Task] Failed to run {task.method} for {task.name} - {e}")
+
+
+def run_cron_based_process_tasks():
+	now = now_datetime()
+
+	tasks = frappe.get_all("Process Task", filters={
+		"is_active": 1,
+		"task_type": "Routine",
+		"is_erp_task": 1,
+		"frequency": "Cron"
+	}, fields=["name", "method", "cron_format", "last_execution"])
+
+	for task in tasks:
+		# Skip if no method or no cron expression is provided
+		if not task.method:
+			frappe.logger().warning(f"[Process Task - Cron] Skipped {task.name}: no method provided.")
+			continue
+
+		if not task.cron_format:
+			frappe.logger().warning(f"[Process Task - Cron] Skipped {task.name}: no cron expression.")
+			continue
+		
+		method_doc = frappe.get_value("Method", task.method, "method")
+		if not method_doc:
+			frappe.logger().warning(f"[Process Task - Cron] Skipped {task.name}: method path not found in Method doctype.")
+			continue
+
+		last_run = task.last_execution or datetime.min
+
+		try:
+			cron_time = croniter(task.cron_format, now).get_prev(datetime)
+			should_run = now >= cron_time and cron_time > get_datetime(last_run)
+		except Exception as e:
+			frappe.log_error(frappe.get_traceback(), f"[Process Task - Cron] Invalid cron format for {task.name}")
+			continue
+
+		if should_run:
+			try:
+				frappe.enqueue(method_doc, queue='default', timeout=600)
+				frappe.db.set_value("Process Task", task.name, "last_execution", now)
+				frappe.logger().info(f"[Process Task - Cron] Enqueued {task.method} for {task.name}")
+			except Exception as e:
+				frappe.log_error(frappe.get_traceback(), f"[Process Task - Cron] Failed to enqueue {task.method} for {task.name}")

@@ -27,6 +27,14 @@ frappe.ui.form.on('Process Task', {
 				frm.set_value('is_erp_task', previous_value);
 			}
 		);
+	},
+	frequency: function(frm) {
+		if (frm.doc.frequency === "Cron") {
+			if (!frm.doc.is_automated) {
+				frappe.msgprint(__('Setting frequency to "Cron" requires automation. Enabling "Is Automated".'));
+				frm.set_value('is_automated', 1);
+			}
+		}
 	}
 });
 

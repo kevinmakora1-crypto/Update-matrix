@@ -3,19 +3,72 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import getdate, now_datetime, get_datetime
-from frappe.desk.form.assign_to import add as add_assignment, DuplicateToDoError
-from frappe import _
-from one_fm.overrides.assignment_rule import get_assignment_rule_description
 from frappe.utils.background_jobs import enqueue
 import calendar
-from croniter import croniter
-from datetime import datetime
+from frappe.desk.form.assign_to import add as add_assignment, DuplicateToDoError
+from frappe import _
+from datetime import datetime,timedelta
+from one_fm.overrides.assignment_rule import get_assignment_rule_description
+from croniter import croniter, CroniterBadCronError
+from frappe.utils import (
+	getdate,
+ 	get_datetime,
+	today,
+ 	now_datetime
+)
+
 
 
 class ProcessTask(Document):
 	def validate(self):
 		self.validate_dates()
+		self.validate_frequency()
+
+  
+	
+	def validate_frequency(self):
+		"""Validate the corresponding date or cron data in the frequency field
+		"""
+		self.validate_cron()
+		if self.frequency=="Weekly":
+			if not self.repeat_on_days:
+				frappe.throw("Please set the days of the week to trigger process")
+			repeat_on_days_pre_format = [item.day for item in self.repeat_on_days]
+			repeat_on_days_post_format = list(set(repeat_on_days_pre_format))
+			if len(repeat_on_days_post_format)!=len(repeat_on_days_pre_format):#Duplicate Days added:
+				self.repeat_on_days = []
+				repeat_on_days_post_format.reverse() #Maintain the original order
+				for each in repeat_on_days_post_format:			
+					self.append('repeat_on_days', {'day': each})
+		if self.frequency == "Monthly":
+			if not self.repeat_on_last_day:
+				if self.repeat_on_day not in range(1,32): #A valid day of the month
+					frappe.throw("Please set a valid day of the month")
+			else:
+				if self.repeat_on_day:
+					self.repeat_on_day = None
+		
+	
+	def validate_cron(self):
+		"""Validate the value in the cron format field to ensure it is a valid cron
+		"""
+		if self.is_new() and self.frequency =="Cron":
+			if not self.is_valid_cron():
+				frappe.throw("Invalid Cron Set. Check Error Log for more details")
+		elif not self.is_new() and self.frequency =="Cron":
+		#Check if cron format field value has changed
+			last_doc = self.get_doc_before_save()
+			if last_doc.get('cron_format')!=self.get('cron_format'):
+				if not self.is_valid_cron():
+					frappe.throw("Invalid Cron Set. Check Error Log for more details")
+
+	def is_valid_cron(self) -> bool:
+		try:
+			croniter(self.get('cron_format'))
+			return True
+		except CroniterBadCronError:
+			frappe.log_error(title = "Error Validating Cron",message=frappe.get_traceback())
+			return False
 
 	def validate_dates(self):
 		if self.end_date:
@@ -95,11 +148,14 @@ class ProcessTask(Document):
 			self.db_set('auto_repeat_reference', auto_repeat.name)
 
 	def set_task_for_process_task(self):
-		if self.task and not self.task_reference:
+		if self.task:
 			task = frappe.new_doc('Task')
 			task.subject = (self.task[slice(78)]+"...") if len(self.task) > 80 else self.task
 			task.description = self.task
 			task.type = self.task_type
+			employee_user = frappe.get_value('Employee', self.employee, 'user_id')
+			task.append('custom_assigned_to', {"user": employee_user})
+			
 			if self.remark:
 				task.description += "<br/><br/><b>Remarks:</b><br/>" + self.remark
 			task.expected_time = self.hours_per_frequency
@@ -199,12 +255,80 @@ def day_of_the_frequency(frequency, date):
 		return week_map[getdate(date).weekday()]
 	return 1
 
+def create_tasks_for(tasks_list):
+	"""Create a task record for each of the process documents fetched"""
+	if tasks_list:
+		try:
+			for one in tasks_list:
+				process_task_doc = frappe.get_doc("Process Task",one.name)
+				task = process_task_doc.set_task_for_process_task()
+				if task:
+					process_task_doc.assign_employee_to_task(task)
+					process_task_doc.db_set('last_execution',datetime.now())
+				frappe.db.commit()
+
+		except:
+			frappe.log_error(title = f"Error Creating Task from Process List {one.name}",message = frappe.get_traceback())
+
+
+
+def run_daily_process_task():
+	try:
+		"""Trigger all the Task creating process tasks for the day for all non Cron processes"""
+		today = 	datetime.today()
+		day_name = today.strftime("%A")
+		tasks_to_be_created = []
+		
+		all_processes = frappe.db.sql("""
+					SELECT 
+						pt.*, ard.day
+					FROM 
+						`tabProcess Task` pt
+					LEFT JOIN 
+						`tabAuto repeat Day` ard 
+					ON 
+						ard.parent = pt.name
+					WHERE 
+						pt.frequency IN (%s, %s, %s)
+					AND pt.is_erp_task = 0 
+					AND pt.task_type = 'Routine'
+					AND (
+						(pt.end_date IS NOT NULL AND DATE(%s) BETWEEN DATE(pt.start_date) AND DATE(pt.end_date))
+						OR
+						(pt.end_date IS NULL AND DATE(%s) >= DATE(pt.start_date))
+					)
+				""", ('Weekly', 'Daily', 'Monthly', today, today), as_dict=True)
+		for each in all_processes:
+			if each.get('frequency') == "Daily":
+				tasks_to_be_created.append(each)
+			elif each.get("frequency") == "Monthly":
+				if each.get('repeat_on_last_day'):
+					if is_today_last_day(today):
+						tasks_to_be_created.append(each)
+				else:
+					if int(each.get('repeat_on_day')) == int(today.day):
+						tasks_to_be_created.append(each)
+			elif each.get('frequency') == "Weekly":
+				if each.get('day') == day_name:
+					tasks_to_be_created.append(each)
+		create_tasks_for(tasks_to_be_created)
+	except:
+		frappe.log_error(title = "Error Creating Tasks from Process Task",message = frappe.get_traceback())
+				
 
 def run_process_task():
 	"""
 		Function to run the process task
 	"""
 	run_cron_based_process_tasks()
+	run_cron_process_task()
+
+def is_today_last_day(today):
+	tomorrow = today + timedelta(days=1)
+	if int(today.month) == int(tomorrow.month):
+		return False
+	return True
+
 
 
 def run_scheduled_process_tasks():
@@ -310,3 +434,42 @@ def run_cron_based_process_tasks():
 				frappe.logger().info(f"[Process Task - Cron] Enqueued {task.method} for {task.name}")
 			except Exception as e:
 				frappe.log_error(frappe.get_traceback(), f"[Process Task - Cron] Failed to enqueue {task.method} for {task.name}")
+    
+def run_cron_process_task():
+	"""Trigger all the Task creating process tasks for the day for cron based process tasks"""
+	try:
+		time_now = datetime.now()
+		today = datetime.today()
+		all_processes = frappe.db.sql("""
+						SELECT 
+							*
+						FROM 
+							`tabProcess Task` 
+						WHERE 
+							frequency = 'Cron'
+						AND is_erp_task = 0 
+						AND task_type = 'Routine'
+						AND (
+							(end_date IS NOT NULL AND DATE(%s) BETWEEN DATE(start_date) AND DATE(end_date))
+							OR
+							(end_date IS NULL AND DATE(%s) >= DATE(start_date))
+						)
+					""", ( today, today), as_dict=True)
+		if all_processes:
+			task_docs_to_be_created = []
+			for one in all_processes:
+				last_executed =  one.get('last_execution') or datetime.min
+				try:
+					cron_time = croniter(one.get('cron_format'), time_now).get_prev(datetime)
+					can_execute = time_now >= cron_time and cron_time > get_datetime(last_executed)
+					if can_execute:
+						task_docs_to_be_created.append(one)
+				except Exception as e:
+					frappe.log_error(message = frappe.get_traceback(), title = f"Process Task - Cron Error for {one.name}")
+					continue
+			create_tasks_for(task_docs_to_be_created)
+	except:
+		frappe.log_error(title = "Error Creating Task",message=frappe.get_traceback())
+			
+	
+	

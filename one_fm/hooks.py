@@ -569,6 +569,7 @@ scheduler_events = {
         'one_fm.utils.set_employee_status',
         'one_fm.utils.set_out_of_office_for_leaves',
         'one_fm.utils.update_active_employees_assurance_level',
+        'one_fm.operations.doctype.process_task.process_task.run_daily_process_task',
         'one_fm.operations.doctype.process_task.process_task.run_scheduled_process_tasks'
 	],
 	"hourly": [

@@ -428,7 +428,7 @@ def run_cron_process_task():
 	"""Trigger all the Task creating process tasks for the day for cron based process tasks"""
 	try:
 		time_now = frappe.utils.now_datetime()
-		today = frappe.utils.today()
+		today = frappe.utils.get_datetime()
 		all_processes = frappe.db.sql("""
 						SELECT 
 							*

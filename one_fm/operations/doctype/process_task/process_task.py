@@ -337,13 +337,18 @@ def run_scheduled_process_tasks():
 	day_of_month = today.day
 	last_day_of_month = calendar.monthrange(today.year, today.month)[1]
 
-	tasks = frappe.get_all("Process Task", filters={
-		"is_active": 1,
-		"task_type": "Routine",
-		"is_erp_task": 1,
-		"is_automated": 1,
-		"frequency": ["in", ["Daily", "Weekly", "Monthly"]]
-	}, fields=["name", "method", "frequency", "repeat_on_last_day", "repeat_on_day"])
+	tasks = frappe.db.sql("""
+		SELECT name, method, frequency, repeat_on_last_day, repeat_on_day
+		FROM `tabProcess Task`
+		WHERE
+			is_active = 1
+			AND task_type = 'Routine'
+			AND is_erp_task = 1
+			AND is_automated = 1
+			AND frequency IN ('Daily', 'Weekly', 'Monthly')
+			AND start_date <= %(today)s
+			AND (end_date IS NULL OR end_date > %(today)s)
+	""", {"today": today}, as_dict=True)
 
 	for task in tasks:
 		doc = frappe.get_doc("Process Task", task.name)
@@ -384,13 +389,19 @@ def run_scheduled_process_tasks():
 
 def run_cron_based_process_tasks():
 	now = now_datetime()
+	today = getdate()
 
-	tasks = frappe.get_all("Process Task", filters={
-		"is_active": 1,
-		"task_type": "Routine",
-		"is_erp_task": 1,
-		"frequency": "Cron"
-	}, fields=["name", "method", "cron_format", "last_execution"])
+	tasks = frappe.db.sql("""
+		SELECT name, method, cron_format, last_execution
+		FROM `tabProcess Task`
+		WHERE
+			is_active = 1
+			AND task_type = 'Routine'
+			AND is_erp_task = 1
+			AND frequency = 'Cron'
+			AND start_date <= %(today)s
+			AND (end_date IS NULL OR end_date > %(today)s)
+	""", {"today": today}, as_dict=True)
 
 	for task in tasks:
 		# Skip if no method or no cron expression is provided
@@ -410,8 +421,8 @@ def run_cron_based_process_tasks():
 		last_run = task.last_execution or datetime.min
 
 		try:
-			cron_time = croniter(task.cron_format, now).get_prev(datetime)
-			should_run = now >= cron_time and cron_time > get_datetime(last_run)
+			next_scheduled_time = croniter(task.cron_format, last_run).get_next(datetime)
+			should_run = now >= next_scheduled_time and last_run < next_scheduled_time
 		except Exception as e:
 			frappe.log_error(frappe.get_traceback(), f"[Process Task - Cron] Invalid cron format for {task.name}")
 			continue

@@ -12,9 +12,16 @@ USER_ALLOWED_STATUSES = ["Open", "Working", "Pending Review"]
 
 def validate_task(doc, method):
     # When new doc is added, then sync field after insert
-    if not doc.is_new():
+    if not doc.is_new() and doc.status != "Pending Review":
         sync_assign_to_field(doc)
     check_completed_by_and_completed_on(doc,method)
+
+    all_asssigned_users = doc.get_assigned_users()
+    assignees = doc.custom_assigned_to 
+    if doc.status == "Pending Review" and assignees:
+        for assignee in assignees:
+            if assignee.user in list(all_asssigned_users):  
+                remove_assignment(doc.doctype, doc.name, assignee.user)
 
     roles = get_user_roles()
     is_manager = is_project_manager(doc.project) if doc.project else False

@@ -264,7 +264,7 @@ def create_tasks_for(tasks_list):
 				task = process_task_doc.set_task_for_process_task()
 				if task:
 					process_task_doc.assign_employee_to_task(task)
-					process_task_doc.db_set('last_execution',datetime.now())
+					process_task_doc.db_set('last_execution',frappe.utils.now_datetime())
 				frappe.db.commit()
 
 		except:
@@ -275,7 +275,7 @@ def create_tasks_for(tasks_list):
 def run_daily_process_task():
 	try:
 		"""Trigger all the Task creating process tasks for the day for all non Cron processes"""
-		today = 	datetime.today()
+		today = 	frappe.utils.get_datetime()
 		day_name = today.strftime("%A")
 		tasks_to_be_created = []
 		
@@ -285,7 +285,7 @@ def run_daily_process_task():
 					FROM 
 						`tabProcess Task` pt
 					LEFT JOIN 
-						`tabAuto repeat Day` ard 
+						`tabAuto Repeat Day` ard 
 					ON 
 						ard.parent = pt.name
 					WHERE 
@@ -427,8 +427,8 @@ def run_cron_based_process_tasks():
 def run_cron_process_task():
 	"""Trigger all the Task creating process tasks for the day for cron based process tasks"""
 	try:
-		time_now = datetime.now()
-		today = datetime.today()
+		time_now = frappe.utils.now_datetime()
+		today = frappe.utils.today()
 		all_processes = frappe.db.sql("""
 						SELECT 
 							*

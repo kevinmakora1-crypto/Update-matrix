@@ -3,7 +3,8 @@
 
 import frappe
 from frappe.model.document import Document
-
+from frappe.utils.background_jobs import enqueue
+import calendar
 from frappe.desk.form.assign_to import add as add_assignment, DuplicateToDoError
 from frappe import _
 from datetime import datetime,timedelta
@@ -12,7 +13,8 @@ from croniter import croniter, CroniterBadCronError
 from frappe.utils import (
 	getdate,
  	get_datetime,
-	today
+	today,
+ 	now_datetime
 )
 
 
@@ -319,6 +321,14 @@ def run_process_task():
 		Function to run the process task
 	"""
 	run_cron_based_process_tasks()
+	run_cron_process_task()
+
+def is_today_last_day(today):
+	tomorrow = today + timedelta(days=1)
+	if int(today.month) == int(tomorrow.month):
+		return False
+	return True
+
 
 
 def run_scheduled_process_tasks():
@@ -413,3 +423,42 @@ def run_cron_based_process_tasks():
 				frappe.logger().info(f"[Process Task - Cron] Enqueued {task.method} for {task.name}")
 			except Exception as e:
 				frappe.log_error(frappe.get_traceback(), f"[Process Task - Cron] Failed to enqueue {task.method} for {task.name}")
+    
+def run_cron_process_task():
+	"""Trigger all the Task creating process tasks for the day for cron based process tasks"""
+	try:
+		time_now = datetime.now()
+		today = datetime.today()
+		all_processes = frappe.db.sql("""
+						SELECT 
+							*
+						FROM 
+							`tabProcess Task` 
+						WHERE 
+							frequency = 'Cron'
+						AND is_erp_task = 0 
+						AND task_type = 'Routine'
+						AND (
+							(end_date IS NOT NULL AND DATE(%s) BETWEEN DATE(start_date) AND DATE(end_date))
+							OR
+							(end_date IS NULL AND DATE(%s) >= DATE(start_date))
+						)
+					""", ( today, today), as_dict=True)
+		if all_processes:
+			task_docs_to_be_created = []
+			for one in all_processes:
+				last_executed =  one.get('last_execution') or datetime.min
+				try:
+					cron_time = croniter(one.get('cron_format'), time_now).get_prev(datetime)
+					can_execute = time_now >= cron_time and cron_time > get_datetime(last_executed)
+					if can_execute:
+						task_docs_to_be_created.append(one)
+				except Exception as e:
+					frappe.log_error(message = frappe.get_traceback(), title = f"Process Task - Cron Error for {one.name}")
+					continue
+			create_tasks_for(task_docs_to_be_created)
+	except:
+		frappe.log_error(title = "Error Creating Task",message=frappe.get_traceback())
+			
+	
+	

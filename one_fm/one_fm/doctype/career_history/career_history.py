@@ -15,10 +15,6 @@ class CareerHistory(Document):
 		update_interview_and_feedback(self)
 
 	def validate(self):
-		if not self.validated_by_recruiter_on:
-			frappe.throw("You can only submit Career History once 'Validate by Recruiter On' is set.")
-		elif getdate(self.validated_by_recruiter_on) > getdate(nowdate()):
-				frappe.throw("Validate by Recruiter On cannot be future date.")
 		self.validate_with_applicant()
 		if self.career_history_company and self.calculate_promotions_and_experience_automatically:
 			self.calculate_promotions_and_experience()
@@ -100,6 +96,10 @@ class CareerHistory(Document):
 			self.total_years_of_experience = total_months_of_experience/12
 
 	def	on_submit(self):
+		if not self.validated_by_recruiter_on:
+			frappe.throw("You can only submit Career History once 'Validate by Recruiter On' is set.")
+		elif getdate(self.validated_by_recruiter_on) > getdate(nowdate()):
+			frappe.throw("Validate by Recruiter On cannot be future date.")
 		self.career_history_score_action()
 		update_interview_and_feedback(self, True)
 

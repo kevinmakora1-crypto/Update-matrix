@@ -1163,7 +1163,7 @@
   "users": []
  },
  {
-    "assign_condition": "status == 'Submitted'",
+    "assign_condition": "docstatus == 1",
     "assignment_days": [
      {
       "day": "Monday",
@@ -1223,7 +1223,7 @@
     "name": "Career History",
     "priority": 0,
     "rule": "Based on Field",
-    "unassign_condition": null,
+    "unassign_condition":"docstatus == 2",
     "users": []
    }
 ]

@@ -3953,3 +3953,26 @@ def background_enqueue_run(report_name, filters=None, user=None):
 		"name": track_instance.name,
 		"redirect_url": get_url_to_form("Prepared Report", track_instance.name)
 	}
+
+
+def update_fields_in_doctypes(data):
+	"""
+	Update multiple Doctypes with different filters and fields.
+
+	:param data: List of dicts, each with keys:
+		- doctype: str
+		- filters: dict
+		- field_value_map: dict
+	"""
+	for entry in data:
+		doctype = entry.get("doctype")
+		filters = entry.get("filters")
+		field_value_map = entry.get("field_value_map")
+
+		if doctype and filters and field_value_map:
+			if frappe.db.exists(doctype, filters):
+				docs = frappe.get_all(doctype, filters=filters, pluck="name")
+				for docname in docs:
+					for field, value in field_value_map.items():
+						frappe.db.set_value(doctype, docname, field, value, update_modified=False)
+

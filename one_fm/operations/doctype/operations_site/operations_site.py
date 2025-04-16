@@ -9,6 +9,7 @@ from frappe.utils import cstr
 from frappe.model.document import Document
 import json
 from frappe.core.doctype.version.version import get_diff
+from one_fm.utils import update_fields_in_doctypes
 
 class OperationsSite(Document):
 	def validate(self):
@@ -89,10 +90,13 @@ class OperationsSite(Document):
 		self.clear_cache()
 		doc_before_save = self.get_doc_before_save()
 		self.update_shift_post_role_status()
+		if doc_before_save and doc_before_save.project != self.project:	
+			update_on_project_change(self,doc_before_save)
 		# changes = self.get_changes()
 		# self.notify_changes()
 		# self.update_permissions(doc_before_save)
 		# self.notify_poc_changes(changes)
+
 
 	def get_changes(self):
 		doc_before_save = self.get_doc_before_save()
@@ -308,3 +312,31 @@ def create_posts(data, site, project=None):
 		frappe.msgprint(_("Posts created successfully."))
 	except Exception as e:
 		frappe.throw(_(frappe.get_traceback()))
+
+
+def update_on_project_change(self,doc_before_save):
+		data = [
+					{
+						"doctype": "Operations Post",
+						"filters": {"site": self.name,"project": doc_before_save.project},
+						"field_value_map": {
+							"project": self.project,
+						}
+					},
+					{
+						"doctype": "Operations Shift",
+						"filters": {"site": self.name,"project": doc_before_save.project},
+						"field_value_map": {
+							"project": self.project,
+						}
+					},
+					{
+						"doctype": "Operations Role",
+						"filters": {"site": self.name,"project": doc_before_save.project},
+						"field_value_map": {
+							"project": self.project,
+						}
+					}
+				]
+
+		update_fields_in_doctypes(data)

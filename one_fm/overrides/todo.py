@@ -42,13 +42,13 @@ def notify_todo_status_change(doc):
         notification_log.from_user = user
         # If notification log type is Alert then it will not send email for the log
         if send_notification_alert_only(doc.assigned_by):
-            notification_log.type = 'Alert'
+            notification_log.type = "Alert"
         else:
-            notification_log.type = 'Assignment'
+            notification_log.type = "Assignment"
         notification_log.insert(ignore_permissions=True)
 
 def send_notification_alert_only(user):
-    if user == 'Administrator':
+    if user == "Administrator":
         return True
     if not is_user_id_company_prefred_email_in_employee(user):
         return True
@@ -64,7 +64,7 @@ def validate_google_task_title(doc):
 
 def set_todo_type_from_refernce_doc(doc):
     if doc.reference_type and doc.reference_name:
-        if doc.reference_type in ['Project', 'Task'] and frappe.get_meta(doc.reference_type).has_field('type'):
+        if doc.reference_type in ["Project", "Task"] and frappe.get_meta(doc.reference_type).has_field('type'):
             doc.type = frappe.db.get_value(doc.reference_type, doc.reference_name, 'type')
         else:
             doc.type = "Action"
@@ -130,7 +130,7 @@ def create_google_task_on_todo_creation_in_erp(doc, method):
 def check_google_task_exists(task_id,pev_emp_service=None):
     if pev_emp_service:
         task = pev_emp_service.tasks().get(tasklist='@default', task=task_id).execute()
-        task['status'] = 'completed'
+        task['status'] = "completed"
         result = pev_emp_service.tasks().update(tasklist='@default',task=task_id, body=task).execute()
 
 
@@ -200,9 +200,9 @@ def update_google_task_on_todo_status_change(doc, method):
         task['notes'] = task_notes
         task['due'] = due_date
         if doc.status == "Open":
-            task['status'] = 'needsAction'
+            task['status'] = "needsAction"
         else:
-            task['status'] = 'completed'
+            task['status'] = "completed"
         result = service.tasks().update(tasklist='@default',task=doc.custom_google_task_id, body=task).execute()
         return result
     
@@ -211,10 +211,10 @@ def get_mapped_status_from_google_task(task):
         Map google task status to ERP ToDo status
     """
     if task.get('deleted'):
-        return 'Cancelled'
+        return "Cancelled"
     if task.get('status') == 'completed':
-        return 'Closed'
-    return 'Open'
+        return "Closed"
+    return "Open"
     
 @frappe.whitelist()
 def sync_google_tasks_with_todos():
@@ -232,11 +232,11 @@ def sync_google_tasks_with_todos():
             batch_user_emails = user_emails_having_google_account[i:i+batch_size]
             frappe.enqueue(sync_google_tasks_for_users, user_emails=batch_user_emails, is_async=True)
 
-        return { 'error': False, 'message' : 'Google Tasks synchronized successfully' }
+        return { "error": False, "message" : "Google Tasks synchronized successfully" }
     
     except Exception as e:
         frappe.log_error(str(e), "Failed to sync google tasks to ERP ToDo")
-        return { 'error': True, 'message' : str(e) }
+        return { "error": True, "message" : str(e) }
 
 
 @frappe.whitelist()
@@ -246,15 +246,15 @@ def sync_my_google_tasks_with_todos():
 
         # Skip if general trigger is not enabled
         if not is_google_task_synchronization_enabled() or logged_in_user == "Administrator":
-            return { 'error': True, 'message' : "You are not allowed to sync google tasks" }
+            return { "error": True, "message" : "You are not allowed to sync google tasks" }
         
         sync_google_tasks_for_users(user_emails=[logged_in_user])
 
-        return { 'error': False, 'message' : 'My Google Tasks synchronized successfully' }
+        return { "error": False, "message" : "My Google Tasks synchronized successfully" }
     
     except Exception as e:
         frappe.log_error(str(e), "Failed to sync google tasks to ERP ToDo")
-        return { 'error': True, 'message' : str(e) }
+        return { "error": True, "message" : str(e) }
 
 
 @frappe.whitelist()
@@ -309,8 +309,8 @@ def sync_google_tasks_for_users(user_emails=[]):
                         service = get_google_task_service(allocated_to)
                         payload = { 
                             **google_task,
-                            'title': f'[Hey!! You cant do that, Close the task in ERPNext] - {task_title}',
-                            'status': 'needsAction' 
+                            "title": f"[Hey!! You cant do that, Close the task in ERPNext] - {task_title}",
+                            "status": "needsAction" 
                         }
                         service.tasks().update(tasklist='@default',task=google_task_id, body=payload).execute()
                     else:
@@ -318,14 +318,14 @@ def sync_google_tasks_for_users(user_emails=[]):
             else:
                 # If ToDo doesn't exist, create a new ToDo with google task details
                 new_todo = frappe.get_doc({
-                    'doctype': 'ToDo',
-                    'description': task_description,
-                    'date': due_date,
-                    'status': mapped_status,
-                    'custom_google_task_title': task_title,
-                    'custom_google_task_id': google_task_id,
-                    'allocated_to': allocated_to,
-                    'custom_source': 'Google Task'
+                    "doctype": "ToDo",
+                    "description": task_description,
+                    "date": due_date,
+                    "status": mapped_status,
+                    "custom_google_task_title": task_title,
+                    "custom_google_task_id": google_task_id,
+                    "allocated_to": allocated_to,
+                    "custom_source": "Google Task"
                 })
                 new_todo.insert(ignore_permissions=True)
 
@@ -341,13 +341,13 @@ def send_email_on_todo_created(doc):
         return
     sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
     recipients = [doc.allocated_to]
-    todo_reference = ''
-    todo_doc_type = ''
-    todo_reference_link = ''
+    todo_reference = ""
+    todo_doc_type = ""
+    todo_reference_link = ""
     if doc.reference_type and doc.reference_name:
-        todo_reference = get_url_to_form("Todo", doc.name) if doc.name else ""
-        todo_doc_type = doc.reference_type if doc.reference_type else ""
-        todo_reference_link = get_url_to_form(todo_doc_type, doc.reference_name) if doc.reference_name else ""
+        todo_reference = get_url_to_form("Todo", doc.name)
+        todo_doc_type = doc.reference_type
+        todo_reference_link = get_url_to_form(todo_doc_type, doc.reference_name)
     args = frappe._dict({
                     "task_id": doc.custom_google_task_id,
                     "source": doc.custom_source,
@@ -363,6 +363,6 @@ def send_email_on_todo_created(doc):
                 })
     
     message = frappe.render_template('one_fm/templates/emails/email_notification_on_task_creation.html', args)
-    subject = f'''A Task has been Created via {doc.custom_source} by {user_id}'''
+    subject = f"""A Task has been Created via {doc.custom_source} by {user_id}"""
     sendemail(sender=sender, recipients= recipients,
             message=message, subject=subject, delayed=False, is_scheduler_email=False,is_external_mail=True)

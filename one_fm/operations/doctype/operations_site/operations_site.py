@@ -315,28 +315,23 @@ def create_posts(data, site, project=None):
 
 
 def update_on_field_change(self,doc_before_save):
+		filters = {"site": self.name,"project": doc_before_save.project}
+		field_value_map = {"project": self.project}
 		data = [
 					{
 						"doctype": "Operations Post",
-						"filters": {"site": self.name,"project": doc_before_save.project},
-						"field_value_map": {
-							"project": self.project,
-						}
+						"filters": filters,
+						"field_value_map": field_value_map
 					},
 					{
 						"doctype": "Operations Shift",
-						"filters": {"site": self.name,"project": doc_before_save.project},
-						"field_value_map": {
-							"project": self.project,
-						}
+						"filters": filters,
+						"field_value_map": field_value_map
 					},
 					{
 						"doctype": "Operations Role",
-						"filters": {"site": self.name,"project": doc_before_save.project},
-						"field_value_map": {
-							"project": self.project,
-						}
+						"filters": filters,
+						"field_value_map": field_value_map
 					}
 				]
-
 		update_fields_in_doctypes(data)

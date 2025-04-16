@@ -3963,6 +3963,11 @@ def update_fields_in_doctypes(data):
 		- doctype: str
 		- filters: dict
 		- field_value_map: dict
+    
+    :example:[{
+        - "doctype": "Operations Post",
+		- "filters": {"site": self.name,"project": doc_before_save.project},
+		- "field_value_map": {"project": self.project,"site": self.name}}]
 	"""
 	for entry in data:
 		doctype = entry.get("doctype")

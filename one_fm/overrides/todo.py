@@ -13,6 +13,7 @@ from google.oauth2 import service_account
 def validate_todo(doc, method):
     notify_todo_status_change(doc)
     set_todo_type_from_refernce_doc(doc)
+    validate_google_task_title(doc)
 
 def notify_todo_status_change(doc):
     if doc.is_new():
@@ -52,6 +53,14 @@ def send_notification_alert_only(user):
     if not is_user_id_company_prefred_email_in_employee(user):
         return True
     return False
+
+def validate_google_task_title(doc):
+    if not doc.custom_google_task_title:
+        # In case of automatic assignments
+        if doc.reference_type and doc.reference_name:
+            doc.custom_google_task_title = f"""Action required for {doc.reference_type} - {doc.reference_name}"""
+        else:
+            doc.custom_google_task_title = convert_html_to_plain_text(doc.description)[:100]
 
 def set_todo_type_from_refernce_doc(doc):
     if doc.reference_type and doc.reference_name:
@@ -332,6 +341,9 @@ def send_email_on_todo_created(doc):
         return
     sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
     recipients = [doc.allocated_to]
+    todo_reference = ''
+    todo_doc_type = ''
+    todo_reference_link = ''
     if doc.reference_type and doc.reference_name:
         todo_reference = get_url_to_form("Todo", doc.name) if doc.name else ""
         todo_doc_type = doc.reference_type if doc.reference_type else ""

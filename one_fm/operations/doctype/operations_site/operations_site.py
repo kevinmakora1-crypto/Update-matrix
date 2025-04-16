@@ -91,7 +91,7 @@ class OperationsSite(Document):
 		doc_before_save = self.get_doc_before_save()
 		self.update_shift_post_role_status()
 		if doc_before_save and doc_before_save.project != self.project:	
-			update_on_project_change(self,doc_before_save)
+			update_on_field_change(self,doc_before_save)
 		# changes = self.get_changes()
 		# self.notify_changes()
 		# self.update_permissions(doc_before_save)
@@ -314,7 +314,7 @@ def create_posts(data, site, project=None):
 		frappe.throw(_(frappe.get_traceback()))
 
 
-def update_on_project_change(self,doc_before_save):
+def update_on_field_change(self,doc_before_save):
 		data = [
 					{
 						"doctype": "Operations Post",

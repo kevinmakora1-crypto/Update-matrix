@@ -182,7 +182,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,shift:
                 JOIN 
                     `tabShift Type` st ON sa.shift_type = st.name
                 WHERE 
-                    sa.employee = '{employee}' 
+                    sa.employee = '{employee.name}' 
                 ORDER BY 
                     sa.creation DESC 
                 LIMIT 1

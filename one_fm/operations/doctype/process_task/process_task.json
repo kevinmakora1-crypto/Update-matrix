@@ -272,6 +272,7 @@
   },
   {
    "default": "0",
+   "description": "Mark if this process task is developed on ERPNext and select the doctype below.",
    "fieldname": "is_erp_task",
    "fieldtype": "Check",
    "label": "Is ERP Task"
@@ -316,7 +317,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-13 15:55:42.983491",
+ "modified": "2025-04-17 15:23:08.055624",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process Task",

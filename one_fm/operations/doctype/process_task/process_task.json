@@ -282,6 +282,7 @@
   },
   {
    "default": "0",
+   "description": "Mark if this process task is fully automated, not requiring an operator to execute.",
    "fieldname": "is_automated",
    "fieldtype": "Check",
    "label": "Is Automated"
@@ -316,7 +317,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-13 15:55:42.983491",
+ "modified": "2025-04-17 15:32:04.331279",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process Task",

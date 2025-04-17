@@ -270,6 +270,16 @@ def create_tasks_for(tasks_list):
 		except:
 			frappe.log_error(title = f"Error Creating Task from Process List {one.name}",message = frappe.get_traceback())
 
+def get_second_saturday(year, month):
+    c = calendar.Calendar(firstweekday=calendar.SUNDAY)
+    monthcal = c.monthdatescalendar(year, month)
+
+    # Find all Thursdays in the month
+    thursdays = [day for week in monthcal for day in week
+                 if day.weekday() == calendar.SATURDAY and day.month == month]
+
+    # Return the third Thursday
+    return thursdays[1] if len(thursdays) >= 2 else None
 
 
 def run_daily_process_task():
@@ -311,6 +321,13 @@ def run_daily_process_task():
 			elif each.get('frequency') == "Weekly":
 				if each.get('day') == day_name:
 					tasks_to_be_created.append(each)
+			elif each.get("frequency") == "Weekly on Saturday":
+				if "Saturday" == day_name:
+					tasks_to_be_created.append(each)
+			elif each.get("frequency") =="Monthly on second Saturday":
+				second_saturday = get_second_saturday(today.year, today.month)
+				if second_saturday and second_saturday == today.date():
+					tasks_to_be_created.append(each)
 		create_tasks_for(tasks_to_be_created)
 	except:
 		frappe.log_error(title = "Error Creating Tasks from Process Task",message = frappe.get_traceback())
@@ -345,7 +362,7 @@ def run_scheduled_process_tasks():
 			AND task_type = 'Routine'
 			AND is_erp_task = 1
 			AND is_automated = 1
-			AND frequency IN ('Daily', 'Weekly', 'Monthly')
+			AND frequency IN ('Daily', 'Weekly', 'Monthly','Weekly on Thursday', 'Monthly on the third Thursday', 'Annually on April 17')
 			AND start_date <= %(today)s
 			AND (end_date IS NULL OR end_date > %(today)s)
 	""", {"today": today}, as_dict=True)
@@ -376,6 +393,13 @@ def run_scheduled_process_tasks():
 			if task.repeat_on_last_day and day_of_month == last_day_of_month:
 				should_run = True
 			elif task.repeat_on_day and day_of_month == task.repeat_on_day:
+				should_run = True
+		elif task.frequency == "Weekly on Saturday":
+			if weekday == "Saturday":
+				should_run = True
+		elif task.frequency == "Monthly on second Saturday":
+			second_saturday = get_second_saturday(today.year, today.month)
+			if second_saturday and second_saturday == today.date():
 				should_run = True
 
 		if should_run:

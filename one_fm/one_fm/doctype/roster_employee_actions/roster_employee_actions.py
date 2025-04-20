@@ -84,6 +84,7 @@ def create_roster_employee_actions():
 		try:
 			site_supervisor = frappe.get_value('Operations Site', supervisor.site, 'account_supervisor')
 			employees = supervisor.employees.split(",")
+			project_manager = frappe.get_value('Project', supervisor.project, 'account_manager')
 
 			roster_employee_actions = frappe.new_doc("Roster Employee Actions")
 			roster_employee_actions.start_date = start_date
@@ -92,6 +93,7 @@ def create_roster_employee_actions():
 			roster_employee_actions.action_type = "Roster Employee"
 			roster_employee_actions.supervisor = supervisor.shift_supervisor
 			roster_employee_actions.site_supervisor = site_supervisor
+			roster_employee_actions.project_manager = project_manager
 			for employee in employees:
 				sorted_dates = sorted(
                 [datetime.strptime(date.strip(), "%Y-%m-%d") for date in employees_not_rostered.get(employee, [])]
@@ -252,6 +254,7 @@ def get_supervisors_not_rostered_employees(employees_not_rostered, date):
 				CASE WHEN osi.account_supervisor IS NOT NULL AND osi.account_supervisor != '' THEN osi.account_supervisor ELSE NULL END,
 				p.account_manager
 			) AS shift_supervisor,
+			os.project As project,
 			os.site AS site,
 			GROUP_CONCAT(e.name) AS employees
 		FROM

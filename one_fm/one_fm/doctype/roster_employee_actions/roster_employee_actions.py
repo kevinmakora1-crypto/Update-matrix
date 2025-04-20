@@ -247,15 +247,23 @@ def get_supervisors_not_rostered_employees(employees_not_rostered, date):
 	employee_ids = tuple(employees_not_rostered.keys())
 	query = """
 		SELECT
-			oss.supervisor AS shift_supervisor,
+			COALESCE(
+				CASE WHEN ess.employee IS NOT NULL THEN oss.supervisor ELSE NULL END,
+				CASE WHEN osi.account_supervisor IS NOT NULL AND osi.account_supervisor != '' THEN osi.account_supervisor ELSE NULL END,
+				p.account_manager
+			) AS shift_supervisor,
 			os.site AS site,
 			GROUP_CONCAT(e.name) AS employees
 		FROM
 			`tabOperations Shift` AS os
-		JOIN
+		LEFT JOIN
+			`tabOperations Site` AS osi ON osi.name = os.site
+		LEFT JOIN
+			`tabProject` AS p ON p.name = os.project
+		LEFT JOIN
 			`tabOperations Shift Supervisor` AS oss
 			ON oss.parent = os.name AND oss.parenttype = 'Operations Shift'
-		JOIN
+		LEFT JOIN
 			(
 				SELECT
 					es.employee
@@ -274,7 +282,8 @@ def get_supervisors_not_rostered_employees(employees_not_rostered, date):
 			os.status = 'Active'
 			AND
 			e.name IN {1}
+			AND (oss.supervisor IS NULL OR ess.employee IS NOT NULL)
 		GROUP BY
-			oss.supervisor, os.site
+			shift_supervisor, os.site
 	""".format(date, employee_ids)
 	return frappe.db.sql(query, as_dict=True)

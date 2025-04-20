@@ -64,7 +64,7 @@
         "users": []
     },
     {
-        "assign_condition": "status in (\"Pending\", \"Overdue\") and site_supervisor is not null and site_supervisor != \"\"",
+        "assign_condition": "status in (\"Pending\", \"Overdue\") and site_supervisor is not None and site_supervisor != \"\"",
         "assignment_days": [
             {
                 "day": "Sunday",

@@ -282,6 +282,7 @@
   },
   {
    "default": "0",
+   "description": "Mark if this process task is fully automated, not requiring an operator to execute.",
    "fieldname": "is_automated",
    "fieldtype": "Check",
    "label": "Is Automated"

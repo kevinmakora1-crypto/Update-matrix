@@ -13,19 +13,34 @@ from collections import OrderedDict
 
 class RosterEmployeeActions(Document):
 	def autoname(self):
-		self.name = str(self.start_date) + "|" + str(self.end_date) + "|" + self.action_type  + "|" + self.supervisor
+		base_name = f"{self.start_date}|{self.end_date}|{self.action_type}|{self.supervisor or self.site_supervisor or self.project_manager}"
+
+		# Check if a document with this name already exists
+		existing = frappe.db.exists("Roster Employee Actions", base_name)
+		if not existing:
+			self.name = base_name
+		else:
+			# Increment until a unique name is found
+			i = 1
+			while True:
+				new_name = f"{base_name}|{i}"
+				if not frappe.db.exists("Roster Employee Actions", new_name):
+					self.name = new_name
+					break
+				i += 1
 
 	def after_insert(self):
 		# send notification to supervisor
-		user_id = frappe.db.get_value("Employee", self.supervisor, ["user_id"])
-		if user_id:
-			link = get_link_to_form(self.doctype, self.name)
-			subject = _("New Action to {action_type}.".format(action_type=self.action_type))
-			message = _("""
-				You have been issued a Roster Employee Action.<br>
-				Please review the employees assigned to you, take necessary actions and update the status.<br>
-				Link: {link}""".format(link=link))
-			sendemail([user_id], subject=subject, message=message, reference_doctype=self.doctype, reference_name=self.name)
+		if self.supervisor:
+			user_id = frappe.db.get_value("Employee", self.supervisor, ["user_id"])
+			if user_id:
+				link = get_link_to_form(self.doctype, self.name)
+				subject = _("New Action to {action_type}.".format(action_type=self.action_type))
+				message = _("""
+					You have been issued a Roster Employee Action.<br>
+					Please review the employees assigned to you, take necessary actions and update the status.<br>
+					Link: {link}""".format(link=link))
+				# sendemail([user_id], subject=subject, message=message, reference_doctype=self.doctype, reference_name=self.name)
 
 @frappe.whitelist()
 def get_permission_query_conditions(user):
@@ -91,9 +106,17 @@ def create_roster_employee_actions():
 			roster_employee_actions.end_date = end_date
 			roster_employee_actions.status = "Pending"
 			roster_employee_actions.action_type = "Roster Employee"
-			roster_employee_actions.supervisor = supervisor.shift_supervisor
-			roster_employee_actions.site_supervisor = site_supervisor
-			roster_employee_actions.project_manager = project_manager
+
+			if supervisor.supervisor_source and supervisor.supervisor_source == "Shift":
+				roster_employee_actions.supervisor = supervisor.shift_supervisor
+				roster_employee_actions.site_supervisor = site_supervisor
+				roster_employee_actions.project_manager = project_manager
+			elif supervisor.supervisor_source and supervisor.supervisor_source == "Site":
+				roster_employee_actions.site_supervisor = supervisor.shift_supervisor
+				roster_employee_actions.project_manager = project_manager
+			elif supervisor.supervisor_source and supervisor.supervisor_source == "Project":
+				roster_employee_actions.project_manager = supervisor.shift_supervisor
+
 			for employee in employees:
 				sorted_dates = sorted(
                 [datetime.strptime(date.strip(), "%Y-%m-%d") for date in employees_not_rostered.get(employee, [])]
@@ -254,6 +277,14 @@ def get_supervisors_not_rostered_employees(employees_not_rostered, date):
 				CASE WHEN osi.account_supervisor IS NOT NULL AND osi.account_supervisor != '' THEN osi.account_supervisor ELSE NULL END,
 				p.account_manager
 			) AS shift_supervisor,
+
+			CASE
+				WHEN ess.employee IS NOT NULL THEN 'Shift'
+				WHEN (osi.account_supervisor IS NOT NULL AND osi.account_supervisor != '') THEN 'Site'
+				WHEN p.account_manager IS NOT NULL THEN 'Project'
+				ELSE 'None'
+			END AS supervisor_source,
+
 			os.project As project,
 			os.site AS site,
 			GROUP_CONCAT(e.name) AS employees

@@ -70,8 +70,7 @@
    "ignore_user_permissions": 1,
    "in_standard_filter": 1,
    "label": "Shift  Supervisor",
-   "options": "Employee",
-   "reqd": 1
+   "options": "Employee"
   },
   {
    "fieldname": "employees_not_rostered",
@@ -156,10 +155,9 @@
    "options": "User"
   }
  ],
- "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-20 15:43:53.613526",
+ "modified": "2025-04-21 20:14:30.566215",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Roster Employee Actions",

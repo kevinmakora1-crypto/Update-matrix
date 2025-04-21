@@ -289,9 +289,10 @@
   },
   {
    "default": "0",
+   "description": "Mark if this task should be executed between the start date and end date.",
    "fieldname": "is_active",
    "fieldtype": "Check",
-   "label": "Is Active"
+   "label": "Enabled"
   },
   {
    "fieldname": "method",

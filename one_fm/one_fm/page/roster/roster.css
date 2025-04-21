@@ -258,7 +258,3 @@ body[data-route="roster"] .switch-container {
 .customtooltip:hover .customtooltiptext {
   visibility: visible;
 }
-
-.hidden {
-  display: none !important;
-}

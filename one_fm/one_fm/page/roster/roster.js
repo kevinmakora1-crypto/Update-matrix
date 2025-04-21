@@ -125,7 +125,8 @@ function load_js(page) {
 
 		};
 		$(".rosterviewclick").click(function () {
-			$("#rosterTypeButtons").removeClass("hidden");
+			$("#rosterTypeButtons").removeClass("d-none");
+			$("#rosterTypeButtons").addClass("d-flex");
 			$rosterMonth.removeClass("d-none");
 			$rosterOtMonth.addClass("d-none");
 			$postMonth.addClass("d-none");
@@ -146,7 +147,8 @@ function load_js(page) {
 			get_roster_data(page);
 		});
 		$(".postviewclick").click(function () {
-			$("#rosterTypeButtons").addClass("hidden");
+			$("#rosterTypeButtons").removeClass("d-flex");
+			$("#rosterTypeButtons").addClass("d-none");
 			$(".basicRosterClick").off('click');
 			$(".otRosterClick").off('click');
 			$rosterMonth.addClass("d-none");

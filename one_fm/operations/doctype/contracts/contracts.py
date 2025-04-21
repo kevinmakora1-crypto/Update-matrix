@@ -14,7 +14,6 @@ from frappe.utils import (
     get_last_day, get_datetime, flt, add_days,add_months,get_date_str
 )
 from frappe import _
-
 from one_fm.processor import sendemail
 
 class Contracts(Document):
@@ -449,6 +448,7 @@ def insert_login_credential(url, user_name, password, client):
 
 #renew contracts by one year
 def auto_renew_contracts():
+    from one_fm.operations.doctype.operations_post.operations_post import create_new_schedule_for_project
     filters = {
         'end_date' : today(),
         'is_auto_renewal' : 1,
@@ -465,6 +465,7 @@ def auto_renew_contracts():
         contract_doc.end_date = add_days(contract_doc.end_date, duration+1)
         contract_doc.save()
         frappe.db.commit()
+        create_new_schedule_for_project(contract_doc.project)
 
 def get_service_items_invoice_amounts(contract, date, current_month=False):
     # use date args instead of system date

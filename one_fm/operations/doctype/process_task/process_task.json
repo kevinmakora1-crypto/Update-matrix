@@ -80,7 +80,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Frequency",
-   "options": "\nDaily\nWeekly\nMonthly\nCron",
+   "options": "\nDaily\nWeekly on Saturday\nMonthly on second Saturday\nWeekly\nMonthly\nCron",
    "reqd": 1
   },
   {
@@ -320,7 +320,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-21 11:12:25.508303",
+ "modified": "2025-04-21 15:13:57.624765",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process Task",

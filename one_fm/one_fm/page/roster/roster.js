@@ -17,20 +17,6 @@ frappe.pages['roster'].on_page_load = function (wrapper) {
 };
 
 
-function showRosterButtons() {
-    const rosterButtons = document.getElementById('rosterButtons');
-    rosterButtons.classList.remove('hidden');
-}
-
-function hideRosterButtons() {
-    const rosterButtons = document.getElementById('rosterButtons');
-    rosterButtons.classList.add('hidden');
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-    showRosterButtons();
-});
-
 
 // Initializes the page with default values
 function load_js(page) {
@@ -139,6 +125,7 @@ function load_js(page) {
 
 		};
 		$(".rosterviewclick").click(function () {
+			$("#rosterButtons").removeClass("hidden");
 			$rosterMonth.removeClass("d-none");
 			$rosterOtMonth.addClass("d-none");
 			$postMonth.addClass("d-none");
@@ -159,6 +146,7 @@ function load_js(page) {
 			get_roster_data(page);
 		});
 		$(".postviewclick").click(function () {
+			$("#rosterButtons").addClass("hidden");
 			$(".basicRosterClick").off('click');
 			$(".otRosterClick").off('click');
 			$rosterMonth.addClass("d-none");

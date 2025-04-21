@@ -26,6 +26,36 @@ class Contracts(Document):
         # 	frappe.msgprint(_("Overtime rate not set."), alert=True, indicator='orange')
 
 
+    def on_update(self):
+        self.update_project_start_end_date()
+
+
+    
+    def update_project_start_end_date(self):
+        if not (self.project and self.start_date and self.end_date):
+            return
+
+        if self.is_new():
+            changed = True
+        else:
+            before = self.get_doc_before_save()
+            changed = (
+                before.start_date != self.start_date or
+                before.end_date   != self.end_date
+            )
+
+        if not changed:
+            return
+
+        frappe.db.set_value(
+            "Project", self.project,
+            {
+                "expected_start_date": self.start_date,
+                "expected_end_date":   self.end_date
+            }
+        )
+
+
 
     def update_contract_dates(self):
         if self.contract_termination_decision_period:

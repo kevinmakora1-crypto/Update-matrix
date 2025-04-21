@@ -156,6 +156,7 @@
    "options": "User"
   }
  ],
+ "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
  "modified": "2025-04-20 15:43:53.613526",

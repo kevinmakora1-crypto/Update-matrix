@@ -272,6 +272,7 @@
   },
   {
    "default": "0",
+   "description": "Mark if this process task is developed on ERPNext and select the doctype below.",
    "fieldname": "is_erp_task",
    "fieldtype": "Check",
    "label": "Is ERP Task"

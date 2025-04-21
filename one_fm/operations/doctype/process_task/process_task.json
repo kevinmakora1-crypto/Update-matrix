@@ -193,7 +193,7 @@
    "fieldtype": "Select",
    "hidden": 1,
    "label": "Series",
-   "options": "R-TASK-.YYYY.-"
+   "options": "P-TASK-.YYYY.-"
   },
   {
    "collapsible": 1,

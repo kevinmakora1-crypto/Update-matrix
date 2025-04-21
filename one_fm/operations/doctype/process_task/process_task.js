@@ -31,7 +31,10 @@ frappe.ui.form.on('Process Task', {
 	frequency: function(frm) {
 		if (frm.doc.frequency === "Cron") {
 			if (!frm.doc.is_automated) {
-				frappe.msgprint(__('Setting frequency to "Cron" requires automation. Enabling "Is Automated".'));
+				frappe.show_alert({
+					message: __('Setting frequency to "Cron" requires automation. Enabling "Is Automated".'),
+					indicator: 'green'
+				});
 				frm.set_value('is_automated', 1);
 			}
 		}

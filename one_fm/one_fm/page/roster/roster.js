@@ -125,7 +125,7 @@ function load_js(page) {
 
 		};
 		$(".rosterviewclick").click(function () {
-			$("#rosterButtons").removeClass("hidden");
+			$("#rosterTypeButtons").removeClass("hidden");
 			$rosterMonth.removeClass("d-none");
 			$rosterOtMonth.addClass("d-none");
 			$postMonth.addClass("d-none");
@@ -146,7 +146,7 @@ function load_js(page) {
 			get_roster_data(page);
 		});
 		$(".postviewclick").click(function () {
-			$("#rosterButtons").addClass("hidden");
+			$("#rosterTypeButtons").addClass("hidden");
 			$(".basicRosterClick").off('click');
 			$(".otRosterClick").off('click');
 			$rosterMonth.addClass("d-none");

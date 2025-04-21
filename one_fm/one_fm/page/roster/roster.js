@@ -16,6 +16,22 @@ frappe.pages['roster'].on_page_load = function (wrapper) {
 
 };
 
+
+function showRosterButtons() {
+    const rosterButtons = document.getElementById('rosterButtons');
+    rosterButtons.classList.remove('hidden');
+}
+
+function hideRosterButtons() {
+    const rosterButtons = document.getElementById('rosterButtons');
+    rosterButtons.classList.add('hidden');
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    showRosterButtons();
+});
+
+
 // Initializes the page with default values
 function load_js(page) {
 	$(this).scrollTop(0);

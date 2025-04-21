@@ -19,6 +19,10 @@
   "site_supervisor",
   "site_supervisor_name",
   "site_supervisor_user",
+  "column_break_ptva",
+  "project_manager",
+  "project_manager_name",
+  "project_manager_user",
   "section_break_h7sd9",
   "employees_not_rostered"
  ],
@@ -125,11 +129,37 @@
    "hidden": 1,
    "label": "Site Supervisor User",
    "options": "User"
+  },
+  {
+   "fieldname": "column_break_ptva",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "project_manager",
+   "fieldtype": "Link",
+   "label": "Project Manager",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "project_manager.employee_name",
+   "fieldname": "project_manager_name",
+   "fieldtype": "Data",
+   "label": "Project Manager Name"
+  },
+  {
+   "fetch_from": "project_manager.user_id",
+   "fetch_if_empty": 1,
+   "fieldname": "project_manager_user",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Project Manager User",
+   "options": "User"
   }
  ],
+ "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-25 10:57:14.741275",
+ "modified": "2025-04-20 15:43:53.613526",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Roster Employee Actions",

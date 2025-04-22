@@ -164,7 +164,7 @@ def convert_html_to_plain_text(html_content):
         if table:
             rows = table.find_all("tr")
             table_content = "\n".join(
-                f"{" : ".join(td.get_text(strip=True) for td in row.find_all("td"))}" for row in rows
+                f"{' : '.join(td.get_text(strip=True) for td in row.find_all('td'))}" for row in rows
             )
             text_output += "\n\nDetails:\n" + table_content +"\n"
 

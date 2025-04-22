@@ -198,6 +198,11 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
         employee_filters.pop('date')
         employee_filters.pop('post_status')
 
+        #------------------- Apply Employee ID filter ------------------------#
+        if employee_search_id:
+            target_employee_name = frappe.db.get_value("Employee", {"employee_id": employee_search_id}, "name") # Fetching single employee because employee id is unique
+            employees = [employee for employee in employees if employee.employee == target_employee_name]
+
         #------------------- Fetch Employee Schedule --------------------#
         #The following section creates a iterable that uses the employee name and id as keys and groups  the  employee data fetched in previous queries
 

@@ -754,6 +754,10 @@ function setup_topbar_events(page) {
 	$('.clear_selection').on('click', function () {
 		clear_selection(page);
 	});
+
+	$("#rosterEmployeeActions").on("click", function() {
+		roster_employee_actions(page);
+	});
 }
 
 //Bind events to Edit options in Roster/Post view
@@ -1095,6 +1099,8 @@ function bind_events(page) {
 		}
 
 	})
+
+
 }
 
 function bind_search_bar_event(page) {
@@ -3852,4 +3858,30 @@ let error_handler = (res) => {
 	} else {
 		$('#cover-spin').hide();
 	}
+}
+
+
+function roster_employee_actions(page){
+	let dialog = new frappe.ui.Dialog({
+		title: "Employee with Missing Schedules",
+		fields: [
+			{
+				fieldname: "employees_table",
+				fieldtype: "HTML",
+				options: "<div id='employees_table'></div>"
+			}
+		]
+	})
+	dialog.$wrapper.find(".modal-dialog").css("max-width", "75%");
+
+
+	frappe.call({
+		method: "one_fm.one_fm.doctype.roster_employee_actions.roster_employee_actions.get_employees_with_missing_schedules",
+		// freeze: true,
+		async: true,
+		callback: function(r) {
+			dialog.fields_dict.employees_table.$wrapper.html(r.message);
+		}
+	});
+	dialog.show();
 }

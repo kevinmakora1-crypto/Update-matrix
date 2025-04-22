@@ -297,6 +297,12 @@ function load_js(page) {
 							fieldtype: 'Section Break',
 							depends_on: "eval:doc.post_status == 'Post Off'",
 						},
+						{
+							label: 'Post Off From Date',
+							fieldname: 'post_off_from_date',
+							fieldtype: 'Date',
+							default: date
+						},
 						{ label: 'Repeat', fieldname: 'repeat', fieldtype: 'Select', options: 'Does not repeat\nSelected Days Only\nDaily\nWeekly\nMonthly\nYearly' },
 						{ 'fieldtype': 'Section Break', 'fieldname': 'sb1', 'depends_on': 'eval:doc.post_status=="Post Off" && doc.repeat=="Weekly"' },
 						{ 'label': 'Sunday', 'fieldname': 'sunday', 'fieldtype': 'Check' },

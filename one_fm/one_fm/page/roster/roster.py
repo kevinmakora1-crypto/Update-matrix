@@ -1175,7 +1175,7 @@ def insert_post_schedule(args, unique_posts_list, existing_schedules_set, end_da
                     insert_post = True
 
         if args.repeat in ['Daily', 'Weekly']:
-            for date in	pd.date_range(start=args.plan_from_date, end=end_date):
+            for date in	pd.date_range(start=args.post_off_from_date, end=end_date):
                 if args.repeat == 'Weekly' and getdate(date).strftime('%A') not in week_days: # Execute the post schedule for selected week days only
                     continue
                 date_str = cstr(date.date())

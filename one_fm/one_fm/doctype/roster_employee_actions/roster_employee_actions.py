@@ -84,6 +84,7 @@ def create_roster_employee_actions():
 		try:
 			site_supervisor = frappe.get_value('Operations Site', supervisor.site, 'account_supervisor')
 			employees = supervisor.employees.split(",")
+			project_manager = frappe.get_value('Project', supervisor.project, 'account_manager')
 
 			roster_employee_actions = frappe.new_doc("Roster Employee Actions")
 			roster_employee_actions.start_date = start_date
@@ -92,6 +93,7 @@ def create_roster_employee_actions():
 			roster_employee_actions.action_type = "Roster Employee"
 			roster_employee_actions.supervisor = supervisor.shift_supervisor
 			roster_employee_actions.site_supervisor = site_supervisor
+			roster_employee_actions.project_manager = project_manager
 			for employee in employees:
 				sorted_dates = sorted(
                 [datetime.strptime(date.strip(), "%Y-%m-%d") for date in employees_not_rostered.get(employee, [])]
@@ -247,15 +249,24 @@ def get_supervisors_not_rostered_employees(employees_not_rostered, date):
 	employee_ids = tuple(employees_not_rostered.keys())
 	query = """
 		SELECT
-			oss.supervisor AS shift_supervisor,
+			COALESCE(
+				CASE WHEN ess.employee IS NOT NULL THEN oss.supervisor ELSE NULL END,
+				CASE WHEN osi.account_supervisor IS NOT NULL AND osi.account_supervisor != '' THEN osi.account_supervisor ELSE NULL END,
+				p.account_manager
+			) AS shift_supervisor,
+			os.project As project,
 			os.site AS site,
 			GROUP_CONCAT(e.name) AS employees
 		FROM
 			`tabOperations Shift` AS os
-		JOIN
+		LEFT JOIN
+			`tabOperations Site` AS osi ON osi.name = os.site
+		LEFT JOIN
+			`tabProject` AS p ON p.name = os.project
+		LEFT JOIN
 			`tabOperations Shift Supervisor` AS oss
 			ON oss.parent = os.name AND oss.parenttype = 'Operations Shift'
-		JOIN
+		LEFT JOIN
 			(
 				SELECT
 					es.employee
@@ -274,7 +285,8 @@ def get_supervisors_not_rostered_employees(employees_not_rostered, date):
 			os.status = 'Active'
 			AND
 			e.name IN {1}
+			AND (oss.supervisor IS NULL OR ess.employee IS NOT NULL)
 		GROUP BY
-			oss.supervisor, os.site
+			shift_supervisor, os.site
 	""".format(date, employee_ids)
 	return frappe.db.sql(query, as_dict=True)

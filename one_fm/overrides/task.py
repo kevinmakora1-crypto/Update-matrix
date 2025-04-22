@@ -21,7 +21,19 @@ def validate_task(doc, method):
     if doc.status == "Pending Review" and assignees:
         for assignee in assignees:
             if assignee.user in list(all_asssigned_users):  
-                remove_assignment(doc.doctype, doc.name, assignee.user)
+                todos = frappe.get_all(
+                    "ToDo",
+                    filters={
+                        "reference_type": doc.doctype,
+                        "reference_name": doc.name,
+                        "allocated_to": assignee.user,
+                        "status": ["!=", "Closed"]  # only update if not already closed
+                    },
+                    pluck="name"
+                )
+
+                if todos: 
+                    frappe.db.set_value("ToDo", {"name": ["in", todos]}, "status", "Closed")
 
     roles = get_user_roles()
     is_manager = is_project_manager(doc.project) if doc.project else False

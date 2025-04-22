@@ -31,8 +31,8 @@ def validate_task(doc, method):
                     pluck="name"
                 )
 
-                for todo_name in todos:
-                    frappe.db.set_value("ToDo", todo_name, "status", "Closed")
+                if todos: 
+                    frappe.db.set_value("ToDo", {"name": ["in", todos]}, "status", "Closed")
 
     roles = get_user_roles()
     is_manager = is_project_manager(doc.project) if doc.project else False

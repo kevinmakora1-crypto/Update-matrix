@@ -29,18 +29,6 @@ class RosterEmployeeActions(Document):
 					break
 				i += 1
 
-	def after_insert(self):
-		# send notification to supervisor
-		if self.supervisor:
-			user_id = frappe.db.get_value("Employee", self.supervisor, ["user_id"])
-			if user_id:
-				link = get_link_to_form(self.doctype, self.name)
-				subject = _("New Action to {action_type}.".format(action_type=self.action_type))
-				message = _("""
-					You have been issued a Roster Employee Action.<br>
-					Please review the employees assigned to you, take necessary actions and update the status.<br>
-					Link: {link}""".format(link=link))
-				# sendemail([user_id], subject=subject, message=message, reference_doctype=self.doctype, reference_name=self.name)
 
 @frappe.whitelist()
 def get_permission_query_conditions(user):

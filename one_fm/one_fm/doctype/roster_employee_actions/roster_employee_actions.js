@@ -15,7 +15,7 @@ frappe.ui.form.on('Employees Not Rostered', {
 		const employee_name = row.employee_name;
         const missing_dates = row.date;
 		const shift_allocation = row.shift_allocation;
-        const url = `/app/roster?employee=${employee}&employee_name=${employee_name}&missing_dates=${missing_dates}&shift_allocation=${shift_allocation}`;
+        const url = `/app/roster?employee_id=${employee}&employee_name=${employee_name}&shift=${shift_allocation}`;
         window.location.href = url;
     }
 });

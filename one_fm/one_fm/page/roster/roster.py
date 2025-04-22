@@ -248,7 +248,7 @@ def get_post_view(start_date, end_date,  project=None, site=None, shift=None, op
         filters.update({'site_shift': shift})
     if operations_role:
         filters.update({'post_template': operations_role})
- 
+
     post_total = frappe.db.count("Operations Post", filters)
 
     post_filters = dict(filters)
@@ -259,7 +259,7 @@ def get_post_view(start_date, end_date,  project=None, site=None, shift=None, op
 
     filters.pop('post_template', None)
     filters.pop('site_shift', None)
-    
+
     if operations_role:
         filters['operations_role'] = operations_role
     if shift:
@@ -878,7 +878,7 @@ def edit_post(posts, values):
         if args.repeat_till and cint(args.project_end_date):
             frappe.throw(_("Cannot set both project end date and custom end date!"))
 
-        if args.repeat != "Does not repeat" and not args.repeat_till and not cint(args.project_end_date):
+        if args.repeat not in ["Does not repeat", "Selected Days Only"] and not args.repeat_till and not cint(args.project_end_date):
             frappe.throw(_("Please set an end date!"))
 
         if args.repeat == "Does not repeat" and cint(args.project_end_date):
@@ -1103,7 +1103,7 @@ def get_post_porjects(unique_posts_list):
 def get_post_schedule_end_date(args, unique_posts_list, post_projects={}):
     end_date = args.repeat_till if args.repeat_till and not cint(args.project_end_date) else None
 
-    if args.repeat == 'Does not repeat':
+    if args.repeat in ['Does not repeat', 'Selected Days Only']:
         end_date = get_last_day(args.plan_from_date)
 
     # If project_end_date is set, get contract end dates in bulk
@@ -1145,7 +1145,7 @@ def insert_post_schedule(args, unique_posts_list, existing_schedules_set, end_da
     delete_post = False
     week_days = get_week_days(args)
     post_date_map = {}
-    if args.repeat in ['Monthly', 'Yearly', 'Does not repeat']:
+    if args.repeat in ['Monthly', 'Yearly', 'Does not repeat', 'Selected Days Only']:
         post_date_map = get_post_date_map(unique_posts_list, posts)
 
     insert_query = get_insert_post_schedule_query_prefix()
@@ -1155,7 +1155,7 @@ def insert_post_schedule(args, unique_posts_list, existing_schedules_set, end_da
             previous_post = post
             post_details=get_post_details(post)
 
-        if args.repeat in ['Monthly', 'Yearly', 'Does not repeat']:
+        if args.repeat in ['Monthly', 'Yearly', 'Does not repeat', 'Selected Days Only']:
             for post_date in post_date_map[post]:
                 if args.repeat == 'Monthly':
                     for date in	month_range(post_date, end_date):
@@ -1169,7 +1169,7 @@ def insert_post_schedule(args, unique_posts_list, existing_schedules_set, end_da
                         delete_post = get_delete_posts(post, date_str, existing_schedules_set, delete_post)
                         insert_query += get_insert_post_schedule_query(post, date_str, post_details, args, owner, creation)
                         insert_post = True
-                elif args.repeat == 'Does not repeat':
+                elif args.repeat in ['Does not repeat', 'Selected Days Only']:
                     delete_post = get_delete_posts(post, post_date, existing_schedules_set, delete_post)
                     insert_query += get_insert_post_schedule_query(post, post_date, post_details, args, owner, creation)
                     insert_post = True

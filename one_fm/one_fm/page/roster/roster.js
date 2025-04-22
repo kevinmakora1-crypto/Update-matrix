@@ -297,7 +297,13 @@ function load_js(page) {
 							fieldtype: 'Section Break',
 							depends_on: "eval:doc.post_status == 'Post Off'",
 						},
-						{ label: 'Repeat', fieldname: 'repeat', fieldtype: 'Select', options: 'Does not repeat\nDaily\nWeekly\nMonthly\nYearly' },
+						{
+							label: 'Post Off From Date',
+							fieldname: 'post_off_from_date',
+							fieldtype: 'Date',
+							default: date
+						},
+						{ label: 'Repeat', fieldname: 'repeat', fieldtype: 'Select', options: 'Does not repeat\nSelected Days Only\nDaily\nWeekly\nMonthly\nYearly' },
 						{ 'fieldtype': 'Section Break', 'fieldname': 'sb1', 'depends_on': 'eval:doc.post_status=="Post Off" && doc.repeat=="Weekly"' },
 						{ 'label': 'Sunday', 'fieldname': 'sunday', 'fieldtype': 'Check' },
 						{ 'label': 'Wednesday', 'fieldname': 'wednesday', 'fieldtype': 'Check' },
@@ -308,7 +314,7 @@ function load_js(page) {
 						{ 'fieldtype': 'Column Break', 'fieldname': 'cb2' },
 						{ 'label': 'Tuesday', 'fieldname': 'tuesday', 'fieldtype': 'Check' },
 						{ 'label': 'Friday', 'fieldname': 'friday', 'fieldtype': 'Check' },
-						{ 'fieldtype': 'Section Break', 'fieldname': 'sb2', 'depends_on': 'eval:doc.post_status=="Post Off" && doc.repeat!= "Does not repeat"' },
+						{ 'fieldtype': 'Section Break', 'fieldname': 'sb2', 'depends_on': 'eval:doc.post_status=="Post Off" && doc.repeat!= "Does not repeat" && doc.repeat!= "Selected Days Only"' },
 						{ 'label': 'Repeat Till', 'fieldtype': 'Date', 'fieldname': 'repeat_till', 'depends_upon': 'eval:doc.project_end_date==0' },
 						{
 							fieldname: 'sb2',
@@ -645,7 +651,7 @@ function get_preset_filters () {
 		view: { main_view, sub_view, roster_type, staff_view_mode },
 		employee: { employee_id, employee_name },
 		page: pageFilters
-	} 
+	}
 }
 
 // Setup and populate preset filters set via query params
@@ -721,7 +727,7 @@ function setup_preset_filters (page) {
 	toggle_between_views()
 	populate_values()
 
-	window.preset_filters_applied = true	  
+	window.preset_filters_applied = true
 }
 
 // Show popups on clicking edit options in Roster view
@@ -1996,7 +2002,7 @@ function get_departments(page) {
             if (selectedDepartment) {
 	           parent.val(selectedDepartment).trigger("change");
             }
-			
+
 			$(parent).on('select2:select', function (e) {
 				page.filters.department = $(this).val();
 				let element = get_wrapper_element().slice(1);
@@ -2023,7 +2029,7 @@ function get_designations(page){
             if (selectedDesignation) {
 	           parent.val(selectedDesignation).trigger("change");
             }
-			
+
 			$(parent).on('select2:select', function (e) {
 				page.filters.designation = $(this).val();
 				let element = get_wrapper_element().slice(1);
@@ -2937,7 +2943,7 @@ function GetTodaySelectedDate() {
 
 //on next month title display on arrow click
 function rosterweekincrement() {
-	weekCalendarSettings.date.add(1, "Weeks"); 
+	weekCalendarSettings.date.add(1, "Weeks");
 	GetWeekHeaders(1);
 	displayWeekCalendar(weekCalendarSettings);
 	let element = get_wrapper_element().slice(1);
@@ -2951,7 +2957,7 @@ function rosterweekincrement() {
 
 //on previous month title display on arrow click
 function rosterweekdecrement() {
-	weekCalendarSettings.date.subtract(1, "Weeks"); 
+	weekCalendarSettings.date.subtract(1, "Weeks");
 	GetWeekHeaders(1);
 	displayWeekCalendar(weekCalendarSettings);
 	let element = get_wrapper_element().slice(1);

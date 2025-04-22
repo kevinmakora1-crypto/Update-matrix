@@ -27,6 +27,7 @@ function load_js(page) {
 	window.isMonth = 1;
 	window.classgrtw = [];
 	window.classgrt = [];
+
 	setup_staff_filters(page);
 	setup_topbar_events(page);
 
@@ -169,9 +170,7 @@ function load_js(page) {
 			get_post_data(page);
 		});
 		$(".basicRosterClick").click(basicRosterClick);
-		$(".otRosterClick").click(
-
-			otRosterClick);
+		$(".otRosterClick").click(otRosterClick);
 
 		//week view click jquery
 		$('.postmonthviewclick').click(function () {
@@ -636,6 +635,93 @@ function load_js(page) {
 	});
 	//table custom accordian click
 
+	setup_preset_filters(page)
+}
+
+function get_preset_filters () {
+	const { main_view, sub_view, roster_type, staff_view_mode, employee_id, employee_name,...pageFilters } = frappe.utils.get_query_params();
+
+	return {
+		view: { main_view, sub_view, roster_type, staff_view_mode },
+		employee: { employee_id, employee_name },
+		page: pageFilters
+	} 
+}
+
+// Setup and populate preset filters set via query params
+function setup_preset_filters (page) {
+	// To avoid re-rendering of roster page
+	if(window.preset_filters_applied) return
+
+	const { view: viewFilters, page: pageFilters, employee: employeeFilters } = get_preset_filters()
+
+	const { main_view: mainView, sub_view: subView, roster_type: rosterType, staff_view_mode: staffViewMode } = viewFilters
+
+	if (mainView) {
+		setTimeout(() => {
+		  $("#page-roster")
+			.find(`.redirect_route[data-route="${mainView}"]`)
+			.click();
+		}, 500);
+	}
+
+	function toggle_between_views() {
+		if(mainView === 'roster') {
+			if(subView === 'roster') {
+				setTimeout(() => {
+					$(".rosterviewclick").click()
+				  }, 1000);
+			}
+			if(subView === 'post') {
+				setTimeout(() => {
+					$(".postviewclick").click()
+				  }, 1000);
+			}
+			if(rosterType === 'basic') {
+				setTimeout(() => {
+					$(".basicRosterClick").click()
+				  }, 1000);
+			}
+			if(rosterType === 'ot') {
+				setTimeout(() => {
+					$(".otRosterClick").click()
+				  }, 1000);
+			}
+		}
+	}
+
+	function populate_values() {
+		if (mainView === 'roster') {
+			setTimeout(() => {
+				const { employee_id: employeeID, employee_name: employeeName } = employeeFilters;
+
+			    let wrapper_element = get_wrapper_element();
+				if (employeeID) {
+					$(wrapper_element).find(".search-employee-id").val(employeeID);
+				}
+			    if (employeeName) {
+					$(wrapper_element).find(".search-employee-name").val(employeeName);
+				}
+			}, 1000);
+		} else if (mainView === 'staff') {
+			setTimeout(() => {
+				const { company, project, site, shift, department, designation } = pageFilters;
+			    if(company) $('.staff-company-dropdown').html(company)
+			    if(project) $('.staff-project-dropdown').html(project)
+			    if(site) $('.staff-site-dropdown').html(site)
+			    if(shift) $('.staff-shift-dropdown').html(shift)
+			    if(department) $('.staff-department-dropdown').html(department)
+			    if(designation) $('.staff-designation-dropdown').html(designation)
+
+				render_staff(staffViewMode || "list")
+			}, 1000);
+		}
+	}
+
+	toggle_between_views()
+	populate_values()
+
+	window.preset_filters_applied = true	  
 }
 
 // Show popups on clicking edit options in Roster view
@@ -655,6 +741,14 @@ function setup_topbar_events(page) {
 
 	$('.dayoff').on('click', function () {
 		dayoff(page);
+	});
+
+	$('.clear_roster_filters').on('click', function () {
+		clear_roster_filters(page);
+	});
+
+	$('.clear_staff_filters').on('click', function () {
+		clear_staff_filters(page);
 	});
 
 	$('.clear_selection').on('click', function () {
@@ -1082,7 +1176,7 @@ function get_roster_data(page, isOt) {
 	let { project, site, shift, department, operations_role, designation, relievers } = page.filters;
 	let { limit_start, limit_page_length } = page.pagination;
 	if (project || site || shift || department || operations_role || designation || relievers){
-
+		$(".clear_roster_filters").removeClass("d-none")
 		$('#cover-spin').show(0);
 		frappe.call({
 			method: "one_fm.one_fm.page.roster.roster.get_roster_view", //dotted path to server method
@@ -1097,6 +1191,8 @@ function get_roster_data(page, isOt) {
 				render_roster(res.data, page, isOt);
 			}
 		});
+	} else {
+		$(".clear_roster_filters").addClass("d-none")
 	}
 }
 // Function responsible for Rendering the Table
@@ -1778,6 +1874,11 @@ function get_projects(page) {
 			parent.empty().trigger("change");
 			parent.select2({ data: project_data });
 
+			const selectedProject = page.filters['project'];
+            if (selectedProject) {
+	           parent.val(selectedProject).trigger("change");
+            }
+
 			$(parent).on('select2:select', function (e) {
 				page.filters.project = $(this).val();
 				get_sites(page);
@@ -1802,6 +1903,11 @@ function get_sites(page) {
 			});
 			parent.empty().trigger("change");
 			parent.select2({ data: site_data });
+
+			const selectedSite = page.filters['site'];
+            if (selectedSite) {
+	           parent.val(selectedSite).trigger("change");
+            }
 
 			$(parent).on('select2:select', function (e) {
 				page.filters.site = $(this).val();
@@ -1829,6 +1935,11 @@ function get_shifts(page) {
 			parent.empty().trigger("change");
 			parent.select2({ data: shift_data });
 
+			const selectedShift = page.filters['shift'];
+            if (selectedShift) {
+	           parent.val(selectedShift).trigger("change");
+            }
+
 			$(parent).on('select2:select', function (e) {
 				page.filters.shift = $(this).val();
 				let element = get_wrapper_element().slice(1);
@@ -1853,6 +1964,12 @@ function get_operations_posts(page) {
 				operations_role_data.push({ 'id': name, 'text': name });
 			});
 			parent.select2({ data: operations_role_data });
+
+			const selectedOperationsRole = page.filters['operations_role'];
+            if (selectedOperationsRole) {
+	           parent.val(selectedOperationsRole).trigger("change");
+            }
+
 			$(parent).on('select2:select', function (e) {
 				page.filters.operations_role = $(this).val();
 				let element = get_wrapper_element().slice(1);
@@ -1874,6 +1991,12 @@ function get_departments(page) {
 				department_data.push({ 'id': name, 'text': name });
 			});
 			parent.select2({ data: department_data });
+
+			const selectedDepartment = page.filters['department'];
+            if (selectedDepartment) {
+	           parent.val(selectedDepartment).trigger("change");
+            }
+			
 			$(parent).on('select2:select', function (e) {
 				page.filters.department = $(this).val();
 				let element = get_wrapper_element().slice(1);
@@ -1895,6 +2018,12 @@ function get_designations(page){
 				designation_data.push({ 'id': name, 'text': name });
 			});
 			parent.select2({ data: designation_data });
+
+			const selectedDesignation = page.filters['designation'];
+            if (selectedDesignation) {
+	           parent.val(selectedDesignation).trigger("change");
+            }
+			
 			$(parent).on('select2:select', function (e) {
 				page.filters.designation = $(this).val();
 				let element = get_wrapper_element().slice(1);
@@ -1906,6 +2035,7 @@ function get_designations(page){
 			;
 		})
 }
+
 function get_relievers(page){
 	let parent = $('[data-page-route="roster"] #rosteringrelieverselect');
 	let reliever_data = [
@@ -1913,6 +2043,12 @@ function get_relievers(page){
 		{'id': 'False', 'text': 'Non Relievers Only'},
 	];
 	parent.select2({ data: reliever_data });
+
+	const selectedReliverStatus = page.filters['relievers'];
+    if (selectedReliverStatus) {
+	    parent.val(selectedReliverStatus).trigger("change");
+    }
+
 	$(parent).on('select2:select', function (e) {
 		page.filters.relievers = $(this).val();
 		let element = get_wrapper_element().slice(1);
@@ -2254,6 +2390,15 @@ function notificationmsg(title, message) {
 
 function render_staff(view) {
 	let filters = cur_page.page.page.filters;
+
+	const { project, site, shift, department, operations_role, designation } = filters
+
+	if (project || site || shift || department || operations_role || designation){
+		$(".clear_staff_filters").removeClass("d-none")
+	} else {
+		$(".clear_staff_filters").addClass("d-none")
+	}
+
 	frappe.xcall('one_fm.one_fm.page.roster.roster.get_staff', filters)
 		.then(res => {
 			if (res) {
@@ -2455,18 +2600,20 @@ function render_staff_card_view(data) {
 }
 
 function setup_staff_filters(page) {
+	const { page: pageFilters, employee: employeeFilters } = get_preset_filters()
+
 	let filters = {
-		assigned: 1,
-		company: '',
-		project: '',
-		site: '',
-		shift: '',
-		department: '',
-		designation: '',
-		operations_role: '',
-		employee_search_name: '',
-		employee_search_id: '',
-		relievers: ''
+		assigned: pageFilters.assigned === '0' ? 0 : 1,
+		company: pageFilters.company || '',
+		project: pageFilters.project || '',
+		site: pageFilters.site || '',
+		shift: pageFilters.shift || '',
+		department: pageFilters.department || '',
+		designation: pageFilters.designation || '',
+		operations_role: pageFilters.operations_role || '',
+		employee_search_name: employeeFilters.employee_name || '',
+		employee_search_id: employeeFilters.employee_id || '',
+		relievers: pageFilters.relievers || '',
 	};
 	let pagination = {
 		limit_start: 0,
@@ -2475,6 +2622,8 @@ function setup_staff_filters(page) {
 	if (page) {
 		page.filters = filters;
 		page.pagination = pagination;
+		page.employee_search_id = employeeFilters.employee_id || ''
+	    page.employee_search_name = employeeFilters.employee_name || ''
 	} else {
 		cur_page.page.page.filters = filters;
 		cur_page.page.page.pagination = pagination;
@@ -3247,6 +3396,30 @@ async function updateEmployeeDefaults(employees, data) {
     }
 }
 
+
+function clear_roster_filters(page) {
+	window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+
+	page.filters = {}
+	cur_page.page.page.filters = {}
+
+	$('#page-roster').empty().append(frappe.render_template('roster'));
+	load_js(page)
+}
+
+function clear_staff_filters(page) {
+	window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+
+	page.filters = {}
+	cur_page.page.page.filters = {}
+
+	$(".assigneddrpval").html("Assigned");
+	["company", "project", "site", "shift", "department", "designation"].forEach(item => {
+		$(`a[data-filter-type=${item}]`).click()
+	})
+
+	render_staff($(".layoutSidenav_content").attr("data-view"));
+}
 
 function clear_selection(page) {
 	classgrt = [];

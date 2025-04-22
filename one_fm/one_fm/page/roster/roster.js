@@ -3323,9 +3323,16 @@ async function updateEmployeeDefaults(employees, data) {
    // Use a Map to store only unique employee records
    let uniqueEmployeeIDs = [...new Set(employees.map(emp => emp.employee))];
 
+   let validProjects = await frappe.db.get_list("Project", {
+    filters: { "custom_exclude_from_default_shift_checker": ["!=", 1] },
+		});
+
+	// Extract project names (IDs) that are valid
+	let validProjectIDs = validProjects.map(project => project.name);
+
     // Bulk fetch all employees' details in a single query
     let fetchedEmployees = await frappe.db.get_list("Employee", {
-        filters: [["name", "in", uniqueEmployeeIDs]],
+        filters: [["name", "in", uniqueEmployeeIDs],["project", "in", validProjectIDs]],
         fields: ["name", "employee_name", "shift", "custom_operations_role_allocation", "custom_is_reliever", "project", "site"],
         limit_page_length: uniqueEmployeeIDs.length // Fetch all in one call
     });

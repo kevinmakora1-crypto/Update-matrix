@@ -3963,11 +3963,15 @@ def update_fields_in_doctypes(data):
 		- doctype: str
 		- filters: dict
 		- field_value_map: dict
-    
-    :example:[{
-        - "doctype": "Operations Post",
-		- "filters": {"site": self.name,"project": doc_before_save.project},
-		- "field_value_map": {"project": self.project,"site": self.name}}]
+
+	Example:
+	[
+		{
+			"doctype": "Operations Post",
+			"filters": {"site": self.name, "project": doc_before_save.project},
+			"field_value_map": {"project": self.project, "site": self.name}
+		}
+	]
 	"""
 	for entry in data:
 		doctype = entry.get("doctype")
@@ -3978,6 +3982,9 @@ def update_fields_in_doctypes(data):
 			if frappe.db.exists(doctype, filters):
 				docs = frappe.get_all(doctype, filters=filters, pluck="name")
 				for docname in docs:
+					doc = frappe.get_doc(doctype, docname)
 					for field, value in field_value_map.items():
-						frappe.db.set_value(doctype, docname, field, value, update_modified=False)
+						doc.set(field, None)   # Clear the field to reset fetched values
+						doc.set(field, value)  # Re-set the actual value
+					doc.save(ignore_permissions=True)
 

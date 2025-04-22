@@ -319,17 +319,17 @@ def update_on_field_change(self,doc_before_save):
 		field_value_map = {"project": self.project}
 		data = [
 					{
-						"doctype": "Operations Post",
-						"filters": filters,
-						"field_value_map": field_value_map
-					},
-					{
 						"doctype": "Operations Shift",
 						"filters": filters,
 						"field_value_map": field_value_map
 					},
 					{
 						"doctype": "Operations Role",
+						"filters": filters,
+						"field_value_map": field_value_map
+					},
+					{
+						"doctype": "Operations Post",
 						"filters": filters,
 						"field_value_map": field_value_map
 					}

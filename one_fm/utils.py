@@ -3986,5 +3986,5 @@ def update_fields_in_doctypes(data):
 					for field, value in field_value_map.items():
 						doc.set(field, None)   # Clear the field to reset fetched values
 						doc.set(field, value)  # Re-set the actual value
-					doc.save(ignore_permissions=True)
+					doc.save()
 

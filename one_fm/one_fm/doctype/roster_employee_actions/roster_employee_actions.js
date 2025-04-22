@@ -6,3 +6,16 @@ frappe.ui.form.on('Roster Employee Actions', {
 
 	// }
 });
+
+frappe.ui.form.on('Employees Not Rostered', {
+    take_action(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+
+        const employee = row.employee;
+		const employee_name = row.employee_name;
+        const missing_dates = row.date;
+		const shift_allocation = row.shift_allocation;
+        const url = `/app/roster?employee_id=${employee}&employee_name=${employee_name}&shift=${shift_allocation}`;
+        window.location.href = url;
+    }
+});

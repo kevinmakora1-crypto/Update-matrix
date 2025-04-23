@@ -80,7 +80,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Frequency",
-   "options": "\nDaily\nWeekly on Saturday\nMonthly on second Saturday\nWeekly\nMonthly\nCron",
+   "options": "\nDaily\nWeekly\nMonthly\nCron",
    "reqd": 1
   },
   {
@@ -272,7 +272,7 @@
   },
   {
    "default": "0",
-   "description": "Mark if this process task is developed on ERPNext and select the doctype below.",
+   "description": "Mark if this process task is developed on ERPNext and select the doctype below",
    "fieldname": "is_erp_task",
    "fieldtype": "Check",
    "label": "Is ERP Task"
@@ -320,7 +320,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-21 15:13:57.624765",
+ "modified": "2025-04-23 19:06:24.431325",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process Task",

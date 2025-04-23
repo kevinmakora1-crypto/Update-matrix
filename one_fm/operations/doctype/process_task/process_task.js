@@ -2,6 +2,35 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Process Task', {
+	onload: function(frm) {
+		if (frm.doc.start_date) {
+			frm.trigger('start_date');
+		}
+	},
+	start_date(frm) {
+        const date = new Date(frm.doc.start_date);
+        const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+		const monthDate = date.toLocaleDateString('en-US', {
+			month: 'long',
+			day: 'numeric'
+		}); 
+        const docfield = frappe.meta.get_docfield("Process Task", "frequency");
+        let staticOptions = [];
+
+        if (docfield && typeof docfield.options === 'string') {
+            staticOptions = docfield.options.split('\n');
+        }
+
+        const updatedOptions = [
+            ...staticOptions,
+            `Weekly on ${dayName}`,
+            `Monthly on second ${dayName}`,
+			`Yearly on ${monthDate}`
+        ];
+
+        frm.set_df_property('frequency', 'options', [...new Set(updatedOptions)]);
+        frm.refresh_field('frequency');
+    },
 	refresh: function(frm) {
 		set_filters(frm);
 		set_custom_buttons(frm);

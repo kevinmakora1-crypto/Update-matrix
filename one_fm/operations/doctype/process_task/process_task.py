@@ -23,9 +23,34 @@ class ProcessTask(Document):
 	def validate(self):
 		self.validate_dates()
 		self.validate_frequency()
+		self._validate_selects()
 
-  
-	
+	def _validate_selects(self):
+		for df in self.meta.get_select_fields():
+			# Skip validation for 'frequency' field
+			if df.fieldname in ["naming_series", "frequency"] or not (self.get(df.fieldname) and df.options):
+				continue
+
+			options = (df.options or "").split("\n")
+
+			# if only empty options
+			if not list(filter(None, options)):
+				continue
+
+			self.set(df.fieldname, str(self.get(df.fieldname)).strip())
+			value = self.get(df.fieldname)
+
+			if value not in options and not (frappe.flags.in_test and value.startswith("_T-")):
+				prefix = _("Row #{0}:").format(self.idx) if self.get("parentfield") else ""
+				label = _(self.meta.get_label(df.fieldname))
+				comma_options = '", "'.join(_(each) for each in options)
+
+				frappe.throw(
+					_('{0} {1} cannot be "{2}". It should be one of "{3}"').format(
+						prefix, label, value, comma_options
+					)
+				)
+
 	def validate_frequency(self):
 		"""Validate the corresponding date or cron data in the frequency field
 		"""
@@ -270,18 +295,18 @@ def create_tasks_for(tasks_list):
 		except:
 			frappe.log_error(title = f"Error Creating Task from Process List {one.name}",message = frappe.get_traceback())
 
-def get_second_saturday(year, month):
-    c = calendar.Calendar(firstweekday=calendar.SUNDAY)
-    monthcal = c.monthdatescalendar(year, month)
+def get_second_weekday(year, month,dayname):
+	c = calendar.Calendar(firstweekday=calendar.SUNDAY)
+	monthcal = c.monthdatescalendar(year, month)
+	weekday_index = list(calendar.day_name).index(dayname)
+	# Find all matching weekdays in the given month
+	weekdays = [day for week in monthcal for day in week
+                if day.weekday() == weekday_index and day.month == month]
+	# Return the second weekday
+	return weekdays[1] if len(weekdays) >= 2 else None
 
-    # Find all Thursdays in the month
-    thursdays = [day for week in monthcal for day in week
-                 if day.weekday() == calendar.SATURDAY and day.month == month]
 
-    # Return the third Thursday
-    return thursdays[1] if len(thursdays) >= 2 else None
-
-
+@frappe.whitelist()
 def run_daily_process_task():
 	try:
 		"""Trigger all the Task creating process tasks for the day for all non Cron processes"""
@@ -290,24 +315,28 @@ def run_daily_process_task():
 		tasks_to_be_created = []
 		
 		all_processes = frappe.db.sql("""
-					SELECT 
-						pt.*, ard.day
-					FROM 
-						`tabProcess Task` pt
-					LEFT JOIN 
-						`tabAuto repeat Day` ard 
-					ON 
-						ard.parent = pt.name
-					WHERE 
-						pt.frequency IN (%s, %s, %s)
-					AND pt.is_erp_task = 0 
-					AND pt.task_type = 'Routine'
-					AND (
-						(pt.end_date IS NOT NULL AND DATE(%s) BETWEEN DATE(pt.start_date) AND DATE(pt.end_date))
-						OR
-						(pt.end_date IS NULL AND DATE(%s) >= DATE(pt.start_date))
+				SELECT 
+					pt.*, ard.day
+				FROM 
+					`tabProcess Task` pt
+				LEFT JOIN 
+					`tabAuto repeat Day` ard 
+				ON 
+					ard.parent = pt.name
+				WHERE 
+					(
+						pt.frequency LIKE 'Weekly%%'
+						OR pt.frequency LIKE 'Daily%%'
+						OR pt.frequency LIKE 'Monthly%%'
 					)
-				""", ('Weekly', 'Daily', 'Monthly', today, today), as_dict=True)
+				AND pt.is_erp_task = 0 
+				AND pt.task_type = 'Routine'
+				AND (
+					(pt.end_date IS NOT NULL AND DATE(%s) BETWEEN DATE(pt.start_date) AND DATE(pt.end_date))
+					OR
+					(pt.end_date IS NULL AND DATE(%s) >= DATE(pt.start_date))
+				)
+			""", (today, today), as_dict=True)
 		for each in all_processes:
 			if each.get('frequency') == "Daily":
 				tasks_to_be_created.append(each)
@@ -321,12 +350,11 @@ def run_daily_process_task():
 			elif each.get('frequency') == "Weekly":
 				if each.get('day') == day_name:
 					tasks_to_be_created.append(each)
-			elif each.get("frequency") == "Weekly on Saturday":
-				if "Saturday" == day_name:
+			elif each.get("frequency") == "Weekly on "+day_name:
 					tasks_to_be_created.append(each)
-			elif each.get("frequency") =="Monthly on second Saturday":
-				second_saturday = get_second_saturday(today.year, today.month)
-				if second_saturday and second_saturday == today.date():
+			elif each.get("frequency") =="Monthly on second "+day_name:
+				second_weekday = get_second_weekday(today.year, today.month,day_name)
+				if second_weekday and second_weekday == today.date():
 					tasks_to_be_created.append(each)
 		create_tasks_for(tasks_to_be_created)
 	except:

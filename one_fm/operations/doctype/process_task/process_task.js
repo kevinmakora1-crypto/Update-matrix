@@ -10,10 +10,6 @@ frappe.ui.form.on('Process Task', {
 	start_date(frm) {
         const date = new Date(frm.doc.start_date);
         const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-		const monthDate = date.toLocaleDateString('en-US', {
-			month: 'long',
-			day: 'numeric'
-		}); 
         const docfield = frappe.meta.get_docfield("Process Task", "frequency");
         let staticOptions = [];
 
@@ -25,7 +21,6 @@ frappe.ui.form.on('Process Task', {
             ...staticOptions,
             `Weekly on ${dayName}`,
             `Monthly on second ${dayName}`,
-			`Yearly on ${monthDate}`
         ];
 
         frm.set_df_property('frequency', 'options', [...new Set(updatedOptions)]);

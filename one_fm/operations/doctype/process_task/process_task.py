@@ -23,38 +23,15 @@ class ProcessTask(Document):
 	def validate(self):
 		self.validate_dates()
 		self.validate_frequency()
-		self._validate_selects()
-
-	def _validate_selects(self):
-		for df in self.meta.get_select_fields():
-			# Skip validation for 'frequency' field
-			if df.fieldname in ["naming_series", "frequency"] or not (self.get(df.fieldname) and df.options):
-				continue
-
-			options = (df.options or "").split("\n")
-
-			# if only empty options
-			if not list(filter(None, options)):
-				continue
-
-			self.set(df.fieldname, str(self.get(df.fieldname)).strip())
-			value = self.get(df.fieldname)
-
-			if value not in options and not (frappe.flags.in_test and value.startswith("_T-")):
-				prefix = _("Row #{0}:").format(self.idx) if self.get("parentfield") else ""
-				label = _(self.meta.get_label(df.fieldname))
-				comma_options = '", "'.join(_(each) for each in options)
-
-				frappe.throw(
-					_('{0} {1} cannot be "{2}". It should be one of "{3}"').format(
-						prefix, label, value, comma_options
-					)
-				)
 
 	def validate_frequency(self):
 		"""Validate the corresponding date or cron data in the frequency field
 		"""
 		self.validate_cron()
+		meta = frappe.get_meta("Process Task")
+		for df in meta.fields:
+			if df.fieldname == "frequency":
+				df.restrict_to_list = 0
 		if self.frequency=="Weekly":
 			if not self.repeat_on_days:
 				frappe.throw("Please set the days of the week to trigger process")

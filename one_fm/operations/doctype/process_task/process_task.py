@@ -31,7 +31,7 @@ class ProcessTask(Document):
 		meta = frappe.get_meta("Process Task")
 		for df in meta.fields:
 			if df.fieldname == "frequency":
-				df.restrict_to_list = 0
+				df.options = '' 
 		if self.frequency=="Weekly":
 			if not self.repeat_on_days:
 				frappe.throw("Please set the days of the week to trigger process")

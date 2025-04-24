@@ -264,7 +264,7 @@ def create_tasks_for(tasks_list):
 				task = process_task_doc.set_task_for_process_task()
 				if task:
 					process_task_doc.assign_employee_to_task(task)
-					process_task_doc.db_set('last_execution',frappe.utils.now_datetime())
+					process_task_doc.db_set('last_execution',now_datetime())
 				frappe.db.commit()
 
 		except:
@@ -427,7 +427,7 @@ def run_cron_based_process_tasks():
 def run_cron_process_task():
 	"""Trigger all the Task creating process tasks for the day for cron based process tasks"""
 	try:
-		time_now = frappe.utils.now_datetime()
+		time_now = now_datetime()
 		today = frappe.utils.get_datetime()
 		all_processes = frappe.db.sql("""
 						SELECT 

@@ -216,7 +216,6 @@ def approve_open_shift_permission(start_date, end_date):
 		""", as_dict=1)
 		# apply workflow
 		error_list = """"""
-		print(shift_permissions)
 		for i in shift_permissions:
 			try:
 				shift_permission = frappe.get_doc("Shift Permission", i.name)
@@ -225,7 +224,6 @@ def approve_open_shift_permission(start_date, end_date):
 				error_list += str(e)+'\n\n'
 		if error_list:frappe.log_error(error_list, 'Shift Permission')
 	except Exception as e:
-		print(frappe.get_traceback())
 		frappe.log_error(frappe.get_traceback(), 'Shift Permission')
 
 def create_checkin(shift_permission):

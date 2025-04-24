@@ -275,7 +275,7 @@ def create_tasks_for(tasks_list):
 def run_daily_process_task():
 	try:
 		"""Trigger all the Task creating process tasks for the day for all non Cron processes"""
-		today = 	frappe.utils.get_datetime()
+		today = 	get_datetime()
 		day_name = today.strftime("%A")
 		tasks_to_be_created = []
 		
@@ -428,7 +428,7 @@ def run_cron_process_task():
 	"""Trigger all the Task creating process tasks for the day for cron based process tasks"""
 	try:
 		time_now = now_datetime()
-		today = frappe.utils.get_datetime()
+		today = get_datetime()
 		all_processes = frappe.db.sql("""
 						SELECT 
 							*

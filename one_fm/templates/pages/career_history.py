@@ -32,6 +32,10 @@ def create_career_history_from_portal(job_applicant, career_history_details):
     career_history.job_applicant = job_applicant
 
     career_histories = json.loads(career_history_details)
+
+    factors_expected_in_new_job = career_histories[-1] if career_histories else {}
+    career_history.what_are_the_factors_you_are_looking_for_in_a_new_job = factors_expected_in_new_job.get("factors_in_new_job")
+
     for history in career_histories:
         career_history_fields = ['company_name', 'country_of_employment', 'start_date', 'responsibility_one',
             'responsibility_two', 'responsibility_three', 'job_title', 'monthly_salary_in_kwd', 'first_contact_name',

@@ -297,6 +297,7 @@ export default {
                         <ul>
                             <li><h6>1. Passport - Data Page (If available)</h6></li>
                             <li><h6>2. Kuwait Civil ID - front and back side (if available)</h6></li>
+                            <li><h6>3. High School Certificate (if available)</h6></li>
                         </ul>
                         <h5>Instructions:</h5>
                         <ol>
@@ -319,6 +320,12 @@ export default {
                                 <div class="form-group col-md-12">
                                     <label  for="file">International Passport Data Page</label>
                                     <input class="form-control" type="file" id="passport_data_page" placeholder="Passport Data"  name="passport_data_page"  accept="image/png, image/jpeg" :onchange="previewImage">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="form-group col-md-12">
+                                    <label  for="file"> High School Certificate</label>
+                                    <input class="form-control" type="file" id="high_School_certificate_page" placeholder="High school Certificate"  name="high_School_certificate_page"  accept="image/png, image/jpeg" :onchange="previewImage">
                                 </div>
                             </div>
                             <div class="row">

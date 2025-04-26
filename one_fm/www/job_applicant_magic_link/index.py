@@ -61,6 +61,13 @@ def get_magic_link():
                             'id':'passport_data_page',
                             'placeholder':'Passport Data Page'
                         })
+                    if job_applicant.high_School_certificate_page:
+                        result['attachments'].append({
+                            'name':job_applicant.high_School_certificate_page,
+                            'image':url+job_applicant.high_School_certificate_page,
+                            'id':'high_School_certificate_page',
+                            'placeholder':'High School Certificate Page'
+                        })
                     if job_applicant.civil_id_front:
                         result['attachments'].append({
                             'name':job_applicant.civil_id_front,
@@ -194,6 +201,37 @@ def upload_image():
             frappe.log_error(frappe.get_traceback(), "Mindee-Passport")
             errors.append("We could not process your passport document.")
 
+    # process high school certificate   
+    if frappe.form_dict.high_School_certificate_page:
+        data_content = frappe._dict(frappe.form_dict.high_School_certificate_page)
+        reference_doctype = frappe.form_dict.reference_doctype
+        reference_docname = frappe.form_dict.reference_docname
+        data = data_content.data
+        filename = "high_school-"+applicant_name+"_"+hashlib.md5(str(datetime.datetime.now()).encode('utf-8')).hexdigest()[:5]+"-"+data_content.name
+        content = base64.b64decode(data)
+        with open(full_path+filename, "wb") as fh:
+            fh.write(content)
+        # append to File doctype
+        file_url = "/files/user/magic_link/"+filename
+        filedoc = frappe.get_doc({
+            "doctype":"File",
+            "is_private":0,
+            "file_url":"/files/user/magic_link/"+filename,
+            "attached_to_doctype":frappe.form_dict.reference_doctype,
+            "attached_to_name":frappe.form_dict.reference_docname
+        }).insert(ignore_permissions=True)
+        filedoc.db_set('file_url', file_url)
+        frappe.db.set_value(reference_doctype, reference_docname, 'high_School_certificate_page', file_url)
+        frappe.db.commit()
+        absolute_path = bench_path+'/sites/'+cstr(frappe.local.site)+'/public/files/'+filename
+        if os.path.isfile(absolute_path):
+            os.remove(absolute_path)
+
+        # delete existing files
+        delete_existing_files(reference_doctype, reference_docname, f"%/files/user/magic_link/high_school-{applicant_name}_%", filedoc.name)
+
+        # process file detection
+        response_data['high_school']={'done':True}
     # civil id front
     if frappe.form_dict.civil_id_front:
         data_content = frappe._dict(frappe.form_dict.civil_id_front)

@@ -227,6 +227,12 @@ career_history = Class.extend({
 
 
 
+      <div class="mb-3 col-lg-12 col-md-12">
+        <label class="form-label">Briefly describe your responsibilities in this role</label>
+        <textarea class="form-control responsibilities_company_${company_no}" rows="4" placeholder="E.g. Managed a team of 5, handled client reports, etc."></textarea>
+      </div>
+
+
 			<div class="mt-5 promotion_section_${company_no}" style="width: 100%">
 
 			</div>
@@ -365,9 +371,7 @@ career_history = Class.extend({
       career_history['country_of_employment'] = $(`.country_of_company_${company_no}`).val();
       career_history['start_date'] = $(`.joined_company${company_no}`).val();
       career_history['monthly_salary_in_kwd'] = $(`.salary_company${company_no}`).val();
-      career_history['responsibility_one'] = $(`.responisbility_1_company${company_no}`).val();
-      career_history['responsibility_two'] = $(`.responisbility_2_company${company_no}`).val();
-      career_history['responsibility_three'] = $(`.responisbility_3_company${company_no}`).val();
+      career_history['responsibility_one'] = $(`.responsibilities_company_${company_no}`).val();
       career_history['job_title'] = $(`.starting_job_title_company_${company_no}`).val();
       career_history['employment_type'] = $(`.employment_type_company_${company_no}`).val();
 

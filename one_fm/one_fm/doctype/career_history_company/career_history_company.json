@@ -26,8 +26,6 @@
   "second_contact_designation",
   "responsibilities_and_accomplishment_section",
   "responsibility_one",
-  "responsibility_two",
-  "responsibility_three",
   "column_break_11",
   "major_accomplishment",
   "section_break_18",
@@ -62,22 +60,12 @@
   },
   {
    "fieldname": "responsibility_one",
-   "fieldtype": "Data",
-   "label": "Responsibility 1"
-  },
-  {
-   "fieldname": "responsibility_two",
-   "fieldtype": "Data",
-   "label": "Responsibility 2"
+   "fieldtype": "Small Text",
+   "label": "Responsibility"
   },
   {
    "fieldname": "column_break_11",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "responsibility_three",
-   "fieldtype": "Data",
-   "label": "Responsibility 3"
   },
   {
    "description": "Please describe a major accomplishment while you worked here",

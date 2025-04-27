@@ -185,6 +185,7 @@ career_history = Class.extend({
 				<label class="form-label">What was the company's name? </label>
 				<input type="text" class="form-control company_${company_no}_name" placeholder="Enter the ${stringifyNumber(company_no)} Company Name"/>
 		  	</div>
+
 		  	<div class="my-3 col-lg-12 col-md-12">
 				<label class="form-label">Which country did you get employed in?</label> <br>
 					<select class="form-control country_of_company_${company_no}">
@@ -198,6 +199,7 @@ career_history = Class.extend({
 				<label class="form-label">When did you join the company?</label>
 				<input type="date" class="form-control joined_company${company_no}"/>
 		  	</div>
+
 		  	<div class="mb-3 col-lg-12 col-md-12">
 				<label class="form-label">What was your first salary at this company?</label>
 				<input type="text" class="form-control salary_company${company_no}" placeholder="Enter your Salary in KWD"/>
@@ -213,10 +215,23 @@ career_history = Class.extend({
 			</div>
 
 
+     <div class="col-lg-12 col-md-12 mb-3">
+        <label class="form-label">What was your employment type?</label>
+        <select class="custom-select employment_type_company_${company_no}">
+        <option value="" disabled selected>Select Employment Type</option>
+          {% for type in employment_type_list %}
+          <option value="{{ type }}">{{ type }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+
+
       <div class="mb-3 col-lg-12 col-md-12">
         <label class="form-label">Briefly describe your responsibilities in this role</label>
         <textarea class="form-control responsibilities_company_${company_no}" rows="4" placeholder="E.g. Managed a team of 5, handled client reports, etc."></textarea>
       </div>
+
 
 			<div class="mt-5 promotion_section_${company_no}" style="width: 100%">
 
@@ -358,6 +373,7 @@ career_history = Class.extend({
       career_history['monthly_salary_in_kwd'] = $(`.salary_company${company_no}`).val();
       career_history['responsibility_one'] = $(`.responsibilities_company_${company_no}`).val();
       career_history['job_title'] = $(`.starting_job_title_company_${company_no}`).val();
+      career_history['employment_type'] = $(`.employment_type_company_${company_no}`).val();
 
       career_history['first_contact_name'] = $(`.first_contact_name_${company_no}`).val();
       career_history['first_contact_email'] = $(`.first_contact_email_${company_no}`).val();

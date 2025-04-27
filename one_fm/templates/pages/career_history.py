@@ -35,7 +35,7 @@ def create_career_history_from_portal(job_applicant, career_history_details):
     career_histories = json.loads(career_history_details)
     for history in career_histories:
         career_history_fields = ['company_name', 'country_of_employment', 'start_date', 'responsibility_one',
-           , 'job_title', "employment_type", 'monthly_salary_in_kwd', 'first_contact_name',
+           'job_title', "employment_type", 'monthly_salary_in_kwd', 'first_contact_name',
             'first_contact_email', 'first_contact_phone', 'first_contact_designation', 'second_contact_name',
             'second_contact_email', 'second_contact_phone', 'second_contact_designation']
 

@@ -13,6 +13,7 @@ frappe.ui.form.on('Career History', {
 		if(frm.doc.total_years_of_experience){
 			set_total_years_of_experience_str(frm, frm.doc.total_years_of_experience);;
 		}
+		calculate_career_history_score(frm);
 	},
 	job_applicant: function(frm) {
     set_job_applicant_details(frm);
@@ -144,6 +145,17 @@ var calculate_career_history_score = function(frm) {
     }
   }
   frm.set_value('career_history_score', career_history_score);
+
+  let description_text = `Factor = Total Number of Promotions and Salary Changes / Total Years Of Experience<br><br>` +
+    `Current Factor: <b>${the_factor.toFixed(2)}</b><br>` +
+    `<br><u>Score Rules:</u><br>` +
+    `- 0 ≤ factor < 0.25 → Score = 1<br>` +
+    `- 0.25 ≤ factor < 0.33 → Score = 2<br>` +
+    `- 0.33 ≤ factor < 0.5 → Score = 3<br>` +
+    `- 0.5 ≤ factor < 1 → Score = 4<br>` +
+    `- factor ≥ 1 → Score = 5`;
+
+	frm.set_df_property('career_history_score', 'description', description_text);
 };
 
 var set_total_years_of_experience_str = function(frm, total_years_of_experience) {

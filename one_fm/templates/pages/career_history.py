@@ -83,7 +83,7 @@ def create_best_references_from_portal(job_applicant, best_references):
                     ref_doc.name_of_person = reference.get(fields['name_field'])
                     ref_doc.email = reference.get(fields['email_field'])
                     ref_doc.contact_number = reference.get(fields['phone_field'])
-                    ref_doc.why_he_is_the_best = reference.get(fields['why_field'])
+                    ref_doc.why_he = reference.get(fields['why_field'])
                     ref_doc.save(ignore_permissions=True)
             except Exception as e:
                 frappe.log_error(

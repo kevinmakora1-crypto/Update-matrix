@@ -33,6 +33,9 @@ def get_magic_link():
                     # get other required data like nationality, gender, ...
                     civil_id_required = True if job_applicant.one_fm_nationality=='Kuwaiti' else False
                     civil_id_required = True if job_applicant.one_fm_have_a_valid_visa_in_kuwait else False
+                    designation_doc = frappe.get_doc('Designation', job_applicant.designation)
+                    high_School_certificate = True if designation_doc.custom_requires_high_school_certificate else False
+                    result['high_School_certificate'] = high_School_certificate
                     result['civil_id_required'] = civil_id_required
                     nationalities = frappe.get_all("Nationality", fields=["name as nationality", "nationality_arabic", "country"])
                     nationalities_dict = {}
@@ -61,13 +64,13 @@ def get_magic_link():
                             'id':'passport_data_page',
                             'placeholder':'Passport Data Page'
                         })
-                    if job_applicant.high_School_certificate_page:
+                    if designation_doc.custom_requires_high_school_certificate:
                         result['attachments'].append({
-                            'name':job_applicant.high_School_certificate_page,
-                            'image':url+job_applicant.high_School_certificate_page,
-                            'id':'high_School_certificate_page',
-                            'placeholder':'High School Certificate Page'
-                        })
+                                'name': designation_doc.custom_requires_high_school_certificatee,
+                                'image': url + designation_doc.custom_requires_high_school_certificate,
+                                'id': 'high_school_certificate_page',
+                                'placeholder': 'High School Certificate Page'
+                            })
                     if job_applicant.civil_id_front:
                         result['attachments'].append({
                             'name':job_applicant.civil_id_front,

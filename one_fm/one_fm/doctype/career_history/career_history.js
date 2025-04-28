@@ -13,6 +13,10 @@ frappe.ui.form.on('Career History', {
 		if(frm.doc.total_years_of_experience){
 			set_total_years_of_experience_str(frm, frm.doc.total_years_of_experience);;
 		}
+		frm.add_custom_button(__('Best Reference'), function() {
+			frappe.route_options = {"job_applicant": frm.doc.job_applicant};
+			frappe.set_route("List", "Best Reference");
+		  },'View');
 	},
 	job_applicant: function(frm) {
     set_job_applicant_details(frm);

@@ -260,6 +260,44 @@ career_history = Class.extend({
 				<button class="btn btn-dark float-left btn_add_more_contact_${company_no}" type="button">{{ _(" + Add more contact person") }}</button>
 			</div>
 
+      <div class="col-lg-12 col-md-12 mb-3">
+				<label>Tell us some details about your best boss from ${stringifyNumber(company_no)} company you worked</label>
+			</div>
+      <div class="col-lg-6 col-md-6 mb-3">
+				<label>Full name</label>
+				<input type="text" class="form-control best_boss_name_${company_no}" placeholder="Full Name"/>
+			</div>
+			<div class="col-lg-6 col-md-6 mb-3">
+				<label>Email</label>
+				<input type="text" class="form-control best_boss_email_${company_no}" placeholder="Email"/>
+			</div>
+      <div class="col-lg-6 col-md-6 mb-3">
+				<label>Phone number with country code</label>
+				<input type="text" class="form-control best_boss_phone_${company_no}" placeholder="Phone number with country code"/>
+			</div>
+      <div class="col-lg-6 col-md-6 mb-3">
+				<label>Why is He/She the best?</label>
+				<input type="text" class="form-control why_best_boss${company_no}" placeholder="Why is he/she the best?"/>
+			</div>
+       <div class="col-lg-12 col-md-12 mb-3">
+				<label> Tell us some details about your best colleague from ${stringifyNumber(company_no)} company you worked</label>
+			</div>
+      <div class="col-lg-6 col-md-6 mb-3">
+				<label>Full name</label>
+				<input type="text" class="form-control best_colleague_name_${company_no}" placeholder="Full Name"/>
+			</div>
+			<div class="col-lg-6 col-md-6 mb-3">
+				<label>Email</label>
+				<input type="text" class="form-control best_colleague_email_${company_no}" placeholder="Email"/>
+			</div>
+			<div class="col-lg-6 col-md-6 mb-3">
+				<label>Phone number with country code</label>
+				<input type="text" class="form-control best_colleague_phone_${company_no}" placeholder="Phone number with country code"/>
+			</div>
+      <div class="col-lg-6 col-md-6 mb-3">
+				<label>Why is He/She the best?</label>
+				<input type="text" class="form-control why_best_colleague${company_no}" placeholder="Why is he/she the best?"/>
+			</div>
 			<div class="col-lg-12 col-md-12 mb-3">
 				<label>Are you still working for the same company?</label>
 				<select class="custom-select still_working_on_same_company_${company_no}">
@@ -331,19 +369,21 @@ career_history = Class.extend({
     var me = this;
     $('.btn-submit-career-history').click(function(){
       var data = me.get_details_from_form();
+      var all_best_references = me.get_all_best_references();
+
       if(!validateResponsibilities(data)){
         return frappe.msgprint(frappe._("Kindly fill the responsibility for the most recent job"));
       }
-      
       // POST Career History if all the conditions are satisfied
       if ($('#job_applicant').attr("data") && data.length > 0){
         frappe.freeze();
         frappe.call({
           type: "POST",
-          method: "one_fm.templates.pages.career_history.create_career_history_from_portal",
+          method: "one_fm.templates.pages.career_history.create_recruitment_documents",
           args: {
             job_applicant: $('#job_applicant').attr("data"),
-            career_history_details: data
+            career_history_details: data,
+            best_references: all_best_references
           },
           btn: this,
           callback: function(r){
@@ -367,10 +407,31 @@ career_history = Class.extend({
        me.create_company_section_html(1)
     });
   },
+  get_all_best_references: function() {
+    var all_best_references = [];
+    for (let company_no = 1; company_no <= TOTAL_COMPANY_NO; company_no++) {
+      var best_references = {};
+      best_references['best_boss_name'] = $(`.best_boss_name_${company_no}`).val();
+      best_references['best_boss_email'] = $(`.best_boss_email_${company_no}`).val();
+      best_references['best_boss_phone'] = $(`.best_boss_phone_${company_no}`).val();
+      best_references['why_best_boss'] = $(`.why_best_boss${company_no}`).val();
+
+      best_references['best_colleague_name'] = $(`.best_colleague_name_${company_no}`).val();
+      best_references['best_colleague_email'] = $(`.best_colleague_email_${company_no}`).val();
+      best_references['best_colleague_phone'] = $(`.best_colleague_phone_${company_no}`).val();
+      best_references['best_colleague_designation'] = $(`.best_colleague_designation_${company_no}`).val();
+      best_references['why_best_colleague'] = $(`.why_best_colleague${company_no}`).val();
+
+      all_best_references.push(best_references);
+    }
+    return all_best_references;
+  },
   get_details_from_form: function() {
     var career_histories = [];
+    
     for (let company_no = 1; company_no <= TOTAL_COMPANY_NO; company_no++) {
       var career_history = {};
+      
       career_history['company_name'] = $(`.company_${company_no}_name`).val();
       career_history['country_of_employment'] = $(`.country_of_company_${company_no}`).val();
       career_history['start_date'] = $(`.joined_company${company_no}`).val();
@@ -387,7 +448,8 @@ career_history = Class.extend({
       career_history['second_contact_name'] = $(`.second_contact_name_${company_no}`).val();
       career_history['second_contact_email'] = $(`.second_contact_email_${company_no}`).val();
       career_history['second_contact_phone'] = $(`.second_contact_phone_${company_no}`).val();
-      career_history['second_contact_designation'] = $(`.second_contact_designation_${company_no}`).val();
+      career_history['second_contact_designation'] = $(`.second_contact_designation_${company_no}`).val(); 
+      
 
       /*
         Still working in same company

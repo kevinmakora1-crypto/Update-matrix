@@ -316,6 +316,10 @@ career_history = Class.extend({
     var me = this;
     $('.btn-submit-career-history').click(function(){
       var data = me.get_details_from_form();
+      if(!validateResponsibilities(data)){
+        return frappe.msgprint(frappe._("Kindly fill the responsibility for the most recent job"));
+      }
+      
       // POST Career History if all the conditions are satisfied
       if ($('#job_applicant').attr("data") && data.length > 0){
         frappe.freeze();
@@ -423,4 +427,16 @@ function stringifyNumber(n) {
   if (n < 20) return special[n];
   if (n % 10 === 0) return deca[Math.floor(n / 10) - 2] + 'ieth';
   return deca[Math.floor(n / 10) - 2] + 'y-' + special[n % 10];
+}
+
+
+function validateResponsibilities(data) {
+  if (data.length === 0) {
+    return true;
+  }
+  
+  const lastObject = data[data.length - 1];
+  return lastObject.responsibility_one !== undefined 
+    && lastObject.responsibility_one !== null 
+    && lastObject.responsibility_one.trim() !== '';
 }

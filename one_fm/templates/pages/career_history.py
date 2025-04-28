@@ -19,6 +19,79 @@ def get_context(context):
     context.country_list = frappe.get_all('Country', fields=['name'])
     context.employment_type_list = frappe.db.get_list("Employment Type", pluck="name")
 
+
+
+
+
+@frappe.whitelist(allow_guest=True)
+def create_recruitment_documents(job_applicant, career_history_details, best_references):
+    '''
+        Method to create Recruitment Documents
+        Best References
+        Career History
+        args:
+            job_applicant: Job Applicant ID
+            career_history_details: Career History details as json
+            best_references: Best References details as json
+    '''
+    create_career_history_from_portal(job_applicant, career_history_details)
+    create_best_references_from_portal(job_applicant, best_references)
+
+
+def create_best_references_from_portal(job_applicant, best_references):
+    '''
+        Method to create Best References from Portal
+        args:
+            job_applicant: str
+                The ID of the Job Applicant
+            best_references: str 
+                JSON string containing reference details with fields:
+                - best_boss_name: Name of best boss reference
+                - best_boss_email: Email of best boss
+                - best_boss_phone: Phone number of best boss
+                - why_best_boss: Reason for being best boss
+                - best_colleague_name: Name of best colleague reference  
+                - best_colleague_email: Email of best colleague
+                - best_colleague_phone: Phone number of best colleague
+                - why_best_colleague: Reason for being best colleague
+    '''
+    # Create Best References
+    best_references_details = json.loads(best_references)
+    
+    reference_types = {
+        'Best Boss': {
+            'name_field': 'best_boss_name',
+            'email_field': 'best_boss_email',
+            'phone_field': 'best_boss_phone',
+            'why_field': 'why_best_boss'
+        },
+        'Best Colleague': {
+            'name_field': 'best_colleague_name',
+            'email_field': 'best_colleague_email',
+            'phone_field': 'best_colleague_phone',
+            'why_field': 'why_best_colleague'
+        }
+    }
+    
+    for reference in best_references_details:
+        for ref_type, fields in reference_types.items():
+            try:
+                # Only create document if the name field exists
+                if reference.get(fields['name_field']):
+                    ref_doc = frappe.new_doc('Best Reference')
+                    ref_doc.job_applicant = job_applicant
+                    ref_doc.reference = ref_type
+                    ref_doc.name_of_person = reference.get(fields['name_field'])
+                    ref_doc.email = reference.get(fields['email_field'])
+                    ref_doc.contact_number = reference.get(fields['phone_field'])
+                    ref_doc.why_he = reference.get(fields['why_field'])
+                    ref_doc.save(ignore_permissions=True)
+            except Exception as e:
+                frappe.log_error(
+                    message=f"Error creating {ref_type} reference: {str(e)}", 
+                    title=f"Error in creating {ref_type} Reference"
+                )
+
 @frappe.whitelist(allow_guest=True)
 def create_career_history_from_portal(job_applicant, career_history_details):
     '''

@@ -107,6 +107,7 @@ career_history = Class.extend({
     $(".still_working_on_same_company_"+(company_no.toString())).on("change", function(){
       var still_working = $(".still_working_on_same_company_"+(company_no.toString())).val();
       $(".reason_why_leave_job_"+(company_no.toString())).remove();
+      $(".factors_in_new_job_"+(company_no.toString())).remove();
       $(".are_you_still_working_"+(company_no.toString())).remove();
       $(".when_did_you_left_"+(company_no.toString())).remove();
       if (still_working == 1){
@@ -115,7 +116,13 @@ career_history = Class.extend({
           <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control reason_why_leave_job_${company_no}_text">
           </textarea>
         </div>`;
+        var factors_in_new_job = `<div class="mx-auto col-lg-12 col-md-12 mb-12 factors_in_new_job_${company_no}">
+          <label class="form-label">What are the factors you are looking for in a new job?</label>
+          <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text">
+          </textarea>
+        </div>`;
         $(".company_"+(company_no.toString())).append(reason_why_leave_job_html);
+        $(".company_"+(company_no.toString())).append(factors_in_new_job);
 				$('.submit-btn').fadeIn();
       }
       else if(still_working == 2){
@@ -151,6 +158,7 @@ career_history = Class.extend({
     var me = this;
     $(`.are_you_still_working_${company_no}_select`).on("change", function(){
       var are_you_still_working = $(`.are_you_still_working_${company_no}_select`).val();
+      $(".factors_in_new_job_"+(company_no.toString())).remove();
       if(are_you_still_working == 2){
         $('.submit-btn').fadeOut();
         $('.next-btn').fadeIn();
@@ -161,7 +169,13 @@ career_history = Class.extend({
         $('.submit-btn').fadeOut();
       }
       else if(are_you_still_working == 1){
+        var factors_in_new_job = `<div class="mx-auto col-lg-12 col-md-12 mb-12 factors_in_new_job_${company_no}">
+          <label class="form-label">What are the factors you are looking for in a new job?</label>
+          <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text">
+          </textarea>
+        </div>`;
         $('.next-btn').fadeOut();
+        $(".company_"+(company_no.toString())).append(factors_in_new_job);
         $('.submit-btn').fadeIn();
         for (let i = company_no; i < TOTAL_COMPANY_NO; i++) {
           $(".company_"+((i+1).toString())).remove();
@@ -462,6 +476,7 @@ career_history = Class.extend({
       else{
         career_history['left_the_company'] = $(`.when_did_you_left_${company_no}_date`).val();
       }
+      career_history['factors_in_new_job'] = $(`.factors_in_new_job_${company_no}_text`).val();
 
       // Set Promotion Details
       var max_promotion = PROMOTIONS_IN_COMPANY[company_no];

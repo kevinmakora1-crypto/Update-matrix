@@ -25,7 +25,7 @@ career_history = Class.extend({
   introduction:function(){
     var intro_section_html = `
     <h4 id="job_applicant" data="{{ job_applicant.name }}">Hey {{job_applicant.applicant_name}},
-		you’re applying for the {{job_applicant.designation}} position.</h4>
+    you’re applying for the {{job_applicant.designation}} position.</h4>
     <h4>We would like to know more about you.</h4>
     <h5>Give us some details about your career, and tell us how great you are!</h5>
   `
@@ -111,28 +111,29 @@ career_history = Class.extend({
       $(".are_you_still_working_"+(company_no.toString())).remove();
       $(".when_did_you_left_"+(company_no.toString())).remove();
       if (still_working == 1){
-        var reason_why_leave_job_html = `<div class="mx-auto col-lg-12 col-md-12 mb-12 reason_why_leave_job_${company_no}">
+        var reason_why_leave_job_html = `<div class="mx-auto col-lg-12 col-md-12 mb-3 reason_why_leave_job_${company_no}">
           <label class="form-label">Why do you plan to leave the job?</label>
-          <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control reason_why_leave_job_${company_no}_text">
-          </textarea>
+          <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control reason_why_leave_job_${company_no}_text"></textarea>
         </div>`;
-        var factors_in_new_job = `<div class="mx-auto col-lg-12 col-md-12 mb-12 factors_in_new_job_${company_no}">
+        var factors_in_new_job = `<div class="mx-auto col-lg-12 col-md-12 factors_in_new_job_${company_no}">
           <label class="form-label">What are the factors you are looking for in a new job?</label>
-          <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text">
-          </textarea>
+          <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text"></textarea>
         </div>`;
         $(".company_"+(company_no.toString())).append(reason_why_leave_job_html);
         $(".company_"+(company_no.toString())).append(factors_in_new_job);
-				$('.submit-btn').fadeIn();
+        me.show_final_interest_step(company_no.toString());
+        $('.submit-btn').fadeIn();
       }
       else if(still_working == 2){
         me.when_did_you_left_the_company(company_no);
         me.are_you_still_working_html(company_no);
-				$('.submit-btn').fadeOut();
+        $('.final-interest-section').remove();
+        $('.submit-btn').fadeOut();
       }
-			else if(still_working == 0){
-				$('.submit-btn').fadeOut();
-			}
+      else if(still_working == 0){
+        $('.final-interest-section').remove();
+        $('.submit-btn').fadeOut();
+      }
     });
   },
   are_you_still_working_html: function(company_no) {
@@ -160,19 +161,20 @@ career_history = Class.extend({
       var are_you_still_working = $(`.are_you_still_working_${company_no}_select`).val();
       $(".factors_in_new_job_"+(company_no.toString())).remove();
       if(are_you_still_working == 2){
+        $('.final-interest-section').remove();
         $('.submit-btn').fadeOut();
         $('.next-btn').fadeIn();
         me.next_career_history(company_no+1);
       }
-			else if(are_you_still_working == 0){
+      else if(are_you_still_working == 0){
+        $('.final-interest-section').remove();
         $('.next-btn').fadeOut();
         $('.submit-btn').fadeOut();
       }
       else if(are_you_still_working == 1){
-        var factors_in_new_job = `<div class="mx-auto col-lg-12 col-md-12 mb-12 factors_in_new_job_${company_no}">
+        var factors_in_new_job = `<div class="mx-auto col-lg-12 col-md-12 factors_in_new_job_${company_no}">
           <label class="form-label">What are the factors you are looking for in a new job?</label>
-          <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text">
-          </textarea>
+          <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text"></textarea>
         </div>`;
         $('.next-btn').fadeOut();
         $(".company_"+(company_no.toString())).append(factors_in_new_job);
@@ -182,9 +184,28 @@ career_history = Class.extend({
 
         }
         TOTAL_COMPANY_NO = company_no;
+        me.show_final_interest_step(TOTAL_COMPANY_NO);
       }
     });
   },
+  
+  show_final_interest_step: function(TOTAL_COMPANY_NO) {
+    $('.final-interest-section').remove();
+        var interestSection = $(`
+            <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
+                <div class="col-lg-12 col-md-12 mb-3">
+                    <label class="form-label">What makes you interested in this opportunity?</label>
+                    <textarea rows="4" cols="50" 
+                        name="interest_reason" 
+                        class="form-control what_make_your_interested_in_this_opportunity"
+                        required></textarea>
+                </div>
+            </div>
+        `);
+
+        $('.section_' + (TOTAL_COMPANY_NO)).after(interestSection);
+  },
+
   create_company_section_html: function(company_no) {
     $('.main_section').delay(400).fadeIn();
     if(company_no>=2){
@@ -194,39 +215,39 @@ career_history = Class.extend({
     var company_section_html = `
     <div class="section_${company_no}">
     <h3 class="mx-auto">Hello, {{job_applicant.applicant_name}}, tell us about the ${stringifyNumber(company_no)} company you worked for!</h3>
-		<div class="row mx-auto col-lg-12 col-md-12 mb-3 company_${company_no} border-top">
-		  	<div class="my-3 col-lg-12 col-md-12">
-				<label class="form-label">What was the company's name? </label>
-				<input type="text" class="form-control company_${company_no}_name" placeholder="Enter the ${stringifyNumber(company_no)} Company Name"/>
-		  	</div>
+    <div class="row mx-auto col-lg-12 col-md-12 mb-3 company_${company_no} border-top">
+        <div class="my-3 col-lg-12 col-md-12">
+        <label class="form-label">What was the company's name? </label>
+        <input type="text" class="form-control company_${company_no}_name" placeholder="Enter the ${stringifyNumber(company_no)} Company Name"/>
+        </div>
 
-		  	<div class="my-3 col-lg-12 col-md-12">
-				<label class="form-label">Which country did you get employed in?</label> <br>
-					<select class="form-control country_of_company_${company_no}">
-					<option>Select Country</option>
-					{% for country in country_list %}
-					<option>{{country.name}}</option>
-					{% endfor %}
-				</select>
-		  	</div>
-		  	<div class="mb-3 col-lg-12 col-md-12">
-				<label class="form-label">When did you join the company?</label>
-				<input type="date" class="form-control joined_company${company_no}"/>
-		  	</div>
+        <div class="my-3 col-lg-12 col-md-12">
+        <label class="form-label">Which country did you get employed in?</label> <br>
+          <select class="form-control country_of_company_${company_no}">
+          <option>Select Country</option>
+          {% for country in country_list %}
+          <option>{{country.name}}</option>
+          {% endfor %}
+        </select>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12">
+        <label class="form-label">When did you join the company?</label>
+        <input type="date" class="form-control joined_company${company_no}"/>
+        </div>
 
-		  	<div class="mb-3 col-lg-12 col-md-12">
-				<label class="form-label">What was your first salary at this company?</label>
-				<input type="text" class="form-control salary_company${company_no}" placeholder="Enter your Salary in KWD"/>
-		  	</div>
+        <div class="mb-3 col-lg-12 col-md-12">
+        <label class="form-label">What was your first salary at this company?</label>
+        <input type="text" class="form-control salary_company${company_no}" placeholder="Enter your Salary in KWD"/>
+        </div>
 
-			<div class="col-lg-12 col-md-12">
-				<hr class="my-5"/>
-			</div>
+      <div class="col-lg-12 col-md-12">
+        <hr class="my-5"/>
+      </div>
 
-			<div class="mb-3 col-lg-12 col-md-12">
-				<label  class="form-label">What was your starting job title?</label>
-				<input type="text" class="form-control starting_job_title_company_${company_no}" placeholder="Enter the Job Title"/>
-			</div>
+      <div class="mb-3 col-lg-12 col-md-12">
+        <label  class="form-label">What was your starting job title?</label>
+        <input type="text" class="form-control starting_job_title_company_${company_no}" placeholder="Enter the Job Title"/>
+      </div>
 
 
      <div class="col-lg-12 col-md-12 mb-3">
@@ -247,80 +268,80 @@ career_history = Class.extend({
       </div>
 
 
-			<div class="mt-5 promotion_section_${company_no}" style="width: 100%">
+      <div class="mt-5 promotion_section_${company_no}" style="width: 100%">
 
-			</div>
-
-			<div class="col-lg-12 col-md-12 mb-3">
-				<label>Tell us about contact person details from ${stringifyNumber(company_no)} company you worked!</label>
-			</div>
-			<div class="col-lg-6 col-md-6 mb-3">
-				<label>Full name</label>
-				<input type="text" class="form-control first_contact_name_${company_no}" placeholder="Full Name"/>
-			</div>
-			<div class="col-lg-6 col-md-6 mb-3">
-				<label>Email</label>
-				<input type="text" class="form-control first_contact_email_${company_no}" placeholder="Email"/>
-			</div>
-			<div class="col-lg-6 col-md-6 mb-3">
-				<label>Designation</label>
-				<input type="text" class="form-control first_contact_designation_${company_no}" placeholder="Designation"/>
-			</div>
-			<div class="col-lg-6 col-md-6 mb-3">
-				<label>Phone number with country code</label>
-				<input type="text" class="form-control first_contact_phone_${company_no}" placeholder="Phone number with country code"/>
-			</div>
-			<div class="col-lg-12 col-md-12 mb-3 add_more_contact_${company_no}">
-				<button class="btn btn-dark float-left btn_add_more_contact_${company_no}" type="button">{{ _(" + Add more contact person") }}</button>
-			</div>
+      </div>
 
       <div class="col-lg-12 col-md-12 mb-3">
-				<label>Tell us some details about your best boss from ${stringifyNumber(company_no)} company you worked</label>
-			</div>
+        <label>Tell us about contact person details from ${stringifyNumber(company_no)} company you worked!</label>
+      </div>
       <div class="col-lg-6 col-md-6 mb-3">
-				<label>Full name</label>
-				<input type="text" class="form-control best_boss_name_${company_no}" placeholder="Full Name"/>
-			</div>
-			<div class="col-lg-6 col-md-6 mb-3">
-				<label>Email</label>
-				<input type="text" class="form-control best_boss_email_${company_no}" placeholder="Email"/>
-			</div>
+        <label>Full name</label>
+        <input type="text" class="form-control first_contact_name_${company_no}" placeholder="Full Name"/>
+      </div>
       <div class="col-lg-6 col-md-6 mb-3">
-				<label>Phone number with country code</label>
-				<input type="text" class="form-control best_boss_phone_${company_no}" placeholder="Phone number with country code"/>
-			</div>
+        <label>Email</label>
+        <input type="text" class="form-control first_contact_email_${company_no}" placeholder="Email"/>
+      </div>
       <div class="col-lg-6 col-md-6 mb-3">
-				<label>Why is He/She the best?</label>
-				<input type="text" class="form-control why_best_boss${company_no}" placeholder="Why is he/she the best?"/>
-			</div>
+        <label>Designation</label>
+        <input type="text" class="form-control first_contact_designation_${company_no}" placeholder="Designation"/>
+      </div>
+      <div class="col-lg-6 col-md-6 mb-3">
+        <label>Phone number with country code</label>
+        <input type="text" class="form-control first_contact_phone_${company_no}" placeholder="Phone number with country code"/>
+      </div>
+      <div class="col-lg-12 col-md-12 mb-3 add_more_contact_${company_no}">
+        <button class="btn btn-dark float-left btn_add_more_contact_${company_no}" type="button">{{ _(" + Add more contact person") }}</button>
+      </div>
+
+      <div class="col-lg-12 col-md-12 mb-3">
+        <label>Tell us some details about your best boss from ${stringifyNumber(company_no)} company you worked</label>
+      </div>
+      <div class="col-lg-6 col-md-6 mb-3">
+        <label>Full name</label>
+        <input type="text" class="form-control best_boss_name_${company_no}" placeholder="Full Name"/>
+      </div>
+      <div class="col-lg-6 col-md-6 mb-3">
+        <label>Email</label>
+        <input type="text" class="form-control best_boss_email_${company_no}" placeholder="Email"/>
+      </div>
+      <div class="col-lg-6 col-md-6 mb-3">
+        <label>Phone number with country code</label>
+        <input type="text" class="form-control best_boss_phone_${company_no}" placeholder="Phone number with country code"/>
+      </div>
+      <div class="col-lg-6 col-md-6 mb-3">
+        <label>Why is He/She the best?</label>
+        <input type="text" class="form-control why_best_boss${company_no}" placeholder="Why is he/she the best?"/>
+      </div>
        <div class="col-lg-12 col-md-12 mb-3">
-				<label> Tell us some details about your best colleague from ${stringifyNumber(company_no)} company you worked</label>
-			</div>
+        <label> Tell us some details about your best colleague from ${stringifyNumber(company_no)} company you worked</label>
+      </div>
       <div class="col-lg-6 col-md-6 mb-3">
-				<label>Full name</label>
-				<input type="text" class="form-control best_colleague_name_${company_no}" placeholder="Full Name"/>
-			</div>
-			<div class="col-lg-6 col-md-6 mb-3">
-				<label>Email</label>
-				<input type="text" class="form-control best_colleague_email_${company_no}" placeholder="Email"/>
-			</div>
-			<div class="col-lg-6 col-md-6 mb-3">
-				<label>Phone number with country code</label>
-				<input type="text" class="form-control best_colleague_phone_${company_no}" placeholder="Phone number with country code"/>
-			</div>
+        <label>Full name</label>
+        <input type="text" class="form-control best_colleague_name_${company_no}" placeholder="Full Name"/>
+      </div>
       <div class="col-lg-6 col-md-6 mb-3">
-				<label>Why is He/She the best?</label>
-				<input type="text" class="form-control why_best_colleague${company_no}" placeholder="Why is he/she the best?"/>
-			</div>
-			<div class="col-lg-12 col-md-12 mb-3">
-				<label>Are you still working for the same company?</label>
-				<select class="custom-select still_working_on_same_company_${company_no}">
-				<option value="0">Choose</option>
-				<option value="1">Yes</option>
-				<option value="2">No</option>
-				</select>
-			</div>
-	</div>
+        <label>Email</label>
+        <input type="text" class="form-control best_colleague_email_${company_no}" placeholder="Email"/>
+      </div>
+      <div class="col-lg-6 col-md-6 mb-3">
+        <label>Phone number with country code</label>
+        <input type="text" class="form-control best_colleague_phone_${company_no}" placeholder="Phone number with country code"/>
+      </div>
+      <div class="col-lg-6 col-md-6 mb-3">
+        <label>Why is He/She the best?</label>
+        <input type="text" class="form-control why_best_colleague${company_no}" placeholder="Why is he/she the best?"/>
+      </div>
+      <div class="col-lg-12 col-md-12 mb-3">
+        <label>Are you still working for the same company?</label>
+        <select class="custom-select still_working_on_same_company_${company_no}">
+        <option value="0">Choose</option>
+        <option value="1">Yes</option>
+        <option value="2">No</option>
+        </select>
+      </div>
+  </div>
 
   </div>`;
     $(".main_section").append(company_section_html);
@@ -382,22 +403,23 @@ career_history = Class.extend({
     // Submit Career History
     var me = this;
     $('.btn-submit-career-history').click(function(){
-      var data = me.get_details_from_form();
+      var {career_histories, interest_reason} = me.get_details_from_form();
       var all_best_references = me.get_all_best_references();
 
-      if(!validateResponsibilities(data)){
+      if(!validateResponsibilities(career_histories)){
         return frappe.msgprint(frappe._("Kindly fill the responsibility for the most recent job"));
       }
       // POST Career History if all the conditions are satisfied
-      if ($('#job_applicant').attr("data") && data.length > 0){
+      if ($('#job_applicant').attr("data") && career_histories.length > 0){
         frappe.freeze();
         frappe.call({
           type: "POST",
           method: "one_fm.templates.pages.career_history.create_recruitment_documents",
           args: {
             job_applicant: $('#job_applicant').attr("data"),
-            career_history_details: data,
-            best_references: all_best_references
+            career_history_details: career_histories,
+            best_references: all_best_references,
+            interest_reason: interest_reason
           },
           btn: this,
           callback: function(r){
@@ -510,13 +532,14 @@ career_history = Class.extend({
 
       career_histories.push(career_history);
     }
-    return career_histories;
+    let interest_reason = $('[name="interest_reason"]').val();
+    return {career_histories, interest_reason};
   }
 });
 
 function stringifyNumber(n) {
-	var special = ['Zeroth', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth', 'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth', 'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth'];
-	var deca = ['Twent', 'Thirt', 'Fort', 'Fift', 'Sixt', 'Sevent', 'Eight', 'Ninet'];
+  var special = ['Zeroth', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth', 'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth', 'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth'];
+  var deca = ['Twent', 'Thirt', 'Fort', 'Fift', 'Sixt', 'Sevent', 'Eight', 'Ninet'];
   if (n < 20) return special[n];
   if (n % 10 === 0) return deca[Math.floor(n / 10) - 2] + 'ieth';
   return deca[Math.floor(n / 10) - 2] + 'y-' + special[n % 10];

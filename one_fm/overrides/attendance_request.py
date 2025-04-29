@@ -4,7 +4,6 @@ from frappe.utils import getdate, get_link_to_form, format_date
 from erpnext.setup.doctype.employee.employee import is_holiday
 from hrms.hr.utils import validate_active_employee
 from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequest
-from frappe.workflow.doctype.workflow_action.workflow_action import apply_workflow
 
 from frappe.desk.form.assign_to import add, remove
 from one_fm.utils import (
@@ -264,9 +263,11 @@ def approve_pending_attendance_request():
         WHERE '{getdate()}' BETWEEN from_date AND to_date
         AND workflow_state = 'Pending Approval'
     """, as_dict=1)
-
     for row in attendance_requests:
         try:
-            apply_workflow(frappe.get_doc("Attendance Request", row.name), "Approve")
+            doc = frappe.get_doc("Attendance Request", row.name)
+            doc.workflow_state = 'Approved'
+            doc.save(ignore_permissions=True).create_attendance()
+            frappe.db.commit()
         except Exception as e:
             frappe.log_error(frappe.get_traceback(), "Attendance Request Marking")

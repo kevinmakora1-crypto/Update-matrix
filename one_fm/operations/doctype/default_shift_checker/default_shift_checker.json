@@ -164,7 +164,8 @@
    "default": "0",
    "fieldname": "is_reliever",
    "fieldtype": "Check",
-   "label": "Is Reliever"
+   "label": "Is Reliever",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_wkho",
@@ -181,7 +182,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-25 09:59:52.031906",
+ "modified": "2025-04-28 11:43:18.267802",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Default Shift Checker",

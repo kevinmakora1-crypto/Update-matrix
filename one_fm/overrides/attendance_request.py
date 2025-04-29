@@ -267,7 +267,7 @@ def approve_pending_attendance_request():
         try:
             doc = frappe.get_doc("Attendance Request", row.name)
             doc.workflow_state = 'Approved'
-            doc.save(ignore_permissions=True)
+            doc.save(ignore_permissions=True).create_attendance()
             frappe.db.commit()
         except Exception as e:
-            print(f"Error in {row.name}: {str(e)}")
+            frappe.log_error(frappe.get_traceback(), "Attendance Request Marking")

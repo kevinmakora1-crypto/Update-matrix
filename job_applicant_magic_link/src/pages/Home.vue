@@ -63,6 +63,12 @@ export default {
             this.religions = data.religions;
             this.education = data.education;
             this.civil_id_required = data.civil_id_required;
+            this.high_school_certificate = data.high_school_certificate;
+            if(data.high_school_certificate){
+              $('#high_school_certificate_page').parent().show();
+            } else {
+              $('#high_school_certificate_page').parent().hide();
+            }
 
             // set upload fields
             if (data.civil_id_required){
@@ -149,11 +155,11 @@ export default {
         params: me.imageFiles,
         method: 'POST',
         onSuccess(data) {
-          if(data.passport || data.civil_id_front || data.civil_id_back){
+          if(data.passport || data.civil_id_front || data.civil_id_back || data.high_school_certificate){
             // update dom with mindee
             Swal.fire(
-              'Passport/Civil ID Uploaded',
-              `Your passport/Civil ID data has been uploaded, complete the form below to fill any missing/incorrect data.\n
+              'Passport/Civil ID/High school certificate Uploaded',
+              `Your passport/Civil ID/High school certificate data has been uploaded, complete the form below to fill any missing/incorrect data.\n
               All * fields in red must be filled, please fill it.`,
               'success'
             )
@@ -323,9 +329,9 @@ export default {
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="form-group col-md-12">
-                                    <label  for="file"> High School Certificate</label>
-                                    <input class="form-control" type="file" id="high_School_certificate_page" placeholder="High school Certificate"  name="high_School_certificate_page"  accept="image/png, image/jpeg" :onchange="previewImage">
+                              <div class="form-group col-md-6" style="display:none;">
+                                  <label class="form-label" for="file" >High School Certificate</label> <span class="required_indicator" style="color: red;">*</span>
+                                    <input class="form-control" type="file" id="high_school_certificate_page" placeholder="High school Certificate"  name="high_school_certificate_page"  accept="image/png, image/jpeg" :onchange="previewImage">
                                 </div>
                             </div>
                             <div class="row">

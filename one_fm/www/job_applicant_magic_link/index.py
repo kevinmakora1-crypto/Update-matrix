@@ -35,7 +35,7 @@ def get_magic_link():
                     civil_id_required = True if job_applicant.one_fm_have_a_valid_visa_in_kuwait else False
                     designation_doc = frappe.get_doc('Designation', job_applicant.designation)
                     high_School_certificate = True if designation_doc.custom_requires_high_school_certificate else False
-                    result['high_School_certificate'] = high_School_certificate
+                    result['high_school_certificate'] = high_School_certificate
                     result['civil_id_required'] = civil_id_required
                     nationalities = frappe.get_all("Nationality", fields=["name as nationality", "nationality_arabic", "country"])
                     nationalities_dict = {}
@@ -205,8 +205,8 @@ def upload_image():
             errors.append("We could not process your passport document.")
 
     # process high school certificate   
-    if frappe.form_dict.high_School_certificate_page:
-        data_content = frappe._dict(frappe.form_dict.high_School_certificate_page)
+    if frappe.form_dict.high_school_certificate_page:
+        data_content = frappe._dict(frappe.form_dict.high_school_certificate_page)
         reference_doctype = frappe.form_dict.reference_doctype
         reference_docname = frappe.form_dict.reference_docname
         data = data_content.data
@@ -224,7 +224,7 @@ def upload_image():
             "attached_to_name":frappe.form_dict.reference_docname
         }).insert(ignore_permissions=True)
         filedoc.db_set('file_url', file_url)
-        frappe.db.set_value(reference_doctype, reference_docname, 'high_School_certificate_page', file_url)
+        frappe.db.set_value(reference_doctype, reference_docname, 'custom_high_school_certificate', file_url)
         frappe.db.commit()
         absolute_path = bench_path+'/sites/'+cstr(frappe.local.site)+'/public/files/'+filename
         if os.path.isfile(absolute_path):
@@ -234,7 +234,7 @@ def upload_image():
         delete_existing_files(reference_doctype, reference_docname, f"%/files/user/magic_link/high_school-{applicant_name}_%", filedoc.name)
 
         # process file detection
-        response_data['high_school']={'done':True}
+        response_data['high_school_certificate']={'done':True}
     # civil id front
     if frappe.form_dict.civil_id_front:
         data_content = frappe._dict(frappe.form_dict.civil_id_front)

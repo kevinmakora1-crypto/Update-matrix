@@ -109,7 +109,7 @@
    "columns": 1,
    "description": "Monthly Salary in KWD",
    "fieldname": "monthly_salary_in_kwd",
-   "fieldtype": "Currency",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Salary"
   },

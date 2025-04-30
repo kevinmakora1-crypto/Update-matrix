@@ -129,9 +129,9 @@ const set_current_address = (frm) => {
         frappe.call({
             method: "one_fm.overrides.employee.fetch_accomodation_name",
             args: { name: frm.doc.name },
-            callback: (r) => {
-                if (r.message && r.message.accommodation) {
-                    frm.set_value("current_address", r.message.accommodation);
+            callback: (r) => {r.data.accomodation
+                if (r.message && r.data.accomodation) {
+                    frm.set_value("current_address", r.data.accomodation);
                 }
             }
         });

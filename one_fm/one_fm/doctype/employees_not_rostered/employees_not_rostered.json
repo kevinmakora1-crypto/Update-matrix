@@ -49,9 +49,10 @@
   {
    "bold": 1,
    "fieldname": "take_action",
-   "fieldtype": "Button",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Take Action"
+   "label": "Take Action",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,

@@ -21,7 +21,7 @@ frappe.ui.form.on('Employee Monthly Action', {
             const today = new Date();
             const monthOptions = frm.fields_dict.month.df.options.split('\n');
 
-            frm.set_value('month', monthOptions[today.getMonth()]);
+            frm.set_value('month', monthOptions[today.getMonth()+1]);
             frm.set_value('year', today.getFullYear().toString());
         }
     },

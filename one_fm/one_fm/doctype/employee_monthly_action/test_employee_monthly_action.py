@@ -5,33 +5,70 @@ import calendar
 
 class TestEmployeeMonthlyAction(FrappeTestCase):
     def setUp(self):
-        # Get existing employee by employee_number
-        employee_name = frappe.get_value("Employee", {"name": "HR-EMP-00001"}, "name")
-        if not employee_name:
-            frappe.throw("Test Employee with name 'EMP-0001' does not exist.")
-        self.test_employee = frappe.get_doc("Employee", employee_name)
+        # Create a test user
+        self.test_user = frappe.get_doc({
+            "doctype": "User",
+            "email": "test_user@example.com",
+            "first_name": "Test",
+            "last_name": "User",
+            "enabled": 1
+        }).insert(ignore_permissions=True)
+
+        # Create a test employee
+        self.test_employee = frappe.get_doc({
+            "doctype": "Employee",
+            "employee_number": "HR-EMP-00001",
+            "employee_name": "Test Employee",
+            "user_id": self.test_user.name,
+            "first_name": "Test",
+            "last_name": "User",
+            "company": "One Facilities Management",
+            "designation": "Jr. Software Developer",
+            "department": "IT - ONEFM",
+            "date_of_joining": "2023-01-01",
+            "gender": "Male",
+            "date_of_birth": "1990-01-01",
+            "one_fm_first_name_in_arabic": "تجربة",
+            "one_fm_last_name_in_arabic": "الموظف",
+            "one_fm_basic_salary": 1000
+        }).insert(ignore_permissions=True)
+
+        # Create goals for the employee
+        self.goal_1 = frappe.get_doc({
+            "doctype": "Goal",
+            "goal_name": "Test Goal 1",
+            "employee": self.test_employee.name,
+            "start_date": datetime.today().date(),
+            "end_date": datetime.today().date(),
+            "progress": 0
+        }).insert(ignore_permissions=True)
+
+        self.goal_2 = frappe.get_doc({
+            "doctype": "Goal",
+            "goal_name": "Test Goal 2",
+            "employee": self.test_employee.name,
+            "start_date": datetime.today().date(),
+            "end_date": datetime.today().date(),
+            "progress": 0
+        }).insert(ignore_permissions=True)
 
         # Get current month and year
         today_date = datetime.today()
         current_month_name = today_date.strftime("%B")
         current_year = str(today_date.year)
 
-
-        self.goals = self.get_employee_goals(
-            employee=self.test_employee.name,
-            year=current_year,
-            month=current_month_name
-        )
-
-        if len(self.goals) < 2:
-            frappe.throw("Not enough goals found for the employee in the current month.")
+        # Use the created goals
+        self.goals = [
+            {"goal_name": self.goal_1.goal_name, "name": self.goal_1.name, "progress": 0},
+            {"goal_name": self.goal_2.goal_name, "name": self.goal_2.name, "progress": 0}
+        ]
 
         # Create Employee Monthly Action using existing goals
         self.employee_monthly_action = frappe.get_doc({
             "doctype": "Employee Monthly Action",
             "employee": self.test_employee.name,
             "month": current_month_name,
-   			"year": current_year,
+            "year": current_year,
             "goal_update": [
                 {"goal": self.goals[0]["goal_name"], "current_progress": 50},
                 {"goal": self.goals[1]["goal_name"], "current_progress": 75}
@@ -39,31 +76,35 @@ class TestEmployeeMonthlyAction(FrappeTestCase):
         }).insert(ignore_permissions=True)
 
     def tearDown(self):
+        # Cancel and delete the test documents
         if self.employee_monthly_action.docstatus == 1:
             self.employee_monthly_action.cancel()
 
         if self.employee_monthly_action:
             frappe.delete_doc("Employee Monthly Action", self.employee_monthly_action.name, force=True)
 
-    def get_employee_goals(self, employee, year, month):
-        if not employee or not year or not month:
-            return []
-        month_index = list(calendar.month_name).index(month)
-        year = int(year)
-        from_date = datetime(year, month_index, 1).date()
-        last_day = calendar.monthrange(year, month_index)[1]
-        to_date = datetime(year, month_index, last_day).date()
+        if self.goal_1:
+            frappe.delete_doc("Goal", self.goal_1.name, force=True)
 
-        goals = frappe.get_all(
-            "Goal",
-            filters={
-                "employee": employee,
-                "start_date": ["<=", to_date],
-                "end_date": [">=", from_date]
-            },
-            fields=["name", "goal_name", "progress"]
-        )
-        return goals
+        if self.goal_2:
+            frappe.delete_doc("Goal", self.goal_2.name, force=True)
+
+        if self.test_employee:
+			# Remove User Permissions pointing to this Employee
+            user_permissions = frappe.get_all(
+				"User Permission",
+				filters={"user": "test_user@example.com"},
+				pluck="name"
+			)
+            for perm in user_permissions:
+               frappe.delete_doc("User Permission", perm, force=True)
+            frappe.delete_doc("Employee", self.test_employee.name, force=True)
+
+
+        if self.test_user:
+            frappe.delete_doc("User", self.test_user.name, force=True)
+        frappe.db.commit()
+
 
     def test_on_submit_updates_goal_progress(self):
         self.employee_monthly_action.submit()

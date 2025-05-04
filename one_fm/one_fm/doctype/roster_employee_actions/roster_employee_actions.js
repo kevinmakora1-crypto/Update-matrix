@@ -1,39 +1,33 @@
-// Copyright (c) 2021, omar jaber and contributors
-// For license information, please see license.txt
 frappe.ui.form.on('Roster Employee Actions', {
-	onload(frm) {
-		render_buttons_in_child(frm);
-	}
-});
+    refresh(frm) {
+        setTimeout(() => {
+            // Ensure button is only added once
+            frm.fields_dict["employees_not_rostered"].$wrapper
+                .find('.grid-body .rows .grid-row')
+                .each(function () {
+                    const rowname = $(this).attr("data-name");
 
-function render_buttons_in_child(frm) {
-    (frm.doc.employees_not_rostered || []).forEach((row, i) => {
-        const button_html = `<button class="btn btn-xs btn-primary" onclick="takeAction('${row.name}')">Take Action</button>`;
-        frappe.model.set_value(row.doctype, row.name, 'take_action', button_html);
-    });
-}
-window.takeAction = function(rowname) {
-    const row = frappe.get_doc(cur_frm.doc.doctype, cur_frm.doc.name)
-        .employees_not_rostered.find(r => r.name === rowname);
+                    const $cell = $(this).find('[data-fieldname="take_action"]');
+                    $cell.empty().append(`<button class="btn btn-xs btn-primary" data-rowname="${rowname}">Take Action</button>`);
+                });
 
-    if (!row || !row.employee) {
-        frappe.msgprint("No employee data found.");
-        return;
-    }
+            // Off previous event bindings to prevent duplication
+            frm.fields_dict["employees_not_rostered"].$wrapper
+                .off('click', 'button[data-rowname]')
+                .on('click', 'button[data-rowname]', function () {
+                    const rowname = $(this).data("rowname");
+                    const row = frm.doc.employees_not_rostered.find(r => r.name === rowname);
 
-    frappe.db.get_doc('Employee', row.employee).then(employee => {
-        const url = `/app/roster?main_view=roster&sub_view=basic&roster_type=basic&employee_id=${employee.employee_id}&shift=${row.shift_allocation}`;
-        window.open(url, '_blank');
-    });
-}
+                    if (!row || !row.employee) {
+                        frappe.msgprint("No employee data found.");
+                        return;
+                    }
 
-frappe.ui.form.on('Employees Not Rostered', {
-    take_action(frm, cdt, cdn) {
-        let row = locals[cdt][cdn];
-
-        frappe.db.get_doc('Employee', row.employee).then(employee => {
-            const url = `/app/roster?main_view=roster&sub_view=basic&roster_type=basic&employee_id=${employee.employee_id}&shift=${row.shift_allocation}`;
-            window.open(url, '_blank');
-        });
+                    frappe.db.get_doc('Employee', row.employee).then(employee => {
+                        const url = `/app/roster?main_view=roster&sub_view=basic&roster_type=basic&employee_id=${employee.employee_id}&shift=${row.shift_allocation}`;
+                        window.open(url, '_blank');
+                    });
+                });
+        }, 300); // slight delay to allow table to render
     }
 });

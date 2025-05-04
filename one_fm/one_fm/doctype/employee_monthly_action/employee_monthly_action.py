@@ -7,7 +7,6 @@ from frappe.model.document import Document
 
 class EmployeeMonthlyAction(Document):
     def on_submit(self):
-        
         for row in self.goal_update:
             goal_doc = frappe.get_value("Goal", {"goal_name": row.goal}, "name")
             if goal_doc:

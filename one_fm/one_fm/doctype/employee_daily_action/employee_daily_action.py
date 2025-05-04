@@ -6,6 +6,34 @@ from frappe.model.document import Document
 
 
 class EmployeeDailyAction(Document):
+	def validate(self):
+		self.fetch_todos()
+
+
+	def fetch_todos(self):
+		""" Fetch all the todos for the employee for the current date """
+
+		if not self.todays_plan_and_accomplishments: #If created from console 
+			todays_todos = frappe.db.get_all("ToDo", {"allocated_to": self.employee_email, "date": self.date},['reference_name', 'reference_type', 'name', 'status','description','type'])
+			for todo in todays_todos:
+				row = self.append("todays_plan_and_accomplishments")
+				row.todo = todo.name
+				row.todo_type = todo.type
+				row.reference = todo.reference_name
+				row.planned = 0
+				row.description = todo.description
+				row.completed = 1 if todo.status != "Open" else 0
+
+		if not self.tomorrows_plan: #If created from console 
+			tomorrows_todos = frappe.db.get_all("ToDo", {"allocated_to": self.employee_email, "date": self.date},['reference_name', 'reference_type', 'name', 'status','description','type'])
+			for todo in tomorrows_todos:
+				row = self.append("tomorrows_plan")
+				row.todo = todo.name
+				row.description = todo.description
+				row.todo_type = todo.type
+				row.reference = todo.reference_name
+	
+	
 	def create_blockers(self):
 		"Create blockers for the employee from the blockers table"
 		for blocker in self.blocker_table:

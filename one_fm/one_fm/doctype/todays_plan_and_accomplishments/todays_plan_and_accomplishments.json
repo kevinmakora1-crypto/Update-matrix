@@ -7,11 +7,12 @@
  "engine": "InnoDB",
  "field_order": [
   "description",
-  "todo_type",
-  "reference",
-  "todo",
   "planned",
-  "completed"
+  "completed",
+  "column_break_tzrg",
+  "reference",
+  "todo_type",
+  "todo"
  ],
  "fields": [
   {
@@ -57,12 +58,16 @@
    "in_list_view": 1,
    "label": "Description",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_tzrg",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-05-02 19:06:33.195623",
+ "modified": "2025-05-04 14:00:03.161883",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Todays Plan and Accomplishments",

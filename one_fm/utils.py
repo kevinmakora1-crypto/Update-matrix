@@ -3697,7 +3697,6 @@ def send_work_anniversary_reminders():
 
 def set_employee_status():
     from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import assign_responsibilities ,reassign_responsibilities
-    from one_fm.overrides.leave_application import reassign_to_applicant,reassign_to_reliever
     # Get today's date
     current_date = getdate(today())
 
@@ -3728,13 +3727,10 @@ def set_employee_status():
             if current_date == getdate(from_date) and status == "Active":
                 frappe.db.set_value('Employee', employee, 'status', 'Vacation')
                 if reliever:
-                    frappe.enqueue(reassign_to_applicant(employee=employee, leave_name=leave_application))
                     frappe.enqueue(assign_responsibilities, leave_application=leave_application)
                 employees_set_to_vacation += 1
             elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":
                 frappe.db.set_value('Employee', employee, 'status', 'Active')
-                if reliever:
-                    frappe.enqueue(reassign_to_reliever(reliever=reliever, leave_name=leave_application, employee=employee))
                 if reliever and frappe.db.exists("Reliever Assignment", {"name": leave_application}):
                     frappe.enqueue(reassign_responsibilities, leave_application=leave_application)
                 employees_set_to_active += 1

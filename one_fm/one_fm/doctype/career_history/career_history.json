@@ -29,6 +29,7 @@
   "tugs",
   "about_the_opportunity_section",
   "about_the_opportunity",
+  "what_are_the_factors_you_are_looking_for_in_a_new_job",
   "amended_from"
  ],
  "fields": [
@@ -89,7 +90,7 @@
   {
    "fieldname": "about_the_opportunity",
    "fieldtype": "Small Text",
-   "label": "What is it that Makes You Interested in this Opportunity"
+   "label": "What is it that makes you interested in this opportunity?"
   },
   {
    "collapsible": 1,
@@ -172,11 +173,16 @@
    "fieldtype": "Link",
    "label": "Recruiter Assigned",
    "options": "User"
+  },
+  {
+   "fieldname": "what_are_the_factors_you_are_looking_for_in_a_new_job",
+   "fieldtype": "Small Text",
+   "label": "What are the factors you are looking for in a new job?"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2025-04-14 16:13:06.996885",
+ "modified": "2025-04-29 11:55:46.051340",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Career History",

@@ -251,3 +251,23 @@ def mark_future_attendance_request():
 			frappe.get_doc("Attendance Request", row.name).mark_attendance(str(getdate()))
 		except Exception as e:
 			frappe.log_error(str(e), 'Attendance Request')
+
+
+def approve_pending_attendance_request():
+    """
+    Get attendance requests for the future where date is today
+    and workflow state is 'Pending Approval' and approve it.
+    """
+    attendance_requests = frappe.db.sql(f"""
+        SELECT name FROM `tabAttendance Request`
+        WHERE '{getdate()}' BETWEEN from_date AND to_date
+        AND workflow_state = 'Pending Approval'
+    """, as_dict=1)
+    for row in attendance_requests:
+        try:
+            doc = frappe.get_doc("Attendance Request", row.name)
+            doc.workflow_state = 'Approved'
+            doc.save(ignore_permissions=True).create_attendance()
+            frappe.db.commit()
+        except Exception as e:
+            frappe.log_error(frappe.get_traceback(), "Attendance Request Marking")

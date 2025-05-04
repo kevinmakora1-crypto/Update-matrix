@@ -1,0 +1,246 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "OWS-EDA-.YYYY.-.MM.-.DD.-.####",
+ "creation": "2025-05-02 15:03:40.084214",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_hvqp",
+  "employee",
+  "employee_name",
+  "designation",
+  "employee_email",
+  "column_break_ouod",
+  "date",
+  "department",
+  "column_break_cvgp",
+  "reports_to",
+  "reports_to_name",
+  "manager_email",
+  "todays_plan_and_accomplishments_section",
+  "todays_plan_and_accomplishments",
+  "section_break_nzqu",
+  "tomorrows_plan",
+  "problems_that_are_stopping_your_work_section",
+  "blocker_table",
+  "inbox_zero_check_section",
+  "number_of_read_emails",
+  "column_break_meko",
+  "number_of_unread_emails",
+  "column_break_fpug",
+  "number_of_open_drive_comments",
+  "section_break_f4ff",
+  "amended_from",
+  "company_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_f4ff",
+   "fieldtype": "Section Break",
+   "label": "More Information"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Employee Daily Action",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company Name",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_hvqp",
+   "fieldtype": "Section Break",
+   "label": "Employee Details"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ouod",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fetch_from": "employee.department",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_cvgp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee.reports_to",
+   "fieldname": "reports_to",
+   "fieldtype": "Link",
+   "label": "Reports To",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "reports_to.employee_name",
+   "fieldname": "reports_to_name",
+   "fieldtype": "Data",
+   "label": "Reports To Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "todays_plan_and_accomplishments_section",
+   "fieldtype": "Section Break",
+   "label": "Today's Plan and Accomplishments"
+  },
+  {
+   "fieldname": "todays_plan_and_accomplishments",
+   "fieldtype": "Table",
+   "label": "Todays Plan and Accomplishments",
+   "options": "Todays Plan and Accomplishments"
+  },
+  {
+   "fieldname": "section_break_nzqu",
+   "fieldtype": "Section Break",
+   "label": "Tomorrow's Plan"
+  },
+  {
+   "fieldname": "tomorrows_plan",
+   "fieldtype": "Table",
+   "label": "Tomorrows Plan",
+   "options": "Tomorrows Plan"
+  },
+  {
+   "fieldname": "problems_that_are_stopping_your_work_section",
+   "fieldtype": "Section Break",
+   "label": "Problems that are stopping your work"
+  },
+  {
+   "fieldname": "inbox_zero_check_section",
+   "fieldtype": "Section Break",
+   "label": "Inbox Zero Check"
+  },
+  {
+   "fieldname": "number_of_read_emails",
+   "fieldtype": "Data",
+   "label": "Number of Read Emails",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_meko",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "number_of_unread_emails",
+   "fieldtype": "Data",
+   "label": "Number of Unread Emails",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_fpug",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "number_of_open_drive_comments",
+   "fieldtype": "Data",
+   "label": "Number of Open Drive Comments",
+   "reqd": 1
+  },
+  {
+   "fieldname": "blocker_table",
+   "fieldtype": "Table",
+   "label": "Blockers",
+   "options": "Blockers"
+  },
+  {
+   "fetch_from": "employee.user_id",
+   "fieldname": "employee_email",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Employee Email",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "reports_to.user_id",
+   "fieldname": "manager_email",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Manager Email",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-05-02 21:01:26.131218",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Employee Daily Action",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

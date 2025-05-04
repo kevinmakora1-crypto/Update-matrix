@@ -115,7 +115,7 @@ class PurchaseOrderOverride(PurchaseOrder):
         for obj in self.items:
 
             # Sum purchased quantities from all purchase orders
-            item_qty = frappe.db.get_list(
+            item_qty = frappe.db.get_all(
                 "Purchase Order Item", 
                 {"parent": ["IN", purchase_orders], "item_code": obj.item_code, 'parentfield': 'items'},
                 pluck="qty"

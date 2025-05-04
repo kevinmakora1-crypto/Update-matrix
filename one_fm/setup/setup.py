@@ -5,7 +5,7 @@ def after_install():
 
 def get_custom_fields():
     custom_fields = {}
-    custom_fields.add(get_job_applicant_custom_fields())
+    custom_fields.update(get_job_applicant_custom_fields())
     return custom_fields
 
 def get_job_applicant_custom_fields():

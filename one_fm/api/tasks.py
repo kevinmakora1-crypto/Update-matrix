@@ -249,6 +249,7 @@ def supervisor_reminder(shift, today_datetime, now_time):
 				Operations Shift: {shift_type}
 				Shift Start: {shift_start}
 				Shift End: {shift_end}
+				<br/>
 				Submit a Shift Permission for the employee to give an excuse and not need to penalize
 				<a class="btn btn-primary" href="/app/shift-permission/new-shift-permission-1">Submit Shift Permission</a>&nbsp;
 				<br/><br/>
@@ -283,6 +284,7 @@ def supervisor_reminder(shift, today_datetime, now_time):
 					Operations Shift: {shift_type}
 					Shift Start: {shift_start}
 					Shift End: {shift_end}
+					<br/>
 					Submit a Shift Permission for the employee to give an excuse and not need to penalize
 					<a class="btn btn-primary" href="/app/shift-permission/new-shift-permission-1">Submit Shift Permission</a>&nbsp;
 					<br/><br/>

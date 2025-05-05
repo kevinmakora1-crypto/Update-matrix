@@ -53,7 +53,10 @@ def get_week_dates(offset=0):
 def fetch_todos(is_current: bool = True):
     try:
         dates = get_week_dates(offset=0 if is_current else 1)
-        fields = ["name", "type"] if is_current else ["name", "date", "type"]
+        fields = ["name", "type", "description"]
+        if not is_current:
+            fields.extend(["date", "reference_name"])
+        
 
         week_todos = frappe.db.get_list(
             "ToDo",

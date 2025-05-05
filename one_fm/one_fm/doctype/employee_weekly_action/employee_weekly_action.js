@@ -46,7 +46,12 @@ const load_todos = (frm, is_current) => {
                     const row = frm.add_child(fieldname);
                     row.todo_type = item.type;
                     row.todo = item.name;
-                    if (!is_current && item.date) row.due_date = item.date;
+                    row.todo_title = item.description
+                    if (!is_current && item.date) {
+                        row.due_date = item.date;
+                        row.reference = item.reference_name;
+                        
+                    }
                 });
 
                 frm.refresh_field(fieldname);

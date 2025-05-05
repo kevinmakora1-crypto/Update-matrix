@@ -3953,3 +3953,46 @@ def background_enqueue_run(report_name, filters=None, user=None):
 		"name": track_instance.name,
 		"redirect_url": get_url_to_form("Prepared Report", track_instance.name)
 	}
+
+
+def update_fields_in_doctypes(data):
+	"""
+	Update multiple Doctypes with different filters and fields.
+
+	:param data: List of dicts, each with keys:
+		- doctype: str
+		- filters: dict
+		- field_value_map: dict
+
+	Example:
+	[
+		{
+			"doctype": "Operations Post",
+			"filters": {"site": self.name, "project": doc_before_save.project},
+			"field_value_map": {"project": self.project, "site": self.name}
+		}
+	]
+	"""
+	for entry in data:
+		doctype = entry.get("doctype")
+		filters = entry.get("filters")
+		field_value_map = entry.get("field_value_map")
+
+		if doctype and filters and field_value_map:
+			if frappe.db.exists(doctype, filters):
+				docs = frappe.get_all(doctype, filters=filters, pluck="name")
+				for docname in docs:
+					doc = frappe.get_doc(doctype, docname)
+					for field, value in field_value_map.items():
+						doc.set(field, None)   # Clear the field to reset fetched values
+						doc.set(field, value)  # Re-set the actual value
+					doc.save()
+
+@frappe.whitelist()
+def get_current_year_and_week():
+    dt = now_datetime()
+    iso_year, week_number, _ = dt.isocalendar()
+    return {
+        "year": iso_year,
+        "week": week_number
+    }

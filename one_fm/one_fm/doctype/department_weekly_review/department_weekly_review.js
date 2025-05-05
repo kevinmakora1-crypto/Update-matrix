@@ -11,13 +11,20 @@ frappe.ui.form.on("Department Weekly Review", {
                 if (department) {
                     frm.set_value('department', department)
 
-                    // Load department relevant data
                     load_department_employees(frm, department)
                     load_department_blockers(frm, department)
                 }
             });
         }
-    }
+    },
+    department: function(frm) {
+        const targetDepartment = frm.doc.department
+
+		if(targetDepartment){
+            load_department_employees(frm, targetDepartment)
+            load_department_blockers(frm, targetDepartment)
+		}
+	},
 });
 
 const set_current_week_and_year = (frm) => {

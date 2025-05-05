@@ -146,7 +146,7 @@ def get_employees_not_rostered(start_date, end_date):
 	try:
 		employees_not_rostered_dict = OrderedDict()
 		for obj in employees_not_rostered:
-			employees_not_rostered_dict.setdefault(obj[0], []).append(obj[4])
+			employees_not_rostered_dict.setdefault(obj[0], []).append(obj[1])
 	except Exception as e:
 		frappe.log_error(frappe.get_traceback(), "Error while generating missing dates(Roster Employee Actions)")
 
@@ -169,9 +169,6 @@ def get_shift_working_active_employees(start_date, end_date):
 	active_employees = frappe.db.sql("""
 		select
 			employee,
-			employee_id, 
-			employee_name,
-			shift as shift_allocation,
 			relieving_date
 
 		from
@@ -183,7 +180,7 @@ def get_shift_working_active_employees(start_date, end_date):
 	""", as_dict=1)
 
 	return [
-		(employee.employee, employee.employee_id, employee.employee_name, employee.shift_allocation, (start_date + timedelta(days=x)).strftime('%Y-%m-%d'))
+		(employee.employee, (start_date + timedelta(days=x)).strftime('%Y-%m-%d'))
 		for employee in active_employees
 		for x in range((end_date - start_date).days + 1)
 		if employee.relieving_date is None or (start_date + timedelta(days=x)) < employee.relieving_date
@@ -207,7 +204,7 @@ def get_rostered_employees(start_date, end_date):
 
 	employees_rostered = frappe.db.sql(f"""
 		select
-			es.employee, es.date, emp.employee_id, es.employee_name, emp.shift as shift_allocation
+			es.employee, es.date
 		from
 			`tabEmployee Schedule` es
 		join `tabEmployee` emp
@@ -219,7 +216,7 @@ def get_rostered_employees(start_date, end_date):
 	""", as_dict=True)
 
 	return [
-		(roster.employee, roster.employee_id, roster.employee_name, roster.shift_allocation, (roster.date).strftime('%Y-%m-%d'))
+		(roster.employee, (roster.date).strftime('%Y-%m-%d'))
 		for roster in employees_rostered
 	]
 
@@ -237,7 +234,7 @@ def get_employees_on_leave_in_period(start_date, end_date):
 
 	leaves = frappe.db.sql(f"""
 		SELECT 
-			la.employee, la.employee_name, la.from_date, la.to_date, emp.employee_id, emp.shift as shift_allocation
+			la.employee, la.from_date, la.to_date
 		FROM 
 			`tabLeave Application` la
 		JOIN `tabEmployee` emp
@@ -256,7 +253,7 @@ def get_employees_on_leave_in_period(start_date, end_date):
 
 
 	return [
-		(leave.employee, leave.employee_id, leave.employee_name, leave.shift_allocation, (leave.from_date + timedelta(days=x)).strftime('%Y-%m-%d'))
+		(leave.employee, (leave.from_date + timedelta(days=x)).strftime('%Y-%m-%d'))
 		for leave in leaves
 		for x in range((leave.to_date - leave.from_date).days + 1)
 	]
@@ -270,9 +267,13 @@ def get_supervisors_not_rostered_employees(employees_not_rostered, date):
 			date: date object
 
 		return: List of dict of supervisor and non rostered employees of the supervisor
-		Eg: [{'shift_supervisor': 'HR-EMP-00003', 'site': 'Site1', 'employees': 'HR-EMP-00001, HR-EMP-00002'}]
+		Eg: [{'shift_supervisor': 'HR-EMP-00003', 'supervisor_source': 'Project/Shift/Site','project': 'P1', 'site': 'Site1', 'employees': 'HR-EMP-00001, HR-EMP-00002'}]
 	"""
-	employee_ids = tuple(employees_not_rostered.keys())
+	employee_list = list(employees_not_rostered.keys())
+
+	# To create ("HR-EMP-1", "HR-EMP-2", "HR-EMP-3")
+	employee_ids = f"""({",".join([f"'{emp_id}'" for emp_id in employee_list])})"""
+
 
 	query = """
 		SELECT
@@ -299,8 +300,14 @@ def get_supervisors_not_rostered_employees(employees_not_rostered, date):
 		LEFT JOIN
 			`tabProject` AS p ON p.name = os.project
 		LEFT JOIN
-			`tabOperations Shift Supervisor` AS oss
-			ON oss.parent = os.name AND oss.parenttype = 'Operations Shift'
+			(
+				SELECT 
+					parent AS shift_name,
+					supervisor,
+					ROW_NUMBER() OVER (PARTITION BY parent ORDER BY idx) AS rn
+				FROM `tabOperations Shift Supervisor`
+				WHERE parenttype = 'Operations Shift'
+			) AS oss ON oss.shift_name = os.name AND oss.rn = 1
 		LEFT JOIN
 			(
 				SELECT
@@ -324,7 +331,9 @@ def get_supervisors_not_rostered_employees(employees_not_rostered, date):
 		GROUP BY
 		    shift_supervisor, os.site
 	""".format(date, employee_ids)
-	return frappe.db.sql(query, as_dict=True)
+	result = frappe.db.sql(query, as_dict=True)
+
+	return result
 
 
 ## Roster Employee Actions code for Roster view below
@@ -355,29 +364,25 @@ def get_employees_with_missing_schedules():
 	else:
 		return OrderedDict()
 
-	# Calculate scheduling gaps
+
 	rostered = get_rostered_employees(start_date, end_date)
 	on_leave = get_employees_on_leave_in_period(start_date, end_date)
 	
 	missing_schedules = set(employees) - set(rostered) - set(on_leave)
-	
-	# Format results
 	result = OrderedDict()
 
-	for emp, emp_id, emp_full_name, shift_allocation, date in missing_schedules:
-		if emp not in result:
-			result[emp] = {
-				"employee_id": emp_id,
-				"employee_name": emp_full_name,
-				"shift_allocation": shift_allocation,
+	
+	for employee, date in missing_schedules:
+		if employee not in result:
+			result[employee] = {
+				"employee_id": employee,
 				"dates": []
 			}
-		result[emp]["dates"].append(date)
+		result[employee]["dates"].append(date)
 
 	# Sort dates for each employee
-	for emp in result:
-		result[emp]["dates"] = sorted(result[emp]["dates"])
-	
+	for employee in result:
+		result[employee]["dates"] = sorted(result[employee]["dates"])
 	html_output = render_employees_missing_schedules_html(result)
 	return html_output
 
@@ -397,18 +402,19 @@ def render_employees_missing_schedules_html(missing_schedules):
 						<th></th>
 					</tr>
 				</thead><tbody>"""
-		
+	
 		for emp, info in missing_schedules.items():
+			emp_info = frappe.db.get_value("Employee", emp, ["employee_name", "shift"], as_dict=1)
 			formatted_dates = [
 				datetime.strptime(date, "%Y-%m-%d").strftime("%d-%m-%Y") for date in info["dates"]
 			]
 			dates_str = ", ".join(formatted_dates)
 			html += f"""<tr>
 							<td>{info["employee_id"]}</td>
-							<td>{info["employee_name"]}</td>
-							<td>{info["shift_allocation"]}</td>
+							<td>{emp_info["employee_name"]}</td>
+							<td>{emp_info["shift"]}</td>
 							<td>{dates_str}</td>
-							<td><a class="btn btn-warning" target="_blank" href="/app/roster?main_view='roster'&sub_view='basic'&roster_type='basic'&shift={info["shift_allocation"]}&employee_id={info["employee_id"]}">Take Action</a></td>
+							<td><a class="btn btn-warning" target="_blank" href="/app/roster?main_view='roster'&sub_view='basic'&roster_type='basic'&shift={emp_info["shift"]}&employee_id={info["employee_id"]}">Take Action</a></td>
 						</tr>"""
 		html += "</tbody></table>"
 		return html
@@ -467,9 +473,6 @@ def _get_employees_with_join(join_clause, where_clause, user_employee, start_dat
 	employees = frappe.db.sql(f"""
 		SELECT 
 			e.name as employee,
-			e.employee_id as employee_id, 
-			e.employee_name,
-			e.shift as shift_allocation,
 			e.relieving_date
 		FROM `tabEmployee` e
 		{join_clause}
@@ -480,7 +483,7 @@ def _get_employees_with_join(join_clause, where_clause, user_employee, start_dat
 	""", {"user_employee": user_employee}, as_dict=True)
 
 	return [
-		(emp.employee, emp.employee_id, emp.employee_name, emp.shift_allocation, (start_date + timedelta(days=x)).strftime('%Y-%m-%d'))
+		(emp.employee, (start_date + timedelta(days=x)).strftime('%Y-%m-%d'))
 		for emp in employees
 		for x in range((end_date - start_date).days + 1)
 		if not emp.relieving_date or (start_date + timedelta(days=x)) < emp.relieving_date

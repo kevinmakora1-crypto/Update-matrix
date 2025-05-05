@@ -245,11 +245,11 @@ def supervisor_reminder(shift, today_datetime, now_time):
 				#for_user = get_employee_user_id(recipient.reports_to) if get_employee_user_id(recipient.reports_to) else get_notification_user(op_shift)
 				subject = _("{employee} has not checked in yet.".format(employee=recipient.employee_name))
 				action_message = _("""
-				Operations Site: {site}
-				Operations Shift: {shift_type}
-				Shift Start: {shift_start}
-				Shift End: {shift_end}
-				<br/>
+				<b>Operations Site:</b> {site} <br/>
+				<b>Operations Shift:</b> {shift_type} <br/>
+				<b>Shift Start:</b> {shift_start} <br/>
+				<b>Shift End:</b> {shift_end}
+				<br/><br/>
 				Submit a Shift Permission for the employee to give an excuse and not need to penalize
 				<a class="btn btn-primary" href="/app/shift-permission/new-shift-permission-1">Submit Shift Permission</a>&nbsp;
 				<br/><br/>
@@ -280,11 +280,11 @@ def supervisor_reminder(shift, today_datetime, now_time):
 				#for_user = get_employee_user_id(recipient.reports_to) if get_employee_user_id(recipient.reports_to) else get_notification_user(op_shift)
 				subject = _('{employee} has not checked out yet.'.format(employee=recipient.employee_name))
 				action_message = _("""
-					Operations Site: {site}
-					Operations Shift: {shift_type}
-					Shift Start: {shift_start}
-					Shift End: {shift_end}
-					<br/>
+					<b>Operations Site:</b> {site} <br/>
+					<b>Operations Shift:</b> {shift_type} <br/>
+					<b>Shift Start:</b> {shift_start} <br/>
+					<b>Shift End:</b> {shift_end}
+					<br/><br/>
 					Submit a Shift Permission for the employee to give an excuse and not need to penalize
 					<a class="btn btn-primary" href="/app/shift-permission/new-shift-permission-1">Submit Shift Permission</a>&nbsp;
 					<br/><br/>

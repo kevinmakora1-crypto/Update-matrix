@@ -182,7 +182,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-05-05 13:58:35.969018",
+ "modified": "2025-05-05 16:18:17.672693",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Employee Monthly Action",
@@ -190,6 +190,7 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -203,6 +204,7 @@
    "write": 1
   },
   {
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,

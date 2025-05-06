@@ -44,6 +44,8 @@ class EmployeeDailyAction(Document):
 			blocker_doc.date = self.date
 			blocker_doc.status = "Open"
 			blocker_doc.blocker_details = blocker.problem
+			blocker_doc.reference_doctype = self.doctype
+			blocker_doc.reference_name = self.name
 			blocker_doc.save()
 			frappe.db.commit()
 

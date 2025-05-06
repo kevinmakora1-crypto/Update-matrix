@@ -12,7 +12,9 @@
   "column_break_wjqy",
   "date",
   "assigned_to",
-  "status"
+  "status",
+  "reference_doctype",
+  "reference_name"
  ],
  "fields": [
   {
@@ -60,6 +62,19 @@
    "fieldtype": "Select",
    "label": "Status",
    "options": "Open\nClosed\nCanceled"
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference Doctype",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Data",
+   "label": "Reference Name",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,

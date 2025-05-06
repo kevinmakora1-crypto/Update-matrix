@@ -14,7 +14,7 @@ def validate_task(doc, method):
     # When new doc is added, then sync field after insert
     if not doc.is_new() and doc.status != "Pending Review":
         sync_assign_to_field(doc)
-    check_completed_by_and_completed_on(doc,method)
+    
 
     all_asssigned_users = doc.get_assigned_users()
     assignees = doc.custom_assigned_to 
@@ -39,6 +39,8 @@ def validate_task(doc, method):
     is_manager = is_project_manager(doc.project) if doc.project else False
     if "Projects User" in roles and "Projects Manager" not in roles and not is_manager and (doc.project or doc.owner != frappe.session.user):
         validate_updated_fields(doc)
+    
+    check_completed_by_and_completed_on(doc,method)
 
 def after_task_insert(doc, method):
     sync_assign_to_field(doc)

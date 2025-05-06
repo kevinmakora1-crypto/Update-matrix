@@ -26,6 +26,8 @@ class EmployeeWeeklyAction(Document):
 			doc.assigned_to = self.get_reporting_manager()
 			doc.priority = blocker.priority
 			doc.blocker_details = blocker.problem
+			doc.reference_doctype = self.doctype
+			doc.reference_name = self.name
 			doc.insert(ignore_permissions=True)
 
 		frappe.db.commit()

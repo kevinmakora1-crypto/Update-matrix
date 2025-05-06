@@ -44,7 +44,8 @@ async function  get_todos_for_user(frm) {
                 allocated_to: user_email,
                 date: frappe.datetime.get_today()
             },
-            fields: ['reference_name', 'reference_type', 'name', 'status','description','type']
+            fields: ['reference_name', 'reference_type', 'name', 'status','description','type'],
+            limit_page_length:0
         },
         callback: function(r) {
             if (r.message) {
@@ -74,7 +75,8 @@ async function get_tomorrows_todos(frm) {
                 allocated_to: user_email,
                 date:  frappe.datetime.add_days(frappe.datetime.get_today(), 1)
             },
-            fields: ['reference_name', 'reference_type', 'name', 'type', 'description']
+            fields: ['reference_name', 'reference_type', 'name', 'type', 'description'],
+            limit_page_length:0
         },
         callback: function(r) {
             if (r.message) {

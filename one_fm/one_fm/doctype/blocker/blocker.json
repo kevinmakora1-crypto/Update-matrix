@@ -12,9 +12,7 @@
   "column_break_wjqy",
   "date",
   "assigned_to",
-  "status",
-  "reference_doctype",
-  "reference_name"
+  "status"
  ],
  "fields": [
   {
@@ -62,24 +60,11 @@
    "fieldtype": "Select",
    "label": "Status",
    "options": "Open\nClosed\nCanceled"
-  },
-  {
-   "fieldname": "reference_doctype",
-   "fieldtype": "Link",
-   "label": "Reference Doctype",
-   "options": "DocType",
-   "read_only": 1
-  },
-  {
-   "fieldname": "reference_name",
-   "fieldtype": "Data",
-   "label": "Reference Name",
-   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-06 09:28:04.045753",
+ "modified": "2025-05-06 09:46:01.809407",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Blocker",

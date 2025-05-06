@@ -442,7 +442,8 @@ class ReassignRelieverAssignment(Document):
 		roles_to_remove_from_reliver = employe_on_leave_roles - reliever_roles
 		if roles_to_remove_from_reliver:
 			reliever_user.remove_roles(*roles_to_remove_from_reliver)
-		frappe.db.set_value("User", reliever_roles, "role_profile_name", doclist.get("reliever").get("role_profile_name"))
+		frappe.db.set_value("User", self._reliever_user_id, "role_profile_name", doclist.get("reliever").get("role_profile_name"))
+
 
 	def reassign_reportees(self,data):
 		Employee = DocType(data.reference_doctype)

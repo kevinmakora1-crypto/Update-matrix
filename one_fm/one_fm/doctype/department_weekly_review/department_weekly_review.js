@@ -6,24 +6,15 @@ frappe.ui.form.on("Department Weekly Review", {
         if (frm.is_new()) {
             set_current_week_and_year(frm)
             fetch_user_department(frm).then((r) => {
-                const { department } = r.message
-                
-                if (department) {
-                    frm.set_value('department', department)
-
-                    load_department_employees(frm, department)
-                    load_department_blockers(frm, department)
-                }
+                frm.set_value(r.message)
+                load_department_employees(frm)
+                load_department_blockers(frm)
             });
         }
     },
     department: function(frm) {
-        const targetDepartment = frm.doc.department
-
-		if(targetDepartment){
-            load_department_employees(frm, targetDepartment)
-            load_department_blockers(frm, targetDepartment)
-		}
+        load_department_employees(frm)
+        load_department_blockers(frm)
 	},
 });
 
@@ -42,10 +33,12 @@ const fetch_user_department = () => {
     return frappe.db.get_value('Employee', { user_id: frappe.session.user }, 'department')
 };
 
-const load_department_employees = (frm, department) => {
+const load_department_employees = (frm) => {
+    if(!frm.doc.department) return
+
     frappe.call({
         method: "one_fm.one_fm.doctype.department_weekly_review.department_weekly_review.get_employees_by_department",
-        args: { department },
+        args: { department: frm.doc.department },
         callback: function (r) {
             if (r.message && Array.isArray(r.message)) {
                 frm.clear_table("attendees");
@@ -62,10 +55,12 @@ const load_department_employees = (frm, department) => {
     });
 };
 
-const load_department_blockers = (frm, department) => {
+const load_department_blockers = (frm) => {
+    if(!(frm.doc.department && frm.doc.week && frm.doc.year)) return
+
     frappe.call({
         method: "one_fm.one_fm.doctype.department_weekly_review.department_weekly_review.get_blockers_by_department",
-        args: { department },
+        args: { department: frm.doc.department, week: frm.doc.week, year: frm.doc.year },
         callback: function (r) {
             if (r.message && Array.isArray(r.message)) {
                 frm.clear_table("blockers");

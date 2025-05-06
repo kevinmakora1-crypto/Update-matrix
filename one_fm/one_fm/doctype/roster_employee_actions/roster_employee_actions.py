@@ -375,7 +375,6 @@ def get_employees_with_missing_schedules():
 	for employee, date in missing_schedules:
 		if employee not in result:
 			result[employee] = {
-				"employee_id": employee,
 				"dates": []
 			}
 		result[employee]["dates"].append(date)
@@ -404,17 +403,17 @@ def render_employees_missing_schedules_html(missing_schedules):
 				</thead><tbody>"""
 	
 		for emp, info in missing_schedules.items():
-			emp_info = frappe.db.get_value("Employee", emp, ["employee_name", "shift"], as_dict=1)
+			emp_info = frappe.db.get_value("Employee", emp, ["employee_name", "employee_id", "shift"], as_dict=1)
 			formatted_dates = [
 				datetime.strptime(date, "%Y-%m-%d").strftime("%d-%m-%Y") for date in info["dates"]
 			]
 			dates_str = ", ".join(formatted_dates)
 			html += f"""<tr>
-							<td>{info["employee_id"]}</td>
+							<td>{emp_info["employee_id"]}</td>
 							<td>{emp_info["employee_name"]}</td>
 							<td>{emp_info["shift"]}</td>
 							<td>{dates_str}</td>
-							<td><a class="btn btn-warning" target="_blank" href="/app/roster?main_view='roster'&sub_view='basic'&roster_type='basic'&shift={emp_info["shift"]}&employee_id={info["employee_id"]}">Take Action</a></td>
+							<td><a class="btn btn-warning" target="_blank" href="/app/roster?main_view='roster'&sub_view='basic'&roster_type='basic'&shift={emp_info["shift"]}&employee_id={emp_info["employee_id"]}">Take Action</a></td>
 						</tr>"""
 		html += "</tbody></table>"
 		return html

@@ -118,7 +118,8 @@
    "fieldname": "assigned_shifts_outside_default_shift",
    "fieldtype": "Table",
    "label": "Assigned Shifts Outside Default Shift",
-   "options": "Default Shift Checker Shift"
+   "options": "Default Shift Checker Shift",
+   "read_only": 1
   },
   {
    "fetch_from": "employee.shift",
@@ -182,7 +183,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-28 11:43:18.267802",
+ "modified": "2025-05-06 08:24:15.457029",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Default Shift Checker",

@@ -292,7 +292,7 @@ def get_supervisors_not_rostered_employees(employees_not_rostered, date):
 
 			os.project As project,
 			os.site AS site,
-			GROUP_CONCAT(e.name) AS employees
+			GROUP_CONCAT(DISTINCT e.name) AS employees
 		FROM
 			`tabOperations Shift` AS os
 		LEFT JOIN

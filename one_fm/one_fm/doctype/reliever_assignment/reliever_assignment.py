@@ -567,8 +567,9 @@ class ReassignRelieverAssignment(Document):
 
 	def reassign_docs_related_to_todos(self,reference_type,reference_name):
 		Doctype = frappe.get_doc('Reliever Assignment Settings',{'reference_doctype':reference_type})
-		matching_docs = [doc for doc in Doctype.as_dict().documents if doc.get('reference_doctype') == reference_type][0]
-		if matching_docs:
+		matching_doc_list = [doc for doc in Doctype.as_dict().documents if doc.get('reference_doctype') == reference_type]
+		if matching_doc_list:
+			matching_docs = matching_doc_list[0]
 			status_to_check =(matching_docs.statuses).split(',')
 			status_field = matching_docs.status_field
 			replaced_with = self.on_leave_employee if matching_docs["link_fieldtype"] == "Employee" else self._employee_user_id
@@ -598,11 +599,10 @@ class ReassignRelieverAssignment(Document):
 									.where(ReferenceType.name == reference_name) \
 									.where(ReferenceType[fieldname] == value_to_replace) \
 									.where(ReferenceType[status_field].isin(status_to_check)).run()
-						
 
 def reassign_responsibilities(leave_application):
 	try:
 		reassign_responsiobility = ReassignRelieverAssignment(leave_application=leave_application)
 		reassign_responsiobility.reassign()
 	except Exception:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(title="Reassign Responsibilities Failed", message=frappe.get_traceback())

@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
-
+from frappe.utils import getdate,add_days
 
 class EmployeeDailyAction(Document):
 	def validate(self):
@@ -25,7 +25,7 @@ class EmployeeDailyAction(Document):
 				row.completed = 1 if todo.status != "Open" else 0
 
 		if not self.tomorrows_plan: #If created from console 
-			tomorrows_todos = frappe.db.get_all("ToDo", {"allocated_to": self.employee_email, "date": self.date},['reference_name', 'reference_type', 'name', 'status','description','type'])
+			tomorrows_todos = frappe.db.get_all("ToDo", {"allocated_to": self.employee_email, "date": add_days(getdate(self.date),1)},['reference_name', 'reference_type', 'name', 'status','description','type'])
 			for todo in tomorrows_todos:
 				row = self.append("tomorrows_plan")
 				row.todo = todo.name

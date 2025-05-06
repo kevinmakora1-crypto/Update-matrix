@@ -9,6 +9,10 @@ frappe.ui.form.on("Employee Daily Action", {
         
     },
     employee(frm) {
+        frm.clear_table('todays_plan_and_accomplishments');
+        frm.clear_table('tomorrows_plan');
+        frm.refresh_fields()
+        
         get_todos_for_user(frm);
         get_tomorrows_todos(frm);
     }

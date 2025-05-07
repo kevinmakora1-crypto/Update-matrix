@@ -1,3 +1,4 @@
+from frappe.workflow.doctype.workflow_action.workflow_action import apply_workflow
 import frappe, pandas as pd
 from frappe import _
 from frappe.utils import getdate, get_link_to_form, format_date
@@ -38,8 +39,9 @@ class AttendanceRequestOverride(AttendanceRequest):
 				self.approver_user = approver.user_id
 
 	def on_submit(self):
-		if not self.reports_to():
-			frappe.throw("You are not the employee supervisor")
+		if not frappe.flags.get("ignore_supervisor_check", False):
+			if not self.reports_to():
+				frappe.throw("You are not the employee supervisor")
 		self.create_attendance()
 
 	def on_cancel(self):
@@ -254,6 +256,7 @@ def mark_future_attendance_request():
 			frappe.log_error(str(e), 'Attendance Request')
 
 
+@frappe.whitelist()
 def approve_pending_attendance_request():
     """
     Get attendance requests for the future where date is today
@@ -266,9 +269,8 @@ def approve_pending_attendance_request():
     """, as_dict=1)
     for row in attendance_requests:
         try:
+            frappe.flags.ignore_supervisor_check = True
             doc = frappe.get_doc("Attendance Request", row.name)
-            doc.workflow_state = 'Approved'
-            doc.save(ignore_permissions=True).create_attendance()
-            frappe.db.commit()
+            apply_workflow(doc, "Approve")
         except Exception as e:
             frappe.log_error(frappe.get_traceback(), "Attendance Request Marking")

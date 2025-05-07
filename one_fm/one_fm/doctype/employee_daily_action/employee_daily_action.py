@@ -4,7 +4,7 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate,add_days
-from one_fm.utils import has_super_user_role, get_approver
+from one_fm.utils import  get_approver
 
 class EmployeeDailyAction(Document):
 	def validate(self):

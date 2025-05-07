@@ -34,14 +34,16 @@ class Contracts(Document):
         if not (self.project and self.start_date and self.end_date):
             return
 
+        changed = False
         if self.is_new():
             changed = True
         else:
             before = self.get_doc_before_save()
-            changed = (
-                before.start_date != self.start_date or
-                before.end_date   != self.end_date
-            )
+            if before:
+                changed = (
+                    before.start_date != self.start_date or
+                    before.end_date   != self.end_date
+                )
 
         if not changed:
             return

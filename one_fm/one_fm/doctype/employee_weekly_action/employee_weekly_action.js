@@ -31,21 +31,13 @@ const fetch_employee_reports_to = (frm) => {
             method: "one_fm.utils.get_approver",
             args : {"employee": frm.doc.employee},
             callback: function (r) {
-                console.log(r)
                 if(r && r.message){
                     frm.set_value("reports_to", r.message);
                 }
             }
         });
 
-
     }
-    return frappe.db.get_value('Employee', { user_id: frappe.session.user }, 'name')
-        .then(r => {
-            if (r.message) {
-                frm.set_value('employee', r.message.name);
-            }
-        });
 };
 
 

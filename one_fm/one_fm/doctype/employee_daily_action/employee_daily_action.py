@@ -4,9 +4,11 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate,add_days
+from one_fm.utils import  get_approver
 
 class EmployeeDailyAction(Document):
 	def validate(self):
+		self.validate_manager()
 		self.fetch_todos()
 
 
@@ -49,7 +51,17 @@ class EmployeeDailyAction(Document):
 			blocker_doc.save()
 			frappe.db.commit()
 
+	def  validate_manager(self):
+		"""Ensure that a manager is set from the shift,site or reports to field """
+		if not self.reports_to:
+			reports_to = get_approver(self.employee)
+			if not reports_to:
+				frappe.throw(f"No Reports to set for {self.employee_name}")
+			self.reports_to = reports_to
+
+
 
 	def on_submit(self):
+		
 		self.create_blockers()
 	

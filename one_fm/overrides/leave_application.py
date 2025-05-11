@@ -117,15 +117,16 @@ class LeaveApplicationOverride(LeaveApplication):
 
 
     def close_leave_acknowledgement_if_below_threshold(self):
-        threshold = frappe.db.get_single_value("HR Settings", "annual_leave_threshold") or 60
-        if self.leave_balance - self.total_leave_days <= threshold:
-            query = """ 
-                UPDATE `tabLeave Acknowledgement Form`
-                SET is_active = 0
-                WHERE employee = %s
-                AND is_active = 1
-                """
-        frappe.db.sql(query, (self.employee, self.name))
+        if self.leave_type == "Annual Leave":
+            threshold = frappe.db.get_single_value("HR Settings", "annual_leave_threshold") or 60
+            if self.leave_balance - self.total_leave_days <= threshold:
+                query = """ 
+                    UPDATE `tabLeave Acknowledgement Form`
+                    SET is_active = 0
+                    WHERE employee = %s
+                    AND is_active = 1
+                    """
+            frappe.db.sql(query, (self.employee,))
 
 
     def validate_applicable_after(self):

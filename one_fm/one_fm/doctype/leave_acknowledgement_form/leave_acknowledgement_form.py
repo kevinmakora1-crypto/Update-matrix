@@ -76,29 +76,38 @@ def get_employees_with_cf_leaves_over_threshold():
 		query = query.having(Sum(Ledger.leaves) >= threshold)
 
 		results = query.run(as_dict=True)
-		return [row.employee for row in results]
+
+		employee_details = frappe.get_all(
+			"Employee",
+			filters={"name": ["in", [row.employee for row in results]]},
+			fields=["name", "custom_civil_id_assurance_level"]
+		)
+
+		return {
+			emp["name"]: emp.get("custom_civil_id_assurance_level", "")
+			for emp in employee_details
+		}
 
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Error fetching employees with leaves more than the threshold")
-		return []
+		return {}
 		
 
 
 
 def generate_leave_acknowledgement():
-	employees_list = get_employees_with_cf_leaves_over_threshold()
+	employees = get_employees_with_cf_leaves_over_threshold()
 
-	if employees_list:
-		new_docs = []
-		for emp in employees_list:
+	if employees:
+		for emp in employees.keys():
 			doc = frappe.get_doc({
 				"doctype": "Leave Acknowledgement Form",
-				"employee": emp,
+				"employee": emp
 			})
-			new_docs.append(doc)
-
-		for doc in new_docs:
 			doc.insert(ignore_permissions=True)
 
+			new_state = "Pending Confirmation" if employees.get(emp) == "High" else "Pending HR"
+			frappe.db.set_value("Leave Acknowledgement Form", doc.name, "workflow_state", new_state)
 
 		frappe.db.commit()
+

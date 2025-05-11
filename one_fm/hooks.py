@@ -208,6 +208,7 @@ standard_queries = {
 	"Operations Role": "one_fm.operations.doctype.operations_role.operations_role.get_operations_role_list",
 	"Warehouse": "one_fm.overrides.queries.warehouse_query",
     "Employee": "one_fm.overrides.queries.employee_query",
+    "Designation": "one_fm.overrides.queries.designation_query",
 }
 
 doc_events = {

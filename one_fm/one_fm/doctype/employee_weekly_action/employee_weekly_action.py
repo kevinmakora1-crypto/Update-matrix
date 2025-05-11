@@ -7,37 +7,40 @@ from frappe.model.document import Document
 from frappe.utils import get_datetime
 
 from one_fm.api.v1.utils import response
+from one_fm.utils import  get_approver
 
 
 class EmployeeWeeklyAction(Document):
 	
 
-	def on_submit(self):
-		self.create_blockers()
+    def on_submit(self):
+        self.create_blockers()
 
-	def create_blockers(self):
-		if not self.blockers:
-			return
+    def create_blockers(self):
+        if not self.blockers:
+            return
 
-		for blocker in self.blockers:
-			doc = frappe.new_doc("Blocker")
-			doc.user = frappe.session.user
-			doc.date = get_datetime().date()
-			doc.assigned_to = self.get_reporting_manager()
-			doc.priority = blocker.priority
-			doc.blocker_details = blocker.problem
-			doc.reference_doctype = self.doctype
-			doc.reference_name = self.name
-			doc.insert(ignore_permissions=True)
+        reports_to = self.get_reporting_manager()
+        if not reports_to:
+            frappe.throw(f"No Reports to set for {self.employee_name}")
 
-		frappe.db.commit()
+        for blocker in self.blockers:
+            doc = frappe.new_doc("Blocker")
+            doc.user = frappe.session.user
+            doc.date = get_datetime().date()
+            doc.assigned_to = reports_to
+            doc.priority = blocker.priority
+            doc.blocker_details = blocker.problem
+            doc.reference_doctype = self.doctype
+            doc.reference_name = self.name
+            doc.insert(ignore_permissions=True)
+
+        frappe.db.commit()
 
 
-	def get_reporting_manager(self):
-		employee_id = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "reports_to")
-		return frappe.db.get_value("Employee", employee_id, "user_id") if employee_id else None
-
-			
+    def get_reporting_manager(self):
+        employee_id = get_approver(frappe.db.get_value("Employee", {"user_id": frappe.session.user}))
+        return frappe.db.get_value("Employee", employee_id, "user_id") if employee_id else None
 	
 
 

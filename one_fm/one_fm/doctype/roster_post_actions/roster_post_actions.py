@@ -394,7 +394,7 @@ def render_operations_roles_html(post_list, is_over_filled_list=False):
                     <th>Date</th>
                     <th>Shift</th>
                     <th>Quantity</th>
-                    <th></th>
+                    
                 </tr>
             </thead><tbody>"""
     
@@ -402,11 +402,11 @@ def render_operations_roles_html(post_list, is_over_filled_list=False):
     for item in post_list:
         html += f"""<tr>
                         <td>{item.get('post', '')}</td>
-                        <td>{item.get('operations_role', '')}</td>
+                        <td><a  target="_blank" href="/app/roster?main_view='roster'&sub_view='basic'&roster_type='basic'&operations_role={item.get('post')}">{item.get('operations_role', '')}</a></td>
                         <td>{item.get('date', '')}</td>
                         <td>{item.get('shift', '')}</td>
                         {f'<td>{item.get("quantity", "")}</td>'  if  is_over_filled_list else '<td>1</td>' }
-                        <td><a class="btn btn-warning" target="_blank" href="/app/roster?main_view='roster'&sub_view='basic'&roster_type='basic'&operations_role={item.get('post')}">Take Action</a></td>
+                        
                         
                     </tr>"""
     html += "</tbody></table>"

@@ -37,7 +37,7 @@ class LeaveAcknowledgementForm(Document):
 def get_employees_with_cf_leaves_over_threshold():
 	try:
 		date = now_datetime().date()
-		threshold = 90
+		threshold = frappe.db.get_single_value("HR Settings", "annual_leave_threshold") or 60
 		leave_type = "Annual Leave"
 
 		excluded_employees = frappe.db.get_list(

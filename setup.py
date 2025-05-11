@@ -2,8 +2,6 @@
 from setuptools import setup, find_packages
 import re, ast
 
-from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
-
 with open('requirements.txt') as f:
 	install_requires = f.read().strip().split('\n')
 
@@ -25,12 +23,3 @@ setup(
 	include_package_data=True,
 	install_requires=install_requires
 )
-
-def get_custom_fields():
-	custom_fields = {}
-	custom_fields.add(get_employee_custom_fields())
-	return custom_fields
-
-
-def after_install():
-	create_custom_fields(get_custom_fields())

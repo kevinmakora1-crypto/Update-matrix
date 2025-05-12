@@ -8,7 +8,6 @@ def execute():
         "doctype": "Workflow",
         "document_type": "Leave Acknowledgement Form",
         "is_active": 1,
-        "modified": "2025-05-08 12:51:09.265765",
         "name": "Leave Acknowledgement Form",
         "override_status": 0,
         "send_email_alert": 0,

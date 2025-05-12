@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "naming_series:",
+ "autoname": "naming_series: series",
  "creation": "2025-05-11 08:07:45.221594",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -43,6 +43,7 @@
    "search_index": 1
   },
   {
+   "fetch_from": "leave_application.employee",
    "fieldname": "employee",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -62,7 +63,6 @@
   },
   {
    "fetch_from": "employee.employee_name",
-   "fetch_if_empty": 1,
    "fieldname": "employee_name",
    "fieldtype": "Data",
    "label": "Employee Name",
@@ -81,7 +81,8 @@
    "fieldname": "additional_leave_days",
    "fieldtype": "Int",
    "label": "Additional Leave Days",
-   "non_negative": 1
+   "non_negative": 1,
+   "read_only": 1
   },
   {
    "fetch_from": "employee.department",
@@ -128,6 +129,7 @@
    "reqd": 1
   },
   {
+   "fetch_from": "leave_application.resumption_date",
    "fieldname": "expected_resumption_date",
    "fieldtype": "Date",
    "label": "Expected Resumption Date",
@@ -140,6 +142,7 @@
    "reqd": 1
   },
   {
+   "fetch_from": "leave_application.leave_approver",
    "fieldname": "approver",
    "fieldtype": "Link",
    "label": "Approver",
@@ -175,13 +178,15 @@
    "set_only_once": 1
   }
  ],
+ "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-05-11 10:36:09.860964",
+ "modified": "2025-05-12 08:54:12.880636",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Leave Extension Request",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {
@@ -195,6 +200,18 @@
    "role": "System Manager",
    "share": 1,
    "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1,
    "write": 1
   }
  ],

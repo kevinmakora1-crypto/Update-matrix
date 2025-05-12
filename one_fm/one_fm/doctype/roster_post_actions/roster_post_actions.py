@@ -327,10 +327,8 @@ def get_overfilled_underfilled_posts():
     }
     
 
-def render_post_in_html(post_list):
-     """Generate a html template that contains the required information in the post_list"""
-     if post_list:
-        pass
+     
+
 def get_applicable_shifts(employee,user_roles):
     try:
         shifts = []
@@ -347,30 +345,28 @@ def get_applicable_shifts(employee,user_roles):
         return list(set(shifts)) #Remove duplicates
              
     except:
-         frappe.throw("An Error Occurred")
          frappe.log_error(title = "Error Fetching Post Data",message=frappe.get_traceback())
+         frappe.throw("An Error Occurred")
     
 
 def get_all_shifts():
-     all_shifts = frappe.get_all("Operations Shift",{'status':'Active'})
-     return [shift.name for shift in all_shifts]
+     all_shifts = frappe.get_all("Operations Shift",{'status':'Active'},pluck ="name")
+     return all_shifts
 
 
 def get_project_shifts(employee):
-    active_projects = frappe.get_all("Project",{'status':"Open",'account_manager':employee})
+    active_projects = frappe.get_all("Project",{'status':"Open",'account_manager':employee},pluck ="name")
     if active_projects:
-        active_project_ids= [i.name for i in active_projects]
-        all_shifts = frappe.get_all("Operations Shift",{'status':'Active','project':['in',active_project_ids]})
-        return [shift.name for shift in all_shifts]
+        all_shifts = frappe.get_all("Operations Shift",{'status':'Active','project':['in',active_projects]},pluck ="name")
+        return all_shifts
     else:
         return []
     
 def get_site_shifts(employee):
-    active_sites = frappe.get_all("Operations Site",{'status':"Active",'account_supervisor':employee})
+    active_sites = frappe.get_all("Operations Site",{'status':"Active",'account_supervisor':employee},pluck ="name")
     if active_sites:
-        active_site_ids = [i.name for i in active_sites]
-        all_shifts = frappe.get_all("Operations Shift",{'status':'Active','site':['in',active_site_ids]})
-        return [shift.name for shift in all_shifts]
+        all_shifts = frappe.get_all("Operations Shift",{'status':'Active','site':['in',active_sites]},pluck ="name")
+        return all_shifts
     else:
         return []
     
@@ -380,6 +376,8 @@ def get_assigned_shifts(employee):
                                 JOIN `tabOperations Shift Supervisor` opss ON os.name = opss.parent 
                                WHERE os.status ='Active' and opss.supervisor = '{employee}' """,as_dict=1)
     return [i.name for i in all_shifts]
+
+
 
 def render_operations_roles_html(post_list, is_over_filled_list=False):
     """

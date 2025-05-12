@@ -3934,7 +3934,7 @@ function roster_post_actions(page){
 		// freeze: true,
 		async: true,
 		callback: function(r) {
-			console.log(r)
+			
 			dialog.fields_dict.posts_notfilled_table.$wrapper.html(r.message.under_filled);
 			dialog.fields_dict.posts_overfilled_table.$wrapper.html(r.message.over_filled);
 		}

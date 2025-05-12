@@ -251,8 +251,20 @@ def get_overfilled_underfilled_posts():
     end_date = add_to_date(start_date, days=15)
     shifts = get_applicable_shifts(user_employee.get('name'),user_roles)
     if not shifts:
-        frappe.throw("No shifts found")
+        return {
+            "under_filled": f"""<div class='dialog-box' style='padding: 20px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; text-align: center;'>
+                            <h4 style='margin: 0; color: #343a40;'>No Shifts found for User {frappe.session.user}</h4>
+                            </div>""",
+            "over_filled": f"""<div class='dialog-box' style='padding: 20px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; text-align: center;'>
+                            <h4 style='margin: 0; color: #343a40;'>No Shifts found for User {frappe.session.user}</h4>
+                            </div>"""
+        }
+
+        
+        # frappe.throw("No shifts found")
     shift_tuple = tuple(shifts)
+    shifts_sub_query = f" AND ps.shift in {shift_tuple}" if len(shift_tuple) > 1 else f" AND ps.shift = '{shift_tuple[0]}'" 
+    # Fetch post schedules in the date range that are active
     post_schedules = frappe.db.sql(f"""
 		SELECT ps.name, ps.date, ps.shift, ps.operations_role, ps.post
         FROM `tabPost Schedule` ps 
@@ -263,7 +275,7 @@ def get_overfilled_underfilled_posts():
           WHERE
         ps.post_status='Planned' AND os.status='Active' 
         AND op.status='Active' AND opr.status='Active'
-        AND pr.is_active='Yes' AND ps.shift in {shift_tuple}
+        AND pr.is_active='Yes' {shifts_sub_query}
         AND ps.date BETWEEN '{start_date}' AND '{end_date}'
         ORDER BY date ASC
     """, as_dict=1)
@@ -304,16 +316,11 @@ def get_overfilled_underfilled_posts():
                 })
     
 
-
-    if not list_of_dict_of_operations_roles_not_filled and not list_of_dict_of_operations_roles_over_filled:
-        return """
-            <div class="alert text-center" role="alert">
-                <h4 class="mb-0">No Post Count Issues </h4>
-                <h5 class="mb-0">Posts are filled correctly for the rest of the month. Great Job! </h5>
-            </div>
-        """
-    roles_not_filled_html = render_operations_roles_html(list_of_dict_of_operations_roles_not_filled)
-    role_over_filled_html = render_operations_roles_html(list_of_dict_of_operations_roles_over_filled,is_over_filled_list=True)
+    roles_not_filled_html = render_operations_roles_html(list_of_dict_of_operations_roles_not_filled)\
+          if list_of_dict_of_operations_roles_not_filled else "<div class='alert text-center' role='alert'><h4 class='mb-0'>No Post Count Issues</h4><h5 class='mb-0'>Posts are filled correctly for the next 2 weeks. Great Job!</h5></div>"
+    role_over_filled_html = render_operations_roles_html(list_of_dict_of_operations_roles_over_filled,is_over_filled_list=True)\
+        if list_of_dict_of_operations_roles_over_filled else "<div class='alert text-center' role='alert'><h4 class='mb-0'>No Post Count Issues</h4><h5 class='mb-0'>Posts are filled correctly for the next 2 weeks. Great Job!</h5></div>"
+    
     return {
          'under_filled':roles_not_filled_html,
          'over_filled':role_over_filled_html
@@ -329,8 +336,7 @@ def get_applicable_shifts(employee,user_roles):
         shifts = []
         if "Operations Manager" in user_roles:
             shifts += get_all_shifts()
-        # if "Project Manager" in user_roles:
-        if "Operations Manager" in user_roles:
+        if "Projects Manager" in user_roles:
             shifts += get_project_shifts(employee)
         if "Site Supervisor" in user_roles:
             shifts += get_site_shifts(employee)

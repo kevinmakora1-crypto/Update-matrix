@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 
 from collections import Counter
-from collections import OrderedDict
+
 
 
 import frappe

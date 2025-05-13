@@ -17,6 +17,10 @@ class PostSchedulerChecker(Document):
 			frappe.get_doc(self.doctype, name).delete()
 
 	def validate(self):
+		if self.is_new():
+			self.fill_items()
+			if not self.items:
+				frappe.throw('No issues found.')
 		if not self.check_date:
 			self.check_date = getdate()
 		self.__get_shift_supervisor()
@@ -24,9 +28,9 @@ class PostSchedulerChecker(Document):
 
 
 	def after_insert(self):
-		self.fill_items()
-		if not self.items:
-			frappe.throw('No issues found.')
+		# self.fill_items()
+		# if not self.items:
+		# 	frappe.throw('No issues found.')
 		frappe.db.commit()
 
 	def __get_shift_supervisor(self):
@@ -39,7 +43,7 @@ class PostSchedulerChecker(Document):
 
 	def get_site_supervisor(self):
 		try:
-			site_supevisor_list = frappe.db.sql(f"""SELECT account_supervisor, account_supervisor_name from `tabOperations Site` 
+			site_supevisor_list = frappe.db.sql(f"""SELECT account_supervisor, account_supervisor_name from `tabOperations Site`
 								 			WHERE project = '{self.project}'
 											AND account_supervisor in (SELECT employee from `tabEmployee Schedule`
 											WHERE employee_availability = 'Working'
@@ -143,11 +147,11 @@ class PostSchedulerChecker(Document):
 			first_day = getdate(get_first_day(current_date))
 
 def schedule_roster_checker():
-	contracts = frappe.db.sql(""" SELECT c.name from `tabContracts` c JOIN `tabProject` p ON p.name = c.project WHERE c.workflow_state = 'Active' 
+	contracts = frappe.db.sql(""" SELECT c.name from `tabContracts` c JOIN `tabProject` p ON p.name = c.project WHERE c.workflow_state = 'Active'
 						   		  AND p.is_active = 'Yes' """, as_dict=1)
 	if not contracts:
 		return
-	
+
 	for row in [obj.get("name") for obj in contracts]:
 		try:
 			doc = frappe.get_doc({"doctype":"Post Scheduler Checker", 'contract': row}).insert(ignore_permissions=True)

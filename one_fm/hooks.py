@@ -129,6 +129,7 @@ doctype_list_js = {
 	"Attendance" : "public/js/doctype_list_js/attendance_list.js",
 	"Wiki Page": "public/js/doctype_list_js/wiki_page_list.js",
     "Employee": "public/js/doctype_list_js/employee_list.js",
+    "ToDo": "public/js/doctype_list_js/todo_list.js"
 }
 doctype_tree_js = {
 	"Warehouse" : "public/js/doctype_tree_js/warehouse_tree.js",
@@ -706,7 +707,6 @@ scheduler_events = {
 			'one_fm.api.tasks.generate_payroll'
 		],
 		"05 23 1-31 * *": [ #“At 23:05 on every day-of-month from 1 through 31.”
-			'one_fm.overrides.attendance_request.mark_future_attendance_request',
 			'one_fm.tasks.one_fm.daily.roster_projection_view_task',
 		],
 		"15 0 * * *": [ # create shift assignment
@@ -748,7 +748,7 @@ scheduler_events = {
         "0 0 15 * *": [
             "one_fm.one_fm.page.roster.roster.create_employee_schedule"
         ],
-        "*/5 * * * *": [ # Runs every 5 minutes
+        "* * * * *": [ # Runs every minute
             "one_fm.overrides.todo.sync_google_tasks_with_todos"
         ],
          "* * * * *": [ # Runs every minute

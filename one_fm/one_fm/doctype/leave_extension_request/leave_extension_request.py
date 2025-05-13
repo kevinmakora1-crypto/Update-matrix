@@ -20,10 +20,10 @@ class LeaveExtensionRequest(Document):
 			paid_leave_days = total_leave_days - unpaid_leave_days
 
 			if paid_leave_days > 0:
-				self.create_leave_application(from_date=self.paid_leave_start_date, resumption_date=add_to_date(self.paid_leave_end_date, days=1), is_paid=True)
+				self.create_leave_application(from_date=self.paid_leave_start_date, to_date=self.paid_leave_end_date, is_paid=True)
 
 			if unpaid_leave_days > 0:
-				self.create_leave_application(from_date=self.unpaid_leave_start_date, resumption_date=add_to_date(self.unpaid_leave_end_date, days=1), is_paid=False)
+				self.create_leave_application(from_date=self.unpaid_leave_start_date, to_date=self.unpaid_leave_end_date, is_paid=False)
 		except:
 			frappe.log_error(frappe.get_traceback(), "Error while creating leave application from leave extension request")
 
@@ -52,9 +52,9 @@ class LeaveExtensionRequest(Document):
 			leave_type=self.leave_type,
 			consider_all_leaves_in_the_allocation_period=True,
 			for_consumption=True
-		).leave_balance_for_consumption)
+		).get("leave_balance"))
 
-		leave_days_without_pay = max(0, total_leave_days - current_leave_balance)
+		leave_days_without_pay = max(0, total_leave_days - current_leave_balance) if current_leave_balance > 0 else total_leave_days
 
 		self.additional_leave_days = total_leave_days
 		self.current_leave_balance = current_leave_balance
@@ -92,13 +92,21 @@ class LeaveExtensionRequest(Document):
 		self.unpaid_leave_start_date = unpaid_leave_start_date
 		self.unpaid_leave_end_date = unpaid_leave_end_date
 
-	def create_leave_application(self, from_date, resumption_date, is_paid):
+	def create_leave_application(self, from_date, to_date, is_paid):
+		custom_reliever_, custom_reliever_name = frappe.db.get_value("Leave Application", self.leave_application, ["custom_reliever_", "custom_reliever_name"])
+
 		leave_application = frappe.new_doc("Leave Application")
 		leave_application.employee = self.employee
 		leave_application.leave_type = self.leave_type if is_paid else "Leave Without Pay"
 		leave_application.custom_is_paid = is_paid
 		leave_application.from_date = from_date
-		leave_application.resumption_date = resumption_date
-		leave_application.custom_reliever_ = frappe.db.get_value("Leave Application", self.leave_application, "custom_reliever_")
-		leave_application.save()
+		leave_application.to_date = to_date
+		leave_application.resumption_date = add_to_date(to_date, days=1)
+		leave_application.leave_approver = self.approver
+		leave_application.leave_approver_name = self.approver_name
+		leave_application.custom_reliever_ = custom_reliever_
+		leave_application.custom_reliever_name = custom_reliever_name
 
+		leave_application.flags.ignore_permissions = True
+		leave_application.insert()
+		leave_application.submit()

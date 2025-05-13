@@ -360,11 +360,12 @@ function manage_leave_extension(frm) {
                 const thresholdDays = await frappe.db.get_single_value("HR and Payroll Additional Settings", "leave_extension_request_allowance") || 0;
 
                 const today = frappe.datetime.get_today()
-                const leaveEndDate = frm.doc.to_date
+                const leavePostingDate = frm.doc.posting_date
+                const permittedEndDate = frappe.datetime.add_days(frm.doc.to_date, thresholdDays)
 
-                const leaveEndDaysDifference = frappe.datetime.get_diff(today, leaveEndDate)
-                
-                if(frm.doc.leave_type === 'Annual Leave' && frm.doc.status === 'Approved' && leaveEndDaysDifference <= thresholdDays && !leaveExtensionRequest) {
+                const isWithinPermittedDateRange = new Date(today) >= new Date(leavePostingDate) && new Date(today) <= new Date(permittedEndDate);
+
+                if(frm.doc.leave_type === 'Annual Leave' && frm.doc.status === 'Approved' && isWithinPermittedDateRange && !leaveExtensionRequest) {
                     frm.add_custom_button(__('Create Leave Extension Request'),
                         function () {                            
                             frappe.prompt([

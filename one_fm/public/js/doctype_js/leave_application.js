@@ -144,7 +144,6 @@ frappe.ui.form.on("Leave Application", {
                 frm.set_value("resumption_date", null);
                 frm.set_value("to_date", null);
                 frm.set_value("total_leave_days", 0);
-                frm.set_df_property("to_date", "read_only", 1);						
                 return;
             }
 

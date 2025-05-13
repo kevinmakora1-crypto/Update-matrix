@@ -671,6 +671,17 @@ function setup_preset_filters (page) {
 		}, 500);
 	}
 
+	if (page.datepicker && pageFilters.month && pageFilters.year) {
+		const newDate = moment(`${pageFilters.year}-${pageFilters.month}-01`, "YYYY-MM-DD").toDate();
+		page.datepicker.setDate(newDate);
+		page.datepicker.set('defaultDate', newDate);
+		if (calendarSettings1) {
+			calendarSettings1.date = moment(newDate);
+			displayCalendar(calendarSettings1, page);
+		}
+	}
+
+
 	function toggle_between_views() {
 		if(mainView === 'roster') {
 			if(subView === 'roster') {
@@ -765,6 +776,10 @@ function setup_topbar_events(page) {
 		roster_employee_actions(page);
 	});
 
+	$("#rosterDayOffIssues").on("click", function() {
+		roster_day_off_issues(page);
+	});
+	
 	$("#rosterPostActions").on("click", function() {
 		roster_post_actions(page);
 	});
@@ -3937,6 +3952,29 @@ function roster_post_actions(page){
 			
 			dialog.fields_dict.posts_notfilled_table.$wrapper.html(r.message.under_filled);
 			dialog.fields_dict.posts_overfilled_table.$wrapper.html(r.message.over_filled);
+		}
+	});
+	dialog.show();
+}
+
+function roster_day_off_issues(){
+	let dialog = new frappe.ui.Dialog({
+		title: "Employees with Day Off Issues",
+		fields: [
+			{
+				fieldname: "employees_table",
+				fieldtype: "HTML",
+				options: "<div id='employees_table'></div>"
+			}
+		]
+	})	
+	dialog.$wrapper.find(".modal-dialog").css("max-width", "75%");
+	frappe.call({
+		method: "one_fm.operations.doctype.roster_day_off_checker.roster_day_off_checker.get_day_off_issue_of_employees",
+		// freeze: true,
+		async: true,
+		callback: function(r) {
+			dialog.fields_dict.employees_table.$wrapper.html(r.message);
 		}
 	});
 	dialog.show();

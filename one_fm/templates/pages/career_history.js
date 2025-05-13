@@ -501,7 +501,7 @@ career_history = Class.extend({
       else{
         career_history['left_the_company'] = $(`.when_did_you_left_${company_no}_date`).val();
         if(validateEndDate(career_history['left_the_company'])){
-          return frappe.msgprint(frappe._("Kindly fill the when did you left the company field"));
+          return frappe.msgprint(frappe._("Kindly fill the when did you leave the company field."));
         }
       }
       career_history['factors_in_new_job'] = $(`.factors_in_new_job_${company_no}_text`).val();

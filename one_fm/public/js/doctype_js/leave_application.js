@@ -107,6 +107,7 @@ frappe.ui.form.on("Leave Application", {
           );
         }
         updateCustomIsPaidVisibility(frm)
+        manage_leave_extension(frm)
     },
     onload: function(frm) {
         $.each(frm.fields_dict, function(fieldname, field) {
@@ -325,5 +326,55 @@ function updateCustomIsPaidVisibility (frm) {
         // Hide the field if no leave_type is selected
         frm.set_df_property("custom_is_paid", "hidden", 1);
         frm.refresh_field("custom_is_paid");
+    }
+}
+
+function manage_leave_extension(frm) {
+    if(!frm.is_new()) {
+        frappe.call({
+            doc: frm.doc,
+            method: 'get_leave_extension_request',
+            callback: async function(res) {
+                const leaveExtensionRequest = res.message
+                
+                const thresholdDays = await frappe.db.get_single_value("HR and Payroll Additional Settings", "leave_extension_request_allowance") || 0;
+
+                const today = frappe.datetime.get_today()
+                const leaveEndDate = frm.doc.to_date
+
+                const leaveEndDaysDifference = frappe.datetime.get_diff(today, leaveEndDate)
+                
+                if(frm.doc.leave_type === 'Annual Leave' && frm.doc.status === 'Approved' && leaveEndDaysDifference <= thresholdDays && !leaveExtensionRequest) {
+                    frm.add_custom_button(__('Create Leave Extension Request'),
+                        function () {                            
+                            frappe.prompt([
+                                {
+                                    fieldname: 'new_resumption_date',
+                                    label: 'New Resumption Date',
+                                    fieldtype: 'Date',
+                                    reqd: true
+                                }
+                            ],
+                            function(values) {
+                                frappe.call({
+                                    doc: frm.doc,
+                                    method: 'create_leave_extension_request',
+                                    args: {
+                                        new_resumption_date: values.new_resumption_date
+                                    },
+                                    callback: function(r) {
+                                        frappe.set_route('Form', 'Leave Extension Request', r.message.name);
+                                    },
+                                    freeze: true,
+                                    freeze_message: __('Creating Leave Extension..')
+                                })
+                            },
+                            'Leave Extension Request',
+                            'Submit')
+                        }
+                    );
+                }
+            }
+          });
     }
 }

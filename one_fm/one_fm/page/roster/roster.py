@@ -319,7 +319,7 @@ def get_filtered_operations_role(doctype, txt, searchfield, start, page_len, fil
     return frappe.db.sql("""
         select distinct name
         from `tabOperations Role`
-        where shift="{shift}"
+        where shift="{shift}" AND status = 'Active'
     """.format(shift=shift))
 
 

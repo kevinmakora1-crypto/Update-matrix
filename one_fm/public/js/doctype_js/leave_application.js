@@ -71,7 +71,7 @@ frappe.ui.form.on("Leave Application", {
                     doc: frm.doc
                 },
                 callback: function(r) {
-                    var fields = ['is_proof_document_required', 'from_date','to_date','leave_approver']
+                    var fields = ['is_proof_document_required', 'from_date','leave_approver']
                     for (var i in fields){
                         if (r && r.message) {
                             cur_frm.set_df_property(fields[i],  'read_only', 0);
@@ -132,9 +132,29 @@ frappe.ui.form.on("Leave Application", {
 
     leave_type: function(frm) {
         updateCustomIsPaidVisibility(frm);
+    },
+
+    resumption_date: function(frm) {
+        if (frm.doc.resumption_date && frm.doc.from_date) {
+            let resumption = frappe.datetime.str_to_obj(frm.doc.resumption_date);
+            let from_date = frappe.datetime.str_to_obj(frm.doc.from_date);
+
+            if (resumption <= from_date) {
+                frappe.msgprint(__('Resumption Date cannot be less than or equal to From Date'));
+                frm.set_value("resumption_date", null);
+                frm.set_value("to_date", null);
+                frm.set_value("total_leave_days", 0);
+                return;
+            }
+
+            let to_date = frappe.datetime.add_days(resumption, -1);
+            frm.set_value("to_date", frappe.datetime.obj_to_str(to_date));
+        }
+
+        frm.trigger("make_dashboard");
+        frm.trigger("half_day_datepicker");
+        frm.trigger("calculate_total_days");
     }
-
-
 })
 
 async function handle_propose_new_date_action(frm) {

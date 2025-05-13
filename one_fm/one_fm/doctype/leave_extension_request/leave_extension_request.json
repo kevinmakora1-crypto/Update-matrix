@@ -181,8 +181,13 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [],
- "modified": "2025-05-12 08:54:12.880636",
+ "links": [
+  {
+   "link_doctype": "Leave Application",
+   "link_fieldname": "custom_leave_extension_request"
+  }
+ ],
+ "modified": "2025-05-13 17:31:01.212850",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Leave Extension Request",

@@ -106,6 +106,7 @@ class LeaveExtensionRequest(Document):
 		leave_application.leave_approver_name = self.approver_name
 		leave_application.custom_reliever_ = custom_reliever_
 		leave_application.custom_reliever_name = custom_reliever_name
+		leave_application.custom_leave_extension_request = self.name
 
 		leave_application.flags.ignore_permissions = True
 		leave_application.insert()

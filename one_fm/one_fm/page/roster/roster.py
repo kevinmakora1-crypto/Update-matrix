@@ -87,117 +87,135 @@ def get_staff_filters_data():
         "designations": designations
     }
 
+def build_employee_filters(employee_search_id, employee_search_name, project, site, shift, department, relievers):
+    # Define all possible filters and their values
+    filter_params = {
+        "employee_id": employee_search_id,
+        "employee_name": ("like", f"%{employee_search_name}%") if employee_search_name else None,
+        "custom_is_reliever": strtobool(relievers) if relievers else None,
+        "project": project,
+        "site": site,
+        "shift": shift,
+        "department": department,
+    }
+    
+    # Build the dictionary with only the keys that have a value
+    employee_filters = {k: v for k, v in filter_params.items() if v is not None and v !=""}
+    return employee_filters
+
+def build_exited_employee_filters(start_date, end_date, employee_search_id=None, 
+                                 employee_search_name=None, relievers=False, project=None, 
+                                 site=None, shift=None, department=None):
+    filters = [
+        f"status='Left'",
+        f"attendance_by_timesheet = '0'",
+        f"relieving_date between '{start_date}' and '{end_date}'"
+    ]
+    
+    if employee_search_id:
+        filters.append(f"employee_id = '{employee_search_id}'")
+    if employee_search_name:
+        filters.append(f"employee_name LIKE '%{employee_search_name}%'")
+    if relievers:
+        filters.append(f"custom_is_reliever={1 if relievers else 0}")
+    if project:
+        filters.append(f"project = '{project}'")
+    if site:
+        filters.append(f"site = '{site}'")
+    if shift:
+        filters.append(f"shift = '{shift}'")
+    if department:
+        filters.append(f"department = '{department}'")
+    
+    return " and ".join(filters)
 
 @frappe.whitelist()
 def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_search_id=None, employee_search_name=None, project=None, site=None, shift=None, department=None, operations_role=None, designation=None, relievers=False, isOt=None, limit_start=0, limit_page_length=9999):
     try:
-        master_data, formatted_employee_data, post_count_data, employee_filters= {}, {}, {}, {}
+        master_data, employee_filters = {}, {}
         operations_roles_list = []
         employees = []
-        asa_filters = "em.status = 'Active' and em.attendance_by_timesheet = '0' "
-        filters = {
-            'date': ['between', (start_date, end_date)]
-        }
-        str_filters = f'es.date between "{start_date}" and "{end_date}"'
-        exited_employee_filters = f"""status='Left' and attendance_by_timesheet = '0' and relieving_date between '{start_date}' and '{end_date}'"""
+        
+        # Base filters
+        filters = {"date": ["between", (start_date, end_date)]}
+        str_filters = f"es.date between '{start_date}' and '{end_date}'"
+        
         if operations_role:
-            filters.update({'operations_role': operations_role})
-            str_filters +=' and es.operations_role = "{}"'.format(operations_role)
-
-        if employee_search_id:
-            employee_filters.update({'employee_id': employee_search_id})
-            exited_employee_filters += f""" and employee_id = "{employee_search_id}" """
-        if employee_search_name:
-            employee_filters.update({'employee_name': ("like", "%" + employee_search_name + "%")})
-            exited_employee_filters += f""" and employee_name LIKE "%{employee_search_name}%" """
-            asa_filters+=f'and asa.employee_name LIKE "%{employee_search_name}%"'
-        if relievers:
-            employee_filters.update({'custom_is_reliever': strtobool(relievers)})
-            exited_employee_filters += f""" and custom_is_reliever={strtobool(relievers)} """
-            asa_filters+=f' and em.custom_is_reliever={strtobool(relievers)}'
-        if project:
-            employee_filters.update({'project': project})
-            exited_employee_filters += f""" and project =  "{project}" """
-            asa_filters+=f' and asa.project = "{project}"'
-        if site:
-            employee_filters.update({'site': site})
-            exited_employee_filters +=f""" and site = "{site}" """
-            asa_filters += f' and asa.site = "{site}"'
-        if shift:
-            employee_filters.update({'shift': shift})
-            exited_employee_filters += f""" and shift = "{shift}" """
-            asa_filters += f' and asa.shift = "{shift}"'
-        if department:
-            employee_filters.update({'department': department})
-            exited_employee_filters += f""" and department = "{department}" """
-
+            filters.update({"operations_role": operations_role})
+            str_filters +=" and es.operations_role = '{}'".format(operations_role)
+        
+        employee_filters = build_employee_filters(employee_search_id, employee_search_name, project, site, shift, department, relievers)
+        # Build exited employee filters using dedicated function
+        exited_employee_filters = build_exited_employee_filters(
+            start_date, end_date,
+            employee_search_id=employee_search_id,
+            employee_search_name=employee_search_name,
+            relievers=relievers,
+            project=project,
+            site=site,
+            shift=shift,
+            department=department
+        )
 
         #--------------------- Fetch Employee list ----------------------------#
         #get list of employees that left the company on that month.
-
-        exited_employee_query = """SELECT employee,employee_name from `tabEmployee` where {}""".format(exited_employee_filters)
+        exited_employee_query = """SELECT employee, employee_name from `tabEmployee` where {}""".format(exited_employee_filters)
         exited_employees = frappe.db.sql(exited_employee_query,as_dict=1)
 
         if isOt:
-            employee_filters.update({'employee_availability' : 'Working'})
+            employee_filters.update({"employee_availability" : "Working"})
             reliever_filter = f"and custom_is_reliever={strtobool(relievers)}" if relievers else ""
             all_active_employees = frappe.db.sql(f"SELECT name from `tabEmployee` where status in ('Active','Vacation') and attendance_by_timesheet = '0' and shift_working= '1' {reliever_filter}",as_dict =1)
             all_active_employee_ids = [i.name for i in all_active_employees]
-            employee_filters.update({'employee':['In',all_active_employee_ids]})
+            employee_filters.update({"employee":[ "In", all_active_employee_ids]})
+
             employees = frappe.db.get_list("Employee Schedule", employee_filters, ["distinct employee", "employee_name"], order_by="employee_name asc" ,limit_start=limit_start, limit_page_length=limit_page_length, ignore_permissions=True)
-            master_data.update({'total' : len(employees)})
+            master_data.update({"total" : len(employees)})
             employees.extend(exited_employees)
             employees = filter_redundant_employees(employees)
-            employee_filters.update({'date': ['between', (start_date, end_date)], 'post_status': 'Planned'})
-            employee_filters.pop('employee_availability')
-            employee_filters.pop('employee')
-            employee_filters.pop('attendance_by_timesheet', None)
+            employee_filters.update({"date": ["between", (start_date, end_date)], "post_status": "Planned"})
+            employee_filters.pop("employee_availability")
+            employee_filters.pop("employee")
+            employee_filters.pop("attendance_by_timesheet", None)
 
         else:
-            employee_filters.update({'status': ["IN",['Active',"Vacation"]]})
-            employee_filters.update({'shift_working':'1'})
-            employee_filters.update({'attendance_by_timesheet':'0'})
+            employee_filters.update({"status": ["IN", ["Active","Vacation"]]})
+            employee_filters.update({"shift_working": 1})
+            employee_filters.update({"attendance_by_timesheet": 0})
             if designation:
-                employee_filters.update({'designation' : designation})
-				
+                employee_filters.update({"designation" : designation})
+
             employees = frappe.db.get_list("Employee", employee_filters, ["employee", "employee_name", "day_off_category", "number_of_days_off"], order_by="employee_name asc" ,limit_start=limit_start, limit_page_length=limit_page_length, ignore_permissions=True)
             employees.extend(exited_employees)
             employees = filter_redundant_employees(employees)
 
-            #Conditional to ensure that the proceeding code block does not run unless Project,shift or site is queried
-            if employee_search_name or shift or site or project:
-                employees_asa_q = f"""SELECT distinct asa.employee as employee, asa.employee_name  as employee_name from `tabAdditional Shift Assignment` asa JOIN `tabEmployee`em on em.name =asa.employee where {asa_filters}"""
-                employees_asa = frappe.db.sql(employees_asa_q,as_dict=1)
-                if len(employees_asa) > 0:
-                    employees.extend(employees_asa)
-                    employees = filter_redundant_employees(employees)
 
-            master_data.update({'total': len(employees)})
-            employee_filters.pop('status', None)
-            employee_filters.pop('shift_working', None)
-            employee_filters.pop('attendance_by_timesheet', None)
-            employee_filters.update({'date': ['between', (start_date, end_date)], 'post_status': 'Planned'})
+            master_data.update({"total": len(employees)})
+            employee_filters.pop("status", None)
+            employee_filters.pop("shift_working", None)
+            employee_filters.pop("attendance_by_timesheet", None)
+            employee_filters.update({"date": ["between", (start_date, end_date)], "post_status": "Planned"})
 
         if employee_search_name:
-            employee_filters.pop('employee_name')
+            employee_filters.pop("employee_name")
         if employee_search_id:
-            employee_filters.pop('employee_id')
+            employee_filters.pop("employee_id")
         if department:
-            employee_filters.pop('department', None)
+            employee_filters.pop("department", None)
         if operations_role:
-            employee_filters.update({'operations_role': operations_role})
+            employee_filters.update({"operations_role": operations_role})
         if designation:
-            employee_filters.pop('designation', None)
-        reliever = frappe.db.get_list('Employee', fields=['*'], filters={'custom_is_reliever': 1})
+            employee_filters.pop("designation", None)
+        reliever = frappe.db.get_list("Employee", fields=["*"], filters={"custom_is_reliever": 1})
         if relievers:
-            employee_filters.pop('custom_is_reliever', None)
-
+            employee_filters.pop("custom_is_reliever", None)
+        
         #------------------- Fetch Operations Roles ------------------------#
         operations_roles_list = frappe.db.get_list("Post Schedule", employee_filters, ["distinct operations_role", "post_abbrv"], ignore_permissions=True)
         if operations_role:
-            employee_filters.pop('operations_role', None)
-        employee_filters.pop('date')
-        employee_filters.pop('post_status')
+            employee_filters.pop("operations_role", None)
+        employee_filters.pop("date")
+        employee_filters.pop("post_status")
 
         #------------------- Apply Employee ID filter ------------------------#
         if employee_search_id:
@@ -206,37 +224,39 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
 
         #------------------- Fetch Employee Schedule --------------------#
         #The following section creates a iterable that uses the employee name and id as keys and groups  the  employee data fetched in previous queries
-
-        new_map=CreateMap(start=start_date,end=end_date,employees=employees,filters=str_filters,isOt=isOt)
-        master_data.update({'employees_data': new_map.formated_rs})
+        new_map=CreateMap(start=start_date, end=end_date, employees=employees, filters=str_filters, isOt=isOt)
+        master_data.update({"employees_data": new_map.formated_rs})
 
         #----------------- Get Operations Role count and check fill status -------------------#
-        post_map = PostMap(start=start_date,end=end_date,operations_roles_list=operations_roles_list,filters=employee_filters)
-        master_data.update({'operations_roles_data': post_map.template,'reliever':reliever})
+        post_map = PostMap(start=start_date, end=end_date, operations_roles_list=operations_roles_list, filters=employee_filters)
+        master_data.update({"operations_roles_data": post_map.template, "reliever": reliever})
+        
         response("Success", 200, master_data)
     except Exception as e:
         return response("Server Error", 500, None, str(frappe.get_traceback()))
 
+
 def get_active_employees(start_date, end_date, master_data):
-    employees = [i.name for i in frappe.db.get_list('Employee', filters={'status': ['!=', 'Left']})]
+    employees = [i.name for i in frappe.db.get_list("Employee", filters={"status": ["!=", "Left"]})]
     employees += [i.name for i in frappe.db.sql("""
         SELECT name FROM `tabEmployee`
         WHERE status='Left' AND relieving_date BETWEEN '{start_date}' AND '{end_date}'""".format(
         start_date=start_date, end_date=end_date), as_dict=1
     )]
     new_employees = {}
-    employees_data = master_data.get('employees_data')
+    employees_data = master_data.get("employees_data")
     for k, v in employees_data.items():
-        if v[0]['employee'] in employees:
+        if v[0]["employee"] in employees:
             new_employees[k] = v
-    master_data['total'] = len(new_employees)
-    master_data['employees_data'] = new_employees
+    master_data["total"] = len(new_employees)
+    master_data["employees_data"] = new_employees
 
     return master_data
 
 
 def filter_redundant_employees(employees):
-    return list({employee['employee']:employee for employee in employees}.values())
+    return list({employee["employee"]:employee for employee in employees}.values())
+
 
 @frappe.whitelist(allow_guest=True)
 def get_post_view(start_date, end_date,  project=None, site=None, shift=None, operations_role=None, active_posts=1, limit_start=0, limit_page_length=100):
@@ -247,13 +267,13 @@ def get_post_view(start_date, end_date,  project=None, site=None, shift=None, op
 
     filters, master_data, post_data = {}, {}, {}
     if project:
-        filters.update({'project': project})
+        filters.update({"project": project})
     if site:
-        filters.update({'site': site})
+        filters.update({"site": site})
     if shift:
-        filters.update({'site_shift': shift})
+        filters.update({"site_shift": shift})
     if operations_role:
-        filters.update({'post_template': operations_role})
+        filters.update({"post_template": operations_role})
 
     post_total = frappe.db.count("Operations Post", filters)
 
@@ -261,23 +281,23 @@ def get_post_view(start_date, end_date,  project=None, site=None, shift=None, op
     post_filters.update(dict(status="Active"))
 
     post_list = frappe.db.get_list("Operations Post", post_filters, "name", order_by="name asc", limit_start=limit_start, limit_page_length=limit_page_length)
-    fields = ['name', 'post', 'operations_role','date', 'post_status', 'site', 'shift', 'project']
+    fields = ["name", "post", "operations_role","date", "post_status", "site", "shift", "project"]
 
-    filters.pop('post_template', None)
-    filters.pop('site_shift', None)
+    filters.pop("post_template", None)
+    filters.pop("site_shift", None)
 
     if operations_role:
-        filters['operations_role'] = operations_role
+        filters["operations_role"] = operations_role
     if shift:
-        filters['shift'] = shift
+        filters["shift"] = shift
 
-    post_names = [p['name'] for p in post_list]
+    post_names = [p["name"] for p in post_list]
     if not post_names:
         master_data.update({"post_data": {}, "total": post_total})
         return master_data
 
-    filters['date'] = ['between', (start_date, end_date)]
-    filters['post'] = ['in', post_names]
+    filters["date"] = ["between", (start_date, end_date)]
+    filters["post"] = ["in", post_names]
 
     # Fetch all schedules for all posts in one query
     all_schedules = frappe.db.get_list(
@@ -291,20 +311,20 @@ def get_post_view(start_date, end_date,  project=None, site=None, shift=None, op
     schedule_lookup = defaultdict(dict)
     for sch in all_schedules:
         # Use string date for consistent comparison
-        schedule_lookup[sch['post']][str(sch['date'])] = sch
+        schedule_lookup[sch["post"]][str(sch["date"])] = sch
 
     # Precompute date range as strings
     date_range = [str(d.date()) for d in pd.date_range(start=start_date, end=end_date)]
 
     for post in post_list:
-        key = post['name']
+        key = post["name"]
         schedule_list = []
         for date_str in date_range:
             schedule = schedule_lookup[key].get(date_str)
             if not schedule:
                 schedule = {
-                    'post': key,
-                    'date': date_str
+                    "post": key,
+                    "date": date_str
                 }
             schedule_list.append(schedule)
         post_data[key] = schedule_list
@@ -315,7 +335,7 @@ def get_post_view(start_date, end_date,  project=None, site=None, shift=None, op
 
 @frappe.whitelist()
 def get_filtered_operations_role(doctype, txt, searchfield, start, page_len, filters):
-    shift = filters.get('shift')
+    shift = filters.get("shift")
     return frappe.db.sql("""
         select distinct name
         from `tabOperations Role`
@@ -340,7 +360,7 @@ def get_employee_leave_attendance(employees,start_date):
         dict: list of dictionaries
     """
     attendance_dict = {}
-    all_attendance = frappe.get_all("Attendance",{'attendance_date':['>=',start_date],'employee':["IN",employees],'docstatus':1,'status':'On Leave'},['attendance_date','employee'])
+    all_attendance = frappe.get_all("Attendance", {"attendance_date": [">=", start_date ], "employee": ["IN",employees], "docstatus": 1, "status": "On Leave" }, ["attendance_date","employee"])
     if all_attendance:
         for each in all_attendance:
             if attendance_dict.get(each.employee):
@@ -367,8 +387,8 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
         employee_leave_attendance = get_employee_leave_attendance(employee_list,start_date)
         if cint(project_end_date) and not end_date:
             project = frappe.db.get_value("Operations Shift", shift, ["project"])
-            if frappe.db.exists("Contracts", {'project': project}):
-                contract, end_date = frappe.db.get_value("Contracts", {'project': project}, ["name", "end_date"])
+            if frappe.db.exists("Contracts", {"project": project}):
+                contract, end_date = frappe.db.get_value("Contracts", {"project": project}, ["name", "end_date"])
                 if not end_date:
                     validation_logs.append("Please set contract end date for contract: {contract}".format(contract=contract))
                 else:
@@ -397,7 +417,7 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
         elif cint(project_end_date) and end_date:
             validation_logs.append("Please select either the project end date or set a custom date. You cannot set both!")
 
-        emp_tuple = str(employee_list).replace('[', '(').replace(']',')')
+        emp_tuple = str(employee_list).replace("[", "(").replace("]",")")
 
         if not cint(request_employee_schedule) and "Projects Manager" not in user_roles and "Operations Manager" not in user_roles:
             all_employee_shift_query = frappe.db.sql("""
@@ -410,7 +430,7 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
             """.format(start_date=start_date, end_date=end_date, emp_tuple=emp_tuple), as_dict=1)
 
         if len(validation_logs) > 0:
-            frappe.log_error(str(validation_logs), 'Roster Schedule')
+            frappe.log_error(str(validation_logs), "Roster Schedule")
             frappe.throw(str(validation_logs))
         else:
             # extreme schedule
@@ -421,7 +441,7 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
             update_roster(key="roster_view")
 
 
-            response("success", 200, {'message':'Successfully rostered employees'})
+            response("success", 200, {"message":"Successfully rostered employees"})
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Schedule Roster")
         response("error", 200, None, str(e))
@@ -437,34 +457,34 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
         return
     creation = now()
     owner = frappe.session.user
-    start_time, end_time = frappe.db.get_value("Shift Type", frappe.db.get_value("Operations Shift", shift, "shift_type"), ['start_time', 'end_time'])
+    start_time, end_time = frappe.db.get_value("Shift Type", frappe.db.get_value("Operations Shift", shift, "shift_type"), ["start_time", "end_time"])
     operations_shift = frappe.get_doc("Operations Shift", shift, ignore_permissions=True)
     operations_role = frappe.get_doc("Operations Role", operations_role, ignore_permissions=True)
     day_off_ot = cint(day_off_ot)
-    if otRoster == 'false':
-        roster_type = 'Basic'
-    elif otRoster == 'true' or day_off_ot == 1:
-        roster_type = 'Over-Time'
+    if otRoster == "false":
+        roster_type = "Basic"
+    elif otRoster == "true" or day_off_ot == 1:
+        roster_type = "Over-Time"
 
     # check for end date
     if end_date:
         end_date = getdate(end_date)
         new_employees = []
         for i in employees:
-            if getdate(i['date']) <= end_date:
+            if getdate(i["date"]) <= end_date:
                 new_employees.append(i)
         if new_employees:
             employees = new_employees.copy()
     # check keep days_off
     if cint(keep_days_off):
         days_off_list = frappe.db.get_list("Employee Schedule", filters={
-            'employee':['IN', [i['employee'] for i in employees]],
-            'date': ['IN', [i['date'] for i in employees]],
-            'employee_availability': 'Day Off'
-        }, fields=['name', 'employee', 'date'])
+            "employee":["IN", [i["employee"] for i in employees]],
+            "date": ["IN", [i["date"] for i in employees]],
+            "employee_availability": "Day Off"
+        }, fields=["name", "employee", "date"])
         days_off_dict = {}
         if days_off_list:
-            # build a dict in the form {'hr-emp-0002:['2023-01-01,]}
+            # build a dict in the form {"hr-emp-0002:["2023-01-01,]}
             for i in days_off_list:
                 if days_off_dict.get(i.employee):
                     days_off_dict[i.employee].append(str(i.date))
@@ -474,13 +494,13 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
             new_employees = []
             if employees and len(days_off_dict):
                 for i in employees:
-                    if not (i.get('date') in days_off_dict.get(i.get('employee'),[])):
+                    if not (i.get("date") in days_off_dict.get(i.get("employee"),[])):
                         new_employees.append(i)
                 if new_employees:
                     employees = new_employees.copy()
 
     # # get and structure employee dictionary for easy hashing
-    employees_list = frappe.db.get_list("Employee", filters={'employee': ['IN', employee_list]}, fields=['name', 'employee_name', 'department','date_of_joining'], ignore_permissions=True)
+    employees_list = frappe.db.get_list("Employee", filters={"employee": ["IN", employee_list]}, fields=["name", "employee_name", "department","date_of_joining"], ignore_permissions=True)
     employees_dict = {}
     for i in employees_list:
         employees_dict[i.name] = i
@@ -492,19 +512,19 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
         next_day = True
     employees_date_dict = {}
     for i in employees:
-        if getdate(employees_dict.get(i.get('employee')).get('date_of_joining')) <= getdate(i.get('date')):
-            if employees_date_dict.get(i['employee']):
-                employees_date_dict[i['employee']].append({'date':i['date'],
-                    'start_datetime': datetime.strptime(f"{i['date']} {shift_start}", '%Y-%m-%d %H:%M:%S'), "end_datetime":datetime.strptime(f"{add_days(i['date'], 1) if next_day else i['date']} {shift_end}", '%Y-%m-%d %H:%M:%S')})
+        if getdate(employees_dict.get(i.get("employee")).get("date_of_joining")) <= getdate(i.get("date")):
+            if employees_date_dict.get(i["employee"]):
+                employees_date_dict[i["employee"]].append({"date":i["date"],
+                    "start_datetime": datetime.strptime(f"{i['date']} {shift_start}", "%Y-%m-%d %H:%M:%S"), "end_datetime":datetime.strptime(f"{add_days(i['date'], 1) if next_day else i['date']} {shift_end}", "%Y-%m-%d %H:%M:%S")})
             else:
-                employees_date_dict[i['employee']] =[{'date':i['date'], 'start_datetime': datetime.strptime(f"{i['date']} {shift_start}", '%Y-%m-%d %H:%M:%S'), "end_datetime":datetime.strptime(f"{add_days(i['date'], 1) if next_day else i['date']} {shift_end}", '%Y-%m-%d %H:%M:%S')}]
+                employees_date_dict[i["employee"]] =[{"date":i["date"], "start_datetime": datetime.strptime(f"{i['date']} {shift_start}", "%Y-%m-%d %H:%M:%S"), "end_datetime":datetime.strptime(f"{add_days(i['date'], 1) if next_day else i['date']} {shift_end}", "%Y-%m-%d %H:%M:%S")}]
 
     # check for intersection schedules
     error_msg = """"""
     checklist = []
     shift_start, shift_end = frappe.db.get_value("Operations Shift", shift, ["start_time", "end_time"])
     for emp, dates in employees_date_dict.items():
-        datelist = [i['date'] for i in dates]
+        datelist = [i["date"] for i in dates]
         if (len(datelist)==1):datelist.append(datelist[0])
         intersect_query = frappe.db.sql(f"""
             SELECT DISTINCT name, date, start_datetime, end_datetime, shift_type, employee_availability, roster_type
@@ -515,13 +535,13 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
         if intersect_query:
             for iq in intersect_query:
                 if not iq.name in checklist:
-                    if iq.employee_availability=='Working':
+                    if iq.employee_availability=="Working":
                         for d in dates:
-                            if d['date'] == str(iq.date):
-                                if (d['start_datetime'] <= iq.start_datetime and iq.end_datetime <= d['end_datetime'] and iq.end_datetime.date()==d['end_datetime'].date()) or (
-                                        iq.start_datetime >= d['start_datetime'] and  d['end_datetime'] <= iq.end_datetime and iq.end_datetime.date()==d['end_datetime'].date()
-                                    ) or (d['start_datetime'] >= iq.start_datetime and iq.end_datetime >= d['end_datetime']
-                                        and iq.end_datetime.date()==d['end_datetime'].date()):
+                            if d["date"] == str(iq.date):
+                                if (d["start_datetime"] <= iq.start_datetime and iq.end_datetime <= d["end_datetime"] and iq.end_datetime.date()==d["end_datetime"].date()) or (
+                                        iq.start_datetime >= d["start_datetime"] and  d["end_datetime"] <= iq.end_datetime and iq.end_datetime.date()==d["end_datetime"].date()
+                                    ) or (d["start_datetime"] >= iq.start_datetime and iq.end_datetime >= d["end_datetime"]
+                                        and iq.end_datetime.date()==d["end_datetime"].date()):
                                     error_msg += f"{emp}, {iq.date}, Requested: <b>{d['start_datetime']} to {d['end_datetime']}</b>, Existing: <b>{iq.start_datetime} to {iq.end_datetime} ({iq.roster_type})</b><hr>\n"
                     checklist.append(iq.name)
     if error_msg:
@@ -547,8 +567,8 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
             end_date = start_date
         list_of_date = date_range(start_date, end_date)
         post_data = validate_overfilled_post(list_of_date,operations_shift.name)
-        post_number = post_data.get('post_number')
-        schedule_data  = post_data.get('schedule_dict')
+        post_number = post_data.get("post_number")
+        schedule_data  = post_data.get("schedule_dict")
         if not post_number:post_number=0
         number_to_add_daily = len(employees_dict)
         omitted_days = []
@@ -559,8 +579,8 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 
             for employee, date_values in employees_date_dict.items():
                 for datevalue in date_values:
-                    if datevalue.get('date') not in omitted_days:
-                        already_scheduled = int(schedule_data.get(datevalue.get('date'),0))
+                    if datevalue.get("date") not in omitted_days:
+                        already_scheduled = int(schedule_data.get(datevalue.get("date"),0))
                         if number_to_add_daily+already_scheduled <= post_number:
                             employee_doc = employees_dict.get(employee)
                             name = f"{datevalue['date']}_{employee}_{roster_type}"
@@ -574,7 +594,7 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
                                 ),"""
                             can_create = True
                         else:
-                            omitted_days.append(datevalue['date'])
+                            omitted_days.append(datevalue["date"])
 
 
             query = query[:-1]

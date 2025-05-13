@@ -40,11 +40,14 @@ def get_employees_with_cf_leaves_over_threshold():
 		threshold = frappe.db.get_single_value("HR Settings", "annual_leave_threshold") or 60
 		leave_type = "Annual Leave"
 
-		excluded_employees = frappe.db.get_list(
-			"Leave Acknowledgement Form",
-			{"is_active": True},
-			pluck="employee"
-		)
+		excluded_employees = frappe.db.sql("""
+				SELECT employee
+				FROM `tabLeave Acknowledgement Form`
+				WHERE 
+					workflow_state IN ('Pending Confirmation', 'Pending HR')
+					AND YEAR(creation) = YEAR(CURDATE())
+			""", as_dict=True)
+
 
 		Ledger = DocType("Leave Ledger Entry")
 		LeaveAllocation = DocType("Leave Allocation")
@@ -70,7 +73,7 @@ def get_employees_with_cf_leaves_over_threshold():
 			query = query.where(Ledger.leave_type == leave_type)
 
 		if excluded_employees:
-			query = query.where(Ledger.employee.notin(excluded_employees))
+			query = query.where(Ledger.employee.notin([obj.get("employee", "") for obj in excluded_employees]))
 
 		query = query.groupby(Ledger.employee)
 		query = query.having(Sum(Ledger.leaves) >= threshold)

@@ -327,7 +327,6 @@ def get_supervisors_not_rostered_employees(employees_not_rostered, date):
 			os.status = 'Active'
 			AND
 			e.name IN {1}
-			AND (oss.supervisor IS NULL OR ess.employee IS NOT NULL)
 		GROUP BY
 		    shift_supervisor, os.site
 	""".format(date, employee_ids)

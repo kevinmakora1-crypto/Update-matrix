@@ -5,9 +5,9 @@ frappe.ui.form.on('Roster Employee Actions', {
         });
 
         // Also handle dynamically rendered rows
-        frm.fields_dict["employees_not_rostered"].grid.on('grid-row-render', function (grid_row) {
+        frm.fields_dict["employees_not_rostered"].grid.on_grid_row_render = function (grid_row) {
             add_action_button(grid_row, frm);
-        });
+        };
     }
 });
 

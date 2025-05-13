@@ -158,15 +158,17 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,shift:
 
         if not isinstance(longitude, float):
             return response("Bad Request", 400, None, "Longitude must be of type float.")
+
         endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
+        employee = frappe.db.get_value("Employee", {"employee_id": employee_id}, ["name", "custom_enable_face_recognition"], as_dict=1)
+
         video_file = frappe.request.files.get("video_file") or video or frappe.request.files.get("video")
         if not video_file:
-            if endpoint_state:
+            if endpoint_state and employee.custom_enable_face_recognition:
                 return response("Bad Request", 400, None, "Video File is required.")
 
-        employee = frappe.db.get_value("Employee", {"employee_id": employee_id})
 
-        if not employee:
+        if not employee.name:
             return response("Resource Not Found", 404, None, "No employee record found with {employee_id}".format(employee_id=employee_id))
         
         right_now = now_datetime()
@@ -180,7 +182,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,shift:
                 JOIN 
                     `tabShift Type` st ON sa.shift_type = st.name
                 WHERE 
-                    sa.employee = '{employee}' 
+                    sa.employee = '{employee.name}' 
                 ORDER BY 
                     sa.creation DESC 
                 LIMIT 1
@@ -189,10 +191,10 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,shift:
             if right_now < shift_actual_start:
                 return response("Bad Request", 400, None, f" Oops! You can't check in right now. Your check-in time is {shift_info.begin_check_in_before_shift_start_time} minutes before you start your shift." + "\U0001F612")
         # check Face Recognition Endpoint
-
+        
         if not filename:
             filename = frappe.session.user+'.mp4'
-        if endpoint_state:
+        if endpoint_state and employee.custom_enable_face_recognition:
             if not face_recog_base_url:
                 return response("Bad Request", 400, None, "Face Recognition Service configuration is not available.")
             status, message = verify_via_face_recogniton_service(url=face_recog_base_url + "verify", data={
@@ -203,7 +205,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,shift:
 
         if not status:
             return response("Bad Request", 400, None, message)
-        doc = create_checkin_log(employee, log_type, skip_attendance, latitude, longitude,current_shift, "Mobile App")
+        doc = create_checkin_log(employee.name, log_type, skip_attendance, latitude, longitude,current_shift, "Mobile App")
         return response("Success", 201, doc, None)
 
     except Exception as error:

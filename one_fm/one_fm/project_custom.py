@@ -1,5 +1,10 @@
 import frappe
 from frappe import _
+from frappe.utils import nowdate
+
+
+from one_fm.utils import response
+
 
 def get_depreciation_expense_amount(doc, handler=""):
     from_asset_depreciation = frappe.db.sql("""select sum(ja.debit) as depreciation_amount
@@ -43,8 +48,8 @@ def validate_project(doc, method):
 	"""
         Check is active status, the update site, shift, ...
     """
-	if doc.is_active == "No":
-		set_operation_site_inactive(doc)
+	# if doc.is_active == "No":
+	# 	set_operation_site_inactive(doc)
 
 def set_operation_site_inactive(doc):
 	# check for active employees
@@ -73,3 +78,18 @@ def queue_operation_site_inactive(operations_site_list):
 		doc.status = "Inactive"
 		doc.save(ignore_permissions=True)
   
+
+
+
+@frappe.whitelist()
+def check_existing_schedules(project: str):
+    is_exist = frappe.db.exists("Employee Schedule", {"project": project, "date": [">", nowdate()]})
+    return response(message="Operation Successful", data=dict(is_exist=bool(is_exist)), status_code=200, success=True)
+
+
+@frappe.whitelist()
+def delete_future_schedules(project):
+    frappe.db.sql("""
+        DELETE FROM `tabEmployee Schedule`
+        WHERE project = %s AND date > %s
+    """, (project, nowdate()))

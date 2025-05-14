@@ -4,6 +4,7 @@
 from collections import Counter
 import frappe
 from frappe import _
+from collections import defaultdict
 from frappe.model.document import Document
 from frappe.utils import nowdate, add_to_date, cstr, cint, getdate, get_link_to_form
 from one_fm.processor import sendemail
@@ -13,7 +14,7 @@ from frappe.permissions import get_doctype_roles
 class RosterPostActions(Document):
 
 	def autoname(self):
-		self.name = self.start_date + "|" + self.end_date + "|" + self.action_type  + "|" + self.supervisor
+		self.name = f"{self.start_date}|{self.end_date}|{self.action_type}|{self.supervisor}"
 
 	def after_insert(self):
 		# send notification to supervisor
@@ -127,33 +128,21 @@ def create_roster_post_actions():
         if not any(es.date == ps.date and es.shift == ps.shift and es.operations_role == ps.operations_role for es in employee_schedules):
             if ps.operations_role:
                 operations_roles_not_filled_set.add(ps.operations_role)
-                list_of_dict_of_operations_roles_not_filled.append(ps)   
-                
-                # Fetch the project and confirm if the is_active field of the project is set,omit operation roles where the project is not active               
-                # project_ = frappe.get_value("Operations Role",ps.operations_role,'project')
-                # if project_:
-                #     is_active = frappe.get_value("Project",project_,'is_active')
-                #     if is_active == "Yes":
-                #         operations_roles_not_filled_set.add(ps.operations_role)
-                #         list_of_dict_of_operations_roles_not_filled.append(ps)   
-                # else:
-                #     operations_roles_not_filled_set.add(ps.operations_role)
-                #     list_of_dict_of_operations_roles_not_filled.append(ps)
+                list_of_dict_of_operations_roles_not_filled.append(ps)       
     
-    
-        for key, emp_count in employee_counts.items():
-            post_count = post_counts.get(key, 0)  # Default to 0 if no post schedule exists
-            if ps.operations_role and ps.operations_role == key[1] and key[0] == ps.date and key[2]==ps.shift:
-                if emp_count > post_count:
-                    operations_roles_over_filled_set.add(key[1])
-                    list_of_dict_of_operations_roles_over_filled.append({
-                        "name":ps.name,
-                        "date": key[0],
-                        "shift": key[2],
-                        "operations_role": key[1],
-                        "post":ps.post,
-                        "quantity": emp_count - post_count  # Difference between employee count and post count
-                    })
+    for key, emp_count in employee_counts.items():
+        post_count = post_counts.get(key, 0)  # Default to 0 if no post schedule exists
+
+        if emp_count > post_count:
+            date, role, shift = key
+            operations_roles_over_filled_set.add(role)
+
+            list_of_dict_of_operations_roles_over_filled.append({
+                "date": date,
+                "shift": shift,
+                "operations_role": role,
+                "quantity": emp_count - post_count
+            })
 
     # Convert set to tuple for passing it in the sql query as a parameter
     operations_roles_not_filled = tuple(operations_roles_not_filled_set)
@@ -163,46 +152,40 @@ def create_roster_post_actions():
         return
 
     #Fetch supervisor and post types in his/her shift
-    result = frappe.db.sql("""select sv.employee, group_concat(distinct ps.operations_role),
+    operations_roles = operations_roles_not_filled + operations_roles_over_filled
+    
+    result = frappe.db.sql(f"""
+        SELECT sv.employee, GROUP_CONCAT(DISTINCT ps.operations_role),
             sh.site
-            from `tabPost Schedule` ps
-            join `tabOperations Shift` sh on sh.name = ps.shift
-            join `tabEmployee` sv on sh.supervisor=sv.employee
-            where ps.operations_role in {operations_roles}
-            AND sh.status='Active' AND sv.status='Active'
-            group by sv.employee""".format(operations_roles=operations_roles_not_filled+operations_roles_over_filled))
-
+        FROM `tabPost Schedule` ps
+        JOIN `tabOperations Shift` sh ON sh.name = ps.shift
+        JOIN `tabEmployee` sv ON sh.supervisor = sv.employee
+        WHERE ps.operations_role IN ({', '.join(['%s'] * len(operations_roles))})
+        AND sh.status = 'Active' AND sv.status = 'Active'
+        GROUP BY sv.employee
+    """, operations_roles)
 
     # For each supervisor, create post actions to fill post type specifying the post types not filled
-    
     for res in result:
         try:
             supervisor = res[0]
             site = frappe.get_value("Operations Site", res[2], 'account_supervisor')
             operations_roles = res[1].split(",")
 
-            check_list = []
-            second_overfilled_check_list = []
-            second_check_list = []
+            not_filled_dict = defaultdict(int)
+            overfilled_dict = defaultdict(int)
+
             for val in list_of_dict_of_operations_roles_not_filled:
                 if val["operations_role"] in operations_roles and val["shift"] in shift_dict[supervisor]:
-                    check_list.append(val)
-            
+                    key = (val["date"], val["shift"], val["operations_role"])
+                    not_filled_dict[key] += 1
+
             for val in list_of_dict_of_operations_roles_over_filled:
-                 if val["operations_role"] in operations_roles and val["shift"] in shift_dict[supervisor]:
-                    second_overfilled_check_list.append(val)
-            
-            for item in check_list:
-                for second_item in second_check_list:
-                    if (item["date"] == second_item["date"]) and (item["shift"] == second_item["shift"]) and (item["operations_role"] == second_item["operations_role"]):
-                        second_item["quantity"] = second_item["quantity"] + 1
-                        break
-                item.update({"quantity": 1})
-                
-                second_check_list.append(item)
-                check_list.remove(item)
-            
-            if second_check_list and len(second_check_list) > 0:
+                if val["operations_role"] in operations_roles and val["shift"] in shift_dict[supervisor]:
+                    key = (val["date"], val["shift"], val["operations_role"])
+                    overfilled_dict[key] += val["quantity"]
+
+            if not_filled_dict or overfilled_dict:
                 roster_post_actions_doc = frappe.new_doc("Roster Post Actions")
                 roster_post_actions_doc.start_date = start_date
                 roster_post_actions_doc.end_date = end_date
@@ -210,26 +193,25 @@ def create_roster_post_actions():
                 roster_post_actions_doc.action_type = "Fill Post Type"
                 roster_post_actions_doc.supervisor = supervisor
                 roster_post_actions_doc.site_supervisor = site
-                for obj in second_check_list:
+
+                for (date, shift, operations_role), quantity in not_filled_dict.items():
                     roster_post_actions_doc.append('operations_roles_not_filled', {
-                        'operations_role': obj.get("operations_role"),
-                        "operations_shift": obj.get("shift"),
-                        "date": obj.get("date"),
-                        "quantity": obj.get("quantity") if obj.get("quantity") else 1
+                        'operations_role': operations_role,
+                        "operations_shift": shift,
+                        "date": date,
+                        "quantity": quantity
                     })
-                if second_overfilled_check_list and len(second_overfilled_check_list)>0:
-                    for obj in second_overfilled_check_list:
-                            roster_post_actions_doc.append('overfilled_posts', {
-                            'operations_role': obj.get("operations_role"),
-                            "operations_shift": obj.get("shift"),
-                            "date": obj.get("date"),
-                            "quantity": obj.get("quantity")
-                        })
+
+                for (date, shift, operations_role), quantity in overfilled_dict.items():
+                    roster_post_actions_doc.append('overfilled_posts', {
+                        'operations_role': operations_role,
+                        "operations_shift": shift,
+                        "date": date,
+                        "quantity": quantity
+                    })
                                 
 
                 roster_post_actions_doc.save()
                 frappe.db.commit()
         except:
             frappe.log_error(frappe.get_traceback(), "Error while creating post actions")
-            
-        del check_list

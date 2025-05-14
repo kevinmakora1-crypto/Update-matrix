@@ -10,6 +10,8 @@
   "default_leave_application_operator",
   "auto_generate_employee_id_on_employee_creation",
   "auto_create_erpnext_user_on_employee_creation_using_employee_id",
+  "column_break_zoeu",
+  "leave_extension_request_allowance",
   "payroll_settings_section",
   "payroll_date",
   "holiday_additional_salary_component",
@@ -302,12 +304,24 @@
    "label": "Default Leave Application Operator",
    "options": "User",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_zoeu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "An approved leave application can only be extended within this number of days after the end date.",
+   "fieldname": "leave_extension_request_allowance",
+   "fieldtype": "Int",
+   "label": "Leave Extension Request Allowance",
+   "non_negative": 1,
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-11-03 10:40:39.237085",
+ "modified": "2025-05-12 09:29:20.212314",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "HR and Payroll Additional Settings",

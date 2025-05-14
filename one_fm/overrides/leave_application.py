@@ -562,6 +562,25 @@ class LeaveApplicationOverride(LeaveApplication):
                 _("This leave application has been paid and cannot be canceled. Please contact the Administrator.")
             )
 
+    @frappe.whitelist()
+    def get_leave_extension_request(self):
+        leave_extension_requests = frappe.get_all("Leave Extension Request", filters={"leave_application": self.name}, fields=["*"])
+        return leave_extension_requests[0] if leave_extension_requests else None
+
+    @frappe.whitelist()
+    def create_leave_extension_request(self, new_resumption_date):
+        designation, department, civil_id_assurance_level = frappe.db.get_value("Employee", self.employee, ["designation", "department", "custom_civil_id_assurance_level"])
+
+        leave_extension_request = frappe.new_doc("Leave Extension Request")
+        leave_extension_request.leave_application = self.name
+        leave_extension_request.designation = designation
+        leave_extension_request.civil_id_assurance_level = civil_id_assurance_level
+        leave_extension_request.department = department
+        leave_extension_request.new_resumption_date = new_resumption_date
+        leave_extension_request.save()
+
+        return leave_extension_request
+
 
 def update_attendance_recods(self):
     if self.status != "Approved":

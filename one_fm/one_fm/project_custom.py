@@ -48,8 +48,8 @@ def validate_project(doc, method):
 	"""
         Check is active status, the update site, shift, ...
     """
-	# if doc.is_active == "No":
-	# 	set_operation_site_inactive(doc)
+	if doc.is_active == "No":
+		set_operation_site_inactive(doc)
 
 def set_operation_site_inactive(doc):
 	# check for active employees

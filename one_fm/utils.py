@@ -3468,7 +3468,7 @@ def get_current_shift(employee):
                     order_by="time desc",
                     limit=1,
                 )
-                
+
                 if checkin:
                     last_log = checkin[0]
                     # CASE 1: Last log is IN → Shift is active
@@ -3531,7 +3531,7 @@ def check_existing():
     shift_exists = get_current_shift(employee)
     if not shift_exists:
         return response("Resource Not Found", 404, None, "No Active Shift Found")
-    
+
     if shift_exists['type'] == "On Time":
         curr_shift = shift_exists['data']
     if not curr_shift:
@@ -3950,6 +3950,14 @@ def background_enqueue_run(report_name, filters=None, user=None):
 		"redirect_url": get_url_to_form("Prepared Report", track_instance.name)
 	}
 
+@frappe.whitelist()
+def get_current_year_and_week():
+    dt = now_datetime()
+    iso_year, week_number, _ = dt.isocalendar()
+    return {
+        "year": iso_year,
+        "week": week_number
+    }
 
 def update_fields_in_doctypes(data):
 	"""
@@ -3983,4 +3991,3 @@ def update_fields_in_doctypes(data):
 						doc.set(field, None)   # Clear the field to reset fetched values
 						doc.set(field, value)  # Re-set the actual value
 					doc.save()
-

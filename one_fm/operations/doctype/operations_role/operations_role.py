@@ -6,10 +6,12 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from frappe.model.rename_doc import rename_doc
-from frappe.utils import cstr, getdate, add_to_date
+from frappe.utils import cstr, getdate, add_to_date, nowdate
 import pandas as pd
 from frappe import _
 from frappe.desk.reportview import build_match_conditions, get_filters_cond
+
+from one_fm.utils import response
 
 class OperationsRole(Document):
 	def after_insert(self):
@@ -103,3 +105,19 @@ def get_operations_role_list(doctype, txt, searchfield, start, page_len, filters
 		% (", ".join(fields), searchfield, "%s", "%s", "%s", "%s", "%s", "%s"),
 		("%%%s%%" % txt, "%%%s%%" % txt, "%%%s%%" % txt, "%%%s%%" % txt, start, page_len),
 	)
+
+
+
+
+@frappe.whitelist()
+def check_existing_schedules(operations_role: str):
+    is_exist = frappe.db.exists("Employee Schedule", {"operations_role": operations_role, "date": [">", nowdate()]})
+    return response(message="Operation Successful", data=dict(is_exist=bool(is_exist)), status_code=200, success=True)
+
+
+@frappe.whitelist()
+def delete_future_schedules(operations_role: str):
+    frappe.db.sql("""
+        DELETE FROM `tabEmployee Schedule`
+        WHERE operations_role = %s AND date > %s
+    """, (operations_role, nowdate()))

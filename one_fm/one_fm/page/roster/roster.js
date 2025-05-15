@@ -671,6 +671,17 @@ function setup_preset_filters (page) {
 		}, 500);
 	}
 
+	if (page.datepicker && pageFilters.month && pageFilters.year) {
+		const newDate = moment(`${pageFilters.year}-${pageFilters.month}-01`, "YYYY-MM-DD").toDate();
+		page.datepicker.setDate(newDate);
+		page.datepicker.set('defaultDate', newDate);
+		if (calendarSettings1) {
+			calendarSettings1.date = moment(newDate);
+			displayCalendar(calendarSettings1, page);
+		}
+	}
+
+
 	function toggle_between_views() {
 		if(mainView === 'roster') {
 			if(subView === 'roster') {
@@ -763,6 +774,14 @@ function setup_topbar_events(page) {
 
 	$("#rosterEmployeeActions").on("click", function() {
 		roster_employee_actions(page);
+	});
+
+	$("#rosterDayOffIssues").on("click", function() {
+		roster_day_off_issues(page);
+	});
+	
+	$("#rosterPostActions").on("click", function() {
+		roster_post_actions(page);
 	});
 }
 
@@ -2613,7 +2632,7 @@ function render_staff_card_view(data) {
 
 function setup_staff_filters(page) {
 	const { page: pageFilters, employee: employeeFilters } = get_preset_filters()
-
+	
 	let filters = {
 		assigned: pageFilters.assigned === '0' ? 0 : 1,
 		company: pageFilters.company || '',
@@ -3883,6 +3902,75 @@ function roster_employee_actions(page){
 
 	frappe.call({
 		method: "one_fm.one_fm.doctype.roster_employee_actions.roster_employee_actions.get_employees_with_missing_schedules",
+		// freeze: true,
+		async: true,
+		callback: function(r) {
+			dialog.fields_dict.employees_table.$wrapper.html(r.message);
+		}
+	});
+	dialog.show();
+}
+
+function roster_post_actions(page){
+	let dialog = new frappe.ui.Dialog({
+		title: "Overfilled/Underfilled Posts",
+		fields: [
+			{
+				fieldname: "post_types_not_filled_section",
+				fieldtype: "Section Break",
+				label:"Not Filled Posts",
+				collapsible: 1
+			},
+			{
+				fieldname: "posts_notfilled_table",
+				fieldtype: "HTML",
+				options: "<div id='posts_notfilled_table'></div>"
+			},
+			{
+				fieldname: "post_types_overfilled_section",
+				fieldtype: "Section Break",
+				label:"Overfilled Posts",
+				collapsible: 1
+				
+			},
+			{
+				fieldname: "posts_overfilled_table",
+				fieldtype: "HTML",
+				options: "<div id='posts_overfilled_table'></div>"
+			}
+
+		]
+	})
+	dialog.$wrapper.find(".modal-dialog").css("max-width", "75%");
+
+
+	frappe.call({
+		method: "one_fm.one_fm.doctype.roster_post_actions.roster_post_actions.get_overfilled_underfilled_posts",
+		// freeze: true,
+		async: true,
+		callback: function(r) {
+			
+			dialog.fields_dict.posts_notfilled_table.$wrapper.html(r.message.under_filled);
+			dialog.fields_dict.posts_overfilled_table.$wrapper.html(r.message.over_filled);
+		}
+	});
+	dialog.show();
+}
+
+function roster_day_off_issues(){
+	let dialog = new frappe.ui.Dialog({
+		title: "Employees with Day Off Issues",
+		fields: [
+			{
+				fieldname: "employees_table",
+				fieldtype: "HTML",
+				options: "<div id='employees_table'></div>"
+			}
+		]
+	})	
+	dialog.$wrapper.find(".modal-dialog").css("max-width", "75%");
+	frappe.call({
+		method: "one_fm.operations.doctype.roster_day_off_checker.roster_day_off_checker.get_day_off_issue_of_employees",
 		// freeze: true,
 		async: true,
 		callback: function(r) {

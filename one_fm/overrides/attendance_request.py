@@ -257,14 +257,14 @@ def mark_future_attendance_request():
 
 
 @frappe.whitelist()
-def approve_pending_attendance_request():
+def approve_pending_attendance_request(start_date):
     """
     Get attendance requests for the future where date is today
     and workflow state is 'Pending Approval' and approve it.
     """
     attendance_requests = frappe.db.sql(f"""
         SELECT name FROM `tabAttendance Request`
-        WHERE '{getdate()}' BETWEEN from_date AND to_date
+        WHERE '{start_date}' BETWEEN from_date AND to_date
         AND workflow_state = 'Pending Approval'
     """, as_dict=1)
     for row in attendance_requests:

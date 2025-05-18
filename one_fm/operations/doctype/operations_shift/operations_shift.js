@@ -5,6 +5,7 @@ frappe.ui.form.on('Operations Shift', {
 	onload: function (frm) {
 		frm.__previous_shift_type = frm.doc.shift_type
 	},
+
 	refresh: function(frm) {
 		if(!frm.doc.__islocal){
 			frm.add_custom_button(
@@ -169,6 +170,9 @@ frappe.ui.form.on('Operations Shift', {
 			).addClass('btn-primary');
 		}
 	},
+	before_save: function(frm) {
+		validate_linked_schedules(frm);
+	},
 	automate_roster: function(frm) {
 		// If the flag is set, do nothing to prevent looping
 		if (frm.__is_resetting_value) {
@@ -223,3 +227,44 @@ frappe.ui.form.on('Operations Shift', {
 	}
 	
 });
+
+function  validate_linked_schedules(frm){
+	if (frm.doc.status =="Inactive" && !frm.__confirmed_inactive && !frm.is_new()){
+		frappe.call({
+			method:"one_fm.one_fm.utils.has_linked_schedules",
+			args:{
+				field: "Operations Shift",
+				value: frm.doc.name,
+			},
+			callback: (response) => {
+				
+				if(response.message==true){
+					frappe.confirm(
+						"The future Employee Schedules linked to the Operations Shift will be deleted on confirmation. Do you want to proceed?",
+						()=>{
+							console.log("CALLING O")
+							frappe.call({
+								method:"one_fm.one_fm.utils.delete_linked_schedules",
+								args:{
+									field: "Operations Shift",
+									value: frm.doc.name
+								},
+								
+								callback: (response) => {
+									frm.__confirmed_inactive = true;
+									frm.save();
+								}
+							})
+						},
+						()=>{
+							frappe.validated=false
+							frm.reload_doc();
+						}
+					)
+				}
+				frappe.validated=false
+			}})			
+		
+	}
+
+}

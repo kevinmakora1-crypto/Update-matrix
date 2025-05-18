@@ -163,16 +163,18 @@ class CreateMap():
         else:
             employee_tuple = tuple(employee_list)  # Format as ('HR-EMP-00081', 'HR-EMP-00082')
 
+
         # Construct the queries
         self.schedule_query = f"""
             SELECT es.employee, es.employee_name, es.date, es.operations_role, es.post_abbrv, 
                 es.shift, es.start_datetime, es.end_datetime, es.roster_type, es.employee_availability, 
                 es.day_off_ot, es.project 
             FROM `tabEmployee Schedule` es 
-            WHERE es.employee IN {employee_tuple} 
-            AND {self.str_filter} 
+            WHERE {self.str_filter} 
+            AND es.employee IN {employee_tuple}
             ORDER BY es.employee
         """
+
 
         self.attendance_query = f"""
             SELECT at.status, at.leave_type, at.leave_application, at.attendance_date, at.employee, 
@@ -220,12 +222,14 @@ class CreateMap():
 
     def start_mapping(self):
         filters = [[i.employee,i.employee_name] for i in  self.all_employees]
+        print(filters, "\n" * 8)
         #Fetch all employee details
         self.employee_details = list(map(self.create_employee_schedule,self.employee_set))
         #Create the attendance iterable for each employee using python map
         self.att_map=list(map(self.create_attendance_map,filters))
         #Create the schedule iterable for each employee using python map
         self.sch_map = list(map(self.create_schedule_map,filters))
+        print(self.sch_map, "\n" *9)
         #Combine both the attenance and schedule maps,
         self.combined_map = list(map(self.combine_maps,self.att_map,self.sch_map))
         #Add missing  calendar days
@@ -307,7 +311,7 @@ class CreateMap():
         schedule = []
         for one in self.schedule_set:
             try:
-                if one.employee==row[0]:
+                if one.employee == row[0]:
                     schedule.append(one.update(self.employee_period_details[row[0]]))
             except KeyError:
                 pass

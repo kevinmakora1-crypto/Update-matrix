@@ -532,7 +532,8 @@ def has_linked_schedules(field,value):
     if field not in ['Operations Site']:
         return False
     doctype_field_dict = {
-        'Operations Site':'site'
+        'Operations Site':'site',
+        'Operations Shift':'shift'
     }
     doctype_field = doctype_field_dict.get(field)
     if not doctype_field:
@@ -551,11 +552,13 @@ def delete_linked_schedules(field,value):
     if field not in ['Operations Site']:
         return False
     doctype_field_dict = {
-        'Operations Site':'site'
+        'Operations Site':'site',
+        'Operations Shift':'shift'
     }
     doctype_field = doctype_field_dict.get(field)
     if not doctype_field:
         return False
     query = f" DELETE FROM `tabEmployee Schedule`  WHERE {doctype_field} = '{value}' AND date > '{nowdate()}' "
+   
     frappe.db.sql(query)
     frappe.db.commit()

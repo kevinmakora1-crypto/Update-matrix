@@ -95,7 +95,7 @@ frappe.ui.form.on('Operations Site', {
 				
 				if(response.message==true){
 					frappe.confirm(
-						"The future Employee Schedules linked to the Operations Role will be deleted on confirmation. Do you want to proceed?",
+						"The future Employee Schedules linked to the Operations Site will be deleted on confirmation. Do you want to proceed?",
 						()=>{
 							frappe.call({
 								method:"one_fm.one_fm.utils.delete_linked_schedules",
@@ -103,7 +103,8 @@ frappe.ui.form.on('Operations Site', {
 									field: "Operations Site",
 									value: frm.doc.name
 								},
-								
+								freeze:1,
+								freeze_message:__("Deleting Linked Schedules..."),
 								callback: (response) => {
 									frm.__confirmed_inactive = true;
 									frm.save();

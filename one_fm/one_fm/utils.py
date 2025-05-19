@@ -521,13 +521,15 @@ def validate_store_keeper_project_supervisor_roles(doc):
     except Exception as e:
         frappe.log_error(e, "Validate Purchase Order(store keeper)")
         return False
+   
+
 @frappe.whitelist()
 def has_linked_schedules(field,value):
     """
         Returns true if there are linked  employee schedules for days after today 
     """
     today = getdate()
-    if field not in ['Operations Site','Operations Shift']:
+    if field not in ['Operations Site']:
         return False
     doctype_field_dict = {
         'Operations Site':'site',
@@ -547,7 +549,7 @@ def delete_linked_schedules(field,value):
         Delete all  future schedules linked to the site
     
     """
-    if field not in ['Operations Site','Operations Shift']:
+    if field not in ['Operations Site']:
         return False
     doctype_field_dict = {
         'Operations Site':'site',
@@ -557,5 +559,6 @@ def delete_linked_schedules(field,value):
     if not doctype_field:
         return False
     query = f" DELETE FROM `tabEmployee Schedule`  WHERE {doctype_field} = '{value}' AND date > '{nowdate()}' "
+   
     frappe.db.sql(query)
     frappe.db.commit()

@@ -29,7 +29,7 @@ frappe.ui.form.on('Operations Shift', {
 									},
 								],
 								get_data: function() {
-									console.log(this);
+									
 									return this.data;
 								},
 								data: [],
@@ -47,7 +47,7 @@ frappe.ui.form.on('Operations Shift', {
 										callback: function(r) {
 											if(!r.exc) {
 												let {designations, skills} = r.message;
-												console.log(designations, skills);
+												
 												post_dialog.fields_dict["skills"].grid.remove_all();
 												post_dialog.fields_dict["designations"].grid.remove_all();
 
@@ -101,7 +101,7 @@ frappe.ui.form.on('Operations Shift', {
 								],
 								data: [],
 								get_data: function() {
-									console.log(this);
+									
 									return this.data;
 								},
 							},
@@ -135,7 +135,7 @@ frappe.ui.form.on('Operations Shift', {
 									},
 								],
 								get_data: function() {
-									console.log(this);
+									
 									return this.data;
 								},
 								data: [],
@@ -242,14 +242,15 @@ function  validate_linked_schedules(frm){
 					frappe.confirm(
 						"The future Employee Schedules linked to the Operations Shift will be deleted on confirmation. Do you want to proceed?",
 						()=>{
-							console.log("CALLING O")
+							
 							frappe.call({
 								method:"one_fm.one_fm.utils.delete_linked_schedules",
 								args:{
 									field: "Operations Shift",
 									value: frm.doc.name
 								},
-								
+								freeze:1,
+								freeze_message:__("Deleting Linked Schedules ..."),
 								callback: (response) => {
 									frm.__confirmed_inactive = true;
 									frm.save();

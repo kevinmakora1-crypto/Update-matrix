@@ -1,12 +1,13 @@
 {
  "actions": [],
- "autoname": "format:{date}-{shift_supervisor_name}-{site_supervisor_name}",
+ "autoname": "format:OPR-RDOC-{employee}-{monthweek}",
  "creation": "2022-10-06 13:46:44.016881",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "date",
+  "monthweek",
   "column_break_3",
   "status",
   "section_break_qccb",
@@ -34,7 +35,6 @@
   "shift_allocation",
   "day_off_difference",
   "detail_section_section",
-  "detail",
   "amended_from"
  ],
  "fields": [
@@ -42,12 +42,6 @@
    "fieldname": "detail_section_section",
    "fieldtype": "Section Break",
    "label": "Detail Section"
-  },
-  {
-   "fieldname": "detail",
-   "fieldtype": "Table",
-   "label": "Detail",
-   "options": "Roster Day Off Detail"
   },
   {
    "fieldname": "column_break_3",
@@ -245,12 +239,19 @@
    "fieldtype": "Data",
    "label": "Day Off Difference",
    "read_only": 1
+  },
+  {
+   "fieldname": "monthweek",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Month/Week",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-18 18:20:08.356217",
+ "modified": "2025-05-19 13:04:04.953036",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Roster Day Off Checker",

@@ -98,20 +98,20 @@ def build_employee_filters(employee_search_id, employee_search_name, project, si
         "shift": shift,
         "department": department,
     }
-    
+
     # Build the dictionary with only the keys that have a value
     employee_filters = {k: v for k, v in filter_params.items() if v is not None and v !=""}
     return employee_filters
 
-def build_exited_employee_filters(start_date, end_date, employee_search_id=None, 
-                                 employee_search_name=None, relievers=False, project=None, 
+def build_exited_employee_filters(start_date, end_date, employee_search_id=None,
+                                 employee_search_name=None, relievers=False, project=None,
                                  site=None, shift=None, department=None):
     filters = [
         f"status='Left'",
         f"attendance_by_timesheet = '0'",
         f"relieving_date between '{start_date}' and '{end_date}'"
     ]
-    
+
     if employee_search_id:
         filters.append(f"employee_id = '{employee_search_id}'")
     if employee_search_name:
@@ -126,24 +126,32 @@ def build_exited_employee_filters(start_date, end_date, employee_search_id=None,
         filters.append(f"shift = '{shift}'")
     if department:
         filters.append(f"department = '{department}'")
-    
+
     return " and ".join(filters)
 
+def fetch_role_schedule_employees(start_date, end_date, role):
+    query  = """SELECT employee, employee_name from `tabEmployee Schedule` WHERE date BETWEEN %s AND %s AND operations_role = %s"""
+    return frappe.db.sql(query, (start_date, end_date, role), as_dict=1)
+
+
+
 @frappe.whitelist()
-def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_search_id=None, employee_search_name=None, project=None, site=None, shift=None, department=None, operations_role=None, designation=None, relievers=False, isOt=None, limit_start=0, limit_page_length=9999):
+def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_search_id=None, employee_search_name=None,
+                     project=None, site=None, shift=None, department=None, operations_role=None, designation=None,
+                     relievers=False, isOt=None, limit_start=0, limit_page_length=9999):
     try:
         master_data, employee_filters = {}, {}
         operations_roles_list = []
         employees = []
-        
+
         # Base filters
         filters = {"date": ["between", (start_date, end_date)]}
         str_filters = f"es.date between '{start_date}' and '{end_date}'"
-        
+
         if operations_role:
             filters.update({"operations_role": operations_role})
             str_filters +=" and es.operations_role = '{}'".format(operations_role)
-        
+
         employee_filters = build_employee_filters(employee_search_id, employee_search_name, project, site, shift, department, relievers)
         # Build exited employee filters using dedicated function
         exited_employee_filters = build_exited_employee_filters(
@@ -209,7 +217,7 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
         reliever = frappe.db.get_list("Employee", fields=["*"], filters={"custom_is_reliever": 1})
         if relievers:
             employee_filters.pop("custom_is_reliever", None)
-        
+
         #------------------- Fetch Operations Roles ------------------------#
         operations_roles_list = frappe.db.get_list("Post Schedule", employee_filters, ["distinct operations_role", "post_abbrv"], ignore_permissions=True)
         if operations_role:
@@ -230,7 +238,7 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
         #----------------- Get Operations Role count and check fill status -------------------#
         post_map = PostMap(start=start_date, end=end_date, operations_roles_list=operations_roles_list, filters=employee_filters)
         master_data.update({"operations_roles_data": post_map.template, "reliever": reliever})
-        
+
         response("Success", 200, master_data)
     except Exception as e:
         return response("Server Error", 500, None, str(frappe.get_traceback()))

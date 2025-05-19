@@ -88,10 +88,19 @@ def get_staff_filters_data():
     }
 
 
+def fetch_role_schedule_employees(start_date, end_date, role):
+    query  = """SELECT employee, employee_name from `tabEmployee Schedule` WHERE date BETWEEN %s AND %s AND operations_role = %s"""
+    return frappe.db.sql(query, (start_date, end_date, role), as_dict=1)
+
+
+
 @frappe.whitelist()
-def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_search_id=None, employee_search_name=None, project=None, site=None, shift=None, department=None, operations_role=None, designation=None, relievers=False, isOt=None, limit_start=0, limit_page_length=9999):
+def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_search_id=None, employee_search_name=None,
+                     project=None, site=None, shift=None, department=None, operations_role=None, designation=None, 
+                     relievers=False, isOt=None, limit_start=0, limit_page_length=9999):
     try:
         master_data, formatted_employee_data, post_count_data, employee_filters= {}, {}, {}, {}
+        role_employees = []
         operations_roles_list = []
         employees = []
         asa_filters = "em.status = 'Active' and em.attendance_by_timesheet = '0' "
@@ -101,8 +110,11 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
         str_filters = f'es.date between "{start_date}" and "{end_date}"'
         exited_employee_filters = f"""status='Left' and attendance_by_timesheet = '0' and relieving_date between '{start_date}' and '{end_date}'"""
         if operations_role:
-            filters.update({'operations_role': operations_role})
-            str_filters +=' and es.operations_role = "{}"'.format(operations_role)
+            role_value = frappe.db.get_value("Operations Post", operations_role, "post_template")
+            filters.update({'operations_role': role_value})
+            str_filters +=' and es.operations_role = "{}"'.format(role_value)
+            role_employees = fetch_role_schedule_employees(start_date=start_date, end_date=end_date, role=role_value)
+
 
         if employee_search_id:
             employee_filters.update({'employee_id': employee_search_id})
@@ -159,9 +171,11 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
             employee_filters.update({'attendance_by_timesheet':'0'})
             if designation:
                 employee_filters.update({'designation' : designation})
-				
-            employees = frappe.db.get_list("Employee", employee_filters, ["employee", "employee_name", "day_off_category", "number_of_days_off"], order_by="employee_name asc" ,limit_start=limit_start, limit_page_length=limit_page_length, ignore_permissions=True)
+			
+            employees = frappe.db.get_list("Employee", employee_filters, ["employee", "employee_name", "day_off_category", "number_of_days_off"],
+                                            order_by="employee_name asc" ,limit_start=limit_start, limit_page_length=limit_page_length, ignore_permissions=True)
             employees.extend(exited_employees)
+            employees.extend(role_employees) if role_employees else None
             employees = filter_redundant_employees(employees)
 
             #Conditional to ensure that the proceeding code block does not run unless Project,shift or site is queried

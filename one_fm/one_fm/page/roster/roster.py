@@ -195,7 +195,6 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
 
             employees = frappe.db.get_list("Employee", employee_filters, ["employee", "employee_name", "day_off_category", "number_of_days_off"], order_by="employee_name asc" ,limit_start=limit_start, limit_page_length=limit_page_length, ignore_permissions=True)
             employees.extend(exited_employees)
-            employees.extend(role_employees) if role_employees else None
             employees = filter_redundant_employees(employees)
 
 

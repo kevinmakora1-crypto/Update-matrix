@@ -25,7 +25,7 @@ frappe.ui.form.on('Operations Site', {
 				}
 			}
 		}
-	
+		
 		if(changes && ids){
 			frm.add_custom_button(
 				__('Review Changes'),
@@ -47,9 +47,7 @@ frappe.ui.form.on('Operations Site', {
 			).addClass('btn-primary');
 		}
 	},
-	
-	onload:  function(frm){
-		
+	onload: function(frm){
 		frm.set_query("account_supervisor", function() {
 			return {
 				"filters": {
@@ -59,10 +57,6 @@ frappe.ui.form.on('Operations Site', {
 
 		});
 	},
-	before_save:  function(frm){
-		validate_linked_schedules(frm)
-	},
-
 	account_supervisor: function(frm){
 		frm.trigger("get_employee_status")
 	},
@@ -83,46 +77,7 @@ frappe.ui.form.on('Operations Site', {
 		})
 	}
 })
- function  validate_linked_schedules(frm){
-	if (frm.doc.status =="Inactive" && !frm.__confirmed_inactive && !frm.is_new()){
-		frappe.call({
-			method:"one_fm.one_fm.utils.has_linked_schedules",
-			args:{
-				field: "Operations Site",
-				value: frm.doc.name,
-			},
-			callback: (response) => {
-				
-				if(response.message==true){
-					frappe.confirm(
-						"The future Employee Schedules linked to the Operations Site will be deleted on confirmation. Do you want to proceed?",
-						()=>{
-							frappe.call({
-								method:"one_fm.one_fm.utils.delete_linked_schedules",
-								args:{
-									field: "Operations Site",
-									value: frm.doc.name
-								},
-								freeze:1,
-								freeze_message:__("Deleting Linked Schedules..."),
-								callback: (response) => {
-									frm.__confirmed_inactive = true;
-									frm.save();
-								}
-							})
-						},
-						()=>{
-							frappe.validated=false
-							frm.reload_doc();
-						}
-					)
-				}
-				frappe.validated=false
-			}})			
-		
-	}
 
-}
 function quick_entry_shifts_and_posts(frm){
 	if(!frm.doc.__islocal){
 		frm.add_custom_button(

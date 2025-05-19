@@ -129,7 +129,8 @@ doctype_list_js = {
 	"Attendance" : "public/js/doctype_list_js/attendance_list.js",
 	"Wiki Page": "public/js/doctype_list_js/wiki_page_list.js",
     "Employee": "public/js/doctype_list_js/employee_list.js",
-    "ToDo": "public/js/doctype_list_js/todo_list.js"
+    "ToDo": "public/js/doctype_list_js/todo_list.js",
+    "Designation": "public/js/doctype_list_js/designation_list.js",
 }
 doctype_tree_js = {
 	"Warehouse" : "public/js/doctype_tree_js/warehouse_tree.js",
@@ -208,6 +209,7 @@ standard_queries = {
 	"Operations Role": "one_fm.operations.doctype.operations_role.operations_role.get_operations_role_list",
 	"Warehouse": "one_fm.overrides.queries.warehouse_query",
     "Employee": "one_fm.overrides.queries.employee_query",
+    "Designation": "one_fm.overrides.queries.designation_query",
 }
 
 doc_events = {
@@ -695,6 +697,9 @@ scheduler_events = {
 		"12 3 * * *":[ #“At 03:12"
 			'one_fm.one_fm.sales_invoice_custom.create_sales_invoice'
 		],
+        "00 2 * * *":[ #“At 02:00"
+			"one_fm.one_fm.doctype.leave_acknowledgement_form.leave_acknowledgement_form.generate_leave_acknowledgement"
+		],
 		"08 00 24 * *": [ #“At 00:08 on day-of-month 24.”
 			'one_fm.api.tasks.generate_penalties'
 		],
@@ -893,7 +898,8 @@ after_migrate = [
     # "one_fm.after_migrate.execute.comment_payment_entry_in_hrms",
     "one_fm.after_migrate.execute.comment_process_expired_allocation_in_hrms",
     "one_fm.after_migrate.execute.replace_prompt_message_in_goal",
-    "one_fm.after_migrate.execute.update_hd_ticket_agent"
+    "one_fm.after_migrate.execute.update_hd_ticket_agent",
+    "one_fm.setup.setup.after_migrate"
 ]
 
 before_migrate = [

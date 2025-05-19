@@ -106,6 +106,7 @@ class LeaveApplicationOverride(LeaveApplication):
         self.close_shifts()
         self.validate_back_dated_application()
         self.update_attendance()
+        self.close_leave_acknowledgement_if_below_threshold()
 
 		# notify leave applier about approval
         if frappe.db.get_single_value("HR Settings", "send_leave_notification"):
@@ -113,6 +114,20 @@ class LeaveApplicationOverride(LeaveApplication):
 
         self.create_leave_ledger_entry()
         self.reload()
+
+
+    def close_leave_acknowledgement_if_below_threshold(self):
+        if self.leave_type == "Annual Leave":
+            threshold = frappe.db.get_single_value("HR Settings", "annual_leave_threshold") or 60
+            if self.leave_balance - self.total_leave_days <= threshold:
+                query = """ 
+                    UPDATE `tabLeave Acknowledgement Form`
+                    SET is_active = 0
+                    WHERE employee = %s
+                    AND is_active = 1
+                    """
+            frappe.db.sql(query, (self.employee,))
+
 
     def validate_applicable_after(self):
         if self.leave_type:
@@ -546,6 +561,25 @@ class LeaveApplicationOverride(LeaveApplication):
             frappe.throw(
                 _("This leave application has been paid and cannot be canceled. Please contact the Administrator.")
             )
+
+    @frappe.whitelist()
+    def get_leave_extension_request(self):
+        leave_extension_requests = frappe.get_all("Leave Extension Request", filters={"leave_application": self.name}, fields=["*"])
+        return leave_extension_requests[0] if leave_extension_requests else None
+
+    @frappe.whitelist()
+    def create_leave_extension_request(self, new_resumption_date):
+        designation, department, civil_id_assurance_level = frappe.db.get_value("Employee", self.employee, ["designation", "department", "custom_civil_id_assurance_level"])
+
+        leave_extension_request = frappe.new_doc("Leave Extension Request")
+        leave_extension_request.leave_application = self.name
+        leave_extension_request.designation = designation
+        leave_extension_request.civil_id_assurance_level = civil_id_assurance_level
+        leave_extension_request.department = department
+        leave_extension_request.new_resumption_date = new_resumption_date
+        leave_extension_request.save()
+
+        return leave_extension_request
 
 
 def update_attendance_recods(self):

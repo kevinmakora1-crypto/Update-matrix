@@ -150,7 +150,7 @@ career_history = Class.extend({
   },
   when_did_you_left_the_company: function(company_no) {
     var when_did_you_left_the_company_html = `<div class="row mx-auto col-lg-12 col-md-12 mt-5 mb-12 when_did_you_left_${company_no}">
-      <label  class="form-label">When did you leave the company?</label>
+      <label  class="form-label">When did you leave the company?<span style="color: red">*</span></label>
       <input type="date" class="form-control when_did_you_left_${company_no}_date"/>
     </div>`
     $(".company_"+(company_no.toString())).append(when_did_you_left_the_company_html);
@@ -294,7 +294,6 @@ career_history = Class.extend({
       <div class="col-lg-12 col-md-12 mb-3 add_more_contact_${company_no}">
         <button class="btn btn-dark float-left btn_add_more_contact_${company_no}" type="button">{{ _(" + Add more contact person") }}</button>
       </div>
-
       <div class="col-lg-12 col-md-12 mb-3">
         <label>Tell us some details about your best boss from ${stringifyNumber(company_no)} company you worked</label>
       </div>
@@ -314,7 +313,8 @@ career_history = Class.extend({
         <label>Why is He/She the best?</label>
         <input type="text" class="form-control why_best_boss${company_no}" placeholder="Why is he/she the best?"/>
       </div>
-       <div class="col-lg-12 col-md-12 mb-3">
+
+       <div class="col-lg-12 col-md-12 mb-3 mt-5" style="width: 100%">
         <label> Tell us some details about your best colleague from ${stringifyNumber(company_no)} company you worked</label>
       </div>
       <div class="col-lg-6 col-md-6 mb-3">
@@ -405,6 +405,9 @@ career_history = Class.extend({
     $('.btn-submit-career-history').click(function(){
       var {career_histories, interest_reason} = me.get_details_from_form();
       var all_best_references = me.get_all_best_references();
+      if(!validateBestReferencesAndColleague(all_best_references)){
+        return frappe.msgprint(frappe._("Kindly fill the best reference for the most recent job"));
+      }
 
       if(!validateResponsibilities(career_histories)){
         return frappe.msgprint(frappe._("Kindly fill the responsibility for the most recent job"));
@@ -485,8 +488,11 @@ career_history = Class.extend({
       career_history['second_contact_email'] = $(`.second_contact_email_${company_no}`).val();
       career_history['second_contact_phone'] = $(`.second_contact_phone_${company_no}`).val();
       career_history['second_contact_designation'] = $(`.second_contact_designation_${company_no}`).val(); 
-      
 
+      if(!career_history['start_date']){
+        return frappe.msgprint(frappe._("Kindly fill the date of joining field."));
+      }
+      
       /*
         Still working in same company
         value="1" if selected 'Yes'
@@ -497,6 +503,9 @@ career_history = Class.extend({
       }
       else{
         career_history['left_the_company'] = $(`.when_did_you_left_${company_no}_date`).val();
+        if(validateEndDate(career_history['left_the_company'])){
+          return frappe.msgprint(frappe._("Kindly fill the when did you leave the company field."));
+        }
       }
       career_history['factors_in_new_job'] = $(`.factors_in_new_job_${company_no}_text`).val();
 
@@ -556,3 +565,19 @@ function validateResponsibilities(data) {
     && lastObject.responsibility_one !== null 
     && lastObject.responsibility_one.trim() !== '';
 }
+
+function validateEndDate(data){
+  return !data;
+}
+
+function validateBestReferencesAndColleague(data) {
+  if (data.length === 0) {
+    return true;
+  }
+  const lastObject = data[data.length - 1];
+  const isBossValid = lastObject.best_boss_name && lastObject.best_boss_name.trim() !== '';
+  const isColleagueValid = lastObject.best_colleague_name && lastObject.best_colleague_name.trim() !== '';
+
+  return isBossValid && isColleagueValid;
+
+  }

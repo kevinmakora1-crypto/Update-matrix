@@ -529,7 +529,7 @@ def has_linked_schedules(field,value):
         Returns true if there are linked  employee schedules for days after today 
     """
     today = getdate()
-    if field not in ['Operations Site']:
+    if field not in ['Operations Site','Operations Shift']:
         return False
     doctype_field_dict = {
         'Operations Site':'site',
@@ -549,7 +549,7 @@ def delete_linked_schedules(field,value):
         Delete all  future schedules linked to the site
     
     """
-    if field not in ['Operations Site']:
+    if field not in ['Operations Site','Operations Shift']:
         return False
     doctype_field_dict = {
         'Operations Site':'site',

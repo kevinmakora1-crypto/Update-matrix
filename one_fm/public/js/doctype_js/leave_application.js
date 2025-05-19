@@ -71,7 +71,7 @@ frappe.ui.form.on("Leave Application", {
                     doc: frm.doc
                 },
                 callback: function(r) {
-                    var fields = ['is_proof_document_required', 'from_date','to_date','leave_approver']
+                    var fields = ['is_proof_document_required', 'from_date','leave_approver']
                     for (var i in fields){
                         if (r && r.message) {
                             cur_frm.set_df_property(fields[i],  'read_only', 0);
@@ -107,6 +107,7 @@ frappe.ui.form.on("Leave Application", {
           );
         }
         updateCustomIsPaidVisibility(frm)
+        manage_leave_extension(frm)
     },
     onload: function(frm) {
         $.each(frm.fields_dict, function(fieldname, field) {
@@ -132,9 +133,29 @@ frappe.ui.form.on("Leave Application", {
 
     leave_type: function(frm) {
         updateCustomIsPaidVisibility(frm);
+    },
+
+    resumption_date: function(frm) {
+        if (frm.doc.resumption_date && frm.doc.from_date) {
+            let resumption = frappe.datetime.str_to_obj(frm.doc.resumption_date);
+            let from_date = frappe.datetime.str_to_obj(frm.doc.from_date);
+
+            if (resumption <= from_date) {
+                frappe.msgprint(__('Resumption Date cannot be less than or equal to From Date'));
+                frm.set_value("resumption_date", null);
+                frm.set_value("to_date", null);
+                frm.set_value("total_leave_days", 0);
+                return;
+            }
+
+            let to_date = frappe.datetime.add_days(resumption, -1);
+            frm.set_value("to_date", frappe.datetime.obj_to_str(to_date));
+        }
+
+        frm.trigger("make_dashboard");
+        frm.trigger("half_day_datepicker");
+        frm.trigger("calculate_total_days");
     }
-
-
 })
 
 async function handle_propose_new_date_action(frm) {
@@ -325,5 +346,56 @@ function updateCustomIsPaidVisibility (frm) {
         // Hide the field if no leave_type is selected
         frm.set_df_property("custom_is_paid", "hidden", 1);
         frm.refresh_field("custom_is_paid");
+    }
+}
+
+function manage_leave_extension(frm) {
+    if(!frm.is_new()) {
+        frappe.call({
+            doc: frm.doc,
+            method: 'get_leave_extension_request',
+            callback: async function(res) {
+                const leaveExtensionRequest = res.message
+                
+                const thresholdDays = await frappe.db.get_single_value("HR and Payroll Additional Settings", "leave_extension_request_allowance") || 0;
+
+                const today = frappe.datetime.get_today()
+                const leavePostingDate = frm.doc.posting_date
+                const permittedEndDate = frappe.datetime.add_days(frm.doc.to_date, thresholdDays)
+
+                const isWithinPermittedDateRange = new Date(today) >= new Date(leavePostingDate) && new Date(today) <= new Date(permittedEndDate);
+
+                if(frm.doc.leave_type === 'Annual Leave' && frm.doc.status === 'Approved' && isWithinPermittedDateRange && !leaveExtensionRequest) {
+                    frm.add_custom_button(__('Create Leave Extension Request'),
+                        function () {                            
+                            frappe.prompt([
+                                {
+                                    fieldname: 'new_resumption_date',
+                                    label: 'New Resumption Date',
+                                    fieldtype: 'Date',
+                                    reqd: true
+                                }
+                            ],
+                            function(values) {
+                                frappe.call({
+                                    doc: frm.doc,
+                                    method: 'create_leave_extension_request',
+                                    args: {
+                                        new_resumption_date: values.new_resumption_date
+                                    },
+                                    callback: function(r) {
+                                        frappe.set_route('Form', 'Leave Extension Request', r.message.name);
+                                    },
+                                    freeze: true,
+                                    freeze_message: __('Creating Leave Extension..')
+                                })
+                            },
+                            'Leave Extension Request',
+                            'Submit')
+                        }
+                    );
+                }
+            }
+          });
     }
 }

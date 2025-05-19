@@ -106,13 +106,28 @@ class LeaveApplicationOverride(LeaveApplication):
         self.close_shifts()
         self.validate_back_dated_application()
         self.update_attendance()
+        self.close_leave_acknowledgement_if_below_threshold()
 
 		# notify leave applier about approval
         if frappe.db.get_single_value("HR Settings", "send_leave_notification"):
             self.notify_employee()
-        
+
         self.create_leave_ledger_entry()
         self.reload()
+
+
+    def close_leave_acknowledgement_if_below_threshold(self):
+        if self.leave_type == "Annual Leave":
+            threshold = frappe.db.get_single_value("HR Settings", "annual_leave_threshold") or 60
+            if self.leave_balance - self.total_leave_days <= threshold:
+                query = """ 
+                    UPDATE `tabLeave Acknowledgement Form`
+                    SET is_active = 0
+                    WHERE employee = %s
+                    AND is_active = 1
+                    """
+            frappe.db.sql(query, (self.employee,))
+
 
     def validate_applicable_after(self):
         if self.leave_type:
@@ -131,15 +146,15 @@ class LeaveApplicationOverride(LeaveApplication):
                                 self.leave_type, leave_type.applicable_after
                             )
                         )
-                        
+
     def validate_reliever(self):
         if self.custom_reliever_ == self.employee:
             frappe.throw("Oops! You can't assign yourself as the reliever!")
-        employee = frappe.get_value("Employee", self.employee, ["reports_to", "user_id"], as_dict=1)    
+        employee = frappe.get_value("Employee", self.employee, ["reports_to", "user_id"], as_dict=1)
         super_user_role = frappe.db.get_single_value("ONEFM General Setting", "super_user_role")
         user_roles = frappe.get_roles(employee.user_id)
         # If Reports to set or Super user role, then reliever is mandatory
-        if (employee.reports_to or (super_user_role in user_roles)) and not self.custom_reliever_:
+        if (self.leave_type == 'Annual Leave' and (employee.reports_to or (super_user_role in user_roles)) and not self.custom_reliever_):
             frappe.throw(msg=_("Please ensure that a Reliever is set"), title=_("No Reliever set"))
 
     def close_shifts(self):
@@ -180,7 +195,7 @@ class LeaveApplicationOverride(LeaveApplication):
 
             get_translated_status = frappe.db.sql(
                 """
-                SELECT translated_text 
+                SELECT translated_text
                 FROM `tabTranslation`
                 WHERE LOWER(source_text) = LOWER(%s)
                 """,
@@ -190,7 +205,7 @@ class LeaveApplicationOverride(LeaveApplication):
             translated_status = next(iter(get_translated_status or []), {})
             args["status_in_arabic"] = translated_status.get("translated_text", args.get("status"))
             args["leave_type_in_arabic"] = leave_type_in_arabic if leave_type_in_arabic else self.leave_type
-            args["doc_url"] = get_url_to_form("Leave Application", self.name) 
+            args["doc_url"] = get_url_to_form("Leave Application", self.name)
             email_template = frappe.get_doc("Email Template", template)
             if args.get("status") == "Approved":
                 email_template = frappe.get_doc("Email Template", "Leave Employee Approval Notification")
@@ -212,8 +227,8 @@ class LeaveApplicationOverride(LeaveApplication):
                 frappe.msgprint("Email Sent to Employee {}".format(employee.employee_name))
         except Exception as e:
             frappe.log_error(message=frappe.get_traceback(), title="Leave Notification")
-            
-            
+
+
     def notify_employee(self):
         self.enqueue_notification_method(self.custom_notify_employee)
 
@@ -318,10 +333,10 @@ class LeaveApplicationOverride(LeaveApplication):
         self.update_attachment_name()
         # self.enqueue_notification_method(self.notify_leave_approver)
         self.enqueue_notification_method(self.notify_employee)
-        
+
     def enqueue_notification_method(self,method):
         frappe.enqueue(method,is_async=True, job_name= str("Leave Notification"),  queue="short")
-        
+
     def update_attachment_name(self):
         if self.proof_documents:
             for each in self.proof_documents:
@@ -420,7 +435,7 @@ class LeaveApplicationOverride(LeaveApplication):
                 frappe.log_error(frappe.get_traceback(),"Error Sending Notification")
 
     def on_cancel(self):
-        from one_fm.utils import disable_out_of_office
+        # from one_fm.utils import disable_out_of_office
         emp = frappe.get_doc("Employee", self.employee)
         if self.status == "Cancelled"  and self.leave_type == 'Annual Leave' and getdate(self.from_date) <= getdate() <= getdate(self.to_date):
             emp.status = "Active"
@@ -433,7 +448,7 @@ class LeaveApplicationOverride(LeaveApplication):
         self.cancel_attendance()
         self.validate_cancel()
         send_leave_cancellation_email_to_leave_approver(self)
-        disable_out_of_office(emp.company_email)
+        # disable_out_of_office(emp.company_email)
 
 
     def validate_attendance_check(self):
@@ -455,7 +470,7 @@ class LeaveApplicationOverride(LeaveApplication):
             frappe.throw("An Error Occured while updating Attendance Checks. Please review the error logs")
 
     def on_update(self):
-        from one_fm.utils import set_out_of_office
+        # from one_fm.utils import set_out_of_office
         if self.workflow_state == "New Dates Proposed":
             send_proposed_date_email(self.name)
         if self.status=='Rejected':
@@ -486,17 +501,18 @@ class LeaveApplicationOverride(LeaveApplication):
         if self.status == "Approved":
             today = getdate()
 
-            employee = frappe.get_doc("Employee", self.employee)
-            custom_reliever = frappe.get_doc("Employee", self.custom_reliever_)
-            employee_email = employee.company_email
-            from_date = getdate(self.from_date)
-            to_date = getdate(self.to_date)
-            custom_reliever_name = self.custom_reliever_name
-            custom_reliever = custom_reliever.user_id
-            employee_name = self.employee_name
+            if self.custom_reliever_:
+                employee = frappe.get_doc("Employee", self.employee)
+                custom_reliever = frappe.get_doc("Employee", self.custom_reliever_)
+                employee_email = employee.company_email
+                from_date = getdate(self.from_date)
+                to_date = getdate(self.to_date)
+                custom_reliever_name = self.custom_reliever_name
+                custom_reliever = custom_reliever.user_id
+                employee_name = self.employee_name
 
-            if today == from_date:
-                set_out_of_office(employee_email, from_date, to_date, custom_reliever_name, custom_reliever, employee_name)
+                # if today == from_date:
+                #     set_out_of_office(employee_email, from_date, to_date, custom_reliever_name, custom_reliever, employee_name)
 
             if getdate(self.from_date) <= getdate() <= getdate(self.to_date):
                 # frappe.db.set_value(), will not call the validate.
@@ -537,14 +553,33 @@ class LeaveApplicationOverride(LeaveApplication):
             self.status = "Open"
             self.custom_reason_for_cancel = ""
         elif self.workflow_state == "Approved":
-            self.status = "Approved" 
+            self.status = "Approved"
 
-    
+
     def validate_cancel(self):
         if (self.workflow_state == "Approved" and self.custom_is_paid and not "System Manager" in frappe.get_roles()):
             frappe.throw(
                 _("This leave application has been paid and cannot be canceled. Please contact the Administrator.")
             )
+
+    @frappe.whitelist()
+    def get_leave_extension_request(self):
+        leave_extension_requests = frappe.get_all("Leave Extension Request", filters={"leave_application": self.name}, fields=["*"])
+        return leave_extension_requests[0] if leave_extension_requests else None
+
+    @frappe.whitelist()
+    def create_leave_extension_request(self, new_resumption_date):
+        designation, department, civil_id_assurance_level = frappe.db.get_value("Employee", self.employee, ["designation", "department", "custom_civil_id_assurance_level"])
+
+        leave_extension_request = frappe.new_doc("Leave Extension Request")
+        leave_extension_request.leave_application = self.name
+        leave_extension_request.designation = designation
+        leave_extension_request.civil_id_assurance_level = civil_id_assurance_level
+        leave_extension_request.department = department
+        leave_extension_request.new_resumption_date = new_resumption_date
+        leave_extension_request.save()
+
+        return leave_extension_request
 
 
 def update_attendance_recods(self):
@@ -585,7 +620,7 @@ def remove_assignment(attendance_check):
     if open_todo:
         for each in open_todo:
             remove("Attendance Check",attendance_check,each.allocated_to,ignore_permissions=1)
-    
+
 
 @frappe.whitelist()
 def get_leave_details(employee, date):
@@ -628,30 +663,9 @@ def get_leave_approver(employee):
     approver = get_approver_user(employee)
     return approver
 
-
-def reassign_to_reliever(reliever: str, leave_name: str, employee: str):
-    try:
-        reliever_employee = frappe.db.get_value("Employee", reliever, ["name", "user_id"], as_dict=1)
-        employee = frappe.db.get_value("Employee", employee, ["name", "user_id"], as_dict=1)
-        reassign = ReassignDutiesToReliever(reliever=reliever_employee, leave_name=leave_name, employee_object=employee)
-        reassign.reassign()
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Reassign Employee Duties To Reliever")
-
-
-def reassign_to_applicant(employee: str, leave_name: str):
-    try:
-        reassigned_documents = frappe.db.get_list("Reassigned Documents", filters={"parent": leave_name}, fields=["reassigned_doctype", "names"])
-        if reassigned_documents:
-            employee = frappe.db.get_value("Employee", employee, ["name", "user_id"], as_dict=1)
-            reassign = ReassignDocumentToLeaveApplicant(reassigned_documents=reassigned_documents, employee=employee)
-            reassign.reassign()
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Reassign Duties Back To Employee")
-
 @frappe.whitelist()
 def send_proposed_date_email(doc_name):
-    frappe.db.set_value("Leave Application",doc_name,'workflow_state',"New Dates Proposed") 
+    frappe.db.set_value("Leave Application",doc_name,'workflow_state',"New Dates Proposed")
     doc = frappe.get_doc("Leave Application", doc_name)
     employee =  frappe.db.get_values("Employee", doc.employee, ["employee_name_in_arabic", "employee_id"], as_dict=1)
     args = frappe._dict({
@@ -694,7 +708,7 @@ def send_leave_details_email_to_employee(self):
                     "header_eng": header_eng,
                     "header_arabic": header_arabic,
                     "employee_name_eng" : self.employee_name,
-                    "employee_name_arabic" : employee_info.get("employee_name_in_arabic") or "",     
+                    "employee_name_arabic" : employee_info.get("employee_name_in_arabic") or "",
                     "employee_id" : self.employee,
                     "leave_type_eng" : self.leave_type,
                     "from_date" : self.from_date,
@@ -736,7 +750,7 @@ def send_leave_cancellation_email_to_leave_approver(self):
                     "approver_name_eng" : self.leave_approver_name,
                     "approver_name_arabic" : approver_arabic_name,
                     "employee_name_eng" : self.employee_name,
-                    "employee_name_arabic" : employee_arabic_name,     
+                    "employee_name_arabic" : employee_arabic_name,
                     "employee_id" : self.employee,
                     "leave_type_eng" : self.leave_type,
                     "from_date" : self.from_date,
@@ -747,7 +761,7 @@ def send_leave_cancellation_email_to_leave_approver(self):
                     "reason_of_cancellation" : self.custom_reason_for_cancel,
                     "doc_link": get_url_to_form("Leave Application", self.name)
                 })
-    
+
     sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
     message = frappe.render_template('one_fm/templates/emails/leave_cancellation_email.html', args)
     subject = f"{header_arabic} | {header_eng}"
@@ -764,7 +778,7 @@ class ReassignDutiesToReliever(NotifyAttendanceManagerOnStatusChange):
         self._reliever = reliever
         self._reassigned_documents = dict()
         self._leave_name = leave_name
-    
+
     def reassign_operations_shift_supervisor(self):
         operation_shift_supervisors = self._operations_shift_supervisor
         if operation_shift_supervisors:
@@ -787,7 +801,7 @@ class ReassignDutiesToReliever(NotifyAttendanceManagerOnStatusChange):
             for obj in projects_manager:
                 frappe.db.set_value("Project", obj, "account_manager", self._reliever.name)
             self._reassigned_documents.update({"Project": projects_manager})
-    
+
     def reassign_reports_to(self):
         reports_to = self._employee_reports_to
         if reports_to:
@@ -823,7 +837,7 @@ class ReassignDutiesToReliever(NotifyAttendanceManagerOnStatusChange):
                 reassigned_documents.reassigned_doctype=key
                 reassigned_documents.names=str(value)
                 reassigned_documents.insert()
-                
+
 
 class ReassignDocumentToLeaveApplicant:
 
@@ -831,12 +845,12 @@ class ReassignDocumentToLeaveApplicant:
         self._employee = employee
         self._reassigned_documents = reassigned_documents
 
-    
+
     def reassign_operations_site(self, sites: list):
         for obj in sites:
             frappe.db.set_value("Operations Site", obj, "account_supervisor", self._employee.name)
 
-    
+
     def reassign_operation_shift(self, shifts: list):
         for obj in shifts:
             frappe.db.set_value("Operations Shift", obj, "supervisor", self._employee.name)
@@ -848,22 +862,22 @@ class ReassignDocumentToLeaveApplicant:
     def reassign_reports_to(self, reports_to: list):
         for obj in reports_to:
             frappe.db.set_value("Employee", obj, "reports_to", self._employee.name)
-            
+
     def reassign_general_settings(self, settings: list):
         for obj in settings:
             frappe.db.set_value("Operation Settings", "Operation Settings", obj, self._employee.user_id)
-            
+
     def reassign_operation_settings(self, settings: list):
         for obj in settings:
             frappe.db.set_value("ONEFM General Setting", "ONEFM General Setting", obj, self._employee.name)
-            
-    
+
+
     def reassign(self):
         documents = {obj.get("reassigned_doctype"): literal_eval(obj.get("names"))for obj in self._reassigned_documents}
         for key, value in documents.items():
             if key == "Operations Site":
                 self.reassign_operations_site(sites=value)
-            
+
             if key == "Operations Shift":
                 self.reassign_operation_shift(shifts=value)
 
@@ -872,10 +886,10 @@ class ReassignDocumentToLeaveApplicant:
 
             if key == "Employee":
                 self.reassign_reports_to(reports_to=value)
-            
+
             if key == "Operation Settings":
                 self.reassign_general_settings(settings=value)
-            
+
             if key == "ONEFM General Setting":
                 self.reassign_operation_settings(settings=value)
 

@@ -1,3 +1,4 @@
+from one_fm.overrides.attendance_request import approve_pending_attendance_request
 import pandas as pd
 import frappe, erpnext
 from frappe import _
@@ -294,9 +295,11 @@ def mark_for_shift_assignment(employee, att_date, roster_type='Basic'):
         # check if checkin and out exists
         if (out_checkins and in_checkins):
             if (out_checkins.time < in_checkins.time):
+                early_exit  = not frappe.db.exists("Employee Checkin", {"log_type": "IN", "time": [">", out_checkins.time], "shift_assignment": shift_assignment.name}) if out_checkins.early_exit else 0
                 out_checkins = False # The employee checked in, out, in but not out
-
-            early_exit = not frappe.db.exists("Employee Checkin", {"log_type": "IN", "time": [">", out_checkins.time], "shift_assignment": shift_assignment.name}) if out_checkins.early_exit else 0
+                
+            if out_checkins:
+                early_exit = not frappe.db.exists("Employee Checkin", {"log_type": "IN", "time": [">", out_checkins.time], "shift_assignment": shift_assignment.name}) if out_checkins.early_exit else 0
 
 
         # start checkin
@@ -502,6 +505,7 @@ def mark_all_attendance():
     frappe.enqueue(approve_open_shift_permission, start_date=str(start_date), end_date=str(end_date))
     frappe.enqueue(approve_pending_employee_checkin_issue)
     frappe.enqueue(mark_open_timesheet_and_create_attendance)
+    frappe.enqueue(approve_pending_attendance_request, start_date=start_date)
     frappe.enqueue(mark_daily_attendance, start_date=start_date, end_date=end_date, timeout=4000, queue='long')
 
 def mark_daily_attendance(start_date, end_date):
@@ -748,7 +752,7 @@ def update_day_off_ot(attendances):
 
 def mark_open_timesheet_and_create_attendance():
     the_date = add_days(getdate(), -1)
-    employee_list = frappe.db.get_list("Employee", filters={"status": "Active", "attendance_by_timesheet": 1}, pluck="name")
+    employee_list = frappe.db.get_list("Employee", filters={"status": "Active", "attendance_by_timesheet": 1}, fields=["name"])
     timesheets = frappe.db.get_list("Timesheet", {'workflow_state':'Pending Approval',
         'start_date': the_date},)
 
@@ -760,19 +764,27 @@ def mark_open_timesheet_and_create_attendance():
 
     present_employees = frappe.db.get_list("Timesheet", filters={"start_date": the_date, "workflow_state": "Approved"}, pluck="employee")
     for obj in employee_list:
-        status, message = is_holiday(employee=obj)
-        if obj not in present_employees:
-            att = frappe.new_doc("Attendance")
-            att.employee = obj
-            att.attendance_date = the_date
-            att.status = "Absent" if not status else "Day Off"
-            att.working_hours = 0
-            att.reference_doctype = "Timesheet"
-            try:
-                att.insert(ignore_permissions=True)
-                att.submit()
-            except Exception as e:
-                frappe.log_error(frappe.get_traceback(), "TImesheet Attendance Marking")
+        attendance_status = None
+        status, message,weekly_off = is_holiday(employee=obj,date=the_date,include_weekly_off=True)
+        if not status:
+            attendance_status = "Absent"
+        else:
+            if weekly_off:
+                attendance_status = "Day Off"
+            #Holidays are marked for all staff in mark daily attendance
+        if attendance_status:
+            if obj.name not in present_employees:
+                att = frappe.new_doc("Attendance")
+                att.employee = obj.name
+                att.attendance_date = the_date
+                att.status = attendance_status
+                att.working_hours = 0
+                att.reference_doctype = "Timesheet"
+                try:
+                    att.insert(ignore_permissions=True)
+                    att.submit()
+                except Exception as e:
+                    frappe.log_error(frappe.get_traceback(), "TImesheet Attendance Marking")
     frappe.db.commit()
 
 
@@ -1034,7 +1046,7 @@ class AttendanceMarking():
                 if checkins: # check for work hours
                     # start checkin
                     for i in checkins:
-                        if i.earliest_time: # maybe record retrived incorrectly
+                        if i.earliest_time and isinstance(i.shift_actual_start, p_datetime): # maybe record retrived incorrectly
                             if not frappe.db.exists("Attendance", {
                                 'employee':i.employee,
                                 'attendance_date':i.shift_actual_start.date(),

@@ -64,7 +64,7 @@
         "users": []
     },
     {
-        "assign_condition": "status in (\"Pending\", \"Overdue\")",
+        "assign_condition": "status in (\"Pending\", \"Overdue\") and site_supervisor is not None and site_supervisor != \"\"",
         "assignment_days": [
             {
                 "day": "Sunday",
@@ -127,6 +127,70 @@
         "unassign_condition": "status == \"Cancelled\"",
         "users": []
     },
+    {
+        "assign_condition": "status in (\"Pending\", \"Overdue\") and not site_supervisor",
+        "assignment_days": [
+         {
+          "day": "Sunday",
+          "parent": "Roster Employee Actions - Project Manager",
+          "parentfield": "assignment_days",
+          "parenttype": "Assignment Rule"
+         },
+         {
+          "day": "Monday",
+          "parent": "Roster Employee Actions - Project Manager",
+          "parentfield": "assignment_days",
+          "parenttype": "Assignment Rule"
+         },
+         {
+          "day": "Tuesday",
+          "parent": "Roster Employee Actions - Project Manager",
+          "parentfield": "assignment_days",
+          "parenttype": "Assignment Rule"
+         },
+         {
+          "day": "Wednesday",
+          "parent": "Roster Employee Actions - Project Manager",
+          "parentfield": "assignment_days",
+          "parenttype": "Assignment Rule"
+         },
+         {
+          "day": "Thursday",
+          "parent": "Roster Employee Actions - Project Manager",
+          "parentfield": "assignment_days",
+          "parenttype": "Assignment Rule"
+         },
+         {
+          "day": "Friday",
+          "parent": "Roster Employee Actions - Project Manager",
+          "parentfield": "assignment_days",
+          "parenttype": "Assignment Rule"
+         },
+         {
+          "day": "Saturday",
+          "parent": "Roster Employee Actions - Project Manager",
+          "parentfield": "assignment_days",
+          "parenttype": "Assignment Rule"
+         }
+        ],
+        "close_condition": "status == \"Completed\"",
+        "custom_routine_task": null,
+        "description": "<p>Here is to inform you that the following {{ doctype }}({{ name }}) requires your attention/action.\n        <br>\n        The details of the request are as follows:\n        <br>\n        </p><table cellpadding=\"0\" cellspacing=\"0\" border=\"1\" style=\"border-collapse: collapse;\">\n            <thead>\n                <tr>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Label</th>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Value</th>\n                </tr>\n            </thead>\n        <tbody>\n        \n            <tr>\n                <td style=\"padding: 10px;\">Start Date</td>\n                <td style=\"padding: 10px;\">{{start_date}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">End Date</td>\n                <td style=\"padding: 10px;\">{{end_date}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Shift  Supervisor</td>\n                <td style=\"padding: 10px;\">{{supervisor}}</td>\n            </tr>\n            </tbody></table><p></p>",
+        "disabled": 0,
+        "docstatus": 0,
+        "doctype": "Assignment Rule",
+        "document_type": "Roster Employee Actions",
+        "due_date_based_on": null,
+        "field": "project_manager_user",
+        "is_assignment_rule_with_workflow": 0,
+        "last_user": null,
+        "modified": "2025-04-20 16:21:54.568766",
+        "name": "Roster Employee Actions - Project Manager",
+        "priority": 0,
+        "rule": "Based on Field",
+        "unassign_condition": "status == \"Cancelled\"",
+        "users": []
+       },
     {
         "assign_condition": "status in (\"Pending\", \"Overdue\")",
         "assignment_days": [
@@ -1161,5 +1225,123 @@
       }
     ],
   "users": []
- }
+ },
+ {
+    "assign_condition": "docstatus == 0",
+    "assignment_days": [
+     {
+      "day": "Monday",
+      "parent": "Career History",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     },
+     {
+      "day": "Tuesday",
+      "parent": "Career History",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     },
+     {
+      "day": "Wednesday",
+      "parent": "Career History",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     },
+     {
+      "day": "Thursday",
+      "parent": "Career History",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     },
+     {
+      "day": "Friday",
+      "parent": "Career History",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     },
+     {
+      "day": "Saturday",
+      "parent": "Career History",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     },
+     {
+      "day": "Sunday",
+      "parent": "Career History",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     }
+    ],
+    "close_condition": null,
+    "custom_routine_task": null,
+    "description": "<p>Here is to inform you that the following {{ doctype }}({{ name }}) requires your attention/action.\n        <br>\n        The details of the request are as follows:\n        <br>\n        </p><table cellpadding=\"0\" cellspacing=\"0\" border=\"1\" style=\"border-collapse: collapse;\">\n            <thead>\n                <tr>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Label</th>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Value</th>\n                </tr>\n            </thead>\n        <tbody>\n        \n            <tr>\n                <td style=\"padding: 10px;\">Job Applicant</td>\n                <td style=\"padding: 10px;\">{{job_applicant}}</td>\n            </tr>\n            </tbody></table><p></p>",
+    "disabled": 0,
+    "docstatus": 0,
+    "doctype": "Assignment Rule",
+    "document_type": "Career History",
+    "due_date_based_on": null,
+    "field": "recruiter_assigned",
+    "is_assignment_rule_with_workflow": 0,
+    "last_user": null,
+    "modified": "2025-04-14 15:28:18.291148",
+    "name": "Career History",
+    "priority": 0,
+    "rule": "Based on Field",
+    "unassign_condition":"docstatus == 1",
+    "users": []
+   },
+   {
+    "name": "Leave Extension Request - Approver",
+    "document_type": "Leave Extension Request",
+    "due_date_based_on": "date",
+    "priority": 0,
+    "disabled": 0,
+    "description": "<p>Here is to inform you that the following {{ doctype }}({{ name }}) requires your attention/action.\n        <br>\n        The details of the request are as follows:\n        <br>\n        </p><table cellpadding=\"0\" cellspacing=\"0\" border=\"1\" style=\"border-collapse: collapse;\">\n            <thead>\n                <tr>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Label</th>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Value</th>\n                </tr>\n            </thead>\n        <tbody>\n        \n            <tr>\n                <td style=\"padding: 10px;\">Employee</td>\n                <td style=\"padding: 10px;\">{{employee}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Date</td>\n                <td style=\"padding: 10px;\">{{date}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Leave Application</td>\n                <td style=\"padding: 10px;\">{{leave_application}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Leave Type</td>\n                <td style=\"padding: 10px;\">{{leave_type}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">New Resumption Date</td>\n                <td style=\"padding: 10px;\">{{new_resumption_date}}</td>\n            </tr>\n            </tbody></table><p></p>",
+    "is_assignment_rule_with_workflow": 1,
+    "assign_condition": "workflow_state=='Pending Approval'",
+    "unassign_condition": "workflow_state in ('Draft', 'Rejected')",
+    "close_condition": "workflow_state=='Approved'",
+    "rule": "Based on Field",
+    "field": "approver",
+    "last_user": null,
+    "doctype": "Assignment Rule",
+    "assignment_days": [
+      {
+        "name": "96315f291a",
+        "day": "Monday",
+        "doctype": "Assignment Rule Day"
+      },
+      {
+        "name": "272fc21fca",
+        "day": "Tuesday",
+        "doctype": "Assignment Rule Day"
+      },
+      {
+        "name": "a58de09d97",
+        "day": "Wednesday",
+        "doctype": "Assignment Rule Day"
+      },
+      {
+        "name": "cde322357c",
+        "day": "Thursday",
+        "doctype": "Assignment Rule Day"
+      },
+      {
+        "name": "70c772e5fa",
+        "day": "Friday",
+        "doctype": "Assignment Rule Day"
+      },
+      {
+        "name": "9c70bf600c",
+        "day": "Saturday",
+        "doctype": "Assignment Rule Day"
+      },
+      {
+        "name": "0aaaf3f860",
+        "day": "Sunday",
+        "doctype": "Assignment Rule Day"
+      }
+    ],
+    "users": []
+  }
 ]

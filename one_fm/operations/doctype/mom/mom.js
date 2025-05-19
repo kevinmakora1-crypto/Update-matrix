@@ -10,6 +10,24 @@ frappe.ui.form.on('MOM', {
 		frm.refresh_fields("attendees");
 	},
 	project: function(frm) {
+		if(frm.doc.project_type != "External"){
+			frappe.call({
+                method: "one_fm.operations.doctype.mom.mom.get_project_users",
+                args: {
+                    project: frm.doc.project
+                },
+                callback(r) {
+                    if (r.message) {
+                        frm.clear_table("general_attendance");
+                        r.message.forEach(user => {
+                            let row = frm.add_child("general_attendance");
+                            row.attendee_name = user;
+                        });
+                        frm.refresh_field("general_attendance");
+                    }
+                }
+            });
+        }
 		if(!frm.doc.site){
 			frm.clear_table("attendees");
 		}
@@ -69,9 +87,21 @@ frappe.ui.form.on('MOM', {
 				frappe.throw("You are not allowed to create MOM for Non-External Projects")
 			}
 		}
+		validate_poc_general_attendance_attended(frm);
 	}
+	
 
 });
+
+
+var validate_poc_general_attendance_attended = (frm) => {
+	const isAttended = frm.doc.attendees.some(obj => obj.attended_meeting) || frm.doc.general_attendance.some(obj => obj.attended_meeting);
+	
+	if (!isAttended) {
+		frappe.throw(__("At least one POC or General Attendance must be marked present."));
+	}
+
+}
 
 
 

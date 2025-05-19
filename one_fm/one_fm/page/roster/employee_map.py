@@ -20,11 +20,9 @@ class PostMap():
         self.abbrvs = {one.operations_role:one.post_abbrv for one in operations_roles_list}
         filters.update({'date':  ['between', (start, end)]})
         self.operation_roles = tuple([one.operations_role for one in operations_roles_list])
-        # self.keys = [[one.post_abbrv,one.operations_role] for one in operations_roles_list]
         self.post_filled_summary = []
         self.post_schedule_summary = []
         filters.update({'operations_role': ['in',self.operation_roles]})
-        # self.post_filled_count = frappe.db.get_all("Employee Schedule",["name", "employee", "date",'operations_role'] ,{'date':  ['between', (start, end)],'operations_role': ['in',self.operation_roles] })
         self.post_filled_count = frappe.db.get_all("Employee Schedule",["name", "employee", "date",'operations_role'] ,filters)
         filters.update({"post_status": "Planned",'operations_role':['in',self.operation_roles]})
         filters.pop('operations_role')
@@ -36,8 +34,6 @@ class PostMap():
         self.template[row.post_abbrv] = []
         return
 
-
-
     def sort_post_schedule(self,each):
         #Create a map that uses the operations role as the key and list of entries as the value
         if self.post_schedule_map.get(each.operations_role):
@@ -46,15 +42,12 @@ class PostMap():
             self.post_schedule_map[each.operations_role] = [one for one in self.post_schedule_count if one.operations_role ==each.operations_role]
         return self.post_schedule_map
 
-
-
     def sort_post_filled(self,each):
         if self.post_filled_map.get(each.operations_role):
             pass
         else:
             self.post_filled_map[each.operations_role] = [one for one in self.post_filled_count if one.operations_role==each.operations_role]
         return self.post_filled_map
-
 
     def summarise_schedule_data(self,data):
         values = self.post_schedule_map[data]
@@ -73,7 +66,6 @@ class PostMap():
             self.preformated_data[self.abbrvs.get(row.get('operations_role'))] = [row]
         else:
             self.preformated_data[self.abbrvs.get(row.get('operations_role'))].append(row)
-
 
     def create_second_section(self,row):
         highlight = "bggreen"
@@ -99,8 +91,6 @@ class PostMap():
 
         return self.template
 
-
-
     def create_date_post_summary(self,date):
         self.cur_date = cstr(date).split(' ')[0]
         summary_data =  list(map(self.summarise_post_data,self.post_filled_map))
@@ -113,12 +103,6 @@ class PostMap():
         summary_schedule = list(map(self.summarise_schedule_data,self.post_schedule_map))
         list(map(self.create_second_section,summary_schedule))
         self.post_schedule_summary.append(summary_schedule)
-
-        # self.preformated_data
-        # sum(frappe.utils.cstr(x.date) == cstr(date.date()) for x in post_schedule_count)
-
-
-
 
     def start_mapping(self):
         list(map(self.sort_post_schedule,self.post_schedule_count))
@@ -149,42 +133,68 @@ class CreateMap():
         else:
             self.str_filter+=' and es.roster_type = "Basic"'
 
+        # Construct the employee list for the SQL IN clause
+        employee_list = [emp.employee for emp in employees]
 
-
-        # self.schedule_query = f"""SELECT  es.employee, es.employee_name, es.date, es.operations_role, es.post_abbrv,  es.shift, roster_type, es.employee_availability, es.day_off_ot
-        # from `tabEmployee Schedule`es  where {self.str_filter} and es.employee in {self.employees} group by es.employee order by date asc, es.employee_name asc """
-
-        #Noticed the trailing comma in a tuple is raising a SQL error, using this conditional to create the fetch query based on the employee
-        if len(employees)==1:
-            self.schedule_query  = f"""SELECT  es.employee, es.employee_name, es.date, es.operations_role, es.post_abbrv, \
-            es.shift, es.start_datetime, es.end_datetime, es.roster_type, es.employee_availability, es.day_off_ot, es.project from `tabEmployee Schedule`es  where \
-                es.employee in  ('{employees[0].employee}') and {self.str_filter} order by es.employee """
-            self.attendance_query = f"SELECT at.status, at.leave_type, at.leave_application,  at.attendance_date,at.employee,at.employee_name, at.operations_shift, osh.start_time, osh.end_time from `tabAttendance`at left join `tabOperations Shift` osh on at.operations_shift=osh.name where at.employee in ('{employees[0].employee}')  and at.attendance_date between '{self.start}' and '{self.end}' and at.docstatus = 1 AND at.roster_type='{self.roster_type}' order by at.employee """
-            self.employee_query = f"SELECT name,employee_id,relieving_date, employee_name,day_off_category,number_of_days_off from `tabEmployee` where name in ('{employees[0].employee}') and shift_working = '1' order by employee_name"
+        # Handle single employee case to avoid trailing comma in the tuple
+        if len(employee_list) == 1:
+            employee_tuple = f"('{employee_list[0]}')"  # Format as ('HR-EMP-00081')
         else:
-            self.schedule_query  = f"SELECT  es.employee, es.employee_name, es.date, es.operations_role, es.post_abbrv, \
-                es.shift,  es.start_datetime, es.end_datetime, es.roster_type, es.employee_availability, es.day_off_ot, es.project from `tabEmployee Schedule`es  where \
-                    es.employee in {self.employees} and {self.str_filter}   order by es.employee "
-            self.attendance_query = f"SELECT at.status,at.leave_type,at.leave_application, at.attendance_date,at.employee,at.employee_name, at.operations_shift, osh.start_time, osh.end_time from `tabAttendance`at  left join `tabOperations Shift` osh on at.operations_shift=osh.name where at.employee in {self.employees}  and at.attendance_date between '{self.start}' and '{self.end}' and at.docstatus = 1 AND at.roster_type='{self.roster_type}' order by at.employee "
+            employee_tuple = tuple(employee_list)  # Format as ('HR-EMP-00081', 'HR-EMP-00082')
 
-            self.employee_query = f"SELECT name, employee_id,relieving_date, employee_name,day_off_category,number_of_days_off from `tabEmployee` where name in {self.employees} and shift_working = '1' order by employee_name"
+        # Construct the queries
+        self.schedule_query = f"""
+            SELECT es.employee, es.employee_name, es.date, es.operations_role, es.post_abbrv, 
+                es.shift, es.start_datetime, es.end_datetime, es.roster_type, es.employee_availability, 
+                es.day_off_ot, es.project 
+            FROM `tabEmployee Schedule` es 
+            WHERE es.employee IN {employee_tuple} 
+            AND {self.str_filter} 
+            ORDER BY es.employee
+        """
 
+        self.attendance_query = f"""
+            SELECT at.status, at.leave_type, at.leave_application, at.attendance_date, at.employee, 
+                at.employee_name, at.operations_shift, osh.start_time, osh.end_time 
+            FROM `tabAttendance` at 
+            LEFT JOIN `tabOperations Shift` osh ON at.operations_shift = osh.name 
+            WHERE at.employee IN {employee_tuple} 
+            AND at.attendance_date BETWEEN '{self.start}' AND '{self.end}' 
+            AND at.docstatus = 1 
+            AND at.roster_type = '{self.roster_type}' 
+            ORDER BY at.employee
+        """
+
+        self.employee_query = f"""
+            SELECT name, employee_id, relieving_date, employee_name, day_off_category, number_of_days_off 
+            FROM `tabEmployee` 
+            WHERE name IN {employee_tuple} 
+            AND shift_working = '1' 
+            ORDER BY employee_name
+        """
 
         self.schedule_set = frappe.db.sql(self.schedule_query,as_dict=1) if self.employees else []
         self.attendance_set = frappe.db.sql(self.attendance_query,as_dict=1) if self.employees else []
+
         if self.isOt:
-            self.leave_attendance = frappe.db.sql(f"SELECT at.status,at.leave_type,at.leave_application,\
-                at.attendance_date,at.employee,at.employee_name, at.operations_shift from `tabAttendance`at\
-                where at.status = 'On Leave' and  at.employee in {self.employees}  and at.attendance_date between '{self.start}' and '{self.end}'\
-                and at.docstatus = 1 order by at.employee ",as_dict = 1)
+            self.leave_attendance = frappe.db.sql(f"""
+                SELECT at.status, at.leave_type, at.leave_application,
+                    at.attendance_date, at.employee, at.employee_name, at.operations_shift 
+                FROM `tabAttendance` at
+                WHERE at.status = 'On Leave' 
+                AND at.employee IN {employee_tuple} 
+                AND at.attendance_date BETWEEN '{self.start}' AND '{self.end}' 
+                AND at.docstatus = 1 
+                ORDER BY at.employee
+            """, as_dict=1)
             self.attendance_set +=self.leave_attendance
+            
         self.employee_set = frappe.db.sql(self.employee_query,as_dict=1) if self.employees else []
         self.start_mapping()
 
     def combine_maps(self,iter1,iter2):
         key = list(iter1.keys())[0]
         return {key:iter1[key]+iter2[key]}
-
 
     def start_mapping(self):
         filters = [[i.employee,i.employee_name] for i in  self.all_employees]
@@ -210,7 +220,6 @@ class CreateMap():
                 emp_name = value[0].get('employee_name')
             else:
                 emp_name = frappe.db.get_value("Employee",key,'employee_name')
-
 
 
             if getdate(self.cur_date) not in [i['date'] for i in value]:
@@ -250,25 +259,17 @@ class CreateMap():
             pass
         return self.formated_rs
 
-
-
-
     def create_missing_days(self,key):
         missing_days = []
-
         return self.formated_rs
-
 
     def add_blank_days(self,date):
         self.cur_date = cstr(date).split(' ')[0]
         self.meme =  list(map(self.add_blanks,self.combined_map))
 
-
-
     def create_employee_schedule(self,row):
         self.employee_period_details[row['name']] = row
         return self.employee_period_details
-
 
     def create_schedule_map(self,row):
         #Update the employee data from the employee period details data structure
@@ -280,8 +281,6 @@ class CreateMap():
             except KeyError:
                 pass
         return {row[0]:schedule}
-
-
 
     def create_attendance_map(self,row):
        """ Create a data structure in the form of """

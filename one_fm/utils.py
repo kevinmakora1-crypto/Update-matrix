@@ -32,7 +32,7 @@ from frappe.utils import (
 )
 from frappe.workflow.doctype.workflow_action.workflow_action import (
     get_email_template, deduplicate_actions, get_next_possible_transitions,
-    get_doc_workflow_state, get_workflow_name, get_workflow_action_url,
+    get_doc_workflow_state, get_workflow_name, get_workflow_action_url,get_confirm_workflow_action_url,
     get_users_next_action_data as _get_users_next_action_data
 )
 
@@ -2742,7 +2742,7 @@ def get_users_next_action_data(transitions, doc, recipients):
 				frappe._dict(
 					{
 						"action_name": transition.action,
-						"action_link": get_workflow_action_url(transition.action, doc, user),
+						"action_link": get_confirm_workflow_action_url(doc,transition.action, user),
 					}
 				)
 			)
@@ -3438,46 +3438,84 @@ def custom_validate_interviewer(self):
 
 @frappe.whitelist()
 def get_current_shift(employee):
-    """
-        Get current shift employee should be logged into
-        This Method Checks if Employee has a shift and is within the checkin Range.
-        args:
-			employee: Employee ID
-		return dict (type, data)
-    """
     try:
         nowtime = now_datetime()
         sql = f"""
             SELECT sa.*,
                 DATE_SUB(sa.start_datetime, INTERVAL st.begin_check_in_before_shift_start_time MINUTE) as checkin_time,
-                DATE_ADD(sa.end_datetime, INTERVAL st.allow_check_out_after_shift_end_time MINUTE) as checkout_time
+                DATE_ADD(sa.end_datetime, INTERVAL st.allow_check_out_after_shift_end_time MINUTE) as checkout_time,
+                sa.end_datetime as actual_end_time
             FROM `tabShift Assignment` sa
             JOIN `tabShift Type` st ON sa.shift_type = st.name
             WHERE sa.employee="{employee}"
             AND sa.status="Active"
             AND sa.docstatus=1
-            AND (DATE('{nowtime}') = sa.start_date
-                OR DATE_ADD(DATE('{nowtime}'), INTERVAL 1 DAY) = sa.start_date
-                OR DATE('{nowtime}') = sa.end_date)
+            AND '{nowtime}' >= DATE_SUB(sa.start_datetime, INTERVAL st.begin_check_in_before_shift_start_time MINUTE)
+            AND '{nowtime}' <= DATE_ADD(sa.end_datetime, INTERVAL st.allow_check_out_after_shift_end_time MINUTE)
+            ORDER BY sa.start_datetime ASC
             """
 
-        shift = frappe.db.sql(sql, as_dict=1)
-        if shift: # shift was checked in between start and end time
-            data = frappe.get_doc("Shift Assignment", shift[0].name)
-            if shift[0].checkin_time > nowtime:
-                minutes = int((shift[0].checkin_time - nowtime).total_seconds() / 60)
-                return {"type":"Early", "data": data, "time": minutes}
-            elif shift[0].checkout_time < nowtime:
-                minutes = int((nowtime - shift[0].checkout_time).total_seconds() / 60)
-                return {"type":"Late", "data": data, "time": minutes}
-            elif shift[0].checkin_time <= nowtime <= shift[0].checkout_time:
-                return {"type":"On Time", "data": data, "time": 0}
-            else:
-                return False
+        shifts = frappe.db.sql(sql, as_dict=1)
+        if shifts:
+             # Find the current shift
+            current_shift = None
+            for shift in shifts:
+                # Check if the shift is currently active
+                checkin = frappe.db.get_list(
+                    "Employee Checkin",
+                    filters={"employee": employee, "shift_assignment":shift.name },
+                    fields=["log_type", "time", "shift_assignment"],
+                    order_by="time desc",
+                    limit=1,
+                )
+                
+                if checkin:
+                    last_log = checkin[0]
+                    # CASE 1: Last log is IN → Shift is active
+                    if last_log.log_type == "IN":
+                        if shift.checkin_time <= nowtime <= shift.checkout_time:
+                            current_shift = shift
+                            break
+                    # CASE 2: Last log is OUT → Only skip if within grace period
+                    elif last_log.log_type == "OUT":
+                        # Check if OUT happened during grace period
+                        if shift.actual_end_time <= last_log.time <= shift.checkout_time:
+                            continue  # Skip this shift, check next one
+                        else:
+                            current_shift = shift
+                            break
+                else:
+                    # Allow checkin if within window
+                    if shift.checkin_time <= nowtime <= shift.checkout_time:
+                        current_shift = shift
+                        break
+
+
+            if current_shift:
+                # If a current shift is found, return its details
+                data = frappe.get_doc("Shift Assignment", current_shift.name)
+                if current_shift.checkin_time > nowtime:
+                    minutes = int((current_shift.checkin_time - nowtime).total_seconds() / 60)
+                    return{"type": "Early", "data": data, "time": minutes}
+                elif current_shift.checkout_time < nowtime:
+                    minutes = int((nowtime - current_shift.checkout_time).total_seconds() / 60)
+                    return{"type": "Late", "data": data, "time": minutes}
+                elif current_shift.checkin_time <= nowtime <= current_shift.checkout_time:
+                    return {"type": "On Time", "data": data, "time": 0}
+
+             # If no active shift is found, check if the next shift is about to start
+            for shift in shifts:
+                if shift.checkin_time > nowtime:  # Next shift starting in the future
+                    data = frappe.get_doc("Shift Assignment", shift.name)
+                    minutes = int((shift.checkin_time - nowtime).total_seconds() / 60)
+                    return {"type": "Upcoming", "data": data, "time": minutes}
+            return False
         return False
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Error while getting current shift")
         return False
+
+
 
 @frappe.whitelist()
 def check_existing():
@@ -3491,6 +3529,9 @@ def check_existing():
     if not employee:
         return response("Employee not found", 404, None, "Employee not found")
     shift_exists = get_current_shift(employee)
+    if not shift_exists:
+        return response("Resource Not Found", 404, None, "No Active Shift Found")
+    
     if shift_exists['type'] == "On Time":
         curr_shift = shift_exists['data']
     if not curr_shift:
@@ -3656,7 +3697,6 @@ def send_work_anniversary_reminders():
 
 def set_employee_status():
     from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import assign_responsibilities ,reassign_responsibilities
-    from one_fm.overrides.leave_application import reassign_to_applicant,reassign_to_reliever
     # Get today's date
     current_date = getdate(today())
 
@@ -3665,7 +3705,7 @@ def set_employee_status():
         filters={
             'status': 'Approved',
             'from_date': ['<=', current_date],
-            'to_date': ['>=', current_date]
+            'to_date': ['>=', add_days(current_date, -1)],
         },
         fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']  # Fetch employee status directly
     )
@@ -3687,13 +3727,10 @@ def set_employee_status():
             if current_date == getdate(from_date) and status == "Active":
                 frappe.db.set_value('Employee', employee, 'status', 'Vacation')
                 if reliever:
-                    frappe.enqueue(reassign_to_applicant(employee=employee, leave_name=leave_application))
                     frappe.enqueue(assign_responsibilities, leave_application=leave_application)
                 employees_set_to_vacation += 1
             elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":
                 frappe.db.set_value('Employee', employee, 'status', 'Active')
-                if reliever:
-                    frappe.enqueue(reassign_to_reliever(reliever=reliever, leave_name=leave_application, employee=employee))
                 if reliever and frappe.db.exists("Reliever Assignment", {"name": leave_application}):
                     frappe.enqueue(reassign_responsibilities, leave_application=leave_application)
                 employees_set_to_active += 1
@@ -3707,30 +3744,31 @@ def set_employee_status():
 
 
 
-def is_holiday(employee, date=None, raise_exception=True):
+def is_holiday(employee, date=None, raise_exception=True,include_weekly_off = False):
     try:
         date = today() if not date else date
         holiday_list = get_holiday_list_for_employee(employee.name, raise_exception)
         if not holiday_list:
-            return False, ""
+            return ((False,"",None) if include_weekly_off else (False, ""))
         holidays = frappe.db.get_value("Holiday", {"parent": holiday_list, "holiday_date": date}, ["weekly_off"], as_dict=1)
         if holidays:
-            return (True, f"Dear {employee.employee_name}, Today is your day off.  Happy Recharging!.") if holidays.weekly_off else (True, "Today is your holiday, have fun")
-        return False, ""
+            message = f"Dear {employee.employee_name}, Today is your day off.  Happy Recharging!." if holidays.weekly_off else "Today is your holiday, have fun"
+            return ((True, message,holidays.weekly_off) if include_weekly_off else (True, message))
+        return ((False,"",None) if include_weekly_off else (False, ""))
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Error while validating Holiday")
-        return False, ""
+        return ((False,"",None) if include_weekly_off else (False, ""))
 
 
 def get_gmail_service(employee_email):
-
     credentials_path = frappe.get_site_path('private', 'files', 'gcp.json')
-
+    credentials_dict = None
     try:
         with open(credentials_path, 'r') as file:
             credentials_dict = json.load(file)
-    except Exception:
-        pass
+    except Exception as e:
+        frappe.log_error(f"Error reading Google credentials: {str(e)}")
+        return
 
     credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=['https://www.googleapis.com/auth/gmail.settings.basic'])
 
@@ -3841,20 +3879,22 @@ def update_assurance_level_task():
                 frappe.db.set_value('Employee', employee['employee'], 'custom_civil_id_assurance_level', verification_level)
     return True
 
-
 def call_to_get_assurance_level(employees):
     response = None
     try:
         api_key = frappe.conf.bulbul_api_wrapper_key
         if isinstance(employees, str):
-            url = f"https://apiwrapper.one-fm.com/api/DigitalSigning/CheckMobileIdentity/{employees}"
+            url = f"https://staging-apiwrapper.one-fm.com/api/DigitalSigning/CheckMobileIdentity/{employees}"
             headers = {'accept': 'text/plain','ApiKey': f'{api_key}'}
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 data = response.json()
                 return data.get("data", None)
+            else:
+                frappe.log_error(frappe.get_traceback(), response.json())
+                return {"error": response.status_code, "title": response.json()}
         else:
-            url = f"https://apiwrapper.one-fm.com/api/DigitalSigning/BulkCheckMobileIdentity"
+            url = f"https://staging-apiwrapper.one-fm.com/api/DigitalSigning/BulkCheckMobileIdentity"
             headers = {'Content-Type': 'application/json','ApiKey': f'{api_key}'}
             batch_size=200
             all_results = []
@@ -3867,6 +3907,9 @@ def call_to_get_assurance_level(employees):
                         batch_result = data.get("data", [])
                         all_results.extend(batch_result)
                         frappe.msgprint(f"Batch {i} sent successfully.")
+                    else:
+                        frappe.log_error(frappe.get_traceback(), response.json())
+                        return {"error": response.status_code, "title": response.json()}
                 except Exception as e:
                         frappe.log_error(frappe.get_traceback(), str(e))
                         return {"error": str(e), "title": "API call failed"}
@@ -3906,3 +3949,41 @@ def background_enqueue_run(report_name, filters=None, user=None):
 		"name": track_instance.name,
 		"redirect_url": get_url_to_form("Prepared Report", track_instance.name)
 	}
+
+
+def update_fields_in_doctypes(data):
+	"""
+	Update multiple Doctypes with different filters and fields.
+
+	:param data: List of dicts, each with keys:
+		- doctype: str
+		- filters: dict
+		- field_value_map: dict
+
+	Example:
+	[
+		{
+			"doctype": "Operations Post",
+			"filters": {"site": self.name, "project": doc_before_save.project},
+			"field_value_map": {"project": self.project, "site": self.name}
+		}
+	]
+	"""
+	for entry in data:
+		doctype = entry.get("doctype")
+		filters = entry.get("filters")
+		field_value_map = entry.get("field_value_map")
+
+		if doctype and filters and field_value_map:
+			if frappe.db.exists(doctype, filters):
+				docs = frappe.get_all(doctype, filters=filters, pluck="name")
+				for docname in docs:
+					doc = frappe.get_doc(doctype, docname)
+					for field, value in field_value_map.items():
+						doc.set(field, None)   # Clear the field to reset fetched values
+						doc.set(field, value)  # Re-set the actual value
+					doc.save()
+
+
+
+   

@@ -1,0 +1,226 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series: series",
+ "creation": "2025-05-11 08:07:45.221594",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "designation",
+  "department",
+  "civil_id_assurance_level",
+  "column_break_ymuu",
+  "date",
+  "leave_application",
+  "leave_type",
+  "expected_resumption_date",
+  "new_resumption_date",
+  "column_break_ahqw",
+  "approver",
+  "approver_name",
+  "additional_leave_days",
+  "current_leave_balance",
+  "leave_without_pay",
+  "section_break_btwc",
+  "naming_series",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_btwc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Leave Extension Request",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "leave_application.employee",
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ymuu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_ahqw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "additional_leave_days",
+   "fieldtype": "Int",
+   "label": "Additional Leave Days",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.department",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.custom_civil_id_assurance_level",
+   "fieldname": "civil_id_assurance_level",
+   "fieldtype": "Data",
+   "label": "Civil ID Assurance Level",
+   "read_only": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "leave_application",
+   "fieldtype": "Link",
+   "label": "Leave Application",
+   "options": "Leave Application",
+   "read_only": 1,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fetch_from": "leave_application.leave_type",
+   "fieldname": "leave_type",
+   "fieldtype": "Link",
+   "label": "Leave Type",
+   "options": "Leave Type",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "leave_application.resumption_date",
+   "fieldname": "expected_resumption_date",
+   "fieldtype": "Date",
+   "label": "Expected Resumption Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "new_resumption_date",
+   "fieldtype": "Date",
+   "label": "New Resumption Date",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "leave_application.leave_approver",
+   "fieldname": "approver",
+   "fieldtype": "Link",
+   "label": "Approver",
+   "options": "User"
+  },
+  {
+   "fetch_from": "approver.full_name",
+   "fieldname": "approver_name",
+   "fieldtype": "Data",
+   "label": "Approver Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_leave_balance",
+   "fieldtype": "Int",
+   "label": "Current Leave Balance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "leave_without_pay",
+   "fieldtype": "Int",
+   "label": "Leave Without Pay",
+   "read_only": 1
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "no_copy": 1,
+   "options": "HR-LER-.YYYY.-",
+   "print_hide": 1,
+   "reqd": 1,
+   "set_only_once": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "link_doctype": "Leave Application",
+   "link_fieldname": "custom_leave_extension_request"
+  }
+ ],
+ "modified": "2025-05-13 17:31:01.212850",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Leave Extension Request",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

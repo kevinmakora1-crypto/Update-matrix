@@ -32,7 +32,6 @@ app_include_js = [
 		"/assets/one_fm/js/maps.js",
 		"/assets/one_fm/js/desk.js",
         "/assets/one_fm/js/showdown.min.js",
-        "purchase.bundle.js",
 		"/assets/one_fm/js/form_overrides/workflow_override.js",
         "text_editor.bundle.js"
 ]
@@ -130,6 +129,8 @@ doctype_list_js = {
 	"Attendance" : "public/js/doctype_list_js/attendance_list.js",
 	"Wiki Page": "public/js/doctype_list_js/wiki_page_list.js",
     "Employee": "public/js/doctype_list_js/employee_list.js",
+    "ToDo": "public/js/doctype_list_js/todo_list.js",
+    "Designation": "public/js/doctype_list_js/designation_list.js",
 }
 doctype_tree_js = {
 	"Warehouse" : "public/js/doctype_tree_js/warehouse_tree.js",
@@ -208,6 +209,7 @@ standard_queries = {
 	"Operations Role": "one_fm.operations.doctype.operations_role.operations_role.get_operations_role_list",
 	"Warehouse": "one_fm.overrides.queries.warehouse_query",
     "Employee": "one_fm.overrides.queries.employee_query",
+    "Designation": "one_fm.overrides.queries.designation_query",
 }
 
 doc_events = {
@@ -229,7 +231,7 @@ doc_events = {
 		"validate":[
 			"one_fm.overrides.purchase_order.validate_purchase_uom"
 		],
-		# 'on_update':"one_fm.purchase.utils.on_update",
+		'on_update':"one_fm.overrides.purchase_order.on_update",
 		"on_update_after_submit": "one_fm.purchase.utils.set_po_letter_head"
 	},
 	"Leave Application": {
@@ -376,6 +378,7 @@ doc_events = {
 	},
 	"Interview": {
 		"validate": "one_fm.overrides.interview.update_interview_rounds_in_job_applicant",
+        "after_insert": "one_fm.overrides.interview.update_from_to_date_null",
 	},
 	"Issue": {
 		"after_insert": [
@@ -441,10 +444,7 @@ doc_events = {
 	# }
     "OAuth Bearer Token": {
 		"after_insert": "one_fm.api.doc_methods.oauth_bearer_token.revoke_and_delete_existing_tokens",
-	},
-    "Employee": {
-        "before_save": "one_fm.overrides.employee.get_assurance_level_of_employee"
-    }
+	}
 }
 
 standard_portal_menu_items = [
@@ -535,6 +535,7 @@ override_doctype_class = {
     "Interview Feedback": "one_fm.overrides.interview_feedback.InterviewFeedbackOverride",
     "Leave Allocation": "one_fm.overrides.leave_allocation.LeaveAllocationOverride",
     "Interview": "one_fm.overrides.interview.InterviewOverride",
+    "Purchase Order": "one_fm.overrides.purchase_order.PurchaseOrderOverride",
 
     # "User": "one_fm.overrides.user.UserOverride"
 }
@@ -694,6 +695,9 @@ scheduler_events = {
 		"12 3 * * *":[ #“At 03:12"
 			'one_fm.one_fm.sales_invoice_custom.create_sales_invoice'
 		],
+        "00 2 * * *":[ #“At 02:00"
+			"one_fm.one_fm.doctype.leave_acknowledgement_form.leave_acknowledgement_form.generate_leave_acknowledgement"
+		],
 		"08 00 24 * *": [ #“At 00:08 on day-of-month 24.”
 			'one_fm.api.tasks.generate_penalties'
 		],
@@ -706,7 +710,6 @@ scheduler_events = {
 			'one_fm.api.tasks.generate_payroll'
 		],
 		"05 23 1-31 * *": [ #“At 23:05 on every day-of-month from 1 through 31.”
-			'one_fm.overrides.attendance_request.mark_future_attendance_request',
 			'one_fm.tasks.one_fm.daily.roster_projection_view_task',
 		],
 		"15 0 * * *": [ # create shift assignment
@@ -748,7 +751,7 @@ scheduler_events = {
         "0 0 15 * *": [
             "one_fm.one_fm.page.roster.roster.create_employee_schedule"
         ],
-        "*/5 * * * *": [ # Runs every 5 minutes
+        "* * * * *": [ # Runs every minute
             "one_fm.overrides.todo.sync_google_tasks_with_todos"
         ]
 	}
@@ -850,7 +853,9 @@ override_whitelisted_methods = {
     "frappe.desk.form.load.get_docinfo": "one_fm.permissions.get_docinfo",
 	"erpnext.controllers.accounts_controller.update_child_qty_rate":"one_fm.overrides.accounts_controller.update_child_qty_rate",
 	"hrms.hr.doctype.goal.goal.get_children":"one_fm.overrides.goal.get_childrens",
-    "hrms.payroll.doctype.payroll_entry.payroll_entry.get_start_end_dates": "one_fm.overrides.payroll_entry.get_start_end_dates"
+    "hrms.payroll.doctype.payroll_entry.payroll_entry.get_start_end_dates": "one_fm.overrides.payroll_entry.get_start_end_dates",
+    "hrms.hr.doctype.job_applicant.job_applicant.create_interview": "one_fm.overrides.job_applicant.create_interview"
+
 }
 
 
@@ -888,7 +893,8 @@ after_migrate = [
     # "one_fm.after_migrate.execute.comment_payment_entry_in_hrms",
     "one_fm.after_migrate.execute.comment_process_expired_allocation_in_hrms",
     "one_fm.after_migrate.execute.replace_prompt_message_in_goal",
-    "one_fm.after_migrate.execute.update_hd_ticket_agent"
+    "one_fm.after_migrate.execute.update_hd_ticket_agent",
+    "one_fm.setup.setup.after_migrate"
 ]
 
 before_migrate = [

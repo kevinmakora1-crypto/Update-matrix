@@ -34,6 +34,9 @@ frappe.ui.form.on('Employee', {
             };
         });
 	},
+	one_fm_provide_accommodation_by_company: function(frm){
+		set_current_address(frm);
+	},
 	status: function(frm){
 		set_mandatory(frm);
 	},
@@ -117,6 +120,26 @@ frappe.ui.form.on('Employee Incentive', {
 		});
 	}
 });
+
+
+const set_current_address = (frm) => {
+    if (!frm.doc.name) return;
+
+    if (frm.doc.one_fm_provide_accommodation_by_company) {
+        frappe.call({
+            method: "one_fm.overrides.employee.fetch_accomodation_name",
+            args: { name: frm.doc.name },
+            callback: (r) => {
+                if (r.message && r.data.accomodation) {
+                    frm.set_value("current_address", r.data.accomodation);
+                }
+            }
+        });
+    } else {
+        frm.set_value("current_address", "");
+    }
+};
+
 
 // SET MANDATORY FIELDS
 let set_mandatory = frm => {

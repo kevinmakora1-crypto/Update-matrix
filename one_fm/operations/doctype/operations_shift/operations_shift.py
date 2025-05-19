@@ -8,7 +8,7 @@ from datetime import timedelta
 from frappe.model.document import Document
 from frappe import _
 from frappe.model.rename_doc import rename_doc
-from frappe.utils import cstr, get_datetime, today, formatdate, getdate
+from frappe.utils import cstr, get_datetime, today, formatdate, getdate, add_days, get_time
 
 class OperationsShift(Document):
 	def autoname(self):
@@ -26,8 +26,8 @@ class OperationsShift(Document):
 	def on_update(self):
 		self.clear_cache()
 		self.validate_name()
-
 		self.update_post_status()
+		self.update_employee_schedules_and_shift_assignments()
 
 	def validate_name(self):
 		#this method is updating the name of the record and sending clear message through exception if any of the records are missing
@@ -94,6 +94,18 @@ class OperationsShift(Document):
 			else:
 				queue_operation_role_inactive(operations_role_list)
 				frappe.msgprint(_("Operations Role linked to the Shift {0} is set to Inactive!".format(self.name)), alert=True, indicator='green')
+
+	def update_employee_schedules_and_shift_assignments(self):
+		if self.is_new():
+			return
+		
+		if self.has_value_changed('shift_type'):
+			start_time = get_time(self.start_time)
+			end_time = get_time(self.end_time)
+
+			frappe.enqueue(update_employee_schedule_shift_type, is_async=True, queue='long', operations_shift=self.name, new_shift_type=self.shift_type, new_start_time=start_time, new_end_time=end_time)
+			frappe.enqueue(update_shift_assignment_shift_type, is_async=True, queue='long', operations_shift=self.name, new_shift_type=self.shift_type, new_start_time=start_time, new_end_time=end_time)
+
 
 def queue_operation_role_inactive(operations_role_list):
 	for operations_role in operations_role_list:
@@ -165,15 +177,20 @@ def get_shift_supervisor(shift, date=False):
 
 	for supervisor in supervisors:
 		# Return the supervisor if the supervisor working on the day
-		if frappe.db.exists(
-			"Employee Schedule",
-			{
-				"employee": supervisor.supervisor,
-				"date": date,
-				"employee_availability": "Working"
-			}
-		):
-			return supervisor.supervisor
+		shift_working = frappe.db.get_value("Employee", supervisor.supervisor, "shift_working")
+		if shift_working:
+			if frappe.db.exists(
+				"Employee Schedule",
+				{
+					"employee": supervisor.supervisor,
+					"date": date,
+					"employee_availability": "Working"
+				}
+			):
+				return supervisor.supervisor
+		else:
+			if not frappe.db.exists("Leave Application", {"employee": supervisor.supervisor, "status": "Approved", "from_date":["<=", date], "to_date":[">=", date]}):
+				return supervisor.supervisor
 
 	return None
 
@@ -201,3 +218,21 @@ def get_supervisor_operations_shifts(supervisor=None, project=None, site=None):
 	shifts = frappe.db.sql(query, as_dict=True)
 
 	return [shift.name for shift in shifts]
+
+def update_employee_schedule_shift_type(operations_shift, new_shift_type, new_start_time, new_end_time):
+	employee_schedules = frappe.get_all("Employee Schedule", filters={"shift": operations_shift, "date": [">=", today()]}, fields=["name", "date"])
+
+	for schedule in employee_schedules:
+		start_date_time = f"{schedule.date} {new_start_time}"
+		end_date_time = f"{add_days(schedule.date, 1) if new_start_time > new_end_time else schedule.date} {new_end_time}"
+
+		frappe.db.set_value("Employee Schedule", schedule.name, {"shift_type": new_shift_type, "start_datetime": start_date_time, "end_datetime": end_date_time})
+
+def update_shift_assignment_shift_type(operations_shift, new_shift_type, new_start_time, new_end_time):
+	shift_assignments = frappe.get_all("Shift Assignment", filters={"shift": operations_shift, "start_date": [">=", today()]}, fields=["name", "start_date", "end_date", "shift_classification"])
+
+	for assignment in shift_assignments:
+		start_date_time = f"{assignment.start_date} {new_start_time}"
+		end_date_time = f"{add_days(assignment.end_date, 1) if new_start_time > new_end_time else assignment.end_date} {new_end_time}" if assignment.end_date else ""
+
+		frappe.db.set_value("Shift Assignment", assignment.name, {"shift_type": new_shift_type, "start_datetime": start_date_time, "end_datetime": end_date_time, "shift_classification": assignment.shift_classification})

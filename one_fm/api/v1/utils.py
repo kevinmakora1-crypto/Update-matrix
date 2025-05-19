@@ -38,7 +38,7 @@ def response_dict(message, status_code, data=None, error=None):
 def get_current_user_details():
 	user = frappe.session.user
 	user_roles = frappe.get_roles(user)
-	user_employee = frappe.get_value("Employee", {"user_id": user}, ["name", "employee_id", "employee_name", "image", "enrolled", "designation"], as_dict=1)
+	user_employee = frappe.get_value("Employee", {"user_id": user}, ["name", "employee_id", "employee_name", "image", "enrolled", "designation", "custom_enable_face_recognition"], as_dict=1)
 	return user, user_roles, user_employee
 
 def setup_directories():
@@ -218,6 +218,8 @@ def google_map_api():
     
 
 def verify_via_face_recogniton_service(url: str, data: dict, files: dict) -> tuple:
+    decrypt_video = 1 if type(files.get('video_file'))==str else 0
+    data['decrypt_video'] = decrypt_video
     res = requests.post(url=url, data=data, files=files)
     if res.status_code == 200:
         api_response = res.json()

@@ -39,7 +39,7 @@ class ShiftPermission(Document):
 		attendance = frappe.db.exists('Attendance',{'attendance_date': self.date, 'employee': self.employee, 'docstatus': 1})
 		if attendance:
 			frappe.throw(_('There is an Attendance {0} exists for the Employee {1} on {2}'.format(attendance, self.emp_name, format_date(self.date))), exc=ExistAttendance)
-	
+
 	def on_update(self):
 		self.update_shift_assignment_checkin()
 		self.assign_to_owner()
@@ -51,7 +51,7 @@ class ShiftPermission(Document):
 
 	# This method validates the permission date and avoid creating permission for previous days
 	def validate_date(self):
-		if getdate(self.date) < getdate():
+		if getdate(self.date) < getdate() and frappe.session.user not in ['Administrator']:
 			frappe.throw(_("Please note that shift permission can not be created for past date")) if self.is_new() else frappe.throw("Please note that shift permission can not be updated to a past date")
 
 	# This method validates any dublicate permission for the employee on same day
@@ -59,7 +59,7 @@ class ShiftPermission(Document):
 		date = getdate(self.date).strftime('%d-%m-%Y')
 		if self.docstatus==0 and frappe.db.exists("Shift Permission", {
 			"employee": self.employee, "date":self.date, "assigned_shift": self.assigned_shift,
-			"workflow_state":"Pending Approver", 'name':['!=', self.name]
+			"workflow_state":"Pending Approver", 'name':['!=', self.name], 'log_type': self.log_type
 			}):
 			frappe.throw(_("{employee} has already applied for permission on {date}.".format(employee=self.emp_name,date=date)))
 
@@ -122,19 +122,23 @@ class ShiftPermission(Document):
 			if self.assigned_shift:
 				if self.log_type == "IN":
 					if self.arrival_time:
-						date_time = datetime.strptime(self.date + " " + self.arrival_time, '%Y-%m-%d %H:%M:%S')
+						date_str = frappe.utils.get_date_str(self.date)
+						arrival_time_str = str(self.arrival_time)
+						date_time = datetime.strptime(date_str + " " + arrival_time_str, '%Y-%m-%d %H:%M:%S')
 						frappe.db.sql("""
 										UPDATE `tabShift Assignment`
 										SET start_datetime = %s
 										WHERE name = %s
 									""", (date_time, self.assigned_shift))
-
-						frappe.db.sql("""
-										UPDATE `tabEmployee Checkin`
-										SET shift_actual_start = %s, late_entry = 0
-										WHERE shift_assignment = %s
-										AND log_type = %s
-									""", (date_time, self.assigned_shift, self.log_type))
+						if frappe.db.exists("Employee Checkin", {"shift_assignment": self.assigned_shift, "log_type": self.log_type}):
+							frappe.db.sql("""
+											UPDATE `tabEmployee Checkin`
+											SET shift_actual_start = %s, late_entry = 0
+											WHERE shift_assignment = %s
+											AND log_type = %s
+										""", (date_time, self.assigned_shift, self.log_type))
+						else:
+							create_checkin(self)
 
 				else:
 					if self.leaving_time:
@@ -144,13 +148,15 @@ class ShiftPermission(Document):
 										SET end_datetime = %s
 										WHERE name = %s
 									""", (date_time, self.assigned_shift))
-
-						frappe.db.sql("""
-										UPDATE `tabEmployee Checkin`
-										SET shift_actual_end = %s, early_exit = 0
-										WHERE shift_assignment = %s
-										AND log_type = %s
-									""", (date_time, self.assigned_shift, self.log_type))
+						if frappe.db.exists("Employee Checkin", {"shift_assignment": self.assigned_shift, "log_type": self.log_type}):
+							frappe.db.sql("""
+											UPDATE `tabEmployee Checkin`
+											SET shift_actual_end = %s, early_exit = 0
+											WHERE shift_assignment = %s
+											AND log_type = %s
+										""", (date_time, self.assigned_shift, self.log_type))
+						else:
+							create_checkin(self)
 
 			frappe.db.commit()
 
@@ -168,11 +174,11 @@ class ShiftPermission(Document):
 					'assign_to': [self.owner],
 					'description': (_(f"Shift Permission: {self.name} has been returned to Draft. Please check and review."))
 				})
-			
+
 			if self.workflow_state == "Pending Approver" and self.get_doc_before_save().workflow_state == "Draft":
 				# Remove doc owner's assignment
 				remove(self.doctype, self.name, self.owner, ignore_permissions=False)
-		
+
 @frappe.whitelist()
 def fetch_approver(employee, date=None):
 	if employee:
@@ -189,12 +195,12 @@ def fetch_approver(employee, date=None):
 		if employee_shift and len(employee_shift) > 0:
 			approver = get_approver(employee)
 			return {
-				'shift_assignment':employee_shift[0].name, 
-				'approver':approver, 
-				'shift':employee_shift[0].shift, 
+				'shift_assignment':employee_shift[0].name,
+				'approver':approver,
+				'shift':employee_shift[0].shift,
 				'shift_type':employee_shift[0].shift_type
 			}
-	
+
 	frappe.throw("No shift assigned to {employee}".format(employee=employee))
 
 
@@ -213,7 +219,6 @@ def approve_open_shift_permission(start_date, end_date):
 		for i in shift_permissions:
 			try:
 				shift_permission = frappe.get_doc("Shift Permission", i.name)
-				create_checkin(shift_permission)
 				apply_workflow(shift_permission, 'Approve')
 			except Exception as e:
 				error_list += str(e)+'\n\n'

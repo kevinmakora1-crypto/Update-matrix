@@ -1,14 +1,15 @@
+frappe.ui.form.off('Location', 'onload_post_render');
+
 frappe.ui.form.on('Location',{
     onload_post_render: function(frm){
-        $('[data-fieldname="map_html"]').append(`<div style='width:100%; height:500px' id='map'></div>`);
+        $('[data-fieldname="map_html"]').empty().append(`<div style='width:100%; height:500px' id='map'></div>`);
         let {latitude, longitude}= frm.doc;
         window.markers = [];
         window.circles = [];
         // JS API is loaded and available
-        console.log("Called")
         window.map = new google.maps.Map(document.getElementById('map'), {
             center: {lat: 29.338394, lng: 48.005958},
-            zoom: 17
+            zoom: 15
         });
         loadGoogleMap(frm);
 

@@ -16,6 +16,7 @@ from one_fm.api.doc_events import haversine
 from one_fm.utils import get_current_shift, check_existing
 
 from one_fm.one_fm.page.face_recognition.utils import update_onboarding_employee, late_checkin_checker
+from one_fm.api.v1.utils import response
 from one_fm.api.v2.zenquotes import fetch_quote
 
 # setup channel for face recognition
@@ -342,6 +343,9 @@ def check_existing():
 		frappe.throw(_("Please link an employee to the logged in user to proceed further."))
 
 	shift_exists = get_current_shift(employee)
+	if not shift_exists:
+		return response("Resource Not Found", 404, None, f"No Active Shift Found")
+
 	if shift_exists['type'] == "Early":
 		# check if user can checkin with the correct time
 		return response("Resource Not Found", 404, None, f"You are checking in too early, checkin is allowed in {shift_exists['data']} minutes ")

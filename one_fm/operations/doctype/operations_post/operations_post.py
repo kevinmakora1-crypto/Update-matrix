@@ -172,7 +172,9 @@ def queue_create_post_schedule_for_operations_post(operations_post, contracts, e
         #The previous series value from frappe is wrong in some cases
         
         for date in	pd.date_range(start=start_date, end=contracts.end_date):
-            doc_id_template = "-".join(["PS",str(datetime.datetime.now().microsecond),operations_post.name[0:5].upper(),post_abbrv.upper()])
+            
+            date_string = frappe.utils.get_date_str(date.date())
+            doc_id_template = f"{operations_post.name}_{date_string}"
             schedule_exists = False
             if exists_schedule_in_between:
                 if  frappe.db.exists("Post Schedule", {"date": cstr(date.date()),'operations_role': operations_post.post_template, "post": operations_post.name}):

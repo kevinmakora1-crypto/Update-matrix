@@ -16,6 +16,8 @@ frappe.pages['roster'].on_page_load = function (wrapper) {
 
 };
 
+
+
 // Initializes the page with default values
 function load_js(page) {
 	$(this).scrollTop(0);
@@ -25,6 +27,7 @@ function load_js(page) {
 	window.isMonth = 1;
 	window.classgrtw = [];
 	window.classgrt = [];
+
 	setup_staff_filters(page);
 	setup_topbar_events(page);
 
@@ -83,9 +86,8 @@ function load_js(page) {
 		$rosterMonth = $('.rosterMonth');
 		$rosterOtMonth = $('.rosterOtMonth');
 		$postMonth = $('.postMonth');
-		//$rosterWeek = $('.rosterWeek');
-		//$rosterOtWeek = $('.rosterOtWeek');
 		$postWeek = $('.postWeek');
+
 		function basicRosterClick() {
 			window.isOt = false;
 			$(".otRosterClick").removeClass("active");
@@ -94,8 +96,6 @@ function load_js(page) {
 			$(".basicRosterClick").addClass("bg-primary");
 			$rosterMonth.removeClass("d-none");
 			$rosterOtMonth.addClass("d-none");
-			//$rosterWeek.addClass("d-none");
-			//$rosterOtWeek.addClass("d-none");
 			$(".switch-container").removeClass("d-none");
 			displayCalendar(calendarSettings1, page);
 			GetHeaders(1, ".rosterMonth");
@@ -110,8 +110,6 @@ function load_js(page) {
 			$(".filterhideshow").addClass("d-none");
 			$rosterMonth.addClass("d-none");
 			$rosterOtMonth.removeClass("d-none");
-			//$rosterWeek.addClass("d-none");
-			//$rosterOtWeek.addClass("d-none");
 			$(".switch-container").removeClass("d-none");
 			$(this).parent().addClass("active");
 			displayCalendar(calendarSettings1, page);
@@ -128,11 +126,11 @@ function load_js(page) {
 
 		};
 		$(".rosterviewclick").click(function () {
+			$("#rosterTypeButtons").removeClass("d-none");
+			$("#rosterTypeButtons").addClass("d-flex");
 			$rosterMonth.removeClass("d-none");
 			$rosterOtMonth.addClass("d-none");
 			$postMonth.addClass("d-none");
-			//$rosterWeek.addClass("d-none");
-			//$rosterOtWeek.addClass("d-none");
 			$postWeek.addClass("d-none");
 			$(".postviewclick").removeClass("active");
 			$(".postviewclick").removeClass("bg-primary");
@@ -150,13 +148,13 @@ function load_js(page) {
 			get_roster_data(page);
 		});
 		$(".postviewclick").click(function () {
+			$("#rosterTypeButtons").removeClass("d-flex");
+			$("#rosterTypeButtons").addClass("d-none");
 			$(".basicRosterClick").off('click');
 			$(".otRosterClick").off('click');
 			$rosterMonth.addClass("d-none");
 			$rosterOtMonth.addClass("d-none");
 			$postMonth.removeClass("d-none");
-			//$rosterWeek.addClass("d-none");
-			//$rosterOtWeek.addClass("d-none");
 			$postWeek.addClass("d-none");
 			$(".postviewclick").addClass("active");
 			$(".postviewclick").addClass("bg-primary");
@@ -172,15 +170,12 @@ function load_js(page) {
 			get_post_data(page);
 		});
 		$(".basicRosterClick").click(basicRosterClick);
-		$(".otRosterClick").click(
-
-			otRosterClick);
+		$(".otRosterClick").click(otRosterClick);
 
 		//week view click jquery
 		$('.postmonthviewclick').click(function () {
 			$rosterMonth.addClass("d-none");
 			$postMonth.removeClass("d-none");
-			//$rosterWeek.addClass("d-none");
 			$postWeek.addClass("d-none");
 			displayCalendar(calendarSettings1, page);
 			GetHeaders(1, ".postMonth");
@@ -189,7 +184,6 @@ function load_js(page) {
 		$('.monthviewclick').click(function () {
 			$rosterMonth.removeClass("d-none");
 			$postMonth.addClass("d-none");
-			//$rosterWeek.addClass("d-none");
 			$postWeek.addClass("d-none");
 			displayCalendar(calendarSettings1, page);
 			GetHeaders(1, ".rosterMonth");
@@ -235,13 +229,7 @@ function load_js(page) {
 							label: 'Plan From Date',
 							fieldname: 'plan_from_date',
 							fieldtype: 'Date',
-							default: date,
-							onchange: function () {
-								let plan_from_date = d.get_value('plan_from_date');
-								if (plan_from_date && moment(plan_from_date).isBefore(moment(frappe.datetime.nowdate()))) {
-									frappe.throw(__("Plan From Date cannot be before today."));
-								}
-							}
+							default: date
 						},
 						{
 							label: 'Plan Till Date',
@@ -309,7 +297,13 @@ function load_js(page) {
 							fieldtype: 'Section Break',
 							depends_on: "eval:doc.post_status == 'Post Off'",
 						},
-						{ label: 'Repeat', fieldname: 'repeat', fieldtype: 'Select', options: 'Does not repeat\nDaily\nWeekly\nMonthly\nYearly' },
+						{
+							label: 'Post Off From Date',
+							fieldname: 'post_off_from_date',
+							fieldtype: 'Date',
+							default: date
+						},
+						{ label: 'Repeat', fieldname: 'repeat', fieldtype: 'Select', options: 'Does not repeat\nSelected Days Only\nDaily\nWeekly\nMonthly\nYearly' },
 						{ 'fieldtype': 'Section Break', 'fieldname': 'sb1', 'depends_on': 'eval:doc.post_status=="Post Off" && doc.repeat=="Weekly"' },
 						{ 'label': 'Sunday', 'fieldname': 'sunday', 'fieldtype': 'Check' },
 						{ 'label': 'Wednesday', 'fieldname': 'wednesday', 'fieldtype': 'Check' },
@@ -320,7 +314,7 @@ function load_js(page) {
 						{ 'fieldtype': 'Column Break', 'fieldname': 'cb2' },
 						{ 'label': 'Tuesday', 'fieldname': 'tuesday', 'fieldtype': 'Check' },
 						{ 'label': 'Friday', 'fieldname': 'friday', 'fieldtype': 'Check' },
-						{ 'fieldtype': 'Section Break', 'fieldname': 'sb2', 'depends_on': 'eval:doc.post_status=="Post Off" && doc.repeat!= "Does not repeat"' },
+						{ 'fieldtype': 'Section Break', 'fieldname': 'sb2', 'depends_on': 'eval:doc.post_status=="Post Off" && doc.repeat!= "Does not repeat" && doc.repeat!= "Selected Days Only"' },
 						{ 'label': 'Repeat Till', 'fieldtype': 'Date', 'fieldname': 'repeat_till', 'depends_upon': 'eval:doc.project_end_date==0' },
 						{
 							fieldname: 'sb2',
@@ -398,7 +392,6 @@ function load_js(page) {
 
 						frappe.call({
 							method: 'one_fm.one_fm.page.roster.roster.edit_post',
-							// method: 'one_fm.api.v2.flutter.roster.edit_post',
 							args: { posts, values },
 							callback: function (r) {
 
@@ -409,7 +402,7 @@ function load_js(page) {
 
 								if (r.status_code == 200) {
 									frappe.msgprint(r.data.message);
-					
+
 									setTimeout(() => {
 										frappe.hide_msgprint();
 									}, 4000);
@@ -434,11 +427,6 @@ function load_js(page) {
 		$("#chkassgined").prop("checked", true);
 		$("#chkassgined").trigger("change");
 
-		//Not being used right now
-		// Add employee modal
-		$("#addemployeeselect").select2({
-			placeholder: "Search Employee",
-		});
 
 		//========================================== Roster Calendar Month View
 
@@ -466,32 +454,6 @@ function load_js(page) {
 	}
 
 
-	$(`input[name="neverselectallcheckbox"]`).on("change", function () {
-
-		if ($(this).is(":checked")) {
-			$("#txtpostenddate").addClass("pointerClass");
-			//add values to [] list
-
-			$(".selectclass").map(function () {
-				if (($(this).attr("data-selectid") != undefined) && ($(this).attr("data-selectid") != null) && ($(this).attr("data-selectid") != "")) {
-					if (isMonth == 1) {
-
-						classgrt.push($(this).attr("data-selectid"));
-					}
-					else {
-
-						classgrtw.push($(this).attr("data-selectid"));
-					}
-				}
-			});
-
-		}
-		else {
-			$("#txtpostenddate").removeClass("pointerClass");
-			classgrt = [];
-			classgrtw = [];
-		}
-	});
 	// Show Active Post value change
 	$(`input[name="chkpostActivePost"]`).on("change", function () {
 
@@ -644,7 +606,6 @@ function load_js(page) {
 			$("#unScheduleStaff").removeClass("d-none");
 			$("#chilldtable3").removeClass("d-none");
 			$("#rowchilldtable3").removeClass("d-none");
-			// $("#chilldtable3").css("display","none !important");
 
 			$("#scheduledStaff1").addClass("d-none");
 			$("#scheduledStaff2").addClass("d-none");
@@ -656,14 +617,11 @@ function load_js(page) {
 			$("#rowchilldtable2").addClass("d-none");
 
 			$("#chkschedule").prop("checked", false);
-
 		}
 		else {
 			$("#unScheduleStaff").addClass("d-none");
 			$("#chilldtable3").addClass("d-none");
 			$("#rowchilldtable3").addClass("d-none");
-			// $("#chilldtable3").css("display", "block");
-
 		}
 	});
 
@@ -683,6 +641,104 @@ function load_js(page) {
 	});
 	//table custom accordian click
 
+	setup_preset_filters(page)
+}
+
+function get_preset_filters () {
+	const { main_view, sub_view, roster_type, staff_view_mode, employee_id, employee_name,...pageFilters } = frappe.utils.get_query_params();
+
+	return {
+		view: { main_view, sub_view, roster_type, staff_view_mode },
+		employee: { employee_id, employee_name },
+		page: pageFilters
+	}
+}
+
+// Setup and populate preset filters set via query params
+function setup_preset_filters (page) {
+	// To avoid re-rendering of roster page
+	if(window.preset_filters_applied) return
+
+	const { view: viewFilters, page: pageFilters, employee: employeeFilters } = get_preset_filters()
+
+	const { main_view: mainView, sub_view: subView, roster_type: rosterType, staff_view_mode: staffViewMode } = viewFilters
+
+	if (mainView) {
+		setTimeout(() => {
+		  $("#page-roster")
+			.find(`.redirect_route[data-route="${mainView}"]`)
+			.click();
+		}, 500);
+	}
+
+	if (page.datepicker && pageFilters.month && pageFilters.year) {
+		const newDate = moment(`${pageFilters.year}-${pageFilters.month}-01`, "YYYY-MM-DD").toDate();
+		page.datepicker.setDate(newDate);
+		page.datepicker.set('defaultDate', newDate);
+		if (calendarSettings1) {
+			calendarSettings1.date = moment(newDate);
+			displayCalendar(calendarSettings1, page);
+		}
+	}
+
+
+	function toggle_between_views() {
+		if(mainView === 'roster') {
+			if(subView === 'roster') {
+				setTimeout(() => {
+					$(".rosterviewclick").click()
+				  }, 1000);
+			}
+			if(subView === 'post') {
+				setTimeout(() => {
+					$(".postviewclick").click()
+				  }, 1000);
+			}
+			if(rosterType === 'basic') {
+				setTimeout(() => {
+					$(".basicRosterClick").click()
+				  }, 1000);
+			}
+			if(rosterType === 'ot') {
+				setTimeout(() => {
+					$(".otRosterClick").click()
+				  }, 1000);
+			}
+		}
+	}
+
+	function populate_values() {
+		if (mainView === 'roster') {
+			setTimeout(() => {
+				const { employee_id: employeeID, employee_name: employeeName } = employeeFilters;
+
+			    let wrapper_element = get_wrapper_element();
+				if (employeeID) {
+					$(wrapper_element).find(".search-employee-id").val(employeeID);
+				}
+			    if (employeeName) {
+					$(wrapper_element).find(".search-employee-name").val(employeeName);
+				}
+			}, 1000);
+		} else if (mainView === 'staff') {
+			setTimeout(() => {
+				const { company, project, site, shift, department, designation } = pageFilters;
+			    if(company) $('.staff-company-dropdown').html(company)
+			    if(project) $('.staff-project-dropdown').html(project)
+			    if(site) $('.staff-site-dropdown').html(site)
+			    if(shift) $('.staff-shift-dropdown').html(shift)
+			    if(department) $('.staff-department-dropdown').html(department)
+			    if(designation) $('.staff-designation-dropdown').html(designation)
+
+				render_staff(staffViewMode || "list")
+			}, 1000);
+		}
+	}
+
+	toggle_between_views()
+	populate_values()
+
+	window.preset_filters_applied = true
 }
 
 // Show popups on clicking edit options in Roster view
@@ -704,14 +760,33 @@ function setup_topbar_events(page) {
 		dayoff(page);
 	});
 
+	$('.clear_roster_filters').on('click', function () {
+		clear_roster_filters(page);
+	});
+
+	$('.clear_staff_filters').on('click', function () {
+		clear_staff_filters(page);
+	});
+
 	$('.clear_selection').on('click', function () {
 		clear_selection(page);
+	});
+
+	$("#rosterEmployeeActions").on("click", function() {
+		roster_employee_actions(page);
+	});
+
+	$("#rosterDayOffIssues").on("click", function() {
+		roster_day_off_issues(page);
+	});
+	
+	$("#rosterPostActions").on("click", function() {
+		roster_post_actions(page);
 	});
 }
 
 //Bind events to Edit options in Roster/Post view
 function bind_events(page) {
-	let d1 = performance.now();
 	let wrapper_element = $(get_wrapper_element());
 	paginateTable(page);
 
@@ -720,7 +795,6 @@ function bind_events(page) {
 		let $rosterMonth = $('.rosterMonth');
 		let $rosterOtMonth = $('.rosterOtMonth');
 		let $postMonth = $('.postMonth');
-		//let $rosterWeek = $('.rosterWeek');
 		let $postWeek = $('.postWeek');
 		$postMonth.find(".hoverselectclass").on("click", function () {
             // Loop through all rows and if there is a checked row, unselect all cells in that row.
@@ -828,19 +902,6 @@ function bind_events(page) {
 			}
 		});
 
-		//add array on each of data select from calender
-		// $rosterWeek.find(".hoverselectclass").on("click", function () {
-		// 	$(this).toggleClass("selectclass");
-		// 	// If the id is not already in the array, add it. If it is, remove it
-		// 	classgrt.indexOf(this.getAttribute("data-selectid")) === -1 ? classgrt.push(this.getAttribute("data-selectid")) : classgrt.splice(classgrt.indexOf(this.getAttribute("data-selectid")), 1);
-
-		// 	if (classgrt.join(",") === "") {
-		// 		$(".filterhideshow").addClass("d-none");
-		// 	}
-		// 	else {
-		// 		$(".filterhideshow").removeClass("d-none");
-		// 	}
-		// });
 
 		/*on checkbox select change*/
 		$postWeek.find(`input[name="selectallcheckbox"]`).on("change", function () {
@@ -915,41 +976,7 @@ function bind_events(page) {
 				classgrt = [... new Set(classgrt)];
 			});
 		});
-		//on checkbox select change
-		// $rosterWeek.find(`input[name="selectallcheckbox"]`).on("change", function () {
-		// 	if ($(this).is(":checked")) {
 
-		// 		$(this).closest('tr').children("td").children().not("label").each(function (i, v) {
-		// 			let [employee, date] = $(v).attr('data-selectid').split('|');
-		// 			if (moment(date).isAfter(moment())) {
-		// 				$(v).addClass("selectclass");
-		// 			}
-		// 		});
-		// 		$(".filterhideshow").removeClass("d-none");
-
-		// 	}
-		// 	else {
-		// 		$(this).closest('tr').children("td").children().not("label").each(function (i, v) {
-		// 			classgrt.splice(classgrt.indexOf($(v).attr('data-selectid')), 1);
-		// 		});
-		// 		$(this).closest('tr').children("td").children().not("label").removeClass("selectclass");
-		// 		$(".filterhideshow").addClass("d-none");
-		// 	}
-		// 	$(".selectclass").map(function () {
-		// 		classgrt.push($(this).attr("data-selectid"));
-		// 		classgrt = [... new Set(classgrt)];
-		// 		// if (($(this).attr("data-selectid") != undefined) && ($(this).attr("data-selectid") != null) && ($(this).attr("data-selectid") != "")) {
-		// 		// 	if (isMonth == 1) {
-		// 		// 		// classgrt.indexOf(this.getAttribute("data-selectid")) === -1 ? classgrt.push(this.getAttribute("data-selectid")) : classgrt.splice(classgrt.indexOf(this.getAttribute("data-selectid")), 1);
-		// 		// 		classgrt.push($(this).attr("data-selectid"));
-		// 		// 	}
-		// 		// 	else {
-		// 		// 		// classgrtw.indexOf(this.getAttribute("data-selectid")) === -1 ? classgrt.push(this.getAttribute("data-selectid")) : classgrt.splice(classgrt.indexOf(this.getAttribute("data-selectid")), 1);
-		// 		// 		classgrtw.push($(this).attr("data-selectid"));
-		// 		// 	}
-		// 		// }
-		// 	});
-		// });
 		//on checkbox select change
         $rosterMonth.find(`input[name="selectallcheckbox"]`).on("change", function () {
             let $checked_employee = $(this);
@@ -996,19 +1023,8 @@ function bind_events(page) {
 
 
 			$(".selectclass").map(function () {
-
 				classgrt.push($(this).attr("data-selectid"));
 				classgrt = [... new Set(classgrt)];
-				// if (($(this).attr("data-selectid") != undefined) && ($(this).attr("data-selectid") != null) && ($(this).attr("data-selectid") != "")) {
-				// 	if (isMonth == 1) {
-				// 		// classgrt.indexOf(this.getAttribute("data-selectid")) === -1 ? classgrt.push(this.getAttribute("data-selectid")) : classgrt.splice(classgrt.indexOf(this.getAttribute("data-selectid")), 1);
-				// 		classgrt.push($(this).attr("data-selectid"));
-				// 	}
-				// 	else {
-				// 		classgrtw.push($(this).attr("data-selectid"));
-				// 		// classgrtw.indexOf(this.getAttribute("data-selectid")) === -1 ? classgrtw.push(this.getAttribute("data-selectid")) : classgrtw.splice(classgrtw.indexOf(this.getAttribute("data-selectid")), 1);
-				// 	}
-				// }
 			});
 		});
 		$rosterOtMonth.find(`input[name="selectallcheckbox"]`).on("change", function () {
@@ -1086,7 +1102,6 @@ function bind_events(page) {
 		});
 		//on checkbox select change
 	}
-	let d2 = performance.now();
 
 	window.employees_list = [];
 	bind_search_bar_event(page);
@@ -1109,6 +1124,8 @@ function bind_events(page) {
 		}
 
 	})
+
+
 }
 
 function bind_search_bar_event(page) {
@@ -1190,7 +1207,7 @@ function get_roster_data(page, isOt) {
 	let { project, site, shift, department, operations_role, designation, relievers } = page.filters;
 	let { limit_start, limit_page_length } = page.pagination;
 	if (project || site || shift || department || operations_role || designation || relievers){
-
+		$(".clear_roster_filters").removeClass("d-none")
 		$('#cover-spin').show(0);
 		frappe.call({
 			method: "one_fm.one_fm.page.roster.roster.get_roster_view", //dotted path to server method
@@ -1205,6 +1222,8 @@ function get_roster_data(page, isOt) {
 				render_roster(res.data, page, isOt);
 			}
 		});
+	} else {
+		$(".clear_roster_filters").addClass("d-none")
 	}
 }
 // Function responsible for Rendering the Table
@@ -1251,7 +1270,6 @@ function render_roster(res, page, isOt) {
 	let { operations_roles_data, employees_data,reliever,total } = res;
 	reliever_data =  reliever
 	page.pagination.total = total;
-	let b1 = performance.now();
 	let $rosterMonth = isOt ? $('.rosterOtMonth') : $('.rosterMonth');
 	let $rosterMonthbody = isOt ? $('.rosterOtMonth').find('#calenderviewtable tbody') : $('.rosterMonth').find('#calenderviewtable tbody');
 	$rosterMonthbody.empty();
@@ -1277,7 +1295,6 @@ function render_roster(res, page, isOt) {
 		let i = 0;
 		let day = start_date;
 		while (day <= end_date) {
-			// for(let day = start_date; day <= end_date; start_date.add(1, 'days')){
 			let { date, operations_role, count, highlight } = operations_roles_data[operations_role_name][i];
 			let pt_count = `
 			<td class="${highlight}">
@@ -1289,10 +1306,6 @@ function render_roster(res, page, isOt) {
 		}
 		$rosterMonth.find(`#calenderviewtable tbody tr[data-name='${escape_values(operations_roles_data[operations_role_name][i - 1]["operations_role"])}']`).append(`<td></td>`);
 	}
-	let b2 = performance.now();
-
-
-	let c1 = performance.now();
 
 	let emp_row_wrapper = `
 	<tr class="collapse tableshowclass show">
@@ -1534,17 +1547,9 @@ function render_roster(res, page, isOt) {
 		$rosterMonth.find(`#rowchildtable tbody tr[data-name="${employees_data[employee_key][i - 1]['employee']}"]`).append(`<td>${j}</td>`);
 
 	}
-	let c2 = performance.now();
-
-	// frappe.show_alert({message:__("Roster updated"), indicator:'green'});
 	bind_events(page);
-
 }
 
-
-// setTimeout(() => {
-// 	hideSideBar();
-// }, 10000);
 
 // Get data for Roster weekly view and render it
 function get_roster_week_data(page, isOt) {
@@ -1563,7 +1568,7 @@ function get_roster_week_data(page, isOt) {
 		.then(res => {
 			let { operations_roles_data, employees_data, total } = res;
 			page.pagination.total = total;
-			// $('.rosterWeek').find('#calenderweekviewtable tbody').empty();
+
 			let $rosterWeek;
 			if (isOt) $rosterWeek = $('.rosterOtWeek');
 			else $rosterWeek = $('.rosterWeek');
@@ -1571,19 +1576,19 @@ function get_roster_week_data(page, isOt) {
 			$rosterWeekbody.empty();
 			for (operations_role_name in operations_roles_data) {
 				let pt_row = `
-			<tr class="colorclass scheduledStaff" data-name="${operations_role_name}">
-				<td class="sticky">
-					<div class="d-flex">
-						<div class="font16 paddingdiv cursorpointer orangecolor">
-							<i class="fa fa-plus" aria-hidden="true"></i>
+				<tr class="colorclass scheduledStaff" data-name="${operations_role_name}">
+					<td class="sticky">
+						<div class="d-flex">
+							<div class="font16 paddingdiv cursorpointer orangecolor">
+								<i class="fa fa-plus" aria-hidden="true"></i>
+							</div>
+							<div class="font16 paddingdiv borderleft cursorpointer">
+								${operations_role_name}
+							</div>
 						</div>
-						<div class="font16 paddingdiv borderleft cursorpointer">
-							${operations_role_name}
-						</div>
-					</div>
-				</td>
-			</tr>
-			`;
+					</td>
+				</tr>
+				`;
 				$rosterWeekbody.append(pt_row);
 				let { start_date, end_date } = page;
 				start_date = moment(start_date);
@@ -1591,13 +1596,12 @@ function get_roster_week_data(page, isOt) {
 				let i = 0;
 				let day = start_date;
 				while (day <= end_date) {
-					// for(let day = start_date; day <= end_date; start_date.add(1, 'days')){
 					let { date, operations_role, count, highlight } = operations_roles_data[operations_role_name][i];
 
 					let pt_count = `
-				<td class="${highlight}">
-					<div class="text-center" data-selectid="${operations_role + "|" + date}">${count}</div>
-				</td>`;
+					<td class="${highlight}">
+						<div class="text-center" data-selectid="${operations_role + "|" + date}">${count}</div>
+					</td>`;
 					$rosterWeek.find(`#calenderweekviewtable tbody tr[data-name="${escape_values(operations_role)}"]`).append(pt_count);
 					i++;
 					start_date.add(1, 'days');
@@ -1605,33 +1609,32 @@ function get_roster_week_data(page, isOt) {
 				$rosterWeek.find(`#calenderweekviewtable tbody tr[data-name="${escape_values(operations_roles_data[operations_role_name][i - 1]['operations_role'])}"]`).append(`<td></td>`);
 			}
 			let emp_row_wrapper = `
-		<tr class="collapse tableshowclass show">
-			<td colspan="33" class="p-0">
-				<table id="rowchildtable" class="table subcalenderweektable mb-0 text-center" style="width:100%">
-					<tbody id="paginate-parent">
-					</tbody>
-				</table>
-			</td>
-		</tr>`;
+			<tr class="collapse tableshowclass show">
+				<td colspan="33" class="p-0">
+					<table id="rowchildtable" class="table subcalenderweektable mb-0 text-center" style="width:100%">
+						<tbody id="paginate-parent">
+						</tbody>
+					</table>
+				</td>
+			</tr>`;
 			$rosterWeekbody.append(emp_row_wrapper);
 
 			for (employee_key in Object.keys(employees_data).sort().reduce((a, c) => (a[c] = employees_data[c], a), {})) {
 				let { employee_name, employee, date } = employees_data[employee_key];
 				let employee_day_off = employees_data[employee_key][0]['employee_day_off']
 				let emp_row = `
-			<tr data-name="${employee_key}">
-				<td class="sticky">
-					<label class="checkboxcontainer simplecheckbox">
-						<span class="lightgrey font16 customfontweight fontw400 postname">${employee_key}</span>
-						<input type="checkbox" name="selectallcheckbox" class="selectallcheckbox">
-						<span class="checkmark"></span>
-					</label>
-					<label >
-						<span class="lightgrey employee_day_off">${employee_day_off}</span>
-					</label>
-				</td>
-			</tr>
-			`;
+				<tr data-name="${employee_key}">
+					<td class="sticky">
+						<label class="checkboxcontainer simplecheckbox">
+							<span class="lightgrey font16 customfontweight fontw400 postname">${employee_key}</span>
+							<input type="checkbox" name="selectallcheckbox" class="selectallcheckbox">
+							<span class="checkmark"></span>
+						</label>
+						<label >
+							<span class="lightgrey employee_day_off">${employee_day_off}</span>
+						</label>
+					</td>
+				</tr>`;
 				$rosterWeek.find('#rowchildtable tbody').append(emp_row);
 
 				let { start_date, end_date } = page;
@@ -1641,7 +1644,6 @@ function get_roster_week_data(page, isOt) {
 				let j = 0;
 				let day = start_date;
 				while (day <= end_date) {
-					// for(let day = start_date; day <= end_date; start_date.add(1, 'days')){
 					let sch = ``;
 					let classmap = {
 						'Working': 'bluebox',
@@ -1685,19 +1687,7 @@ function get_roster_week_data(page, isOt) {
 					$rosterWeek.find(`#rowchildtable tbody tr[data-name="${employee_name}"]`).append(sch);
 				}
 				$rosterWeek.find(`#rowchildtable tbody tr[data-name="${employees_data[employee_key][i - 1]['employee_name']}"]`).append(`<td>${j}</td>`);
-				// $('.rosterMonth').find(`#rowchildtable tbody tr[data-name="${employee_name}"]`).append(`<td></td>`);
-				// let employee_modal = `
-				// <tr>
-				// 	<td>
-				// 		<a href="#" class="lightbluecolor cursorpointer addpostmodalclick">
-				// 			<span class="fa fa-plus" aria-hidden="true"></span>
-				// 			<span class="pl-2"> Add Employees</span>
-				// 		</a>
-				// 	</td>
-				// </tr>`;
-				// $('.rosterMonth').find(`#rowchildtable tbody"]`).append(employee_modal);
 			}
-			// frappe.show_alert({message:__("Roster updated"), indicator:'green'});
 			bind_events(page);
 		});
 }
@@ -1742,7 +1732,6 @@ function get_post_data(page) {
 					let i = 0;
 					let day = start_date;
 					while (day <= end_date) {
-						// for(let day = start_date; day <= end_date; start_date.add(1, 'days')){
 						let schedule = ``;
 						let classmap = {
 							'Planned': 'bluebox',
@@ -1784,7 +1773,6 @@ function get_post_data(page) {
 					}
 					$postMonth.find(`#calenderviewtable tbody tr[data-name="${escape_values(post_name)}"]`).append(`<td></td>`);
 				}
-				// frappe.show_alert({message:__("Postview updated"), indicator:'green'});
 				bind_events(page);
 			}).catch(e =>{
 				console.log(e);
@@ -1830,7 +1818,6 @@ function get_post_week_data(page) {
 				let i = 0;
 				let day = start_date;
 				while (day <= end_date) {
-					// for(let day = start_date; day <= end_date; start_date.add(1, 'days')){
 					let schedule = ``;
 					let classmap = {
 						'Planned': 'blueboxcolor',
@@ -1872,7 +1859,6 @@ function get_post_week_data(page) {
 				}
 				$postWeek.find(`#calenderweekviewtable tbody tr[data-name="${escape_values(post_name)}"]`).append(`<td></td>`);
 			}
-			// frappe.show_alert({message:__("Postview updated"), indicator:'green'});
 			bind_events(page);
 		});
 }
@@ -1919,6 +1905,11 @@ function get_projects(page) {
 			parent.empty().trigger("change");
 			parent.select2({ data: project_data });
 
+			const selectedProject = page.filters['project'];
+            if (selectedProject) {
+	           parent.val(selectedProject).trigger("change");
+            }
+
 			$(parent).on('select2:select', function (e) {
 				page.filters.project = $(this).val();
 				get_sites(page);
@@ -1943,6 +1934,11 @@ function get_sites(page) {
 			});
 			parent.empty().trigger("change");
 			parent.select2({ data: site_data });
+
+			const selectedSite = page.filters['site'];
+            if (selectedSite) {
+	           parent.val(selectedSite).trigger("change");
+            }
 
 			$(parent).on('select2:select', function (e) {
 				page.filters.site = $(this).val();
@@ -1970,6 +1966,11 @@ function get_shifts(page) {
 			parent.empty().trigger("change");
 			parent.select2({ data: shift_data });
 
+			const selectedShift = page.filters['shift'];
+            if (selectedShift) {
+	           parent.val(selectedShift).trigger("change");
+            }
+
 			$(parent).on('select2:select', function (e) {
 				page.filters.shift = $(this).val();
 				let element = get_wrapper_element().slice(1);
@@ -1994,6 +1995,12 @@ function get_operations_posts(page) {
 				operations_role_data.push({ 'id': name, 'text': name });
 			});
 			parent.select2({ data: operations_role_data });
+
+			const selectedOperationsRole = page.filters['operations_role'];
+            if (selectedOperationsRole) {
+	           parent.val(selectedOperationsRole).trigger("change");
+            }
+
 			$(parent).on('select2:select', function (e) {
 				page.filters.operations_role = $(this).val();
 				let element = get_wrapper_element().slice(1);
@@ -2015,6 +2022,12 @@ function get_departments(page) {
 				department_data.push({ 'id': name, 'text': name });
 			});
 			parent.select2({ data: department_data });
+
+			const selectedDepartment = page.filters['department'];
+            if (selectedDepartment) {
+	           parent.val(selectedDepartment).trigger("change");
+            }
+
 			$(parent).on('select2:select', function (e) {
 				page.filters.department = $(this).val();
 				let element = get_wrapper_element().slice(1);
@@ -2036,6 +2049,12 @@ function get_designations(page){
 				designation_data.push({ 'id': name, 'text': name });
 			});
 			parent.select2({ data: designation_data });
+
+			const selectedDesignation = page.filters['designation'];
+            if (selectedDesignation) {
+	           parent.val(selectedDesignation).trigger("change");
+            }
+
 			$(parent).on('select2:select', function (e) {
 				page.filters.designation = $(this).val();
 				let element = get_wrapper_element().slice(1);
@@ -2047,6 +2066,7 @@ function get_designations(page){
 			;
 		})
 }
+
 function get_relievers(page){
 	let parent = $('[data-page-route="roster"] #rosteringrelieverselect');
 	let reliever_data = [
@@ -2054,6 +2074,12 @@ function get_relievers(page){
 		{'id': 'False', 'text': 'Non Relievers Only'},
 	];
 	parent.select2({ data: reliever_data });
+
+	const selectedReliverStatus = page.filters['relievers'];
+    if (selectedReliverStatus) {
+	    parent.val(selectedReliverStatus).trigger("change");
+    }
+
 	$(parent).on('select2:select', function (e) {
 		page.filters.relievers = $(this).val();
 		let element = get_wrapper_element().slice(1);
@@ -2144,7 +2170,6 @@ function get_wrapper_element(element) {
 	if (element) return element;
 	let roster_element = $(".rosterMonth").attr("class").split(/\s+/).includes("d-none");
 	let roster_ot_element = $(".rosterOtMonth").attr("class").split(/\s+/).includes("d-none");
-	// let roster_week_element = $(".rosterWeek").attr("class").split(/\s+/).includes("d-none");
 	let post_element = $(".postMonth").attr("class").split(/\s+/).includes("d-none");
 	let post_week_element = $(".postWeek").attr("class").split(/\s+/).includes("d-none");
 
@@ -2161,10 +2186,6 @@ function get_wrapper_element(element) {
 		element = '.postWeek';
 		return element;
 	}
-	// else if (roster_element && !roster_week_element && post_element && post_week_element) {
-	// 	element = '.rosterWeek';
-	// 	return element;
-	// }
 }
 
 const search_staff = () => {
@@ -2185,18 +2206,6 @@ const search_staff = () => {
 		});
 
 };
-
-// const debounce = function (fn, d) {
-// 	let timer;
-// 	return function () {
-// 	  let context = this,
-// 		args = arguments;
-// 	  clearTimeout(timer);
-// 	  timer = setTimeout(() => {
-// 		fn.apply(context, arguments);
-// 	  }, d);
-// 	}
-// }
 
 
 //function for dynamic set calender header data on right calender
@@ -2221,7 +2230,7 @@ function GetHeaders(IsMonthSet, element) {
 			var calDate = moment(new Date(today.getFullYear(), today.getMonth(), i));
 			var todayDay = calDate.format("ddd");
 			var todayDaydate = calDate.format("DD");
-			var th = "";// "<th id="data-day_" + i + "" onclick="ChangeRosteringDate(" + i + ",this)">" + calDate.format("ddd") + " " + calDate.format("DD") + "</th>";
+			var th = "";
 			if (todayDay == 'Fri' || todayDay == 'Sat') {
 				th = '<th class="greytablebg vertical-sticky" style="z-index:1" id="data-day_' + i + '" onclick="ChangeRosteringDate(' + i + ',this)">' + calDate.format('ddd') + ' ' + calDate.format('DD') + '</th>';
 			} else if (todayDaydate === getdateres) {
@@ -2247,7 +2256,7 @@ function GetHeaders(IsMonthSet, element) {
 			var calDate = moment(new Date(today.getFullYear(), today.getMonth(), i));
 			var todayDay = calDate.format("ddd");
 
-			var th = "";// "<th id="data-day_" + i + "" onclick="ChangeRosteringDate(" + i + ",this)">" + calDate.format("ddd") + " " + calDate.format("DD") + "</th>";
+			var th = "";
 			if (todayDay == 'Fri' || todayDay == 'Sat') {
 				th = '<th class="greytablebg vertical-sticky" style="z-index:1" id="data-day_' + i + '" onclick="ChangeRosteringDate(' + i + ',this)">' + calDate.format('ddd') + ' ' + calDate.format('DD') + '</th>';
 			}
@@ -2282,14 +2291,11 @@ function staffmanagement() {
 		table = $('[data-page-route="roster"] #staffdatatable').DataTable();
 		table.clear();
 		table.destroy();
-		// table.rows().invalidate().draw();
 	}
-	// else {
 	table = $('[data-page-route="roster"] #staffdatatable').on('processing.dt', function (e, settings, processing) {
 		$('.dataTables_processing')
 			.css('display', processing ? 'flex' : 'none');
-	})
-		.on('preXhrpreXhr.dt', function (e, settings, data) {
+		}).on('preXhrpreXhr.dt', function (e, settings, data) {
 		}).DataTable({
 			"dom": '<"top"fl><"position-relative table-responsive customtableborder"tr><"bottom"ip><"clear">',
 			"paging": true,
@@ -2309,12 +2315,10 @@ function staffmanagement() {
 				},
 			},
 			"lengthMenu": [[50, 100, 500, -1], [50, 100, 500, "All"]],
-			// "pageLength": 50,
 			order: [],
 			columnDefs: [{ orderable: false, targets: [0] }]
 
 		}).columns.adjust();
-	// }
 }
 //datatable function call for staff
 
@@ -2324,24 +2328,18 @@ function assignedfilter(value1) {
 	var functionmainvalue = value1;
 
 	if (filtervale == "Assigned" && functionmainvalue == 0) {
-		// $(".unassignedbtn").removeClass("d-none");
-		// $(".assignedbtn").addClass("d-none");
 		$(".editbtn").removeClass("d-none");
 		$(".mobile-edit").removeClass("d-none");
 		$(".mainclassfilter").removeClass("d-none");
 		$(".allfilters").addClass("d-none");
 	}
 	else if (filtervale == "Unassigned" && functionmainvalue == 0) {
-		// $(".unassignedbtn").addClass("d-none");
-		// $(".assignedbtn").removeClass("d-none");
 		$(".editbtn").removeClass("d-none");
 		$(".mobile-edit").removeClass("d-none");
 		$(".mainclassfilter").removeClass("d-none");
 		$(".allfilters").addClass("d-none");
 	}
 	else {
-		// $(".unassignedbtn").addClass("d-none");
-		// $(".assignedbtn").addClass("d-none");
 		$(".editbtn").addClass("d-none");
 		$(".mobile-edit").addClass("d-none");
 	}
@@ -2360,7 +2358,6 @@ function clearassignfilter() {
 //show (Assign to all) button on unassign option click on assign dropdown
 function filteassignget() {
 	$(".allfilters").removeClass("d-none");
-
 }
 //show (Assign to all) button on unassign option click on assign dropdown
 
@@ -2372,8 +2369,6 @@ function clearallfilter() {
 	$(".assigneddrpval").html("");
 	$(".assigneddrpval").html("Assigned");
 	$(".hideshowprjname").addClass("d-none");
-	// $(".btnunassignonclick").removeClass("d-block").addClass("d-none");
-	// $(".rostercustomstafftab").removeClass("d-none").addClass("d-flex");
 	render_staff($(".layoutSidenav_content").attr("data-view"));
 }
 //clear dropdown value
@@ -2389,31 +2384,31 @@ function notificationmsg(title, message) {
 		icon: "far fa-check-circle notifycolor",
 		target: "_blank"
 	},
-		{
-			element: "body",
-			type: "success",
-			showProgressbar: false,
-			placement: {
-				from: "top",
-				align: "right"
-			},
-			offset: 20,
-			spacing: 10,
-			z_index: 1080,
-			delay: 3300,
-			timer: 500,
-			url_target: "_blank",
-			mouse_over: null,
-			animate: {
-				enter: "animated fadeInDown",
-				exit: "animated fadeOutRight"
-			},
-			onShow: null,
-			onShown: null,
-			onClose: null,
-			onClosed: null,
-			icon_type: "class",
-		});
+	{
+		element: "body",
+		type: "success",
+		showProgressbar: false,
+		placement: {
+			from: "top",
+			align: "right"
+		},
+		offset: 20,
+		spacing: 10,
+		z_index: 1080,
+		delay: 3300,
+		timer: 500,
+		url_target: "_blank",
+		mouse_over: null,
+		animate: {
+			enter: "animated fadeInDown",
+			exit: "animated fadeOutRight"
+		},
+		onShow: null,
+		onShown: null,
+		onClose: null,
+		onClosed: null,
+		icon_type: "class",
+	});
 }
 
 
@@ -2426,6 +2421,15 @@ function notificationmsg(title, message) {
 
 function render_staff(view) {
 	let filters = cur_page.page.page.filters;
+
+	const { project, site, shift, department, operations_role, designation } = filters
+
+	if (project || site || shift || department || operations_role || designation){
+		$(".clear_staff_filters").removeClass("d-none")
+	} else {
+		$(".clear_staff_filters").addClass("d-none")
+	}
+
 	frappe.xcall('one_fm.one_fm.page.roster.roster.get_staff', filters)
 		.then(res => {
 			if (res) {
@@ -2627,18 +2631,20 @@ function render_staff_card_view(data) {
 }
 
 function setup_staff_filters(page) {
+	const { page: pageFilters, employee: employeeFilters } = get_preset_filters()
+	
 	let filters = {
-		assigned: 1,
-		company: '',
-		project: '',
-		site: '',
-		shift: '',
-		department: '',
-		designation: '',
-		operations_role: '',
-		employee_search_name: '',
-		employee_search_id: '',
-		relievers: ''
+		assigned: pageFilters.assigned === '0' ? 0 : 1,
+		company: pageFilters.company || '',
+		project: pageFilters.project || '',
+		site: pageFilters.site || '',
+		shift: pageFilters.shift || '',
+		department: pageFilters.department || '',
+		designation: pageFilters.designation || '',
+		operations_role: pageFilters.operations_role || '',
+		employee_search_name: employeeFilters.employee_name || '',
+		employee_search_id: employeeFilters.employee_id || '',
+		relievers: pageFilters.relievers || '',
 	};
 	let pagination = {
 		limit_start: 0,
@@ -2647,6 +2653,8 @@ function setup_staff_filters(page) {
 	if (page) {
 		page.filters = filters;
 		page.pagination = pagination;
+		page.employee_search_id = employeeFilters.employee_id || ''
+	    page.employee_search_name = employeeFilters.employee_name || ''
 	} else {
 		cur_page.page.page.filters = filters;
 		cur_page.page.page.pagination = pagination;
@@ -2703,14 +2711,10 @@ function setup_staff_filters_data() {
 				if (text === "Assigned") {
 
 					$(".hideshowprjname").addClass("d-none");
-					// $(".btnunassignonclick").removeClass("d-block").addClass("d-none");
-					// $(".rostercustomstafftab").removeClass("d-none").addClass("d-flex");
 				}
 				else {
 
 					$(".hideshowprjname").removeClass("d-none");
-					// $(".btnunassignonclick").removeClass("d-none").addClass("d-block");
-					// $(".rostercustomstafftab").addClass("d-none").removeClass("d-flex");
 				}
 				render_staff($(".layoutSidenav_content").attr("data-view"));
 			});
@@ -2816,7 +2820,6 @@ function staff_edit_dialog() {
 					$('#cover-spin').hide();
 					update_staff_view();
 					frappe.msgprint(__("Successful!"));
-					// render_staff($(".layoutSidenav_content").attr("data-view"));
 				},
 				freeze: true,
 				freeze_message: __('Editing Post....')
@@ -2863,19 +2866,15 @@ function GetWeekHeaders(IsMonthSet, element) {
 	(element);
 	if (IsMonthSet == 0) {
 		var today = new Date();
-		// var firstDay = weekCalendarSettings.date.startOf("week").date();
-		// var endofday = weekCalendarSettings.date.endOf("week").date();
-		// (firstDay, endofday);
 		var firstDay = new Date(startOfWeek(today));
 		var lastDay = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate() + 6);
 		var lastDate = moment(lastDay);
 		var getdateres = moment(new Date()).format("DD");
 
 		var dataHTML = "";
-		var calDate = moment(new Date(firstDay));//moment(new Date(firstDay.getFullYear(), firstDay.getMonth(), i));
+		var calDate = moment(new Date(firstDay));
 		for (var i = 1; i <= 7; i++) {
 
-			// var calDate = moment(new Date(firstDay.getFullYear(), firstDay.getMonth(), i));
 			var todayDay = calDate.format("ddd");
 			var weekNumber = getWeekOfMonth(calDate.toDate());
 			var todayDaydate = calDate.format("DD");
@@ -2962,7 +2961,6 @@ function getWeekOfMonth(date) {
 //function for get selected date
 function GetTodaySelectedDate() {
 	var tdate = weekCalendarSettings.today.format("DD");
-	//$("#calenderviewtable th").removeClass("hightlightedtable");
 	let element = get_wrapper_element().slice(1);
 	$(element).find("#data-day_" + tdate).addClass("hightlightedtable");
 }
@@ -2970,7 +2968,7 @@ function GetTodaySelectedDate() {
 
 //on next month title display on arrow click
 function rosterweekincrement() {
-	weekCalendarSettings.date.add(1, "Weeks"); //.subtract(6, "days");
+	weekCalendarSettings.date.add(1, "Weeks");
 	GetWeekHeaders(1);
 	displayWeekCalendar(weekCalendarSettings);
 	let element = get_wrapper_element().slice(1);
@@ -2984,7 +2982,7 @@ function rosterweekincrement() {
 
 //on previous month title display on arrow click
 function rosterweekdecrement() {
-	weekCalendarSettings.date.subtract(1, "Weeks"); //.subtract(7, "days");
+	weekCalendarSettings.date.subtract(1, "Weeks");
 	GetWeekHeaders(1);
 	displayWeekCalendar(weekCalendarSettings);
 	let element = get_wrapper_element().slice(1);
@@ -3029,7 +3027,6 @@ function displayWeekCalendar(weekCalendarSettings, page) {
 }
 
 function unschedule_staff(page) {
-	// let employees = window.employees_list;
 	let employees = [];
 	let otRoster = false
 	let selected = [... new Set(classgrt)];
@@ -3108,7 +3105,6 @@ function unschedule_staff(page) {
 				type: "POST",
 				args: { employees, otRoster, start_date, end_date, never_end, selected_days_only },
 				callback: function(res) {
-					// code snippet
 					d.hide();
 					error_handler(res);
 					let element = get_wrapper_element().slice(1);
@@ -3137,7 +3133,6 @@ function schedule_leave(page) {
 				'label': 'Start Date', 'fieldname': 'start_date', 'fieldtype': 'Date', 'reqd': 1, 'default': date, onchange: function () {
 					let start_date = d.get_value('start_date');
 					if (start_date && moment(start_date).isSameOrBefore(moment(frappe.datetime.nowdate()))) {
-						// d.set_value('start_date', frappe.datetime.add_days(moment(frappe.datetime.nowdate()), '1'));
 						frappe.throw(__("Start Date cannot be before today."));
 					}
 				}
@@ -3147,11 +3142,9 @@ function schedule_leave(page) {
 					let end_date = d.get_value('end_date');
 					let start_date = d.get_value('start_date');
 					if (end_date && moment(end_date).isSameOrBefore(moment(frappe.datetime.nowdate()))) {
-						// d.set_value('end_date', undefined);
 						frappe.throw(__("End Date cannot be before today."));
 					}
 					if (start_date && end_date && moment(end_date).isBefore(moment(frappe.datetime.nowdate()))) {
-						// d.set_value('end_date', undefined);
 						frappe.throw(__("End Date cannot be before Start Date."));
 					}
 				}
@@ -3180,12 +3173,6 @@ function change_post(page) {
 		'fields': [
 			{
 				'label': 'Choose Operations Role', 'fieldname': 'operations_role', 'fieldtype': 'Link', 'options': 'Operations Role', 'reqd': 1, get_query: function () {
-					// return {
-					// 	// "filters": {
-					// 	// 	"project_type": "External"
-					// 	// },
-					// 	"page_len": 9999
-					// };
 				}
 			},
 		],
@@ -3201,7 +3188,6 @@ function change_post(page) {
 
 function schedule_change_post(page) {
 	let date = frappe.datetime.add_days(frappe.datetime.nowdate(), '1');
-	// let employees = window.employees_list;
 	let employees = [];
 	let selected = [... new Set(classgrt)];
 	let otRoster = false;
@@ -3283,14 +3269,12 @@ function schedule_change_post(page) {
 					let start_date = d.get_value('start_date');
 					let end_date = d.get_value('end_date');
 					if (start_date && moment(start_date).isSameOrBefore(moment(frappe.datetime.nowdate()))) {
-						// d.set_value('start_date', frappe.datetime.add_days(moment(frappe.datetime.nowdate()), '1'));
 						// Set the date to null and refresh the field
 						d.fields_dict.start_date.value  = '';
 						d.fields_dict.start_date.refresh()
 						frappe.throw(__("Start Date cannot be before today."));
 					}
 					if (start_date && end_date && moment(end_date).isBefore(moment(start_date))) {
-						// d.set_value('start_date', frappe.datetime.add_days(moment(frappe.datetime.nowdate()), '1'));
 						// Set the date to null and refresh the field
 						d.fields_dict.start_date.value  = '';
 						d.fields_dict.start_date.refresh()
@@ -3370,9 +3354,16 @@ async function updateEmployeeDefaults(employees, data) {
    // Use a Map to store only unique employee records
    let uniqueEmployeeIDs = [...new Set(employees.map(emp => emp.employee))];
 
+   let validProjects = await frappe.db.get_list("Project", {
+    filters: { "custom_exclude_from_default_shift_checker": ["!=", 1] },
+		});
+
+	// Extract project names (IDs) that are valid
+	let validProjectIDs = validProjects.map(project => project.name);
+
     // Bulk fetch all employees' details in a single query
     let fetchedEmployees = await frappe.db.get_list("Employee", {
-        filters: [["name", "in", uniqueEmployeeIDs]],
+        filters: [["name", "in", uniqueEmployeeIDs],["project", "in", validProjectIDs]],
         fields: ["name", "employee_name", "shift", "custom_operations_role_allocation", "custom_is_reliever", "project", "site"],
         limit_page_length: uniqueEmployeeIDs.length // Fetch all in one call
     });
@@ -3444,13 +3435,37 @@ async function updateEmployeeDefaults(employees, data) {
 }
 
 
+function clear_roster_filters(page) {
+	window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+
+	page.filters = {}
+	cur_page.page.page.filters = {}
+
+	$('#page-roster').empty().append(frappe.render_template('roster'));
+	load_js(page)
+}
+
+function clear_staff_filters(page) {
+	window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+
+	page.filters = {}
+	cur_page.page.page.filters = {}
+
+	$(".assigneddrpval").html("Assigned");
+	["company", "project", "site", "shift", "department", "designation"].forEach(item => {
+		$(`a[data-filter-type=${item}]`).click()
+	})
+
+	render_staff($(".layoutSidenav_content").attr("data-view"));
+}
+
 function clear_selection(page) {
 	classgrt = [];
 	classgrtw = [];
 
 	$(".filterhideshow").addClass("d-none");
 	$(".Postfilterhideshow").addClass("d-none");
-	
+
 	$("#calenderviewtable tbody").find("tr").each(function (i, row) {
 		$(row).find("input[type='checkbox']").prop("checked", false); // Uncheck the employee checkbox
 		$(row).find("div").removeClass("selectclass"); // Remove days selections
@@ -3460,7 +3475,6 @@ function clear_selection(page) {
 function update_roster_view(element, page) {
 	page[element](page);
 	frappe.realtime.on("roster_view", function (output) {
-		// message = JSON.parse(output);
 		page[element](page);
 	});
 }
@@ -3488,7 +3502,6 @@ function paginateTable(page) {
 			pager = wrapper_element.find(settings.pagerSelector);
 		}
 
-		// var numItems = children.size();
 		var numItems = page.pagination.total;
 		var numPages = Math.ceil(numItems / perPage);
 
@@ -3509,12 +3522,11 @@ function paginateTable(page) {
 			$('<li><a href="#" class="next_link">»</a></li>').appendTo(pager);
 		}
 
-		// pager.find('.page_link:first').addClass('active');
 		pager.find('.prev_link').hide();
 		if (numPages <= 1) {
 			pager.find('.next_link').hide();
 		}
-		// pager.children().eq(1).addClass("active");
+
 		let active_page = (page.pagination.limit_start / page.pagination.limit_page_length);
 		pager.children().eq(active_page).addClass("active");
 
@@ -3525,7 +3537,6 @@ function paginateTable(page) {
 			let limit_start = ((clickedPage + 1) * 100) - 100;
 
 			page.pagination.limit_start = limit_start;
-			// goTo(clickedPage,perPage);
 			let element = get_wrapper_element().slice(1);
 			page[element](page);
 			return false;
@@ -3716,7 +3727,6 @@ function editMobileNumber(){
 				fieldname: "employees",
 				fieldtype: "Table",
 				label: "Employees",
-//                cannot_add_rows: true,
 				cannot_delete_rows: true,
 				in_place_edit: true,
 				reqd: 1,
@@ -3873,4 +3883,99 @@ let error_handler = (res) => {
 	} else {
 		$('#cover-spin').hide();
 	}
+}
+
+
+function roster_employee_actions(page){
+	let dialog = new frappe.ui.Dialog({
+		title: "Employee with Missing Schedules",
+		fields: [
+			{
+				fieldname: "employees_table",
+				fieldtype: "HTML",
+				options: "<div id='employees_table'></div>"
+			}
+		]
+	})
+	dialog.$wrapper.find(".modal-dialog").css("max-width", "75%");
+
+
+	frappe.call({
+		method: "one_fm.one_fm.doctype.roster_employee_actions.roster_employee_actions.get_employees_with_missing_schedules",
+		// freeze: true,
+		async: true,
+		callback: function(r) {
+			dialog.fields_dict.employees_table.$wrapper.html(r.message);
+		}
+	});
+	dialog.show();
+}
+
+function roster_post_actions(page){
+	let dialog = new frappe.ui.Dialog({
+		title: "Overfilled/Underfilled Posts",
+		fields: [
+			{
+				fieldname: "post_types_not_filled_section",
+				fieldtype: "Section Break",
+				label:"Not Filled Posts",
+				collapsible: 1
+			},
+			{
+				fieldname: "posts_notfilled_table",
+				fieldtype: "HTML",
+				options: "<div id='posts_notfilled_table'></div>"
+			},
+			{
+				fieldname: "post_types_overfilled_section",
+				fieldtype: "Section Break",
+				label:"Overfilled Posts",
+				collapsible: 1
+				
+			},
+			{
+				fieldname: "posts_overfilled_table",
+				fieldtype: "HTML",
+				options: "<div id='posts_overfilled_table'></div>"
+			}
+
+		]
+	})
+	dialog.$wrapper.find(".modal-dialog").css("max-width", "75%");
+
+
+	frappe.call({
+		method: "one_fm.one_fm.doctype.roster_post_actions.roster_post_actions.get_overfilled_underfilled_posts",
+		// freeze: true,
+		async: true,
+		callback: function(r) {
+			
+			dialog.fields_dict.posts_notfilled_table.$wrapper.html(r.message.under_filled);
+			dialog.fields_dict.posts_overfilled_table.$wrapper.html(r.message.over_filled);
+		}
+	});
+	dialog.show();
+}
+
+function roster_day_off_issues(){
+	let dialog = new frappe.ui.Dialog({
+		title: "Employees with Day Off Issues",
+		fields: [
+			{
+				fieldname: "employees_table",
+				fieldtype: "HTML",
+				options: "<div id='employees_table'></div>"
+			}
+		]
+	})	
+	dialog.$wrapper.find(".modal-dialog").css("max-width", "75%");
+	frappe.call({
+		method: "one_fm.operations.doctype.roster_day_off_checker.roster_day_off_checker.get_day_off_issue_of_employees",
+		// freeze: true,
+		async: true,
+		callback: function(r) {
+			dialog.fields_dict.employees_table.$wrapper.html(r.message);
+		}
+	});
+	dialog.show();
 }

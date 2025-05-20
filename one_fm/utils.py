@@ -3468,7 +3468,7 @@ def get_current_shift(employee):
                     order_by="time desc",
                     limit=1,
                 )
-                
+
                 if checkin:
                     last_log = checkin[0]
                     # CASE 1: Last log is IN → Shift is active
@@ -3531,7 +3531,7 @@ def check_existing():
     shift_exists = get_current_shift(employee)
     if not shift_exists:
         return response("Resource Not Found", 404, None, "No Active Shift Found")
-    
+
     if shift_exists['type'] == "On Time":
         curr_shift = shift_exists['data']
     if not curr_shift:
@@ -3697,7 +3697,6 @@ def send_work_anniversary_reminders():
 
 def set_employee_status():
     from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import assign_responsibilities ,reassign_responsibilities
-    from one_fm.overrides.leave_application import reassign_to_applicant,reassign_to_reliever
     # Get today's date
     current_date = getdate(today())
 
@@ -3728,13 +3727,10 @@ def set_employee_status():
             if current_date == getdate(from_date) and status == "Active":
                 frappe.db.set_value('Employee', employee, 'status', 'Vacation')
                 if reliever:
-                    frappe.enqueue(reassign_to_applicant(employee=employee, leave_name=leave_application))
                     frappe.enqueue(assign_responsibilities, leave_application=leave_application)
                 employees_set_to_vacation += 1
             elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":
                 frappe.db.set_value('Employee', employee, 'status', 'Active')
-                if reliever:
-                    frappe.enqueue(reassign_to_reliever(reliever=reliever, leave_name=leave_application, employee=employee))
                 if reliever and frappe.db.exists("Reliever Assignment", {"name": leave_application}):
                     frappe.enqueue(reassign_responsibilities, leave_application=leave_application)
                 employees_set_to_active += 1
@@ -3953,3 +3949,45 @@ def background_enqueue_run(report_name, filters=None, user=None):
 		"name": track_instance.name,
 		"redirect_url": get_url_to_form("Prepared Report", track_instance.name)
 	}
+
+@frappe.whitelist()
+def get_current_year_and_week():
+    dt = now_datetime()
+    iso_year, week_number, _ = dt.isocalendar()
+    return {
+        "year": iso_year,
+        "week": week_number
+    }
+
+def update_fields_in_doctypes(data):
+	"""
+	Update multiple Doctypes with different filters and fields.
+
+	:param data: List of dicts, each with keys:
+		- doctype: str
+		- filters: dict
+		- field_value_map: dict
+
+	Example:
+	[
+		{
+			"doctype": "Operations Post",
+			"filters": {"site": self.name, "project": doc_before_save.project},
+			"field_value_map": {"project": self.project, "site": self.name}
+		}
+	]
+	"""
+	for entry in data:
+		doctype = entry.get("doctype")
+		filters = entry.get("filters")
+		field_value_map = entry.get("field_value_map")
+
+		if doctype and filters and field_value_map:
+			if frappe.db.exists(doctype, filters):
+				docs = frappe.get_all(doctype, filters=filters, pluck="name")
+				for docname in docs:
+					doc = frappe.get_doc(doctype, docname)
+					for field, value in field_value_map.items():
+						doc.set(field, None)   # Clear the field to reset fetched values
+						doc.set(field, value)  # Re-set the actual value
+					doc.save()

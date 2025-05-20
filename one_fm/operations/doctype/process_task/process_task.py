@@ -24,12 +24,14 @@ class ProcessTask(Document):
 		self.validate_dates()
 		self.validate_frequency()
 
-  
-	
 	def validate_frequency(self):
 		"""Validate the corresponding date or cron data in the frequency field
 		"""
 		self.validate_cron()
+		meta = frappe.get_meta("Process Task")
+		for df in meta.fields:
+			if df.fieldname == "frequency":
+				df.options = '' 
 		if self.frequency=="Weekly":
 			if not self.repeat_on_days:
 				frappe.throw("Please set the days of the week to trigger process")
@@ -270,6 +272,15 @@ def create_tasks_for(tasks_list):
 		except:
 			frappe.log_error(title = f"Error Creating Task from Process List {one.name}",message = frappe.get_traceback())
 
+def get_second_weekday(year, month,dayname):
+	c = calendar.Calendar(firstweekday=calendar.SUNDAY)
+	monthcal = c.monthdatescalendar(year, month)
+	weekday_index = list(calendar.day_name).index(dayname)
+	# Find all matching weekdays in the given month
+	weekdays = [day for week in monthcal for day in week
+                if day.weekday() == weekday_index and day.month == month]
+	# Return the second weekday
+	return weekdays[1] if len(weekdays) >= 2 else None
 
 
 def run_daily_process_task():
@@ -280,24 +291,28 @@ def run_daily_process_task():
 		tasks_to_be_created = []
 		
 		all_processes = frappe.db.sql("""
-					SELECT 
-						pt.*, ard.day
-					FROM 
-						`tabProcess Task` pt
-					LEFT JOIN 
-						`tabAuto Repeat Day` ard 
-					ON 
-						ard.parent = pt.name
-					WHERE 
-						pt.frequency IN (%s, %s, %s)
-					AND pt.is_erp_task = 0 
-					AND pt.task_type = 'Routine'
-					AND (
-						(pt.end_date IS NOT NULL AND DATE(%s) BETWEEN DATE(pt.start_date) AND DATE(pt.end_date))
-						OR
-						(pt.end_date IS NULL AND DATE(%s) >= DATE(pt.start_date))
+				SELECT 
+					pt.*, ard.day
+				FROM 
+					`tabProcess Task` pt
+				LEFT JOIN 
+					`tabAuto Repeat Day` ard 
+				ON 
+					ard.parent = pt.name
+				WHERE 
+					(
+						pt.frequency LIKE 'Weekly%%'
+						OR pt.frequency LIKE 'Daily%%'
+						OR pt.frequency LIKE 'Monthly%%'
 					)
-				""", ('Weekly', 'Daily', 'Monthly', today, today), as_dict=True)
+				AND pt.is_erp_task = 0 
+				AND pt.task_type = 'Routine'
+				AND (
+					(pt.end_date IS NOT NULL AND DATE(%s) BETWEEN DATE(pt.start_date) AND DATE(pt.end_date))
+					OR
+					(pt.end_date IS NULL AND DATE(%s) >= DATE(pt.start_date))
+				)
+			""", (today, today), as_dict=True)
 		for each in all_processes:
 			if each.get('frequency') == "Daily":
 				tasks_to_be_created.append(each)
@@ -310,6 +325,12 @@ def run_daily_process_task():
 						tasks_to_be_created.append(each)
 			elif each.get('frequency') == "Weekly":
 				if each.get('day') == day_name:
+					tasks_to_be_created.append(each)
+			elif each.get("frequency") == "Weekly on "+day_name:
+					tasks_to_be_created.append(each)
+			elif each.get("frequency") =="Monthly on second "+day_name:
+				second_weekday = get_second_weekday(today.year, today.month,day_name)
+				if second_weekday and second_weekday == today.date():
 					tasks_to_be_created.append(each)
 		create_tasks_for(tasks_to_be_created)
 	except:
@@ -330,20 +351,28 @@ def is_today_last_day(today):
 	return True
 
 
-
 def run_scheduled_process_tasks():
 	today = getdate()
 	weekday = today.strftime('%A')  # e.g., 'Monday'
 	day_of_month = today.day
 	last_day_of_month = calendar.monthrange(today.year, today.month)[1]
 
-	tasks = frappe.get_all("Process Task", filters={
-		"is_active": 1,
-		"task_type": "Routine",
-		"is_erp_task": 1,
-		"is_automated": 1,
-		"frequency": ["in", ["Daily", "Weekly", "Monthly"]]
-	}, fields=["name", "method", "frequency", "repeat_on_last_day", "repeat_on_day"])
+	tasks = frappe.db.sql("""
+			SELECT name, method, frequency, repeat_on_last_day, repeat_on_day
+			FROM `tabProcess Task`
+			WHERE
+				is_active = 1
+				AND task_type = 'Routine'
+				AND is_erp_task = 1
+				AND is_automated = 1
+				AND (
+					frequency LIKE 'Weekly%%'
+					OR frequency LIKE 'Daily%%'
+					OR frequency LIKE 'Monthly%%'
+				)
+				AND start_date <= %(today)s
+				AND (end_date IS NULL OR end_date > %(today)s)
+		""", {"today": today}, as_dict=True)
 
 	for task in tasks:
 		doc = frappe.get_doc("Process Task", task.name)
@@ -372,6 +401,12 @@ def run_scheduled_process_tasks():
 				should_run = True
 			elif task.repeat_on_day and day_of_month == task.repeat_on_day:
 				should_run = True
+		elif task.frequency == "Weekly on "+weekday:
+				should_run = True
+		elif task.frequency == "Monthly on second "+weekday:
+			second_weekday = get_second_weekday(today.year, today.month,weekday)
+			if second_weekday and second_weekday == today:
+				should_run = True
 
 		if should_run:
 			try:
@@ -384,13 +419,19 @@ def run_scheduled_process_tasks():
 
 def run_cron_based_process_tasks():
 	now = now_datetime()
+	today = getdate()
 
-	tasks = frappe.get_all("Process Task", filters={
-		"is_active": 1,
-		"task_type": "Routine",
-		"is_erp_task": 1,
-		"frequency": "Cron"
-	}, fields=["name", "method", "cron_format", "last_execution"])
+	tasks = frappe.db.sql("""
+		SELECT name, method, cron_format, last_execution
+		FROM `tabProcess Task`
+		WHERE
+			is_active = 1
+			AND task_type = 'Routine'
+			AND is_erp_task = 1
+			AND frequency = 'Cron'
+			AND start_date <= %(today)s
+			AND (end_date IS NULL OR end_date > %(today)s)
+	""", {"today": today}, as_dict=True)
 
 	for task in tasks:
 		# Skip if no method or no cron expression is provided
@@ -410,8 +451,8 @@ def run_cron_based_process_tasks():
 		last_run = task.last_execution or datetime.min
 
 		try:
-			cron_time = croniter(task.cron_format, now).get_prev(datetime)
-			should_run = now >= cron_time and cron_time > get_datetime(last_run)
+			next_scheduled_time = croniter(task.cron_format, last_run).get_next(datetime)
+			should_run = now >= next_scheduled_time and last_run < next_scheduled_time
 		except Exception as e:
 			frappe.log_error(frappe.get_traceback(), f"[Process Task - Cron] Invalid cron format for {task.name}")
 			continue

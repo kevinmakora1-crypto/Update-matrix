@@ -13,6 +13,11 @@ frappe.ui.form.on('Career History', {
 		if(frm.doc.total_years_of_experience){
 			set_total_years_of_experience_str(frm, frm.doc.total_years_of_experience);;
 		}
+		calculate_career_history_score(frm);
+		frm.add_custom_button(__('Best Reference'), function() {
+			frappe.route_options = {"job_applicant": frm.doc.job_applicant};
+			frappe.set_route("List", "Best Reference");
+		  },'View');
 	},
 	job_applicant: function(frm) {
     set_job_applicant_details(frm);
@@ -95,9 +100,14 @@ var calculate_promotions_and_experience = function(frm) {
 		for (var company in start_date_in_company) {
 			if (start_date_in_company.hasOwnProperty(company)) {
 				var start_date = start_date_in_company[company];
-				if(end_date_in_company[company]){
-					total_years_of_experience += calculate_total_years_of_experience(start_date, end_date_in_company[company]);
+				var end_date = end_date_in_company[company];
+
+				if (!end_date)
+				{
+					end_date = new Date().toISOString().split('T')[0];
 				}
+
+				total_years_of_experience += calculate_total_years_of_experience(start_date, end_date);
 			}
 			if(promotions[company]){
 				total_number_of_promotions += promotions[company].length-1;
@@ -144,6 +154,17 @@ var calculate_career_history_score = function(frm) {
     }
   }
   frm.set_value('career_history_score', career_history_score);
+
+  let description_text = `Factor = Total Number of Promotions and Salary Changes / Total Years Of Experience<br><br>` +
+    `Current Factor: <b>${the_factor.toFixed(2)}</b><br>` +
+    `<br><u>Score Rules:</u><br>` +
+    `- 0 ≤ factor < 0.25 → Score = 1<br>` +
+    `- 0.25 ≤ factor < 0.33 → Score = 2<br>` +
+    `- 0.33 ≤ factor < 0.5 → Score = 3<br>` +
+    `- 0.5 ≤ factor < 1 → Score = 4<br>` +
+    `- factor ≥ 1 → Score = 5`;
+
+	frm.set_df_property('career_history_score', 'description', description_text);
 };
 
 var set_total_years_of_experience_str = function(frm, total_years_of_experience) {

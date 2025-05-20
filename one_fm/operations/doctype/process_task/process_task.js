@@ -2,6 +2,30 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Process Task', {
+	onload: function(frm) {
+		if (frm.doc.start_date) {
+			frm.trigger('start_date');
+		}
+	},
+	start_date(frm) {
+        const date = new Date(frm.doc.start_date);
+        const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+        const docfield = frappe.meta.get_docfield("Process Task", "frequency");
+        let staticOptions = [];
+
+        if (docfield && typeof docfield.options === 'string') {
+            staticOptions = docfield.options.split('\n');
+        }
+
+        const updatedOptions = [
+            ...staticOptions,
+            `Weekly on ${dayName}`,
+            `Monthly on second ${dayName}`,
+        ];
+
+        frm.set_df_property('frequency', 'options', [...new Set(updatedOptions)]);
+        frm.refresh_field('frequency');
+    },
 	refresh: function(frm) {
 		set_filters(frm);
 		set_custom_buttons(frm);
@@ -31,7 +55,10 @@ frappe.ui.form.on('Process Task', {
 	frequency: function(frm) {
 		if (frm.doc.frequency === "Cron") {
 			if (!frm.doc.is_automated) {
-				frappe.msgprint(__('Setting frequency to "Cron" requires automation. Enabling "Is Automated".'));
+				frappe.show_alert({
+					message: __('Setting frequency to "Cron" requires automation. Enabling "Is Automated".'),
+					indicator: 'green'
+				});
 				frm.set_value('is_automated', 1);
 			}
 		}

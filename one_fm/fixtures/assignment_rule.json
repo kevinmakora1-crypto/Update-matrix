@@ -256,7 +256,7 @@
         "users": []
     },
     {
-        "assign_condition": "site_supervisor and status in (\"Pending\", \"Overdue\")",
+        "assign_condition": "status in (\"Pending\", \"Overdue\")",
         "assignment_days": [
             {
                 "day": "Sunday",
@@ -320,7 +320,7 @@
         "users": []
     },
     {
-        "assign_condition": "not site_supervisor and project_manager and status in (\"Pending\", \"Overdue\")",
+        "assign_condition": "not site_supervisor_user and status in (\"Pending\", \"Overdue\")",
         "assignment_days": [
             {
                 "day": "Sunday",
@@ -376,7 +376,7 @@
         "field": "project_manager_user",
         "is_assignment_rule_with_workflow": 0,
         "last_user": null,
-        "modified": "2024-12-19 00:12:34.270154",
+        "modified": "2025-05-19 00:12:34.270154",
         "name": "Roster Day Off Checker - Project Manager",
         "priority": 0,
         "rule": "Based on Field",

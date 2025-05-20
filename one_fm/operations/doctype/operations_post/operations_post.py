@@ -181,7 +181,7 @@ def queue_create_post_schedule_for_operations_post(operations_post, contracts, e
                     schedule_exists = True
             if not schedule_exists:
                 ps_name_idx += 1
-                ps_name = 'PS-'+str(ps_name_idx).zfill(5)
+                
                 query += f"""
                     (
                         "{doc_id_template}", "{operations_post.name}", "{operations_post.post_template}", "{post_abbrv}",

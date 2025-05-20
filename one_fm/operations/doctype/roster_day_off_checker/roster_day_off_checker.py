@@ -12,18 +12,18 @@ from one_fm.one_fm.page.roster.roster import get_current_user_details
 from one_fm.operations.doctype.operations_shift.operations_shift import get_shift_supervisor
 
 monthname_dict = {
-	'01': 'Jan',
-	'02': 'Feb',
-	'03': 'Mar',
-	'04': 'Apr',
-	'05': 'May',
-	'06': 'Jun',
-	'07': 'Jul',
-	'08': 'Aug',
-	'09': 'Sep',
-	'10': 'Oct',
-	'11': 'Nov',
-	'12': 'Dec',
+	"01": "Jan",
+	"02": "Feb",
+	"03": "Mar",
+	"04": "Apr",
+	"05": "May",
+	"06": "Jun",
+	"07": "Jul",
+	"08": "Aug",
+	"09": "Sep",
+	"10": "Oct",
+	"11": "Nov",
+	"12": "Dec",
 }
 
 
@@ -76,19 +76,19 @@ def check_roster_day_off():
 	# Validate their offs for next 2 months/weeks based on their Day Off Category
 	# If discrepency, create record with each employee info
 	try:
-		Employee = frappe.qb.DocType('Employee')
+		Employee = frappe.qb.DocType("Employee")
 		employees = frappe.db.sql(frappe.qb.from_(Employee).select("*").where((Employee.status=="Active") & (Employee.shift_working == 1)), as_dict=1)
 
 		today = getdate()
 
 		for employee in employees:
-			comaprison_dates = get_day_off_comparison_dates(employee.day_off_category)
+			comparison_dates = get_day_off_comparison_dates(employee.day_off_category)
 
 			site_supervisor = frappe.db.get_value("Operations Site", employee.site, "account_supervisor")
 			shift_supervisor = get_shift_supervisor(employee.shift)
-			project_manager = frappe.db.get_value('Project', employee.project, 'account_manager')
+			project_manager = frappe.db.get_value("Project", employee.project, "account_manager")
 
-			for period in comaprison_dates:	# Always 2 iterations only because we have just two period for comparison	
+			for period in comparison_dates:	# Always 2 iterations only because we have just two period for comparison	
 				day_off_data = get_employee_day_off_comparison(employee, period["start_date"], period["end_date"])
 
 				if day_off_data["day_off_difference"]:
@@ -132,7 +132,7 @@ def get_employee_day_off_comparison(employee, start_date, end_date):
 		.groupby(EmployeeSchedule.employee), as_dict=1) 
 	ot_days = ot[0].ot_days if len(ot) > 0 else 0 
 
-	day_off_diff = ''
+	day_off_diff = ""
 	employee_number_of_days_off = employee.number_of_days_off
 
 	if employee_number_of_days_off != (off_days + ot_days): # If has any discrepency
@@ -147,8 +147,8 @@ def get_employee_day_off_comparison(employee, start_date, end_date):
 		elif (ot_days and off_days):
 			day_off_diff = f"{ot_days} day(s) OT and {off_days} day(s) off scheduled, actual day off should be {employee_number_of_days_off}"
 
-	start_date_split = str(start_date).split('-')
-	end_date_split = str(end_date).split('-')
+	start_date_split = str(start_date).split("-")
+	end_date_split = str(end_date).split("-")
 
 	return {
 		"monthweek": f"{monthname_dict[start_date_split[1]]} {start_date_split[2]} - {monthname_dict[end_date_split[1]]} {end_date_split[2]}",
@@ -161,7 +161,7 @@ def get_employee_day_off_comparison(employee, start_date, end_date):
 
 @frappe.whitelist()
 def generate_checker():
-	frappe.enqueue(check_roster_day_off, queue='long', timeout=4000)
+	frappe.enqueue(check_roster_day_off, queue="long", timeout=4000)
 
 @frappe.whitelist()
 def get_day_off_issue_of_employees():
@@ -180,7 +180,7 @@ def get_day_off_issue_of_employees():
 	else:
 		#Get base employee list based on role
 		if "Operations Manager" in user_roles:
-			Employee = frappe.qb.DocType('Employee')
+			Employee = frappe.qb.DocType("Employee")
 			employees = frappe.db.sql( frappe.qb.from_(Employee).select("*").where((Employee.status=="Active") & (Employee.shift_working == 1)), as_dict=1)
 		elif "Project Manager" in user_roles:
 			employees = get_project_manager_employees(user_employee.name)
@@ -203,9 +203,9 @@ def get_day_off_details_of_employees(employees):
 		roster_day_off_data = []
 
 		for employee in employees:
-			comaprison_dates = get_day_off_comparison_dates(employee.day_off_category)
+			comparison_dates = get_day_off_comparison_dates(employee.day_off_category)
 
-			for period in comaprison_dates:	# Always 2 iterations only because we have just two period for comparison	
+			for period in comparison_dates:	# Always 2 iterations only because we have just two period for comparison	
 				day_off_data = get_employee_day_off_comparison(employee, period["start_date"], period["end_date"])
 
 				if day_off_data["day_off_difference"]:

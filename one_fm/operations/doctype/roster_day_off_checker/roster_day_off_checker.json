@@ -7,9 +7,10 @@
  "engine": "InnoDB",
  "field_order": [
   "date",
-  "monthweek",
   "column_break_3",
   "status",
+  "column_break_xlfy",
+  "monthweek",
   "section_break_qccb",
   "shift_supervisor",
   "shift_supervisor_name",
@@ -246,12 +247,15 @@
    "in_list_view": 1,
    "label": "Month/Week",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_xlfy",
+   "fieldtype": "Column Break"
   }
  ],
- "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-19 13:04:04.953036",
+ "modified": "2025-05-20 16:53:00.161096",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Roster Day Off Checker",

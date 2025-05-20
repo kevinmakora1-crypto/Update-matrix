@@ -1227,6 +1227,70 @@
   "users": []
  },
  {
+    "assign_condition": "workflow_state==\"Pending Approval\"",
+    "assignment_days": [
+     {
+      "day": "Monday",
+      "parent": "Leave Approver Assignment",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     },
+     {
+      "day": "Tuesday",
+      "parent": "Leave Approver Assignment",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     },
+     {
+      "day": "Wednesday",
+      "parent": "Leave Approver Assignment",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     },
+     {
+      "day": "Thursday",
+      "parent": "Leave Approver Assignment",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     },
+     {
+      "day": "Friday",
+      "parent": "Leave Approver Assignment",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     },
+     {
+      "day": "Saturday",
+      "parent": "Leave Approver Assignment",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     },
+     {
+      "day": "Sunday",
+      "parent": "Leave Approver Assignment",
+      "parentfield": "assignment_days",
+      "parenttype": "Assignment Rule"
+     }
+    ],
+    "close_condition": "workflow_state in ('Pending Reliever',\"Approved\")",
+    "custom_routine_task": null,
+    "description": "Leave Approver Assignment",
+    "disabled": 0,
+    "docstatus": 0,
+    "doctype": "Assignment Rule",
+    "document_type": "Leave Application",
+    "due_date_based_on": "from_date",
+    "field": "leave_approver",
+    "is_assignment_rule_with_workflow": 0,
+    "last_user": null,
+    "modified": "2025-05-06 12:25:40.080588",
+    "name": "Leave Approver Assignment",
+    "priority": 0,
+    "rule": "Based on Field",
+    "unassign_condition": "workflow_state in ('Pending Reliever',\"Approved\")",
+    "users": []
+   },
+ {
     "assign_condition": "docstatus == 0",
     "assignment_days": [
      {

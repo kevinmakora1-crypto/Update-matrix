@@ -16,9 +16,9 @@ class POCCheck(Document):
 	def on_submit(self):
 		self.validate_rows()
 		self.validate_general_attendees_rows()
-		self.remove_assignments()
 		self.update_poc_details()
 		self.update_general_attendees_details()
+		# self.remove_assignments()
 	
 	def remove_assignments(self):
 		open_todo = get_open_todos("POC Check",self.name)
@@ -68,24 +68,47 @@ class POCCheck(Document):
 		destination_dict = {"Operations Site":["Operations Site"],'Project':['Project'],'Both':["Operations Site","Project"]}
 		for each in self.general_attendees:
 			if each.action == "Add as POC":
-				if destination_dict.get(each.destination_doctype):
-					for one in destination_dict.get(each.destination_doctype):
-						try:
-							new_poc = frappe.get_doc({
-								"parentfield": "poc",
-								"doctype": "POC",
-								"parenttype": one,
-								"parent": self.project if one == "Project" else self.site,
-								"poc": each.attendee_name
-							})
-							new_poc.insert()
-						except frappe.ValidationError:
-							frappe.throw(
-								f"Please note that <b>{each.attendee_name}</b> could not be set as a POC in "
-								f"<b>{one}</b> <b>{self.project if one == 'Project' else self.site}</b>."
-							)
+				if frappe.db.exists("Contact", each.attendee_name):
+					attendee_contact = frappe.get_doc("Contact", each.attendee_name)
+				else:
+					parts = each.attendee_name.split()
+					first_name = parts[0]
+					last_name = " ".join(parts[1:]) if len(parts) > 1 else ""
 
+					attendee_contact = frappe.get_doc({
+						"doctype": "Contact",
+						"first_name": first_name,
+						"last_name": last_name
+					})
+					attendee_contact.insert()
+
+					frappe.msgprint(
+						msg=f"Contact <b>{each.attendee_name}</b> was not found and has been created.",
+						title="New Contact Created",
+						indicator="blue"
+					)
+
+				destinations = destination_dict.get(each.destination_doctype, [])
+				self.insert_poc(attendee_contact.name, destinations)
+	
 	def validate_general_attendees_rows(self):
 		for each in self.general_attendees:
 			if each.action not in ["Do Nothing", "Add as POC"]:
 				frappe.throw(f"Please set an action for row {each.idx} in General Attendees Table")
+
+	def insert_poc(self, attendee_name, destinations):
+		for one in destinations:
+			try:
+				new_poc = frappe.get_doc({
+					"parentfield": "poc",
+					"doctype": "POC",
+					"parenttype": one,
+					"parent": self.project if one == "Project" else self.site,
+					"poc": attendee_name
+				})
+				new_poc.insert()
+			except frappe.ValidationError:
+				frappe.throw(
+					f"Please note that <b>{attendee_name}</b> could not be set as a POC in "
+					f"<b>{one}</b> <b>{self.project if one == 'Project' else self.site}</b>."
+				)

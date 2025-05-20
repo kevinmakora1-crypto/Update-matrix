@@ -5,10 +5,10 @@ from one_fm.custom.workflow.workflow import get_workflow, create_workflow, delet
 from one_fm.custom.assignment_rule.assignment_rule import get_assignment_rule, create_assignment_rule, delete_assignment_rule
 
 # Custom field imports
-from one_fm.custom.custom_field.buying import get_supplier_group_custom_fields
-from one_fm.custom.custom_field.payroll import get_additional_salary_custom_fields
-from one_fm.custom.custom_field.automation import get_assignment_rule_custom_fields
-from one_fm.custom.property_setter.automation import get_assignment_rule_properties
+from one_fm.custom.custom_field.supplier_group import get_supplier_group_custom_fields
+from one_fm.custom.custom_field.additional_salary import get_additional_salary_custom_fields
+from one_fm.custom.custom_field.assignment_rule import get_assignment_rule_custom_fields
+from one_fm.custom.property_setter.assignment_rule import get_assignment_rule_properties
 
 def after_install():
 	create_custom_fields(get_custom_fields())

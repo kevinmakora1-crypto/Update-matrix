@@ -508,7 +508,7 @@
   "name": "Attendance Request Approval",
   "priority": 0,
   "rule": "Based on Field",
-  "unassign_condition": "workflow_state in ('Approved', 'Draft', 'Rejected')",
+  "unassign_condition": null,
   "users": []
  },
  {

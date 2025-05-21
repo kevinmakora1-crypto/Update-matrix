@@ -42,7 +42,8 @@ def export_data(
 	google_sheet_id=None,
 	sheet_name=None,
 	owner=None,
-	client_id = None
+	client_id=None,
+	name=None
 ):
 	_doctype = doctype
 	if isinstance(_doctype, list):
@@ -66,7 +67,8 @@ def export_data(
 		google_sheet_id=google_sheet_id,
 		sheet_name=sheet_name,
 		owner=owner,
-		client_id = client_id
+		client_id=client_id,
+		name=name
 	)
 	result = exporter.build_response()
 
@@ -86,7 +88,8 @@ class DataExporter:
 		google_sheet_id=None,
 		sheet_name=None,
 		owner=None,
-		client_id = None
+		client_id=None,
+		name=None
 	):
 		self.doctype = doctype
 		self.parent_doctype = parent_doctype
@@ -100,6 +103,7 @@ class DataExporter:
 		self.owner = owner
 		self.cell_colour = []
 		self.client_id = client_id
+		self.name = name
 
 		api = self.initialize_service()
 		self.service = api["service"]
@@ -193,7 +197,7 @@ class DataExporter:
 				_("No Data"), _("There is no data to be exported"), indicator_color="orange"
 			)
 		result = {"google_sheet_id":self.google_sheet_id, "link":self.link,"sheet_name":self.sheet_name}
-		frappe.db.set_value("Google Sheet Data Export", {"reference_doctype": self.doctype}, "last_execution_date", nowdate())
+		frappe.db.set_value("Google Sheet Data Export", self.name, "last_execution_date", nowdate())
 
 		return result
 
@@ -583,6 +587,7 @@ def update_google_sheet_daily():
 			sheet_name= doc.sheet_name,
 			owner= doc.owner,
 			client_id= doc.client_id,
+			name= doc.name,
 			is_async=True, queue="long", timeout=9000)
 
 @frappe.whitelist()

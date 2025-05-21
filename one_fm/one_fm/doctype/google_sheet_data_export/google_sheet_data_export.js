@@ -6,10 +6,10 @@ frappe.ui.form.on('Google Sheet Data Export', {
 		if(!frm.is_new()){
 			frm.add_custom_button(__('Export Sheet'), function(){
 				export_data(frm);
-			});	
+			});
 			const doctype = frm.doc.reference_doctype;
 			if (doctype) {
-				frappe.model.with_doctype(doctype, () => set_filters_and_field(frm));	
+				frappe.model.with_doctype(doctype, () => set_filters_and_field(frm));
 			}
 		}
 		if(frm.doc.reference_doctype == null){
@@ -41,9 +41,9 @@ frappe.ui.form.on('Google Sheet Data Export', {
 		columns[dt] = options;
 		});
 		let filters = frm.filter_list.get_filters().map((filter) => filter.slice(1, 4))
-		
+
 		frm.set_value('filter_cache',  JSON.stringify(filters) )
-		frm.set_value('field_cache',  JSON.stringify(columns))	
+		frm.set_value('field_cache',  JSON.stringify(columns))
 		frappe.call({
 			method: "one_fm.one_fm.doctype.google_sheet_data_export.exporter.get_client_id",
 			callback: function(r) {
@@ -53,7 +53,7 @@ frappe.ui.form.on('Google Sheet Data Export', {
 			}
 		});
 	},
-	
+
 	reference_doctype: (frm) => {
 		const doctype = frm.doc.reference_doctype;
 		if (doctype) {
@@ -104,7 +104,7 @@ const export_data = (frm) => {
 		filters = JSON.parse(frm.doc.filter_cache)
 		select_columns = frm.doc.field_cache;
 	}
-	
+
 	frappe.call({
 		method: "one_fm.one_fm.doctype.google_sheet_data_export.exporter.export_data",
 		args: {
@@ -116,7 +116,8 @@ const export_data = (frm) => {
 			google_sheet_id: frm.doc.google_sheet_id,
 			sheet_name: frm.doc.sheet_name,
 			owner:frm.doc.owner,
-			client_id: frm.doc.client_id
+			client_id: frm.doc.client_id,
+			name: frm.doc.name
 		},
 		freeze: true,
 		freeze_message: __("Exporting Data to the Sheet"),
@@ -133,10 +134,6 @@ const export_data = (frm) => {
 				}
 			}
 		});
-	
-	
-	
-	
 };
 
 const reset_filter_and_field = (frm) => {
@@ -166,9 +163,9 @@ const set_filters_and_field = (frm) => {
 	filters.forEach((filter) => {
 		frm.filter_list.add_filter(doctype, filter[0],filter[1],filter[2])
 	})
-	
+
 	// Add 'Select All' and 'Unselect All' button
-	
+
 	make_multiselect_buttons(parent_wrapper);
 	frm.fields_multicheck = {};
 	related_doctypes.forEach((dt) => {
@@ -181,7 +178,7 @@ const set_field_options = (frm) => {
 	const filter_wrapper = frm.fields_dict.filter_list.$wrapper;
 	const doctype = frm.doc.reference_doctype;
 	const related_doctypes = get_doctypes(doctype);
-	
+
 	parent_wrapper.empty();
 	filter_wrapper.empty();
 
@@ -251,7 +248,7 @@ const add_doctype_field_multicheck_control = (frm, doctype, parent_wrapper) => {
 		for (const [key, value] of Object.entries(selected_fields)) {
 			let c = selected_fields[key]
 			if(key == df.parent && c.includes(df.fieldname)){
-				check = 1 
+				check = 1
 			}
 		}
 		return {

@@ -16,9 +16,9 @@ class POCCheck(Document):
 	def on_submit(self):
 		self.validate_rows()
 		self.validate_general_attendees_rows()
+		self.remove_assignments()
 		self.update_poc_details()
 		self.update_general_attendees_details()
-		self.remove_assignments()
 	
 	def remove_assignments(self):
 		open_todo = get_open_todos("POC Check",self.name)

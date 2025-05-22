@@ -62,8 +62,17 @@ class PostSchedulerChecker(Document):
 
 	def fill_items(self):
 		current_date = getdate()
-		last_day = getdate(get_last_day(current_date))
+		contracts_project = frappe.db.get_value("Contracts", self.contract, "project")
+		project_date_details = frappe.db.get_value("Project", contracts_project, ["expected_start_date", "expected_end_date"])
+		last_day = getdate(get_last_day(current_date)) 
 		first_day = getdate(get_first_day(current_date))
+		
+		# Use project's expected dates if they fall within the current month
+		if project_date_details[0] and project_date_details[0] > first_day:
+			first_day = getdate(project_date_details[0])
+		if project_date_details[1] and project_date_details[1] < last_day:
+			last_day = getdate(project_date_details[1])
+			
 		week_range = get_week_start_end(str(getdate()))
 		datediff = date_diff(last_day, first_day) + 1
 
@@ -111,6 +120,13 @@ class PostSchedulerChecker(Document):
 						elif item.days_off_category == 'Weekly':
 							first_day = week_range.start
 							last_day = week_range.end
+							
+							# Use project's expected dates if they fall within the week range
+							if project_date_details[0] and project_date_details[0] > first_day:
+								first_day = getdate(project_date_details[0])
+							if project_date_details[1] and project_date_details[1] < last_day:
+								last_day = getdate(project_date_details[1])
+								
 							expected = 7 - item.no_of_days_off
 							no_of_days_off = item.no_of_days_off
 					for post in operations_post:

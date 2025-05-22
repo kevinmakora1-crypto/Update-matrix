@@ -3985,7 +3985,6 @@ def update_fields_in_doctypes(data):
 
 
 
-   
 def get_workflow_action_buttons_html(doc, user):
     from one_fm.overrides.workflow import get_next_possible_transitions
     doctype = doc.get('doctype')

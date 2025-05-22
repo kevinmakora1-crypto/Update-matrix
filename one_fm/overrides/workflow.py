@@ -245,14 +245,11 @@ def filter_allowed_users(users, doc, transition):
 	return filtered_users
 
 def get_next_possible_transitions(workflow_name, state,doc=None):
-	wt= frappe.get_all("Workflow Transition")
-	filters = [['parent', '=', workflow_name], ['state', '=', state]]
-
-	if wt:
-		trans_doc = frappe.get_doc("Workflow Transition",wt[0]['name'])
-		if hasattr(trans_doc,'skip_creation_of_workflow_action'):
-			filters.append(['skip_creation_of_workflow_action', '!=', 1])
-	
+	filters = [
+		['parent', '=', workflow_name],
+		['state', '=', state],
+		['skip_creation_of_workflow_action', '!=', 1]
+	]
 	transitions = frappe.get_all('Workflow Transition', fields='*', filters=filters)
 	valid_transitions = []
 	for transition in transitions:

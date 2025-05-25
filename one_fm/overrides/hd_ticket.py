@@ -87,15 +87,23 @@ def validate_hd_ticket(doc, event):
 
 
 def notify_ticket_raiser_of_receipt(doc, event):
-    subject = f"HelpDesk Ticket - {doc.name}"
-    context = dict(
-        document_name=doc.name,
-        document_link=frappe.utils.get_url(doc.get_url()),
-        document_subject=doc.subject
-    )
-    msg = frappe.render_template('one_fm/templates/emails/notify_ticket_raiser_receipt.html', context=context)
-    frappe.enqueue(method=sendemail, queue="short", recipients=doc.raised_by, subject=subject, content=msg, is_external_mail=True, is_scheduler_email=True)
-    
+    try:
+        subject = f"Support Ticket Raised - Ticket No. {doc.name}"
+        employee=  frappe.db.get_value("Employee", {"user_id": doc.raised_by}, ["employee_name"], as_dict=1)
+
+        args = frappe._dict({
+            "employee_name": employee.employee_name,
+            "ticket_id": doc.name,
+            "ticket_subject": doc.subject,
+            "base_url": frappe.utils.get_url(),
+            "doc_type": doc.doctype,
+            "doc_name": doc.name
+        })
+        message = frappe.render_template('one_fm/templates/emails/notify_ticket_raiser_receipt.html', context=args)
+        frappe.enqueue(method=sendemail, queue="short", recipients=doc.raised_by, subject=subject, content=message, is_external_mail=True, is_scheduler_email=True)
+
+    except Exception as e:
+        frappe.log_error(message=frappe.get_traceback(), title="HD Ticket")
     
     
 def notify_issue_raiser_about_priority(doc, event):

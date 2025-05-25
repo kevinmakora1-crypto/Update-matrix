@@ -123,8 +123,8 @@ class PostSchedulerChecker(Document):
 							expected = (date_diff(last_day, first_day) + 1) - item.no_of_days_off
 							no_of_days_off = item.no_of_days_off
 						elif item.days_off_category == 'Weekly':
-							first_day = week_range.start
-							last_day = week_range.end
+							first_day = getdate(week_range.start)
+							last_day = getdate(week_range.end)
 							# Use project's expected dates if they fall within the week range
 							if project_date_details.expected_start_date and project_date_details.expected_start_date > first_day:
 								first_day = getdate(project_date_details.expected_start_date)

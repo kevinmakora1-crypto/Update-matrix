@@ -392,7 +392,7 @@ def get_shift_site_location(shift, date, log_type):
         elif shift.shift:
             # Fetch the site from Operations Shift to get the location of the Site
             site = frappe.get_value("Operations Shift", shift.shift, "site")
-            return frappe.db.sql("""
+            result = frappe.db.sql("""
                 SELECT
                     loc.latitude, loc.longitude, loc.geofence_radius
                 FROM
@@ -402,6 +402,7 @@ def get_shift_site_location(shift, date, log_type):
                         SELECT site_location FROM `tabOperations Site` where name="{site}"
                     )
             """.format(site=site), as_dict=1)
+            return result[0] if result else None
     return location
 
 

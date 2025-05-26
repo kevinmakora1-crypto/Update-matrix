@@ -204,7 +204,8 @@ def generate_employee_id(doc):
 		elif doc.one_fm_nationality and get_denomyn(doc.one_fm_nationality):
 			country = pycountry.countries.search_fuzzy(get_denomyn(doc.one_fm_nationality))[0].alpha_2
 		else:
-			country = 'XX'
+			country_code = frappe.db.get_value("Country", doc.one_fm_nationality, "code") if doc.one_fm_nationality else None
+			country = 'XX' if not country_code else country_code.upper()
 	except Exception as e:
 		frappe.throw(_(str(e)))
 

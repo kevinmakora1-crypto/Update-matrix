@@ -62,8 +62,17 @@ class PostSchedulerChecker(Document):
 
 	def fill_items(self):
 		current_date = getdate()
-		last_day = getdate(get_last_day(current_date))
+		contracts_project = frappe.db.get_value("Contracts", self.contract, "project")
+		project_date_details = frappe.db.get_value("Project", contracts_project, ["expected_start_date", "expected_end_date"],as_dict=1)
+		last_day = getdate(get_last_day(current_date)) 
 		first_day = getdate(get_first_day(current_date))
+		
+		# Use project's expected dates if they fall within the current month
+		if project_date_details.expected_start_date and project_date_details.expected_start_date > first_day:
+			first_day = getdate(project_date_details.expected_start_date)
+		if project_date_details.expected_end_date and project_date_details.expected_end_date < last_day:
+			last_day = getdate(project_date_details.expected_end_date)
+			
 		week_range = get_week_start_end(str(getdate()))
 		datediff = date_diff(last_day, first_day) + 1
 
@@ -102,16 +111,26 @@ class PostSchedulerChecker(Document):
 					expected = 0
 					no_of_days_off = 0
 					if item.rate_type_off == 'Full Month':
-						expected = getdate(get_last_day(getdate())).day
+						#instead of a full month if the project starts or ends within the  month use the difference between the start and end date
+						if project_date_details.expected_start_date and project_date_details.expected_start_date > first_day:
+							first_day = getdate(project_date_details.expected_start_date)
+						if project_date_details.expected_end_date and project_date_details.expected_end_date < last_day:
+							last_day = getdate(project_date_details.expected_end_date)
+						expected = date_diff(last_day, first_day) + 1
 						no_of_days_off = 0
 					elif item.rate_type_off == 'Days Off':
 						if item.days_off_category == 'Monthly':
-							expected = getdate(get_last_day(current_date)).day - item.no_of_days_off
+							expected = (date_diff(last_day, first_day) + 1) - item.no_of_days_off
 							no_of_days_off = item.no_of_days_off
 						elif item.days_off_category == 'Weekly':
-							first_day = week_range.start
-							last_day = week_range.end
-							expected = 7 - item.no_of_days_off
+							first_day = getdate(week_range.start)
+							last_day = getdate(week_range.end)
+							# Use project's expected dates if they fall within the week range
+							if project_date_details.expected_start_date and project_date_details.expected_start_date > first_day:
+								first_day = getdate(project_date_details.expected_start_date)
+							if project_date_details.expected_end_date and project_date_details.expected_end_date < last_day:
+								last_day = getdate(project_date_details.expected_end_date)
+							expected = (date_diff(last_day, first_day) + 1) - item.no_of_days_off
 							no_of_days_off = item.no_of_days_off
 					for post in operations_post:
 						post_schedules = get_post_schedules(project=contract.project, post=post, first_day=first_day, last_day=last_day)
@@ -144,7 +163,11 @@ class PostSchedulerChecker(Document):
 							'comment': "Hourly rate_type."
 						})
 			last_day = getdate(get_last_day(current_date))
+			if last_day > project_date_details.expected_end_date:
+				last_day = project_date_details.expected_end_date
 			first_day = getdate(get_first_day(current_date))
+			if first_day < project_date_details.expected_start_date:
+				first_day = project_date_details.expected_start_date
 
 def schedule_roster_checker():
 	contracts = frappe.db.sql(""" SELECT c.name from `tabContracts` c JOIN `tabProject` p ON p.name = c.project WHERE c.workflow_state = 'Active'

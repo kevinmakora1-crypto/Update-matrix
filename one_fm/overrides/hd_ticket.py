@@ -85,6 +85,31 @@ def validate_hd_ticket(doc, event):
         if emp_user:
             doc.custom_bug_buster = emp_user
 
+    if (doc.status == "Closed" or doc.status == "Resolved") and not doc.resolution_details:
+        frappe.throw(_("Please fill in Resolution Details before closing the ticket."))
+
+
+def notify_ticket_raiser_of_resolution_details(doc, event):
+    if doc.status == "Closed":
+        previous_doc = doc.get_doc_before_save() # Check if status was just changed to Closed
+        if previous_doc and previous_doc.status != "Closed":
+            try:
+                subject = f"HD Ticket {doc.name} Closed"
+                employee=  frappe.db.get_value("Employee", {"user_id": doc.raised_by}, ["employee_name"], as_dict=1)
+
+                args = frappe._dict({
+                    "employee_name": employee.employee_name,
+                    "ticket_subject": doc.subject,
+                    "resolution_details": doc.resolution_details,
+                    "base_url": frappe.utils.get_url(),
+                    "doc_type": doc.doctype,
+                    "doc_name": doc.name
+                })
+                message = frappe.render_template('one_fm/templates/emails/notify_ticket_raiser_of_resolution.html', context=args)
+                frappe.enqueue(method=sendemail, queue="short", recipients=doc.raised_by, subject=subject, content=message, is_external_mail=True, is_scheduler_email=True)
+            except Exception as e:
+                frappe.log_error(message=frappe.get_traceback(), title="HD Ticket")
+
 
 def notify_ticket_raiser_of_receipt(doc, event):
     subject = f"HelpDesk Ticket - {doc.name}"

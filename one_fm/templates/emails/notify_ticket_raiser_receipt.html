@@ -59,12 +59,12 @@
 </head>
 <body>
      <div class="subject-container">
-        <h1 class="title">Support Ticket Raised - Ticket No. {{ticket_id}}</h1>
+        <h1 class="title">HD Ticket {{ doc_name }} Raised</h1>
     </div>
     <table class="core-table">
         <tr>
           <th>Document Name</th>
-          <td></td>
+          <td>{{ doc_name }}</td>
         </tr>
         <tr>
             <th>Document Type</th>
@@ -90,7 +90,7 @@
                 <br><br>
                 <strong>Ticket ID: </strong>
                 <br>
-                {{ ticket_id }}
+                {{ doc_name }}
                 <br><br>
                 <strong>Ticket Subject: </strong>
                 <br>

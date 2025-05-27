@@ -43,7 +43,7 @@ class JobApplicantOverride(JobApplicant):
 			job title and email ID, but a different name.
 			If a duplicate application is found, an error is thrown.
 		'''
-		if self.one_fm_hiring_method != 'Bulk Recruitment':
+		if self.one_fm_hiring_method != 'Bulk Recruitment' and self.is_new():
 			if frappe.db.exists("Job Applicant", {
 				"job_title": self.job_title,
 				"one_fm_email_id": self.one_fm_email_id,

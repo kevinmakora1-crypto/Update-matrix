@@ -88,12 +88,12 @@ def check_roster_day_off():
 			shift_supervisor = get_shift_supervisor(employee.shift)
 			project_manager = frappe.db.get_value("Project", employee.project, "account_manager")
 
-			for period in comparison_dates:	# Always 2 iterations only because we have just two period for comparison	
+			for period in comparison_dates:	# Always 2 iterations only because we have just two period for comparison
 				day_off_data = get_employee_day_off_comparison(employee, period["start_date"], period["end_date"])
 
 				if day_off_data["day_off_difference"]:
 					duration = day_off_data["monthweek"]
-		
+
 					# Delete exising for target duration against employee
 					frappe.delete_doc_if_exists("Roster Day Off Checker", f"OPR-RDOC-{employee.name}-{duration}")
 
@@ -107,30 +107,31 @@ def check_roster_day_off():
 					day_off_checker.day_off_difference = day_off_data["day_off_difference"]
 					day_off_checker.insert(ignore_permissions=1)
 
+
 	except Exception:
 		frappe.log_error(frappe.get_traceback())
 
-def get_employee_day_off_comparison(employee, start_date, end_date):		
+def get_employee_day_off_comparison(employee, start_date, end_date):
 	EmployeeSchedule = frappe.qb.DocType("Employee Schedule")
 
 	# QB conditions
-	employee_name = (EmployeeSchedule.employee == employee.name) 
+	employee_name = (EmployeeSchedule.employee == employee.name)
 	employee_schedule_date = (EmployeeSchedule.date[start_date:end_date])
-		
+
 	# Calculate no of off days
-	od = frappe.db.sql(frappe.qb.from_(EmployeeSchedule)        
+	od = frappe.db.sql(frappe.qb.from_(EmployeeSchedule)
 		.select(Count("name").as_("off_days"))
 		.where(employee_schedule_date & employee_name & (EmployeeSchedule.employee_availability == "Day Off") & (EmployeeSchedule.day_off_ot == 0))
-		.groupby(EmployeeSchedule.employee), 
-	as_dict=1) 
-	off_days = od[0].off_days if len(od) > 0 else 0 
+		.groupby(EmployeeSchedule.employee),
+	as_dict=1)
+	off_days = od[0].off_days if len(od) > 0 else 0
 
 	# Calculate no of ot days
 	ot = frappe.db.sql( frappe.qb.from_(EmployeeSchedule)
 		.select(Count("name").as_("ot_days"))
 		.where(employee_schedule_date & employee_name & (EmployeeSchedule.day_off_ot == 1))
-		.groupby(EmployeeSchedule.employee), as_dict=1) 
-	ot_days = ot[0].ot_days if len(ot) > 0 else 0 
+		.groupby(EmployeeSchedule.employee), as_dict=1)
+	ot_days = ot[0].ot_days if len(ot) > 0 else 0
 
 	day_off_diff = ""
 	employee_number_of_days_off = employee.number_of_days_off
@@ -158,6 +159,7 @@ def get_employee_day_off_comparison(employee, start_date, end_date):
 		"ot_days": ot_days,
 		"day_off_difference": day_off_diff
 	}
+
 
 @frappe.whitelist()
 def generate_checker():
@@ -188,9 +190,9 @@ def get_day_off_issue_of_employees():
 			employees = get_site_supervisor_employees(user_employee.name)
 		elif "Shift Supervisor" in user_roles:
 			employees = get_shift_supervisor_employees(user_employee.name)
-		else:	
+		else:
 			return OrderedDict()
-			
+
 		roster_day_off_data = get_day_off_details_of_employees(employees)
 
 		html_output = render_day_off_issues_html(roster_day_off_data)
@@ -205,7 +207,7 @@ def get_day_off_details_of_employees(employees):
 		for employee in employees:
 			comparison_dates = get_day_off_comparison_dates(employee.day_off_category)
 
-			for period in comparison_dates:	# Always 2 iterations only because we have just two period for comparison	
+			for period in comparison_dates:	# Always 2 iterations only because we have just two period for comparison
 				day_off_data = get_employee_day_off_comparison(employee, period["start_date"], period["end_date"])
 
 				if day_off_data["day_off_difference"]:
@@ -221,7 +223,7 @@ def get_day_off_details_of_employees(employees):
 					})
 
 		return roster_day_off_data
-		
+
 	except Exception:
 		frappe.log_error(frappe.get_traceback())
 
@@ -241,8 +243,8 @@ def render_day_off_issues_html(roster_day_off_data):
 						<th></th>
 					</tr>
 				</thead><tbody>"""
-		
-	
+
+
 		for info in roster_day_off_data:
 			html += f"""<tr>
 							<td>{info["employee_id"]}</td>
@@ -267,7 +269,7 @@ def get_project_manager_employees(user_employee):
 	return _get_employees_with_join(
 		join_clause="""
 			JOIN `tabOperations Shift` os ON e.shift = os.name
-			JOIN `tabOperations Site` site ON os.site = site.name 
+			JOIN `tabOperations Site` site ON os.site = site.name
 			JOIN `tabProject` p ON site.project = p.name
 		""",
 		where_clause="p.account_manager = %(user_employee)s",
@@ -290,7 +292,7 @@ def get_shift_supervisor_employees(user_employee):
 	return _get_employees_with_join(
 		join_clause="""
 			JOIN `tabOperations Shift` os ON e.shift = os.name
-			JOIN `tabOperations Shift Supervisor` oss 
+			JOIN `tabOperations Shift Supervisor` oss
 				ON os.name = oss.parent AND oss.parenttype = 'Operations Shift'
 		""",
 		where_clause="oss.supervisor = %(user_employee)s",
@@ -300,7 +302,7 @@ def get_shift_supervisor_employees(user_employee):
 def _get_employees_with_join(join_clause, where_clause, user_employee):
 	"""Generic query builder for role-based employee fetching (returns employee records only)"""
 	return frappe.db.sql(f"""
-		SELECT 
+		SELECT
 			e.name,
 			e.employee_name,
 			e.day_off_category,
@@ -314,4 +316,3 @@ def _get_employees_with_join(join_clause, where_clause, user_employee):
 			AND e.shift_working = 1
 			AND {where_clause}
 	""", {"user_employee": user_employee}, as_dict=True)
-

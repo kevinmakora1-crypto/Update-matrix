@@ -3041,6 +3041,9 @@ function unschedule_staff(page) {
 		'title': 'Unschedule Staff',
 		'fields': [
 			{
+				'label': 'Roster Type', 'fieldname': 'roster_type', 'fieldtype': 'Select', 'options': 'Basic\nOver-Time', 'default': 'Basic'
+			},
+			{
 				'label': 'Selected Days Only', 'fieldname': 'selected_days_only', 'fieldtype': 'Check', 'default': 0, onchange: function () {
 					let val = d.get_value('selected_days_only');
 					if (val) {
@@ -3094,18 +3097,12 @@ function unschedule_staff(page) {
 		],
 		primary_action: function () {
 			$('#cover-spin').show(0);
-			let { selected_days_only, start_date, end_date, never_end } = d.get_values();
-			let element = get_wrapper_element();
-			if (element == ".rosterOtMonth") {
-				otRoster = true;
-			} else if (element == ".rosterMonth") {
-				otRoster = false;
-			}
+			let { roster_type, selected_days_only, start_date, end_date, never_end } = d.get_values();
 
 			frappe.call({
 				method: "one_fm.one_fm.page.roster.roster.unschedule_staff",
 				type: "POST",
-				args: { employees, otRoster, start_date, end_date, never_end, selected_days_only },
+				args: { employees, roster_type, start_date, end_date, never_end, selected_days_only },
 				callback: function(res) {
 					d.hide();
 					error_handler(res);

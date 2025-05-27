@@ -875,9 +875,8 @@ def schedule_leave(employees, leave_type, start_date, end_date):
         return frappe.utils.response.report_error(e.http_status_code)
 
 @frappe.whitelist(allow_guest=True)
-def unschedule_staff(employees, otRoster,start_date=None, end_date=None, never_end=0, selected_days_only=0):
+def unschedule_staff(employees, roster_type, start_date=None, end_date=None, never_end=0, selected_days_only=0):
     try:
-        roster_type = "Over-Time" if otRoster == 'true' else "Basic"
         _start_date = getdate(start_date) if start_date else None
         stop_date = getdate(end_date) if end_date else None
 
@@ -895,6 +894,9 @@ def unschedule_staff(employees, otRoster,start_date=None, end_date=None, never_e
         if end_date:
             employees = [i for i in employees if getdate(i['date'])<=stop_date]
 
+        # If roster type is "Basic" then delete Basic/Over-Time schedules otherwise delete only target roster type schedules
+        roster_type_query = "roster_type in ('Basic', 'Over-Time')" if roster_type == "Basic" else f"roster_type = '{roster_type}'"
+
         # check if no end date
         if cint(never_end) == 1:
             employees_to_delete = []
@@ -904,12 +906,12 @@ def unschedule_staff(employees, otRoster,start_date=None, end_date=None, never_e
             # delete all schedules greater than start date
             employees_to_delete=str(tuple(employees_to_delete)).replace(',)', ')')
             frappe.db.sql(f"""
-                DELETE FROM `tabEmployee Schedule` WHERE employee IN {employees_to_delete} and date>='{start_date}' and roster_type ='{roster_type}'
+                DELETE FROM `tabEmployee Schedule` WHERE employee IN {employees_to_delete} and date>='{start_date}' and {roster_type_query}
             """)
         else:
             for i in employees:
                 frappe.db.sql(f"""
-                    DELETE FROM `tabEmployee Schedule` WHERE employee='{i['employee']}' and date='{i['date']}' and roster_type ='{roster_type}'
+                    DELETE FROM `tabEmployee Schedule` WHERE employee='{i['employee']}' and date='{i['date']}' and {roster_type_query}
                 """)
         response("Success", 200, {'message':'Staff(s) unscheduled successfully'})
     except Exception as e:

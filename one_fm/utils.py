@@ -3998,7 +3998,7 @@ def get_workflow_action_buttons_html(doc, user):
         action_details = []
 
         for transition in transitions:
-            if transition.get("custom_requires_frontend_input"):
+            if transition.get("custom_requires_frontend_input") or transition.get("require_digital_signature"):
                 action_name = f"{transition.action} (open in ERP)"
                 action_link = f"{frappe.utils.get_url()}/app/{doctype.lower().replace(' ', '-')}/{doc.name}"
             else:

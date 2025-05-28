@@ -143,7 +143,7 @@ class ShiftPermission(Document):
 				else:
 					if self.leaving_time:
 						date_time = datetime.strptime(
-    								self.date.strftime('%Y-%m-%d') + " " + str(self.leaving_time),
+    								getdate(self.date).strftime('%Y-%m-%d') + " " + str(self.leaving_time),
     								'%Y-%m-%d %H:%M:%S'
 									)						
 						frappe.db.sql("""

@@ -2,7 +2,7 @@ from one_fm.utils import get_doctype_mandatory_fields
 from frappe.workflow.doctype.workflow_action.workflow_action import (
 
     get_workflow_name,
-    get_workflow_action_url,
+    get_confirm_workflow_action_url,
     get_doc_workflow_state
 )
 
@@ -60,7 +60,7 @@ def get_workflow_assignment_rule_description(doc, user):
                 frappe._dict(
                     {
                         "action_name": transition.action,
-                        "action_link": get_workflow_action_url(transition.action, doc, user),
+                        "action_link": get_confirm_workflow_action_url(doc, transition.action, user),
                     }
                 )
             )

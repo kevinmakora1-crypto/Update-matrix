@@ -245,12 +245,17 @@ def supervisor_reminder(shift, today_datetime, now_time):
 				#for_user = get_employee_user_id(recipient.reports_to) if get_employee_user_id(recipient.reports_to) else get_notification_user(op_shift)
 				subject = _("{employee} has not checked in yet.".format(employee=recipient.employee_name))
 				action_message = _("""
+				<b>Operations Site:</b> {site} <br/>
+				<b>Operations Shift:</b> {shift_type} <br/>
+				<b>Shift Start:</b> {shift_start} <br/>
+				<b>Shift End:</b> {shift_end}
+				<br/><br/>
 				Submit a Shift Permission for the employee to give an excuse and not need to penalize
 				<a class="btn btn-primary" href="/app/shift-permission/new-shift-permission-1">Submit Shift Permission</a>&nbsp;
 				<br/><br/>
 				Issue penalty for the employee
 				<a class='btn btn-primary btn-danger no-punch-in' id='{employee}_{date}_{shift}' href="/app/penalty-issuance/new-penalty-issuance-1">Issue Penalty</a>
-				""").format(shift=recipient.shift, date=cstr(now_time), employee=recipient.name, time=checkin_time)
+				""").format(site=recipient.site, shift_type=recipient.shift_type, shift_start=recipient.start_datetime, shift_end=recipient.end_datetime, shift=recipient.shift, date=cstr(now_time), employee=recipient.name, time=checkin_time)
 				if action_user is not None:
 					send_notification(title, subject, action_message, category, [action_user])
 
@@ -275,12 +280,17 @@ def supervisor_reminder(shift, today_datetime, now_time):
 				#for_user = get_employee_user_id(recipient.reports_to) if get_employee_user_id(recipient.reports_to) else get_notification_user(op_shift)
 				subject = _('{employee} has not checked out yet.'.format(employee=recipient.employee_name))
 				action_message = _("""
+					<b>Operations Site:</b> {site} <br/>
+					<b>Operations Shift:</b> {shift_type} <br/>
+					<b>Shift Start:</b> {shift_start} <br/>
+					<b>Shift End:</b> {shift_end}
+					<br/><br/>
 					Submit a Shift Permission for the employee to give an excuse and not need to penalize
 					<a class="btn btn-primary" href="/app/shift-permission/new-shift-permission-1">Submit Shift Permission</a>&nbsp;
 					<br/><br/>
 					Issue penalty for the employee
 					<a class='btn btn-primary btn-danger no-punch-in' id='{employee}_{date}_{shift}' href="/app/penalty-issuance/new-penalty-issuance-1">Issue Penalty</a>
-					""").format(shift=recipient.shift, date=cstr(now_time), employee=recipient.name, time=checkout_time)
+					""").format(site=recipient.site, shift_type=recipient.shift_type, shift_start=recipient.start_datetime, shift_end=recipient.end_datetime, shift=recipient.shift, date=cstr(now_time), employee=recipient.name, time=checkout_time)
 				if action_user is not None:
 						send_notification(title, subject, action_message, category, [action_user])
 
@@ -329,7 +339,7 @@ def checkin_checkout_query(date, shift_type, log_type):
 	else:
 		permission_type = ("Leave Early",)
 
-	query = frappe.db.sql("""SELECT DISTINCT emp.user_id, emp.name , emp.employee_name, emp.holiday_list, tSA.shift
+	query = frappe.db.sql("""SELECT DISTINCT emp.user_id, emp.name , emp.employee_name, emp.holiday_list, tSA.shift, tSA.shift_type, tSA.site, tSA.start_datetime, tSA.end_datetime
 					FROM `tabShift Assignment` tSA, `tabEmployee` emp
 					WHERE
 						tSA.employee=emp.name

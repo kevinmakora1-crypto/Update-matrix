@@ -111,17 +111,14 @@ class OperationsPost(Document):
             and frappe.db.get_value('Operations Role', self.post_template, 'status') != 'Active':
             frappe.throw(_("The Operations Role <br/>'<b>{0}</b>' selected in the Post '<b>{1}</b>' is <b>Inactive</b>. <br/> To make the Post atcive first make the Role active".format(self.post_template, self.name)))
 
-    def on_update(self):
-        self.validate_name()
-        self.update_operation_roles()
-
-
     def validate_name(self):
         condition = self.post_name+"-"+self.gender+"|"+self.site_shift
         if condition != self.name:
-            rename_doc(self.doctype, self.name, condition, force=True)
+            rename_doc(doctype=self.doctype, old=self.name, new=condition, force=True, doc=self)
 
     def on_update(self):
+        self.validate_name()
+        # self.update_operation_roles()
         if self.status == "Active":
             check_list = frappe.db.get_list("Post Schedule", filters={"post":self.name, "date": [">", getdate()]})
             if len(check_list) < 1 :

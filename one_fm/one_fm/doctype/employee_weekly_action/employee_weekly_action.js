@@ -5,16 +5,26 @@ frappe.ui.form.on("Employee Weekly Action", {
     onload(frm) {
         if (frm.is_new()) {
             frm.set_value(get_week_and_year());
-            fetch_employee(frm).then(() => {
-                fetch_employee_reports_to(frm);
-                load_todos(frm, true);
-                load_todos(frm, false);
-            });
-
+            fetch_employee(frm)
         }
+    },
+    employee(frm) {
+      frm.events.load_plans_and_reports_to(frm)
+    },
+    load_plans_and_reports_to(frm) {
+      frm.events.clear_plans_table(frm)
+      if(frm.doc.employee){
+        fetch_employee_reports_to(frm);
+        load_todos(frm, true);
+        load_todos(frm, false);
+      }
+    },
+    clear_plans_table(frm) {
+      frm.clear_table('project_progress_and_plans');
+      frm.clear_table('next_week_task_plan');
+      frm.refresh_fields();
     }
 });
-
 
 const fetch_employee = (frm) => {
     return frappe.db.get_value('Employee', { user_id: frappe.session.user }, 'name')
@@ -26,23 +36,16 @@ const fetch_employee = (frm) => {
 };
 
 const fetch_employee_reports_to = (frm) => {
-    if (!frm.doc.reports_to){
-        frappe.call({
-            method: "one_fm.utils.get_approver",
-            args : {"employee": frm.doc.employee},
-            callback: function (r) {
-                if(r && r.message){
-                    frm.set_value("reports_to", r.message);
-                }
-            }
-        });
-
-    }
+  frappe.call({
+      method: "one_fm.utils.get_approver",
+      args : {"employee": frm.doc.employee},
+      callback: function (r) {
+          if(r && r.message){
+              frm.set_value("reports_to", r.message);
+          }
+      }
+  });
 };
-
-
-
-
 
 const get_week_and_year = () => {
     const currentDate = new Date();
@@ -52,15 +55,13 @@ const get_week_and_year = () => {
     return { week: weekNumber, year: adjustedDate.getFullYear() };
 };
 
-
 const load_todos = (frm, is_current) => {
     frappe.call({
         method: "one_fm.one_fm.doctype.employee_weekly_action.employee_weekly_action.fetch_todos",
-        args: { is_current },
+        args: { employee:frm.doc.employee, is_current:is_current },
         callback: function (r) {
             if (r && r.status_code === 200 && Array.isArray(r.data)) {
                 const fieldname = is_current ? 'project_progress_and_plans' : 'next_week_task_plan';
-                frm.clear_table(fieldname);
 
                 r.data.forEach(item => {
                     let description = "";

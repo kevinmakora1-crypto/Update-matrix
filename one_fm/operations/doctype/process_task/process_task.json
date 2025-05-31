@@ -17,6 +17,7 @@
   "erp_document",
   "task",
   "task_type",
+  "is_routine_task",
   "method",
   "column_break_im0w3",
   "frequency",
@@ -80,8 +81,8 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Frequency",
-   "options": "\nDaily\nWeekly\nMonthly\nCron",
-   "reqd": 1
+   "mandatory_depends_on": "is_routine_task",
+   "options": "\nDaily\nWeekly\nMonthly\nCron"
   },
   {
    "description": "Set number of hours take for the task in the frequency",
@@ -316,11 +317,18 @@
    "fieldtype": "Datetime",
    "label": "Last Execution",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "task_type.is_routine_task",
+   "fieldname": "is_routine_task",
+   "fieldtype": "Check",
+   "label": "Is Routine Task"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-23 19:06:24.431325",
+ "modified": "2025-05-31 19:29:26.984038",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process Task",

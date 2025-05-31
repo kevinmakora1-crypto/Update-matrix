@@ -7,10 +7,10 @@ frappe.ui.form.on("Employee Weekly Action", {
             frm.set_value(get_week_and_year());
             fetch_employee(frm).then(() => {
                 fetch_employee_reports_to(frm);
-                load_todos(frm, true); 
+                load_todos(frm, true);
                 load_todos(frm, false);
             });
-            
+
         }
     }
 });
@@ -63,14 +63,18 @@ const load_todos = (frm, is_current) => {
                 frm.clear_table(fieldname);
 
                 r.data.forEach(item => {
+                    let description = "";
+                    if (item.description){
+                      description = item.description.replace(/(<([^>]+)>)/gi, "");
+                    }
                     const row = frm.add_child(fieldname);
                     row.todo_type = item.type;
                     row.todo = item.name;
-                    row.todo_title = item.description
+                    row.todo_title = description;
                     if (!is_current && item.date) {
                         row.due_date = item.date;
                         row.reference = item.reference_name;
-                        
+
                     }
                 });
 

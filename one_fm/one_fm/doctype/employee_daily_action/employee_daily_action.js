@@ -6,13 +6,13 @@ frappe.ui.form.on("Employee Daily Action", {
         if(frm.is_new()){
             set_employee_from_the_session_user(frm);
         }
-        
+
     },
     employee(frm) {
         frm.clear_table('todays_plan_and_accomplishments');
         frm.clear_table('tomorrows_plan');
         frm.refresh_fields()
-        
+
         get_todos_for_user(frm);
         get_tomorrows_todos(frm);
     }
@@ -51,13 +51,17 @@ async function  get_todos_for_user(frm) {
             if (r.message) {
                 frm.clear_table('todays_plan_and_accomplishments');
                 r.message.forEach(function(todo) {
+                    let description = "";
+                    if (todo.description){
+                      description = todo.description.replace(/(<([^>]+)>)/gi, "");
+                    }
                     let row = frm.add_child('todays_plan_and_accomplishments');
                     row.todo = todo.name;
                     row.todo_type = todo.type; // Default type, can be modified based on your needs
                     row.reference = todo.reference_name;
                     row.planned = 0;
                     row.completed = todo.status === 'Open' ? 0 : 1;
-                    row.description = todo.description;
+                    row.description = description;
                 });
                 frm.refresh_field('todays_plan_and_accomplishments');
             }
@@ -83,15 +87,17 @@ async function get_tomorrows_todos(frm) {
                 frm.clear_table('tomorrows_plan');
                 r.message.forEach(function(todo) {
                     let row = frm.add_child('tomorrows_plan');
+                    let description = "";
+                    if (todo.description){
+                      description = todo.description.replace(/(<([^>]+)>)/gi, "");
+                    }
                     row.todo = todo.name;
                     row.todo_type = todo.type;
                     row.reference = todo.reference_name;
-                    row.description = todo.description;
+                    row.description = description;
                 });
                 frm.refresh_field('tomorrows_plan');
             }
         }
     });
 }
-
-

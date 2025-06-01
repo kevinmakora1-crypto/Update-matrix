@@ -125,30 +125,31 @@ onMounted(async () => {
     const data = res.data;
     subject.value = data.subject || "";
     description.value = data.description || "";
-    type.value = data.type || "";
     priority.value = data.priority || "";
-    process.value = data.process || "";
+    type.value = data.ticket_type || "";
+    process.value = data.custom_process || "";  
   } catch (e) {
     console.error("Failed to fetch ticket data", e);
   }
 });
+
 
 async function submitUpdate() {
   if (!ticketName) return;
 
   try {
     await call("one_fm.overrides.hd_ticket.update_ticket", {
-      name: ticketName,
-      updates: JSON.stringify({
-        subject: subject.value,
-        description: description.value,
-        type: type.value,
-        priority: priority.value,
-        process: process.value,
-        attachments: attachments.value,
-      }),
-    });
-    router.push({ name: "TicketDetails", params: { ticket_name: ticketName } });
+    name: ticketName,
+    updates: JSON.stringify({
+      subject: subject.value,
+      description: description.value,
+      ticket_type: type.value,
+      priority: priority.value,
+      custom_process: process.value,
+    }),
+  });
+
+    router.push("/helpdesk");
   } catch (e) {
     console.error("Update failed", e);
   }

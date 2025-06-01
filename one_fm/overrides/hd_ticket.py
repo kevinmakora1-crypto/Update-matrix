@@ -19,11 +19,13 @@ class HDTicketOverride(HDTicket):
 
     def before_insert(self):
         self.set_im_mail_ticket_to_draft()
-        
 
+        
     def validate(self):
         super().validate()
         self.validate_hd_ticket()
+        self.send_mail_for_completion()
+
 
     def on_change(self):
         self.notify_issue_raiser_about_priority()
@@ -38,7 +40,6 @@ class HDTicketOverride(HDTicket):
         super().after_insert()
         self.send_google_chat_notification()
         self.notify_ticket_raiser_of_receipt()
-        self.send_mail_for_completion()
 
 
 
@@ -138,8 +139,6 @@ class HDTicketOverride(HDTicket):
             )
 
 
-
-
     def notify_ticket_raiser_of_receipt(self):
         subject = f"HelpDesk Ticket - {self.name}"
         context = dict(
@@ -205,6 +204,28 @@ class HDTicketOverride(HDTicket):
             })
 
 
+    def on_communication_update(self, c):
+        # If communication is incoming, then it is a reply from customer, and ticket must
+        # be reopened.
+
+        if not self.is_new() and self.c.sent_or_received == "Received":
+            self.status = "Open"
+
+        # If communication is outgoing, it must be a reply from agent
+        if c.sent_or_received == "Sent":
+            # Set first response date if not set already
+            self.first_responded_on = (
+                self.first_responded_on or frappe.utils.now_datetime()
+            )
+
+            if frappe.db.get_single_value("HD Settings", "auto_update_status"):
+                self.status = "Replied"
+
+        # Fetch description from communication if not set already. This might not be needed
+        # anymore as a communication is created when a ticket is created.
+        self.description = self.description or c.content
+        # Save the ticket, allowing for hooks to run.
+        self.save()
 
 
 @frappe.whitelist()
@@ -256,7 +277,7 @@ def cleanhtml(raw_html):
 
 @frappe.whitelist()
 def get_ticket_details(name: str):
-    fields = ['subject', 'description']
+    fields = ['subject', 'description', "priority", "ticket_type", "custom_process"]
     hd_ticket = frappe.db.get_value('HD Ticket',{'status': 'Draft', "name": name}, fields, as_dict=True)
     if not hd_ticket:
         frappe.throw(_("Ticket not found"), frappe.DoesNotExistError)

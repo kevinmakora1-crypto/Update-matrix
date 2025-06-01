@@ -828,7 +828,11 @@ fixtures = [
 				)
 			)
 		}
-	}
+	},
+	{
+		"dt": "HD Ticket Template",
+		"filters": [["name", "in",["Default"]]]
+	},
 ]
 
 # before_tests = "one_fm.install.before_tests"

@@ -61,32 +61,32 @@ class PostSchedulerChecker(Document):
 
 
 	def fill_items(self):
-		current_date = getdate()
-		last_day = getdate(get_last_day(current_date))
-		first_day = getdate(get_first_day(current_date))
+		current_date = getdate()			
 		week_range = get_week_start_end(str(getdate()))
-		datediff = date_diff(last_day, first_day) + 1
 
 		contract = frappe.get_doc("Contracts", self.contract)
+
 		for item in contract.items:
-			message = """"""
-			expected = 0
-			if not item.no_of_days_off:item.no_of_days_off = 0
-			else:item.no_of_days_off=int(item.no_of_days_off)
+
+			message = ""
+
+			if not item.no_of_days_off: item.no_of_days_off = 0
+			else: item.no_of_days_off=int(item.no_of_days_off)
+
 			if item.subitem_group == "Service" and item.rate_type=='Monthly':
 				roles = [i.name for i in frappe.db.sql(f"""
 					SELECT name FROM `tabOperations Role`
 					WHERE sale_item="{item.item_code}" AND project="{self.project}"
 				""", as_dict=1)]
-				roles_dict = {}
-				schedule_count = 0
+
 				operations_post = frappe.db.get_list(
 					"Operations Post",
 					filters={
 						'project': self.project,
 						'post_template': ['in', roles],
 						"status": "Active"
-					}
+					},
+					fields=["name", "start_date", "end_date"]
 				)
 				if not roles:
 					message += f"""No operations roles created with sale item {item.item_code} in project {contract.project}, for contract {contract.name} in items row {item.idx}\n\n"""
@@ -97,54 +97,47 @@ class PostSchedulerChecker(Document):
 				elif len(operations_post)<item.count:
 					message += f"""Less operations post created, expected: {item.count}, created: {len(operations_post)} for roles {roles}\n\n"""
 
-				# create final records
-				if item.rate_type == 'Monthly':
+				for post in operations_post:
 					expected = 0
-					no_of_days_off = 0
-					if item.rate_type_off == 'Full Month':
-						expected = getdate(get_last_day(getdate())).day
-						no_of_days_off = 0
-					elif item.rate_type_off == 'Days Off':
-						if item.days_off_category == 'Monthly':
-							expected = getdate(get_last_day(current_date)).day - item.no_of_days_off
-							no_of_days_off = item.no_of_days_off
-						elif item.days_off_category == 'Weekly':
-							first_day = week_range.start
-							last_day = week_range.end
-							expected = 7 - item.no_of_days_off
-							no_of_days_off = item.no_of_days_off
-					for post in operations_post:
-						post_schedules = get_post_schedules(project=contract.project, post=post, first_day=first_day, last_day=last_day)
-						if not post_schedules:
-							message += f"""No post schedules created for Post  ({post.name})\n\n"""
-						elif post_schedules > expected:
-							message += f"""More post schedules created, expected: {expected}, created: {post_schedules} for post {post.name}\n\n"""
-						elif post_schedules < expected:
-							message += f"""Less post schedules created, expected: {expected}, created: {post_schedules} for post {post.name}\n\n"""
 
-					if message:
-						self.append('items', {
-							'item': item.item_code,
-							'from_date': first_day,
-							'to_date': last_day,
-							'rate_type': item.rate_type,
-							'rate_type_off': item.rate_type_off,
-							'no_of_days_off': item.no_of_days_off,
-							'days_off_category': item.days_off_category,
-							'comment': message
-						})
-				else:
+					if item.rate_type_off == 'Days Off' and item.days_off_category and item.days_off_category == 'Weekly':
+						first_day = getdate(week_range.start)
+						last_day = getdate(week_range.end)
+					else:
+						first_day = getdate(get_first_day(current_date))
+						last_day = getdate(get_last_day(current_date))
+
+					# Instead of a full month if the post starts or ends within the month/week use the difference between the start and end date
+					if post.start_date and post.start_date > first_day:
+						first_day = getdate(post.start_date)
+					if post.end_date and post.end_date < last_day:
+						last_day = getdate(post.end_date)
+
+					expected = date_diff(last_day, first_day) + 1
+						
+					if item.rate_type_off == 'Days Off':
+						expected = expected - item.no_of_days_off
+
+					post_schedules = get_post_schedules(project=contract.project, post=post, first_day=first_day, last_day=last_day)
+					if not post_schedules:
+						message += f"""No post schedules created for Post  ({post.name})\n\n"""
+					elif post_schedules > expected:
+						message += f"""More post schedules created from {first_day} to {last_day}, expected: {expected}, created: {post_schedules} for post {post.name}\n\n"""
+					elif post_schedules < expected:
+						message += f"""Less post schedules created from {first_day} to {last_day}, expected: {expected}, created: {post_schedules} for post {post.name}\n\n"""
+
+				if message:
 					self.append('items', {
-							'item': item.item_code,
-							'from_date': first_day,
-							'to_date': last_day,
-							'rate_type': item.rate_type,
-							'rate_type_off': '',
-							'no_of_days_off': 0,
-							'comment': "Hourly rate_type."
-						})
-			last_day = getdate(get_last_day(current_date))
-			first_day = getdate(get_first_day(current_date))
+						'item': item.item_code,
+						'from_date': first_day,
+						'to_date': last_day,
+						'rate_type': item.rate_type,
+						'rate_type_off': item.rate_type_off,
+						'no_of_days_off': item.no_of_days_off,
+						'days_off_category': item.days_off_category,
+						'comment': message
+					})
+
 
 def schedule_roster_checker():
 	contracts = frappe.db.sql(""" SELECT c.name from `tabContracts` c JOIN `tabProject` p ON p.name = c.project WHERE c.workflow_state = 'Active'

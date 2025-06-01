@@ -246,15 +246,6 @@ doc_events = {
 	"Leave Type": {
 		"validate": "one_fm.utils.validate_leave_type_for_one_fm_paid_leave"
 	},
-	"HD Ticket": {
-		"validate": "one_fm.overrides.hd_ticket.validate_hd_ticket",
-		"after_insert":[
-      					"one_fm.overrides.hd_ticket.send_google_chat_notification",
-                  		"one_fm.overrides.hd_ticket.notify_ticket_raiser_of_receipt"
-                    	],
-		"on_change": "one_fm.overrides.hd_ticket.notify_issue_raiser_about_priority",
-		"on_update": "one_fm.overrides.hd_ticket.apply_ticket_escalation"
-	},
 	"Employee Grade": {
 		"validate": "one_fm.one_fm.utils.employee_grade_validate"
 	},
@@ -536,6 +527,7 @@ override_doctype_class = {
     "Leave Allocation": "one_fm.overrides.leave_allocation.LeaveAllocationOverride",
     "Interview": "one_fm.overrides.interview.InterviewOverride",
     "Purchase Order": "one_fm.overrides.purchase_order.PurchaseOrderOverride",
+    "HD Ticket": "one_fm.overrides.hd_ticket.HDTicketOverride",
 
     # "User": "one_fm.overrides.user.UserOverride"
 }
@@ -894,6 +886,7 @@ after_migrate = [
     "one_fm.after_migrate.execute.comment_process_expired_allocation_in_hrms",
     "one_fm.after_migrate.execute.replace_prompt_message_in_goal",
     "one_fm.after_migrate.execute.update_hd_ticket_agent",
+    "one_fm.after_migrate.execute.deploy_ticket_edit_view",
     "one_fm.setup.setup.after_migrate"
 ]
 

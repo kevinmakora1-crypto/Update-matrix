@@ -1,5 +1,6 @@
 import frappe, os, shutil, subprocess
-from frappe.utils import cstr
+
+from frappe.utils import cstr, get_bench_path
 from one_fm.utils import production_domain
 
 def comment_timesheet_in_hrms():
@@ -416,6 +417,8 @@ def update_hd_ticket_agent():
         print(FILE_PATH, 'not found')
     return
 
+
+
 def run_command(command, cwd=None, shell=True):
     try:
         result = subprocess.run(command, cwd=cwd, shell=shell, check=True, text=True, capture_output=True)
@@ -426,3 +429,84 @@ def run_command(command, cwd=None, shell=True):
         print(f"An error occurred while running the command: {e}")
         print(f"Output: {e.stdout}")
         print(f"Error: {e.stderr}")
+
+
+
+def deploy_ticket_edit_view():
+    bench_path = get_bench_path()
+
+    # Paths
+    source_file = os.path.join(bench_path, "apps", "one_fm", "one_fm", "public", "js", "form_overrides", "hd_ticket", "TicketEdit.vue")
+    target_folder = os.path.join(bench_path, "apps", "helpdesk", "desk", "src", "pages", "ticket")
+    target_file = os.path.join(target_folder, "TicketEdit.vue")
+
+    # Ensure source exists
+    if not os.path.exists(source_file):
+        print(f"[❌] Source file not found: {source_file}")
+        return False
+
+    # Make sure target directory exists
+    os.makedirs(target_folder, exist_ok=True)
+
+    # Always copy (overwrite if exists)
+    shutil.copy2(source_file, target_file)
+    print(f"[✅] TicketEdit.vue deployed to: {target_file}")
+
+    # ROUTER UPDATE
+    router_file = os.path.join(bench_path, "apps", "helpdesk", "desk", "src", "router", "index.ts")
+    if not os.path.exists(router_file):
+        print("❌ Router file not found:", router_file)
+        return False
+
+    with open(router_file, 'r') as f:
+        content = f.read()
+
+    if 'name: "TicketEdit"' in content:
+        print("⚠️ TicketEdit route already exists.")
+    else:
+        search_text = 'const routes = ['
+
+        appendable_code = '''
+  {
+    path: "/edit-ticket/:ticket_name?",
+    name: "TicketEdit",
+    component: () => import("@/pages/ticket/TicketEdit.vue"),
+    props: true,
+    meta: {
+      onSuccessRoute: "TicketCustomer",
+      parent: "TicketsCustomer",
+    },
+  },'''
+
+        appended = append_code_in_file(
+            router_file,
+            search_text=search_text,
+            appendable_code=appendable_code,
+            insert_before_search_text=False  # insert after the line
+        )
+
+        if appended:
+            print("✅ TicketEdit route added.")
+        else:
+            print("⚠️ Failed to insert route.")
+            return False
+
+    # BUILD
+    helpdesk_desk_dir = os.path.join(bench_path, "apps", "helpdesk", "desk")
+    try:
+        print("[🔨] Running yarn build in helpdesk/desk...")
+        run_command("yarn build", cwd=helpdesk_desk_dir)
+    except Exception as e:
+        print(f"[❌] yarn build failed: {e}")
+        return False
+
+    # RESTART
+    try:
+        print("[🔁] Restarting bench...")
+        run_command("bench restart", cwd=bench_path)
+    except Exception as e:
+        print(f"[❌] bench restart failed: {e}")
+        return False
+
+    print("[🎉] TicketEdit deployment complete.")
+    return True

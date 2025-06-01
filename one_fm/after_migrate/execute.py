@@ -426,3 +426,60 @@ def run_command(command, cwd=None, shell=True):
         print(f"An error occurred while running the command: {e}")
         print(f"Output: {e.stdout}")
         print(f"Error: {e.stderr}")
+
+
+
+def update_hd_ticket_side_bar():
+    FILE_PATH = frappe.utils.get_bench_path()+'/apps/helpdesk/desk/src/components/ticket/TicketAgentFields.vue'
+    if (os.path.exists(FILE_PATH)):
+        # Replace lines 'agent_group'
+        
+        search_pattern = r"""
+            \s*{                            
+            \s*field:\s*"agent_group",     
+            \s*label:\s*"Team",             
+            \s*store:\s*useTeamStore\(\),  
+            \s*},\s*                        
+        """
+        
+        fourth_change = remove_code_block_with_regex(FILE_PATH, search_pattern)
+        if fourth_change:
+            # execute build
+            print("Rebuilding Helpdesk")
+            # Define the directories
+            bench_path = frappe.utils.get_bench_path()
+            helpdesk_dir = os.path.join(bench_path, 'apps/helpdesk/desk')
+
+            # Run yarn build
+            yarn_build_command = 'yarn build'
+            run_command(yarn_build_command, cwd=helpdesk_dir)
+            #  Restart bench
+            bench_restart_command = "bench restart"
+            run_command(bench_restart_command, cwd=bench_path)
+    else:
+        print(FILE_PATH, 'not found')
+    return
+
+
+def remove_code_block_with_regex(file_path, pattern):
+    import re
+    try:
+        with open(file_path, 'r') as file:
+            content = file.read()
+
+        # Check if the pattern exists
+        if not re.search(pattern, content, flags=re.MULTILINE | re.VERBOSE):
+            print("Pattern not found in file.")
+            return False
+
+        # Remove the block
+        updated_content = re.sub(pattern, '', content, flags=re.MULTILINE | re.VERBOSE)
+
+        with open(file_path, 'w') as file:
+            file.write(updated_content)
+
+        print("Pattern removed successfully.")
+        return True
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False

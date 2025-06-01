@@ -89,7 +89,8 @@ class OperationsSite(Document):
 	def on_update(self):
 		self.clear_cache()
 		doc_before_save = self.get_doc_before_save()
-		self.update_shift_post_role_status()
+		if doc_before_save and doc_before_save.status != self.status: # only update if status has changed
+			self.update_shift_post_role_status()
 		if doc_before_save and doc_before_save.project != self.project:	
 			update_on_field_change(self,doc_before_save)
 		# changes = self.get_changes()

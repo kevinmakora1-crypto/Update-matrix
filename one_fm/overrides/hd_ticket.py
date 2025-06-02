@@ -1,4 +1,4 @@
-import frappe, requests, re
+import frappe, requests, re, json
 from frappe import _
 from frappe.utils import getdate
 from json import dumps
@@ -56,7 +56,7 @@ class HDTicketOverride(HDTicket):
 
 
     def set_im_mail_ticket_to_draft(self):
-        if frappe.flags.in_receive:
+        if frappe.flags.in_receive or not self.via_customer_portal:
             self.status = "Draft"
 
 
@@ -208,7 +208,7 @@ class HDTicketOverride(HDTicket):
         # If communication is incoming, then it is a reply from customer, and ticket must
         # be reopened.
 
-        if not self.is_new() and self.c.sent_or_received == "Received":
+        if not self.is_new() and c.sent_or_received == "Received":
             self.status = "Open"
 
         # If communication is outgoing, it must be a reply from agent
@@ -294,7 +294,6 @@ def update_ticket(name: str, updates: str):
     """
     updates: JSON string with keys subject, description, type, priority, attachments, etc.
     """
-    import json
 
     doc = frappe.get_doc("HD Ticket", name)
     try:

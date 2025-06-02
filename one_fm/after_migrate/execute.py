@@ -431,41 +431,34 @@ def run_command(command, cwd=None, shell=True):
         print(f"Error: {e.stderr}")
 
 
-
-def deploy_ticket_edit_view():
+def deploy_ticket_views():
     bench_path = get_bench_path()
 
-    # Paths
-    source_file = os.path.join(bench_path, "apps", "one_fm", "one_fm", "public", "js", "form_overrides", "hd_ticket", "TicketEdit.vue")
-    target_folder = os.path.join(bench_path, "apps", "helpdesk", "desk", "src", "pages", "ticket")
-    target_file = os.path.join(target_folder, "TicketEdit.vue")
+    ticket_target_folder = os.path.join(bench_path, "apps", "helpdesk", "desk", "src", "pages", "ticket")
 
-    # Ensure source exists
-    if not os.path.exists(source_file):
-        print(f"[❌] Source file not found: {source_file}")
+    ticket_edit_source = os.path.join(bench_path, "apps", "one_fm", "one_fm", "public", "js", "form_overrides", "hd_ticket", "TicketEdit.vue")
+    ticket_edit_target = os.path.join(ticket_target_folder, "TicketEdit.vue")
+
+    if not os.path.exists(ticket_edit_source):
+        print(f"[❌] Source TicketEdit.vue not found: {ticket_edit_source}")
         return False
 
-    # Make sure target directory exists
-    os.makedirs(target_folder, exist_ok=True)
+    shutil.copy2(ticket_edit_source, ticket_edit_target)
+    print(f"[✅] TicketEdit.vue deployed to: {ticket_edit_target}")
 
-    # Always copy (overwrite if exists)
-    shutil.copy2(source_file, target_file)
-    print(f"[✅] TicketEdit.vue deployed to: {target_file}")
-
-    # ROUTER UPDATE
     router_file = os.path.join(bench_path, "apps", "helpdesk", "desk", "src", "router", "index.ts")
+
     if not os.path.exists(router_file):
         print("❌ Router file not found:", router_file)
         return False
 
-    with open(router_file, 'r') as f:
-        content = f.read()
+    with open(router_file, "r") as f:
+        router_content = f.read()
 
-    if 'name: "TicketEdit"' in content:
+    if 'name: "TicketEdit"' in router_content:
         print("⚠️ TicketEdit route already exists.")
     else:
-        search_text = 'const routes = ['
-
+        search_text = "const routes = ["
         appendable_code = '''
   {
     path: "/edit-ticket/:ticket_name?",
@@ -478,21 +471,21 @@ def deploy_ticket_edit_view():
     },
   },'''
 
-        appended = append_code_in_file(
-            router_file,
-            search_text=search_text,
-            appendable_code=appendable_code,
-            insert_before_search_text=False  # insert after the line
-        )
+        updated_content = ""
+        if search_text in router_content:
+            parts = router_content.split(search_text)
+            updated_content = parts[0] + search_text + appendable_code + parts[1]
 
-        if appended:
+            with open(router_file, "w") as f:
+                f.write(updated_content)
+
             print("✅ TicketEdit route added.")
         else:
-            print("⚠️ Failed to insert route.")
+            print("⚠️ Could not find insertion point for router update.")
             return False
 
-    # BUILD
     helpdesk_desk_dir = os.path.join(bench_path, "apps", "helpdesk", "desk")
+
     try:
         print("[🔨] Running yarn build in helpdesk/desk...")
         run_command("yarn build", cwd=helpdesk_desk_dir)
@@ -500,7 +493,6 @@ def deploy_ticket_edit_view():
         print(f"[❌] yarn build failed: {e}")
         return False
 
-    # RESTART
     try:
         print("[🔁] Restarting bench...")
         run_command("bench restart", cwd=bench_path)
@@ -508,5 +500,6 @@ def deploy_ticket_edit_view():
         print(f"[❌] bench restart failed: {e}")
         return False
 
-    print("[🎉] TicketEdit deployment complete.")
+    print("[🎉] TicketNew and TicketEdit views deployed successfully.")
     return True
+

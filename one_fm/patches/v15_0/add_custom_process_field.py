@@ -10,7 +10,7 @@ def execute():
                 "label": "Process",
                 "insert_after": "cb00",
                 "reqd": 1,
-                # "default": "Others", 
+                "default": "Others", 
                 "options": "Process"
                 
             },

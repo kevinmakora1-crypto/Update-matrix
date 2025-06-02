@@ -162,6 +162,7 @@ function handleOnFieldChange(e, fieldname, fieldtype) {
 
 async function fetchTicketDetails() {
   if (!ticketName) return;
+
   try {
     const res = await call("one_fm.overrides.hd_ticket.get_ticket_details", {
       name: ticketName,
@@ -171,12 +172,6 @@ async function fetchTicketDetails() {
     subject.value = data.subject || "";
     description.value = data.description || "";
 
-    Object.assign(templateFields, {
-      ...data.custom_fields || {},
-      priority: data.priority,
-      process: data.custom_process || data.process,
-    });
-
     if (data.fields && data.fields.length) {
       templateData.value.fields = data.fields;
     } else {
@@ -185,6 +180,18 @@ async function fetchTicketDetails() {
 
     oldFields = JSON.parse(JSON.stringify(templateData.value.fields));
 
+    // Assign values only for fields that exist
+    for (const field of templateData.value.fields) {
+      const key = field.fieldname;
+      if (key === "priority") {
+        templateFields.priority = data.priority;
+      } else if (key === "process") {
+        templateFields.process = data.custom_process || data.process;
+      } else if (data.custom_fields?.hasOwnProperty(key)) {
+        templateFields[key] = data.custom_fields[key];
+      }
+    }
+
     setupCustomizations(templateData, {
       doc: templateFields,
       call,
@@ -192,10 +199,12 @@ async function fetchTicketDetails() {
       $dialog,
       applyFilters,
     });
+
   } catch (e) {
     console.error("Failed to fetch ticket", e);
   }
 }
+
 
 async function handleSubmit() {
   loading.value = true;

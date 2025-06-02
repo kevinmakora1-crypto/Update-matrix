@@ -155,7 +155,6 @@
    "reqd": 1
   },
   {
-   "default": "Today",
    "fetch_from": "project.expected_end_date",
    "fetch_if_empty": 1,
    "fieldname": "end_date",

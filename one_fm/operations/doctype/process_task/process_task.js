@@ -27,7 +27,6 @@ frappe.ui.form.on('Process Task', {
         frm.refresh_field('frequency');
     },
 	refresh: function(frm) {
-		set_filters(frm);
 		set_custom_buttons(frm);
 	},
 	is_erp_task: function(frm) {
@@ -114,13 +113,4 @@ var set_task_and_auto_repeat = function(frm) {
 			}
 		});
 	}
-};
-
-var set_filters = function(frm) {
-
-	frm.set_query("task_type", function() {
-		return {
-			filters: {'is_routine_task': true}
-		}
-	});
 };

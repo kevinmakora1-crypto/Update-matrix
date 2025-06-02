@@ -897,7 +897,8 @@ after_migrate = [
     "one_fm.after_migrate.execute.replace_prompt_message_in_goal",
     "one_fm.after_migrate.execute.update_hd_ticket_agent",
     "one_fm.setup.setup.after_migrate",
-    "one_fm.after_migrate.execute.update_hd_ticket_side_bar"
+    "one_fm.after_migrate.execute.update_hd_ticket_side_bar",
+    "one_fm.after_migrate.execute.add_resolution_details_updation"
 ]
 
 before_migrate = [

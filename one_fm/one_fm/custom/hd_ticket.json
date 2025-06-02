@@ -79,7 +79,7 @@
    "columns": 0,
    "creation": "2024-03-28 10:19:20.608913",
    "default": null,
-   "depends_on": null,
+   "depends_on": "eval: doc.ticket_type == 'Bug'",  
    "description": null,
    "docstatus": 0,
    "dt": "HD Ticket",

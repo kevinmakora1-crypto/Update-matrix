@@ -1471,5 +1471,93 @@
       }
     ],
     "users": []
-  }
+  },
+  {
+    "name":"HD Ticket - Process Owner",
+    "docstatus":0,
+    "document_type":"HD Ticket",
+    "priority":1,
+    "disabled":0,
+    "description":"<p>Here is to inform you that the following {{ doctype }}({{ name }}) requires your attention/action.\n        <br>\n        The details of the request are as follows:\n        <br>\n        </p><table cellpadding=\"0\" cellspacing=\"0\" border=\"1\" style=\"border-collapse: collapse;\">\n            <thead>\n                <tr>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Label</th>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Value</th>\n                </tr>\n            </thead>\n        <tbody>\n        \n            <tr>\n                <td style=\"padding: 10px;\">Subject</td>\n                <td style=\"padding: 10px;\">{{subject}}</td>\n            </tr>\n            </tbody></table><p></p>",
+    "is_assignment_rule_with_workflow":0,
+    "assign_condition":"status == 'Open' and ticket_type != 'Bug'",
+    "unassign_condition":"ticket_type == 'Bug'",
+    "close_condition":"status == 'Closed'",
+    "rule":"Based on Field",
+    "field":"custom_process_owner",
+    "doctype":"Assignment Rule",
+    "assignment_days":[
+       {
+          "name":"5ea6vtnc3c",
+          "docstatus":0,
+          "idx":1,
+          "day":"Monday",
+          "parent":"HD Ticket - Process Owner",
+          "parentfield":"assignment_days",
+          "parenttype":"Assignment Rule",
+          "doctype":"Assignment Rule Day"
+       },
+       {
+          "name":"3itdt5et4o",
+          "docstatus":0,
+          "idx":2,
+          "day":"Tuesday",
+          "parent":"HD Ticket - Process Owner",
+          "parentfield":"assignment_days",
+          "parenttype":"Assignment Rule",
+          "doctype":"Assignment Rule Day"
+       },
+       {
+          "name":"0aamdh8noh",
+          "docstatus":0,
+          "idx":3,
+          "day":"Wednesday",
+          "parent":"HD Ticket - Process Owner",
+          "parentfield":"assignment_days",
+          "parenttype":"Assignment Rule",
+          "doctype":"Assignment Rule Day"
+       },
+       {
+          "name":"eqo7ajfkhg",
+          "docstatus":0,
+          "idx":4,
+          "day":"Thursday",
+          "parent":"HD Ticket - Process Owner",
+          "parentfield":"assignment_days",
+          "parenttype":"Assignment Rule",
+          "doctype":"Assignment Rule Day"
+       },
+       {
+          "name":"s5r99ijdsn",
+          "docstatus":0,
+          "idx":5,
+          "day":"Friday",
+          "parent":"HD Ticket - Process Owner",
+          "parentfield":"assignment_days",
+          "parenttype":"Assignment Rule",
+          "doctype":"Assignment Rule Day"
+       },
+       {
+          "name":"4j01njoqbt",
+          "docstatus":0,
+          "idx":6,
+          "day":"Saturday",
+          "parent":"HD Ticket - Process Owner",
+          "parentfield":"assignment_days",
+          "parenttype":"Assignment Rule",
+          "doctype":"Assignment Rule Day"
+       },
+       {
+          "name":"6m1648d9h0",
+          "docstatus":0,
+          "idx":7,
+          "day":"Sunday",
+          "parent":"HD Ticket - Process Owner",
+          "parentfield":"assignment_days",
+          "parenttype":"Assignment Rule",
+          "doctype":"Assignment Rule Day"
+       }
+    ],
+    "users":[]
+ }
 ]

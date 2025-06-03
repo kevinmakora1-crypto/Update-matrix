@@ -272,36 +272,6 @@ def update_hd_ticket_agent():
         appendable_code = '''
             const showCreateStoryConfirmationDialog = ref(false);
             const showStoryCreationProgressDialog = ref(false);
-            const selectedProject = ref(null)
-
-            const projectOptions = [
-  {
-    label: 'ONEFM',
-    value: 'ON',
-    onClick: () => {
-      selectedProject.value = 'ON'
-    },
-  },
-  {
-    label: 'Roster',
-    value: 'ROS',
-    onClick: () => {
-      selectedProject.value = 'ROS'
-    },
-  },
-  {
-    label: 'Recruitment',
-    value: 'REC',
-    onClick: () => {
-      selectedProject.value = 'REC'
-    },
-  },
-]
-
-function getProjectLabel(value) {
-  const option = projectOptions.find(opt => opt.value === value)
-  return option ? option.label : 'Select Project'
-}
         '''
         first_change = append_code_in_file(FILE_PATH, search_text, appendable_code, False)
 
@@ -309,15 +279,6 @@ function getProjectLabel(value) {
         search_text = 'const ticket = createResource({'
         appendable_code = '''
         const createDevTicket = () => {
-           if (!selectedProject.value) {
-    createToast({
-                    title: 'Dev Ticket Error',
-                    text: "Please select a project before proceeding.",
-                    icon: "x",
-                    iconClasses: "text-red-600",
-                  });
-    return
-  }
         
             showCreateStoryConfirmationDialog.value = false;
             showStoryCreationProgressDialog.value = true;
@@ -329,12 +290,10 @@ function getProjectLabel(value) {
                 params: {
                     name: ticket.data.name,
                     description: ticket.data.description,
-                    project: selectedProject.value
                 },
                 transform: (data) => {},
                 onSuccess: (data) => {
                     showStoryCreationProgressDialog.value = false;
-                    selectedProject.value = null;
                     if (data.error){
                     createToast({
                       title: "Dev Ticket Error",
@@ -355,7 +314,6 @@ function getProjectLabel(value) {
                 },
                 onError: (error) => {
                     showStoryCreationProgressDialog.value = false;
-                    selectedProject.value = null;
                     createToast({
                     title: 'Dev Ticket Error',
                     text: error.message || "Something went wrong in creating dev ticket",
@@ -397,20 +355,6 @@ function getProjectLabel(value) {
                     <h3>Create Dev Ticket</h3>
                     </template>
                     <template #body-content>
-                      <p>Select the project this dev ticket belongs to:</p>
-                      <Dropdown
-    :options="projectOptions"
-    placeholder="Select Project"
-    class="my-2 w-full"
-  >
-    <template #default="{ open }">
-      <Button :label="getProjectLabel(selectedProject)">
-        <template #suffix>
-          <FeatherIcon :name="open ? 'chevron-up' : 'chevron-down'" class="h-4" />
-        </template>
-      </Button>
-    </template>
-  </Dropdown>
                     <p>By clicking on "Confirm", a dev ticket will be created</p>
                     </template>
                     <template #actions>
@@ -420,7 +364,7 @@ function getProjectLabel(value) {
                     </Button>
                     <Button
                         class="ml-2"
-                        @click="() => {showCreateStoryConfirmationDialog = false; selectedProject = null;}"
+                        @click="showCreateStoryConfirmationDialog = false;"
                     >
                         Close
                     </Button>

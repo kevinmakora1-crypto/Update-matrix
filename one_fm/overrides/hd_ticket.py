@@ -183,7 +183,7 @@ def apply_ticket_escalation(doc, event):
 
 
 @frappe.whitelist()
-def create_dev_ticket(name, description, project):
+def create_dev_ticket(name, description):
     """
     Create a Jira bug ticket from HD Ticket
     """
@@ -199,8 +199,9 @@ def create_dev_ticket(name, description, project):
         email = frappe.conf.get("jira_email")
         api_token = frappe.conf.get("jira_api_token")
         jira_url = frappe.conf.get("jira_url") or "https://one-fm.atlassian.net"
+        project = frappe.conf.get("project_id")
 
-        if not all([email, api_token]):
+        if not all([email, api_token, project]):
             frappe.throw("Jira credentials not found in site_config.json")
 
         # Prepare authentication

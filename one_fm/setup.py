@@ -80,7 +80,7 @@ def remove_property_setter(property_setters):
 		row_name = property.get("row_name")
 
 		if property_name:
-			core_delete_property_setter(
+			delete_property_setter(
 				doc_type=doctype,
 				property=property_name,
 				field_name=field_name,

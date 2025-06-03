@@ -50,7 +50,7 @@ def sendemail(recipients, subject, header=None, message=None,
 				recipients.remove(recipient)
 		if not sender:
 			sender = "Administrator"
-	
+	print(recipients)
 	if recipients and len(recipients) > 0:
 		frappe.sendmail(template = template,
 			recipients=recipients,

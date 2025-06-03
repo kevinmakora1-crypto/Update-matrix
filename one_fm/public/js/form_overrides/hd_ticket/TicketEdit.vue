@@ -217,7 +217,7 @@ async function handleSubmit() {
         ...templateFields,
       }),
     });
-    router.push("/helpdesk");
+    router.push("/");
   } catch (e) {
     console.error("Failed to update ticket", e);
   } finally {

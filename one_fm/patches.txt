@@ -117,3 +117,5 @@ one_fm.patches.v15_0.update_designation_disabled_field
 one_fm.patches.v15_0.update_hr_settings_leave_threshold
 one_fm.patches.v15_0.add_roster_index
 one_fm.patches.v15_0.add_custom_process_field
+one_fm.patches.v15_0.delete_all_roaster_day_off_checker_records
+one_fm.patches.v15_0.update_operation_post_start_and_end_date

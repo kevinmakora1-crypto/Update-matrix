@@ -59,7 +59,6 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.oauth2 import service_account
 
 
-
 def get_common_email_args(doc):
 	doctype = doc.get("doctype")
 	docname = doc.get("name")
@@ -3984,3 +3983,43 @@ def update_fields_in_doctypes(data):
 						doc.set(field, value)  # Re-set the actual value
 					doc.save()
 
+
+
+def get_workflow_action_buttons_html(doc, user):
+    from one_fm.overrides.workflow import get_next_possible_transitions
+    doctype = doc.get('doctype')
+    workflow = get_workflow_name(doctype)
+    message_html = ""
+    if workflow:
+        transitions = get_next_possible_transitions(
+            workflow, get_doc_workflow_state(doc), doc
+        )
+
+        action_details = []
+
+        for transition in transitions:
+            if transition.get("custom_requires_frontend_input") or transition.get("require_digital_signature"):
+                action_name = f"{transition.action} (open in ERP)"
+                action_link = f"{frappe.utils.get_url()}/app/{doctype.lower().replace(' ', '-')}/{doc.name}"
+            else:
+                action_name = transition.action
+                action_link = get_confirm_workflow_action_url(doc, transition.action, user)
+
+            action_details.append(
+                frappe._dict(
+                    {
+                        "action_name": action_name,
+                        "action_link": action_link,
+                    }
+                )
+            )
+
+        if action_details and len(action_details) > 0:
+            message_html += "<div>"
+            for action in action_details:
+                message_html += '<a href="{0}" class="btn btn-primary btn-action" style="margin-right: 10px; margin-bottom: 10px">{1}</a>'.format(
+                    action.action_link, action.action_name
+                )
+            message_html += "</div>"
+
+    return message_html

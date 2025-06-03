@@ -1536,7 +1536,6 @@
     "unassign_condition": "ticket_type == 'Bug'",
     "users": []
    },
-   [
     {
      "assign_condition": "status == 'Open' and ticket_type == 'Bug'",
      "assignment_days": [
@@ -1593,7 +1592,7 @@
      "due_date_based_on": null,
      "field": "custom_bug_buster",
      "is_assignment_rule_with_workflow": 0,
-     "last_user": "s.shariff@one-fm.com",
+     "last_user": null,
      "modified": "2025-06-02 21:15:28.726838",
      "name": "HD Ticket - Bug Buster",
      "priority": 0,
@@ -1662,5 +1661,4 @@
       }
      ]
     }
-   ]
 ]

@@ -138,17 +138,50 @@ class HDTicketOverride(HDTicket):
                 body=dumps(bot_message),
             )
 
+    if (doc.status == "Closed" or doc.status == "Resolved") and not doc.resolution_details:
+        frappe.throw(_("Please fill in Resolution Details before closing the ticket."))
 
-    def notify_ticket_raiser_of_receipt(self):
-        subject = f"HelpDesk Ticket - {self.name}"
-        context = dict(
-            document_name=self.name,
-            document_link=frappe.utils.get_url(self.get_url()),
-            document_subject=self.subject
-        )
-        msg = frappe.render_template('one_fm/templates/emails/notify_ticket_raiser_receipt.html', context=context)
-        frappe.enqueue(method=sendemail, queue="short", recipients=self.raised_by, subject=subject, content=msg, is_external_mail=True, is_scheduler_email=True)
-    
+
+def notify_ticket_raiser_of_resolution_details(doc, event):
+    if doc.status == "Closed":
+        previous_doc = doc.get_doc_before_save() # Check if status was just changed to Closed
+        if previous_doc and previous_doc.status != "Closed":
+            try:
+                subject = f"HD Ticket {doc.name} Closed"
+                employee=  frappe.db.get_value("Employee", {"user_id": doc.raised_by}, ["employee_name"], as_dict=1)
+
+                args = frappe._dict({
+                    "employee_name": employee.employee_name,
+                    "ticket_subject": doc.subject,
+                    "resolution_details": doc.resolution_details,
+                    "base_url": frappe.utils.get_url(),
+                    "doc_type": doc.doctype,
+                    "doc_name": doc.name
+                })
+                message = frappe.render_template('one_fm/templates/emails/notify_ticket_raiser_of_resolution.html', context=args)
+                frappe.enqueue(method=sendemail, queue="short", recipients=doc.raised_by, subject=subject, content=message, is_external_mail=True, is_scheduler_email=True)
+            except Exception as e:
+                frappe.log_error(message=frappe.get_traceback(), title="HD Ticket")
+
+
+
+  def notify_ticket_raiser_of_receipt(self):
+      try:
+          subject = f"HD Ticket {self.name} Raised"
+          employee=  frappe.db.get_value("Employee", {"user_id": doc.raised_by}, ["employee_name"], as_dict=1)
+
+          args = frappe._dict({
+              "employee_name": employee.employee_name,
+              "ticket_subject": self.subject,
+              "base_url": frappe.utils.get_url(),
+              "doc_type": self.doctype,
+              "doc_name": self.name
+          })
+          message = frappe.render_template('one_fm/templates/emails/notify_ticket_raiser_receipt.html', context=args)
+          frappe.enqueue(method=sendemail, queue="short", recipients=self.raised_by, subject=subject, content=message, is_external_mail=True, is_scheduler_email=True)
+      except Exception as e:
+          frappe.log_error(message=frappe.get_traceback(), title="HD Ticket")
+
     
     
     def notify_issue_raiser_about_priority(self):
@@ -228,44 +261,96 @@ class HDTicketOverride(HDTicket):
         self.save()
 
 
+=
 @frappe.whitelist()
-def create_dev_ticket(name, description):
+def create_dev_ticket(name, description, project):
     """
-        Create Dev Ticket using name and description
+    Create a Jira bug ticket from HD Ticket
     """
+    import base64
+    from frappe.utils import get_url_to_form
     try:
         doc = frappe.get_doc("HD Ticket", name)
-        doc_link = frappe.utils.get_url(doc.get_url())
-        default_api_integration = frappe.get_doc("Default API Integration")
+        doc_link = frappe.utils.get_url(get_url_to_form(doc.doctype, doc.name))
+
+        # Use fallback if description is not provided
         description = cleanhtml(description) or doc.subject
 
-        pivotal_tracker = frappe.get_doc("API Integration",
-            [i for i in default_api_integration.integration_setting
-                if i.app_name=='Pivotal Tracker'][0].app_name)
-        if pivotal_tracker.active:
-            headers={"X-TrackerToken":pivotal_tracker.get_password('api_token').replace(' ', ''),
-                "Content-Type": "application/json"}
-            project_id = pivotal_tracker.get_password('project_id').replace(' ', '')
-            url = f"{pivotal_tracker.url}/services/v5/projects/{project_id}/stories"
+        email = frappe.conf.get("jira_email")
+        api_token = frappe.conf.get("jira_api_token")
+        jira_url = frappe.conf.get("jira_url") or "https://one-fm.atlassian.net"
 
-            req = requests.post(
-                url=url,
-                headers=headers,
-                json={"name":doc.subject,
-                'description':f"""Link:\t{doc_link}\nStatus: \t{doc.status}\nPriority: \t{doc.priority}\nTicket Type: \t{doc.ticket_type}\n\n
-                {description}""",
-                'story_type':'bug',},
-                timeout=5
-            )
-            if(req.status_code==200):
-                response_data = frappe._dict(req.json())
-                doc.db_set('custom_dev_ticket', f"{pivotal_tracker.url}/n/projects/{project_id}/stories/{response_data.id}")
-                return {'status':'success'}
-            else:
-                frappe.throw(f"Dev ticket could not be created:\n {req.json()}")
+        if not all([email, api_token]):
+            frappe.throw("Jira credentials not found in site_config.json")
+
+        # Prepare authentication
+        auth = base64.b64encode(f"{email}:{api_token}".encode()).decode()
+        headers = {
+            "Authorization": f"Basic {auth}",
+            "Content-Type": "application/json"
+        }
+
+        data = {
+                    "fields": {
+                        "project": {"key": project},
+                        "summary": doc.subject,
+                        "description": {
+                            "type": "doc",
+                            "version": 1,
+                            "content": [
+                                {
+                                    "type": "paragraph",
+                                    "content": [
+                                        {"type": "text", "text": f"Link: {doc_link}"},
+                                    ]
+                                },
+                                {
+                                    "type": "paragraph",
+                                    "content": [
+                                        {"type": "text", "text": f"Status: {doc.status}"},
+                                    ]
+                                },
+                                {
+                                    "type": "paragraph",
+                                    "content": [
+                                        {"type": "text", "text": f"Priority: {doc.priority}"},
+                                    ]
+                                },
+                                {
+                                    "type": "paragraph",
+                                    "content": [
+                                        {"type": "text", "text": f"Ticket Type: {doc.ticket_type}"},
+                                    ]
+                                },
+                                {
+                                    "type": "paragraph",
+                                    "content": [
+                                        {"type": "text", "text": cleanhtml(description)},
+                                    ]
+                                },
+                            ]
+                        },
+                        "issuetype": {"name": "Bug"}
+                    }
+                }
+
+
+        url = f"{jira_url}/rest/api/3/issue"
+        response = requests.post(url, headers=headers, json=data, timeout=5)
+
+        if response.status_code == 201:
+            issue_key = response.json().get("key")
+            issue_url = f"{jira_url}/browse/{issue_key}"
+            doc.db_set('custom_dev_ticket', issue_url)
+            return {'status': 'success', 'jira_issue': issue_key}
+        else:
+            error_msg = response.json().get("errors") or response.text
+            return {'error': 'Dev Ticket Error', 'message': f"Dev ticket could not be created:\n{error_msg}"}
+
     except Exception as e:
-        frappe.throw(f"Dev ticket could not be created:\n {str(e)}")
-        frappe.log_error(str(e), 'Dev Ticket')
+        frappe.log_error(frappe.get_traceback(), "Dev Ticket Creation Error")
+        return {'error': 'Dev Ticket Error', 'message': f"Dev ticket could not be created:\n {str(e)}"}
+
 
 CLEANER = re.compile('<.*?>') 
 

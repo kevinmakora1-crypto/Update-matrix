@@ -210,7 +210,7 @@ def get_leave_types(employee_id: str = None) -> dict:
 @frappe.whitelist()
 def get_employees_role_to_display_reliever_field(employee_id: str = None)-> dict:
     try:
-        employee = frappe.get_value("Employee", {"employee_id": employee_id}, ["name", "user_id"], as_dict=1)
+        employee = frappe.get_value("Employee", {"employee_id": employee_id}, ["name", "user_id", "reports_to"], as_dict=1)
         super_user_role = frappe.db.get_single_value("ONEFM General Setting", "super_user_role")
         user_roles = frappe.get_roles(employee.user_id)
         if (employee.reports_to or (super_user_role in user_roles)):

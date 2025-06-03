@@ -221,11 +221,9 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
         if isOt:
             employee_filters.update({"employee_availability" : "Working"})
             reliever_filter = f"and custom_is_reliever={strtobool(relievers)}" if relievers else ""
-            all_active_employees = frappe.db.sql(f"SELECT name from `tabEmployee` where status in ('Active','Vacation') and attendance_by_timesheet = '0' and shift_working= '1' {reliever_filter}",as_dict =1)
-            all_active_employee_ids = [i.name for i in all_active_employees]
+            all_active_employee_ids = frappe.db.sql_list(f"SELECT name from `tabEmployee` where status in ('Active','Vacation') and attendance_by_timesheet = '0' and shift_working= '1' {reliever_filter}")
             employee_filters.update({"employee":[ "In", all_active_employee_ids]})
-
-            employees = frappe.db.get_list("Employee Schedule", employee_filters, ["distinct employee", "employee_name"], order_by="employee_name asc" ,limit_start=limit_start, limit_page_length=limit_page_length, ignore_permissions=True)
+            employees = frappe.db.get_list("Employee Schedule", employee_filters, ["distinct employee", "employee_name"], limit_start=limit_start, limit_page_length=limit_page_length, ignore_permissions=True)
             master_data.update({"total" : len(employees)})
             employees.extend(exited_employees)
             employees = filter_redundant_employees(employees)
@@ -240,7 +238,6 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
             employee_filters.update({"attendance_by_timesheet": 0})
             if designation:
                 employee_filters.update({"designation" : designation})
-
             employees = frappe.db.get_list("Employee", employee_filters, ["employee", "employee_name", "day_off_category", "number_of_days_off"], order_by="employee_name asc" ,limit_start=limit_start, limit_page_length=limit_page_length, ignore_permissions=True)
             employees.extend(exited_employees)
             employees.extend(employee_schedule_filter(start_date=start_date, end_date=end_date, site=site, shift=shift, project=project, role=role_value if role_value else None)) 
@@ -878,9 +875,8 @@ def schedule_leave(employees, leave_type, start_date, end_date):
         return frappe.utils.response.report_error(e.http_status_code)
 
 @frappe.whitelist(allow_guest=True)
-def unschedule_staff(employees, otRoster,start_date=None, end_date=None, never_end=0, selected_days_only=0):
+def unschedule_staff(employees, roster_type, start_date=None, end_date=None, never_end=0, selected_days_only=0):
     try:
-        roster_type = "Over-Time" if otRoster == 'true' else "Basic"
         _start_date = getdate(start_date) if start_date else None
         stop_date = getdate(end_date) if end_date else None
 
@@ -898,6 +894,9 @@ def unschedule_staff(employees, otRoster,start_date=None, end_date=None, never_e
         if end_date:
             employees = [i for i in employees if getdate(i['date'])<=stop_date]
 
+        # If roster type is "Basic" then delete Basic/Over-Time schedules otherwise delete only target roster type schedules
+        roster_type_query = "roster_type in ('Basic', 'Over-Time')" if roster_type == "Basic" else f"roster_type = '{roster_type}'"
+
         # check if no end date
         if cint(never_end) == 1:
             employees_to_delete = []
@@ -907,12 +906,12 @@ def unschedule_staff(employees, otRoster,start_date=None, end_date=None, never_e
             # delete all schedules greater than start date
             employees_to_delete=str(tuple(employees_to_delete)).replace(',)', ')')
             frappe.db.sql(f"""
-                DELETE FROM `tabEmployee Schedule` WHERE employee IN {employees_to_delete} and date>='{start_date}' and roster_type ='{roster_type}'
+                DELETE FROM `tabEmployee Schedule` WHERE employee IN {employees_to_delete} and date>='{start_date}' and {roster_type_query}
             """)
         else:
             for i in employees:
                 frappe.db.sql(f"""
-                    DELETE FROM `tabEmployee Schedule` WHERE employee='{i['employee']}' and date='{i['date']}' and roster_type ='{roster_type}'
+                    DELETE FROM `tabEmployee Schedule` WHERE employee='{i['employee']}' and date='{i['date']}' and {roster_type_query}
                 """)
         response("Success", 200, {'message':'Staff(s) unscheduled successfully'})
     except Exception as e:
@@ -1356,7 +1355,7 @@ def delete_existing_post_schedules(date,post):
         frappe.log_error("Error Deleting Post Schedules",frappe.get_traceback())
 
 @frappe.whitelist()
-def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_freq=None, week_days=[], repeat_till=None, project_end_date=None):
+def dayoff(employees, client_day_off=0, selected_dates=0, selected_reliever=None, repeat=0, repeat_freq=None, week_days=[], repeat_till=None, project_end_date=None):
     """
         Set days of done with sql query for instant response
     """
@@ -1364,6 +1363,7 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
         creation = now()
         owner = frappe.session.user
         roster_type = "Basic"
+        employee_availability = "Client Day Off" if cint(client_day_off) else "Day Off"
 
         id_list = []
         query = """
@@ -1398,7 +1398,7 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                     id_list.append(name)
                     querycontent += f"""(
                         "{name}", "{employee["employee"]}", "{date}", "", "", "",
-                        '', "Day Off", "", "", "Basic",
+                        '', "{employee_availability}", "", "", "Basic",
                         0, "{owner}", "{owner}", "{creation}", "{creation}"
                     ),"""
                     update_day_off_ot = frappe.db.get_value("Employee Schedule",
@@ -1431,7 +1431,7 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                                 id_list.append(name)
                                 querycontent += f"""(
                                     "{name}", "{employee["employee"]}", "{date.date()}", "", "", "",
-                                    '', "Day Off", "", "", "Basic",
+                                    '', "{employee_availability}", "", "", "Basic",
                                     0, "{owner}", "{owner}", "{creation}", "{creation}"
                                 ),"""
                                 emp_query = f"""
@@ -1471,7 +1471,7 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                                 id_list.append(name)
                                 querycontent += f"""(
                                     "{name}", "{employee["employee"]}", "{date.date()}", "", "", "",
-                                    '', "Day Off", "", "", "Basic",
+                                    '', "{employee_availability}", "", "", "Basic",
                                     0, "{owner}", "{owner}", "{creation}", "{creation}"
                                 ),"""
                                 emp_query = f"""
@@ -1511,7 +1511,7 @@ def dayoff(employees, selected_dates=0,selected_reliever=None, repeat=0, repeat_
                 shift_type = "",
                 day_off_ot = 0,
                 roster_type = "Basic",
-                employee_availability = "Day Off"
+                employee_availability = "{employee_availability}"
             """
             frappe.db.sql(query, values=[], as_dict=1)
             frappe.db.commit()

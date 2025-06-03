@@ -1230,6 +1230,7 @@ function get_roster_data(page, isOt) {
 let classmap = {
 	'Working': 'bluebox',
 	'Day Off': 'greyboxcolor',
+	'Client Day Off': 'silverboxcolor',
 	'Sick Leave': 'purplebox',
 	'Emergency Leave': 'purplebox',
 	'Annual Leave': 'purplebox',
@@ -1238,6 +1239,7 @@ let classmap = {
 };
 let leavemap = {
 	'Day Off': 'DO',
+	'Client Day Off': 'CDO',
 	'Sick Leave': 'SL',
 	'Annual Leave': 'AL',
 	'Emergency Leave': 'EL',
@@ -3039,6 +3041,9 @@ function unschedule_staff(page) {
 		'title': 'Unschedule Staff',
 		'fields': [
 			{
+				'label': 'Roster Type', 'fieldname': 'roster_type', 'fieldtype': 'Select', 'options': 'Basic\nOver-Time', 'default': 'Basic'
+			},
+			{
 				'label': 'Selected Days Only', 'fieldname': 'selected_days_only', 'fieldtype': 'Check', 'default': 0, onchange: function () {
 					let val = d.get_value('selected_days_only');
 					if (val) {
@@ -3092,18 +3097,12 @@ function unschedule_staff(page) {
 		],
 		primary_action: function () {
 			$('#cover-spin').show(0);
-			let { selected_days_only, start_date, end_date, never_end } = d.get_values();
-			let element = get_wrapper_element();
-			if (element == ".rosterOtMonth") {
-				otRoster = true;
-			} else if (element == ".rosterMonth") {
-				otRoster = false;
-			}
+			let { roster_type, selected_days_only, start_date, end_date, never_end } = d.get_values();
 
 			frappe.call({
 				method: "one_fm.one_fm.page.roster.roster.unschedule_staff",
 				type: "POST",
-				args: { employees, otRoster, start_date, end_date, never_end, selected_days_only },
+				args: { employees, roster_type, start_date, end_date, never_end, selected_days_only },
 				callback: function(res) {
 					d.hide();
 					error_handler(res);
@@ -3608,6 +3607,7 @@ function dayoff(page) {
 		'fields': [
 			{ 'label': 'Selected days only', 'fieldname': 'selected_dates', 'fieldtype': 'Check', 'default': 0 },
 			{ 'label': 'Set Reliever', 'fieldname': 'set_reliever', 'fieldtype': 'Check', 'default': 0 },
+			{ 'label': 'Client Day Off', 'fieldname': 'client_day_off', 'fieldtype': 'Check', 'default': 0 },
 			{ 'label': 'Reliever', 'fieldname': 'selected_reliever', 'fieldtype': 'Select', 'options': reliever_options,'depends_on': 'eval:doc.set_reliever==1' },
 			{ 'label': 'Repeat', 'fieldname': 'repeat', 'fieldtype': 'Select', 'depends_on': 'eval:doc.selected_dates==0', 'options': 'Does not repeat\nWeekly\nMonthly' },
 			{ 'fieldtype': 'Section Break', 'fieldname': 'sb1', 'depends_on': 'eval:doc.repeat=="Weekly" && doc.selected_dates==0' },
@@ -3629,10 +3629,11 @@ function dayoff(page) {
 			let week_days = [];
 			let args = {};
 			let repeat_freq = '';
-			let { selected_dates,set_reliever,selected_reliever, repeat, sunday, monday, tuesday, wednesday, thursday, friday, saturday, repeat_till, project_end_date } = d.get_values();
+			let { selected_dates, client_day_off, set_reliever, selected_reliever, repeat, sunday, monday, tuesday, wednesday, thursday, friday, saturday, repeat_till, project_end_date } = d.get_values();
 			args["selected_dates"] = selected_dates;
 			args["set_reliever"] = set_reliever;
 			args["employees"] = employees;
+			args["client_day_off"] = client_day_off;
 
 			if(set_reliever == 0){
 				args['selected_reliever']=""

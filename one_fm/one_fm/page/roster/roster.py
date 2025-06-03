@@ -119,7 +119,7 @@ def build_employee_schedule_filters(EmployeeSchedule, start_date, end_date, empl
 	if site: filter_params.append(EmployeeSchedule.site == site),
 	if shift: filter_params.append(EmployeeSchedule.shift == shift),
 	if department: filter_params.append(EmployeeSchedule.department == department),
-	if operations_role: filter_params.append(EmployeeSchedule.custom_operations_role_allocation == operations_role),
+	if operations_role: filter_params.append(EmployeeSchedule.operations_role == operations_role),
 
 	return combine_filters(filter_params)
 
@@ -146,42 +146,45 @@ def combine_filters(filters):
 def get_employees_for_roster_view(start_date, end_date, employee_search_id=None, employee_search_name=None,
 	project=None, site=None, shift=None, department=None, operations_role=None, designation=None,
 	relievers=False):
-	Employee = DocType("Employee")
-	employee_filters = build_employee_filters(Employee, start_date, end_date, employee_search_id, employee_search_name, project, site, shift, department, relievers, operations_role, designation)
+	try:
+		Employee = DocType("Employee")
+		employee_filters = build_employee_filters(Employee, start_date, end_date, employee_search_id, employee_search_name, project, site, shift, department, relievers, operations_role, designation)
 
-	# Employee query
-	employee_query = (
-		frappe.qb
-		.from_(Employee)
-		.select(Employee.name, Employee.employee_name)
-	)
+		# Employee query
+		employee_query = (
+			frappe.qb
+			.from_(Employee)
+			.select(Employee.name, Employee.employee_name)
+		)
 
-	if employee_filters:
-		employee_query = employee_query.where(employee_filters)
-	
-	if relievers or employee_search_id or employee_search_name:
-		employees = frappe.db.sql(employee_query, as_dict=True)
+		if employee_filters:
+			employee_query = employee_query.where(employee_filters)
+		
+		if relievers or employee_search_id or employee_search_name or designation or department:
+			employees = frappe.db.sql(employee_query, as_dict=True)
+			return employees
+
+		EmployeeSchedule = DocType("Employee Schedule")
+		employee_schedule_filters = build_employee_schedule_filters(EmployeeSchedule, start_date, end_date, employee_search_name, project, site, shift, department, operations_role)
+
+		# Employee Schedule query (get employee field as name)
+		schedule_query = (
+			frappe.qb
+			.from_(EmployeeSchedule)
+			.select(EmployeeSchedule.employee.as_("name"), EmployeeSchedule.employee_name)
+		)
+		if employee_schedule_filters:
+			schedule_query = schedule_query.where(employee_schedule_filters)
+
+		# Combine both queries using UNION (no need for .distinct(), UNION removes duplicates)
+		combined_query = employee_query.union(schedule_query).orderby("employee_name", order=Order.asc)
+
+		# Execute the query
+		employees = frappe.db.sql(combined_query, as_dict=True)
 		return employees
-
-	EmployeeSchedule = DocType("Employee Schedule")
-	employee_schedule_filters = build_employee_schedule_filters(EmployeeSchedule, start_date, end_date, employee_search_name, project, site, shift, department, operations_role)
-
-	# Employee Schedule query (get employee field as name)
-	schedule_query = (
-		frappe.qb
-		.from_(EmployeeSchedule)
-		.select(EmployeeSchedule.employee.as_("name"), EmployeeSchedule.employee_name)
-	)
-	if employee_schedule_filters:
-		schedule_query = schedule_query.where(employee_schedule_filters)
-
-	# Combine both queries using UNION (no need for .distinct(), UNION removes duplicates)
-	combined_query = employee_query.union(schedule_query).orderby("employee_name", order=Order.asc)
-
-	# Execute the query
-	employees = frappe.db.sql(combined_query, as_dict=True)
-	return employees
-
+	except Exception as e:
+		frappe.log_error("Employees for Roster View", frappe.get_traceback())
+		
 
 @frappe.whitelist()
 def get_roster_view(start_date, end_date, employee_search_id=None, employee_search_name=None,
@@ -216,7 +219,6 @@ def get_roster_view(start_date, end_date, employee_search_id=None, employee_sear
 
 		response("Success", 200, master_data)
 	except Exception as e:
-		print(frappe.get_traceback())
 		return response("Server Error", 500, None, str(frappe.get_traceback()))
 
 
@@ -1465,11 +1467,12 @@ def dayoff(employees, client_day_off=0, selected_dates=0, selected_reliever=None
 			"""
 			frappe.db.sql(query_main) 
 			frappe.db.commit()
-					
-		if frappe.db.exists("Employee", selected_reliever):
-			reliever_roster_assignment(selected_reliever, roster_list)
-		else:
-			frappe.msgprint(f"Reliever with Employee ID {selected_reliever} not found.")
+
+		if selected_reliever:			
+			if frappe.db.exists("Employee", selected_reliever):
+				reliever_roster_assignment(selected_reliever, roster_list)
+			else:
+				frappe.msgprint(f"Reliever with Employee ID {selected_reliever} not found.")
 
 		return response("success", 200, {"message":"Days Off set successfully."}) 
 	except Exception as e:

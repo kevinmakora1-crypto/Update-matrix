@@ -35,7 +35,7 @@ def get_custom_fields():
 	return custom_fields
 
 def add_property_setter(property_setters):
-	for property in property_setters():
+	for property in property_setters:
 		make_property_setter(
 			doctype=property.get("doctype"),
 			field_name=property.get("fieldname"),
@@ -73,7 +73,7 @@ def delete_custom_fields(custom_fields: dict):
 		frappe.clear_cache(doctype=doctype)
 
 def remove_property_setter(property_setters):
-	for property in property_setters():
+	for property in property_setters:
 		property_name = property.get("property")
 		doctype = property.get("doc_type")
 		field_name = property.get("field_name")

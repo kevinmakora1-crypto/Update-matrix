@@ -1598,67 +1598,6 @@
      "priority": 0,
      "rule": "Based on Field",
      "unassign_condition": "ticket_type != 'Bug'",
-     "users": [
-      {
-       "parent": "HD Ticket - Bug Buster",
-       "parentfield": "users",
-       "parenttype": "Assignment Rule",
-       "user": "c.akeru@one-fm.com"
-      },
-      {
-       "parent": "HD Ticket - Bug Buster",
-       "parentfield": "users",
-       "parenttype": "Assignment Rule",
-       "user": "m.alsubaie@one-fm.com"
-      },
-      {
-       "parent": "HD Ticket - Bug Buster",
-       "parentfield": "users",
-       "parenttype": "Assignment Rule",
-       "user": "s.shariff@one-fm.com"
-      },
-      {
-       "parent": "HD Ticket - Bug Buster",
-       "parentfield": "users",
-       "parenttype": "Assignment Rule",
-       "user": "y.oyedele@one-fm.com"
-      },
-      {
-       "parent": "HD Ticket - Bug Buster",
-       "parentfield": "users",
-       "parenttype": "Assignment Rule",
-       "user": "m.amjad@one-fm.com"
-      },
-      {
-       "parent": "HD Ticket - Bug Buster",
-       "parentfield": "users",
-       "parenttype": "Assignment Rule",
-       "user": "a.islam@one-fm.com"
-      },
-      {
-       "parent": "HD Ticket - Bug Buster",
-       "parentfield": "users",
-       "parenttype": "Assignment Rule",
-       "user": "s.sunuwar@one-fm.com"
-      },
-      {
-       "parent": "HD Ticket - Bug Buster",
-       "parentfield": "users",
-       "parenttype": "Assignment Rule",
-       "user": "p.tamang@one-fm.com"
-      },
-      {
-       "parent": "HD Ticket - Bug Buster",
-       "parentfield": "users",
-       "parenttype": "Assignment Rule",
-       "user": "k.wanyama@one-fm.com"
-      },
-      {
-       "parent": "HD Ticket - Bug Buster",
-       "parentfield": "users",
-       "parenttype": "Assignment Rule",
-       "user": "z.abdou@one-fm.com"
-      }
-     ]
+     "users": []
     }
 ]

@@ -1,5 +1,6 @@
 import frappe, os, shutil, subprocess
-from frappe.utils import cstr
+
+from frappe.utils import cstr, get_bench_path
 from one_fm.utils import production_domain
 
 def comment_timesheet_in_hrms():
@@ -488,6 +489,7 @@ function getProjectLabel(value) {
     return
 
 
+
 def add_resolution_details_updation():
     FILE_PATH = frappe.utils.get_bench_path()+'/apps/helpdesk/desk/src/pages/TicketAgent.vue'
     if (os.path.exists(FILE_PATH)):
@@ -570,6 +572,7 @@ def add_resolution_details_updation():
         print(FILE_PATH, 'not found')
     return
 
+
 def run_command(command, cwd=None, shell=True):
     try:
         result = subprocess.run(command, cwd=cwd, shell=shell, check=True, text=True, capture_output=True)
@@ -581,6 +584,79 @@ def run_command(command, cwd=None, shell=True):
         print(f"Output: {e.stdout}")
         print(f"Error: {e.stderr}")
 
+
+
+def deploy_ticket_views():
+    bench_path = get_bench_path()
+
+    ticket_target_folder = os.path.join(bench_path, "apps", "helpdesk", "desk", "src", "pages", "ticket")
+
+    ticket_edit_source = os.path.join(bench_path, "apps", "one_fm", "one_fm", "public", "js", "form_overrides", "hd_ticket", "TicketEdit.vue")
+    ticket_edit_target = os.path.join(ticket_target_folder, "TicketEdit.vue")
+
+    if not os.path.exists(ticket_edit_source):
+        print(f"[❌] Source TicketEdit.vue not found: {ticket_edit_source}")
+        return False
+
+    shutil.copy2(ticket_edit_source, ticket_edit_target)
+    print(f"[✅] TicketEdit.vue deployed to: {ticket_edit_target}")
+
+    router_file = os.path.join(bench_path, "apps", "helpdesk", "desk", "src", "router", "index.ts")
+
+    if not os.path.exists(router_file):
+        print("❌ Router file not found:", router_file)
+        return False
+
+    with open(router_file, "r") as f:
+        router_content = f.read()
+
+    if 'name: "TicketEdit"' in router_content:
+        print("⚠️ TicketEdit route already exists.")
+    else:
+        search_text = "const routes = ["
+        appendable_code = '''
+  {
+    path: "/edit-ticket/:ticket_name?",
+    name: "TicketEdit",
+    component: () => import("@/pages/ticket/TicketEdit.vue"),
+    props: true,
+    meta: {
+      onSuccessRoute: "TicketCustomer",
+      parent: "TicketsCustomer",
+    },
+  },'''
+
+        updated_content = ""
+        if search_text in router_content:
+            parts = router_content.split(search_text)
+            updated_content = parts[0] + search_text + appendable_code + parts[1]
+
+            with open(router_file, "w") as f:
+                f.write(updated_content)
+
+            print("✅ TicketEdit route added.")
+        else:
+            print("⚠️ Could not find insertion point for router update.")
+            return False
+
+    helpdesk_desk_dir = os.path.join(bench_path, "apps", "helpdesk", "desk")
+
+    try:
+        print("[🔨] Running yarn build in helpdesk/desk...")
+        run_command("yarn build", cwd=helpdesk_desk_dir)
+    except Exception as e:
+        print(f"[❌] yarn build failed: {e}")
+        return False
+
+    try:
+        print("[🔁] Restarting bench...")
+        run_command("bench restart", cwd=bench_path)
+    except Exception as e:
+        print(f"[❌] bench restart failed: {e}")
+        return False
+
+    print("[🎉] TicketNew and TicketEdit views deployed successfully.")
+    return True
 
 
 def update_hd_ticket_side_bar():
@@ -637,3 +713,4 @@ def remove_code_block_with_regex(file_path, pattern):
     except Exception as e:
         print(f"An error occurred: {e}")
         return False
+

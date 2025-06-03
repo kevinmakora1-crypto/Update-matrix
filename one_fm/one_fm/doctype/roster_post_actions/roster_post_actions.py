@@ -83,6 +83,7 @@ def create_roster_post_actions():
         WHERE
         status='Active'
     """, as_dict=1)
+    
     shift_dict = {}
     for item in op_shift:
         if item.supervisor in shift_dict.keys():

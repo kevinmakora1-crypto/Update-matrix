@@ -38,7 +38,7 @@ def add_property_setter(property_setters):
 	for property in property_setters:
 		make_property_setter(
 			doctype=property.get("doctype"),
-			field_name=property.get("fieldname"),
+			fieldname=property.get("fieldname"),
 			property=property.get("property"),
 			value=property.get("value"),
 			property_type=property.get("property_type"),
@@ -76,14 +76,14 @@ def remove_property_setter(property_setters):
 	for property in property_setters:
 		property_name = property.get("property")
 		doctype = property.get("doc_type")
-		field_name = property.get("field_name")
+		fieldname = property.get("fieldname")
 		row_name = property.get("row_name")
 
 		if property_name:
 			delete_property_setter(
 				doc_type=doctype,
 				property=property_name,
-				field_name=field_name,
+				fieldname=fieldname,
 				row_name=row_name
 			)
 

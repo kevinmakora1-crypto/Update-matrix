@@ -1535,5 +1535,132 @@
     "rule": "Based on Field",
     "unassign_condition": "ticket_type == 'Bug'",
     "users": []
-   }
+   },
+   [
+    {
+     "assign_condition": "status == 'Open' and ticket_type == 'Bug'",
+     "assignment_days": [
+      {
+       "day": "Monday",
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "assignment_days",
+       "parenttype": "Assignment Rule"
+      },
+      {
+       "day": "Tuesday",
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "assignment_days",
+       "parenttype": "Assignment Rule"
+      },
+      {
+       "day": "Wednesday",
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "assignment_days",
+       "parenttype": "Assignment Rule"
+      },
+      {
+       "day": "Thursday",
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "assignment_days",
+       "parenttype": "Assignment Rule"
+      },
+      {
+       "day": "Friday",
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "assignment_days",
+       "parenttype": "Assignment Rule"
+      },
+      {
+       "day": "Saturday",
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "assignment_days",
+       "parenttype": "Assignment Rule"
+      },
+      {
+       "day": "Sunday",
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "assignment_days",
+       "parenttype": "Assignment Rule"
+      }
+     ],
+     "close_condition": "status == 'Closed'",
+     "custom_routine_task": null,
+     "description": "{{ description }}",
+     "disabled": 0,
+     "docstatus": 0,
+     "doctype": "Assignment Rule",
+     "document_type": "HD Ticket",
+     "due_date_based_on": null,
+     "field": "custom_bug_buster",
+     "is_assignment_rule_with_workflow": 0,
+     "last_user": "s.shariff@one-fm.com",
+     "modified": "2025-06-02 21:15:28.726838",
+     "name": "HD Ticket - Bug Buster",
+     "priority": 0,
+     "rule": "Based on Field",
+     "unassign_condition": "ticket_type != 'Bug'",
+     "users": [
+      {
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "users",
+       "parenttype": "Assignment Rule",
+       "user": "c.akeru@one-fm.com"
+      },
+      {
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "users",
+       "parenttype": "Assignment Rule",
+       "user": "m.alsubaie@one-fm.com"
+      },
+      {
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "users",
+       "parenttype": "Assignment Rule",
+       "user": "s.shariff@one-fm.com"
+      },
+      {
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "users",
+       "parenttype": "Assignment Rule",
+       "user": "y.oyedele@one-fm.com"
+      },
+      {
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "users",
+       "parenttype": "Assignment Rule",
+       "user": "m.amjad@one-fm.com"
+      },
+      {
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "users",
+       "parenttype": "Assignment Rule",
+       "user": "a.islam@one-fm.com"
+      },
+      {
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "users",
+       "parenttype": "Assignment Rule",
+       "user": "s.sunuwar@one-fm.com"
+      },
+      {
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "users",
+       "parenttype": "Assignment Rule",
+       "user": "p.tamang@one-fm.com"
+      },
+      {
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "users",
+       "parenttype": "Assignment Rule",
+       "user": "k.wanyama@one-fm.com"
+      },
+      {
+       "parent": "HD Ticket - Bug Buster",
+       "parentfield": "users",
+       "parenttype": "Assignment Rule",
+       "user": "z.abdou@one-fm.com"
+      }
+     ]
+    }
+   ]
 ]

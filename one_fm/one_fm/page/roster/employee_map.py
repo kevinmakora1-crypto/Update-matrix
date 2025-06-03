@@ -127,7 +127,7 @@ class CreateMap:
 
 		self.str_filter = f"es.date between '{self.start}' and '{self.end}'"
 		if operations_role:
-					str_filters += f" and es.operations_role = '{operations_role}'"
+			self.str_filter += f" and es.operations_role = '{operations_role}'"
 					
 		# Prepare a tuple of employee IDs for SQL IN clause
 		if len(employees) == 1:

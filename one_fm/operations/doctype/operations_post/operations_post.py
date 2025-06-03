@@ -102,6 +102,7 @@ class OperationsPost(Document):
         #     frappe.throw(f"Operations Role ({self.post_template}) does not belong to selected shift ({self.site_shift})")
 
         self.validate_operations_role_status()
+        self.validate_dates()
         # check if operations site inactive
         if (self.status=='Active' and frappe.db.exists("Operations Site", {'name':self.site, 'status':'Inactive'})):frappe.throw(f"You cannot make this post active because Operations Site '{self.site}' is Inactive.")
 
@@ -115,6 +116,28 @@ class OperationsPost(Document):
         condition = self.post_name+"-"+self.gender+"|"+self.site_shift
         if condition != self.name:
             rename_doc(doctype=self.doctype, old=self.name, new=condition, force=True, doc=self)
+
+    def validate_dates(self):
+        project_expected_start_date, project_expected_end_date = frappe.db.get_value("Project", self.project, fieldname=["expected_start_date", "expected_end_date"])
+
+        start_date = getdate(self.start_date) if self.start_date else None
+        end_date = getdate(self.end_date) if self.end_date else None
+
+        # Validate that end date is after start date
+        if start_date and end_date:
+            if end_date < start_date:
+                frappe.throw(_("End date should be after start date"))
+
+        # Validate that start date is not before project expected start date
+        if project_expected_start_date and start_date:
+            if start_date < getdate(project_expected_start_date):
+                frappe.throw(_("Start date should not be before project expected start date"))
+
+        # Validate that end date is not after project expected end date
+        if project_expected_end_date and end_date:
+            if end_date > getdate(project_expected_end_date):
+                frappe.throw(_("End date should not be after project expected end date"))
+
 
     def on_update(self):
         self.validate_name()
@@ -169,14 +192,16 @@ def queue_create_post_schedule_for_operations_post(operations_post, contracts, e
         #The previous series value from frappe is wrong in some cases
         
         for date in	pd.date_range(start=start_date, end=contracts.end_date):
-            doc_id_template = "-".join(["PS",str(datetime.datetime.now().microsecond),operations_post.name[0:5].upper(),post_abbrv.upper()])
+            
+            date_string = frappe.utils.get_date_str(date.date())
+            doc_id_template = f"{operations_post.name}_{date_string}"
             schedule_exists = False
             if exists_schedule_in_between:
                 if  frappe.db.exists("Post Schedule", {"date": cstr(date.date()),'operations_role': operations_post.post_template, "post": operations_post.name}):
                     schedule_exists = True
             if not schedule_exists:
                 ps_name_idx += 1
-                ps_name = 'PS-'+str(ps_name_idx).zfill(5)
+                
                 query += f"""
                     (
                         "{doc_id_template}", "{operations_post.name}", "{operations_post.post_template}", "{post_abbrv}",

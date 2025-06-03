@@ -4,6 +4,10 @@ import json
 from twilio.rest import Client as TwilioClient
 import xml.etree.ElementTree as ET
 from frappe.utils.jinja import (get_email_from_template)
+from frappe.desk.doctype.notification_settings.notification_settings import(
+	is_notifications_enabled,
+	is_email_notifications_enabled
+)
 
 @frappe.whitelist()
 def sendemail(recipients, subject, header=None, message=None,
@@ -25,7 +29,7 @@ def sendemail(recipients, subject, header=None, message=None,
 
 		if not is_scheduler_emails_enabled:
 			return
-        
+
 
 	if "Administrator" in recipients:
 		recipients.remove("Administrator")
@@ -45,12 +49,10 @@ def sendemail(recipients, subject, header=None, message=None,
 		recipients = [recipients]
 
 	if not is_external_mail:
-		for recipient in recipients:
-			if not is_user_id_company_prefred_email_in_employee(recipient):
-				recipients.remove(recipient)
+		recipients = [recipient for recipient in recipients if is_email_notifications_allowed(recipient)]
 		if not sender:
 			sender = "Administrator"
-	
+
 	if recipients and len(recipients) > 0:
 		frappe.sendmail(template = template,
 			recipients=recipients,
@@ -75,6 +77,31 @@ def sendemail(recipients, subject, header=None, message=None,
 			attachments = attachments,
 			delayed=delayed
 		)
+
+def is_email_notifications_allowed(user):
+    """
+    The method check if email notifications are allowed for a given user.
+    Args:
+        user (str): The user's email.
+    Returns:
+        bool: True if email notifications are allowed, otherwise False.
+    """
+
+	# Check if general notifications are enabled for the user
+    if not is_notifications_enabled(user):
+        return False  # Return False if notifications are disabled
+
+    # Check if email notifications specifically are enabled for the user
+    if not is_email_notifications_enabled(user):
+        return False  # Return False if email notifications are disabled
+
+    # Check if the user's email is the preferred company email in the Employee record
+    if not is_user_id_company_prefred_email_in_employee(user):
+        return False  # Return False if it's not the preferred email
+
+    # If all conditions pass, return True (email notifications are allowed)
+    return True
+
 
 @frappe.whitelist()
 def is_user_id_company_prefred_email_in_employee(user_id):

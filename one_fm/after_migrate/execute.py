@@ -272,6 +272,36 @@ def update_hd_ticket_agent():
         appendable_code = '''
             const showCreateStoryConfirmationDialog = ref(false);
             const showStoryCreationProgressDialog = ref(false);
+            const selectedProject = ref(null)
+
+            const projectOptions = [
+  {
+    label: 'ONEFM',
+    value: 'ON',
+    onClick: () => {
+      selectedProject.value = 'ON'
+    },
+  },
+  {
+    label: 'Roster',
+    value: 'ROS',
+    onClick: () => {
+      selectedProject.value = 'ROS'
+    },
+  },
+  {
+    label: 'Recruitment',
+    value: 'REC',
+    onClick: () => {
+      selectedProject.value = 'REC'
+    },
+  },
+]
+
+function getProjectLabel(value) {
+  const option = projectOptions.find(opt => opt.value === value)
+  return option ? option.label : 'Select Project'
+}
         '''
         first_change = append_code_in_file(FILE_PATH, search_text, appendable_code, False)
 
@@ -279,6 +309,15 @@ def update_hd_ticket_agent():
         search_text = 'const ticket = createResource({'
         appendable_code = '''
         const createDevTicket = () => {
+           if (!selectedProject.value) {
+    createToast({
+                    title: 'Dev Ticket Error',
+                    text: "Please select a project before proceeding.",
+                    icon: "x",
+                    iconClasses: "text-red-600",
+                  });
+    return
+  }
         
             showCreateStoryConfirmationDialog.value = false;
             showStoryCreationProgressDialog.value = true;
@@ -290,19 +329,33 @@ def update_hd_ticket_agent():
                 params: {
                     name: ticket.data.name,
                     description: ticket.data.description,
+                    project: selectedProject.value
                 },
                 transform: (data) => {},
                 onSuccess: (data) => {
                     showStoryCreationProgressDialog.value = false;
+                    selectedProject.value = null;
+                    if (data.error){
+                    createToast({
+                      title: "Dev Ticket Error",
+                      text: data.message || "Something went wrong in creating dev ticket",
+                      icon: "x",
+                      iconClasses: "text-red-600",
+                    });
+                  } else if (data.status == 'success' ) {
+
                     createToast({
                       title: "Dev ticket created successfully",
                       icon: "check",
                       iconClasses: "text-green-600",
                     });
+
+                  }
                     ticket.reload();
                 },
                 onError: (error) => {
                     showStoryCreationProgressDialog.value = false;
+                    selectedProject.value = null;
                     createToast({
                     title: 'Dev Ticket Error',
                     text: error.message || "Something went wrong in creating dev ticket",
@@ -324,9 +377,14 @@ def update_hd_ticket_agent():
 
 
         # Append Template code for button and modal
-        search_text = '''      </template>
-    </LayoutHeader>'''
-        appendable_code = '''
+        search_text = '''    <CustomActions
+          v-if="ticket.data._customActions"
+          :actions="ticket.data._customActions"
+        />'''
+        appendable_code = '''    <CustomActions
+          v-if="ticket.data._customActions"
+          :actions="ticket.data._customActions"
+        />
             <div v-if="['Open', 'Replied'].includes(ticket.data.status)">
                 <Button @click="viewDevTicket" v-if="ticket.data.custom_dev_ticket">
                     View Dev Ticket
@@ -339,6 +397,20 @@ def update_hd_ticket_agent():
                     <h3>Create Dev Ticket</h3>
                     </template>
                     <template #body-content>
+                      <p>Select the project this dev ticket belongs to:</p>
+                      <Dropdown
+    :options="projectOptions"
+    placeholder="Select Project"
+    class="my-2 w-full"
+  >
+    <template #default="{ open }">
+      <Button :label="getProjectLabel(selectedProject)">
+        <template #suffix>
+          <FeatherIcon :name="open ? 'chevron-up' : 'chevron-down'" class="h-4" />
+        </template>
+      </Button>
+    </template>
+  </Dropdown>
                     <p>By clicking on "Confirm", a dev ticket will be created</p>
                     </template>
                     <template #actions>
@@ -348,7 +420,7 @@ def update_hd_ticket_agent():
                     </Button>
                     <Button
                         class="ml-2"
-                        @click="showCreateStoryConfirmationDialog = false"
+                        @click="() => {showCreateStoryConfirmationDialog = false; selectedProject = null;}"
                     >
                         Close
                     </Button>
@@ -372,8 +444,7 @@ def update_hd_ticket_agent():
                     </template>
                 </Dialog>
             </div>
-            </template>
-            </LayoutHeader>
+
         '''
         third_change = append_code_in_file(FILE_PATH, search_text, appendable_code, insert_before_search_text=True, replace_with_search_text=True)
         search_text = "subjectInput.value = data.subject;"
@@ -399,6 +470,89 @@ def update_hd_ticket_agent():
                         }, 1000);
                     """
         fourth_change = append_code_in_file(FILE_PATH, search_text, appendable_code, False)
+        if (first_change or second_change or third_change or fourth_change):
+            # execute build
+            print("Rebuilding Helpdesk")
+            # Define the directories
+            bench_path = frappe.utils.get_bench_path()
+            helpdesk_dir = os.path.join(bench_path, 'apps/helpdesk/desk')
+
+            # Run yarn build
+            yarn_build_command = 'yarn build'
+            run_command(yarn_build_command, cwd=helpdesk_dir)
+            #  Restart bench
+            bench_restart_command = "bench restart"
+            run_command(bench_restart_command, cwd=bench_path)
+    else:
+        print(FILE_PATH, 'not found')
+    return
+
+
+def add_resolution_details_updation():
+    FILE_PATH = frappe.utils.get_bench_path()+'/apps/helpdesk/desk/src/pages/TicketAgent.vue'
+    if (os.path.exists(FILE_PATH)):
+        # Append lines before '} from "frappe-ui";' to import TextEditor
+        search_text = '} from "frappe-ui";'
+        appendable_code = '''TextEditor'''
+        first_change = append_code_in_file(FILE_PATH, search_text, appendable_code, insert_before_search_text=True)
+
+        # Append code before 'const ticket = createResource({'
+        search_text = 'const showSubjectDialog = ref(false);'
+        appendable_code = '''
+            \n\nconst showResolutionDialog = ref(false);
+            const resolutionDetails = ref('');
+
+            const submitResolution = () => {
+                updateTicket('resolution_details', resolutionDetails.value);
+                showResolutionDialog.value = false
+            };\n\n
+        '''
+        second_change = append_code_in_file(FILE_PATH, search_text, appendable_code)
+
+        # Append Template code for button and modal
+        search_text = '''    <CustomActions
+          v-if="ticket.data._customActions"
+          :actions="ticket.data._customActions"
+        />'''
+        appendable_code = '''
+            <CustomActions
+                v-if="ticket.data._customActions"
+                :actions="ticket.data._customActions"
+                />
+            <div>
+                <Button @click="showResolutionDialog = true">
+                    Update Resolution Details
+                </Button>
+                <Dialog v-model="showResolutionDialog">
+                    <template #body-title>
+                    <h3>Update Resolution Details</h3>
+                    </template>
+
+                    <template #body-content>
+                    <div class="mb-1.5 text-sm text-gray-600">Resolution Details</div>
+                    <TextEditor ref="content" variant="outline"
+                        editor-class="!prose-sm overflow-auto min-h-[180px] max-h-80 py-1.5 px-2 rounded border border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm focus:bg-white focus:border-gray-500 focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400 text-gray-800 transition-colors"
+                        :bubble-menu="true" :content="resolutionDetails" :placeholder="'Add resolution details here...'" :disabled="isLoading"
+                        @change="(val) => (resolutionDetails = val)" />
+                    </template>
+
+                    <template #actions>
+                    <Button variant="solid" :loading="isLoading" :disabled="!resolutionDetails"
+                        @click="submitResolution">
+                        Submit
+                    </Button>
+                    <Button class="ml-2" @click="showResolutionDialog = false">Cancel</Button>
+                    </template>
+                </Dialog>
+            </div>
+        '''
+        third_change = append_code_in_file(FILE_PATH, search_text, appendable_code, replace_with_search_text=True)
+
+        # Append predefined value for resolution details
+        search_text = 'subjectInput.value = data.subject;'
+        appendable_code = 'resolutionDetails.value = data.resolution_details'
+        fourth_change = append_code_in_file(FILE_PATH, search_text, appendable_code)
+
         if (first_change or second_change or third_change or fourth_change):
             # execute build
             print("Rebuilding Helpdesk")

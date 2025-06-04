@@ -3467,7 +3467,7 @@ def get_current_shift(employee):
                     order_by="time desc",
                     limit=1,
                 )
-                
+
                 if checkin:
                     last_log = checkin[0]
                     # CASE 1: Last log is IN → Shift is active
@@ -3530,7 +3530,7 @@ def check_existing():
     shift_exists = get_current_shift(employee)
     if not shift_exists:
         return response("Resource Not Found", 404, None, "No Active Shift Found")
-    
+
     if shift_exists['type'] == "On Time":
         curr_shift = shift_exists['data']
     if not curr_shift:
@@ -3983,7 +3983,37 @@ def update_fields_in_doctypes(data):
 						doc.set(field, value)  # Re-set the actual value
 					doc.save()
 
+def get_json_file(file_name, folder):
+    """
+    Load and return JSON data from a file in the specified folder.
 
+    Args:
+        file_name (str): The name of the JSON file (must end with `.json`).
+        folder (str): The absolute path to the folder containing the JSON file.
+
+    Returns:
+        dict: Parsed JSON data from the file.
+    """
+    data = {}
+    if not file_name.endswith(".json"):
+        frappe.log_error("Only JSON files are allowed. Please ensure the file ends with '.json'.")
+
+    file_path = os.path.join(folder, file_name)
+
+    if not os.path.isfile(file_path):
+        frappe.log_error(f"File not found: {file_path}")
+
+    try:
+        with open(file_path, "r") as f:
+            data = json.load(f)
+
+    except json.JSONDecodeError as e:
+        frappe.log_error(f"Invalid JSON format in file {file_path}: {str(e)}")
+
+    except Exception as e:
+        frappe.log_error(f"An error occurred while reading the file {file_path}: {str(e)}")
+
+    return data
 
 def get_workflow_action_buttons_html(doc, user):
     from one_fm.overrides.workflow import get_next_possible_transitions

@@ -2389,8 +2389,6 @@ function change_ot_schedule(page) {
 					};
 				}
 			},
-			{ "label": "Keep Days Off", "fieldname": "keep_days_off", "fieldtype": "Check", default: 0},
-
 		],
 		primary_action: function () {
 			let values = d.get_values();

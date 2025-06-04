@@ -53,6 +53,7 @@ def get_field_properties():
 
 def create_workflows():
 	create_workflow(get_workflow_json_file("erf.json"))
+	create_workflow(get_workflow_json_file("leave_acknowledgement_form.json"))
 
 def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("roster_post_action_site_supervisor.json"))

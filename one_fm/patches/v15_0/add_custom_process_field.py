@@ -9,9 +9,9 @@ def execute():
                 "fieldtype": "Link",
                 "label": "Process",
                 "insert_after": "cb00",
-                # "reqd": 1,
-                # "default": "Others", 
-                # "options": "Process"
+                "reqd": 1,
+                "default": "Others", 
+                "options": "Process"
                 
             },
         ]

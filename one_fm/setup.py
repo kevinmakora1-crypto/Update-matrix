@@ -20,12 +20,14 @@ def after_install():
 	add_property_setter(get_field_properties())
 	create_workflows()
 	create_assignment_rules()
+	frappe.db.commit()
 
 def before_uninstall():
 	delete_custom_fields(get_custom_fields())
 	remove_property_setter(get_field_properties())
 	delete_workflows()
 	delete_assignment_rules()
+	frappe.db.commit()
 
 def get_custom_fields():
 	"""ONEFM specific custom fields that need to be added to the masters in ERPNext"""
@@ -37,8 +39,8 @@ def get_custom_fields():
 def add_property_setter(property_setters):
 	for property in property_setters:
 		make_property_setter(
-			doctype=property.get("doctype"),
-			fieldname=property.get("fieldname"),
+			doctype=property.get("doc_type"),
+			fieldname=property.get("field_name"),
 			property=property.get("property"),
 			value=property.get("value"),
 			property_type=property.get("property_type"),
@@ -76,19 +78,16 @@ def delete_custom_fields(custom_fields: dict):
 def remove_property_setter(property_setters):
 	for property in property_setters:
 		property_name = property.get("property")
-		doctype = property.get("doc_type")
-		fieldname = property.get("fieldname")
-		row_name = property.get("row_name")
-
+		doc_type = property.get("doc_type")
 		if property_name:
 			delete_property_setter(
-				doc_type=doctype,
+				doc_type=doc_type,
 				property=property_name,
-				fieldname=fieldname,
-				row_name=row_name
+				field_name=property.get("field_name"),
+				row_name=property.get("row_name")
 			)
 
-			frappe.clear_cache(doctype=doctype)
+			frappe.clear_cache(doctype=doc_type)
 
 def delete_workflows():
 	delete_workflow(get_workflow_json_file("erf.json"))

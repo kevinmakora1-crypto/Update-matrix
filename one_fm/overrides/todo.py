@@ -23,7 +23,7 @@ def notify_todo_status_change(doc):
         user = frappe.session.user
         subject = _("{0}({1}) assignment is {2}".format(doc.reference_type, doc.reference_name, doc.status))
         email_content = _("""
-                        The assignment referenced to {0}({1}) is {2} by {3}. See Details Below <br> 
+                        The assignment referenced to {0}({1}) is {2} by {3}. See Details Below <br>
                     <p>Description: {4} </p> <br>
                     <p>Date of Allocation:{5}</p> <br>
                     <p>Due Date:{6}</p> <br>
@@ -84,7 +84,7 @@ def get_google_task_service(employee_email):
     credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=["https://www.googleapis.com/auth/tasks"])
     delegated_credentials = credentials.with_subject(employee_email)
     return build("tasks", "v1", credentials=delegated_credentials)
-    
+
 def before_save(doc,method):
     previous_doc = doc.get_doc_before_save()
     if previous_doc:
@@ -99,11 +99,11 @@ def create_google_task_on_todo_creation(doc, method):
 
 def create_google_task_on_todo_creation_in_erp(doc, method):
     employee_email = doc.allocated_to
-    
+
     # If task is already created then avoiding recreating it
     if doc.custom_google_task_id:
         return
-    
+
     if not employee_email:
         frappe.throw(_("No assigned user found for this ToDo"))
     service = get_google_task_service(employee_email)
@@ -122,7 +122,7 @@ def create_google_task_on_todo_creation_in_erp(doc, method):
     }
     result = service.tasks().insert(tasklist="@default", body=task_body).execute()
     task_id = result["id"]
-    doc.custom_google_task_id = task_id 
+    doc.custom_google_task_id = task_id
     doc.save()
     send_email_on_todo_created(doc)
     return result
@@ -146,7 +146,7 @@ def create_description_for_google_todo(doc):
         todo_reference_link = get_url_to_form(todo_doc_type, doc.reference_name) if doc.reference_name else ""
         task_notes +=f"""
         Hey you cant update this task on Google Task, Close the task in ERPNext
-        
+
 		ToDo Reference: {todo_reference}
 		Reference DocType: {todo_doc_type}
 		Reference Name: {todo_reference_link}
@@ -178,11 +178,11 @@ def update_google_task_on_todo_status_change(doc, method):
     # Skip for newly created ToDos
     if doc.is_new():
         return
-    
+
     # Skip if general trigger is not enabled
     if not is_google_task_synchronization_enabled():
         return
-    
+
     if doc.custom_google_task_id:
         employee_email = doc.allocated_to
         if not employee_email:
@@ -194,7 +194,7 @@ def update_google_task_on_todo_status_change(doc, method):
             task = create_google_task_on_todo_creation_in_erp(doc, method)
         task_title = doc.custom_google_task_title
         task_notes = create_description_for_google_todo(doc)
-        date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
+        date_obj = datetime.strptime(str(doc.date), "%Y-%m-%d")
         due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
         task["title"] = task_title
         task["notes"] = task_notes
@@ -205,7 +205,7 @@ def update_google_task_on_todo_status_change(doc, method):
             task["status"] = "completed"
         result = service.tasks().update(tasklist="@default",task=doc.custom_google_task_id, body=task).execute()
         return result
-    
+
 def get_mapped_status_from_google_task(task):
     """
         Map google task status to ERP ToDo status
@@ -215,7 +215,7 @@ def get_mapped_status_from_google_task(task):
     if task.get("status") == "completed":
         return "Closed"
     return "Open"
-    
+
 @frappe.whitelist()
 def sync_google_tasks_with_todos():
     try:
@@ -233,7 +233,7 @@ def sync_google_tasks_with_todos():
             frappe.enqueue(sync_google_tasks_for_users, user_emails=batch_user_emails, is_async=True)
 
         return { "error": False, "message" : "Google Tasks synchronized successfully" }
-    
+
     except Exception as e:
         frappe.log_error(str(e), "Failed to sync google tasks to ERP ToDo")
         return { "error": True, "message" : str(e) }
@@ -247,11 +247,11 @@ def sync_my_google_tasks_with_todos():
         # Skip if general trigger is not enabled
         if not is_google_task_synchronization_enabled() or logged_in_user == "Administrator":
             return { "error": True, "message" : "You are not allowed to sync google tasks" }
-        
+
         sync_google_tasks_for_users(user_emails=[logged_in_user])
 
         return { "error": False, "message" : "My Google Tasks synchronized successfully" }
-    
+
     except Exception as e:
         frappe.log_error(str(e), "Failed to sync google tasks to ERP ToDo")
         return { "error": True, "message" : str(e) }
@@ -307,10 +307,10 @@ def sync_google_tasks_for_users(user_emails=[]):
                     # If ToDo has any reference then it shouldn't be closed by Google Task
                     if todo.reference_type and mapped_status == "Closed":
                         service = get_google_task_service(allocated_to)
-                        payload = { 
+                        payload = {
                             **google_task,
                             "title": f"[Hey!! You cant do that, Close the task in ERPNext] - {task_title}",
-                            "status": "needsAction" 
+                            "status": "needsAction"
                         }
                         service.tasks().update(tasklist="@default",task=google_task_id, body=payload).execute()
                     else:
@@ -361,7 +361,7 @@ def send_email_on_todo_created(doc):
                     "due_date":doc.date,
                     "status" : doc.status,
                 })
-    
+
     message = frappe.render_template("one_fm/templates/emails/email_notification_on_task_creation.html", args)
     subject = f"""A Task has been Created via {doc.custom_source} by {user_id}"""
     sendemail(sender=sender, recipients= recipients,

@@ -77,70 +77,73 @@ class HDTicketOverride(HDTicket):
         """Hangouts Chat incoming webhook to send the Issues Created, in Card Format."""
 
         # Fetch the Key and Token for the API
-        default_api_integration = frappe.get_doc("Default API Integration")
+        try:
+            default_api_integration = frappe.get_doc("Default API Integration")
 
-        google_chat = frappe.get_doc("API Integration",
-            [i for i in default_api_integration.integration_setting
-                if i.app_name=='Google Chat'][0].app_name)
+            google_chat = frappe.get_doc("API Integration",
+                [i for i in default_api_integration.integration_setting
+                    if i.app_name=='Google Chat'][0].app_name)
 
-        if google_chat.active:
-            # Construct the request URL
-            url = f"""{google_chat.url}/spaces/{google_chat.api_parameter[0].get_password('value')}/messages?key={google_chat.get_password('api_key')}&token={google_chat.get_password('api_token')}"""
+            if google_chat.active:
+                # Construct the request URL
+                url = f"""{google_chat.url}/spaces/{google_chat.api_parameter[0].get_password('value')}/messages?key={google_chat.get_password('api_key')}&token={google_chat.get_password('api_token')}"""
 
-            # Construct Message Body
-            message = f"""<b>A new Issue has been created</b><br>
-                <i>Details:</i> <br>
-                Subject: {self.subject} <br>
-                Name: {self.name} <br>
-                Raised By (Email): {self.raised_by} <br>
-                Body: {self.description}<br>
-                """
+                # Construct Message Body
+                message = f"""<b>A new Issue has been created</b><br>
+                    <i>Details:</i> <br>
+                    Subject: {self.subject} <br>
+                    Name: {self.name} <br>
+                    Raised By (Email): {self.raised_by} <br>
+                    Body: {self.description}<br>
+                    """
 
-            # Construct Card the allows Button action
-            bot_message = {
-                "cards_v2": [
-                    {
-                    "card_id": "IssueCard",
-                    "card": {
-                    "sections": [
-                    {
-                        "widgets": [
-                            {
-                            "textParagraph": {
-                            "text": message
-                            }
-                            },
+                # Construct Card the allows Button action
+                bot_message = {
+                    "cards_v2": [
                         {
-                        "buttonList": {
-                            "buttons": [
+                        "card_id": "IssueCard",
+                        "card": {
+                        "sections": [
+                        {
+                            "widgets": [
+                                {
+                                "textParagraph": {
+                                "text": message
+                                }
+                                },
                             {
-                                "text": "Open Document",
-                                "onClick": {
-                                "openLink": {
-                                    "url": frappe.utils.get_url(self.get_url()),
-                                }
-                                }
-                            },
-                            ]
+                            "buttonList": {
+                                "buttons": [
+                                {
+                                    "text": "Open Document",
+                                    "onClick": {
+                                    "openLink": {
+                                        "url": frappe.utils.get_url(self.get_url()),
+                                    }
+                                    }
+                                },
+                                ]
+                            }
+                            }
+                        ]
                         }
-                        }
-                    ]
+                        ]
+                    }
                     }
                     ]
                 }
-                }
-                ]
-            }
 
-            # Call the API
-            message_headers = {'Content-Type': 'application/json; charset=UTF-8'}
-            http_obj = Http()
-            response = http_obj.request(
-                uri=url,
-                method='POST',
-                headers=message_headers,
-                body=dumps(bot_message),
-            )
+                # Call the API
+                message_headers = {'Content-Type': 'application/json; charset=UTF-8'}
+                http_obj = Http()
+                response = http_obj.request(
+                    uri=url,
+                    method='POST',
+                    headers=message_headers,
+                    body=dumps(bot_message),
+                )
+        except Exception as e:
+             frappe.log_error(frappe.get_traceback(), "Error while sending google notification")
 
     
 

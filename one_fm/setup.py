@@ -11,6 +11,7 @@ from one_fm.custom.assignment_rule.assignment_rule import (
 )
 # Custom field imports
 from one_fm.custom.custom_field.supplier_group import get_supplier_group_custom_fields
+from one_fm.one_fm.custom.custom_field.leave_type import get_leave_type_custom_fields
 from one_fm.custom.custom_field.additional_salary import get_additional_salary_custom_fields
 from one_fm.custom.custom_field.assignment_rule import get_assignment_rule_custom_fields
 from one_fm.custom.property_setter.assignment_rule import get_assignment_rule_properties
@@ -34,6 +35,7 @@ def get_custom_fields():
 	custom_fields = get_additional_salary_custom_fields()
 	custom_fields.update(get_supplier_group_custom_fields())
 	custom_fields.update(get_assignment_rule_custom_fields())
+	custom_fields.update(get_leave_type_custom_fields())
 	return custom_fields
 
 def add_property_setter(property_setters):

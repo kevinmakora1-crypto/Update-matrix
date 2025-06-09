@@ -4,6 +4,4 @@ from one_fm.one_fm.custom.custom_field.leave_type import get_leave_type_custom_f
 
 
 def execute():
-	create_custom_fields({
-		get_leave_type_custom_fields()
-	} )
+	create_custom_fields(get_leave_type_custom_fields())

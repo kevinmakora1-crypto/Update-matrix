@@ -465,7 +465,7 @@ def add_resolution_details_updation():
                 v-if="ticket.data._customActions"
                 :actions="ticket.data._customActions"
                 />
-            <div>
+            <div v-if="!['Closed', 'Resolved'].includes(ticket.data.status)">
                 <Button @click="showResolutionDialog = true">
                     Update Resolution Details
                 </Button>

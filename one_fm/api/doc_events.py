@@ -241,6 +241,16 @@ def clear_cache(doc):
 	if doc.has_value_changed('account_manager'):
 		frappe.cache.delete_key('user_permissions')
 
+
+def update_project_manager_name(doc, method):
+	"""
+		Run when the project is updated. Set the project manager name in the employee doctype for
+		applicable employees.
+	"""
+	if doc.has_value_changed('account_manager'):
+		frappe.db.set_value("Employee", {"project": doc.name}, "project_manager_name", doc.manager_name)
+		
+
 def on_project_update_switch_shift_site_post_to_inactive(doc, method):
     clear_cache(doc)
     if doc.is_active == "No" and  doc.project_type == "External":

@@ -93,7 +93,7 @@ class OperationsSite(Document):
 			applicable employees.
 		"""
 		if self.has_value_changed('account_supervisor'):
-			frappe.db.set_value("Employee", {"site": self.name}, "custom_site_supervisor_name", self.account_supervisor_name)
+			frappe.db.set_value("Employee", {"site": self.name}, "site_supervisor_name", self.account_supervisor_name)
 			
 
    

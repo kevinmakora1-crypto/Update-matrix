@@ -3,14 +3,14 @@ def get_employee_custom_fields():
     return {
         "Employee": [
             {
-                "fieldname": "custom_site_supervisor_name",
+                "fieldname": "site_supervisor_name",
                 "owner":"Administrator",
                 "fieldtype": "Data",
-                "label": "Site Manager",
+                "label": "Site Supervisor Name",
                 "insert_after": "site",
                 "fetch_from":"site.account_supervisor_name",
                 "read_only": 1,
-            },
+                },
             {
                 "fieldname": "project_manager_name",
                 "owner":"Administrator",

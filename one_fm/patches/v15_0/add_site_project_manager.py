@@ -3,14 +3,14 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
 def execute():
-    if not frappe.db.exists("Custom Field", "Employee-custom_site_supervisor_name"):
+    if not frappe.db.exists("Custom Field", "Employee-site_supervisor_name"):
         create_custom_fields({
             "Employee": [
                 {
-                    "fieldname": "custom_site_supervisor_name",
+                    "fieldname": "site_supervisor_name",
                     "owner":"Administrator",
                     "fieldtype": "Data",
-                    "label": "Site Manager",
+                    "label": "Site Supervisor Name",
                     "insert_after": "site",
                     "fetch_from":"site.account_supervisor_name",
                     "read_only": 1,

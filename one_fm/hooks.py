@@ -164,7 +164,7 @@ website_generators = ["Client"]
 # ------------
 
 before_install = "one_fm.install.before_install.execute"
-# after_install = "one_fm.install.after_install"
+after_install = "one_fm.setup.after_install"
 #revert staging
 
 # Desk Notifications
@@ -245,15 +245,6 @@ doc_events = {
 	},
 	"Leave Type": {
 		"validate": "one_fm.utils.validate_leave_type_for_one_fm_paid_leave"
-	},
-	"HD Ticket": {
-		"validate": "one_fm.overrides.hd_ticket.validate_hd_ticket",
-		"after_insert":[
-      					"one_fm.overrides.hd_ticket.send_google_chat_notification",
-                  		"one_fm.overrides.hd_ticket.notify_ticket_raiser_of_receipt"
-                    	],
-		"on_change": "one_fm.overrides.hd_ticket.notify_issue_raiser_about_priority",
-		"on_update": "one_fm.overrides.hd_ticket.apply_ticket_escalation"
 	},
 	"Employee Grade": {
 		"validate": "one_fm.one_fm.utils.employee_grade_validate"
@@ -536,6 +527,7 @@ override_doctype_class = {
     "Leave Allocation": "one_fm.overrides.leave_allocation.LeaveAllocationOverride",
     "Interview": "one_fm.overrides.interview.InterviewOverride",
     "Purchase Order": "one_fm.overrides.purchase_order.PurchaseOrderOverride",
+    "HD Ticket": "one_fm.overrides.hd_ticket.HDTicketOverride",
 
     # "User": "one_fm.overrides.user.UserOverride"
 }
@@ -618,7 +610,6 @@ scheduler_events = {
 		"0/15 * * * *": [ #At every 15th minute from 0 through 59.”
 			"one_fm.legal.doctype.penalty.penalty.automatic_reject",
 			# 'one_fm.api.tasks.process_attendance',
-			"one_fm.events.email_queue.flush_emails",
 		],
 		"0/5 * * * *": [
 			"one_fm.api.tasks.run_checkin_reminder",
@@ -836,7 +827,11 @@ fixtures = [
 				)
 			)
 		}
-	}
+	},
+	{
+		"dt": "HD Ticket Template",
+		"filters": [["name", "in",["Default"]]]
+	},
 ]
 
 # before_tests = "one_fm.install.before_tests"
@@ -894,7 +889,9 @@ after_migrate = [
     "one_fm.after_migrate.execute.comment_process_expired_allocation_in_hrms",
     "one_fm.after_migrate.execute.replace_prompt_message_in_goal",
     "one_fm.after_migrate.execute.update_hd_ticket_agent",
-    "one_fm.setup.setup.after_migrate"
+    "one_fm.after_migrate.execute.deploy_ticket_views",
+    "one_fm.after_migrate.execute.update_hd_ticket_side_bar",
+    "one_fm.after_migrate.execute.add_resolution_details_updation"
 ]
 
 before_migrate = [

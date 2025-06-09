@@ -59,7 +59,6 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.oauth2 import service_account
 
 
-
 def get_common_email_args(doc):
 	doctype = doc.get("doctype")
 	docname = doc.get("name")
@@ -3468,7 +3467,7 @@ def get_current_shift(employee):
                     order_by="time desc",
                     limit=1,
                 )
-                
+
                 if checkin:
                     last_log = checkin[0]
                     # CASE 1: Last log is IN → Shift is active
@@ -3531,7 +3530,7 @@ def check_existing():
     shift_exists = get_current_shift(employee)
     if not shift_exists:
         return response("Resource Not Found", 404, None, "No Active Shift Found")
-    
+
     if shift_exists['type'] == "On Time":
         curr_shift = shift_exists['data']
     if not curr_shift:
@@ -3985,8 +3984,77 @@ def update_fields_in_doctypes(data):
 						doc.set(field, value)  # Re-set the actual value
 					doc.save()
 
+def get_json_file(file_name, folder):
+    """
+    Load and return JSON data from a file in the specified folder.
+
+    Args:
+        file_name (str): The name of the JSON file (must end with `.json`).
+        folder (str): The absolute path to the folder containing the JSON file.
+
+    Returns:
+        dict: Parsed JSON data from the file.
+    """
+    data = {}
+    if not file_name.endswith(".json"):
+        frappe.log_error("Only JSON files are allowed. Please ensure the file ends with '.json'.")
+
+    file_path = os.path.join(folder, file_name)
+
+    if not os.path.isfile(file_path):
+        frappe.log_error(f"File not found: {file_path}")
+
+    try:
+        with open(file_path, "r") as f:
+            data = json.load(f)
+
+    except json.JSONDecodeError as e:
+        frappe.log_error(f"Invalid JSON format in file {file_path}: {str(e)}")
+
+    except Exception as e:
+        frappe.log_error(f"An error occurred while reading the file {file_path}: {str(e)}")
+
+    return data
+
+def get_workflow_action_buttons_html(doc, user):
+    from one_fm.overrides.workflow import get_next_possible_transitions
+    doctype = doc.get('doctype')
+    workflow = get_workflow_name(doctype)
+    message_html = ""
+    if workflow:
+        transitions = get_next_possible_transitions(
+            workflow, get_doc_workflow_state(doc), doc
+        )
+
+        action_details = []
+
+        for transition in transitions:
+            if transition.get("custom_requires_frontend_input") or transition.get("require_digital_signature"):
+                action_name = f"{transition.action} (open in ERP)"
+                action_link = f"{frappe.utils.get_url()}/app/{doctype.lower().replace(' ', '-')}/{doc.name}"
+            else:
+                action_name = transition.action
+                action_link = get_confirm_workflow_action_url(doc, transition.action, user)
+
+            action_details.append(
+                frappe._dict(
+                    {
+                        "action_name": action_name,
+                        "action_link": action_link,
+                    }
+                )
+            )
+
+        if action_details and len(action_details) > 0:
+            message_html += "<div>"
+            for action in action_details:
+                message_html += '<a href="{0}" class="btn btn-primary btn-action" style="margin-right: 10px; margin-bottom: 10px">{1}</a>'.format(
+                    action.action_link, action.action_name
+                )
+            message_html += "</div>"
+
+    return message_html
+
 
 def fetch_leave_types_update_employee_status():
     return set(frappe.db.get_list("Leave Type", {"custom_update_employee_status_to_vacation": True}, pluck="name"))
-
-   

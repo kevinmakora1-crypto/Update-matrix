@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 import frappe, json
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import get_url
+from frappe.utils import get_url, now_datetime
 from one_fm.processor import sendemail
 
 
@@ -126,6 +126,9 @@ def create_job_applicant_from_job_portal(applicant_name, country, applicant_emai
 
 
         job_applicant.resume_attachment = resume_attachment_url
+        
+
+        job_applicant.application_date = now_datetime()
 
         if rotation_shift:
             if rotation_shift == "yes":

@@ -229,27 +229,25 @@ frappe.ui.form.on('Operations Shift', {
 });
 
 function  validate_linked_schedules(frm){
-	if (frm.doc.status =="Inactive" && !frm.__confirmed_inactive && !frm.is_new()){
+	if (frm.doc.status == "Inactive" && !frm.__confirmed_inactive && !frm.is_new()){
 		frappe.call({
-			method:"one_fm.one_fm.utils.has_linked_schedules",
-			args:{
+			method: "one_fm.one_fm.utils.has_linked_schedules",
+			args: {
 				field: "Operations Shift",
 				value: frm.doc.name,
 			},
 			callback: (response) => {
-				
-				if(response.message==true){
+				if(response.message){
 					frappe.confirm(
 						"The future Employee Schedules linked to the Operations Shift will be deleted on confirmation. Do you want to proceed?",
-						()=>{
-							
+						function () {
 							frappe.call({
 								method:"one_fm.one_fm.utils.delete_linked_schedules",
 								args:{
 									field: "Operations Shift",
 									value: frm.doc.name
 								},
-								freeze:1,
+								freeze: true,
 								freeze_message:__("Deleting Linked Schedules ..."),
 								callback: (response) => {
 									frm.__confirmed_inactive = true;
@@ -257,15 +255,17 @@ function  validate_linked_schedules(frm){
 								}
 							})
 						},
-						()=>{
-							frappe.validated=false
+						function () {
+							frappe.validated = false;
 							frm.reload_doc();
 						}
 					)
+				} else {
+					frappe.validated = true
 				}
-				frappe.validated=false
-			}})			
-		
+			}
+		});
+		frappe.validated=false		
 	}
 
 }

@@ -3705,6 +3705,7 @@ def set_employee_status():
             'status': 'Approved',
             'from_date': ['<=', current_date],
             'to_date': ['>=', add_days(current_date, -1)],
+            "leave_type": ["IN", fetch_leave_types_update_employee_status()]
         },
         fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']  # Fetch employee status directly
     )
@@ -4053,3 +4054,7 @@ def get_workflow_action_buttons_html(doc, user):
             message_html += "</div>"
 
     return message_html
+
+
+def fetch_leave_types_update_employee_status():
+    return set(frappe.db.get_list("Leave Type", {"custom_update_employee_status_to_vacation": True}, pluck="name"))

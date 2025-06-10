@@ -416,18 +416,7 @@ def update_hd_ticket_agent():
                     """
         fourth_change = append_code_in_file(FILE_PATH, search_text, appendable_code, False)
         if (first_change or second_change or third_change or fourth_change):
-            # execute build
-            print("Rebuilding Helpdesk")
-            # Define the directories
-            bench_path = frappe.utils.get_bench_path()
-            helpdesk_dir = os.path.join(bench_path, 'apps/helpdesk/desk')
-
-            # Run yarn build
-            yarn_build_command = 'yarn build'
-            run_command(yarn_build_command, cwd=helpdesk_dir)
-            #  Restart bench
-            bench_restart_command = "bench restart"
-            run_command(bench_restart_command, cwd=bench_path)
+            return True
     else:
         print(FILE_PATH, 'not found')
     return
@@ -500,18 +489,7 @@ def add_resolution_details_updation():
         fourth_change = append_code_in_file(FILE_PATH, search_text, appendable_code)
 
         if (first_change or second_change or third_change or fourth_change):
-            # execute build
-            print("Rebuilding Helpdesk")
-            # Define the directories
-            bench_path = frappe.utils.get_bench_path()
-            helpdesk_dir = os.path.join(bench_path, 'apps/helpdesk/desk')
-
-            # Run yarn build
-            yarn_build_command = 'yarn build'
-            run_command(yarn_build_command, cwd=helpdesk_dir)
-            #  Restart bench
-            bench_restart_command = "bench restart"
-            run_command(bench_restart_command, cwd=bench_path)
+            return True
     else:
         print(FILE_PATH, 'not found')
     return
@@ -583,22 +561,6 @@ def deploy_ticket_views():
             print("⚠️ Could not find insertion point for router update.")
             return False
 
-    helpdesk_desk_dir = os.path.join(bench_path, "apps", "helpdesk", "desk")
-
-    try:
-        print("[🔨] Running yarn build in helpdesk/desk...")
-        run_command("yarn build", cwd=helpdesk_desk_dir)
-    except Exception as e:
-        print(f"[❌] yarn build failed: {e}")
-        return False
-
-    try:
-        print("[🔁] Restarting bench...")
-        run_command("bench restart", cwd=bench_path)
-    except Exception as e:
-        print(f"[❌] bench restart failed: {e}")
-        return False
-
     print("[🎉] TicketNew and TicketEdit views deployed successfully.")
     return True
 
@@ -609,27 +571,21 @@ def update_hd_ticket_side_bar():
         # Replace lines 'agent_group'
         
         search_pattern = r"""
-            \s*{                            
-            \s*field:\s*"agent_group",     
-            \s*label:\s*"Team",             
-            \s*store:\s*useTeamStore\(\),  
-            \s*},\s*                        
+            \s*{                         
+            \s*field:\s*"priority",     
+            \s*label:\s*"Priority",     
+            \s*store:\s*useTicketPriorityStore\(\), 
+            \s*},                       
+            \s*{                         
+            \s*field:\s*"agent_group",  
+            \s*label:\s*"Team",         
+            \s*store:\s*useTeamStore\(\), 
+            \s*},                       
         """
         
         fourth_change = remove_code_block_with_regex(FILE_PATH, search_pattern)
         if fourth_change:
-            # execute build
-            print("Rebuilding Helpdesk")
-            # Define the directories
-            bench_path = frappe.utils.get_bench_path()
-            helpdesk_dir = os.path.join(bench_path, 'apps/helpdesk/desk')
-
-            # Run yarn build
-            yarn_build_command = 'yarn build'
-            run_command(yarn_build_command, cwd=helpdesk_dir)
-            #  Restart bench
-            bench_restart_command = "bench restart"
-            run_command(bench_restart_command, cwd=bench_path)
+            return True
     else:
         print(FILE_PATH, 'not found')
     return
@@ -658,3 +614,24 @@ def remove_code_block_with_regex(file_path, pattern):
         print(f"An error occurred: {e}")
         return False
 
+
+def update_all_ticket_features():
+    any_changes = False
+
+    if update_hd_ticket_agent():
+        any_changes = True
+    if add_resolution_details_updation():
+        any_changes = True
+    if deploy_ticket_views():
+        any_changes = True
+    if update_hd_ticket_side_bar():
+        any_changes = True
+
+    if any_changes:
+        bench_path = frappe.utils.get_bench_path()
+        helpdesk_dir = os.path.join(bench_path, 'apps/helpdesk/desk')
+
+        run_command("yarn build", cwd=helpdesk_dir)
+        run_command("bench restart", cwd=bench_path)
+    else:
+        print("No changes detected. Skipping build and restart.")

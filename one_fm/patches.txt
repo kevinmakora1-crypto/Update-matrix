@@ -124,3 +124,5 @@ one_fm.patches.v15_0.add_update_custom_field #2025-05-20
 one_fm.patches.v15_0.add_update_property_setter #2025-05-20
 one_fm.patches.v15_0.add_update_assignment_rule #2025-05-20
 one_fm.patches.v15_0.add_update_workflow #2025-06-04
+one_fm.patches.v15_0.add_update_custom_field #2025-06-09 Add Employee Custom Fields
+

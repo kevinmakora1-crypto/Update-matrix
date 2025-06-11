@@ -4,7 +4,7 @@ from . import __version__ as app_version
 import frappe as _frappe
 from frappe import _
 from hrms.hr.doctype.shift_type.shift_type import ShiftType
-from one_fm.api.doc_methods.shift_type import process_auto_attendance
+
 
 
 app_name = "one_fm"
@@ -861,7 +861,7 @@ override_doctype_dashboards = {
     'Project': 'one_fm.overrides.project_dashboard.get_data',
 }
 
-#ShiftType.process_auto_attendance = process_auto_attendance
+
 
 # Required apps before installation
 required_apps = ['frappe', 'erpnext']

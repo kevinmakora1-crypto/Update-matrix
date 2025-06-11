@@ -173,7 +173,7 @@ def get_employee_day_off_comparison(employee, start_date, end_date):
 		# Calculate no of off days
 		od = frappe.db.sql(frappe.qb.from_(Attendance)
 			.select(Count("name").as_("off_days"))
-			.where(employee_attendance_date & employee_name & (Attendance.status == "Day Off") & (Attendance.day_off_ot == 0))
+			.where(employee_attendance_date & employee_name & (Attendance.status == "Day Off") & (Attendance.day_off_ot == 0) & (Attendance.docstatus == 1))
 			.groupby(Attendance.employee),
 		as_dict=1)
 		off_days = off_days + (od[0].off_days if len(od) > 0 else 0)

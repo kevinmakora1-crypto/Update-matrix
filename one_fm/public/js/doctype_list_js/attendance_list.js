@@ -8,9 +8,7 @@ frappe.listview_settings["Attendance"] = {
 			return [__(doc.status), "red", "status,=," + doc.status];
 		} else if (doc.status == "Half Day") {
 			return [__(doc.status), "orange", "status,=," + doc.status];
-		}else if (doc.status == "Day Off"){
-            return [__(doc.status), "blue", "status,=," + doc.status];
-        }else if (doc.status == "Holiday"){
+		}else if (["Day Off", "Client Day Off", "Holiday"].includes(doc.status)){
             return [__(doc.status), "blue", "status,=," + doc.status];
         }else if (doc.status == "On Hold"){
             return [__(doc.status), "yellow", "status,=," + doc.status];

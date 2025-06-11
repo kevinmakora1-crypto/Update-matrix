@@ -71,7 +71,7 @@ def get_day_off_comparison_dates(day_off_category):
 
     return comparison_periods
 
-def split_date_range_into_past_future(start_date, end_date):
+def split_date_range_into_past_and_future(start_date, end_date):
     """
     Splits the input date range into 'past' and 'future' based on today's date.
     
@@ -152,7 +152,7 @@ def check_roster_day_off():
 		frappe.log_error(frappe.get_traceback())
 
 def get_employee_day_off_comparison(employee, start_date, end_date):
-	date_ranges = split_date_range_into_past_future(start_date, end_date)
+	date_ranges = split_date_range_into_past_and_future(start_date, end_date)
 
 	off_days = 0
 	ot_days = 0

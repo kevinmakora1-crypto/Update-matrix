@@ -26,8 +26,11 @@ class OperationsShift(Document):
 	def on_update(self):
 		self.clear_cache()
 		self.validate_name()
-		self.update_post_status()
 		self.update_employee_schedules_and_shift_assignments()
+
+		if self.has_value_changed("status"): # only updates post and roles when status is changed
+			self.update_post_status()
+			
 
 	def validate_name(self):
 		#this method is updating the name of the record and sending clear message through exception if any of the records are missing

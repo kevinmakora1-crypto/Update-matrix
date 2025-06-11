@@ -41,39 +41,7 @@ frappe.ui.form.on('Project', {
         frm.refresh_field("cost_center");
     },
     before_save: function(frm) {
-        if (frm.doc.is_active === 'No' && !frm.__confirmed_inactive) {
-            frappe.call({
-                method: "one_fm.one_fm.project_custom.check_existing_schedules",
-                args: {
-                    project: frm.doc.name
-                },
-                callback: function(response) {
-                    if (response.message && response.data_obj && response.data_obj.is_exist) {
-                        frappe.confirm(
-                            "The future Employee Schedules linked to the Project will be deleted on confirmation. Do you want to proceed?",
-                            function () {
-                                frappe.call({
-                                    method: "one_fm.one_fm.project_custom.delete_future_schedules",
-                                    args: {
-                                        project: frm.doc.name
-                                    },
-                                    callback: function() {
-                                        frm.__confirmed_inactive = true;
-                                        frm.save();
-                                    }
-                                });
-                            },
-                            function () {
-                                frappe.validated = false;
-                                frm.reload_doc();
-                            }
-                        );
-                    }
-                }
-            });
-
-            frappe.validated = false;
-        }
+        validate_linked_schedules(frm)
     }
 });
 
@@ -158,6 +126,45 @@ function set_open_count (frm, doctype){
                 });
             }
         });
+    }
+}
+
+function validate_linked_schedules (frm) {
+    if (frm.doc.is_active === 'No' && !frm.__confirmed_inactive && !frm.is_new()) {
+        frappe.call({
+            method: "one_fm.one_fm.project_custom.check_existing_schedules",
+            args: {
+                project: frm.doc.name
+            },
+            callback: function(response) {
+                if (response.message && response.data_obj && response.data_obj.is_exist) {
+                    frappe.confirm(
+                        "The future Employee Schedules linked to the Project will be deleted on confirmation. Do you want to proceed?",
+                        function () {
+                            frappe.call({
+                                method: "one_fm.one_fm.project_custom.delete_future_schedules",
+                                args: {
+                                    project: frm.doc.name
+                                },
+                                freeze: true,
+                                freeze_message: __("Deleting Linked Schedules..."),
+                                callback: function() {
+                                    frm.__confirmed_inactive = true;
+                                    frm.save();
+                                }
+                            });
+                        },
+                        function () {
+                            frappe.validated = false;
+                            frm.reload_doc();
+                        }
+                    );
+                } else {
+                    frappe.validated = true
+                }
+            }
+        });
+        frappe.validated = false
     }
 }
 

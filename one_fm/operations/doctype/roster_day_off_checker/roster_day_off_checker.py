@@ -4,7 +4,7 @@
 from collections import OrderedDict
 import frappe
 from frappe.utils import (
-    get_first_day, get_last_day, getdate, add_days, add_months
+    get_first_day, get_last_day, getdate, add_days, add_months, nowdate
 )
 from frappe.model.document import Document
 from frappe.query_builder.functions import Count
@@ -71,6 +71,46 @@ def get_day_off_comparison_dates(day_off_category):
 
     return comparison_periods
 
+def split_date_range_into_past_future(start_date, end_date):
+    """
+    Splits the input date range into 'past' and 'future' based on today's date.
+    
+    Args:
+        start_date (str): The start date of the range (YYYY-MM-DD).
+        end_date (str): The end date of the range (YYYY-MM-DD).
+
+    Returns:
+        dict: {
+            "past": {"start_date": ..., "end_date": ...} or None,
+            "future": {"start_date": ..., "end_date": ...} or None
+        }
+    """
+    start = getdate(start_date)
+    end = getdate(end_date)
+    today = getdate(nowdate())
+
+    result = {
+        "past": None,
+        "future": None
+    }
+
+    if start < today:
+        past_end = min(end, add_days(today, -1))
+        if past_end >= start:
+            result["past"] = {
+                "start_date": start,
+                "end_date": past_end
+            }
+
+    if end >= today:
+        future_start = max(start, today)
+        result["future"] = {
+            "start_date": future_start,
+            "end_date": end
+        }
+
+    return result
+
 def check_roster_day_off():
 	# Get all active employees
 	# Validate their offs for next 2 months/weeks based on their Day Off Category
@@ -112,26 +152,66 @@ def check_roster_day_off():
 		frappe.log_error(frappe.get_traceback())
 
 def get_employee_day_off_comparison(employee, start_date, end_date):
-	EmployeeSchedule = frappe.qb.DocType("Employee Schedule")
+	date_ranges = split_date_range_into_past_future(start_date, end_date)
 
-	# QB conditions
-	employee_name = (EmployeeSchedule.employee == employee.name)
-	employee_schedule_date = (EmployeeSchedule.date[start_date:end_date])
+	off_days = 0
+	ot_days = 0
 
-	# Calculate no of off days
-	od = frappe.db.sql(frappe.qb.from_(EmployeeSchedule)
-		.select(Count("name").as_("off_days"))
-		.where(employee_schedule_date & employee_name & (EmployeeSchedule.employee_availability == "Day Off") & (EmployeeSchedule.day_off_ot == 0))
-		.groupby(EmployeeSchedule.employee),
-	as_dict=1)
-	off_days = od[0].off_days if len(od) > 0 else 0
+	if date_ranges["past"]:
+		"""
+		Calculate day offs and day off ot using employee's attendance within the date range for past days
+		"""
+		Attendance = frappe.qb.DocType("Attendance")
 
-	# Calculate no of ot days
-	ot = frappe.db.sql( frappe.qb.from_(EmployeeSchedule)
-		.select(Count("name").as_("ot_days"))
-		.where(employee_schedule_date & employee_name & (EmployeeSchedule.day_off_ot == 1))
-		.groupby(EmployeeSchedule.employee), as_dict=1)
-	ot_days = ot[0].ot_days if len(ot) > 0 else 0
+		attendance_start_date = date_ranges["past"]["start_date"]
+		attendance_end_date = date_ranges["past"]["end_date"]
+
+		# QB conditions
+		employee_name = (Attendance.employee == employee.name)
+		employee_attendance_date = (Attendance.attendance_date[attendance_start_date:attendance_end_date])
+
+		# Calculate no of off days
+		od = frappe.db.sql(frappe.qb.from_(Attendance)
+			.select(Count("name").as_("off_days"))
+			.where(employee_attendance_date & employee_name & (Attendance.status == "Day Off") & (Attendance.day_off_ot == 0))
+			.groupby(Attendance.employee),
+		as_dict=1)
+		off_days = off_days + (od[0].off_days if len(od) > 0 else 0)
+
+		# Calculate no of ot days
+		ot = frappe.db.sql( frappe.qb.from_(Attendance)
+			.select(Count("name").as_("ot_days"))
+			.where(employee_attendance_date & employee_name & (Attendance.day_off_ot == 1))
+			.groupby(Attendance.employee), as_dict=1)
+		ot_days = ot_days + (ot[0].ot_days if len(ot) > 0 else 0)
+
+	if date_ranges["future"]:
+		"""
+		Calculate day offs and day off ot using employee schedules within the date range for future days (including today)
+		"""
+		EmployeeSchedule = frappe.qb.DocType("Employee Schedule")
+
+		schedule_start_date = date_ranges["future"]["start_date"]
+		schedule_end_date = date_ranges["future"]["end_date"]
+
+		# QB conditions
+		employee_name = (EmployeeSchedule.employee == employee.name)
+		employee_schedule_date = (EmployeeSchedule.date[schedule_start_date:schedule_end_date])
+
+		# Calculate no of off days
+		od = frappe.db.sql(frappe.qb.from_(EmployeeSchedule)
+			.select(Count("name").as_("off_days"))
+			.where(employee_schedule_date & employee_name & (EmployeeSchedule.employee_availability == "Day Off") & (EmployeeSchedule.day_off_ot == 0))
+			.groupby(EmployeeSchedule.employee),
+		as_dict=1)
+		off_days = off_days + (od[0].off_days if len(od) > 0 else 0)
+
+		# Calculate no of ot days
+		ot = frappe.db.sql( frappe.qb.from_(EmployeeSchedule)
+			.select(Count("name").as_("ot_days"))
+			.where(employee_schedule_date & employee_name & (EmployeeSchedule.day_off_ot == 1))
+			.groupby(EmployeeSchedule.employee), as_dict=1)
+		ot_days = ot_days + (ot[0].ot_days if len(ot) > 0 else 0)
 
 	day_off_diff = ""
 	employee_number_of_days_off = employee.number_of_days_off

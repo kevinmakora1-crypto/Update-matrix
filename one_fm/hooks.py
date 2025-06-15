@@ -312,8 +312,11 @@ doc_events = {
 			"one_fm.one_fm.project_custom.validate_project",
 		],
 		"onload": "one_fm.one_fm.project_custom.get_depreciation_expense_amount",
-		"on_update": "one_fm.api.doc_events.on_project_update_switch_shift_site_post_to_inactive"
-	# 	"on_update": "one_fm.api.doc_events.project_on_update"
+		"on_update": [
+						"one_fm.api.doc_events.on_project_update_switch_shift_site_post_to_inactive",
+						"one_fm.api.doc_events.update_project_manager_name"
+					]
+			# 	"on_update": "one_fm.api.doc_events.project_on_update"
 	},
 	"Attendance": {
 		"on_submit": [

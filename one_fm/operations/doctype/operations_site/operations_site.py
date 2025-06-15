@@ -85,6 +85,17 @@ class OperationsSite(Document):
 	def clear_cache(self):
 		if self.has_value_changed('account_supervisor'):
 			frappe.cache.delete_key('user_permissions')
+	
+
+	def update_site_manager_name(self):
+		"""
+			Run when the site is updated. Set the site manager name in the employee doctype for
+			applicable employees.
+		"""
+		if self.has_value_changed('account_supervisor'):
+			frappe.db.set_value("Employee", {"site": self.name}, "site_supervisor_name", self.account_supervisor_name)
+			
+
    
 	def on_update(self):
 		self.clear_cache()
@@ -93,6 +104,7 @@ class OperationsSite(Document):
 			self.update_shift_post_role_status()
 		if doc_before_save and doc_before_save.project != self.project:	
 			update_on_field_change(self,doc_before_save)
+		self.update_site_manager_name()
 		# changes = self.get_changes()
 		# self.notify_changes()
 		# self.update_permissions(doc_before_save)

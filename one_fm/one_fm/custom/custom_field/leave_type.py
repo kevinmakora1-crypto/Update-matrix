@@ -7,7 +7,7 @@ def get_leave_type_custom_fields():
 				"fieldtype": "Check",
 				"label": "Update Employee Status to Vacation",
 				"insert_after": "custom_is_maternity",
-				"description": "Determines whether the employee's document status should be automatically updated when the leave is active.",
+				"description": 'If checked, Employee status will be updated to "Vacation" on "Leave Start Date" and reverted to "Active" on "Resumption Date".',
 				"in_list_view": 1,
 			},
 		]

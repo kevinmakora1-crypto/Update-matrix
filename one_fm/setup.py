@@ -17,6 +17,8 @@ from one_fm.custom.custom_field.assignment_rule import get_assignment_rule_custo
 from one_fm.custom.property_setter.assignment_rule import get_assignment_rule_properties
 from one_fm.custom.custom_field.employee import get_employee_custom_fields
 from one_fm.custom.custom_field.hd_ticket import get_hd_ticket_custom_fields
+from one_fm.custom.custom_field.attendance import get_attendance_custom_fields
+
 
 def after_install():
 	create_custom_fields(get_custom_fields())
@@ -40,6 +42,7 @@ def get_custom_fields():
 	custom_fields.update(get_leave_type_custom_fields())
 	custom_fields.update(get_employee_custom_fields())
 	custom_fields.update(get_hd_ticket_custom_fields())
+	custom_fields.update(get_attendance_custom_fields())
 	return custom_fields
 
 def add_property_setter(property_setters):

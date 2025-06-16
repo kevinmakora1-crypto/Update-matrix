@@ -3,6 +3,7 @@
 
 from collections import OrderedDict
 import frappe
+from datetime import date
 from frappe.utils import (
     get_first_day, get_last_day, getdate, add_days, add_months, nowdate
 )
@@ -30,44 +31,53 @@ monthname_dict = {
 class RosterDayOffChecker(Document):
 	pass
 
-def get_day_off_comparison_dates(day_off_category):
+
+def get_day_off_comparison_dates(employee):
     today = getdate()
     comparison_periods = []
 
-    if day_off_category == "Monthly":
-        # Current month
-        current_month_start = get_first_day(today)
-        current_month_end = get_last_day(today)
+    # Fallbacks for null dates
+    joining_date = employee.date_of_joining or date.min
+    relieving_date = employee.relieving_date or date.max
+
+    def add_period(start, end, total_days):
+        # Clamp dates within employee tenure
+        start_date = max(start, joining_date)
+        end_date = min(end, relieving_date)
+
+        if start_date > end_date:
+            return
+
+        # Calculate calendar day difference
+        days_diff = (end_date - start_date).days + 1
+
+        # Calculate proportional days off
+        calculated_days_off = (days_diff / total_days) * employee.number_of_days_off
+
         comparison_periods.append({
-            "start_date": current_month_start,
-            "end_date": current_month_end
+            "start_date": start_date,
+            "end_date": end_date,
+            "calculated_number_of_days_off": round(calculated_days_off)
         })
+
+    if employee.day_off_category == "Monthly":
+        # Current month
+        add_period(get_first_day(today), get_last_day(today), 30)
 
         # Next month
-        next_month_date = add_months(today, 1)
-        next_month_start = get_first_day(next_month_date)
-        next_month_end = get_last_day(next_month_date)
-        comparison_periods.append({
-            "start_date": next_month_start,
-            "end_date": next_month_end
-        })
+        next_month = add_months(today, 1)
+        add_period(get_first_day(next_month), get_last_day(next_month), 30)
 
-    elif day_off_category == "Weekly":
-        # First 7-day period starting from tomorrow
+    elif employee.day_off_category == "Weekly":
+        # First week (starting from tomorrow)
         week1_start = add_days(today, 1)
         week1_end = add_days(week1_start, 6)
-        comparison_periods.append({
-            "start_date": week1_start,
-            "end_date": week1_end
-        })
+        add_period(week1_start, week1_end, 7)
 
-        # Next 7-day period
+        # Second week
         week2_start = add_days(week1_end, 1)
         week2_end = add_days(week2_start, 6)
-        comparison_periods.append({
-            "start_date": week2_start,
-            "end_date": week2_end
-        })
+        add_period(week2_start, week2_end, 7)
 
     return comparison_periods
 
@@ -122,14 +132,14 @@ def check_roster_day_off():
 		today = getdate()
 
 		for employee in employees:
-			comparison_dates = get_day_off_comparison_dates(employee.day_off_category)
+			comparison_dates = get_day_off_comparison_dates(employee)
 
 			site_supervisor = frappe.db.get_value("Operations Site", employee.site, "account_supervisor")
 			shift_supervisor = get_shift_supervisor(employee.shift)
 			project_manager = frappe.db.get_value("Project", employee.project, "account_manager")
 
 			for period in comparison_dates:	# Always 2 iterations only because we have just two period for comparison
-				day_off_data = get_employee_day_off_comparison(employee, period["start_date"], period["end_date"])
+				day_off_data = get_employee_day_off_comparison(employee, period["start_date"], period["end_date"], period["calculated_number_of_days_off"])
 
 				if day_off_data["day_off_difference"]:
 					duration = day_off_data["monthweek"]
@@ -151,7 +161,7 @@ def check_roster_day_off():
 	except Exception:
 		frappe.log_error(frappe.get_traceback())
 
-def get_employee_day_off_comparison(employee, start_date, end_date):
+def get_employee_day_off_comparison(employee, start_date, end_date, calculated_day_offs = 0):
 	date_ranges = split_date_range_into_past_and_future(start_date, end_date)
 
 	off_days = 0
@@ -214,7 +224,7 @@ def get_employee_day_off_comparison(employee, start_date, end_date):
 		ot_days = ot_days + (ot[0].ot_days if len(ot) > 0 else 0)
 
 	day_off_diff = ""
-	employee_number_of_days_off = employee.number_of_days_off
+	employee_number_of_days_off = calculated_day_offs
 
 	if employee_number_of_days_off != (off_days + ot_days): # If has any discrepency
 		if off_days > employee_number_of_days_off and not ot_days:
@@ -285,10 +295,10 @@ def get_day_off_details_of_employees(employees):
 		roster_day_off_data = []
 
 		for employee in employees:
-			comparison_dates = get_day_off_comparison_dates(employee.day_off_category)
+			comparison_dates = get_day_off_comparison_dates(employee)
 
 			for period in comparison_dates:	# Always 2 iterations only because we have just two period for comparison
-				day_off_data = get_employee_day_off_comparison(employee, period["start_date"], period["end_date"])
+				day_off_data = get_employee_day_off_comparison(employee, period["start_date"], period["end_date"], period["calculated_number_of_days_off"])
 
 				if day_off_data["day_off_difference"]:
 					roster_day_off_data.append({

@@ -416,7 +416,7 @@ def mark_for_active_employees(from_date=None, to_date=None):
     # Get all active employees
     active_employees = frappe.get_list("Employee", {
         "status": ["=", "Active"],
-        "employment_type": ["!=", "Service Provider"],
+        "attendance_by_timesheet":0,
     }, ["name", "employee_name", "company", "department", "holiday_list"])
     
     # Process employees with schedules/shifts
@@ -437,20 +437,20 @@ def mark_attendance_for_unscheduled_employees(employees, date):
     """
     try:
         # Get employees who already have attendance marked
-        existing_attendance = frappe.get_list("Attendance", {
+        existing_attendance = frappe.get_all("Attendance", {
             'attendance_date': date,
             'roster_type': 'Basic',
             'status': ['IN', ['Present', 'Holiday', 'On Leave', 'Work From Home', 'On Hold', 'Day Off']]
         }, pluck="employee")
         
         # Get employees with schedules
-        scheduled_employees = frappe.get_list("Employee Schedule", {
+        scheduled_employees = frappe.get_all("Employee Schedule", {
             'date': date,
             'employee': ['IN', [e.name for e in employees]]
         }, pluck="employee")
         
         # Get employees with shift assignments
-        shift_assigned_employees = frappe.get_list("Shift Assignment", {
+        shift_assigned_employees = frappe.get_all("Shift Assignment", {
             'start_date': date,
             'employee': ['IN', [e.name for e in employees]],
             'docstatus': 1
@@ -479,7 +479,7 @@ def mark_attendance_for_unscheduled_employees(employees, date):
                 `name`, `naming_series`, `employee`, `employee_name`, 
                 `status`, `attendance_date`, `company`, `department`,
                 `roster_type`, `docstatus`, `modified_by`, `owner`,
-                `creation`, `modified`, `comment`
+                `creation`, `modified`, `comment`, `is_unscheduled`
             ) VALUES
         """
         
@@ -500,9 +500,9 @@ def mark_attendance_for_unscheduled_employees(employees, date):
                     "{name}", "{naming_series}", "{emp.name}", "{emp.employee_name}",
                     "{status}", "{date}", "{emp.company}", "{emp.department}",
                     "Basic", 1, "{owner}", "{owner}",
-                    "{creation}", "{creation}", "{comment}"
-                ),
-            """
+                    "{creation}", "{creation}", "{comment}", 1
+                ),"""
+            
         
         if query_body:
             query += query_body[:-1]  # Remove trailing comma

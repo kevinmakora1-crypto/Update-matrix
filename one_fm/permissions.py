@@ -36,8 +36,7 @@ def extend_user_permission(user: str) -> list:
 
     # Direct reports
     direct_reports = frappe.get_all("Employee", filters={
-        'reports_to': employee_id,
-        'status': 'Active'
+        'reports_to': employee_id
     }, fields=["name"])
     employee_ids.update(emp["name"] for emp in direct_reports)
 
@@ -52,8 +51,7 @@ def extend_user_permission(user: str) -> list:
         values = get_manager(doctype, employee_id) or []
         if values:
             related_employees = frappe.get_all("Employee", filters={
-                field: ['in', values],
-                'status': 'Active'
+                field: ['in', values]
             }, fields=["name"])
             employee_ids.update(emp["name"] for emp in related_employees)
 

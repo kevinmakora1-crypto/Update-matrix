@@ -153,6 +153,8 @@ function load_js(page) {
 			$(".employee-section").removeClass("d-none");
 			$(".reliever-section").removeClass("d-none");
 
+			window.currentView = "staff";
+
 			displayCalendar(calendarSettings1, page);
 			GetHeaders(1, ".rosterMonth");
 			get_roster_data(page);
@@ -176,6 +178,8 @@ function load_js(page) {
 			delete page.filters.reliever
 			render_selected_tags(page);
 			update_clear_button(page); 
+
+			window.currentView = "post";
 
 			displayCalendar(calendarSettings1, page);
 			GetHeaders(0, ".postMonth");
@@ -2719,6 +2723,15 @@ function clear_roster_filters(page) {
 
 	$("#page-roster").empty().append(frappe.render_template("roster"));
 	load_js(page)
+
+	// Restore previously selected view
+	setTimeout(() => {
+		if (window.currentView === "post") {
+			$(".postviewclick").trigger("click");
+		} else {
+			$(".rosterviewclick").trigger("click");
+		}
+	}, 0);
 }
 
 function clear_staff_filters(page) {

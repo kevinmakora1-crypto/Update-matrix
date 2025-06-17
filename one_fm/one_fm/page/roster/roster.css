@@ -257,3 +257,11 @@ body[data-route="roster"] .switch-container {
 .customtooltip:hover .customtooltiptext {
   visibility: visible;
 }
+
+#search-bar-container {
+  min-height: 44px;
+  max-height: none;
+  height: auto;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}

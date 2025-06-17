@@ -626,7 +626,7 @@ function update_clear_button(page) {
     }
 }
 
-const filter_order = ["project", "site", "shift", "operations_role", "employee_search_name", "reliever"];
+const filter_order = ["project", "site", "shift", "operations_role", "employee_search_name", "employee_search_id", "reliever"];
 
 function render_selected_tags(page) {
     let $container = $("#search-bar-container");
@@ -636,8 +636,9 @@ function render_selected_tags(page) {
 		if (page.filters[filterKey]) {
 			let tag_text = "";
 			if (filterKey == "reliever") { page.filters[filterKey] == "1" ? tag_text = "Relievers Only" : tag_text = "Non-Relievers Only"; }
+			else { tag_text = page.filters[filterKey] }
 
-            let $tag = $("<span class='selected-tag'></span>").html(`<span class="selected-tag-text">${filterKey == "reliever" ? tag_text : page.filters[filterKey]}</span>`);
+            let $tag = $("<span class='selected-tag'></span>").html(`<span class="selected-tag-text" title="${tag_text}">${tag_text}</span>`);
             let $close = $("<span class='remove-tag'>&times;</span>");
             $close.on("click", function(e) {
                 e.stopPropagation();

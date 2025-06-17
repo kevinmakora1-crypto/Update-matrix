@@ -364,5 +364,4 @@ def send_email_on_todo_created(doc):
 
     message = frappe.render_template("one_fm/templates/emails/email_notification_on_task_creation.html", args)
     subject = f"""A Task has been Created via {doc.custom_source} by {user_id}"""
-    sendemail(sender=sender, recipients= recipients,
-            message=message, subject=subject, delayed=False, is_scheduler_email=False,is_external_mail=True)
+    sendemail(sender=sender, recipients= recipients, message=message, subject=subject)

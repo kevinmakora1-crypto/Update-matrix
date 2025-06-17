@@ -176,6 +176,7 @@ function load_js(page) {
 			$(".reliever-section").addClass("d-none");
 			delete page.filters.employee_search_name;
 			delete page.filters.reliever
+			delete page.filters.employee_search_id
 			render_selected_tags(page);
 			update_clear_button(page); 
 

@@ -5,7 +5,7 @@ def get_attendance_custom_fields():
                 "fieldname": "is_unscheduled",
                 "fieldtype": "Check",
                 "insert_after": "comment",
-                "label": "Is Unscheduled"
+                "label": "Has No Shift Assignment"
             }
         ]
     }

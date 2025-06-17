@@ -35,11 +35,14 @@ def execute():
 
         if existing_attendance:
             if existing_attendance.status == "Absent" and existing_attendance.roster_type == "Basic":
-                attendance_doc = frappe.get_doc("Attendance", existing_attendance.name)
-                attendance_doc.status = "Client Day Off"
-                attendance_doc.comment = f"Employee Schedule - {employee_schedule}"
-                attendance_doc.save()
-                attendance_doc.submit()
+                comment = f"Employee Schedule - {employee_schedule}"
+                frappe.db.sql("""
+                    UPDATE `tabAttendance`
+                    SET status = %s,
+                        comment = %s
+                    WHERE name = %s
+                """, ("Client Day Off", comment, existing_attendance.name))
+
             else:
                 pass
         else: 

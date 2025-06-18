@@ -148,15 +148,28 @@ def update_interview_and_feedback(career_history, submit=False):
 
 	frappe.msgprint(_('Interview Feedback {0} {1} successfully').format(
 		get_link_to_form('Interview Feedback', interview_feedback.name), 'submitted' if submit else 'saved'))
+	
+def get_user_interview(career_history):
+	"""
+		Fetch the Interview record of this user for the career history
+	"""
+	query = """
+				Select interview.name  from `tabInterview` interview LEFT JOIN `tabInterview Detail` int_details
+				on interview.name = int_details.parent WHERE interview.career_history = %s AND
+				 interviewer = %s 
+			"""
+	interview = frappe.db.sql(query, (career_history.name, frappe.session.user),as_dict=1)
+	return interview
 
 def get_interview(career_history):
-	interview_exists = frappe.db.exists('Interview',
-		{'career_history': career_history.name, 'docstatus': ['!=', 2]})
-	if interview_exists:
+	interview_record = get_user_interview(career_history)
+	if interview_record:
+		interview_exists = interview_record[0].name
 		from hrms.hr.doctype.interview_feedback.interview_feedback import get_applicable_interviewers
 		applicable_interviewers = get_applicable_interviewers(interview_exists)
 		if frappe.session.user in applicable_interviewers:
 			return interview_exists
+
 	return create_interview(career_history)
 
 def create_interview(career_history):

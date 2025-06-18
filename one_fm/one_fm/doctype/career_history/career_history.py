@@ -120,8 +120,11 @@ def update_interview_and_feedback(career_history, submit=False):
 		args:
 			career_history: Object of career_history
 	"""
+	#create one inteview feedback per interview record
 	interview_feedback_exists = frappe.db.exists('Interview Feedback',
-		{'career_history': career_history.name, 'docstatus': 0})
+		{'career_history': career_history.name,
+		'interviewer': frappe.session.user,
+   	 'docstatus': 0})
 	if interview_feedback_exists:
 		interview_feedback = frappe.get_doc('Interview Feedback', interview_feedback_exists)
 	else:
@@ -154,9 +157,10 @@ def get_user_interview(career_history):
 		Fetch the Interview record of this user for the career history
 	"""
 	query = """
-				Select interview.name  from `tabInterview` interview LEFT JOIN `tabInterview Detail` int_details
-				on interview.name = int_details.parent WHERE interview.career_history = %s AND
-				 interviewer = %s 
+				SELECT interview.name  from `tabInterview` interview
+				LEFT JOIN `tabInterview Detail` int_details on interview.name = int_details.parent
+				WHERE interview.career_history = %s 
+				AND int_details.interviewer = %s 
 			"""
 	interview = frappe.db.sql(query, (career_history.name, frappe.session.user),as_dict=1)
 	return interview
@@ -169,7 +173,6 @@ def get_interview(career_history):
 		applicable_interviewers = get_applicable_interviewers(interview_exists)
 		if frappe.session.user in applicable_interviewers:
 			return interview_exists
-
 	return create_interview(career_history)
 
 def create_interview(career_history):

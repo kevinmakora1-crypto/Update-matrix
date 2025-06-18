@@ -2589,6 +2589,29 @@ function change_ot_schedule(page) {
 					};
 				}
 			},
+			{ "fieldtype": "Section Break"},
+			{
+				"label": "Selected Days Only",
+				"fieldname": "selected_days_only",
+				"fieldtype": "Check",
+				onchange: function () {
+					let show = d.get_value("selected_days_only");
+					d.toggle_display("from_date", show);
+					d.toggle_display("to_date", show);
+				}
+			},
+			{ "fieldtype": "Section Break" },
+			{
+				"label": "From Date",
+				"fieldname": "from_date",
+				"fieldtype": "Date"
+			},
+			{ "fieldtype": "Column Break" },
+			{
+				"label": "To Date",
+				"fieldname": "to_date",
+				"fieldtype": "Date"
+			}
 		],
 		primary_action: function () {
 			let values = d.get_values();

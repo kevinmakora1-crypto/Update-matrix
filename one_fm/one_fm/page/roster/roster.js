@@ -88,14 +88,6 @@ function load_js(page) {
 
 		});
 
-		$("#dropdown-apply-btn").on("click", function() {
-			// Hide dropdown
-			$("#dropdownContent").addClass("d-none");
-			// Call the roster loader as per your code
-			let element = get_wrapper_element().slice(1);
-			page[element](page);
-		});
-
 		// Search bar input
 		$("#search-bar").on("input", function() {
 			populate_dropdown_options(page, $(this).val());
@@ -661,6 +653,8 @@ function render_selected_tags(page) {
             });
             $tag.append($close);
             $tag.insertBefore($("#search-bar"));
+	    let element = get_wrapper_element().slice(1);
+	    page[element](page);
         }
     });
     update_clear_button(page);

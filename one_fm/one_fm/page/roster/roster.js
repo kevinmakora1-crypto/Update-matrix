@@ -85,7 +85,8 @@ function load_js(page) {
 			populate_dropdown_options(page, "");
 			render_selected_tags(page);
 			update_clear_button(page);
-
+			let element = get_wrapper_element().slice(1);
+			page[element](page);
 		});
 
 		// Search bar input
@@ -650,11 +651,17 @@ function render_selected_tags(page) {
                 $("#search-bar").val("");
                 populate_dropdown_options(page, "");
                 update_clear_button(page);
+				let element = get_wrapper_element().slice(1);
+				if (Object.values(page.filters).filter(Boolean).length === 1){
+					$(".rosterMonth #calenderviewtable tbody").empty();
+					$(".postMonth #calenderviewtable tbody").empty();
+					$("#myPager").empty();
+				} else {
+					page[element](page);
+				}
             });
             $tag.append($close);
             $tag.insertBefore($("#search-bar"));
-	    let element = get_wrapper_element().slice(1);
-	    page[element](page);
         }
     });
     update_clear_button(page);

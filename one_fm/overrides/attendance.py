@@ -57,7 +57,7 @@ class AttendanceOverride(Attendance):
     def validate(self):
         from erpnext.controllers.status_updater import validate_status
 
-        validate_status(self.status, ["Present", "Absent", "On Leave", "Half Day", "Work From Home", "Day Off", "Holiday", "On Hold"])
+        validate_status(self.status, ["Present", "Absent", "On Leave", "Half Day", "Work From Home", "Day Off", "Holiday", "On Hold", "Client Day Off"])
         validate_active_employee(self.employee)
         self.validate_attendance_date()
         self.validate_duplicate_record()
@@ -69,7 +69,7 @@ class AttendanceOverride(Attendance):
             self.roster_type='Basic'
 
     def validate_working_hours(self):
-        if self.status not in ['Absent', 'Day Off', 'Holiday', 'On Leave', 'On Hold']:
+        if self.status not in ['Absent', 'Day Off', 'Holiday', 'On Leave', 'On Hold', "Client Day Off"]:
             if not self.working_hours:frappe.throw("Working hours is required.")
             if self.working_hours <= 0:frappe.throw("Working hours must be greater than 0 if staus is Presnet ot Work From Home.")
 

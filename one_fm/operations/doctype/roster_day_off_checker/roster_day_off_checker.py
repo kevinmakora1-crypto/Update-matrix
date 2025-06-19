@@ -157,6 +157,8 @@ def check_roster_day_off():
 					day_off_checker.day_off_difference = day_off_data["day_off_difference"]
 					day_off_checker.insert(ignore_permissions=1)
 
+		frappe.db.commit()
+
 
 	except Exception:
 		frappe.log_error(frappe.get_traceback())

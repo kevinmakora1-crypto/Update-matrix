@@ -17,7 +17,7 @@ def get_context(context):
 
     # Get Country List to the context to show in the portal
     context.country_list = frappe.get_all('Country', fields=['name'])
-    context.employment_type_list = frappe.db.get_list("Employment Type", pluck="name")
+    context.employment_type_list = frappe.db.get_all("Employment Type", pluck="name")
 
 
 

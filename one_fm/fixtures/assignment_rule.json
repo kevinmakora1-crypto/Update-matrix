@@ -314,13 +314,13 @@
         "last_user": null,
         "modified": "2025-05-19 00:12:34.270154",
         "name": "Roster Day Off Checker - Site Supervisor",
-        "priority": 0,
+        "priority": 1,
         "rule": "Based on Field",
         "unassign_condition": "status == \"Cancelled\"",
         "users": []
     },
     {
-        "assign_condition": "not site_supervisor_user and status in (\"Pending\", \"Overdue\")",
+        "assign_condition": "status in (\"Pending\", \"Overdue\")",
         "assignment_days": [
             {
                 "day": "Sunday",

@@ -473,12 +473,18 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 	# check for end date
 	if end_date:
 		end_date_val = getdate(end_date)
+		start_date_val = getdate(start_date)
+        # Build a map of selected employees
+		employee_set = list(set(i["employee"] for i in employees))
 		new_employees = []
-		for i in employees:
-			if getdate(i["date"]) <= end_date_val:
-				new_employees.append(i)
+		for emp in employee_set:
+			current = start_date_val
+			while current <= end_date_val:
+				new_employees.append({"employee": emp,"date": str(current)})
+				current += timedelta(days=1)
 		if new_employees:
 			employees = new_employees.copy()
+
 
 	# check keep days_off
 	if cint(keep_days_off):

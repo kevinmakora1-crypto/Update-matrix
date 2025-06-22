@@ -2598,6 +2598,9 @@ function change_ot_schedule(page) {
 				  let val = d.get_value("selected_days_only");
 				  d.fields_dict.end_date.df.hidden = val;
 				  d.fields_dict.end_date.refresh();
+				  if (val) {
+					d.set_value("end_date", "");
+				  }
 				}
 			  },
 			  { "fieldtype": "Section Break" },

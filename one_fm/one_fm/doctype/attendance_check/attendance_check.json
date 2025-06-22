@@ -361,7 +361,7 @@
    "default": "0",
    "fieldname": "is_unscheduled",
    "fieldtype": "Check",
-   "label": "Is Unscheduled",
+   "label": "Has No Shift Assignment",
    "read_only": 1
   },
   {
@@ -385,7 +385,7 @@
    "link_fieldname": "reference_docname"
   }
  ],
- "modified": "2024-07-21 18:09:03.081135",
+ "modified": "2025-06-17 17:39:12.812292",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Attendance Check",

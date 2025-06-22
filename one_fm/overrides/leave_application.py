@@ -13,7 +13,7 @@ from erpnext.crm.utils import get_open_todos
 from one_fm.api.api import push_notification_rest_api_for_leave_application
 from one_fm.api.tasks import remove_assignment
 from one_fm.overrides.employee import NotifyAttendanceManagerOnStatusChange
-from one_fm.utils import get_approver_user, leave_application_on_cancel
+from one_fm.utils import get_approver_user, leave_application_on_cancel,fetch_leave_types_update_employee_status, get_workflow_action_buttons_html
 from hrms.hr.utils import get_holidays_for_employee
 from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import ReassignRelieverAssignment, reassign_responsibilities
 
@@ -321,6 +321,16 @@ class LeaveApplicationOverride(LeaveApplication):
                     frappe.msgprint(_("Please set default template for Leave Approval Notification in HR Settings."))
                     return
                 email_template = frappe.get_doc("Email Template", template)
+
+                if email_template.get("add_workflow_action_buttons_to_email"):
+                    doc = frappe.get_doc(self.doctype, self.name)
+                    user = self.leave_approver or ""
+                    args["show_workflow_buttons"] = 1
+                    args["workflow_buttons_html"] = get_workflow_action_buttons_html(doc, user)
+                else:
+                    args["show_workflow_buttons"] = 0
+                    args["workflow_buttons_html"] = ""
+
                 message = frappe.render_template(email_template.response_html, args)
                 subject = f'طلب الإجازة تم تقديمه للموافقة – {employee[0].employee_name_in_arabic} | Leave Application Submitted for Approval  – {self.employee_name}'
                 sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
@@ -516,7 +526,7 @@ class LeaveApplicationOverride(LeaveApplication):
 
             if getdate(self.from_date) <= getdate() <= getdate(self.to_date):
                 # frappe.db.set_value(), will not call the validate.
-                if self.leave_type !='Sick Leave':
+                if self.leave_type in fetch_leave_types_update_employee_status():
                     frappe.db.set_value("Employee", self.employee, "status", "Vacation")
             self.validate_attendance_check()
         self.clear_employee_schedules()

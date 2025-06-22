@@ -1253,7 +1253,8 @@ let attendancemap = {
 	'Half Day': 'greenboxcolor',
 	'On Leave': 'purplebox',
 	"Holiday":"greyboxcolor",
-	"On Hold": "orangeboxcolor"
+	"On Hold": "orangeboxcolor",
+	'Client Day Off': 'silverboxcolor',
 };
 let attendance_abbr_map = {
 	'Present': 'P',
@@ -1262,7 +1263,8 @@ let attendance_abbr_map = {
 	'Half Day': 'HD',
 	"Holiday":"H",
 	'On Leave': 'OL',
-	'On Hold': 'OH'
+	'On Hold': 'OH',
+	'Client Day Off': 'CDO'
 };
 
 let reliever_data;
@@ -1508,6 +1510,13 @@ function render_roster(res, page, isOt) {
 								data-selectid="${employee + "|" + date + "|" + attendance}">${leavemap[leave_type]?leavemap[leave_type]:'LV'}<span class="customtooltiptext">${leave_application ? leave_application+'|'+leave_type : shift +`<br>Start: ${start_time}<br>End: ${end_time}`}</span></div>
 						</td>`;
 
+						}
+						else if (attendance == "Client Day Off"){
+							sch = `
+							<td>
+								<div class="${moment().isBefore(moment(date)) ? 'hoverselectclass' : 'forbidden'} tablebox ${attendancemap[attendance]} client-day-off-class d-flex justify-content-center align-items-center text-white so customtooltip"
+									data-selectid="${employee + "|" + date + "|" + attendance}">CDO<span class="customtooltiptext">Client Day Off</span></div>
+							</td>`;
 						}
 						else{
 							sch = `

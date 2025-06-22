@@ -639,14 +639,18 @@ function render_selected_tags(page) {
 			let tag_text = "";
 			if (filterKey == "reliever") { page.filters[filterKey] == "1" ? tag_text = "Relievers Only" : tag_text = "Non-Relievers Only"; }
 			else { tag_text = page.filters[filterKey] }
-
             let $tag = $("<span class='selected-tag'></span>").html(`<span class="selected-tag-text" title="${tag_text}">${tag_text}</span>`);
             let $close = $("<span class='remove-tag'>&times;</span>");
             $close.on("click", function(e) {
                 e.stopPropagation();
                 // Remove this and all child filters
                 let idx = filter_order.indexOf(filterKey);
-                filter_order.slice(idx).forEach(k => delete page.filters[k]);
+                filter_order.slice(idx).forEach(k => {
+					if (k === "reliever" && filterKey !== "reliever") {
+						return;
+					}
+					delete page.filters[k];
+				});
                 render_selected_tags(page);
                 $("#search-bar").val("");
                 populate_dropdown_options(page, "");
@@ -888,7 +892,9 @@ function bind_events(page) {
 					classgrt.splice(classgrt.indexOf($(v).attr("data-selectid")), 1);
 				});
 				$checked_employee.closest("tr").children("td").children().not("label").not("span").removeClass("selectclass");
-				$(".filterhideshow").addClass("d-none");
+					if ($("input[type='checkbox']:checked").length === 0) {
+						$(".filterhideshow").addClass("d-none");
+					}
 			}
 			$checked_employee.closest("tbody").children("tr").each(function (i, cell) {
 				const unchecked_row = $(cell).find("input[name='selectallcheckbox']:not(:checked)");

@@ -1407,7 +1407,7 @@
    "property": "options",
    "property_type": "Select",
    "row_name": null,
-   "value": "Present\nAbsent\nOn Leave\nHalf Day\nWork From Home\nDay Off\nHoliday\nOn Hold"
+   "value": "Present\nAbsent\nOn Leave\nHalf Day\nWork From Home\nDay Off\nClient Day Off\nHoliday\nOn Hold"
   }
  ],
  "sync_on_migrate": 1

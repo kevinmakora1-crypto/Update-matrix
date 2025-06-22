@@ -269,7 +269,7 @@ def notify_supervisor_about_late_entry(checkin):
 			checkin_shift_assignment = False
 			if checkin.shift_assignment:
 				checkin_shift_assignment = last_shift_assignment = checkin.shift_assignment
-				shift_late_minutes = frappe.db.get_value("Shift Type", {"name": checkin.shift_type}, ['supervisor_reminder_shift_start', 'start_time'], as_dict=1)
+				shift_late_minutes = frappe.db.get_value("Shift Type", {"name": checkin.shift_type}, ['supervisor_reminder_shift_start', 'start_time', 'late_entry_grace_period'], as_dict=1)
 				the_roster_type = checkin.roster_type
 				op_shift = frappe.get_doc("Operations Shift", checkin.operations_shift)
 
@@ -277,7 +277,7 @@ def notify_supervisor_about_late_entry(checkin):
 				last_shift_assignment = get_shift_from_checkin(checkin)
 				if last_shift_assignment:
 					checkin_shift_assignment = last_shift_assignment.name
-					shift_late_minutes = frappe.db.get_value("Shift Type", {"name": last_shift_assignment["shift_type"]}, ['supervisor_reminder_shift_start', 'start_time'], as_dict=1)
+					shift_late_minutes = frappe.db.get_value("Shift Type", {"name": last_shift_assignment["shift_type"]}, ['supervisor_reminder_shift_start', 'start_time', 'late_entry_grace_period'], as_dict=1)
 					the_roster_type = last_shift_assignment.roster_type
 					op_shift = frappe.get_doc("Operations Shift", last_shift_assignment.shift)
 
@@ -286,7 +286,7 @@ def notify_supervisor_about_late_entry(checkin):
 				notify_late_arrival = False if exists_checkin(checkin_shift_assignment, checkin.name) else True
 
 			if last_shift_assignment and notify_late_arrival and not shift_permission:
-				if checkin.time.time() > datetime.strptime(str(shift_late_minutes["start_time"] + timedelta(minutes=shift_late_minutes['supervisor_reminder_shift_start'])), "%H:%M:%S").time():
+				if checkin.time.time() > datetime.strptime(str(shift_late_minutes["start_time"] + timedelta(minutes=shift_late_minutes['late_entry_grace_period'])), "%H:%M:%S").time():
 					time_diff = calculate_time_diffrence_for_checkin(shift_late_minutes["start_time"], checkin.time)
 					time_of_arrival = parse(str(checkin.time)).time()
 					get_reports_to = frappe.db.get_value("Employee", {"name": checkin.employee}, ['reports_to'])

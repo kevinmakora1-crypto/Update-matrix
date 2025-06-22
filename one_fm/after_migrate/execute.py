@@ -1,5 +1,6 @@
 import frappe, os, shutil, subprocess
-from frappe.utils import cstr
+
+from frappe.utils import cstr, get_bench_path
 from one_fm.utils import production_domain
 
 def comment_timesheet_in_hrms():
@@ -294,11 +295,22 @@ def update_hd_ticket_agent():
                 transform: (data) => {},
                 onSuccess: (data) => {
                     showStoryCreationProgressDialog.value = false;
+                    if (data.error){
+                    createToast({
+                      title: "Dev Ticket Error",
+                      text: data.message || "Something went wrong in creating dev ticket",
+                      icon: "x",
+                      iconClasses: "text-red-600",
+                    });
+                  } else if (data.status == 'success' ) {
+
                     createToast({
                       title: "Dev ticket created successfully",
                       icon: "check",
                       iconClasses: "text-green-600",
                     });
+
+                  }
                     ticket.reload();
                 },
                 onError: (error) => {
@@ -324,9 +336,14 @@ def update_hd_ticket_agent():
 
 
         # Append Template code for button and modal
-        search_text = '''      </template>
-    </LayoutHeader>'''
-        appendable_code = '''
+        search_text = '''    <CustomActions
+          v-if="ticket.data._customActions"
+          :actions="ticket.data._customActions"
+        />'''
+        appendable_code = '''    <CustomActions
+          v-if="ticket.data._customActions"
+          :actions="ticket.data._customActions"
+        />
             <div v-if="['Open', 'Replied'].includes(ticket.data.status)">
                 <Button @click="viewDevTicket" v-if="ticket.data.custom_dev_ticket">
                     View Dev Ticket
@@ -348,7 +365,7 @@ def update_hd_ticket_agent():
                     </Button>
                     <Button
                         class="ml-2"
-                        @click="showCreateStoryConfirmationDialog = false"
+                        @click="showCreateStoryConfirmationDialog = false;"
                     >
                         Close
                     </Button>
@@ -372,8 +389,7 @@ def update_hd_ticket_agent():
                     </template>
                 </Dialog>
             </div>
-            </template>
-            </LayoutHeader>
+
         '''
         third_change = append_code_in_file(FILE_PATH, search_text, appendable_code, insert_before_search_text=True, replace_with_search_text=True)
         search_text = "subjectInput.value = data.subject;"
@@ -400,21 +416,84 @@ def update_hd_ticket_agent():
                     """
         fourth_change = append_code_in_file(FILE_PATH, search_text, appendable_code, False)
         if (first_change or second_change or third_change or fourth_change):
-            # execute build
-            print("Rebuilding Helpdesk")
-            # Define the directories
-            bench_path = frappe.utils.get_bench_path()
-            helpdesk_dir = os.path.join(bench_path, 'apps/helpdesk/desk')
-
-            # Run yarn build
-            yarn_build_command = 'yarn build'
-            run_command(yarn_build_command, cwd=helpdesk_dir)
-            #  Restart bench
-            bench_restart_command = "bench restart"
-            run_command(bench_restart_command, cwd=bench_path)
+            return True
     else:
         print(FILE_PATH, 'not found')
     return
+
+
+
+def add_resolution_details_updation():
+    FILE_PATH = frappe.utils.get_bench_path()+'/apps/helpdesk/desk/src/pages/TicketAgent.vue'
+    if (os.path.exists(FILE_PATH)):
+        # Append lines before '} from "frappe-ui";' to import TextEditor
+        search_text = '} from "frappe-ui";'
+        appendable_code = '''TextEditor'''
+        first_change = append_code_in_file(FILE_PATH, search_text, appendable_code, insert_before_search_text=True)
+
+        # Append code before 'const ticket = createResource({'
+        search_text = 'const showSubjectDialog = ref(false);'
+        appendable_code = '''
+            \n\nconst showResolutionDialog = ref(false);
+            const resolutionDetails = ref('');
+
+            const submitResolution = () => {
+                updateTicket('resolution_details', resolutionDetails.value);
+                showResolutionDialog.value = false
+            };\n\n
+        '''
+        second_change = append_code_in_file(FILE_PATH, search_text, appendable_code)
+
+        # Append Template code for button and modal
+        search_text = '''    <CustomActions
+          v-if="ticket.data._customActions"
+          :actions="ticket.data._customActions"
+        />'''
+        appendable_code = '''
+            <CustomActions
+                v-if="ticket.data._customActions"
+                :actions="ticket.data._customActions"
+                />
+            <div v-if="!['Closed', 'Resolved'].includes(ticket.data.status)">
+                <Button @click="showResolutionDialog = true">
+                    Update Resolution Details
+                </Button>
+                <Dialog v-model="showResolutionDialog">
+                    <template #body-title>
+                    <h3>Update Resolution Details</h3>
+                    </template>
+
+                    <template #body-content>
+                    <div class="mb-1.5 text-sm text-gray-600">Resolution Details</div>
+                    <TextEditor ref="content" variant="outline"
+                        editor-class="!prose-sm overflow-auto min-h-[180px] max-h-80 py-1.5 px-2 rounded border border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm focus:bg-white focus:border-gray-500 focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400 text-gray-800 transition-colors"
+                        :bubble-menu="true" :content="resolutionDetails" :placeholder="'Add resolution details here...'" :disabled="isLoading"
+                        @change="(val) => (resolutionDetails = val)" />
+                    </template>
+
+                    <template #actions>
+                    <Button variant="solid" :loading="isLoading" :disabled="!resolutionDetails"
+                        @click="submitResolution">
+                        Submit
+                    </Button>
+                    <Button class="ml-2" @click="showResolutionDialog = false">Cancel</Button>
+                    </template>
+                </Dialog>
+            </div>
+        '''
+        third_change = append_code_in_file(FILE_PATH, search_text, appendable_code, replace_with_search_text=True)
+
+        # Append predefined value for resolution details
+        search_text = 'subjectInput.value = data.subject;'
+        appendable_code = 'resolutionDetails.value = data.resolution_details'
+        fourth_change = append_code_in_file(FILE_PATH, search_text, appendable_code)
+
+        if (first_change or second_change or third_change or fourth_change):
+            return True
+    else:
+        print(FILE_PATH, 'not found')
+    return
+
 
 def run_command(command, cwd=None, shell=True):
     try:
@@ -426,3 +505,133 @@ def run_command(command, cwd=None, shell=True):
         print(f"An error occurred while running the command: {e}")
         print(f"Output: {e.stdout}")
         print(f"Error: {e.stderr}")
+
+
+
+def deploy_ticket_views():
+    bench_path = get_bench_path()
+
+    ticket_target_folder = os.path.join(bench_path, "apps", "helpdesk", "desk", "src", "pages", "ticket")
+
+    ticket_edit_source = os.path.join(bench_path, "apps", "one_fm", "one_fm", "public", "js", "form_overrides", "hd_ticket", "TicketEdit.vue")
+    ticket_edit_target = os.path.join(ticket_target_folder, "TicketEdit.vue")
+
+    if not os.path.exists(ticket_edit_source):
+        print(f"[❌] Source TicketEdit.vue not found: {ticket_edit_source}")
+        return False
+
+    shutil.copy2(ticket_edit_source, ticket_edit_target)
+    print(f"[✅] TicketEdit.vue deployed to: {ticket_edit_target}")
+
+    router_file = os.path.join(bench_path, "apps", "helpdesk", "desk", "src", "router", "index.ts")
+
+    if not os.path.exists(router_file):
+        print("❌ Router file not found:", router_file)
+        return False
+
+    with open(router_file, "r") as f:
+        router_content = f.read()
+
+    if 'name: "TicketEdit"' in router_content:
+        print("⚠️ TicketEdit route already exists.")
+    else:
+        search_text = "const routes = ["
+        appendable_code = '''
+  {
+    path: "/edit-ticket/:ticket_name?",
+    name: "TicketEdit",
+    component: () => import("@/pages/ticket/TicketEdit.vue"),
+    props: true,
+    meta: {
+      onSuccessRoute: "TicketCustomer",
+      parent: "TicketsCustomer",
+    },
+  },'''
+
+        updated_content = ""
+        if search_text in router_content:
+            parts = router_content.split(search_text)
+            updated_content = parts[0] + search_text + appendable_code + parts[1]
+
+            with open(router_file, "w") as f:
+                f.write(updated_content)
+
+            print("✅ TicketEdit route added.")
+        else:
+            print("⚠️ Could not find insertion point for router update.")
+            return False
+
+    print("[🎉] TicketNew and TicketEdit views deployed successfully.")
+    return True
+
+
+def update_hd_ticket_side_bar():
+    FILE_PATH = frappe.utils.get_bench_path()+'/apps/helpdesk/desk/src/components/ticket/TicketAgentFields.vue'
+    if (os.path.exists(FILE_PATH)):
+        # Replace lines 'agent_group'
+        
+        search_pattern = r"""
+            \s*{                         
+            \s*field:\s*"priority",     
+            \s*label:\s*"Priority",     
+            \s*store:\s*useTicketPriorityStore\(\), 
+            \s*},                       
+            \s*{                         
+            \s*field:\s*"agent_group",  
+            \s*label:\s*"Team",         
+            \s*store:\s*useTeamStore\(\), 
+            \s*},                       
+        """
+        
+        fourth_change = remove_code_block_with_regex(FILE_PATH, search_pattern)
+        if fourth_change:
+            return True
+    else:
+        print(FILE_PATH, 'not found')
+    return
+
+
+def remove_code_block_with_regex(file_path, pattern):
+    import re
+    try:
+        with open(file_path, 'r') as file:
+            content = file.read()
+
+        # Check if the pattern exists
+        if not re.search(pattern, content, flags=re.MULTILINE | re.VERBOSE):
+            print("Pattern not found in file.")
+            return False
+
+        # Remove the block
+        updated_content = re.sub(pattern, '', content, flags=re.MULTILINE | re.VERBOSE)
+
+        with open(file_path, 'w') as file:
+            file.write(updated_content)
+
+        print("Pattern removed successfully.")
+        return True
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
+
+
+def update_all_ticket_features():
+    any_changes = False
+
+    if update_hd_ticket_agent():
+        any_changes = True
+    if add_resolution_details_updation():
+        any_changes = True
+    if deploy_ticket_views():
+        any_changes = True
+    if update_hd_ticket_side_bar():
+        any_changes = True
+
+    if any_changes:
+        bench_path = frappe.utils.get_bench_path()
+        helpdesk_dir = os.path.join(bench_path, 'apps/helpdesk/desk')
+
+        run_command("yarn build", cwd=helpdesk_dir)
+        run_command("bench restart", cwd=bench_path)
+    else:
+        print("No changes detected. Skipping build and restart.")

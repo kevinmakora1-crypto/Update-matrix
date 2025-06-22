@@ -1773,7 +1773,7 @@ def fetch_employees_not_in_checkin():
 		shift_permissions = [i.employee for i in frappe.db.sql(f"""
 			SELECT employee FROM `tabShift Permission`
 			WHERE date='{cur_date}' AND employee IN {shift_assignments_employees_tuple}
-			AND log_type='{log_type}'
+			AND log_type='{log_type}' AND workflow_state != 'Rejected'
 			GROUP BY employee
 		""", as_dict=1)]
 
@@ -1785,6 +1785,7 @@ def fetch_employees_not_in_checkin():
 			WHERE  docstatus=1
 			AND '{cur_date}' BETWEEN from_date AND to_date
 			AND employee IN {shift_assignments_employees_tuple}
+			AND workflow_state NOT IN ('Rejected', 'Canceled')
 			GROUP BY employee
 		""", as_dict=1)]
 
@@ -1805,6 +1806,7 @@ def fetch_employees_not_in_checkin():
 			SELECT employee FROM `tabShift Request`
 			WHERE  docstatus=1 AND '{cur_date}' BETWEEN from_date AND to_date
 			AND employee IN {shift_assignments_employees_tuple}
+			AND workflow_state != 'Rejected'
 		""", as_dict=1)]
 
 		employees_yet_to_checkin = [i for i in employees_yet_to_checkin if not i in shift_request]

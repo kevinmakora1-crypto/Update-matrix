@@ -1,4 +1,4 @@
-# Copyright (c) 2023, omar jaber and Contributors
+# Copyright (c) 2025, omar jaber and Contributors
 # See license.txt
 
 # import frappe

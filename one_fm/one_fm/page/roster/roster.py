@@ -345,7 +345,7 @@ def get_employee_leave_attendance(employees,start_date):
 	return attendance_dict
 
 @frappe.whitelist()
-def schedule_overtime(employees, shift, operations_role):
+def schedule_overtime(employees, shift, operations_role,start_date,end_date=None, selected_days_only=0):	
 	try:
 		employees = json.loads(employees)
 		if not employees:
@@ -354,7 +354,7 @@ def schedule_overtime(employees, shift, operations_role):
 		employee_list = list({obj["employee"] for obj in employees})
 
 		# extreme schedule
-		extreme_schedule(employees=employees, start_date=today(), end_date=None, shift=shift,
+		extreme_schedule(employees=employees, start_date=start_date, end_date=end_date, shift=shift,
 			operations_role=operations_role, otRoster="true", keep_days_off=0, day_off_ot=0,
 			request_employee_schedule=0, employee_list=employee_list
 		)

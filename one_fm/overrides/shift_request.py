@@ -105,6 +105,13 @@ def validate(doc, event=None):
                                                                ['roster_type', '=', "Basic"]], fields=['name'])
             if not shift_assignemnt_exists:
                 frappe.throw("Employee being replaced does not have existing shift.")
+    if doc.status == 'Draft' and doc.purpose == 'Update Existing Assignment':
+        shift_assignemnt_exists = frappe.get_list("Shift Assignment",
+                                                    filters=[['employee', '=', doc.employee],
+                                                            ['start_date', 'between', [doc.from_date, doc.to_date]],
+                                                            ['roster_type', '=', "Basic"]], fields=['name'])
+        if not shift_assignemnt_exists:
+            frappe.throw("Employee does not have existing Assignment.")
     process_shift_assignment(doc)  # set shift assignment and employee schedule
 
 

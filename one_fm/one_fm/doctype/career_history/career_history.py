@@ -120,6 +120,8 @@ def update_interview_and_feedback(career_history, submit=False):
 		args:
 			career_history: Object of career_history
 	"""
+	if frappe.session.user == "Guest":
+		return
 	#create one inteview feedback per interview record
 	interview_feedback_exists = frappe.db.exists('Interview Feedback',
 		{'career_history': career_history.name,

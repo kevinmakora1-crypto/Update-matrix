@@ -75,7 +75,10 @@ def get_workflow_assignment_rule_description(doc, user):
 
 def do_assignment(self, doc):
     # clear existing assignment, to reassign
+    if frappe.session.user == "Guest":
+        frappe.set_user('Administrator')
     assign_to.clear(doc.get("doctype"), doc.get("name"))
+    
 
     user = self.get_user(doc)
 

@@ -352,6 +352,14 @@ def schedule_overtime(employees, shift, operations_role,start_date,end_date=None
 			frappe.throw("Employees must be selected.")
 
 		employee_list = list({obj["employee"] for obj in employees})
+		if cint(project_end_date) and not end_date:
+			project = frappe.db.get_value("Operations Shift", shift, ["project"])
+			if frappe.db.exists("Contracts", {"project": project}):
+				contract, end_date_val = frappe.db.get_value("Contracts", {"project": project}, ["name", "end_date"])
+				if not end_date_val:
+					frappe.throw("Please set contract end date for contract: {contract}".format(contract=contract))
+				else:
+					end_date = end_date_val
 
 		# extreme schedule
 		extreme_schedule(employees=employees, start_date=start_date, end_date=end_date, shift=shift,

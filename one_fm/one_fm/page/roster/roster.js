@@ -639,14 +639,14 @@ function render_selected_tags(page) {
 			let tag_text = "";
 			if (filterKey == "reliever") { page.filters[filterKey] == "1" ? tag_text = "Relievers Only" : tag_text = "Non-Relievers Only"; }
 			else { tag_text = page.filters[filterKey] }
-
             let $tag = $("<span class='selected-tag'></span>").html(`<span class="selected-tag-text" title="${tag_text}">${tag_text}</span>`);
             let $close = $("<span class='remove-tag'>&times;</span>");
             $close.on("click", function(e) {
                 e.stopPropagation();
-                // Remove this and all child filters
-                let idx = filter_order.indexOf(filterKey);
-                filter_order.slice(idx).forEach(k => delete page.filters[k]);
+				// Remove only the clicked filter, but never remove 'reliever' unless it is the one being clicked
+					if (filterKey !== "reliever") {
+						delete page.filters[filterKey];
+					}
                 render_selected_tags(page);
                 $("#search-bar").val("");
                 populate_dropdown_options(page, "");

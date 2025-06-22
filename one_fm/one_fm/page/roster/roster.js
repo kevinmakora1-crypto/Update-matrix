@@ -888,7 +888,9 @@ function bind_events(page) {
 					classgrt.splice(classgrt.indexOf($(v).attr("data-selectid")), 1);
 				});
 				$checked_employee.closest("tr").children("td").children().not("label").not("span").removeClass("selectclass");
-				$(".filterhideshow").addClass("d-none");
+					if ($("input[type='checkbox']:checked").length === 0) {
+						$(".filterhideshow").addClass("d-none");
+					}
 			}
 			$checked_employee.closest("tbody").children("tr").each(function (i, cell) {
 				const unchecked_row = $(cell).find("input[name='selectallcheckbox']:not(:checked)");

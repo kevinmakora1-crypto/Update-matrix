@@ -2616,6 +2616,16 @@ function change_ot_schedule(page) {
 					}
 				}
 			},
+			{ "label": "Project End Date", "fieldname": "project_end_date", "fieldtype": "Check",
+				onchange: function () {
+					let val = d.get_value("project_end_date");
+					d.fields_dict.end_date.df.hidden = val;
+					d.fields_dict.end_date.refresh();
+					if (val) {
+					  d.set_value("end_date", "");
+					}
+				  }
+			 },
 			{ "fieldtype": "Column Break" },
 			{
 				label: "To Date",
@@ -2632,7 +2642,8 @@ function change_ot_schedule(page) {
 					frappe.throw(__("End Date cannot be before Start Date."));
 				  }
 				}
-			  }
+			  },
+
 		],
 		primary_action: function () {
 			let values = d.get_values();

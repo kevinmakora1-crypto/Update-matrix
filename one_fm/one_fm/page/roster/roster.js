@@ -643,10 +643,14 @@ function render_selected_tags(page) {
             let $close = $("<span class='remove-tag'>&times;</span>");
             $close.on("click", function(e) {
                 e.stopPropagation();
-				// Remove only the clicked filter, but never remove 'reliever' unless it is the one being clicked
-					if (filterKey !== "reliever") {
-						delete page.filters[filterKey];
+                // Remove this and all child filters
+                let idx = filter_order.indexOf(filterKey);
+                filter_order.slice(idx).forEach(k => {
+					if (k === "reliever" && filterKey !== "reliever") {
+						return;
 					}
+					delete page.filters[k];
+				});
                 render_selected_tags(page);
                 $("#search-bar").val("");
                 populate_dropdown_options(page, "");

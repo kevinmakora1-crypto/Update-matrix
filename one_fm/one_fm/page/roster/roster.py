@@ -3,7 +3,7 @@ import json
 from distutils.util import strtobool
 from collections import defaultdict
 from pandas.core.indexes.datetimes import date_range
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import reduce
 from operator import and_
 

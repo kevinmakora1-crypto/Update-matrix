@@ -81,7 +81,7 @@ def update_job_offer_with_erf_change(job_offer, job_applicant_obj, new_erf_obj, 
                 new_erf,
                 new_erf_obj.shift_working,
                 new_erf_obj.operations_shift,
-                operations_shif["project"],
+                operations_shift["project"],
                 operations_shift["shift_type"],
                 operations_shift["site"],
                 job_offer

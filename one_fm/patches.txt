@@ -118,3 +118,4 @@ one_fm.patches.v15_0.update_hr_settings_leave_threshold
 one_fm.patches.v15_0.add_roster_index
 one_fm.patches.v15_0.delete_all_roaster_day_off_checker_records
 one_fm.patches.v15_0.update_attendance_check_client_day_off
+one_fm.patches.v15_0.update_erf_in_job_applicant_and_offer

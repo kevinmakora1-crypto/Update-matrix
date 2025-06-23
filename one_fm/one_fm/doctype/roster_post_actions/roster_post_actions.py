@@ -71,7 +71,6 @@ def get_permission_query_conditions(user):
 def create():
 	frappe.enqueue(create_roster_post_actions, is_async=True, queue='long')
 
-
 def create_roster_post_actions():
     """
     This function creates a Roster Post Actions document that issues actions to supervisors to fill post types that are not filled for a given date range.
@@ -79,9 +78,10 @@ def create_roster_post_actions():
     # clear existing
 
     op_shift = frappe.db.sql(f"""
-    	SELECT supervisor, name FROM `tabOperations Shift`
+    	SELECT oss.supervisor, sh.name FROM `tabOperations Shift` sh
+        JOIN `tabOperations Shift Supervisor` oss ON oss.parent = sh.name
         WHERE
-        status='Active'
+        sh.status='Active'
     """, as_dict=1)
     
     shift_dict = {}
@@ -163,11 +163,13 @@ def create_roster_post_actions():
             sh.site
         FROM `tabPost Schedule` ps
         JOIN `tabOperations Shift` sh ON sh.name = ps.shift
-        JOIN `tabEmployee` sv ON sh.supervisor = sv.employee
+        JOIN `tabOperations Shift Supervisor` oss ON oss.parent = ps.shift
+        JOIN `tabEmployee` sv ON oss.supervisor = sv.employee
         WHERE ps.operations_role IN ({', '.join(['%s'] * len(operations_roles))})
         AND sh.status = 'Active' AND sv.status = 'Active'
         GROUP BY sv.employee
     """, operations_roles)
+    
 
     # For each supervisor, create post actions to fill post type specifying the post types not filled
     for res in result:

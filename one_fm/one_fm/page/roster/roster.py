@@ -3,7 +3,7 @@ import json
 from distutils.util import strtobool
 from collections import defaultdict
 from pandas.core.indexes.datetimes import date_range
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import reduce
 from operator import and_
 
@@ -345,16 +345,24 @@ def get_employee_leave_attendance(employees,start_date):
 	return attendance_dict
 
 @frappe.whitelist()
-def schedule_overtime(employees, shift, operations_role):
+def schedule_overtime(employees, shift, operations_role,start_date,end_date=None, selected_days_only=0,project_end_date=None):	
 	try:
 		employees = json.loads(employees)
 		if not employees:
 			frappe.throw("Employees must be selected.")
 
 		employee_list = list({obj["employee"] for obj in employees})
+		if cint(project_end_date) and not end_date:
+			project = frappe.db.get_value("Operations Shift", shift, ["project"])
+			if frappe.db.exists("Contracts", {"project": project}):
+				contract, end_date_val = frappe.db.get_value("Contracts", {"project": project}, ["name", "end_date"])
+				if not end_date_val:
+					frappe.throw("Please set contract end date for contract: {contract}".format(contract=contract))
+				else:
+					end_date = end_date_val
 
 		# extreme schedule
-		extreme_schedule(employees=employees, start_date=today(), end_date=None, shift=shift,
+		extreme_schedule(employees=employees, start_date=start_date, end_date=end_date, shift=shift,
 			operations_role=operations_role, otRoster="true", keep_days_off=0, day_off_ot=0,
 			request_employee_schedule=0, employee_list=employee_list
 		)
@@ -465,12 +473,18 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 	# check for end date
 	if end_date:
 		end_date_val = getdate(end_date)
+		start_date_val = getdate(start_date)
+        # Build a map of selected employees
+		employee_set = list(set(i["employee"] for i in employees))
 		new_employees = []
-		for i in employees:
-			if getdate(i["date"]) <= end_date_val:
-				new_employees.append(i)
+		for emp in employee_set:
+			current = start_date_val
+			while current <= end_date_val:
+				new_employees.append({"employee": emp,"date": str(current)})
+				current += timedelta(days=1)
 		if new_employees:
 			employees = new_employees.copy()
+
 
 	# check keep days_off
 	if cint(keep_days_off):

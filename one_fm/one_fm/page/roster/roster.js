@@ -2595,6 +2595,61 @@ function change_ot_schedule(page) {
 					};
 				}
 			},
+			{ "fieldtype": "Section Break"},
+			{
+				label: "Selected Days Only",
+				fieldname: "selected_days_only",
+				fieldtype: "Check",
+				onchange: function () {
+				  let val = d.get_value("selected_days_only");
+				  d.fields_dict.end_date.df.hidden = val;
+				  d.fields_dict.end_date.refresh();
+				  if (val) {
+					d.set_value("end_date", "");
+				  }
+				}
+			  },
+			  { "fieldtype": "Section Break" },
+			{
+				"label": "From Date",
+				"fieldname": "start_date",
+				"fieldtype": "Date",
+				"default": frappe.datetime.add_days(frappe.datetime.nowdate(), 1),
+				onchange: function () {
+					let start_date = d.get_value("start_date");
+					if (start_date && moment(start_date).isSameOrBefore(moment(frappe.datetime.nowdate()))) {
+						frappe.throw(__("Start Date cannot be before today."));
+					}
+				}
+			},
+			{ "label": "Project End Date", "fieldname": "project_end_date", "fieldtype": "Check",
+				onchange: function () {
+					let val = d.get_value("project_end_date");
+					d.fields_dict.end_date.df.hidden = val;
+					d.fields_dict.end_date.refresh();
+					if (val) {
+					  d.set_value("end_date", "");
+					}
+				  }
+			 },
+			{ "fieldtype": "Column Break" },
+			{
+				label: "To Date",
+				fieldname: "end_date",
+				fieldtype: "Date",
+				hidden: 0,  // start as visible; will be hidden dynamically
+				onchange: function () {
+				  let end_date = d.get_value("end_date");
+				  let start_date = d.get_value("start_date");
+				  if (end_date && moment(end_date).isSameOrBefore(moment(frappe.datetime.nowdate()))) {
+					frappe.throw(__("End Date cannot be before today."));
+				  }
+				  if (start_date && end_date && moment(end_date).isBefore(moment(start_date))) {
+					frappe.throw(__("End Date cannot be before Start Date."));
+				  }
+				}
+			  },
+
 		],
 		primary_action: function () {
 			let values = d.get_values();

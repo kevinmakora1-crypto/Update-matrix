@@ -78,9 +78,10 @@ def create_roster_post_actions():
     # clear existing
 
     op_shift = frappe.db.sql(f"""
-    	SELECT supervisor, name FROM `tabOperations Shift`
+    	SELECT oss.supervisor, sh.name FROM `tabOperations Shift` sh
+        JOIN `tabOperations Shift Supervisor` oss ON oss.parent = sh.name
         WHERE
-        status='Active'
+        sh.status='Active'
     """, as_dict=1)
     shift_dict = {}
     for item in op_shift:

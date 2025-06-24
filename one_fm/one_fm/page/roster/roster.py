@@ -835,6 +835,7 @@ def unschedule_staff(employees, roster_type, start_date=None, end_date=None, nev
 		stop_date = getdate(end_date) if end_date else None
 
 		employees = json.loads(employees)
+		employee_list = list({obj["employee"] for obj in employees})
 
 		if not employees:
 			response("Error", 400, None, {"message": "Employees must be selected."})
@@ -844,9 +845,15 @@ def unschedule_staff(employees, roster_type, start_date=None, end_date=None, nev
 
 		if _start_date:
 			employees = [i for i in employees if getdate(i["date"])>=_start_date]
-
-		if end_date:
-			employees = [i for i in employees if getdate(i["date"])<=stop_date]
+   
+		if end_date:		
+			end_date_val = getdate(end_date)
+			employees = []
+			list_of_date = date_range(start_date, end_date_val)
+			for obj in employee_list:
+				for day in list_of_date:
+					employees.append({"employee": obj, "date": str(day.date())})
+			end_date = end_date_val
 
 		# If roster type is "Basic" then delete Basic/Over-Time schedules otherwise delete only target roster type schedules
 		roster_type_query = "roster_type in ('Basic', 'Over-Time')" if roster_type == "Basic" else f"roster_type = '{roster_type}'"

@@ -407,8 +407,12 @@ def mark_bulk_attendance(employee, from_date, to_date):
 
     frappe.msgprint(f"Marked Attendance successfully for {employee} between {from_date} and {to_date}")
 
+
+
+def schedule_mark_for_active_employees():
+    frappe.enqueue(mark_for_active_employees, queue='long', timeout=4000)
+
 # Mark attendance for Active Employees
-@frappe.whitelist()
 def mark_for_active_employees(from_date=None, to_date=None):
     if not (from_date and to_date):
         from_date, to_date = add_days(getdate(), -1), add_days(getdate(), -1)

@@ -729,7 +729,7 @@ scheduler_events = {
 			'one_fm.overrides.attendance.mark_day_off_for_yesterday'
 		],
         "55 12 * * *": [ # mark attendance for previous day mark_for_active_employees at 12:45 pm today
-			'one_fm.overrides.attendance.mark_for_active_employees'
+			'one_fm.overrides.attendance.schedule_mark_for_active_employees'
 		],
 		"*/15 * * * *": [ # Update Google Sheet. Runs every 15 mins.
 			'one_fm.one_fm.doctype.google_sheet_data_export.exporter.update_google_sheet_daily'

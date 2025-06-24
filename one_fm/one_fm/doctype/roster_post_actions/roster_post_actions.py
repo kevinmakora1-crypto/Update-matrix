@@ -79,10 +79,12 @@ def create_roster_post_actions():
     # clear existing
 
     op_shift = frappe.db.sql(f"""
-    	SELECT supervisor, name FROM `tabOperations Shift`
+    	SELECT oss.supervisor, sh.name FROM `tabOperations Shift` sh
+        JOIN `tabOperations Shift Supervisor` oss ON oss.parent = sh.name
         WHERE
-        status='Active'
+        sh.status='Active'
     """, as_dict=1)
+    
     shift_dict = {}
     for item in op_shift:
         if item.supervisor in shift_dict.keys():
@@ -156,18 +158,66 @@ def create_roster_post_actions():
 
     #Fetch supervisor and post types in his/her shift
     operations_roles = operations_roles_not_filled + operations_roles_over_filled
+    
+    # Query 1: Get relevant Post Schedules based on operations roles
+    # Select only columns needed for the next join: ps.shift, ps.operations_role
+    relevant_post_schedules = frappe.db.sql(f"""
+            SELECT DISTINCT ps.shift, ps.operations_role
+            FROM `tabPost Schedule` ps
+            WHERE ps.operations_role IN ({', '.join(['%s'] * len(operations_roles))})
+            AND ps.post_status='Planned'
+        """, operations_roles, as_dict=1)
+    if not relevant_post_schedules:
+        return []
+    unique_shifts_from_posts = {ps['shift'] for ps in relevant_post_schedules}
+    if not unique_shifts_from_posts:
+        return [] # No shifts to process
 
-    result = frappe.db.sql(f"""
-        SELECT sv.employee, GROUP_CONCAT(DISTINCT ps.operations_role),
+    # Query 2: Get active shifts, their supervisors, and sites, filtered by relevant shifts
+    # This query links Shifts, Shift Supervisors, and Employees.
+    # It uses the shifts identified in Query 1.
+    # We also need 'sh.site' here as it's part of the final output.
+    supervisor_shift_site_data = frappe.db.sql(f"""
+        SELECT
+            oss.supervisor,
+            oss.parent AS shift_name,
             sh.site
-        FROM `tabPost Schedule` ps
-        JOIN `tabOperations Shift` sh ON sh.name = ps.shift
-        JOIN `tabEmployee` sv ON sh.supervisor = sv.employee
-        WHERE ps.operations_role IN ({', '.join(['%s'] * len(operations_roles))})
-        AND sh.status = 'Active' AND sv.status = 'Active'
-        GROUP BY sv.employee
-    """, operations_roles)
+        FROM `tabOperations Shift` sh
+        JOIN `tabOperations Shift Supervisor` oss ON oss.parent = sh.name
+        JOIN `tabEmployee` sv ON oss.supervisor = sv.employee
+        WHERE sh.name IN ({', '.join(['%s'] * len(unique_shifts_from_posts))})
+        AND sh.status = 'Active'
+        AND sv.status = 'Active'
+    """, tuple(unique_shifts_from_posts), as_dict=1)
+    if not supervisor_shift_site_data:
+        return []
+    # Aggregate supervisor_shift_site_data in Python for efficient lookup
+    # supervisor_to_shifts_map: {supervisor: {shift1, shift2}, ...}
+    # supervisor_to_site_map: {supervisor: site, ...}
+    supervisor_to_shifts_map = defaultdict(set)
+    supervisor_to_site_map = {}
 
+    for row in supervisor_shift_site_data:
+        supervisor_to_shifts_map[row['supervisor']].add(row['shift_name'])
+        supervisor_to_site_map[row['supervisor']] = row['site']
+
+    final_supervisor_data = defaultdict(lambda: {"roles": set(), "site": None})
+
+    for ps_data in relevant_post_schedules:
+        post_shift = ps_data['shift']
+        post_operations_role = ps_data['operations_role']
+
+        # Iterate through supervisors to see if this shift belongs to them
+        for supervisor, shifts_managed in supervisor_to_shifts_map.items():
+            if post_shift in shifts_managed:
+                final_supervisor_data[supervisor]['roles'].add(post_operations_role)
+                # Assign site if not already assigned
+                if final_supervisor_data[supervisor]['site'] is None:
+                    final_supervisor_data[supervisor]['site'] = supervisor_to_site_map.get(supervisor)
+    result = []
+    for supervisor, data in final_supervisor_data.items():
+        if data['roles']: # Only include if there are actual roles found
+            result.append((supervisor, ",".join(data['roles']), data['site']))    
     # For each supervisor, create post actions to fill post type specifying the post types not filled
     for res in result:
         try:

@@ -113,7 +113,7 @@ def create_google_task_on_todo_creation_in_erp(doc, method):
             check_google_task_exists(doc.custom_google_task_id,pev_emp_email_service)
     task_notes = create_description_for_google_todo(doc)
     task_title = doc.custom_google_task_title
-    date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
+    date_obj = datetime.strptime(str(doc.date), "%Y-%m-%d")
     due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
     task_body = {
         "title": task_title,

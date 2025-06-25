@@ -118,7 +118,8 @@ doctype_js = {
     "Appraisal": "public/js/doctype_js/appraisal.js",
     "Employee Performance Feedback":"public/js/doctype_js/employee_performance_feedback.js",
     "Leave Allocation": "public/js/doctype_js/leave_allocation.js",
-    "Contact": "public/js/doctype_js/contact.js"
+    "Contact": "public/js/doctype_js/contact.js",
+    "ToDo": "public/js/doctype_js/todo.js"
 }
 doctype_list_js = {
 	"Job Applicant" : "public/js/doctype_js/job_applicant_list.js",
@@ -423,7 +424,10 @@ doc_events = {
 	"ToDo": {
 		"validate": "one_fm.overrides.todo.validate_todo",
         "before_save":"one_fm.overrides.todo.before_save",
-        "after_insert":"one_fm.overrides.todo.create_google_task_on_todo_creation",
+        "after_insert":[
+            "one_fm.overrides.todo.create_google_task_on_todo_creation",
+            "one_fm.overrides.todo.send_email_on_todo_created"
+        ],
         "on_update": "one_fm.overrides.todo.update_google_task_on_todo_status_change"
 	},
 	# "Wiki Page": {

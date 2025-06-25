@@ -415,6 +415,7 @@ function load_js(page) {
 							freeze: true,
 							freeze_message: __("Editing Post....")
 						});
+						$(".Postfilterhideshow").addClass("d-none");
 					}
 				});
 

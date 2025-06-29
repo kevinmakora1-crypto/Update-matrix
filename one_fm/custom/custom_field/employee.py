@@ -19,7 +19,7 @@ def get_employee_custom_fields():
                 "insert_after": "project",
                 "fetch_from":"project.manager_name",
                 "read_only": 1,
-                },
+                }
         ]
     }
 

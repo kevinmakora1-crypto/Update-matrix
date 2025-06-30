@@ -430,17 +430,7 @@ doc_events = {
         ],
         "on_update": "one_fm.overrides.todo.update_google_task_on_todo_status_change"
 	},
-	# "Wiki Page": {
-	# 	"after_insert": "one_fm.wiki_chat_bot.main.after_insert_wiki_page"
-	# },
-    "Task": {
-        "validate": "one_fm.overrides.task.validate_task",
-        "after_insert": "one_fm.overrides.task.after_task_insert"
-	},
-	# "Additional Salary" :{
-	# 	"on_submit": "one_fm.grd.utils.validate_date"
-	# }
-    "OAuth Bearer Token": {
+	"OAuth Bearer Token": {
 		"after_insert": "one_fm.api.doc_methods.oauth_bearer_token.revoke_and_delete_existing_tokens",
 	}
 }
@@ -535,8 +525,7 @@ override_doctype_class = {
     "Interview": "one_fm.overrides.interview.InterviewOverride",
     "Purchase Order": "one_fm.overrides.purchase_order.PurchaseOrderOverride",
     "HD Ticket": "one_fm.overrides.hd_ticket.HDTicketOverride",
-
-    # "User": "one_fm.overrides.user.UserOverride"
+    "Task": "one_fm.overrides.task.TaskOverride",
 }
 
 

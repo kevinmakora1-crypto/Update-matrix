@@ -15,7 +15,7 @@ class EmployeeDailyAction(Document):
 	def fetch_todos(self):
 		""" Fetch all the todos for the employee for the current date """
 
-		if not self.todays_plan_and_accomplishments: #If created from console 
+		if not self.todays_plan_and_accomplishments: #If created from console
 			todays_todos = frappe.db.get_all("ToDo", {"allocated_to": self.employee_email, "date": self.date},['reference_name', 'reference_type', 'name', 'status','description','type'])
 			for todo in todays_todos:
 				row = self.append("todays_plan_and_accomplishments")
@@ -26,7 +26,7 @@ class EmployeeDailyAction(Document):
 				row.description = todo.description
 				row.completed = 1 if todo.status != "Open" else 0
 
-		if not self.tomorrows_plan: #If created from console 
+		if not self.tomorrows_plan: #If created from console
 			tomorrows_todos = frappe.db.get_all("ToDo", {"allocated_to": self.employee_email, "date": add_days(getdate(self.date),1)},['reference_name', 'reference_type', 'name', 'status','description','type'])
 			for todo in tomorrows_todos:
 				row = self.append("tomorrows_plan")
@@ -34,8 +34,8 @@ class EmployeeDailyAction(Document):
 				row.description = todo.description
 				row.todo_type = todo.type
 				row.reference = todo.reference_name
-	
-	
+
+
 	def create_blockers(self):
 		"Create blockers for the employee from the blockers table"
 		for blocker in self.blocker_table:
@@ -53,15 +53,12 @@ class EmployeeDailyAction(Document):
 
 	def  validate_manager(self):
 		"""Ensure that a manager is set from the shift,site or reports to field """
-		if not self.reports_to:
-			reports_to = get_approver(self.employee)
-			if not reports_to:
-				frappe.throw(f"No Reports to set for {self.employee_name}")
-			self.reports_to = reports_to
+		reports_to = get_approver(self.employee)
+		if not reports_to:
+			frappe.throw(f"No Reports to set for {self.employee_name}")
+		self.reports_to = reports_to
 
 
 
 	def on_submit(self):
-		
 		self.create_blockers()
-	

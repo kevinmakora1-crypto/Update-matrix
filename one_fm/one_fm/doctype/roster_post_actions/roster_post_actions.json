@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "autoname": "hash",
  "creation": "2021-10-13 12:21:16.765478",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -12,14 +13,17 @@
   "status",
   "supervisor",
   "supervisor_name",
+  "operations_role",
+  "operations_site",
   "column_break_9",
   "action_type",
   "site_supervisor",
   "site_supervisor_name",
-  "site_supervisor_user",
+  "operations_shift",
+  "project",
   "section_break_12",
   "operations_roles_not_filled",
-  "overfilled_posts"
+  "operations_roles_over_filled"
  ],
  "fields": [
   {
@@ -69,8 +73,8 @@
   {
    "fieldname": "operations_roles_not_filled",
    "fieldtype": "Table",
-   "label": "Post Types Not Filled",
-   "options": "Post Types Not Filled"
+   "label": "Not Filled Details",
+   "options": "Operation Roles Not Filled Details"
   },
   {
    "fetch_from": "supervisor.employee_name",
@@ -108,28 +112,48 @@
    "fieldtype": "Section Break"
   },
   {
-   "fetch_from": "site_supervisor.user_id",
-   "fetch_if_empty": 1,
-   "fieldname": "site_supervisor_user",
+   "fieldname": "project",
    "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Site Supervisor User",
-   "options": "User"
+   "label": "Project",
+   "options": "Project",
+   "read_only": 1
   },
   {
-   "fieldname": "overfilled_posts",
+   "fieldname": "operations_role",
+   "fieldtype": "Link",
+   "label": "Operations Role",
+   "options": "Operations Role",
+   "read_only": 1
+  },
+  {
+   "fieldname": "operations_site",
+   "fieldtype": "Link",
+   "label": "Operations Site",
+   "options": "Operations Site",
+   "read_only": 1
+  },
+  {
+   "fieldname": "operations_shift",
+   "fieldtype": "Link",
+   "label": "Operations Shift",
+   "options": "Operations Shift",
+   "read_only": 1
+  },
+  {
+   "fieldname": "operations_roles_over_filled",
    "fieldtype": "Table",
-   "label": "Post Types OverFilled",
-   "options": "Post Types OverFilled"
+   "label": "Over Filled Details",
+   "options": "Operation Roles Over Filled Details"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-08 15:45:52.987293",
+ "modified": "2025-06-30 13:36:12.650638",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Roster Post Actions",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {

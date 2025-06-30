@@ -263,8 +263,9 @@
   },
   {
    "fieldname": "required_number_of_days_off",
-   "fieldtype": "Int",
-   "label": "Required Number Of Days Off (New Joining/Exit/Annual Leave)"
+   "fieldtype": "Data",
+   "label": "Required Number Of Days Off (New Joining/Exit/Annual Leave)",
+   "read_only": 1
   },
   {
    "fieldname": "day_off_details_section",
@@ -274,12 +275,14 @@
   {
    "fieldname": "roster_days_off",
    "fieldtype": "Int",
-   "label": "Roster Days Off"
+   "label": "Roster Day Off",
+   "read_only": 1
   },
   {
    "fieldname": "roster_day_off_ot",
    "fieldtype": "Int",
-   "label": "Roster Day Off OT"
+   "label": "Roster Day Off OT",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_ywpy",
@@ -288,12 +291,14 @@
   {
    "fieldname": "day_off_taken",
    "fieldtype": "Int",
-   "label": "Day Off Taken"
+   "label": "Day Off Taken",
+   "read_only": 1
   },
   {
    "fieldname": "worked_day_off_ot",
    "fieldtype": "Int",
-   "label": "Worked Day Off OT"
+   "label": "Worked Day Off OT",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_qxlm",
@@ -302,7 +307,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-30 17:05:20.178381",
+ "modified": "2025-06-30 23:37:57.141525",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Roster Day Off Checker",

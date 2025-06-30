@@ -44,7 +44,6 @@ def validate_task(doc):
                 )
                 if todos:
                     frappe.db.set_value("ToDo", {"name": ["in", todos]}, "status", "Cancelled")
-                    # frappe.db.commit()
 
     roles = get_user_roles()
     is_manager = is_project_manager(doc.project) if doc.project else False

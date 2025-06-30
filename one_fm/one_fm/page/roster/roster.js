@@ -415,6 +415,7 @@ function load_js(page) {
 							freeze: true,
 							freeze_message: __("Editing Post....")
 						});
+						$(".Postfilterhideshow").addClass("d-none");
 					}
 				});
 
@@ -800,6 +801,25 @@ function setup_topbar_events(page) {
 	});
 }
 
+function updateFilterVisibility(page_name) {
+	const hasSelection = $(".selectclass").length > 0;
+
+	if (page_name === "roster") {
+		if (hasSelection) {
+			$(".filterhideshow").removeClass("d-none");
+		} else {
+			$(".filterhideshow").addClass("d-none");
+		}
+	} else if (page_name === "post") {
+		if (hasSelection) {
+			$(".Postfilterhideshow").removeClass("d-none");
+		} else {
+			$(".Postfilterhideshow").addClass("d-none");
+		}
+	}
+}
+
+
 //Bind events to Edit options in Roster/Post view
 function bind_events(page) {
 	if (["Operations Manager", "Site Supervisor", "Shift Manager", "Shift Supervisor", "Projects Manager"].some(i => frappe.user_roles.includes(i))) {
@@ -816,11 +836,8 @@ function bind_events(page) {
 			});
 			$(this).toggleClass("selectclass");
 			classgrt.indexOf(this.getAttribute("data-selectid")) === -1 ? classgrt.push(this.getAttribute("data-selectid")) : classgrt.splice(classgrt.indexOf(this.getAttribute("data-selectid")), 1);
-			if (classgrt.join(",") === "") {
-				$(".Postfilterhideshow").addClass("d-none");
-			} else {
-				$(".Postfilterhideshow").removeClass("d-none");
-			}
+			updateFilterVisibility("post");
+
 		});
 
 		$rosterMonth.find(".hoverselectclass").on("click", function () {
@@ -836,11 +853,8 @@ function bind_events(page) {
 				$(".dayoff").show();
 			}
 			classgrt.indexOf(this.getAttribute("data-selectid")) === -1 ? classgrt.push(this.getAttribute("data-selectid")) : classgrt.splice(classgrt.indexOf(this.getAttribute("data-selectid")), 1);
-			if (classgrt.join(",") === "") {
-				$(".filterhideshow").addClass("d-none");
-			} else {
-				$(".filterhideshow").removeClass("d-none");
-			}
+			updateFilterVisibility("roster");
+
 		});
 
 		$postMonth.find(`input[name="selectallcheckbox"]`).on("change", function () {
@@ -852,14 +866,14 @@ function bind_events(page) {
 					}
 				});
 				$(this).parent().parent().parent().children("td").children().not("label").not("span").removeClass("hoverselectclass");
-				$(".Postfilterhideshow").removeClass("d-none");
+				updateFilterVisibility("post");
 			} else {
 				$(this).parent().parent().parent().children("td").children().not("label").not("span").addClass("hoverselectclass");
 				$(this).closest("tr").children("td").children().not("label").not("span").each(function (i, v) {
 					classgrt.splice(classgrt.indexOf($(v).attr("data-selectid")), 1);
 				});
 				$(this).parent().parent().parent().children("td").children().not("label").not("span").removeClass("selectclass");
-				$(".Postfilterhideshow").addClass("d-none");
+				updateFilterVisibility("post");
 			}
 			$(this).closest("tbody").children("tr").each(function (i, cell) {
 				const unchecked_row = $(cell).find("input[name='selectallcheckbox']:not(:checked)");
@@ -886,15 +900,13 @@ function bind_events(page) {
 						classgrt.push($(v).attr("data-selectid"));
 					}
 				});
-				$(".filterhideshow").removeClass("d-none");
+				updateFilterVisibility("roster");
 			} else {
 				$checked_employee.closest("tr").children("td").children().not("label").not("span").each(function (i, v) {
 					classgrt.splice(classgrt.indexOf($(v).attr("data-selectid")), 1);
 				});
 				$checked_employee.closest("tr").children("td").children().not("label").not("span").removeClass("selectclass");
-					if ($("input[type='checkbox']:checked").length === 0) {
-						$(".filterhideshow").addClass("d-none");
-					}
+				updateFilterVisibility("roster");
 			}
 			$checked_employee.closest("tbody").children("tr").each(function (i, cell) {
 				const unchecked_row = $(cell).find("input[name='selectallcheckbox']:not(:checked)");
@@ -906,6 +918,7 @@ function bind_events(page) {
 				classgrt.push($(this).attr("data-selectid"));
 				classgrt = [... new Set(classgrt)];
 			});
+
 		});
 
 		$("input[name='selectallcheckboxes']").on("change", function () {
@@ -913,16 +926,17 @@ function bind_events(page) {
 				$(this).parent().parent().parent().children("td").children().not("label").not("span").removeClass("hoverselectclass");
 				$(this).parent().parent().parent().children("td").children().not("label").not("span").addClass("selectclass");
 				$(this).parent().parent().parent().children("td").children().not("label").not("span").addClass("disableselectclass");
-				$(".Postfilterhideshow").removeClass("d-none");
+				updateFilterVisibility("post");
 			} else {
 				$(this).parent().parent().parent().children("td").children().not("label").not("span").addClass("hoverselectclass");
 				$(this).parent().parent().parent().children("td").children().not("label").not("span").removeClass("selectclass");
 				$(this).parent().parent().parent().children("td").children().not("label").not("span").removeClass("disableselectclass");
-				$(".Postfilterhideshow").addClass("d-none");
+				updateFilterVisibility("post");
 			}
 			$(".selectclass").map(function () {
 				classgrt.indexOf(this.getAttribute("data-selectid")) === -1 ? classgrt.push(this.getAttribute("data-selectid")) : classgrt.splice(classgrt.indexOf(this.getAttribute("data-selectid")), 1);
 			});
+			
 			if ($(this).parent().parent().parent().children("td").children().hasClass("redboxcolor")) {
 				$("#selRetrive").show();
 				$(".selPost").hide();

@@ -1,12 +1,13 @@
 {
  "actions": [],
- "autoname": "hash",
+ "autoname": "naming_series:",
  "creation": "2021-10-13 12:21:16.765478",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "start_date",
+  "naming_series",
   "col_br_1",
   "end_date",
   "actions_section",
@@ -144,16 +145,23 @@
    "fieldtype": "Table",
    "label": "Over Filled Details",
    "options": "Operation Roles Over Filled Details"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "OPR-RPA-.YYYY.-.#####"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-30 13:36:12.650638",
+ "modified": "2025-06-30 17:32:07.879848",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Roster Post Actions",
- "naming_rule": "Random",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {

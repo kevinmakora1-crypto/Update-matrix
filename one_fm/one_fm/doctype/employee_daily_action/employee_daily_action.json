@@ -132,7 +132,8 @@
    "fieldname": "todays_plan_and_accomplishments",
    "fieldtype": "Table",
    "label": "Todays Plan and Accomplishments",
-   "options": "Todays Plan and Accomplishments"
+   "options": "Todays Plan and Accomplishments",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_nzqu",
@@ -143,7 +144,8 @@
    "fieldname": "tomorrows_plan",
    "fieldtype": "Table",
    "label": "Tomorrows Plan",
-   "options": "Tomorrows Plan"
+   "options": "Tomorrows Plan",
+   "read_only": 1
   },
   {
    "fieldname": "problems_that_are_stopping_your_work_section",
@@ -209,7 +211,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-05-04 13:38:40.353427",
+ "modified": "2025-06-30 20:55:21.643820",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Employee Daily Action",

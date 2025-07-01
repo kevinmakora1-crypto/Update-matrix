@@ -113,7 +113,7 @@ def create_google_task_on_todo_creation_in_erp(doc, method):
             check_google_task_exists(doc.custom_google_task_id,pev_emp_email_service)
     task_notes = create_description_for_google_todo(doc)
     task_title = doc.custom_google_task_title
-    date_obj = datetime.strptime(doc.date, "%Y-%m-%d")
+    date_obj = datetime.strptime(str(doc.date), "%Y-%m-%d")
     due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
     task_body = {
         "title": task_title,
@@ -124,7 +124,6 @@ def create_google_task_on_todo_creation_in_erp(doc, method):
     task_id = result["id"]
     doc.custom_google_task_id = task_id
     doc.save()
-    send_email_on_todo_created(doc)
     return result
 
 def check_google_task_exists(task_id,pev_emp_service=None):
@@ -356,14 +355,14 @@ def sync_google_tasks_for_users(user_emails=[]):
         except Exception as e:
             frappe.log_error(str(e), f"Failed to sync Google task {google_task_id} to ERP ToDo")
 
-
 @frappe.whitelist()
-def send_email_on_todo_created(doc):
+def send_email_on_todo_created(doc, method):
+    if not doc.notify_allocated_to_via_email:
+        return
     user_id = frappe.session.user
     user_email = frappe.db.get_value("User", user_id, "email")
     if user_email == doc.allocated_to:
         return
-    sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
     recipients = [doc.allocated_to]
     todo_reference = ""
     todo_doc_type = ""
@@ -388,4 +387,4 @@ def send_email_on_todo_created(doc):
 
     message = frappe.render_template("one_fm/templates/emails/email_notification_on_task_creation.html", args)
     subject = f"""A Task has been Created via {doc.custom_source} by {user_id}"""
-    sendemail(sender=sender, recipients= recipients, message=message, subject=subject)
+    sendemail(recipients= recipients, message=message, subject=subject)

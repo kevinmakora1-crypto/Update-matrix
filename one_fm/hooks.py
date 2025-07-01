@@ -118,7 +118,8 @@ doctype_js = {
     "Appraisal": "public/js/doctype_js/appraisal.js",
     "Employee Performance Feedback":"public/js/doctype_js/employee_performance_feedback.js",
     "Leave Allocation": "public/js/doctype_js/leave_allocation.js",
-    "Contact": "public/js/doctype_js/contact.js"
+    "Contact": "public/js/doctype_js/contact.js",
+    "ToDo": "public/js/doctype_js/todo.js"
 }
 doctype_list_js = {
 	"Job Applicant" : "public/js/doctype_js/job_applicant_list.js",
@@ -423,20 +424,13 @@ doc_events = {
 	"ToDo": {
 		"validate": "one_fm.overrides.todo.validate_todo",
         "before_save":"one_fm.overrides.todo.before_save",
-        "after_insert":"one_fm.overrides.todo.create_google_task_on_todo_creation",
+        "after_insert":[
+            "one_fm.overrides.todo.create_google_task_on_todo_creation",
+            "one_fm.overrides.todo.send_email_on_todo_created"
+        ],
         "on_update": "one_fm.overrides.todo.update_google_task_on_todo_status_change"
 	},
-	# "Wiki Page": {
-	# 	"after_insert": "one_fm.wiki_chat_bot.main.after_insert_wiki_page"
-	# },
-    "Task": {
-        "validate": "one_fm.overrides.task.validate_task",
-        "after_insert": "one_fm.overrides.task.after_task_insert"
-	},
-	# "Additional Salary" :{
-	# 	"on_submit": "one_fm.grd.utils.validate_date"
-	# }
-    "OAuth Bearer Token": {
+	"OAuth Bearer Token": {
 		"after_insert": "one_fm.api.doc_methods.oauth_bearer_token.revoke_and_delete_existing_tokens",
 	}
 }
@@ -531,9 +525,9 @@ override_doctype_class = {
     "Interview": "one_fm.overrides.interview.InterviewOverride",
     "Purchase Order": "one_fm.overrides.purchase_order.PurchaseOrderOverride",
     "HD Ticket": "one_fm.overrides.hd_ticket.HDTicketOverride",
-    "ToDo": "one_fm.overrides.todo.ToDo"
-
+    "ToDo": "one_fm.overrides.todo.ToDo",
     # "User": "one_fm.overrides.user.UserOverride"
+    "Task": "one_fm.overrides.task.TaskOverride",
 }
 
 
@@ -749,10 +743,8 @@ scheduler_events = {
             "one_fm.one_fm.page.roster.roster.create_employee_schedule"
         ],
         "* * * * *": [ # Runs every minute
+            "one_fm.operations.doctype.process_task.process_task.run_process_task",
             "one_fm.overrides.todo.sync_google_tasks_with_todos"
-        ],
-         "* * * * *": [ # Runs every minute
-            "one_fm.operations.doctype.process_task.process_task.run_process_task"
         ]
 	}
 }

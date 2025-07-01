@@ -191,9 +191,10 @@ def create_roster_post_actions():
                 })
 
             roster_post_actions_doc.save()
-            frappe.db.commit()
         except:
             frappe.log_error(frappe.get_traceback(), "Error while creating roster post actions")
+
+    frappe.db.commit()
 
 
 @frappe.whitelist()

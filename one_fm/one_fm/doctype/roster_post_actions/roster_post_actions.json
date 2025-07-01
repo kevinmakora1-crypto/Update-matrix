@@ -20,6 +20,7 @@
   "action_type",
   "site_supervisor",
   "site_supervisor_name",
+  "site_supervisor_user",
   "operations_shift",
   "project",
   "section_break_12",
@@ -151,13 +152,22 @@
    "fieldtype": "Select",
    "hidden": 1,
    "label": "Series",
-   "options": "OPR-RPA-.YYYY.-.#####"
+   "options": "OPR-RPA-.YYYY.-.MM.-.DD.-.####"
+  },
+  {
+   "fetch_from": "site_supervisor.user_id",
+   "fetch_if_empty": 1,
+   "fieldname": "site_supervisor_user",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Site Supervisor User",
+   "options": "User"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-30 17:32:07.879848",
+ "modified": "2025-07-01 11:23:53.316766",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Roster Post Actions",

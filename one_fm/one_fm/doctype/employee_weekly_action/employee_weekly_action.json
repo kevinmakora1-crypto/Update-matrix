@@ -145,7 +145,7 @@
    "label": "Positivity and Reflection"
   },
   {
-   "default": "Achievements:\u00a0\nWhat went well today?\nWhat were you happy with?\u2028\n\nChallenges:\nWhat could have gone better?\nTasks you struggled with\nAreas for skill improvement\n\nEmotional Check:\nHow did you feel today?\nProductivity, happiness, stress\u2028\n\nNurturing Gratitude:\nWhat small thing at work are you thankful for today? (e.g., supportive colleagues, reliable tools, interesting tasks)\nWho helped you out recently, and how can you express your appreciation? (e.g., colleague who answered a question, manager who gave feedback, client who provided positive feedback)\n\nWorkplace Improvement:\nSuggestions for workplace improvement\nPolicy or resource needs\u2028\n\nLearning:\nWhat did you learn this week?\nNew insights about your work or yourself",
+   "default": "<p><strong>Achievements:</strong></p>\n  <p>What went well today?</p>\n  <p>What were you happy with?</p>\n\n  <p><strong>Challenges:</strong></p>\n  <p>What could have gone better?</p>\n  <p>Tasks you struggled with</p>\n  <p>Areas for skill improvement</p>\n\n  <p><strong>Emotional Check:</strong></p>\n  <p>How did you feel today?</p>\n  <p>Productivity, happiness, stress</p>\n\n  <p><strong>Nurturing Gratitude:</strong></p>\n  <p>What small thing at work are you thankful for today? <em>(e.g., supportive colleagues, reliable tools, interesting tasks)</em></p>\n  <p>Who helped you out recently, and how can you express your appreciation? <em>(e.g., colleague who answered a question, manager who gave feedback, client who provided positive feedback)</em></p>\n\n  <p><strong>Workplace Improvement:</strong></p>\n  <p>Suggestions for workplace improvement</p>\n  <p>Policy or resource needs</p>\n\n  <p><strong>Learning:</strong></p>\n  <p>What did you learn this week?</p>\n  <p>New insights about your work or yourself</p>",
    "fieldname": "text_editor_ztre",
    "fieldtype": "Text Editor"
   },
@@ -176,7 +176,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-05-08 11:29:14.992351",
+ "modified": "2025-07-01 23:39:37.137108",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Employee Weekly Action",

@@ -925,8 +925,6 @@ def edit_post(posts, values):
         frappe.throw(_("Insufficient permissions to Edit Post."))
 
     args = frappe._dict(json.loads(values))
-    print("samdaniii")
-    print(args.post_status)
 
     if args.post_status == "Plan Post":
         if args.plan_end_date and cint(args.project_end_date):

@@ -925,6 +925,8 @@ def edit_post(posts, values):
         frappe.throw(_("Insufficient permissions to Edit Post."))
 
     args = frappe._dict(json.loads(values))
+    print("samdaniii")
+    print(args.post_status)
 
     if args.post_status == "Plan Post":
         if args.plan_end_date and cint(args.project_end_date):
@@ -942,8 +944,8 @@ def edit_post(posts, values):
 
         if not args.cancel_end_date and not cint(args.project_end_date):
             frappe.throw(_("Please set an end date!"))
-
-        frappe.enqueue(cancel_post,posts=posts, args=args, is_async=True, queue='long', at_front=True, timeout=3600)
+        cancel_post(posts, args)
+        return response("Success", 200, {'message': 'Post Cancelled Successfully'})
 
     elif args.post_status == "Suspend Post":
         if args.suspend_to_date and cint(args.project_end_date):
@@ -951,8 +953,9 @@ def edit_post(posts, values):
 
         if not args.suspend_to_date and not cint(args.project_end_date):
             frappe.throw(_("Please set an end date!"))
-
-        frappe.enqueue(suspend_post, posts=posts, args=args, is_async=True, queue='long', at_front=True, timeout=3600)
+        
+        suspend_post(posts, args)
+        return response("Success", 200, {'message': 'Post Suspended Successfully'})
 
     elif args.post_status == "Post Off":
         if args.repeat_till and cint(args.project_end_date):

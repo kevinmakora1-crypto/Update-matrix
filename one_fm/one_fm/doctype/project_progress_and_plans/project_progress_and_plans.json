@@ -21,10 +21,10 @@
   },
   {
    "fieldname": "todo_type",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "label": "ToDo Type",
-   "options": "\nRoutine\nProject\nAction"
+   "options": "Task Type"
   },
   {
    "fieldname": "reviewed_and_planned",
@@ -33,7 +33,6 @@
    "label": "Reviewed and Planned",
    "options": "\nYes\nNo",
    "reqd": 1
-
   },
   {
    "fetch_from": "todo.custom_google_task_title",
@@ -47,8 +46,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
-
- "modified": "2025-05-05 11:41:58.853750",
+ "modified": "2025-07-01 23:09:05.075688",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Project Progress and Plans",

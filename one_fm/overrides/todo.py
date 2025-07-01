@@ -208,8 +208,7 @@ def update_google_task_on_todo_status_change(doc, method):
 
 
 def close_google_task_on_todo_delete(doc, method):
-    result = {"status": "skipped", "message": "No custom_google_task_id found."}
-
+    result = {}
     if doc.custom_google_task_id:
         employee_email = doc.allocated_to
         if not employee_email:

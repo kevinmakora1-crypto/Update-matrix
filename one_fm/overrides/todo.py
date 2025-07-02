@@ -55,12 +55,15 @@ def send_notification_alert_only(user):
     return False
 
 def validate_google_task_title(doc):
-    if not doc.custom_google_task_title:
-        # In case of automatic assignments
-        if doc.reference_type and doc.reference_name:
-            doc.custom_google_task_title = f"""Action required for {doc.reference_type} - {doc.reference_name}"""
-        else:
-            doc.custom_google_task_title = convert_html_to_plain_text(doc.description)[:100]
+    if doc.custom_google_task_title:
+        return
+
+    if doc.reference_type=="Task" and doc.reference_name:
+        doc.custom_google_task_title = frappe.db.get_value("Task", doc.reference_name, "subject")
+    elif doc.reference_type and doc.reference_name:
+        doc.custom_google_task_title = f"""Action required for {doc.reference_type} - {doc.reference_name}"""
+    else:
+        doc.custom_google_task_title = convert_html_to_plain_text(doc.description)[:100]
 
 def set_todo_type_from_refernce_doc(doc):
     if doc.reference_type and doc.reference_name:

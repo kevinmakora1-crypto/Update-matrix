@@ -59,6 +59,7 @@ async function  get_todos_for_user(frm) {
                     row.todo = todo.name;
                     row.todo_type = todo.type; // Default type, can be modified based on your needs
                     row.reference = todo.reference_name;
+                    row.reference_type = todo.reference_type;
                     row.planned = 0;
                     row.completed = todo.status === 'Open' ? 0 : 1;
                     row.description = description;
@@ -93,6 +94,7 @@ async function get_tomorrows_todos(frm) {
                     }
                     row.todo = todo.name;
                     row.todo_type = todo.type;
+                    row.reference_type = todo.reference_type;
                     row.reference = todo.reference_name;
                     row.description = description;
                 });

@@ -311,6 +311,7 @@ doc_events = {
 		"validate": [
 			"one_fm.one_fm.project_custom.validate_poc_list",
 			"one_fm.one_fm.project_custom.validate_project",
+			"one_fm.overrides.project.update_project_user_assignment"
 		],
 		"onload": "one_fm.one_fm.project_custom.get_depreciation_expense_amount",
 		"on_update": [

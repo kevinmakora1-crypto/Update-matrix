@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import date
 
 from frappe import _
+from frappe.desk.form.assign_to import add as add_assignment
 from frappe.utils import get_fullname, nowdate, add_to_date, getdate, date_diff, get_url_to_form, get_date_str
 
 from hrms.hr.doctype.leave_application.leave_application import *
@@ -114,6 +115,34 @@ class LeaveApplicationOverride(LeaveApplication):
 
         self.create_leave_ledger_entry()
         self.reload()
+
+
+    def assign_unassign_reliever(self):
+        last_doc = self.get_doc_before_save()
+        
+        if last_doc and last_doc.workflow_state != self.workflow_state:
+            user = frappe.db.get_value("Employee", self.custom_reliever_, "user_id")
+            
+            if not user:
+                return
+                
+            if self.workflow_state == "Pending Reliever":
+                add_assignment({
+                    'doctype': self.doctype,
+                    'name': self.name,
+                    'assign_to': [user],
+                    'description': (_("The Following Leave Application {0} Needs your immediate attention.").format(self.name))
+                })
+            
+            elif last_doc.workflow_state == "Pending Reliever" and self.workflow_state != "Pending Reliever":
+                 print("999999", "\n" * 9)
+                 frappe.db.delete("ToDo", {
+                "reference_type": self.doctype,
+                "reference_name": self.name,
+                "allocated_to": user,
+                })
+
+
 
 
     def close_leave_acknowledgement_if_below_threshold(self):
@@ -535,6 +564,10 @@ class LeaveApplicationOverride(LeaveApplication):
         if self.has_value_changed('workflow_state') and self.workflow_state == 'Pending Approval':
             send_leave_details_email_to_employee(self)
             self.notify_leave_approver()
+
+        self.assign_unassign_reliever()
+
+        
 
     def clear_employee_schedules(self):
         last_doc = self.get_doc_before_save()

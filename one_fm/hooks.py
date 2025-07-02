@@ -526,7 +526,6 @@ override_doctype_class = {
     "Purchase Order": "one_fm.overrides.purchase_order.PurchaseOrderOverride",
     "HD Ticket": "one_fm.overrides.hd_ticket.HDTicketOverride",
     "ToDo": "one_fm.overrides.todo.ToDo",
-    # "User": "one_fm.overrides.user.UserOverride"
     "Task": "one_fm.overrides.task.TaskOverride",
 }
 

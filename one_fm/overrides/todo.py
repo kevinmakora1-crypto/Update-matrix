@@ -1,6 +1,6 @@
 import json
 import frappe
-from frappe import _
+from frappe.model.document import Document
 from frappe.utils import get_fullname, get_url_to_form, getdate
 from bs4 import BeautifulSoup
 from datetime import datetime,timezone, timedelta
@@ -9,6 +9,10 @@ from googleapiclient.discovery import build
 from frappe import _
 from google.oauth2 import service_account
 
+
+class ToDo(Document):
+    def on_trash(self):
+        close_google_task_on_todo_delete(self, "on_trash")
 
 def validate_todo(doc, method):
     notify_todo_status_change(doc)
@@ -207,7 +211,27 @@ def update_google_task_on_todo_status_change(doc, method):
             task["status"] = "completed"
         result = service.tasks().update(tasklist="@default",task=doc.custom_google_task_id, body=task).execute()
         return result
+    
 
+def close_google_task_on_todo_delete(doc, method):
+    result = {}
+    if doc.custom_google_task_id:
+        employee_email = doc.allocated_to
+        if not employee_email:
+            frappe.throw(_("No assigned user found for this ToDo"))
+        try:
+            service = get_google_task_service(employee_email)
+            task = service.tasks().get(tasklist="@default", task=doc.custom_google_task_id).execute()
+            task["status"] = "completed"
+            result = service.tasks().update(tasklist="@default",task=doc.custom_google_task_id, body=task).execute()
+        except Exception as e:
+            frappe.log_error(
+                message=f"Failed to close Google Task '{doc.custom_google_task_id}' for ToDo {doc.name}: {frappe.utils.get_traceback()}",
+                title="Google Task Closure Error"
+            )
+            result = {"status": "error", "message": f"Failed to close Google Task: {e}"}
+    return result
+        
 def get_mapped_status_from_google_task(task):
     """
         Map google task status to ERP ToDo status

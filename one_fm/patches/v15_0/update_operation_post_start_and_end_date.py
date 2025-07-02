@@ -1,6 +1,9 @@
 import frappe
 
 def execute():
+    # Reload doctype so that newly added fields should be added first before executing patch
+    frappe.reload_doctype("Operations Post")
+
     # Get all Operations Post records with a linked Project
     operations_posts = frappe.get_all("Operations Post", filters={"project": ["!=", ""]}, fields=["name", "project"])
 

@@ -10,6 +10,10 @@ from frappe import _
 from google.oauth2 import service_account
 
 
+class ToDo(Document):
+    def on_trash(self):
+        close_google_task_on_todo_delete(self, "on_trash")
+
 def validate_todo(doc, method):
     notify_todo_status_change(doc)
     set_todo_type_from_refernce_doc(doc)
@@ -204,7 +208,7 @@ def update_google_task_on_todo_status_change(doc, method):
             task["status"] = "completed"
         result = service.tasks().update(tasklist="@default",task=doc.custom_google_task_id, body=task).execute()
         return result
-
+    
 
 def close_google_task_on_todo_delete(doc, method):
     result = {}
@@ -224,10 +228,6 @@ def close_google_task_on_todo_delete(doc, method):
             )
             result = {"status": "error", "message": f"Failed to close Google Task: {e}"}
     return result
-
-class ToDo(Document):
-    def on_trash(self):
-        close_google_task_on_todo_delete(self, "on_trash")
         
 def get_mapped_status_from_google_task(task):
     """

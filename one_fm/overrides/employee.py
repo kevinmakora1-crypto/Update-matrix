@@ -218,16 +218,17 @@ class EmployeeOverride(EmployeeMaster):
                     frappe.throw(message)
 
 
-    def clear_schedules(doc):
+    def clear_schedules(self):
         # clear future employee schedules
-        if doc.status == 'Left':
-            frappe.db.sql(f"""
-                DELETE FROM `tabEmployee Schedule` WHERE employee='{doc.name}'
-                AND date>'{doc.relieving_date}'
-            """)
-            frappe.msgprint(f"""
-                Employee Schedule cleared for {doc.employee_name} starting from {add_days(doc.relieving_date, 1)}
-            """)
+        if(self.has_value_changed('relieving_date') or self.has_value_changed('status')):
+            if self.status == 'Left' or self.relieving_date:
+                frappe.db.sql(f"""
+                    DELETE FROM `tabEmployee Schedule` WHERE employee = '{self.name}'
+                    AND date > '{self.relieving_date}'
+                """)
+                frappe.msgprint(f"""
+                    Employee Schedule cleared for {self.employee_name} starting from {add_days(self.relieving_date, 1)}
+                """)
 
 def validate_leaves(self):
     if self.status=='Vacation':

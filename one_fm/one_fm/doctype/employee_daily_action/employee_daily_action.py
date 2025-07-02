@@ -21,6 +21,7 @@ class EmployeeDailyAction(Document):
 				row = self.append("todays_plan_and_accomplishments")
 				row.todo = todo.name
 				row.todo_type = todo.type
+				row.reference_type = todo.reference_type
 				row.reference = todo.reference_name
 				row.planned = 0
 				row.description = todo.description
@@ -33,6 +34,7 @@ class EmployeeDailyAction(Document):
 				row.todo = todo.name
 				row.description = todo.description
 				row.todo_type = todo.type
+				row.reference_type = todo.reference_type
 				row.reference = todo.reference_name
 
 

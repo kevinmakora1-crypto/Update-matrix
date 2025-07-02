@@ -494,6 +494,13 @@ def run_cron_process_task():
 					can_execute = time_now >= cron_time and cron_time > get_datetime(last_executed)
 					if can_execute:
 						task_docs_to_be_created.append(one)
+					if one.method:
+						method_doc = frappe.get_value("Method", one.method, "method")
+						if method_doc:
+							fn = frappe.get_attr(method_doc)
+							fn()
+						else:
+							frappe.log_error(frappe.get_traceback(), f"Method not found for Process Task - Cron {one.name}")
 				except Exception as e:
 					frappe.log_error(message = frappe.get_traceback(), title = f"Process Task - Cron Error for {one.name}")
 					continue

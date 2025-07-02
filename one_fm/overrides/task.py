@@ -23,13 +23,13 @@ class TaskOverride(Task):
 
 def validate_task(doc):
     # When new doc is added, then sync field after insert
-    if not doc.is_new() and doc.workflow_state in ["Open", "Working"]:
+    if not doc.is_new() and getattr(doc, "workflow_state", None) in ["Open", "Working"]:
         sync_assign_to_field(doc)
 
 
     all_asssigned_users = doc.get_assigned_users()
     assignees = doc.custom_assigned_to
-    if doc.workflow_state == "Pending Review" and assignees:
+    if getattr(doc, "workflow_state", None) == "Pending Review" and assignees:
         for assignee in assignees:
             if assignee.user in list(all_asssigned_users):
                 todos = frappe.get_all(

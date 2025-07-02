@@ -459,6 +459,8 @@ def run_cron_based_process_tasks():
 
 		if should_run:
 			try:
+				if isinstance(method_doc, str):
+					method_doc = frappe.get_attr(method_doc)
 				frappe.enqueue(method_doc, queue='default', timeout=600)
 				frappe.db.set_value("Process Task", task.name, "last_execution", now)
 				frappe.logger().info(f"[Process Task - Cron] Enqueued {task.method} for {task.name}")
@@ -496,11 +498,9 @@ def run_cron_process_task():
 						task_docs_to_be_created.append(one)
 					if one.method:
 						method_doc = frappe.get_value("Method", one.method, "method")
-						if method_doc:
-							fn = frappe.get_attr(method_doc)
-							fn()
-						else:
-							frappe.log_error(frappe.get_traceback(), f"Method not found for Process Task - Cron {one.name}")
+						if isinstance(method_doc, str):
+							method_doc = frappe.get_attr(method_doc)
+						frappe.enqueue(method_doc, queue='default', timeout=600)
 				except Exception as e:
 					frappe.log_error(message = frappe.get_traceback(), title = f"Process Task - Cron Error for {one.name}")
 					continue

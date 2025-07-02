@@ -70,6 +70,7 @@ def create_workflows():
 
 def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("roster_post_action_site_supervisor.json"))
+	create_assignment_rule(get_assignment_rule_json_file("action_poc_check.json"))
 
 def delete_custom_fields(custom_fields: dict):
 	"""
@@ -105,3 +106,4 @@ def delete_workflows():
 
 def delete_assignment_rules():
 	delete_assignment_rule(get_assignment_rule_json_file("roster_post_action_site_supervisor.json"))
+	delete_assignment_rule(get_assignment_rule_json_file("action_poc_check.json"))

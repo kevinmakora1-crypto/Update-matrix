@@ -133,9 +133,9 @@ def get_day_off_comparison_dates(employee, total_leave_dates):
 
     return comparison_periods
 
-def split_date_range_for_attendance_and_schedule(start_date, end_date):
+def split_date_range_for_past_and_future(start_date, end_date):
     """
-    Splits the input date range into 'attendance' and 'schedule' based on today's date.
+    Splits the input date range into 'past' and 'future' based on today's date.
     
     Args:
         start_date (str): The start date of the range (YYYY-MM-DD).
@@ -143,8 +143,8 @@ def split_date_range_for_attendance_and_schedule(start_date, end_date):
 
     Returns:
         dict: {
-            "attendance": {"start_date": ..., "end_date": ...} or None,
-            "schedule": {"start_date": ..., "end_date": ...} or None
+            "past": {"start_date": ..., "end_date": ...} or None,
+            "future": {"start_date": ..., "end_date": ...} or None
         }
     """
     start = getdate(start_date)
@@ -152,22 +152,22 @@ def split_date_range_for_attendance_and_schedule(start_date, end_date):
     today = getdate(nowdate())
 
     result = {
-        "attendance": None,
-        "schedule": None
+        "past": None,
+        "future": None
     }
 
     if start < today:
-        attendance_end = min(end, add_days(today, -2)) # Day before yesterday
-        if attendance_end >= start:
-            result["attendance"] = {
+        past_end = min(end, add_days(today, -1))
+        if past_end >= start:
+            result["past"] = {
                 "start_date": start,
-                "end_date": attendance_end
+                "end_date": past_end
             }
 
     if end >= today:
-        schedule_start = max(start, add_days(today, -1)) # yesterday
-        result["schedule"] = {
-            "start_date": schedule_start,
+        future_start = max(start, today)
+        result["future"] = {
+            "start_date": future_start,
             "end_date": end
         }
 
@@ -224,7 +224,7 @@ def check_roster_day_off():
 		frappe.log_error(frappe.get_traceback())
 
 def get_employee_day_off_comparison(employee, start_date, end_date, calculated_day_offs = 0, working_dates = []):
-	date_ranges = split_date_range_for_attendance_and_schedule(start_date, end_date)
+	date_ranges = split_date_range_for_past_and_future(start_date, end_date)
 
 	off_days = 0
 	ot_days = 0
@@ -232,14 +232,14 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 	availed_off_days = 0
 	availed_ot_days = 0
 
-	if date_ranges["attendance"]:
+	if date_ranges["past"]:
 		"""
 		Calculate day offs and day off ot using employee's attendance within the date range
 		"""
 		Attendance = frappe.qb.DocType("Attendance")
 
-		attendance_start_date = date_ranges["attendance"]["start_date"]
-		attendance_end_date = date_ranges["attendance"]["end_date"]
+		attendance_start_date = date_ranges["past"]["start_date"]
+		attendance_end_date = date_ranges["past"]["end_date"]
 
 		# QB conditions
 		conditions = (
@@ -267,14 +267,14 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 		ot_days = ot_days + (ot[0].ot_days if len(ot) > 0 else 0)
 		availed_ot_days = availed_ot_days + ot_days
 
-	if date_ranges["schedule"]:
+	if date_ranges["future"]:
 		"""
-		Calculate day offs and day off ot using employee schedules within the date range including yesterday and today)
+		Calculate day offs and day off ot using employee schedules within the date range including today
 		"""
 		EmployeeSchedule = frappe.qb.DocType("Employee Schedule")
 
-		schedule_start_date = date_ranges["schedule"]["start_date"]
-		schedule_end_date = date_ranges["schedule"]["end_date"]
+		schedule_start_date = date_ranges["future"]["start_date"]
+		schedule_end_date = date_ranges["future"]["end_date"]
 
 		# QB conditions
 		conditions = (

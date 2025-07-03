@@ -30,6 +30,7 @@ class EmployeeOverride(EmployeeMaster):
         self.set_employee_name()
         set_employee_name(self, method=None)
         self.set_employee_id_based_on_residency()
+        self.validate_reliever()
         self.validate_date()
         self.validate_email()
         self.validate_status()
@@ -206,6 +207,10 @@ class EmployeeOverride(EmployeeMaster):
         if last_doc and last_doc.get('status') == "Active":
             if self.status != "Active":
                 NotifyAttendanceManagerOnStatusChange(employee_object=self).notify_authorities()
+
+    def validate_reliever(self):
+        if self.custom_is_reliever == 1 and self.custom_is_weekend_reliever == 1:
+            frappe.throw("Employee can either marked as Day Off reliever or Weekend reliever")
 
     def validate_status_change(self):
         last_doc = self.get_doc_before_save()

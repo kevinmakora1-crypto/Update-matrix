@@ -102,7 +102,6 @@ class OperationsPost(Document):
         #     frappe.throw(f"Operations Role ({self.post_template}) does not belong to selected shift ({self.site_shift})")
 
         self.validate_operations_role_status()
-        self.validate_dates()
         # check if operations site inactive
         if (self.status=='Active' and frappe.db.exists("Operations Site", {'name':self.site, 'status':'Inactive'})):frappe.throw(f"You cannot make this post active because Operations Site '{self.site}' is Inactive.")
 
@@ -116,27 +115,6 @@ class OperationsPost(Document):
         condition = self.post_name+"-"+self.gender+"|"+self.site_shift
         if condition != self.name:
             rename_doc(doctype=self.doctype, old=self.name, new=condition, force=True, doc=self)
-
-    def validate_dates(self):
-        project_expected_start_date, project_expected_end_date = frappe.db.get_value("Project", self.project, fieldname=["expected_start_date", "expected_end_date"])
-
-        start_date = getdate(self.start_date) if self.start_date else None
-        end_date = getdate(self.end_date) if self.end_date else None
-
-        # Validate that end date is after start date
-        if start_date and end_date:
-            if end_date < start_date:
-                frappe.throw(_("End date should be after start date"))
-
-        # Validate that start date is not before project expected start date
-        if project_expected_start_date and start_date:
-            if start_date < getdate(project_expected_start_date):
-                frappe.throw(_("Start date should not be before project expected start date"))
-
-        # Validate that end date is not after project expected end date
-        if project_expected_end_date and end_date:
-            if end_date > getdate(project_expected_end_date):
-                frappe.throw(_("End date should not be after project expected end date"))
 
 
     def on_update(self):

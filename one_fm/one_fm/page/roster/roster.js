@@ -1321,7 +1321,7 @@ function render_roster(res, page, isOt) {
 		</td>
 	</tr>`;
 	$rosterMonthbody.append(emp_row_wrapper);
-	for (employee_key in Object.keys(employees_data).sort().reduce((a, c) => (a[c] = employees_data[c], a), {})) {
+	for (employee_key in Object.keys(employees_data).reduce((a, c) => (a[c] = employees_data[c], a), {})) {
 		// let { employee_name, employee, date } = employees_data[employee_key];
 
 

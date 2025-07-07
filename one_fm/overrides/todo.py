@@ -211,7 +211,7 @@ def update_google_task_on_todo_status_change(doc, method):
             task["status"] = "completed"
         result = service.tasks().update(tasklist="@default",task=doc.custom_google_task_id, body=task).execute()
         return result
-    
+
 
 def close_google_task_on_todo_delete(doc, method):
     result = {}
@@ -231,7 +231,7 @@ def close_google_task_on_todo_delete(doc, method):
             )
             result = {"status": "error", "message": f"Failed to close Google Task: {e}"}
     return result
-        
+
 def get_mapped_status_from_google_task(task):
     """
         Map google task status to ERP ToDo status
@@ -331,7 +331,7 @@ def sync_google_tasks_for_users(user_emails=[]):
                 # If status doesnot match
                 if mapped_status != todo.status:
                     # If ToDo has any reference then it shouldn't be closed by Google Task
-                    if todo.reference_type and mapped_status == "Closed":
+                    if todo.reference_type and google_task.get("status") == "completed" and todo.status not in ["Closed", "Cancelled"]:
                         service = get_google_task_service(allocated_to)
                         payload = {
                             **google_task,

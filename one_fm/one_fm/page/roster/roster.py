@@ -1719,54 +1719,61 @@ def create_or_update_schedule_for_employee(employee, date, availability, operati
             "name"
         )
 
+        leave_applications = frappe.db.get_all('Leave Application', filters={'employee': employee.name, 'leave_type': 'Annual Leave', 'status': 'Approved', 'from_date': ['<=', date], 'to_date': ['>=', date]}, pluck='name')
+        employee_relieving_date = frappe.db.get_value('Employee', employee, 'relieving_date')
+        can_schedule = not leave_applications and (
+                            not employee_relieving_date or employee_relieving_date >= date
+                        )
+
         creation = now()
         owner = frappe.session.user
         start_datetime = datetime.strptime(f"{date} {operations_shift.start_time}", '%Y-%m-%d %H:%M:%S')
         end_datetime = datetime.strptime(f"{date} {operations_shift.end_time}", '%Y-%m-%d %H:%M:%S')
         day_off_ot = 1 if availability == "Day Off OT" else 0
 
-        if existing_schedule:
-            # Update the existing record
-            schedule_doc = frappe.get_doc("Employee Schedule", existing_schedule)
-            schedule_doc.employee_availability = "Working"
-            schedule_doc.date = date
-            schedule_doc.shift = operations_shift.name
-            schedule_doc.site = operations_shift.site
-            schedule_doc.project = operations_shift.project
-            schedule_doc.shift_type = operations_shift.shift_type
-            schedule_doc.operations_role = operations_role.name
-            schedule_doc.post_abbrv = operations_role.post_abbrv
-            schedule_doc.roster_type = "Basic"
-            schedule_doc.day_off_ot = day_off_ot
-            schedule_doc.start_datetime = start_datetime
-            schedule_doc.end_datetime = end_datetime
-            schedule_doc.save(ignore_permissions=True)
-        else:
-            # Create a new record
-            frappe.get_doc({
-                "doctype": "Employee Schedule",
-                "name": name,
-                "employee": employee.name,
-                "employee_name": employee.employee_name,
-                "department": employee.department,
-                "date": date,
-                "shift": operations_shift.name,
-                "site": operations_shift.site,
-                "project": operations_shift.project,
-                "shift_type": operations_shift.shift_type,
-                "employee_availability": "Working",
-                "operations_role": operations_role.name,
-                "post_abbrv": operations_role.post_abbrv,
-                "roster_type": "Basic",
-                "day_off_ot": day_off_ot,
-                "start_datetime": start_datetime,
-                "end_datetime": end_datetime,
-                "owner": owner,
-                "modified_by": owner,
-                "creation": creation,
-                "modified": creation
-            }).insert(ignore_permissions=True)
-            frappe.db.commit()
+        if can_schedule:
+            if existing_schedule:
+                # Update the existing record
+                schedule_doc = frappe.get_doc("Employee Schedule", existing_schedule)
+                schedule_doc.employee_availability = "Working"
+                schedule_doc.date = date
+                schedule_doc.shift = operations_shift.name
+                schedule_doc.site = operations_shift.site
+                schedule_doc.project = operations_shift.project
+                schedule_doc.shift_type = operations_shift.shift_type
+                schedule_doc.operations_role = operations_role.name
+                schedule_doc.post_abbrv = operations_role.post_abbrv
+                schedule_doc.roster_type = "Basic"
+                schedule_doc.day_off_ot = day_off_ot
+                schedule_doc.start_datetime = start_datetime
+                schedule_doc.end_datetime = end_datetime
+                schedule_doc.save(ignore_permissions=True)
+            else:
+                # Create a new record
+                frappe.get_doc({
+                    "doctype": "Employee Schedule",
+                    "name": name,
+                    "employee": employee.name,
+                    "employee_name": employee.employee_name,
+                    "department": employee.department,
+                    "date": date,
+                    "shift": operations_shift.name,
+                    "site": operations_shift.site,
+                    "project": operations_shift.project,
+                    "shift_type": operations_shift.shift_type,
+                    "employee_availability": "Working",
+                    "operations_role": operations_role.name,
+                    "post_abbrv": operations_role.post_abbrv,
+                    "roster_type": "Basic",
+                    "day_off_ot": day_off_ot,
+                    "start_datetime": start_datetime,
+                    "end_datetime": end_datetime,
+                    "owner": owner,
+                    "modified_by": owner,
+                    "creation": creation,
+                    "modified": creation
+                }).insert(ignore_permissions=True)
+                frappe.db.commit()
     except Exception as e:
         frappe.log_error(f"Error for employee {employee.name} on {date}: {str(e)}", "Employee Schedule Error")
 

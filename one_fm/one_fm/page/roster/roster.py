@@ -1751,7 +1751,7 @@ def create_or_update_schedule_for_employee(employee, date_val, availability, ope
 		
 		existing_schedule_name = frappe.get_value( 
 			"Employee Schedule",
-			{"employee": employee.name, "date": date_str},
+			{"employee": employee.name, "date": date_str, "roster_type": "Basic", "shift_type": operations_shift_doc.shift_type},
 			"name"
 		)
 

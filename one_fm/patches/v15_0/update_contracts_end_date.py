@@ -4,7 +4,7 @@ from one_fm.operations.doctype.operations_post.operations_post import create_new
 
 
 def execute():
-    lulu_contract_project_partial = [
+    lulu_contract_project = [
         "Lulu Hypermarket Express - Kuwait City",
         "Lulu Hypermarket Egaila + Lulu Hypermarket Camp House",
         "Lulu Hypermarket Express - Terrace Mall",
@@ -12,17 +12,17 @@ def execute():
         "Lulu Fresh Market - Khairan"
     ]
     contracts_to_renew = []
-    for title_partial in lulu_contract_project_partial:
+    for project in lulu_contract_project:
         found_contracts = frappe.get_list(
             "Contracts",
-            filters={"project": ["like", f"%{title_partial}%"]},
+            filters={"project": ["like", f"%{project}%"]},
             fields=["name", "contract_name", "start_date","end_date"],
             limit=1
         )
         if found_contracts:
             contracts_to_renew.append(found_contracts[0])
         else:
-            frappe.log_error(f"Contract matching '{title_partial}' not found.", "Contract Auto-Renew Error")
+            frappe.log_error(f"Contract matching '{project}' not found.", "Contract Auto-Renew Error")
 
     if not contracts_to_renew:
         frappe.log_error("No matching contracts found to renew.", "Contract Auto-Renew")

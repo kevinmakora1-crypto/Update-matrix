@@ -66,7 +66,7 @@ const load_todos = (frm, is_current) => {
                 r.data.forEach(item => {
                     let description = "";
                     if (item.description){
-                      description = item.description.replace(/(<([^>]+)>)/gi, "");
+                      description = item.description.replace(/<[^>]*>/g, "").trim();
                     }
                     const row = frm.add_child(fieldname);
                     row.todo_type = item.type;

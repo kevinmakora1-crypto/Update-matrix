@@ -35,16 +35,20 @@ def renew_contract_check(contracts):
         try:
             current_year = now_datetime().year
             end_date_obj = getdate(contract.end_date)
-            if end_date_obj.year == current_year - 1:
+            if end_date_obj.year == current_year and end_date_obj < now_datetime().date():
                 contract_doc = renew_contracts(contract)
                 create_new_schedule_for_project(contract_doc.project)
             else:
-                while end_date_obj.year < current_year - 1:
+                while end_date_obj.year < current_year:
                     contract_doc = renew_contracts(contract)
-                    end_date_obj = getdate(contract_doc.end_date)   
+                    end_date_obj = getdate(contract_doc.end_date)
+                if end_date_obj.year == current_year and end_date_obj < now_datetime().date():
+                    contract_doc = renew_contracts(contract)
+                    create_new_schedule_for_project(contract_doc.project)
         except Exception as e:
-            frappe.log_error(f"Error: {e}", "Date Check Error")
+            frappe.log_error(f"Error: {e}", "Contract Auto-Renew Error")
             return False
+
 
 def renew_contracts(contract):
     contract_doc = frappe.get_doc('Contracts', contract["name"])

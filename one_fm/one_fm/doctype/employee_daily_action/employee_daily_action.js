@@ -53,7 +53,7 @@ async function  get_todos_for_user(frm) {
                 r.message.forEach(function(todo) {
                     let description = "";
                     if (todo.description){
-                      description = item.description.replace(/<[^>]*>/g, "").trim();
+                      description = todo.description.replace(/<[^>]*>/g, "").trim();
                     }
                     let row = frm.add_child('todays_plan_and_accomplishments');
                     row.todo = todo.name;
@@ -90,7 +90,7 @@ async function get_tomorrows_todos(frm) {
                     let row = frm.add_child('tomorrows_plan');
                     let description = "";
                     if (todo.description){
-                      description = item.description.replace(/<[^>]*>/g, "").trim();
+                      description = todo.description.replace(/<[^>]*>/g, "").trim();
                     }
                     row.todo = todo.name;
                     row.todo_type = todo.type;

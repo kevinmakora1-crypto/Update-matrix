@@ -125,7 +125,8 @@
    "fieldname": "next_week_task_plan",
    "fieldtype": "Table",
    "label": "Next Week Task Plan",
-   "options": "Next Week Task Plan"
+   "options": "Next Week Task Plan",
+   "read_only": 1
   },
   {
    "description": "If a blocker has already been reported in the Employee Daily Action, there is no need to repeat the blocker in the Employee Weekly Action.",
@@ -176,7 +177,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-07-01 23:39:37.137108",
+ "modified": "2025-07-09 00:33:14.777718",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Employee Weekly Action",

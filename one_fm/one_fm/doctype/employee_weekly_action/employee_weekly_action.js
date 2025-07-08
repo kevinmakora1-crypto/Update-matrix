@@ -69,13 +69,11 @@ const load_todos = (frm, is_current) => {
                       description = item.description.replace(/<[^>]*>/g, "").trim();
                     }
                     const row = frm.add_child(fieldname);
-                    row.todo_type = item.type;
+                    row.project = item.project;
                     row.todo = item.name;
                     row.todo_title = description;
                     if (!is_current && item.date) {
                         row.due_date = item.date;
-                        row.reference = item.reference_name;
-
                     }
                 });
 

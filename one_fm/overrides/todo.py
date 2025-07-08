@@ -167,6 +167,10 @@ def convert_html_to_plain_text(html_content):
         text_output = "\n".join(paragraphs)
 
         table = soup.find("table")
+
+        if not text_output and not table:
+            return html_content
+
         if table:
             rows = table.find_all("tr")
             table_content = "\n".join(

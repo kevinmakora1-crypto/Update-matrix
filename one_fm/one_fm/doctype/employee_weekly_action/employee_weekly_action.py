@@ -75,6 +75,6 @@ def get_to_do_linked_projects(start_date, end_date, allocated_to):
             `tabProject` p, `tabToDo` t
         where
             t.reference_type = "Project" and t.reference_name = p.name and t.date between '{0}' and '{1}'
-            and t.allocated_to = '{2}'
+            and t.allocated_to = '{2}' and t.status='Open'
     '''
     return frappe.db.sql(query.format(start_date, end_date, allocated_to), as_dict=True)

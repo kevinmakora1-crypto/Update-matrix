@@ -121,3 +121,4 @@ one_fm.patches.v15_0.update_attendance_check_client_day_off
 one_fm.patches.v15_0.update_erf_in_job_applicant_and_offer
 one_fm.patches.v15_0.update_operation_post_start_and_end_date
 one_fm.patches.v15_0.update_on_boarding_EMP-ONB-2025-00315
+one_fm.patches.v15_0.update_contracts_end_date

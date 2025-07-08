@@ -402,7 +402,7 @@ def _get_employees_with_join(join_clause, where_clause, user_employee):
 			e.day_off_category,
 			e.number_of_days_off,
 			e.employee_id,
-			e.shift
+			e.shift,
 		    e.custom_operations_role_allocation
 		FROM `tabEmployee` e
 		{join_clause}

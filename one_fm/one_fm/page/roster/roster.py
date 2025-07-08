@@ -740,7 +740,6 @@ def validate_overfilled_post(date_list_str, operations_shift_name, operations_ro
 		schedule_dict[each_item.get("date").strftime("%Y-%m-%d")] = each_item.schedule_count
 
 
-	print("schedule_dict", schedule_dict, "post_number", post_number)
 	return { "schedule_dict": schedule_dict, "post_number": post_number }
 
 def update_employee_shift(employees, shift, owner, creation):

@@ -575,7 +575,7 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 			VALUES
 		"""
 		can_create = False		
-		omitted_days = []
+		omitted_days = set()
 				
 		# Create a temporary structure to count new schedules per day from the current batch
 		daily_add_count = defaultdict(int)

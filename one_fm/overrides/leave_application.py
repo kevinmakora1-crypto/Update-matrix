@@ -135,12 +135,11 @@ class LeaveApplicationOverride(LeaveApplication):
                 })
             
             elif last_doc.workflow_state == "Pending Reliever" and self.workflow_state != "Pending Reliever":
-                 print("999999", "\n" * 9)
-                 frappe.db.delete("ToDo", {
-                "reference_type": self.doctype,
-                "reference_name": self.name,
-                "allocated_to": user,
-                })
+                frappe.db.set_value("ToDo", {
+                    "reference_type": self.doctype,
+                    "reference_name": self.name,
+                    "allocated_to": user,
+                }, "status", "Closed")
 
 
 

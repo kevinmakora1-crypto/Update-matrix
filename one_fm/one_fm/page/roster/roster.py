@@ -574,15 +574,7 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 			`operations_role`, `post_abbrv`, `roster_type`, `day_off_ot`, `start_datetime`, `end_datetime`, `owner`, `modified_by`, `creation`, `modified`)
 			VALUES
 		"""
-		can_create = False
-		effective_end_date = getdate(end_date) if end_date else getdate(start_date) 
-		list_of_dates_pd = pd.date_range(start=start_date, end=effective_end_date)
-
-		post_data = validate_overfilled_post(list_of_dates_pd, operations_shift_doc.name)
-		post_number = post_data.get("post_number")
-		schedule_data  = post_data.get("schedule_dict")
-		if not post_number:post_number=0
-		
+		can_create = False		
 		omitted_days = []
 				
 		# Create a temporary structure to count new schedules per day from the current batch
@@ -599,6 +591,11 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 		for employee_name_iter, date_values in employees_date_dict.items():
 			for datevalue in date_values:
 				current_processing_date = datevalue.get("date")
+
+				# For each date, check overfill status
+				post_data = validate_overfilled_post([current_processing_date], operations_shift_doc.name, operations_role_doc.name)
+				post_number = post_data.get("post_number", 0)
+				schedule_data = post_data.get("schedule_dict", {})
 
 				if roster_type == "Over-Time":
 					# Query for existing Basic schedule for this employee and date
@@ -677,8 +674,14 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 
 
 		if omitted_days:
-			omitted_days_str = ", ".join(sorted(list(set(omitted_days))))
-			frappe.msgprint(f"Employee Schedules were not created for {omitted_days_str} because {operations_shift_doc.name} would have been overfilled if additional schedules were added for these days.")
+			omitted_days_str = ", ".join(datetime.strptime(date, "%Y-%m-%d").strftime("%d-%m-%Y") for date in sorted(set(omitted_days)))
+			title = "This action has overfilled the post for the following dates."
+			msg = f"""
+			<b>Role: {operations_role_doc.post_abbrv}</b> ({operations_role_doc.name}) <br>
+			<b>Shift:</b> {operations_shift_doc.name}<br>
+			<b>Dates:</b> {omitted_days_str}
+			"""
+			frappe.msgprint(_(msg), _(title))
 
 	else: # request_employee_schedule is true
 		from_schedule = frappe.db.get_list(
@@ -714,24 +717,19 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 	frappe.enqueue(update_employee_shift, employees=list(employees_date_dict.keys()), shift=shift, owner=owner, creation=creation)
 
 
-def validate_overfilled_post(date_list_pd, operations_shift_name): 
-
-	dates_unique = list(set(date_list_pd))
-	date_list_str = [e.strftime("%Y-%m-%d") for e in dates_unique] 
-	
+def validate_overfilled_post(date_list_str, operations_shift_name, operations_role): 
 	cond = "" 
 	schedule_dict = {}
 	base_query = f""" SELECT date ,count(name) as schedule_count from `tabEmployee Schedule`  WHERE shift = "{operations_shift_name}" and employee_availability = "Working" """
-	
-	post_number_res = frappe.db.sql(f""" SELECT count(name) as post_number from `tabOperations Post` where status = 'Active' and site_shift = '{operations_shift_name}' """,as_dict=1)
+	post_number_res = frappe.db.sql(f""" SELECT count(name) as post_number from `tabOperations Post` where status = 'Active' and site_shift = '{operations_shift_name}' and post_template = '{operations_role}' """,as_dict=1)
 	post_number = post_number_res[0].get("post_number") if post_number_res else 0
 	
 	if not date_list_str: # Handle empty date list
-		return{"schedule_dict": schedule_dict, "post_number": post_number}
+		return { "schedule_dict": schedule_dict, "post_number": post_number } 
 
-	if len(date_list_str)==1:
+	if len(date_list_str) == 1:
 		cond = f" AND date = '{date_list_str[0]}'" 
-	elif len(date_list_str)>1:
+	elif len(date_list_str) > 1:
 		# Correctly format tuple for SQL IN clause
 		cond = f" AND date in {str(tuple(date_list_str))}"
 	
@@ -742,7 +740,8 @@ def validate_overfilled_post(date_list_pd, operations_shift_name):
 		schedule_dict[each_item.get("date").strftime("%Y-%m-%d")] = each_item.schedule_count
 
 
-	return{"schedule_dict":schedule_dict,"post_number":post_number}
+	print("schedule_dict", schedule_dict, "post_number", post_number)
+	return { "schedule_dict": schedule_dict, "post_number": post_number }
 
 def update_employee_shift(employees, shift, owner, creation):
 	"""Update employee assignment"""

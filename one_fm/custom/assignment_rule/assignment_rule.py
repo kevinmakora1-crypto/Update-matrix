@@ -53,7 +53,7 @@ def create_assignment_rule(assignment_rule:dict):
     except Exception as e:
         frappe.log_error(
             title="Assignment Rule Save Error",
-            message=f"Failed to create or update Assignment Rule '{name}': {frappe.get_traceback()}"
+            message=f"Failed to create or update Assignment Rule: {frappe.get_traceback()}"
         )
 
 def delete_assignment_rule(assignment_rule:dict):

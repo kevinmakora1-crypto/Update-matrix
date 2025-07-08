@@ -151,8 +151,7 @@
    "default": "Today",
    "fieldname": "start_date",
    "fieldtype": "Date",
-   "label": "Start Date",
-   "reqd": 1
+   "label": "Start Date"
   },
   {
    "fetch_from": "project.expected_end_date",
@@ -163,7 +162,7 @@
   }
  ],
  "links": [],
- "modified": "2025-05-31 23:40:47.812880",
+ "modified": "2025-07-04 10:48:37.464794",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Operations Post",

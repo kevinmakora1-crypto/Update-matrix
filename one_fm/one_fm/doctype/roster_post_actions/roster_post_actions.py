@@ -9,7 +9,7 @@ import frappe
 from frappe import _
 from collections import defaultdict
 from frappe.model.document import Document
-from frappe.utils import nowdate, add_to_date, cstr, cint, getdate, get_link_to_form
+from frappe.utils import nowdate, add_to_date, cstr, cint, getdate, get_link_to_form, add_days
 from one_fm.processor import sendemail
 from frappe.permissions import get_doctype_roles
 from one_fm.one_fm.page.roster.roster import get_current_user_details
@@ -20,7 +20,7 @@ class RosterPostActions(Document):
         user_id = frappe.db.get_value("Employee", self.supervisor, ["user_id"])
         if user_id:
             link = get_link_to_form(self.doctype, self.name)
-            subject = _("New Action to {action_type}.".format(action_type=self.action_type))
+            subject = _("New Action Required")
             message = _("""
 				You have been issued a Roster Post Action.<br>
 				Please review the Post Type for the specified date in the roster, take necessary actions and update the status.<br>
@@ -165,18 +165,19 @@ def create_roster_post_actions():
             continue
 
         try:
+            yesterday_roster_post_actions_count = len(frappe.get_all("Roster Post Actions", filters={ "start_date": add_days(start_date, -1), "end_date": add_days(end_date, -1), "operations_role": role, "operations_shift": shift }))
 
             roster_post_actions_doc = frappe.new_doc("Roster Post Actions")
             roster_post_actions_doc.start_date = start_date
             roster_post_actions_doc.end_date = end_date
             roster_post_actions_doc.status = "Pending"
-            roster_post_actions_doc.action_type = "Fill Post Type"
             roster_post_actions_doc.supervisor = shift_details["shift_supervisor"]
             roster_post_actions_doc.site_supervisor = shift_details["site_supervisor"]
             roster_post_actions_doc.operations_role = role
             roster_post_actions_doc.operations_shift = shift
             roster_post_actions_doc.operations_site = shift_details["site"]
             roster_post_actions_doc.project = shift_details["project"]
+            roster_post_actions_doc.repeat_count = yesterday_roster_post_actions_count + 1
 
             for i in data["not_filled"]:
                 roster_post_actions_doc.append('operations_roles_not_filled', {

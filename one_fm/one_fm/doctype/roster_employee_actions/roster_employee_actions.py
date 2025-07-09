@@ -80,23 +80,25 @@ def create_roster_employee_actions():
 				[datetime.strptime(date.strip(), "%Y-%m-%d") for date in dates]
 			)
 
-			yesterday_roster_employee_actions_count = len(frappe.get_all("Roster Employee Actions", filters={ "start_date": add_days(start_date, -1), "end_date": add_days(end_date, -1), "employee": employee }))
+			yesterday_roster_employee_actions = frappe.db.exists("Roster Employee Actions", { "start_date": add_days(start_date, -1), "end_date": add_days(end_date, -1), "employee": employee })
 
-			roster_employee_actions = frappe.new_doc("Roster Employee Actions")
-			roster_employee_actions.start_date = start_date
-			roster_employee_actions.end_date = end_date
-			roster_employee_actions.status = "Pending"
-			roster_employee_actions.supervisor = shift_supervisor
-			roster_employee_actions.site_supervisor = site_supervisor
-			roster_employee_actions.project_manager = project_manager
-			roster_employee_actions.shift = shift_allocation
-			roster_employee_actions.site = site_allocation
-			roster_employee_actions.project = project_allocation
-			roster_employee_actions.employee = employee
-			roster_employee_actions.missing_dates = ", ".join([date.strftime("%Y-%m-%d") for date in sorted_dates])
-			roster_employee_actions.repeat_count = yesterday_roster_employee_actions_count + 1
+			if yesterday_roster_employee_actions:
+				frappe.db.set_value("Roster Employee Actions", yesterday_roster_employee_actions, "repeat_count", 2)
+			else:
+				roster_employee_actions = frappe.new_doc("Roster Employee Actions")
+				roster_employee_actions.start_date = start_date
+				roster_employee_actions.end_date = end_date
+				roster_employee_actions.status = "Pending"
+				roster_employee_actions.supervisor = shift_supervisor
+				roster_employee_actions.site_supervisor = site_supervisor
+				roster_employee_actions.project_manager = project_manager
+				roster_employee_actions.shift = shift_allocation
+				roster_employee_actions.site = site_allocation
+				roster_employee_actions.project = project_allocation
+				roster_employee_actions.employee = employee
+				roster_employee_actions.missing_dates = ", ".join([date.strftime("%Y-%m-%d") for date in sorted_dates])
 
-			roster_employee_actions.save()
+				roster_employee_actions.save()
 
 		except Exception as e:
 			frappe.log_error(frappe.get_traceback(), "Error while generating Roster employee actions")

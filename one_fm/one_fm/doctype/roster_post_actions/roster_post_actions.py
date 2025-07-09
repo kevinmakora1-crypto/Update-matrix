@@ -165,33 +165,35 @@ def create_roster_post_actions():
             continue
 
         try:
-            yesterday_roster_post_actions_count = len(frappe.get_all("Roster Post Actions", filters={ "start_date": add_days(start_date, -1), "end_date": add_days(end_date, -1), "operations_role": role, "operations_shift": shift }))
+            yesterday_roster_post_actions = frappe.db.exists("Roster Post Actions", { "start_date": add_days(start_date, -1), "end_date": add_days(end_date, -1), "operations_role": role, "operations_shift": shift })
 
-            roster_post_actions_doc = frappe.new_doc("Roster Post Actions")
-            roster_post_actions_doc.start_date = start_date
-            roster_post_actions_doc.end_date = end_date
-            roster_post_actions_doc.status = "Pending"
-            roster_post_actions_doc.supervisor = shift_details["shift_supervisor"]
-            roster_post_actions_doc.site_supervisor = shift_details["site_supervisor"]
-            roster_post_actions_doc.operations_role = role
-            roster_post_actions_doc.operations_shift = shift
-            roster_post_actions_doc.operations_site = shift_details["site"]
-            roster_post_actions_doc.project = shift_details["project"]
-            roster_post_actions_doc.repeat_count = yesterday_roster_post_actions_count + 1
+            if yesterday_roster_post_actions:
+                frappe.db.set_value("Roster Post Actions", yesterday_roster_post_actions, "repeat_count", 2)
+            else:
+                roster_post_actions_doc = frappe.new_doc("Roster Post Actions")
+                roster_post_actions_doc.start_date = start_date
+                roster_post_actions_doc.end_date = end_date
+                roster_post_actions_doc.status = "Pending"
+                roster_post_actions_doc.supervisor = shift_details["shift_supervisor"]
+                roster_post_actions_doc.site_supervisor = shift_details["site_supervisor"]
+                roster_post_actions_doc.operations_role = role
+                roster_post_actions_doc.operations_shift = shift
+                roster_post_actions_doc.operations_site = shift_details["site"]
+                roster_post_actions_doc.project = shift_details["project"]
 
-            for i in data["not_filled"]:
-                roster_post_actions_doc.append('operations_roles_not_filled', {
-                    "date": i["date"],
-                    "quantity": i["quantity"]
-                })
+                for i in data["not_filled"]:
+                    roster_post_actions_doc.append('operations_roles_not_filled', {
+                        "date": i["date"],
+                        "quantity": i["quantity"]
+                    })
 
-            for i in data["over_filled"]:
-                roster_post_actions_doc.append('operations_roles_over_filled', {
-                    "date": i["date"],
-                    "quantity": i["quantity"]
-                })
+                for i in data["over_filled"]:
+                    roster_post_actions_doc.append('operations_roles_over_filled', {
+                        "date": i["date"],
+                        "quantity": i["quantity"]
+                    })
 
-            roster_post_actions_doc.save()
+                roster_post_actions_doc.save()
         except:
             frappe.log_error(frappe.get_traceback(), "Error while creating roster post actions")
 

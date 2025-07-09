@@ -80,7 +80,7 @@ def create_roster_employee_actions():
 				[datetime.strptime(date.strip(), "%Y-%m-%d") for date in dates]
 			)
 
-			yesterday_roster_employee_action = frappe.db.exists("Roster Employee Actions", f'{add_days(start_date, -1)}|{add_days(end_date, -1)}|{employee}')
+			yesterday_roster_employee_actions_count = len(frappe.get_all("Roster Employee Actions", filters={ "start_date": add_days(start_date, -1), "end_date": add_days(end_date, -1), "employee": employee }))
 
 			roster_employee_actions = frappe.new_doc("Roster Employee Actions")
 			roster_employee_actions.start_date = start_date
@@ -94,9 +94,7 @@ def create_roster_employee_actions():
 			roster_employee_actions.project = project_allocation
 			roster_employee_actions.employee = employee
 			roster_employee_actions.missing_dates = ", ".join([date.strftime("%Y-%m-%d") for date in sorted_dates])
-
-			if yesterday_roster_employee_action:
-				roster_employee_actions.repeat_count = 2 # static because just considering for yesterday only
+			roster_employee_actions.repeat_count = yesterday_roster_employee_actions_count + 1
 
 			roster_employee_actions.save()
 

@@ -59,7 +59,7 @@ def get_staff(assigned=1, employee_id=None, employee_name=None, company=None, pr
 		select
 			distinct emp.name, emp.employee_id, emp.employee_name, emp.image, emp.one_fm_nationality as nationality,
 		   usr.mobile_no, usr.name as email, emp.designation, emp.department, emp.shift, emp.site,
-		 emp.project,opsite.account_supervisor_name as site_supervisor,opshift.supervisor_name as shift_supervisor, emp.custom_operations_role_allocation, emp.custom_is_reliever
+		 emp.project,opsite.account_supervisor_name as site_supervisor,opshift.supervisor_name as shift_supervisor, emp.custom_operations_role_allocation, emp.custom_is_reliever, emp.custom_is_weekend_reliever
 		from `tabEmployee` as emp, `tabUser` as usr,`tabOperations Shift` as opshift,`tabOperations Site` as opsite
 		where
 		emp.project is not NULL
@@ -1583,7 +1583,7 @@ def get_shift_details_of_employee(emp_name_arg, date_arg):
 
 
 @frappe.whitelist()
-def assign_staff(employees, shift, custom_is_reliever, custom_operations_role_allocation=None, request_employee_assignment=None):
+def assign_staff(employees, shift, custom_is_reliever, custom_is_weekend_reliever, custom_operations_role_allocation=None, request_employee_assignment=None):
 	if not employees:
 		frappe.throw("Please select employees first")
 
@@ -1595,7 +1595,8 @@ def assign_staff(employees, shift, custom_is_reliever, custom_operations_role_al
 			if not cint(request_employee_assignment):
 				frappe.enqueue(assign_job, employee=employee_name_iter, shift=shift_name_val, site=site_val, project=project_val,
 							   custom_operations_role_allocation=custom_operations_role_allocation,
-							   custom_is_reliever=custom_is_reliever, is_async=True, queue="long")
+							   custom_is_reliever=custom_is_reliever,
+							   custom_is_weekend_reliever=custom_is_weekend_reliever, is_async=True, queue="long")
 			else:
 				emp_project_db, emp_site_db, emp_shift_db = frappe.db.get_value("Employee", employee_name_iter, ["project", "site", "shift"])
 
@@ -1620,13 +1621,14 @@ def create_request_employee_assignment(employee, from_shift, to_shift):
 	frappe.db.commit()
 
 
-def assign_job(employee, shift, site, project, custom_operations_role_allocation, custom_is_reliever):
+def assign_job(employee, shift, site, project, custom_operations_role_allocation, custom_is_reliever, custom_is_weekend_reliever):
 	update_values = {
 		"shift": shift,
 		"site": site,
 		"project": project,
 		"custom_operations_role_allocation": custom_operations_role_allocation,
-		"custom_is_reliever": custom_is_reliever
+		"custom_is_reliever": custom_is_reliever,
+		"custom_is_weekend_reliever": custom_is_weekend_reliever
 	}
 	frappe.db.set_value("Employee", employee, update_values)
 	frappe.db.commit()
@@ -1831,6 +1833,7 @@ def get_employee_details(employee_id):
 			"site": employee.site,
 			"shift": employee.shift,
 			"custom_is_reliever": employee.custom_is_reliever,
+			"custom_is_weekend_reliever": employee.custom_is_weekend_reliever,
 			"custom_operations_role_allocation": employee.custom_operations_role_allocation
 		}
 	except frappe.DoesNotExistError:

@@ -1,6 +1,6 @@
 [
     {
-        "assign_condition": "status in (\"Pending\", \"Overdue\")",
+        "assign_condition": "status in (\"Pending\")",
         "assignment_days": [
             {
                 "day": "Sunday",
@@ -60,7 +60,7 @@
         "name": "Roster Post Actions - Site Supervisor",
         "priority": 0,
         "rule": "Based on Field",
-        "unassign_condition": "status == \"Cancelled\"",
+        "unassign_condition": null,
         "users": []
     },
     {

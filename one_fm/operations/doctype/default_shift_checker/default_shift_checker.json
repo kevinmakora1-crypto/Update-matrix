@@ -73,7 +73,7 @@
    "fieldtype": "Select",
    "in_standard_filter": 1,
    "label": "Action Type",
-   "options": "No Changes Made\nShift Allocation Update\nMark Employee as Day Off Reliever\nMark Employee as Weekend Reliever\nUn-Mark Employee as Day Off Reliever\nUn-Mark Employee as Weekend Reliever"
+   "options": "No Changes Made\nShift Allocation Update\nMark Employee as Day Off Reliever\nMark Employee as Weekend Reliever\nUnMark Employee as Day Off Reliever\nUnMark Employee as Weekend Reliever"
   },
   {
    "fieldname": "site_supervisor",

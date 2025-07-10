@@ -64,7 +64,7 @@
         "users": []
     },
     {
-        "assign_condition": "status in (\"Pending\", \"Overdue\") and site_supervisor is not None and site_supervisor != \"\"",
+        "assign_condition": "status in (\"Pending\") and site_supervisor is not None and site_supervisor != \"\"",
         "assignment_days": [
             {
                 "day": "Sunday",
@@ -124,7 +124,7 @@
         "name": "Roster Employee Actions - Site Supervisor",
         "priority": 0,
         "rule": "Based on Field",
-        "unassign_condition": "status == \"Cancelled\"",
+        "unassign_condition": null,
         "users": []
     },
     {

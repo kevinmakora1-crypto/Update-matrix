@@ -6,7 +6,7 @@ from frappe.model.document import Document
 from frappe import _
 from frappe.query_builder import DocType
 from frappe.query_builder.functions import Count
-from frappe.utils import getdate, get_last_day
+from frappe.utils import getdate, get_last_day, add_days
 
 class DefaultShiftChecker(Document):
 	def on_submit(self):
@@ -23,9 +23,20 @@ class DefaultShiftChecker(Document):
 				"shift": self.new_shift_allocation,
 				"custom_operations_role_allocation": self.new_operations_role_allocation
 			},
-			"Mark Employee as Reliever": {
-				"custom_is_reliever": 1
-			}
+			"Mark Employee as Day Off Reliever": {
+				"custom_is_reliever": 1,
+				"custom_is_weekend_reliever": 0
+			},
+			"Mark Employee as Weekend Reliever": {
+				"custom_is_reliever": 0,
+				"custom_is_weekend_reliever": 1
+			},
+			"UnMark Employee as Day Off Reliever": {
+				"custom_is_reliever": 0
+			},
+			"UnMark Employee as Weekend Reliever": {
+				"custom_is_weekend_reliever": 0
+			},
 		}
 
 		if self.action_type in field_updates:
@@ -110,29 +121,34 @@ def create_checker(start_date, end_date, is_day_off_reliever=False, is_weekend_r
 	# Create Default Shift Checker records
 	for employee in query.run(as_dict=True):
 		try:
-			doc = frappe.new_doc("Default Shift Checker")
-			doc.employee = employee.employee
-			doc.start_date = start_date
-			doc.end_date = end_date
-			doc.site_supervisor = frappe.db.get_value("Operations Site", employee.default_site, "account_supervisor")
+			yesterday_default_shift_checker = frappe.db.exists("Default Shift Checker", { "employee": employee.employee, "start_date": add_days(start_date, -1) })
 
-			if is_day_off_reliever:
-				doc.is_day_off_reliever = 1
-			if is_weekend_reliever:
-				doc.is_weekend_reliever = 1
+			if yesterday_default_shift_checker:
+				frappe.db.set_value("Default Shift Checker", yesterday_default_shift_checker, "repeat_count", 2)
+			else:
+				doc = frappe.new_doc("Default Shift Checker")
+				doc.employee = employee.employee
+				doc.start_date = start_date
+				doc.end_date = end_date
+				doc.site_supervisor = frappe.db.get_value("Operations Site", employee.default_site, "account_supervisor")
 
-			# Determine shift condition
-			shift_condition = (EmployeeSchedule.shift == employee.default_shift) if is_reliever else (EmployeeSchedule.shift != employee.default_shift)
-			shifts = get_shift_assignments(employee.employee, shift_condition, start_date, end_date, EmployeeSchedule)
+				if is_day_off_reliever:
+					doc.is_day_off_reliever = 1
+				if is_weekend_reliever:
+					doc.is_weekend_reliever = 1
 
-			for shift_name, data in shifts.items():
-				doc.append(child_table_field_name, {
-					"operations_shift": shift_name,
-					"schedule_dates": data["dates"],
-					"count": data["count"]
-				})
+				# Determine shift condition
+				shift_condition = (EmployeeSchedule.shift == employee.default_shift) if is_reliever else (EmployeeSchedule.shift != employee.default_shift)
+				shifts = get_shift_assignments(employee.employee, shift_condition, start_date, end_date, EmployeeSchedule)
 
-			doc.insert()
+				for shift_name, data in shifts.items():
+					doc.append(child_table_field_name, {
+						"operations_shift": shift_name,
+						"schedule_dates": data["dates"],
+						"count": data["count"]
+					})
+
+				doc.insert()
 		except Exception as e:
 			frappe.log_error("Default Shift Checker Error", str(e))
 

@@ -3,18 +3,24 @@
 
 from datetime import datetime
 import frappe
-from frappe.utils import getdate, get_last_day, get_first_day, date_diff
+from frappe.utils import getdate, get_last_day, get_first_day, date_diff, add_days
 from frappe.model.document import Document
 from one_fm.utils import get_week_start_end
-from one_fm.operations.doctype.operations_shift.operations_shift import get_supervisor_operations_shifts, get_shift_supervisor
 
 class PostSchedulerChecker(Document):
-	def autoname(self):
-		self.name = f"{self.contract}-{str(getdate())}"
 	def before_insert(self):
-		name = f"{self.contract}-{str(getdate())}"
-		if frappe.db.exists(self.doctype, {'name': name}):
-			frappe.get_doc(self.doctype, name).delete()
+		today = getdate()
+		yesterday = add_days(today, -1)
+
+		today_name = f"{self.contract}-{str(today)}"
+		yesterday_name = f"{self.contract}-{str(yesterday)}"
+
+		# Check for yesterday's record
+		if frappe.db.exists(self.doctype, {'name': yesterday_name}):
+			frappe.db.set_value(self.doctype, yesterday_name, 'repeat_count', 2)
+		# Else check for today's record and delete if exists
+		elif frappe.db.exists(self.doctype, {'name': today_name}):
+			frappe.get_doc(self.doctype, today_name).delete()
 
 	def validate(self):
 		if self.is_new():
@@ -23,9 +29,8 @@ class PostSchedulerChecker(Document):
 				frappe.throw('No issues found.')
 		if not self.check_date:
 			self.check_date = getdate()
-		self.__get_shift_supervisor()
+		self.get_project_manager()
 		self.get_site_supervisor()
-
 
 	def after_insert(self):
 		# self.fill_items()
@@ -33,12 +38,8 @@ class PostSchedulerChecker(Document):
 		# 	frappe.throw('No issues found.')
 		frappe.db.commit()
 
-	def __get_shift_supervisor(self):
-		shifts = get_supervisor_operations_shifts(project=self.project)
-		if shifts and len(shifts) > 0:
-			self.supervisor = get_shift_supervisor(shifts[0])
-			if self.supervisor:
-				self.supervisor_name = frappe.db.get_value("Employee", self.supervisor, "employee_name")
+	def get_project_manager(self):
+		self.project_manager = frappe.db.get_value('Project', self.project, 'account_manager')
 
 
 	def get_site_supervisor(self):

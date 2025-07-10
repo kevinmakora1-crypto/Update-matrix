@@ -17,7 +17,7 @@
   "operations_role",
   "operations_site",
   "column_break_9",
-  "action_type",
+  "repeat_count",
   "site_supervisor",
   "site_supervisor_name",
   "site_supervisor_user",
@@ -33,7 +33,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nCompleted\nOverdue\nCancelled"
+   "options": "Pending\nCompleted"
   },
   {
    "fieldname": "supervisor",
@@ -43,12 +43,6 @@
    "label": "Shift Supervisor",
    "options": "Employee",
    "reqd": 1
-  },
-  {
-   "fieldname": "action_type",
-   "fieldtype": "Select",
-   "label": "Action Type",
-   "options": "Fill Post Type\nReview Post Type"
   },
   {
    "fieldname": "start_date",
@@ -162,12 +156,19 @@
    "hidden": 1,
    "label": "Site Supervisor User",
    "options": "User"
+  },
+  {
+   "default": "1",
+   "fieldname": "repeat_count",
+   "fieldtype": "Int",
+   "label": "Repeat Count",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-01 11:23:53.316766",
+ "modified": "2025-07-09 13:36:39.637573",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Roster Post Actions",

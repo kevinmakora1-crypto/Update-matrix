@@ -1373,8 +1373,8 @@ def dayoff(employees, client_day_off=0, selected_dates=0, selected_reliever=None
         querycontent = """"""
         roster_list=[]
 
-        if not repeat_till and not cint(project_end_date) and not selected_dates:
-            frappe.throw(_("Please select either a repeat till date or check the project end date option."))
+        if not repeat_till and not cint(project_end_date) and not cint(selected_dates):
+            frappe.throw(_("Please select either a repeat till date or check the project end date or check selected days only option."))
 
         from one_fm.api.mobile.roster import month_range
         if cint(selected_dates):

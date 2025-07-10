@@ -3631,9 +3631,9 @@ function dayoff(page) {
 	let d = new frappe.ui.Dialog({
 		'title': 'Day Off',
 		'fields': [
-			{ 'label': 'Selected days only', 'fieldname': 'selected_dates', 'fieldtype': 'Check', 'default': 0 },
 			{ 'label': 'Set Reliever', 'fieldname': 'set_reliever', 'fieldtype': 'Check', 'default': 0 },
 			{ 'label': 'Client Day Off', 'fieldname': 'client_day_off', 'fieldtype': 'Check', 'default': 0 },
+			{ 'label': 'Selected days only', 'fieldname': 'selected_dates', 'fieldtype': 'Check', 'default': 0 },
 			{ 'label': 'Reliever', 'fieldname': 'selected_reliever', 'fieldtype': 'Select', 'options': reliever_options,'depends_on': 'eval:doc.set_reliever==1' },
 			{ 'label': 'Repeat', 'fieldname': 'repeat', 'fieldtype': 'Select', 'depends_on': 'eval:doc.selected_dates==0', 'options': 'Does not repeat\nWeekly\nMonthly' },
 			{ 'fieldtype': 'Section Break', 'fieldname': 'sb1', 'depends_on': 'eval:doc.repeat=="Weekly" && doc.selected_dates==0' },

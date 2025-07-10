@@ -8,12 +8,13 @@
   "employee",
   "employee_name",
   "default_shift_allocation",
+  "default_operations_role_allocation",
   "column_break_fxzs",
+  "repeat_count",
   "start_date",
   "end_date",
   "is_day_off_reliever",
   "is_weekend_reliever",
-  "default_operations_role_allocation",
   "actions_section",
   "status",
   "site_supervisor",
@@ -72,7 +73,7 @@
    "fieldtype": "Select",
    "in_standard_filter": 1,
    "label": "Action Type",
-   "options": "No Changes Made\nShift Allocation Update\nMark Employee as Reliever"
+   "options": "No Changes Made\nShift Allocation Update\nMark Employee as Day Off Reliever\nMark Employee as Weekend Reliever\nUn-Mark Employee as Day Off Reliever\nUn-Mark Employee as Weekend Reliever"
   },
   {
    "fieldname": "site_supervisor",
@@ -174,10 +175,10 @@
    "options": "Default Shift Checker Shift"
   },
   {
-   "default": "0",
-   "fieldname": "is_weekend_reliever",
-   "fieldtype": "Check",
-   "label": "Is Weekend Reliever",
+   "default": "1",
+   "fieldname": "repeat_count",
+   "fieldtype": "Int",
+   "label": "Repeat Count",
    "read_only": 1
   },
   {
@@ -186,12 +187,20 @@
    "fieldtype": "Check",
    "label": "Is Day Off Reliever",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_weekend_reliever",
+   "fieldtype": "Check",
+   "label": "Is Weekend Reliever",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2025-07-02 16:15:44.624816",
+ "modified": "2025-07-10 13:23:29.350854",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Default Shift Checker",

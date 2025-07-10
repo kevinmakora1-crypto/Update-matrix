@@ -6,7 +6,7 @@ from frappe.model.document import Document
 from frappe import _
 from frappe.query_builder import DocType
 from frappe.query_builder.functions import Count
-from frappe.utils import getdate, get_last_day
+from frappe.utils import getdate, get_last_day, add_days
 
 class DefaultShiftChecker(Document):
 	def on_submit(self):
@@ -23,9 +23,20 @@ class DefaultShiftChecker(Document):
 				"shift": self.new_shift_allocation,
 				"custom_operations_role_allocation": self.new_operations_role_allocation
 			},
-			"Mark Employee as Reliever": {
-				"custom_is_reliever": 1
-			}
+			"Mark Employee as Day Off Reliever": {
+				"custom_is_reliever": 1,
+				"custom_is_weekend_reliever": 0
+			},
+			"Mark Employee as Weekend Reliever": {
+				"custom_is_reliever": 0,
+				"custom_is_weekend_reliever": 1
+			},
+			"Un-Mark Employee as Day Off Reliever": {
+				"custom_is_reliever": 0
+			},
+			"Un-Mark Employee as Weekend Reliever": {
+				"custom_is_weekend_reliever": 0
+			},
 		}
 
 		if self.action_type in field_updates:

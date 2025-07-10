@@ -936,7 +936,7 @@ function bind_events(page) {
 			$(".selectclass").map(function () {
 				classgrt.indexOf(this.getAttribute("data-selectid")) === -1 ? classgrt.push(this.getAttribute("data-selectid")) : classgrt.splice(classgrt.indexOf(this.getAttribute("data-selectid")), 1);
 			});
-			
+
 			if ($(this).parent().parent().parent().children("td").children().hasClass("redboxcolor")) {
 				$("#selRetrive").show();
 				$(".selPost").hide();
@@ -1977,6 +1977,9 @@ function render_staff_list_view(data) {
 			<td>
 				${custom_is_reliever ? "Yes" : "No"}
 			</td>
+			<td>
+				${custom_is_weekend_reliever ? 'Yes' : 'No'}
+			</td>
 		</tr>`;
 		$staffdatatable.append(row);
 		$(".datatablecjeckbox").change(function () {
@@ -2276,7 +2279,7 @@ function staff_edit_dialog() {
 			}
 		],
 		primary_action: function () {
-			let { shift, custom_operations_role_allocation, custom_is_reliever } = d.get_values();
+			let { shift, custom_operations_role_allocation, custom_is_reliever, custom_is_weekend_reliever } = d.get_values();
 
 			$("#cover-spin").show(0);
 			frappe.call({
@@ -2303,6 +2306,7 @@ function staff_edit_dialog() {
 			callback: function (r) {
 				if (r.message) {
 					let employee_details = r.message;
+					console.log(employee_details)
 					// Populate fields
 					d.set_value("project", employee_details.project);
 					d.set_value("site", employee_details.site);

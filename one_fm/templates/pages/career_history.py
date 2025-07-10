@@ -120,14 +120,17 @@ def create_career_history_from_portal(job_applicant, career_history_details, int
         company = career_history.append('career_history_company')
         for field in career_history_fields:
             company.set(field, history.get(field))
+        
+        promotions = [p for p in history.get('promotions', []) if p.get('start_date')]
+        if promotions and promotions[0].get("start_date"):
+            company.end_date = getdate(promotions[0].get("start_date"))
 
         last_job_title = history.get('job_title')
         last_employment_type = history.get("employment_type")
         last_salary = history.get('monthly_salary_in_kwd')
         last_job_responsibility = history.get("responsibility_one")
 
-
-        for promotion in history.get('promotions'):
+        for idx, promotion in enumerate(promotions):
             company = career_history.append('career_history_company')
             company.company_name = history.get('company_name')
             company.job_title = last_job_title
@@ -143,6 +146,10 @@ def create_career_history_from_portal(job_applicant, career_history_details, int
                 company.monthly_salary_in_kwd = promotion.get('monthly_salary_in_kwd')
                 last_salary = promotion.get('monthly_salary_in_kwd')
             company.start_date = getdate(promotion.get('start_date'))
+            if idx < len(promotions) - 1:
+                next_start_date = promotions[idx + 1].get('start_date')
+                if next_start_date:
+                    company.end_date = getdate(next_start_date)
         if history.get('left_the_company'):
             company.end_date = history.get('left_the_company')
         if history.get('reason_for_leaving_job'):

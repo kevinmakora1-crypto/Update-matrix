@@ -49,7 +49,10 @@ class MOM(Document):
 				attendees_list.append({'poc_name':each.poc_name,'poc_designation':each.poc_designation})
 
 			for attendees in self.general_attendance:
-				general_attendees_list.append({'attendee_name':attendees.attendee_name})
+				parts = attendees.attendee_name.split()
+				first_name = parts[0]
+				last_name = " ".join(parts[1:]) if len(parts) > 1 else ""
+				general_attendees_list.append({'first_name': first_name, 'last_name': last_name})
 
 			poc_check.general_attendees = general_attendees_list
 			poc_check.mom_poc_table = attendees_list

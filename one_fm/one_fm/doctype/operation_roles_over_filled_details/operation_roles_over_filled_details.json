@@ -7,29 +7,14 @@
  "engine": "InnoDB",
  "field_order": [
   "date",
-  "operations_role",
-  "operations_shift",
   "quantity"
  ],
  "fields": [
   {
    "fieldname": "date",
    "fieldtype": "Date",
+   "in_list_view": 1,
    "label": "Date"
-  },
-  {
-   "fieldname": "operations_role",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Operations Role",
-   "options": "Operations Role"
-  },
-  {
-   "fieldname": "operations_shift",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Operations Shift",
-   "options": "Operations Shift"
   },
   {
    "fieldname": "quantity",
@@ -41,10 +26,10 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-02-17 16:56:12.255178",
+ "modified": "2025-06-30 07:29:18.291242",
  "modified_by": "Administrator",
  "module": "one_fm",
- "name": "Post Types OverFilled",
+ "name": "Operation Roles Over Filled Details",
  "owner": "Administrator",
  "permissions": [],
  "sort_field": "modified",

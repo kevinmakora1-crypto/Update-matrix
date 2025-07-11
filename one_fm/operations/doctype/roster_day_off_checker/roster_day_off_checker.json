@@ -36,13 +36,14 @@
   "shift_allocation",
   "required_number_of_days_off",
   "day_off_details_section",
-  "roster_days_off",
-  "roster_day_off_ot",
+  "rostered_days_off",
+  "rostered_day_off_ot",
   "column_break_ywpy",
   "day_off_taken",
   "worked_day_off_ot",
   "column_break_qxlm",
   "day_off_difference",
+  "repeat_count",
   "detail_section_section",
   "amended_from"
  ],
@@ -273,18 +274,6 @@
    "label": "Day Off Details"
   },
   {
-   "fieldname": "roster_days_off",
-   "fieldtype": "Int",
-   "label": "Roster Day Off",
-   "read_only": 1
-  },
-  {
-   "fieldname": "roster_day_off_ot",
-   "fieldtype": "Int",
-   "label": "Roster Day Off OT",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_ywpy",
    "fieldtype": "Column Break"
   },
@@ -303,11 +292,30 @@
   {
    "fieldname": "column_break_qxlm",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rostered_days_off",
+   "fieldtype": "Int",
+   "label": "Rostered Day Off",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rostered_day_off_ot",
+   "fieldtype": "Int",
+   "label": "Rostered Day Off OT",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "repeat_count",
+   "fieldtype": "Int",
+   "label": "Repeat Count",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-30 23:37:57.141525",
+ "modified": "2025-07-09 17:12:23.782346",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Roster Day Off Checker",

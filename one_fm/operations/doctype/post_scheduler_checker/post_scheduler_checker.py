@@ -6,6 +6,8 @@ import frappe
 from frappe.utils import getdate, get_last_day, get_first_day, date_diff, add_days
 from frappe.model.document import Document
 from one_fm.utils import get_week_start_end
+from one_fm.operations.doctype.operations_shift.operations_shift import get_supervisor_operations_shifts, get_shift_supervisor
+import math
 
 class PostSchedulerChecker(Document):
 	pass
@@ -166,4 +168,42 @@ def schedule_roster_checker():
 
 @frappe.whitelist()
 def generate_checker():
-	frappe.enqueue(schedule_roster_checker)
+	count = frappe.db. sql("""
+			SELECT
+				COUNT(*)
+			FROM
+				`tabContracts` c JOIN `tabProject` p ON p.name = c.project
+			WHERE
+				c.workflow_state = 'Active' AND p.is_active = 'Yes'
+	""")[0][0]
+
+	if count == 0:
+		return
+	
+	page = 1
+	page_size = 10
+	iterations = math.ceil (count / page_size)
+	for current_page in range(page, iterations + 1):
+		offset = (current_page - 1) * page_size
+		frappe.enqueue(create_post_schedule_checker_from_contracts, page_size=page_size, offset=offset)
+
+def create_post_schedule_checker_from_contracts(page_size, offset):
+	contracts = frappe.db.sql("""
+		SELECT
+			c.name
+		FROM
+			`tabContracts` c JOIN `tabProject` p ON p.name = c.project
+		WHERE
+			c.workflow_state = 'Active' AND p.is_active = 'Yes'
+		LIMIT %s OFFSET %s
+	""", (page_size, offset), as_dict=1)
+
+	if not contracts:
+		return
+
+	for row in [obj.get("name") for obj in contracts]:
+		try:
+			doc = frappe.get_doc({"doctype":"Post Scheduler Checker", 'contract': row}).insert(ignore_permissions=True)
+		except Exception as e:
+			print(e)
+	frappe.db.commit()

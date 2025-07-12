@@ -12,12 +12,14 @@
   "project",
   "site_supervisor",
   "site_supervisor_name",
+  "site_supervisor_user",
   "column_break_2",
+  "repeat_count",
   "check_date",
   "client",
-  "supervisor",
-  "supervisor_name",
-  "site_supervisor_user",
+  "project_manager",
+  "project_manager_name",
+  "project_manager_user",
   "section_break_8",
   "items"
  ],
@@ -71,22 +73,6 @@
    "options": "Post Scheduler Checker Item"
   },
   {
-   "fieldname": "supervisor",
-   "fieldtype": "Link",
-   "label": "Shift Supervisor",
-   "options": "Employee",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "supervisor.employee_name",
-   "fieldname": "supervisor_name",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Shift Supervisor Name",
-   "read_only": 1
-  },
-  {
    "fieldname": "site_supervisor",
    "fieldtype": "Link",
    "label": "Site Supervisor",
@@ -107,7 +93,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nCompleted\nOverdue\nCancelled"
+   "options": "Pending\nCompleted"
   },
   {
    "fetch_from": "site_supervisor.user_id",
@@ -117,12 +103,44 @@
    "hidden": 1,
    "label": "Site Supervisor User",
    "options": "User"
+  },
+  {
+   "default": "1",
+   "fieldname": "repeat_count",
+   "fieldtype": "Int",
+   "label": "Repeat Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "project_manager",
+   "fieldtype": "Link",
+   "label": "Project Manager",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "project_manager.employee_name",
+   "fetch_if_empty": 1,
+   "fieldname": "project_manager_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Project Manager Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "project_manager.user_id",
+   "fetch_if_empty": 1,
+   "fieldname": "project_manager_user",
+   "fieldtype": "Link",
+   "label": "Project Manager User",
+   "options": "User",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-16 17:05:51.826819",
+ "modified": "2025-07-10 11:12:27.033173",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Post Scheduler Checker",

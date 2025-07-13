@@ -59,5 +59,11 @@ frappe.query_reports["Accommodation Checkin Checkout Report"] = {
 			"fieldtype": "Check",
 			"default": true
 		},
+		{
+			"fieldname":"checkout_list_only",
+			"label": __("Checkout List Only"),
+			"fieldtype": "Check",
+			"default": false
+		},
 	]
 };

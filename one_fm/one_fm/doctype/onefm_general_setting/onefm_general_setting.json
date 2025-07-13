@@ -16,7 +16,8 @@
   "roster_settings_section",
   "default_shift_checker_threshold",
   "column_break_tusm",
-  "reliever_default_shift_checker_threshold",
+  "day_off_reliever_default_shift_checker_threshold",
+  "weekend_reliever_default_shift_checker_threshold",
   "section_break_2",
   "zenquote_keyword_category",
   "zenquotes_api_key",
@@ -222,16 +223,23 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "Any reliever assigned to the same shift up to this number of times will be reported in Default Shift Checker",
-   "fieldname": "reliever_default_shift_checker_threshold",
+   "description": "Any weekend reliever assigned to the same shift up to this number of times will be reported in Default Shift Checker",
+   "fieldname": "weekend_reliever_default_shift_checker_threshold",
    "fieldtype": "Int",
-   "label": "Reliever Default Shift Checker Threshold ",
+   "label": "Weekend Reliever Default Shift Checker Threshold",
+   "reqd": 1
+  },
+  {
+   "description": "Any day off reliever assigned to the same shift up to this number of times will be reported in Default Shift Checker",
+   "fieldname": "day_off_reliever_default_shift_checker_threshold",
+   "fieldtype": "Int",
+   "label": "Day Off Reliever Default Shift Checker Threshold ",
    "reqd": 1
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2025-04-25 09:56:02.132468",
+ "modified": "2025-07-02 15:51:55.759750",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "ONEFM General Setting",

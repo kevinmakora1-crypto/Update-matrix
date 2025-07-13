@@ -631,12 +631,11 @@ var set_type_of_license_btn = function(frm) {
 		$wrapper
 			.html(type_of_license_html);
 		$wrapper.on('click', '.type_of_license_btn_html', function() {
-			if(frm.doc.docstatus == 0){
 				var $btn = $(this);
 				$wrapper.find('.type_of_license_btn_html').removeClass('btn-primary');
 				$btn.addClass('btn-primary');
 				frm.set_value('type_of_license', $btn.attr('data-type_of_license'));
-			}
+			
 		});
 	}
 	else{

@@ -34,7 +34,16 @@
   "column_break_kncm",
   "employee_name",
   "shift_allocation",
+  "required_number_of_days_off",
+  "day_off_details_section",
+  "rostered_days_off",
+  "rostered_day_off_ot",
+  "column_break_ywpy",
+  "day_off_taken",
+  "worked_day_off_ot",
+  "column_break_qxlm",
   "day_off_difference",
+  "repeat_count",
   "detail_section_section",
   "amended_from"
  ],
@@ -142,6 +151,7 @@
   {
    "fieldname": "project_manager",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "in_standard_filter": 1,
    "label": "Project Manager",
    "options": "Employee",
@@ -211,7 +221,7 @@
    "fetch_from": "employee.day_off_category",
    "fieldname": "day_off_category",
    "fieldtype": "Data",
-   "label": "Day Off Category",
+   "label": "Employee Day Off Category",
    "read_only": 1
   },
   {
@@ -224,8 +234,8 @@
   {
    "fetch_from": "employee.number_of_days_off",
    "fieldname": "number_of_days_off",
-   "fieldtype": "Data",
-   "label": "Number of Days Off",
+   "fieldtype": "Int",
+   "label": "Employee Record Number Of Days Off",
    "read_only": 1
   },
   {
@@ -251,11 +261,61 @@
   {
    "fieldname": "column_break_xlfy",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "required_number_of_days_off",
+   "fieldtype": "Data",
+   "label": "Required Number Of Days Off (New Joining/Exit/Annual Leave)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "day_off_details_section",
+   "fieldtype": "Section Break",
+   "label": "Day Off Details"
+  },
+  {
+   "fieldname": "column_break_ywpy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "day_off_taken",
+   "fieldtype": "Int",
+   "label": "Day Off Taken",
+   "read_only": 1
+  },
+  {
+   "fieldname": "worked_day_off_ot",
+   "fieldtype": "Int",
+   "label": "Worked Day Off OT",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_qxlm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rostered_days_off",
+   "fieldtype": "Int",
+   "label": "Rostered Day Off",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rostered_day_off_ot",
+   "fieldtype": "Int",
+   "label": "Rostered Day Off OT",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "repeat_count",
+   "fieldtype": "Int",
+   "label": "Repeat Count",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-20 16:53:00.161096",
+ "modified": "2025-07-09 17:12:23.782346",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Roster Day Off Checker",

@@ -343,6 +343,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "default": "0",
    "fieldname": "driving_license_required",
    "fieldtype": "Check",
@@ -350,6 +351,7 @@
    "label": "Is Kuwait Driving License a Mandatory Requirement"
   },
   {
+   "allow_on_submit": 1,
    "depends_on": "driving_license_required",
    "fieldname": "type_of_license",
    "fieldtype": "Select",
@@ -1021,7 +1023,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-09-19 14:13:31.692633",
+ "modified": "2025-07-01 09:58:20.845350",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "ERF",

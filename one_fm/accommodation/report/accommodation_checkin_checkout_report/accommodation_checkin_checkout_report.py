@@ -58,6 +58,9 @@ def get_columns(filters):
 				   'fieldtype': 'Data',
 				   'width': 120,
 			   },
+      ]
+	if not filters.get('checkout_list_only'):
+		columns += [
 			   {
 				   'fieldname': 'checkin_checkout_date_time',
 				   'label': _('Checkin'),
@@ -73,7 +76,7 @@ def get_columns(filters):
 			   },
 		]
 
-	if not filters.get('current_list_only'):
+	if not filters.get('current_list_only') or filters.get('checkout_list_only'):
 		columns += [
 				{
 					'fieldname': 'checkout_date',
@@ -134,58 +137,85 @@ def get_conditions(filters):
 	return conditions
 
 def get_data(filters):
-	data=[]
-	current_list_only = filters.get('current_list_only')
-	conditions = get_conditions(filters)
-	leave_data = get_leave_data()
-	acc_list=frappe.db.sql("""select * from `tabAccommodation Checkin Checkout` where type='IN' {0}""".format(conditions), as_dict=1)
-	for acc in acc_list:
-		checkout_date = ''
-		checkout = ''
-		designation = ''
-		project = ''
-		nationality = ''
-		employee_status = ''
-		if acc.employee:
-			employee = frappe.get_doc('Employee', acc.employee)
-			designation = employee.designation
-			project = employee.project
-			employee_status = employee.status
-			nationality = employee.one_fm_nationality
-		if acc.checked_out and not current_list_only:
-			checkout = frappe.db.exists('Accommodation Checkin Checkout', {'checkin_reference': acc.name})
-			if checkout:
-				checkout_date = frappe.db.get_value('Accommodation Checkin Checkout', checkout, 'checkin_checkout_date_time')
-		if acc.checked_out and current_list_only:
-			pass
-		else:
-			row = {
-				'employee':acc.employee,
-				'accommodation':acc.accommodation,
-				'accommodation_unit':acc.accommodation_unit,
-				'accommodation_space':acc.accommodation_space,
-				'bed':acc.bed,
-				'employee_id':acc.employee_id,
-				'full_name':acc.full_name,
-				'civil_id':acc.civil_id,
-				'checkin_checkout_date_time':acc.checkin_checkout_date_time,
-				'checkin_ref':acc.name,
-				'tenant_category':acc.tenant_category,
-				'designation':designation,
-				'project':project,
-				'nationality':nationality,
-				'employee_status':employee_status
-			}
-			if not current_list_only:
-				row = {**row, **{
-					'checkout_date':checkout_date,
-					'checkout':checkout
-				}}
-			if row.get('employee_status') and leave_data and leave_data.get(row.get('employee_status')):
-				row['employee_status'] = f"<i style='color:red'>{leave_data.get(row.get('employee_status'))}</i>"
-			data.append(row)
+    data = []
+    current_list_only = filters.get('current_list_only')
+    checkout_list_only = filters.get('checkout_list_only')
+    conditions = get_conditions(filters)
+    leave_data = get_leave_data()
 
-	return data
+    acc_list = frappe.db.sql("""
+        SELECT * FROM `tabAccommodation Checkin Checkout`
+        WHERE type = 'IN' {0}
+    """.format(conditions), as_dict=1)
+
+    for acc in acc_list:
+        checkout = ''
+        checkout_date = ''
+        designation = ''
+        project = ''
+        nationality = ''
+        employee_status = ''
+
+        if acc.employee:
+            employee = frappe.get_doc('Employee', acc.employee)
+            designation = employee.designation
+            project = employee.project
+            employee_status = employee.status
+            nationality = employee.one_fm_nationality
+
+        # Check if there's a corresponding checkout record
+        if acc.checked_out:
+            checkout = frappe.db.exists('Accommodation Checkin Checkout', {
+                'checkin_reference': acc.name
+            })
+            if checkout:
+                checkout_date = frappe.db.get_value(
+                    'Accommodation Checkin Checkout',
+                    checkout,
+                    'checkin_checkout_date_time'
+                )
+
+        # Logic for filtering records
+        show_record = False
+        if current_list_only and not checkout_list_only:
+            # Show only check-ins
+            if not acc.checked_out:
+                show_record = True
+        elif checkout_list_only and not current_list_only:
+            # Show only check-outs
+            if acc.checked_out:
+                show_record = True
+        elif not current_list_only and not checkout_list_only:
+            # Show both
+            show_record = True
+
+        if show_record:
+            row = {
+                'employee': acc.employee,
+                'accommodation': acc.accommodation,
+                'accommodation_unit': acc.accommodation_unit,
+                'accommodation_space': acc.accommodation_space,
+                'bed': acc.bed,
+                'employee_id': acc.employee_id,
+                'full_name': acc.full_name,
+                'civil_id': acc.civil_id,
+                'tenant_category': acc.tenant_category,
+                'designation': designation,
+                'project': project,
+                'nationality': nationality,
+                'employee_status': employee_status,
+                'checkin_checkout_date_time': acc.checkin_checkout_date_time,
+                'checkin_ref': acc.name,
+                'checkout': checkout,
+                'checkout_date': checkout_date
+            }
+
+            if row.get('employee_status') and leave_data and leave_data.get(row.get('employee_status')):
+                row['employee_status'] = f"<i style='color:red'>{leave_data.get(row.get('employee_status'))}</i>"
+
+            data.append(row)
+
+    return data
 
 
 def get_leave_data():

@@ -636,8 +636,10 @@ scheduler_events = {
 		"10 4 * * *": [ #“At 04:10.”
 			'one_fm.utils.check_grp_operator_submission_four',
 			'one_fm.operations.doctype.post_scheduler_checker.post_scheduler_checker.schedule_roster_checker',
-			# 'one_fm.operations.doctype.roster_day_off_checker.roster_day_off_checker.generate_checker',
             'one_fm.operations.doctype.default_shift_checker.default_shift_checker.create_default_shift_checker'
+		],
+		"30 13 * * *": [ #“At 01:30 pm - Need to run after attendance is marked”
+			'one_fm.operations.doctype.roster_day_off_checker.roster_day_off_checker.generate_checker',
 		],
 		"30 4 * * *": [
 			'one_fm.utils.check_grp_operator_submission_four_half'
@@ -726,7 +728,7 @@ scheduler_events = {
 			'one_fm.overrides.attendance.mark_day_off_for_yesterday'
 		],
         "55 12 * * *": [ # mark attendance for previous day mark_for_active_employees at 12:45 pm today
-			'one_fm.overrides.attendance.mark_for_active_employees'
+			'one_fm.overrides.attendance.schedule_mark_for_active_employees'
 		],
 		"*/15 * * * *": [ # Update Google Sheet. Runs every 15 mins.
 			'one_fm.one_fm.doctype.google_sheet_data_export.exporter.update_google_sheet_daily'

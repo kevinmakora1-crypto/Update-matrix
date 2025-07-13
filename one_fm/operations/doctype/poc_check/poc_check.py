@@ -74,21 +74,18 @@ class POCCheck(Document):
 	def update_general_attendees_details(self):
 		destination_dict = {"Operations Site":["Operations Site"],'Project':['Project'],'Both':["Operations Site","Project"]}
 		for each in self.general_attendees:
-			parts = each.attendee_name.split()
-			first_name = parts[0]
-			last_name = " ".join(parts[1:]) if len(parts) > 1 else ""
 
 			if each.action == "Add as POC":
-				if frappe.db.exists("Contact", {"first_name": first_name, "last_name": last_name, "designation": each.designation, "email_id": each.email_address, "phone": each.phone, "gender": each.gender}):
+				if frappe.db.exists("Contact", {"first_name": each.first_name, "last_name": each.last_name, "designation": each.designation, "email_id": each.email_address, "phone": each.phone, "gender": each.gender}):
 					frappe.throw(
-						msg=f"Contact <b>{each.attendee_name}</b> already exists.",
+						msg=f"Contact <b>{each.first_name} {each.last_name}</b> already exists.",
 						title="Already Exists"
 					)
 				else:
 					attendee_contact = frappe.get_doc({
 						"doctype": "Contact",
-						"first_name": first_name,
-						"last_name": last_name,
+						"first_name": each.first_name,
+						"last_name": each.last_name,
 						"designation": each.designation,
 						"email_id": each.email_address,
 						"phone": each.phone,
@@ -100,7 +97,7 @@ class POCCheck(Document):
 					attendee_contact.insert()
 
 					frappe.msgprint(
-						msg=f"Contact <b>{each.attendee_name}</b> was not found and has been created.",
+						msg=f"Contact <b>{each.first_name} {each.last_name}</b> was not found and has been created.",
 						title="New Contact Created",
 						indicator="blue"
 					)

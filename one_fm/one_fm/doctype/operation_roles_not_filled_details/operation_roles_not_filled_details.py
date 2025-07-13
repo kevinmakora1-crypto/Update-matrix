@@ -1,9 +1,8 @@
-# Copyright (c) 2025, omar jaber and contributors
+# Copyright (c) 2021, omar jaber and contributors
 # For license information, please see license.txt
 
 # import frappe
 from frappe.model.document import Document
 
-
-class PostTypesOverFilled(Document):
+class OperationRolesNotFilledDetails(Document):
 	pass

@@ -1,6 +1,6 @@
 [
     {
-        "assign_condition": "status in (\"Pending\", \"Overdue\")",
+        "assign_condition": "status in (\"Pending\")",
         "assignment_days": [
             {
                 "day": "Sunday",
@@ -60,11 +60,11 @@
         "name": "Roster Post Actions - Site Supervisor",
         "priority": 0,
         "rule": "Based on Field",
-        "unassign_condition": "status == \"Cancelled\"",
+        "unassign_condition": null,
         "users": []
     },
     {
-        "assign_condition": "status in (\"Pending\", \"Overdue\") and site_supervisor is not None and site_supervisor != \"\"",
+        "assign_condition": "status in (\"Pending\") and site_supervisor is not None and site_supervisor != \"\"",
         "assignment_days": [
             {
                 "day": "Sunday",
@@ -124,7 +124,7 @@
         "name": "Roster Employee Actions - Site Supervisor",
         "priority": 0,
         "rule": "Based on Field",
-        "unassign_condition": "status == \"Cancelled\"",
+        "unassign_condition": null,
         "users": []
     },
     {
@@ -192,67 +192,67 @@
         "users": []
        },
     {
-        "assign_condition": "status in (\"Pending\", \"Overdue\")",
+        "assign_condition": "status in (\"Pending\")",
         "assignment_days": [
             {
                 "day": "Sunday",
-                "parent": "Post Schedule Checker - Site Supervisor",
+                "parent": "Post Scheduler Checker - Project Manager",
                 "parentfield": "assignment_days",
                 "parenttype": "Assignment Rule"
             },
             {
                 "day": "Monday",
-                "parent": "Post Schedule Checker - Site Supervisor",
+                "parent": "Post Scheduler Checker - Project Manager",
                 "parentfield": "assignment_days",
                 "parenttype": "Assignment Rule"
             },
             {
                 "day": "Tuesday",
-                "parent": "Post Schedule Checker - Site Supervisor",
+                "parent": "Post Scheduler Checker - Project Manager",
                 "parentfield": "assignment_days",
                 "parenttype": "Assignment Rule"
             },
             {
                 "day": "Wednesday",
-                "parent": "Post Schedule Checker - Site Supervisor",
+                "parent": "Post Scheduler Checker - Project Manager",
                 "parentfield": "assignment_days",
                 "parenttype": "Assignment Rule"
             },
             {
                 "day": "Thursday",
-                "parent": "Post Schedule Checker - Site Supervisor",
+                "parent": "Post Scheduler Checker - Project Manager",
                 "parentfield": "assignment_days",
                 "parenttype": "Assignment Rule"
             },
             {
                 "day": "Friday",
-                "parent": "Post Schedule Checker - Site Supervisor",
+                "parent": "Post Scheduler Checker - Project Manager",
                 "parentfield": "assignment_days",
                 "parenttype": "Assignment Rule"
             },
             {
                 "day": "Saturday",
-                "parent": "Post Schedule Checker - Site Supervisor",
+                "parent": "Post Scheduler Checker - Project Manager",
                 "parentfield": "assignment_days",
                 "parenttype": "Assignment Rule"
             }
         ],
         "close_condition": "status ==  \"Completed\"",
         "custom_routine_task": null,
-        "description": "<p>Here is to inform you that the following {{ doctype }}({{ name }}) requires your attention/action.\n        <br>\n        The details of the request are as follows:\n        <br>\n        </p><table cellpadding=\"0\" cellspacing=\"0\" border=\"1\" style=\"border-collapse: collapse;\">\n            <thead>\n                <tr>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Label</th>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Value</th>\n                </tr>\n            </thead>\n        <tbody>\n        \n            <tr>\n                <td style=\"padding: 10px;\">Contract</td>\n                <td style=\"padding: 10px;\">{{contract}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Project</td>\n                <td style=\"padding: 10px;\">{{project}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Site Supervisor</td>\n                <td style=\"padding: 10px;\">{{site_supervisor}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Shift Supervisor</td>\n                <td style=\"padding: 10px;\">{{supervisor}}</td>\n            </tr>\n            </tbody></table><p></p>",
+        "description": "<p>Here is to inform you that the following {{ doctype }}({{ name }}) requires your attention/action.\n        <br>\n        The details of the request are as follows:\n        <br>\n        </p><table cellpadding=\"0\" cellspacing=\"0\" border=\"1\" style=\"border-collapse: collapse;\">\n            <thead>\n                <tr>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Label</th>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Value</th>\n                </tr>\n            </thead>\n        <tbody>\n        \n            <tr>\n                <td style=\"padding: 10px;\">Contract</td>\n                <td style=\"padding: 10px;\">{{contract}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Project</td>\n                <td style=\"padding: 10px;\">{{project}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Site Supervisor</td>\n                <td style=\"padding: 10px;\">{{site_supervisor}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Project Manager</td>\n                <td style=\"padding: 10px;\">{{project_manager}}</td>\n            </tr>\n            </tbody></table><p></p>",
         "disabled": 0,
         "docstatus": 0,
         "doctype": "Assignment Rule",
         "document_type": "Post Scheduler Checker",
         "due_date_based_on": null,
-        "field": "site_supervisor_user",
+        "field": "project_manager_user",
         "is_assignment_rule_with_workflow": 0,
         "last_user": null,
-        "modified": "2024-12-30 23:43:16.100532",
-        "name": "Post Schedule Checker - Site Supervisor",
+        "modified": "2025-07-09 23:43:16.100532",
+        "name": "Post Scheduler Checker - Project Manager",
         "priority": 0,
         "rule": "Based on Field",
-        "unassign_condition": "status ==  \"Cancelled\"",
+        "unassign_condition": null,
         "users": []
     },
     {

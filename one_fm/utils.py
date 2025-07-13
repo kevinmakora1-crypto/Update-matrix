@@ -3728,6 +3728,14 @@ def set_employee_status():
                 frappe.db.set_value('Employee', employee, 'status', 'Vacation')
                 if reliever:
                     frappe.enqueue(assign_responsibilities, leave_application=leave_application)
+
+                frappe.db.sql(
+                    '''
+                    DELETE FROM `tabEmployee Schedule` WHERE
+                    employee = %s AND
+                    date BETWEEN %s AND %s;
+                    ''', (employee, from_date, to_date)
+                )
                 employees_set_to_vacation += 1
             elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":
                 frappe.db.set_value('Employee', employee, 'status', 'Active')

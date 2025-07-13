@@ -220,6 +220,7 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
 
         if isOt:
             employee_filters.update({"employee_availability" : "Working"})
+            employee_filters.update({"date": ["between", (start_date, end_date)]})
             reliever_filter = f"and custom_is_reliever={strtobool(relievers)}" if relievers else ""
             all_active_employee_ids = frappe.db.sql_list(f"SELECT name from `tabEmployee` where status in ('Active','Vacation') and attendance_by_timesheet = '0' and shift_working= '1' {reliever_filter}")
             employee_filters.update({"employee":[ "In", all_active_employee_ids]})
@@ -227,7 +228,7 @@ def get_roster_view(start_date, end_date, assigned=0, scheduled=0, employee_sear
             master_data.update({"total" : len(employees)})
             employees.extend(exited_employees)
             employees = filter_redundant_employees(employees)
-            employee_filters.update({"date": ["between", (start_date, end_date)], "post_status": "Planned"})
+            employee_filters.update({"post_status": "Planned"})
             employee_filters.pop("employee_availability")
             employee_filters.pop("employee")
             employee_filters.pop("attendance_by_timesheet", None)

@@ -139,26 +139,24 @@ def schedule_roster_checker():
 			items = get_post_scheduler_items(contract, project)
 
 			if len(items) > 0:
-				yesterday_post_scheduler = frappe.db.exists("Post Scheduler Checker", { "project": project, "check_date": add_days(today, -1) })
+				yesterday_repeat_count = frappe.db.get_value("Post Scheduler Checker", { "project": project, "check_date": add_days(today, -1) }, ["repeat_count"])
 
-				if yesterday_post_scheduler:
-					frappe.db.set_value("Post Scheduler Checker", yesterday_post_scheduler, "repeat_count", 2)
-				else:
-					# Delete exising for target contract against date
-					frappe.delete_doc_if_exists("Post Scheduler Checker", f"{project}-{str(today)}")
+				# Delete exising for target contract against date
+				frappe.delete_doc_if_exists("Post Scheduler Checker", f"{project}-{str(today)}")
 
-					post_scheduler_checker = frappe.new_doc("Post Scheduler Checker")
+				post_scheduler_checker = frappe.new_doc("Post Scheduler Checker")
 
-					post_scheduler_checker.check_date = today
-					post_scheduler_checker.contract = contract
-					post_scheduler_checker.project = project
-					post_scheduler_checker.site_supervisor = get_working_site_supervisor(project, today)
-					post_scheduler_checker.project_manager = frappe.db.get_value('Project', project, 'account_manager')
+				post_scheduler_checker.check_date = today
+				post_scheduler_checker.repeat_count = (yesterday_repeat_count or 0) + 1
+				post_scheduler_checker.contract = contract
+				post_scheduler_checker.project = project
+				post_scheduler_checker.site_supervisor = get_working_site_supervisor(project, today)
+				post_scheduler_checker.project_manager = frappe.db.get_value('Project', project, 'account_manager')
 
-					for sub_item in items:
-						post_scheduler_checker.append("items", sub_item)
+				for sub_item in items:
+					post_scheduler_checker.append("items", sub_item)
 
-					post_scheduler_checker.save()
+				post_scheduler_checker.save()
 			
 		except Exception as e:
 			frappe.log_error(frappe.get_traceback(), "Error while generating Post Scheduler Checker")

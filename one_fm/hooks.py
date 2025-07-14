@@ -562,8 +562,9 @@ scheduler_events = {
         'one_fm.utils.set_employee_status',
         'one_fm.utils.set_out_of_office_for_leaves',
         'one_fm.utils.update_active_employees_assurance_level',
-        'one_fm.operations.doctype.process_task.process_task.run_daily_process_task',
-        'one_fm.operations.doctype.process_task.process_task.run_scheduled_process_tasks'
+        'one_fm.operations.doctype.process_task.process_task.create_task_on_monthly_on_day',
+        'one_fm.operations.doctype.process_task.process_task.trigger_method_from_monthly_on_day_process_task',
+        'one_fm.operations.doctype.process_task.process_task.trigger_method_from_monthly_on_last_day_process_task'
 	],
 	"hourly": [
 		# "one_fm.api.tasks.send_checkin_hourly_reminder",
@@ -743,7 +744,7 @@ scheduler_events = {
             "one_fm.one_fm.page.roster.roster.create_employee_schedule"
         ],
         "* * * * *": [ # Runs every minute
-            "one_fm.operations.doctype.process_task.process_task.run_process_task",
+            "one_fm.operations.doctype.process_task.process_task.create_task_on_cron_process_task",
             "one_fm.overrides.todo.sync_google_tasks_with_todos"
         ]
 	}

@@ -144,8 +144,6 @@ def schedule_roster_checker():
 				# Delete exising for target contract against date
 				frappe.delete_doc_if_exists("Post Scheduler Checker", f"{project}-{str(today)}")
 
-				print(yesterday_repeat_count, type(yesterday_repeat_count))
-
 				post_scheduler_checker = frappe.new_doc("Post Scheduler Checker")
 
 				post_scheduler_checker.check_date = today

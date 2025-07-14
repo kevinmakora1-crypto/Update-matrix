@@ -59,9 +59,10 @@
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nCompleted\nOverdue\nCancelled"
+   "options": "Pending\nCompleted"
   },
   {
    "fieldname": "column_break_mejq",
@@ -200,7 +201,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-07-10 13:23:29.350854",
+ "modified": "2025-07-14 09:40:57.141824",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Default Shift Checker",
@@ -241,16 +242,8 @@
    "title": "Pending"
   },
   {
-   "color": "Pink",
-   "title": "Overdue"
-  },
-  {
    "color": "Green",
    "title": "Completed"
-  },
-  {
-   "color": "Red",
-   "title": "Cancelled"
   }
  ]
 }

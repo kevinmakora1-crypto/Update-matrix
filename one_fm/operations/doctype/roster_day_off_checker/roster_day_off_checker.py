@@ -199,28 +199,26 @@ def check_roster_day_off():
 				if day_off_data["day_off_difference"]:
 					duration = day_off_data["monthweek"]
 
-					yesterday_day_off_checker = frappe.db.exists("Roster Day Off Checker", { "employee": employee.name, "monthweek": duration, "date": add_days(today, -1) })
+					yesterday_repeat_count = frappe.db.get_value("Roster Day Off Checker", { "employee": employee.name, "monthweek": duration, "date": add_days(today, -1) }, ["repeat_count"])
 
-					if yesterday_day_off_checker:
-						frappe.db.set_value("Roster Day Off Checker", yesterday_day_off_checker, "repeat_count", 2)
-					else:
-						# Delete exising for target duration against employee
-						frappe.delete_doc_if_exists("Roster Day Off Checker", f"OPR-RDOC-{employee.name}-{duration}")
+					# Delete exising for target duration against employee
+					frappe.delete_doc_if_exists("Roster Day Off Checker", f"OPR-RDOC-{employee.name}-{duration}")
 
-						day_off_checker = frappe.new_doc("Roster Day Off Checker")
-						day_off_checker.date = today
-						day_off_checker.monthweek = duration
-						day_off_checker.employee = employee.name
-						day_off_checker.shift_supervisor = shift_supervisor
-						day_off_checker.site_supervisor = site_supervisor
-						day_off_checker.project_manager = project_manager
-						day_off_checker.required_number_of_days_off = period["calculated_number_of_days_off"] if period["calculated_number_of_days_off"] != employee.number_of_days_off else ''
-						day_off_checker.rostered_days_off = day_off_data["rostered_off_days"]
-						day_off_checker.rostered_day_off_ot = day_off_data["rostered_ot_days"]
-						day_off_checker.day_off_taken = day_off_data["availed_off_days"]
-						day_off_checker.worked_day_off_ot = day_off_data["availed_ot_days"]
-						day_off_checker.day_off_difference = day_off_data["day_off_difference"]
-						day_off_checker.insert(ignore_permissions=1)
+					day_off_checker = frappe.new_doc("Roster Day Off Checker")
+					day_off_checker.date = today
+					day_off_checker.monthweek = duration
+					day_off_checker.repeat_count = (yesterday_repeat_count or 0) + 1
+					day_off_checker.employee = employee.name
+					day_off_checker.shift_supervisor = shift_supervisor
+					day_off_checker.site_supervisor = site_supervisor
+					day_off_checker.project_manager = project_manager
+					day_off_checker.required_number_of_days_off = period["calculated_number_of_days_off"] if period["calculated_number_of_days_off"] != employee.number_of_days_off else ''
+					day_off_checker.rostered_days_off = day_off_data["rostered_off_days"]
+					day_off_checker.rostered_day_off_ot = day_off_data["rostered_ot_days"]
+					day_off_checker.day_off_taken = day_off_data["availed_off_days"]
+					day_off_checker.worked_day_off_ot = day_off_data["availed_ot_days"]
+					day_off_checker.day_off_difference = day_off_data["day_off_difference"]
+					day_off_checker.insert(ignore_permissions=1)
 
 		frappe.db.commit()
 

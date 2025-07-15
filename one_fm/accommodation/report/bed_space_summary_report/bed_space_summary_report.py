@@ -7,7 +7,10 @@ from frappe import _
 
 def execute(filters=None):
 	columns, data = get_columns(), get_data(filters)
+	total_row = get_total_row(data)
+	data.append(total_row)
 	return columns, data
+
 
 def get_columns():
     return [
@@ -62,3 +65,27 @@ def get_data(filters):
 		data.append(row)
 
 	return data
+
+def get_total_row(data):
+	total_beds = sum(row[2] for row in data)
+	total_occupied = sum(row[3] for row in data)
+	total_occupied_temp = sum(row[4] for row in data)
+	total_booked = sum(row[5] for row in data)
+	total_temp_booked = sum(row[6] for row in data)
+	total_vacant = sum(row[7] for row in data)
+
+	# Weighted percent calculations
+	total_occupied_percent = (total_occupied + total_occupied_temp) * 100 / total_beds if total_beds else 0
+	total_vacant_percent = total_vacant * 100 / total_beds if total_beds else 0
+
+	return [
+		"Total", "",  # First 2 columns are blank or "Total"
+		total_beds,
+		total_occupied,
+		total_occupied_temp,
+		total_booked,
+		total_temp_booked,
+		total_vacant,
+		total_occupied_percent,
+		total_vacant_percent,
+	]

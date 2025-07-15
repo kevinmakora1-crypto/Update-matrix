@@ -31,7 +31,7 @@ monthname_dict = {
 class RosterDayOffChecker(Document):
 	pass
 
-def get_annual_leave_dates_by_employee():
+def get_leave_dates_by_employee():
     today = getdate(nowdate())
     
     # First of current month
@@ -43,7 +43,7 @@ def get_annual_leave_dates_by_employee():
     results = frappe.db.sql("""
         SELECT employee, from_date, to_date
         FROM `tabLeave Application`
-        WHERE leave_type = 'Annual Leave'
+        WHERE leave_type IN ('Annual Leave', 'Leave Without Pay')
 		AND status = 'Approved'
         AND (
             (from_date BETWEEN %(start_date)s AND %(end_date)s)
@@ -183,11 +183,11 @@ def check_roster_day_off():
 		Employee = frappe.qb.DocType("Employee")
 		employees = frappe.db.sql(frappe.qb.from_(Employee).select("*").where((Employee.status=="Active") & (Employee.shift_working == 1) & ((Employee.relieving_date.isnull()) | (Employee.relieving_date > today))), as_dict=1)
 
-		annual_leave_days_by_employee = get_annual_leave_dates_by_employee()
+		leave_dates_by_employee = get_leave_dates_by_employee()
 
 		for employee in employees:
-			employee_annual_leave_dates = annual_leave_days_by_employee.get(employee.name)
-			comparison_dates = get_day_off_comparison_dates(employee, employee_annual_leave_dates)
+			employee_leave_dates = leave_dates_by_employee.get(employee.name)
+			comparison_dates = get_day_off_comparison_dates(employee, employee_leave_dates)
 
 			site_supervisor = frappe.db.get_value("Operations Site", employee.site, "account_supervisor")
 			shift_supervisor = get_shift_supervisor(employee.shift)

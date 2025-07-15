@@ -35,7 +35,7 @@ def create_new_schedule_for_project(proj):
         if existing_proj:
             all_operations_post = frappe.get_all("Operations Post",{'project':existing_proj})
             all_operations_post_ = [frappe.get_doc("Operations Post",i.name) for i in all_operations_post]
-            
+
             frappe.enqueue(create_post_schedules, operations_posts=all_operations_post_, queue="long",job_name = 'Create Post Schedules')
             return response("Post Creation Scheduled Sucessfully",{}, True, 200)
     except:
@@ -141,7 +141,7 @@ def create_post_schedule_for_operations_post(operations_post):
             exists_schedule_in_between = False
             if frappe.db.exists("Post Schedule", {"date": ['between', (start_date, contracts.end_date)], "post": operations_post.name}):
                 exists_schedule_in_between = True
-                
+
                 frappe.enqueue(queue_create_post_schedule_for_operations_post, operations_post=operations_post, contracts=contracts, exists_schedule_in_between=exists_schedule_in_between, start_date=start_date, is_async=True, queue="long")
             else:
                 queue_create_post_schedule_for_operations_post(operations_post, contracts, exists_schedule_in_between, start_date)
@@ -166,11 +166,11 @@ def queue_create_post_schedule_for_operations_post(operations_post, contracts, e
         post_abbrv = frappe.db.get_value("Operations Role", operations_post.post_template, ["post_abbrv"])
         naming_series = NamingSeries('PS-')
         ps_name_idx = previous_series = naming_series.get_current_value()
-        
+
         #The previous series value from frappe is wrong in some cases
-        
+
         for date in	pd.date_range(start=start_date, end=contracts.end_date):
-            
+
             date_string = frappe.utils.get_date_str(date.date())
             doc_id_template = f"{operations_post.name}_{date_string}"
             schedule_exists = False
@@ -179,7 +179,7 @@ def queue_create_post_schedule_for_operations_post(operations_post, contracts, e
                     schedule_exists = True
             if not schedule_exists:
                 ps_name_idx += 1
-                
+
                 query += f"""
                     (
                         "{doc_id_template}", "{operations_post.name}", "{operations_post.post_template}", "{post_abbrv}",

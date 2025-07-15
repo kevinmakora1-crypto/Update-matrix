@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import date
 
 from frappe import _
+from frappe.desk.form.assign_to import add as add_assignment
 from frappe.utils import get_fullname, nowdate, add_to_date, getdate, date_diff, get_url_to_form, get_date_str
 
 from hrms.hr.doctype.leave_application.leave_application import *
@@ -13,7 +14,7 @@ from erpnext.crm.utils import get_open_todos
 from one_fm.api.api import push_notification_rest_api_for_leave_application
 from one_fm.api.tasks import remove_assignment
 from one_fm.overrides.employee import NotifyAttendanceManagerOnStatusChange
-from one_fm.utils import get_approver_user, leave_application_on_cancel
+from one_fm.utils import get_approver_user, leave_application_on_cancel,fetch_leave_types_update_employee_status, get_workflow_action_buttons_html
 from hrms.hr.utils import get_holidays_for_employee
 from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import ReassignRelieverAssignment, reassign_responsibilities
 
@@ -114,6 +115,33 @@ class LeaveApplicationOverride(LeaveApplication):
 
         self.create_leave_ledger_entry()
         self.reload()
+
+
+    def assign_unassign_reliever(self):
+        last_doc = self.get_doc_before_save()
+        
+        if last_doc and last_doc.workflow_state != self.workflow_state:
+            user = frappe.db.get_value("Employee", self.custom_reliever_, "user_id")
+            
+            if not user:
+                return
+                
+            if self.workflow_state == "Pending Reliever":
+                add_assignment({
+                    'doctype': self.doctype,
+                    'name': self.name,
+                    'assign_to': [user],
+                    'description': (_("The Following Leave Application {0} Needs your immediate attention.").format(self.name))
+                })
+            
+            elif last_doc.workflow_state == "Pending Reliever" and self.workflow_state != "Pending Reliever":
+                frappe.db.set_value("ToDo", {
+                    "reference_type": self.doctype,
+                    "reference_name": self.name,
+                    "allocated_to": user,
+                }, "status", "Closed")
+
+
 
 
     def close_leave_acknowledgement_if_below_threshold(self):
@@ -321,6 +349,16 @@ class LeaveApplicationOverride(LeaveApplication):
                     frappe.msgprint(_("Please set default template for Leave Approval Notification in HR Settings."))
                     return
                 email_template = frappe.get_doc("Email Template", template)
+
+                if email_template.get("add_workflow_action_buttons_to_email"):
+                    doc = frappe.get_doc(self.doctype, self.name)
+                    user = self.leave_approver or ""
+                    args["show_workflow_buttons"] = 1
+                    args["workflow_buttons_html"] = get_workflow_action_buttons_html(doc, user)
+                else:
+                    args["show_workflow_buttons"] = 0
+                    args["workflow_buttons_html"] = ""
+
                 message = frappe.render_template(email_template.response_html, args)
                 subject = f'طلب الإجازة تم تقديمه للموافقة – {employee[0].employee_name_in_arabic} | Leave Application Submitted for Approval  – {self.employee_name}'
                 sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
@@ -516,7 +554,7 @@ class LeaveApplicationOverride(LeaveApplication):
 
             if getdate(self.from_date) <= getdate() <= getdate(self.to_date):
                 # frappe.db.set_value(), will not call the validate.
-                if self.leave_type !='Sick Leave':
+                if self.leave_type in fetch_leave_types_update_employee_status():
                     frappe.db.set_value("Employee", self.employee, "status", "Vacation")
             self.validate_attendance_check()
         self.clear_employee_schedules()
@@ -525,6 +563,10 @@ class LeaveApplicationOverride(LeaveApplication):
         if self.has_value_changed('workflow_state') and self.workflow_state == 'Pending Approval':
             send_leave_details_email_to_employee(self)
             self.notify_leave_approver()
+
+        self.assign_unassign_reliever()
+
+        
 
     def clear_employee_schedules(self):
         last_doc = self.get_doc_before_save()

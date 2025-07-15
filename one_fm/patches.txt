@@ -116,7 +116,15 @@ one_fm.patches.v15_0.revert_reliever_assignments
 one_fm.patches.v15_0.update_designation_disabled_field
 one_fm.patches.v15_0.update_hr_settings_leave_threshold
 one_fm.patches.v15_0.add_roster_index
+one_fm.patches.v15_0.add_roster_index #03-06-2025
 one_fm.patches.v15_0.delete_all_roaster_day_off_checker_records
+one_fm.patches.v15_0.update_operation_post_start_and_end_date
+one_fm.patches.v15_0.add_custom_process_field_property_setter
+one_fm.patches.v15_0.add_update_custom_field #2025-05-20
+one_fm.patches.v15_0.add_update_property_setter #2025-05-20
+one_fm.patches.v15_0.add_update_assignment_rule #2025-05-20
+one_fm.patches.v15_0.add_update_workflow #2025-06-04
+one_fm.patches.v15_0.add_update_custom_field #2025-06-15 Add Attendance Custom Fields
 one_fm.patches.v15_0.update_attendance_check_client_day_off
 one_fm.patches.v15_0.update_erf_in_job_applicant_and_offer
 one_fm.patches.v15_0.update_operation_post_start_and_end_date

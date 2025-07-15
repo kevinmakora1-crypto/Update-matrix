@@ -11,7 +11,7 @@ def execute():
         target_contract = frappe.db.get_value("Contracts", { "project": op.project }, ["name", "start_date"], as_dict=True)
 
         if not target_contract:
-            continue 
+            continue
 
         # Try to fetch the first date from the dates child table of Contract
         child_start_date = frappe.get_all(
@@ -32,4 +32,3 @@ def execute():
             frappe.db.set_value("Operations Post", op.name, "start_date", start_date)
 
     frappe.db.commit()
-

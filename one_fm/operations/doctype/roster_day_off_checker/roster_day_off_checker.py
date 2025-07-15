@@ -403,6 +403,8 @@ def get_day_off_details_of_employees(employees):
 						"day_off_difference": day_off_data["day_off_difference"],
 						"year": day_off_data["year"],
 						"month": day_off_data["month"],
+						"role":employee.custom_operations_role_allocation,
+						"shift":employee.shift
 					})
 
 		return roster_day_off_data
@@ -435,7 +437,7 @@ def render_day_off_issues_html(roster_day_off_data):
 							<td>{info["monthweek"]}</td>
 							<td>{info["day_off_category"]}</td>
 							<td>{info["day_off_difference"]}</td>
-							<td><a class="btn btn-warning" target="_blank" href="/app/roster?main_view='roster'&sub_view='basic'&roster_type='basic'&department={info["department"]}&employee_id={info["employee_id"]}&month={info["month"]}&year={info["year"]}">Take Action</a></td>
+							<td><a class="btn btn-warning" target="_blank" href="/app/roster?main_view='roster'&sub_view='basic'&roster_type='basic'&department={info["department"]}&employee_id={info["employee_id"]}&operations_role={info["role"]}&month={info["month"]}&year={info["year"]}">Take Action</a></td>
 						</tr>"""
 		html += "</tbody></table>"
 		return html
@@ -491,7 +493,8 @@ def _get_employees_with_join(join_clause, where_clause, user_employee):
 			e.day_off_category,
 			e.number_of_days_off,
 			e.employee_id,
-			e.shift
+			e.shift,
+		    e.custom_operations_role_allocation
 		FROM `tabEmployee` e
 		{join_clause}
 		WHERE

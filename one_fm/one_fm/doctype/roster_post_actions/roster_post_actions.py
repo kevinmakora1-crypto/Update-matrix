@@ -67,7 +67,6 @@ def get_permission_query_conditions(user):
 def create():
 	frappe.enqueue(create_roster_post_actions, is_async=True, queue='long')
 
-
 def create_roster_post_actions():
     """
     This function creates a Roster Post Actions document that issues actions to supervisors to fill operation roles that are not filled or overfilled for a given date range.

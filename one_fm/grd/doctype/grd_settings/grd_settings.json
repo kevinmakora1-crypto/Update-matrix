@@ -12,6 +12,9 @@
   "default_grd_operator_pifss",
   "default_grd_operator_transfer",
   "default_pam_operator",
+  "section_break_acel",
+  "days_before_expiry_to_notify_supervisor",
+  "column_break_fajb",
   "preparation_record_settings_section",
   "preparation_record_creation_day",
   "create_preparation_record_manually",
@@ -123,11 +126,25 @@
    "fieldtype": "Link",
    "label": "Default PAM Operator",
    "options": "User"
+  },
+  {
+   "fieldname": "section_break_acel",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "Specify the number of days in advance the supervisor should be notified before an employee's document expires. A notification will be triggered based on this value.",
+   "fieldname": "days_before_expiry_to_notify_supervisor",
+   "fieldtype": "Int",
+   "label": "Days Before Expiry to Notify Supervisor"
+  },
+  {
+   "fieldname": "column_break_fajb",
+   "fieldtype": "Column Break"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-05-14 15:33:20.237365",
+ "modified": "2025-07-15 14:06:12.750452",
  "modified_by": "Administrator",
  "module": "GRD",
  "name": "GRD Settings",

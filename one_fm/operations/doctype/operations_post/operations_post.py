@@ -102,7 +102,6 @@ class OperationsPost(Document):
         #     frappe.throw(f"Operations Role ({self.post_template}) does not belong to selected shift ({self.site_shift})")
 
         self.validate_operations_role_status()
-        self.validate_dates()
         # check if operations site inactive
         if (self.status=='Active' and frappe.db.exists("Operations Site", {'name':self.site, 'status':'Inactive'})):frappe.throw(f"You cannot make this post active because Operations Site '{self.site}' is Inactive.")
 

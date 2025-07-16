@@ -2,6 +2,12 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Career History', {
+	onload: function(frm) {
+        frm.doc.career_history_company.sort((a, b) => {
+            return new Date(b.start_date) - new Date(a.start_date);
+        });
+        frm.refresh_field('career_history_company');
+    },
 	refresh: function(frm) {
 		frm.set_query('job_applicant', function () {
 			return {

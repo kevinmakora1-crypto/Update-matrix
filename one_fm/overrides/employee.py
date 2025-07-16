@@ -30,6 +30,7 @@ class EmployeeOverride(EmployeeMaster):
         self.set_employee_name()
         set_employee_name(self, method=None)
         self.set_employee_id_based_on_residency()
+        self.validate_reliever()
         self.validate_date()
         self.validate_email()
         self.validate_status()
@@ -254,6 +255,10 @@ class EmployeeOverride(EmployeeMaster):
             if self.status != "Active":
                 NotifyAttendanceManagerOnStatusChange(employee_object=self).notify_authorities()
 
+    def validate_reliever(self):
+        if self.custom_is_reliever == 1 and self.custom_is_weekend_reliever == 1:
+            frappe.throw("Employee can either marked as Day Off reliever or Weekend reliever")
+
     def validate_status_change(self):
         last_doc = self.get_doc_before_save()
         if last_doc and last_doc.get('status') == "Active":
@@ -265,16 +270,17 @@ class EmployeeOverride(EmployeeMaster):
                     frappe.throw(message)
 
 
-    def clear_schedules(doc):
+    def clear_schedules(self):
         # clear future employee schedules
-        if doc.status == 'Left':
-            frappe.db.sql(f"""
-                DELETE FROM `tabEmployee Schedule` WHERE employee='{doc.name}'
-                AND date>'{doc.relieving_date}'
-            """)
-            frappe.msgprint(f"""
-                Employee Schedule cleared for {doc.employee_name} starting from {add_days(doc.relieving_date, 1)}
-            """)
+        if(self.has_value_changed('relieving_date') or self.has_value_changed('status')):
+            if self.status == 'Left' or self.relieving_date:
+                frappe.db.sql(f"""
+                    DELETE FROM `tabEmployee Schedule` WHERE employee = '{self.name}'
+                    AND date > '{self.relieving_date}'
+                """)
+                frappe.msgprint(f"""
+                    Employee Schedule cleared for {self.employee_name} starting from {add_days(self.relieving_date, 1)}
+                """)
 
 def validate_leaves(self):
     if self.status=='Vacation':

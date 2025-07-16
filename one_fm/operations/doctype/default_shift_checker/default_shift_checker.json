@@ -8,11 +8,13 @@
   "employee",
   "employee_name",
   "default_shift_allocation",
+  "default_operations_role_allocation",
   "column_break_fxzs",
+  "repeat_count",
   "start_date",
   "end_date",
-  "is_reliever",
-  "default_operations_role_allocation",
+  "is_day_off_reliever",
+  "is_weekend_reliever",
   "actions_section",
   "status",
   "site_supervisor",
@@ -57,9 +59,10 @@
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nCompleted\nOverdue\nCancelled"
+   "options": "Pending\nCompleted"
   },
   {
    "fieldname": "column_break_mejq",
@@ -71,7 +74,7 @@
    "fieldtype": "Select",
    "in_standard_filter": 1,
    "label": "Action Type",
-   "options": "No Changes Made\nShift Allocation Update\nMark Employee as Reliever"
+   "options": "No Changes Made\nShift Allocation Update\nMark Employee as Day Off Reliever\nMark Employee as Weekend Reliever\nUnMark Employee as Day Off Reliever\nUnMark Employee as Weekend Reliever"
   },
   {
    "fieldname": "site_supervisor",
@@ -114,7 +117,7 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.is_reliever==0",
+   "depends_on": "eval:doc.is_day_off_reliever == 0 && doc.is_weekend_reliever == 0",
    "fieldname": "assigned_shifts_outside_default_shift",
    "fieldtype": "Table",
    "label": "Assigned Shifts Outside Default Shift",
@@ -162,28 +165,43 @@
    "search_index": 1
   },
   {
-   "default": "0",
-   "fieldname": "is_reliever",
-   "fieldtype": "Check",
-   "label": "Is Reliever",
-   "read_only": 1
-  },
-  {
    "fieldname": "section_break_wkho",
    "fieldtype": "Section Break"
   },
   {
-   "depends_on": "eval:doc.is_reliever==1",
+   "depends_on": "eval:doc.is_day_off_reliever == 1 || doc.is_weekend_reliever == 1",
    "fieldname": "reliever_assigned_to_the_same_shift",
    "fieldtype": "Table",
    "label": "Reliever Assigned to the Same Shift",
    "options": "Default Shift Checker Shift"
+  },
+  {
+   "default": "1",
+   "fieldname": "repeat_count",
+   "fieldtype": "Int",
+   "label": "Repeat Count",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_day_off_reliever",
+   "fieldtype": "Check",
+   "label": "Is Day Off Reliever",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_weekend_reliever",
+   "fieldtype": "Check",
+   "label": "Is Weekend Reliever",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2025-05-06 08:24:15.457029",
+ "modified": "2025-07-14 09:40:57.141824",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Default Shift Checker",
@@ -224,16 +242,8 @@
    "title": "Pending"
   },
   {
-   "color": "Pink",
-   "title": "Overdue"
-  },
-  {
    "color": "Green",
    "title": "Completed"
-  },
-  {
-   "color": "Red",
-   "title": "Cancelled"
   }
  ]
 }

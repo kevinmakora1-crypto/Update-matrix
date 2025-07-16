@@ -936,7 +936,7 @@ function bind_events(page) {
 			$(".selectclass").map(function () {
 				classgrt.indexOf(this.getAttribute("data-selectid")) === -1 ? classgrt.push(this.getAttribute("data-selectid")) : classgrt.splice(classgrt.indexOf(this.getAttribute("data-selectid")), 1);
 			});
-			
+
 			if ($(this).parent().parent().parent().children("td").children().hasClass("redboxcolor")) {
 				$("#selRetrive").show();
 				$(".selPost").hide();
@@ -1920,7 +1920,7 @@ function render_staff_list_view(data) {
 	data.forEach(function (employee) {
 
 
-		let { name, employee_id, employee_name, nationality, mobile_no, email, designation, project, site, shift, department, site_supervisor, shift_supervisor, custom_operations_role_allocation, custom_is_reliever } = employee;
+		let { name, employee_id, employee_name, nationality, mobile_no, email, designation, project, site, shift, department, site_supervisor, shift_supervisor, custom_operations_role_allocation, custom_is_reliever, custom_is_weekend_reliever } = employee;
 		let row = `
 		<tr>
 			<td>
@@ -1976,6 +1976,9 @@ function render_staff_list_view(data) {
 			</td>
 			<td>
 				${custom_is_reliever ? "Yes" : "No"}
+			</td>
+			<td>
+				${custom_is_weekend_reliever ? 'Yes' : 'No'}
 			</td>
 		</tr>`;
 		$staffdatatable.append(row);
@@ -2258,13 +2261,23 @@ function staff_edit_dialog() {
 				}
 			},
 			{
-				"label": "Is Reliever", "fieldname": "custom_is_reliever", "fieldtype": "Check", onchange: function () {
+				"label": "Is Day Off Reliever", "fieldname": "custom_is_reliever", "fieldtype": "Check", onchange: function () {
 					let is_reliever = d.get_value("custom_is_reliever");
-					d.set_df_property("custom_operations_role_allocation", "reqd", !is_reliever);
+					if(is_reliever){
+						d.set_value("custom_is_weekend_reliever", 0)
+					}
 				}
 			},
 			{
-				"label": "Default Operations Role", "fieldname": "custom_operations_role_allocation", "fieldtype": "Link", "options": "Operations Role", "reqd": 1, get_query: function () {
+				"label": "Is Weekend Reliever", "fieldname": "custom_is_weekend_reliever", "fieldtype": "Check", onchange: function () {
+					let is_weekend_reliever = d.get_value("custom_is_weekend_reliever");
+					if(is_weekend_reliever){
+						d.set_value("custom_is_reliever", 0)
+					}
+				}
+			},
+			{
+				"label": "Default Operations Role", "fieldname": "custom_operations_role_allocation", "fieldtype": "Link", "options": "Operations Role", "mandatory_depends_on": "eval: !doc.custom_is_reliever && !doc.custom_is_weekend_reliever", get_query: function () {
 					let shift = d.get_value("shift");
 					if (shift) {
 						return {
@@ -2276,12 +2289,12 @@ function staff_edit_dialog() {
 			}
 		],
 		primary_action: function () {
-			let { shift, custom_operations_role_allocation, custom_is_reliever } = d.get_values();
+			let { shift, custom_operations_role_allocation, custom_is_reliever, custom_is_weekend_reliever } = d.get_values();
 
 			$("#cover-spin").show(0);
 			frappe.call({
 				method: "one_fm.one_fm.page.roster.roster.assign_staff",
-				args: { employees, shift, custom_operations_role_allocation, custom_is_reliever },
+				args: { employees, shift, custom_operations_role_allocation, custom_is_reliever, custom_is_weekend_reliever },
 				callback: function (r) {
 
 					d.hide();
@@ -2303,11 +2316,13 @@ function staff_edit_dialog() {
 			callback: function (r) {
 				if (r.message) {
 					let employee_details = r.message;
+					console.log(employee_details)
 					// Populate fields
 					d.set_value("project", employee_details.project);
 					d.set_value("site", employee_details.site);
 					d.set_value("shift", employee_details.shift);
 					d.set_value("custom_is_reliever", employee_details.custom_is_reliever);
+					d.set_value('custom_is_weekend_reliever', employee_details.custom_is_weekend_reliever);
 					d.set_value("custom_operations_role_allocation", employee_details.custom_operations_role_allocation);
 				}
 			}

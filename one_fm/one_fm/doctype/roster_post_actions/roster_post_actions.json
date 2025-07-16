@@ -1,25 +1,31 @@
 {
  "actions": [],
+ "autoname": "naming_series:",
  "creation": "2021-10-13 12:21:16.765478",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "start_date",
+  "naming_series",
   "col_br_1",
   "end_date",
   "actions_section",
   "status",
   "supervisor",
   "supervisor_name",
+  "operations_role",
+  "operations_site",
   "column_break_9",
-  "action_type",
+  "repeat_count",
   "site_supervisor",
   "site_supervisor_name",
   "site_supervisor_user",
+  "operations_shift",
+  "project",
   "section_break_12",
   "operations_roles_not_filled",
-  "overfilled_posts"
+  "operations_roles_over_filled"
  ],
  "fields": [
   {
@@ -27,7 +33,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nCompleted\nOverdue\nCancelled"
+   "options": "Pending\nCompleted"
   },
   {
    "fieldname": "supervisor",
@@ -37,12 +43,6 @@
    "label": "Shift Supervisor",
    "options": "Employee",
    "reqd": 1
-  },
-  {
-   "fieldname": "action_type",
-   "fieldtype": "Select",
-   "label": "Action Type",
-   "options": "Fill Post Type\nReview Post Type"
   },
   {
    "fieldname": "start_date",
@@ -69,8 +69,8 @@
   {
    "fieldname": "operations_roles_not_filled",
    "fieldtype": "Table",
-   "label": "Post Types Not Filled",
-   "options": "Post Types Not Filled"
+   "label": "Not Filled Details",
+   "options": "Operation Roles Not Filled Details"
   },
   {
    "fetch_from": "supervisor.employee_name",
@@ -108,6 +108,47 @@
    "fieldtype": "Section Break"
   },
   {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project",
+   "read_only": 1
+  },
+  {
+   "fieldname": "operations_role",
+   "fieldtype": "Link",
+   "label": "Operations Role",
+   "options": "Operations Role",
+   "read_only": 1
+  },
+  {
+   "fieldname": "operations_site",
+   "fieldtype": "Link",
+   "label": "Operations Site",
+   "options": "Operations Site",
+   "read_only": 1
+  },
+  {
+   "fieldname": "operations_shift",
+   "fieldtype": "Link",
+   "label": "Operations Shift",
+   "options": "Operations Shift",
+   "read_only": 1
+  },
+  {
+   "fieldname": "operations_roles_over_filled",
+   "fieldtype": "Table",
+   "label": "Over Filled Details",
+   "options": "Operation Roles Over Filled Details"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "OPR-RPA-.YYYY.-.MM.-.DD.-.####"
+  },
+  {
    "fetch_from": "site_supervisor.user_id",
    "fetch_if_empty": 1,
    "fieldname": "site_supervisor_user",
@@ -117,19 +158,21 @@
    "options": "User"
   },
   {
-   "fieldname": "overfilled_posts",
-   "fieldtype": "Table",
-   "label": "Post Types OverFilled",
-   "options": "Post Types OverFilled"
+   "default": "1",
+   "fieldname": "repeat_count",
+   "fieldtype": "Int",
+   "label": "Repeat Count",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-08 15:45:52.987293",
+ "modified": "2025-07-09 13:36:39.637573",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Roster Post Actions",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {

@@ -43,17 +43,19 @@ def create_assignment_rule(assignment_rule:dict):
         frappe.log_error("Missing required field: 'name'.")
         return
 
+    assignment_rule_name = assignment_rule["name"]
+
     try:
-        if not frappe.db.exists("Assignment Rule", assignment_rule["name"]):
+        if not frappe.db.exists("Assignment Rule", assignment_rule_name):
             frappe.get_doc(assignment_rule).insert(ignore_permissions=True)
         else:
-            doc = frappe.get_doc("Assignment Rule", assignment_rule["name"])
+            doc = frappe.get_doc("Assignment Rule", assignment_rule_name)
             doc.update(assignment_rule)
             doc.save()
     except Exception as e:
         frappe.log_error(
             title="Assignment Rule Save Error",
-            message=f"Failed to create or update Assignment Rule: {frappe.get_traceback()}"
+            message=f"Failed to create or update Assignment Rule '{assignment_rule_name}': {frappe.get_traceback()}"
         )
 
 def delete_assignment_rule(assignment_rule:dict):

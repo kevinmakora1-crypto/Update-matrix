@@ -679,7 +679,7 @@ def leave_application_list_(user):
 		if frappe.get_single("ONEFM General Setting").extend_user_permissions:
 			supervisors=extend_user_permission(user)
 			if supervisors:
-				supervisors = [i.name for i in supervisors]
+				supervisors = [i for i in supervisors]
 		supervisors.append(supervisor)
 		roles = [i.role for i in frappe.db.sql("SELECT role FROM `tabONEFM Document Access Roles Detail` where parentfield = 'document_access_roles'", as_dict=1)]
 		has_roles = any([item in roles for item in frappe.get_roles(frappe.db.get_value('Employee', supervisor, 'user_id'))])
@@ -693,7 +693,7 @@ def leave_application_list_(user):
 			if frappe.get_single("ONEFM General Setting").extend_user_permissions:
 				supervisors=extend_user_permission(user)
 				if supervisors:
-					supervisors = [i.name for i in supervisors]
+					supervisors = [i for i in supervisors]
 			supervisors.append(employee)
 			frappe.cache().set_value(frappe.session.user,frappe._dict({'employee':employee}))
 			roles = [i.role for i in frappe.db.sql("SELECT role FROM `tabONEFM Document Access Roles Detail` where parentfield = 'document_access_roles'    ", as_dict=1)]

@@ -818,6 +818,13 @@
     "parenttype": "DocType Layout"
    },
    {
+    "fieldname": "custom_is_weekend_reliever",
+    "label": "Is Weekend Reliever",
+    "parent": "Employee",
+    "parentfield": "fields",
+    "parenttype": "DocType Layout"
+   },
+   {
     "fieldname": "shift",
     "label": "Shift",
     "parent": "Employee",
@@ -932,6 +939,13 @@
    {
     "fieldname": "payroll_cost_center",
     "label": "Payroll Cost Center",
+    "parent": "Employee",
+    "parentfield": "fields",
+    "parenttype": "DocType Layout"
+   },
+   {
+    "fieldname": "custom_payroll_cycle_start_date",
+    "label": "Payroll Cycle Start Date",
     "parent": "Employee",
     "parentfield": "fields",
     "parenttype": "DocType Layout"
@@ -1427,6 +1441,13 @@
     "parenttype": "DocType Layout"
    },
    {
+    "fieldname": "custom_enable_face_recognition",
+    "label": "Enable Face Recognition",
+    "parent": "Employee",
+    "parentfield": "fields",
+    "parenttype": "DocType Layout"
+   },
+   {
     "fieldname": "one_fm_erf",
     "label": "ERF",
     "parent": "Employee",
@@ -1516,9 +1537,16 @@
     "parent": "Employee",
     "parentfield": "fields",
     "parenttype": "DocType Layout"
+   },
+   {
+    "fieldname": "custom_payroll_cycle_end_date",
+    "label": "Payroll Cycle End Date",
+    "parent": "Employee",
+    "parentfield": "fields",
+    "parenttype": "DocType Layout"
    }
   ],
-  "modified": "2024-12-17 08:49:40.169020",
+  "modified": "2025-07-03 09:43:20.583779",
   "name": "Employee",
   "route": "app/employee/"
  }

@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 import frappe, json
+from frappe.utils.safe_exec import safe_eval
 from frappe.utils import cint
 import datetime
 from frappe import _
@@ -55,7 +56,7 @@ def get_transitions(doc, workflow=None, user=None):
 			if transition.condition:
 				# if condition, evaluate
 				# access to frappe.db.get_value and frappe.db.get_list
-				success = frappe.safe_eval(transition.condition,
+				success = safe_eval(transition.condition,
 					dict(frappe = frappe._dict(
 						db = frappe._dict(get_value = frappe.db.get_value, get_list=frappe.db.get_list),
 						session = frappe.session
@@ -216,7 +217,7 @@ def filter_allowed_users(users, doc, transition):
 	if transition.condition:
 		# if condition, evaluate
 		# access to frappe.db.get_value and frappe.db.get_list
-		success = frappe.safe_eval(transition.condition,
+		success = safe_eval(transition.condition,
 			dict(frappe = frappe._dict(
 				db = frappe._dict(get_value = frappe.db.get_value, get_list=frappe.db.get_list),
 				session = frappe.session

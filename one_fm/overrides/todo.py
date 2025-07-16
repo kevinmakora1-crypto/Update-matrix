@@ -202,6 +202,9 @@ def update_google_task_on_todo_status_change(doc, method):
             task = service.tasks().get(tasklist="@default", task=doc.custom_google_task_id).execute()
         except:
             task = create_google_task_on_todo_creation_in_erp(doc, method)
+        if not task:
+            frappe.log_error("Google task creation failed", f"Could not create Google Task for ToDo {doc.name}")
+            return
         task_title = doc.custom_google_task_title
         task_notes = create_description_for_google_todo(doc)
         date_obj = datetime.strptime(str(doc.date), "%Y-%m-%d")

@@ -22,7 +22,8 @@ class ProcessTask(Document):
 	def validate(self):
 		self.validate_dates()
 		self.validate_frequency()
-		if not self.is_active or not self.method or not self.get_frequency_for_scheduled_event():
+		self.validate_method()
+		if not all([self.is_active, self.method, self.get_frequency_for_scheduled_event()]):
 			self.clear_scheduled_events()
 
 	def validate_dates(self):
@@ -100,6 +101,10 @@ class ProcessTask(Document):
 		)
 		if frequency_field:
 			frequency_field.options = ""
+
+	def validate_method(self):
+		if not(self.is_automated and self.is_erp_task):
+			self.method = ""
 
 	def clear_scheduled_events(self):
 		"""Deletes existing scheduled jobs by Server Script if self.event_frequency or self.cron_format has changed"""

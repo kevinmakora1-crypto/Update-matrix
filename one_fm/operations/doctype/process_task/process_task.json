@@ -297,6 +297,7 @@
    "label": "Enabled"
   },
   {
+   "depends_on": "eval: doc.is_automated && doc.is_erp_task",
    "fieldname": "method",
    "fieldtype": "Link",
    "label": "Method",
@@ -328,7 +329,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-31 19:29:26.984038",
+ "modified": "2025-07-17 00:32:27.075265",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process Task",

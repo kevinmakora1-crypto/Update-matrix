@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "format: {start_date} | {end_date} | Check Default Shift | {employee}",
+ "autoname": "format: {start_date} | {end_date} | Check Default Shift | {employee} - {##}",
  "creation": "2024-12-20 10:44:56.021618",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -201,7 +201,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-07-14 09:40:57.141824",
+ "modified": "2025-07-16 17:54:51.715244",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Default Shift Checker",

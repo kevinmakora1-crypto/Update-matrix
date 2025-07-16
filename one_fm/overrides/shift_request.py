@@ -592,15 +592,15 @@ def create_employee_schedule_from_request(doc, date):
 
 def assign_day_off(shift_request):
     shift_assignment = frappe.get_list('Shift Assignment',
-                                       {'employee': shift_request.employee, 'start_date': shift_request.from_date},
+                                       {'employee': shift_request.employee, 'start_date': shift_request.from_date, 'roster_type': "Basic"},
                                        ['name', "start_date"])
     if shift_assignment:
         for s in shift_assignment:
-            frappe.db.sql(f"""DELETE from `tabEmployee Checkin` WHERE employee='{shift_request.employee}' AND shift_assignment='{s.name}'""")
+            frappe.db.sql(f"""DELETE from `tabEmployee Checkin` WHERE employee='{shift_request.employee}' AND shift_assignment='{s.name}' AND roster_type='Basic'""")
             if s.start_date >= getdate():
                 frappe.db.sql(f"""DELETE from `tabShift Assignment` WHERE name='{s.name}'""")
 
-    employee_schedule = frappe.get_list('Employee Schedule', {'employee': shift_request.employee, 'date': ["between", (
+    employee_schedule = frappe.get_list('Employee Schedule', {'employee': shift_request.employee, 'roster_type': "Basic",'date': ["between", (
     shift_request.from_date, shift_request.to_date)]}, ['name'])
     if employee_schedule:
         for es in employee_schedule:

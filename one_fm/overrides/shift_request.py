@@ -227,12 +227,6 @@ def process_shift_assignment(doc, event=None):
                     day_off_filters = {
                         'date': date, 
                         'employee': doc.employee,
-                        'employee_availability': 'Day Off'
-                    }
-
-                    day_off_filters = {
-                        'date': date, 
-                        'employee': doc.employee,
                         'employee_availability': ['in', ['Day Off', 'Client Day Off']]
                     }
 

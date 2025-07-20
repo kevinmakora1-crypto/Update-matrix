@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "format:{start_date}|{end_date}|{employee}",
+ "autoname": "format:{start_date}|{end_date}|{employee}-{##}",
  "creation": "2021-10-11 13:17:40.746985",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -246,7 +246,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-08 21:06:23.031790",
+ "modified": "2025-07-20 10:22:56.733296",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Roster Employee Actions",

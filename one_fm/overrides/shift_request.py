@@ -217,6 +217,7 @@ def process_shift_assignment(doc, event=None):
                         AND date BETWEEN '{doc.from_date}' AND '{doc.to_date}' """, as_dict=1)
                     if existing_schedules:
                         replace_employee_schedule(doc, existing_schedules, schedule_date_range)
+
         elif doc.purpose == 'Assign Unrostered Employee':
             schedule_date_range = [str(i.date()) for i in pd.date_range(start=doc.from_date, end=doc.to_date)]
             new_date_range = [i for i in schedule_date_range]
@@ -229,16 +230,23 @@ def process_shift_assignment(doc, event=None):
                         'employee_availability': 'Day Off'
                     }
 
-                    if frappe.db.exists("Employee Schedule", day_off_filters):
-                        existing_schedule = frappe.get_doc("Employee Schedule", day_off_filters)
-                        
+                    day_off_filters = {
+                        'date': date, 
+                        'employee': doc.employee,
+                        'employee_availability': ['in', ['Day Off', 'Client Day Off']]
+                    }
 
+                    schedule_name = frappe.db.get_value("Employee Schedule", day_off_filters, "name")
+
+                    if schedule_name:
+                        existing_schedule = frappe.get_doc("Employee Schedule", schedule_name)
+                        
                         start_time, end_time = frappe.db.get_value(
                             "Shift Type", 
                             doc.shift_type,
                             ['start_time', 'end_time']
                         )
-
+                        
                         end_date = existing_schedule.date
                         if start_time > end_time:
                             end_date = add_days(end_date, 1)

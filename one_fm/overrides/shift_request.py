@@ -96,7 +96,7 @@ def validate(doc, event=None):
         doc.status == 'Draft'
     if doc.status == 'Draft' and doc.purpose == 'Assign Unrostered Employee':
         if check_for_roster(doc):
-            frappe.throw("Employee Already has been rostered for the given dates")
+            frappe.throw("Employee is already assigned to a shift within this date range.")
     if doc.status == 'Draft' and doc.purpose == 'Replace Existing Assignment':
         if doc.replaced_employee:
             shift_assignemnt_exists = frappe.get_list("Shift Assignment",
@@ -112,7 +112,7 @@ def validate(doc, event=None):
                                                     ["roster_type", "=", "Basic"]
                                                 ])
         if not shift_assignemnt_exists:
-            frappe.throw("Employee does not have existing Assignment.")
+            frappe.throw("Employee does not have an existing assignment. Even employees with day off do not have an existing assignment. If you want to assign a shift to an employee with a day off please use Assign Unrostered Employee.")
     process_shift_assignment(doc)  # set shift assignment and employee schedule
 
 
@@ -217,38 +217,54 @@ def process_shift_assignment(doc, event=None):
                         AND date BETWEEN '{doc.from_date}' AND '{doc.to_date}' """, as_dict=1)
                     if existing_schedules:
                         replace_employee_schedule(doc, existing_schedules, schedule_date_range)
+
         elif doc.purpose == 'Assign Unrostered Employee':
             schedule_date_range = [str(i.date()) for i in pd.date_range(start=doc.from_date, end=doc.to_date)]
             new_date_range = [i for i in schedule_date_range]
 
             for date in new_date_range:
-                es = frappe.get_doc("Employee Schedule", {'date': date, 'employee': doc.employee,
-                                                                          'employee_availability': 'Day Off'})
-                
-                if es:
-                    start_time, end_time = frappe.db.get_value("Shift Type", doc.shift_type,
-                                                                ['start_time', 'end_time'])
-                    end_date = es.date
-                    if start_time > end_time:
-                        end_date = add_days(end_date, 1)
-
-                    frappe.db.set_value('Employee Schedule', es.name, {
-                        'shift': doc.operations_shift,
-                        'shift_type': doc.shift_type,
-                        'start_datetime': f"{es.date} {start_time}",
-                        'end_datetime': f"{end_date} {end_time}",
-                        'operations_role': doc.operations_role,
-                        'post_abbrv': role_abbr,
-                        'employee_availability': 'Working',
-                        'roster_type': doc.roster_type,
-                        'department': doc.department,
-                        'site': doc.site,
-                        'reference_doctype': doc.doctype,
-                        'reference_docname': doc.name
+                if shift_worker == 1: 
+                    day_off_filters = {
+                        'date': date, 
+                        'employee': doc.employee,
+                        'employee_availability': ['in', ['Day Off', 'Client Day Off']]
                     }
-                                        )
-                else:
-                    create_employee_schedule_from_request(doc, date)
+
+                    schedule_name = frappe.db.get_value("Employee Schedule", day_off_filters, "name")
+
+                    if schedule_name:
+                        existing_schedule = frappe.get_doc("Employee Schedule", schedule_name)
+                        
+                        start_time, end_time = frappe.db.get_value(
+                            "Shift Type", 
+                            doc.shift_type,
+                            ['start_time', 'end_time']
+                        )
+                        
+                        end_date = existing_schedule.date
+                        if start_time > end_time:
+                            end_date = add_days(end_date, 1)
+                        
+                        update_data = {
+                            'shift': doc.operations_shift,
+                            'shift_type': doc.shift_type,
+                            'start_datetime': f"{existing_schedule.date} {start_time}",
+                            'end_datetime': f"{end_date} {end_time}",
+                            'operations_role': doc.operations_role,
+                            'post_abbrv': role_abbr,
+                            'employee_availability': 'Working',
+                            'roster_type': doc.roster_type,
+                            'department': doc.department,
+                            'site': doc.site,
+                            'reference_doctype': doc.doctype,
+                            'reference_docname': doc.name
+                        }
+                        
+                        frappe.db.set_value('Employee Schedule', existing_schedule.name, update_data)
+                        
+                    else:
+                        create_employee_schedule_from_request(doc, date)
+
                 if date == today():
                     shift_assignment = frappe._dict({
                         "company": doc.company,

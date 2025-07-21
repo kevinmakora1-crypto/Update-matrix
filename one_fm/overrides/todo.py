@@ -86,7 +86,7 @@ def get_google_task_service(employee_email):
         with open(credentials_path, "r") as file:
             credentials_dict = json.load(file)
     except Exception as e:
-        frappe.log_error(title = "Error reading Google credentials",message={str(e)})
+        frappe.log_error(title = "Error reading Google credentials",message=str(e))
         return
     credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=["https://www.googleapis.com/auth/tasks"])
     delegated_credentials = credentials.with_subject(employee_email)
@@ -203,7 +203,7 @@ def update_google_task_on_todo_status_change(doc, method):
         except:
             task = create_google_task_on_todo_creation_in_erp(doc, method)
         if not task:
-            frappe.log_error("Google task creation failed", f"Could not create Google Task for ToDo {doc.name}")
+            frappe.log_error(title = "Google task creation failed",message = f"Could not create Google Task for ToDo {doc.name}")
             return
         task_title = doc.custom_google_task_title
         task_notes = create_description_for_google_todo(doc)

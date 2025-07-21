@@ -8,6 +8,13 @@ from frappe.model.document import Document
 
 
 class POCCheck(Document):
+	def validate(self):
+		self.validate_operations_manager()
+
+	def validate_operations_manager(self):
+		if not self.operations_manager_user:
+			self.operations_manager_user = frappe.db.get_single_value("Operation Settings", "default_operation_manager")
+
 	def validate_rows(self):
 		for each in self.mom_poc_table:
 			if each.action not in ["Delete POC", "Do Nothing", "Update POC"]:

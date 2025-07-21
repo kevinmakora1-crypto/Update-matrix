@@ -118,7 +118,8 @@ doctype_js = {
     "Appraisal": "public/js/doctype_js/appraisal.js",
     "Employee Performance Feedback":"public/js/doctype_js/employee_performance_feedback.js",
     "Leave Allocation": "public/js/doctype_js/leave_allocation.js",
-    "Contact": "public/js/doctype_js/contact.js"
+    "Contact": "public/js/doctype_js/contact.js",
+    "ToDo": "public/js/doctype_js/todo.js"
 }
 doctype_list_js = {
 	"Job Applicant" : "public/js/doctype_js/job_applicant_list.js",
@@ -310,6 +311,7 @@ doc_events = {
 		"validate": [
 			"one_fm.one_fm.project_custom.validate_poc_list",
 			"one_fm.one_fm.project_custom.validate_project",
+			"one_fm.overrides.project.update_project_user_assignment"
 		],
 		"onload": "one_fm.one_fm.project_custom.get_depreciation_expense_amount",
 		"on_update": [
@@ -423,20 +425,13 @@ doc_events = {
 	"ToDo": {
 		"validate": "one_fm.overrides.todo.validate_todo",
         "before_save":"one_fm.overrides.todo.before_save",
-        "after_insert":"one_fm.overrides.todo.create_google_task_on_todo_creation",
+        "after_insert":[
+            "one_fm.overrides.todo.create_google_task_on_todo_creation",
+            "one_fm.overrides.todo.send_email_on_todo_created"
+        ],
         "on_update": "one_fm.overrides.todo.update_google_task_on_todo_status_change"
 	},
-	# "Wiki Page": {
-	# 	"after_insert": "one_fm.wiki_chat_bot.main.after_insert_wiki_page"
-	# },
-    "Task": {
-        "validate": "one_fm.overrides.task.validate_task",
-        "after_insert": "one_fm.overrides.task.after_task_insert"
-	},
-	# "Additional Salary" :{
-	# 	"on_submit": "one_fm.grd.utils.validate_date"
-	# }
-    "OAuth Bearer Token": {
+	"OAuth Bearer Token": {
 		"after_insert": "one_fm.api.doc_methods.oauth_bearer_token.revoke_and_delete_existing_tokens",
 	}
 }
@@ -531,8 +526,8 @@ override_doctype_class = {
     "Interview": "one_fm.overrides.interview.InterviewOverride",
     "Purchase Order": "one_fm.overrides.purchase_order.PurchaseOrderOverride",
     "HD Ticket": "one_fm.overrides.hd_ticket.HDTicketOverride",
-
-    # "User": "one_fm.overrides.user.UserOverride"
+    "ToDo": "one_fm.overrides.todo.ToDo",
+    "Task": "one_fm.overrides.task.TaskOverride",
 }
 
 
@@ -566,7 +561,10 @@ scheduler_events = {
         "one_fm.developer.doctype.bug_buster.bug_buster.roster_bug_buster",
         'one_fm.utils.set_employee_status',
         'one_fm.utils.set_out_of_office_for_leaves',
-        'one_fm.utils.update_active_employees_assurance_level'
+        'one_fm.utils.update_active_employees_assurance_level',
+        'one_fm.operations.doctype.process_task.process_task.create_task_on_monthly_on_day',
+        'one_fm.operations.doctype.process_task.process_task.trigger_method_from_monthly_on_day_process_task',
+        'one_fm.operations.doctype.process_task.process_task.trigger_method_from_monthly_on_last_day_process_task'
 	],
 	"hourly": [
 		# "one_fm.api.tasks.send_checkin_hourly_reminder",
@@ -715,7 +713,6 @@ scheduler_events = {
 			'one_fm.api.tasks.validate_am_shift_assignment'
 		],
 		"15 13 * * *":[ # Attendance Check
-			'one_fm.one_fm.doctype.attendance_check.attendance_check.schedule_attendance_check',
 			'one_fm.one_fm.doctype.attendance_check.attendance_check.attendance_check_pending_approval_check'
 		],
 		"15 12 * * *": [ # create shift assignment
@@ -748,6 +745,7 @@ scheduler_events = {
             "one_fm.one_fm.page.roster.roster.create_employee_schedule"
         ],
         "* * * * *": [ # Runs every minute
+            "one_fm.operations.doctype.process_task.process_task.create_task_on_cron_process_task",
             "one_fm.overrides.todo.sync_google_tasks_with_todos"
         ]
 	}

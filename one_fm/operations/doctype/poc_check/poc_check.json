@@ -10,6 +10,7 @@
   "project",
   "supervisor",
   "supervisor_name",
+  "operations_manager_user",
   "column_break_ghof",
   "site",
   "amended_from",
@@ -103,12 +104,19 @@
   {
    "fieldname": "section_break_cemp",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "operations_manager_user",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Operations Manager User",
+   "options": "User"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-05-18 12:33:40.114274",
+ "modified": "2025-07-02 08:00:29.385491",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "POC Check",

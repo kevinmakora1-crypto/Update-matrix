@@ -2,6 +2,9 @@ import frappe
 from frappe import _
 from pypika import CustomFunction
 from hrms.hr.doctype.goal.goal import Goal
+from datetime import datetime
+import calendar
+
 
 
 
@@ -135,3 +138,26 @@ def _update_goal_completion_status(goals: list[dict]) -> list[dict]:
 				goal["completion_count"] = _("{0} of {1} Completed").format(completed, total_goals)
 
 	return goals
+
+
+@frappe.whitelist()
+def get_goals_for_employee(employee,year=None,month=None):
+    if not employee or not year or not month:
+        return []
+    month = list(calendar.month_name).index(month) 
+    year = int(year)
+    from_date = datetime(int(year), month, 1).date()
+    last_day = calendar.monthrange(int(year), month)[1]
+    to_date = datetime(int(year), month, last_day).date()
+
+    goals = frappe.get_all(
+        "Goal",
+        filters={
+            "employee": employee,
+            "start_date": ["<=", to_date],
+            "end_date": [">=", from_date]
+        },
+        fields=["name", "goal_name", "progress"]
+    )
+   
+    return goals

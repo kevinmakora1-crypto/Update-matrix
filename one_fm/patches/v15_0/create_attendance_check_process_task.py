@@ -1,8 +1,7 @@
 import frappe
 
 def execute():
-    frappe.reload_doctype("Process Task")
-    frappe.reload_doctype("Process")
+    frappe.reload_doc("operations", "doctype", "Process Task")
     if not frappe.db.exists("Method", "one_fm.one_fm.doctype.attendance_check.attendance_check.schedule_attendance_check"):
         frappe.get_doc({
             "method":"one_fm.one_fm.doctype.attendance_check.attendance_check.schedule_attendance_check",

@@ -571,7 +571,7 @@ scheduler_events = {
 		'one_fm.utils.send_gp_letter_attachment_reminder3',
 		'one_fm.utils.send_gp_letter_reminder',
         "one_fm.overrides.attendance.run_attendance_marking_hourly",
-		# "one_fm.api.tasks.validate_shift_assignment",
+		"one_fm.api.tasks.validate_shift_assignment",
 		'one_fm.overrides.employee_checkin.auto_generate_checkin'
 	],
 
@@ -713,7 +713,6 @@ scheduler_events = {
 			'one_fm.api.tasks.validate_am_shift_assignment'
 		],
 		"15 13 * * *":[ # Attendance Check
-			# 'one_fm.one_fm.doctype.attendance_check.attendance_check.schedule_attendance_check',
 			'one_fm.one_fm.doctype.attendance_check.attendance_check.attendance_check_pending_approval_check'
 		],
 		"15 12 * * *": [ # create shift assignment

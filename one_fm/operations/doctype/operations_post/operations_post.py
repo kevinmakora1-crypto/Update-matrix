@@ -103,7 +103,8 @@ class OperationsPost(Document):
 
         self.validate_operations_role_status()
         # check if operations site inactive
-        if (self.status=='Active' and frappe.db.exists("Operations Site", {'name':self.site, 'status':'Inactive'})):frappe.throw(f"You cannot make this post active because Operations Site '{self.site}' is Inactive.")
+        if (self.status=='Active' and frappe.db.exists("Operations Site", {'name':self.site, 'status':'Inactive'})):
+            frappe.throw(f"You cannot make this post active because Operations Site '{self.site}' is Inactive.")
 
 
     def validate_operations_role_status(self):
@@ -111,21 +112,25 @@ class OperationsPost(Document):
             and frappe.db.get_value('Operations Role', self.post_template, 'status') != 'Active':
             frappe.throw(_("The Operations Role <br/>'<b>{0}</b>' selected in the Post '<b>{1}</b>' is <b>Inactive</b>. <br/> To make the Post atcive first make the Role active".format(self.post_template, self.name)))
 
+    def on_update(self):
+        self.validate_name()
+        if self.has_value_changed("status"):
+            if self.status == "Active":
+                check_list = frappe.db.get_list(
+                    "Post Schedule",
+                    filters={
+                        "post":self.name, "date": [">", getdate()]
+                    }
+                )
+                if not check_list:
+                    create_post_schedule_for_operations_post(self)
+            elif self.status == "Inactive":
+                delete_schedule(self)
+
     def validate_name(self):
         condition = self.post_name+"-"+self.gender+"|"+self.site_shift
         if condition != self.name:
             rename_doc(doctype=self.doctype, old=self.name, new=condition, force=True, doc=self)
-
-
-    def on_update(self):
-        self.validate_name()
-        # self.update_operation_roles()
-        if self.status == "Active":
-            check_list = frappe.db.get_list("Post Schedule", filters={"post":self.name, "date": [">", getdate()]})
-            if len(check_list) < 1 :
-                create_post_schedule_for_operations_post(self)
-        elif self.status == "Inactive":
-              delete_schedule(self)
 
 def delete_schedule(doc):
     frappe.db.sql(f"""

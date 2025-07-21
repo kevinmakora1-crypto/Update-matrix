@@ -86,7 +86,7 @@ def get_google_task_service(employee_email):
         with open(credentials_path, "r") as file:
             credentials_dict = json.load(file)
     except Exception as e:
-        frappe.log_error(f"Error reading Google credentials: {str(e)}")
+        frappe.log_error(title = "Error reading Google credentials",message={str(e)})
         return
     credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=["https://www.googleapis.com/auth/tasks"])
     delegated_credentials = credentials.with_subject(employee_email)
@@ -180,7 +180,7 @@ def convert_html_to_plain_text(html_content):
 
         return text_output
     except Exception as e:
-        frappe.log_error(str(e), f"Error converting HTML to plain text")
+        frappe.log_error(message = str(e),title = f"Error converting HTML to plain text")
         return "Failed to parse content."
 
 
@@ -268,7 +268,7 @@ def sync_google_tasks_with_todos():
         return { "error": False, "message" : "Google Tasks synchronized successfully" }
 
     except Exception as e:
-        frappe.log_error(str(e), "Failed to sync google tasks to ERP ToDo")
+        frappe.log_error(message = str(e),title =  "Failed to sync google tasks to ERP ToDo")
         return { "error": True, "message" : str(e) }
 
 
@@ -286,7 +286,7 @@ def sync_my_google_tasks_with_todos():
         return { "error": False, "message" : "My Google Tasks synchronized successfully" }
 
     except Exception as e:
-        frappe.log_error(str(e), "Failed to sync google tasks to ERP ToDo")
+        frappe.log_error(message =str(e),title = "Failed to sync google tasks to ERP ToDo")
         return { "error": True, "message" : str(e) }
 
 
@@ -363,7 +363,7 @@ def sync_google_tasks_for_users(user_emails=[]):
                 new_todo.insert(ignore_permissions=True)
 
         except Exception as e:
-            frappe.log_error(str(e), f"Failed to sync Google task {google_task_id} to ERP ToDo")
+            frappe.log_error(message = str(e),title = f"Failed to sync Google task {google_task_id} to ERP ToDo")
 
 @frappe.whitelist()
 def send_email_on_todo_created(doc, method):

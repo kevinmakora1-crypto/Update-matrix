@@ -3958,6 +3958,14 @@ def background_enqueue_run(report_name, filters=None, user=None):
 		"redirect_url": get_url_to_form("Prepared Report", track_instance.name)
 	}
 
+@frappe.whitelist()
+def get_current_year_and_week():
+    dt = now_datetime()
+    iso_year, week_number, _ = dt.isocalendar()
+    return {
+        "year": iso_year,
+        "week": week_number
+    }
 
 def update_fields_in_doctypes(data):
 	"""

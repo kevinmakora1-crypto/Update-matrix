@@ -7,7 +7,7 @@ from collections import OrderedDict
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import  add_to_date, cstr, getdate, add_days
+from frappe.utils import  add_to_date, cstr, getdate, add_days, add_months, get_first_day, get_last_day
 from frappe.permissions import get_doctype_roles
 
 from one_fm.one_fm.page.roster.roster import get_current_user_details
@@ -60,49 +60,63 @@ def create_roster_employee_actions():
 	"""
 		This function creates a Roster Employee Actions document and issues notifications to relevant supervisors
 		directing them to schedule employees that are unscheduled and assigned to them.
-		It computes employees not scheduled for the span of two weeks, starting from tomorrow.
+		It computes employees not scheduled for the span of two months, starting from tomorrow.
 	"""
+	tomorrow = add_days(getdate(), 1)
+	next_month = add_months(tomorrow, 1)
 
-	start_date = getdate(add_to_date(cstr(getdate()), days=1)) # start date to be from tomorrow
-	end_date = getdate(add_to_date(start_date, days=14)) # end date to be 14 days after start date
+	durations = [
+		{
+			"start_date": tomorrow,
+			"end_date": get_last_day(tomorrow)
+		},
+		{
+			"start_date": get_first_day(next_month),
+			"end_date": get_last_day(next_month)
+		},
+	]
 
-	employees_not_rostered = get_employees_not_rostered(start_date, end_date)
+	for duration in durations:
+		start_date = duration["start_date"]
+		end_date = duration["end_date"]
 
-	for employee, dates in employees_not_rostered.items():
-		try:
-			shift_allocation, site_allocation, project_allocation = frappe.db.get_value("Employee", employee, ["shift", "site", "project"])
+		employees_not_rostered = get_employees_not_rostered(start_date, end_date)
 
-			shift_supervisor = get_shift_supervisor(shift_allocation)
-			site_supervisor = frappe.db.get_value('Operations Site', site_allocation, 'account_supervisor')
-			project_manager = frappe.db.get_value('Project', project_allocation, 'account_manager')
+		for employee, dates in employees_not_rostered.items():
+			try:
+				shift_allocation, site_allocation, project_allocation = frappe.db.get_value("Employee", employee, ["shift", "site", "project"])
 
-			sorted_dates = sorted(
-				[datetime.strptime(date.strip(), "%Y-%m-%d") for date in dates]
-			)
+				shift_supervisor = get_shift_supervisor(shift_allocation)
+				site_supervisor = frappe.db.get_value('Operations Site', site_allocation, 'account_supervisor')
+				project_manager = frappe.db.get_value('Project', project_allocation, 'account_manager')
 
-			yesterday_repeat_count = frappe.db.get_value("Roster Employee Actions", { "start_date": add_days(start_date, -1), "end_date": add_days(end_date, -1), "employee": employee }, ["repeat_count"])
+				sorted_dates = sorted(
+					[datetime.strptime(date.strip(), "%Y-%m-%d") for date in dates]
+				)
 
-			roster_employee_actions = frappe.new_doc("Roster Employee Actions")
-			roster_employee_actions.start_date = start_date
-			roster_employee_actions.end_date = end_date
-			roster_employee_actions.repeat_count = (yesterday_repeat_count or 0) + 1
-			roster_employee_actions.status = "Pending"
-			roster_employee_actions.supervisor = shift_supervisor
-			roster_employee_actions.site_supervisor = site_supervisor
-			roster_employee_actions.project_manager = project_manager
-			roster_employee_actions.shift = shift_allocation
-			roster_employee_actions.site = site_allocation
-			roster_employee_actions.project = project_allocation
-			roster_employee_actions.employee = employee
-			roster_employee_actions.missing_dates = ", ".join([date.strftime("%Y-%m-%d") for date in sorted_dates])
+				yesterday_repeat_count = frappe.db.get_value("Roster Employee Actions", { "start_date": add_days(start_date, -1), "end_date": add_days(end_date, -1), "employee": employee }, ["repeat_count"])
 
-			roster_employee_actions.save()
+				roster_employee_actions = frappe.new_doc("Roster Employee Actions")
+				roster_employee_actions.start_date = start_date
+				roster_employee_actions.end_date = end_date
+				roster_employee_actions.repeat_count = (yesterday_repeat_count or 0) + 1
+				roster_employee_actions.status = "Pending"
+				roster_employee_actions.supervisor = shift_supervisor
+				roster_employee_actions.site_supervisor = site_supervisor
+				roster_employee_actions.project_manager = project_manager
+				roster_employee_actions.shift = shift_allocation
+				roster_employee_actions.site = site_allocation
+				roster_employee_actions.project = project_allocation
+				roster_employee_actions.employee = employee
+				roster_employee_actions.missing_dates = ", ".join([date.strftime("%Y-%m-%d") for date in sorted_dates])
 
-		except Exception as e:
-			frappe.log_error(frappe.get_traceback(), "Error while generating Roster employee actions")
-			continue
+				roster_employee_actions.save()
 
-		frappe.db.commit()
+			except Exception as e:
+				frappe.log_error(frappe.get_traceback(), "Error while generating Roster employee actions")
+				continue
+
+			frappe.db.commit()
 
 def get_employees_not_rostered(start_date, end_date):
 	"""

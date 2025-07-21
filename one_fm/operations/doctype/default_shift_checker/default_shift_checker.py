@@ -6,7 +6,7 @@ from frappe.model.document import Document
 from frappe import _
 from frappe.query_builder import DocType
 from frappe.query_builder.functions import Count
-from frappe.utils import getdate, get_last_day, add_days
+from frappe.utils import getdate, get_first_day, get_last_day, add_days, add_months
 
 class DefaultShiftChecker(Document):
 	def on_submit(self):
@@ -47,17 +47,29 @@ class DefaultShiftChecker(Document):
 
 
 def create_default_shift_checker():
-	start_date = getdate()
-	last_day_of_month = get_last_day(start_date)
+	tomorrow = add_days(getdate(), 1)
+	next_month = add_months(tomorrow, 1)
 
-	# For normal employees
-	create_checker(start_date, last_day_of_month)
+	durations = [
+		{
+			"start_date": tomorrow,
+			"end_date": get_last_day(tomorrow)
+		},
+		{
+			"start_date": get_first_day(next_month),
+			"end_date": get_last_day(next_month)
+		},
+	]
 
-	# For day off relievers
-	create_checker(start_date, last_day_of_month, is_day_off_reliever=True)
+	for duration in durations:
+		# For normal employees
+		create_checker(duration["start_date"], duration["end_date"])
 
-	# For weekend relievers
-	create_checker(start_date, last_day_of_month, is_weekend_reliever=True)
+		# For day off relievers
+		create_checker(duration["start_date"], duration["end_date"], is_day_off_reliever=True)
+
+		# For weekend relievers
+		create_checker(duration["start_date"], duration["end_date"], is_weekend_reliever=True)
 
 
 def create_checker(start_date, end_date, is_day_off_reliever=False, is_weekend_reliever=False):

@@ -17,7 +17,7 @@ def execute():
             "from_date": ["<=", to_date],
         },
         fields=["employee", "from_date", "to_date"]
-    )[:1]
+    )
 
     for leave in leave_apps:
         # Get the actual overlap between the leave and July range

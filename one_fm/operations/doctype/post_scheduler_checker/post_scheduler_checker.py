@@ -3,7 +3,7 @@
 
 from datetime import datetime
 import frappe
-from frappe.utils import getdate, get_last_day, get_first_day, date_diff, add_days
+from frappe.utils import getdate, get_last_day, get_first_day, date_diff, add_days, add_months
 from frappe.model.document import Document
 from one_fm.utils import get_week_start_end
 from one_fm.operations.doctype.operations_shift.operations_shift import get_supervisor_operations_shifts, get_shift_supervisor
@@ -41,9 +41,7 @@ def get_working_site_supervisor(project, date):
 
 	
 def get_post_scheduler_items(contract, project):
-	current_date = getdate()			
-	week_range = get_week_start_end(str(getdate()))
-
+	current_date = getdate()
 	contract = frappe.get_doc("Contracts", contract)
 
 	items = []
@@ -80,46 +78,64 @@ def get_post_scheduler_items(contract, project):
 				item_message += f"""Less operations post created, expected: {item.count}, created: {len(operations_post)} for roles {roles}\n\n"""
 
 			for post in operations_post:
-				expected = 0
-				post_message = ""
+				# Get two periods: current & next
+				periods = []
 
-				if item.rate_type_off == 'Days Off' and item.days_off_category and item.days_off_category == 'Weekly':
-					first_day = getdate(week_range.start)
-					last_day = getdate(week_range.end)
+				if item.rate_type_off == 'Days Off' and item.days_off_category == 'Weekly':
+					# Weekly: current week and next week
+					curr_week = get_week_start_end(str(current_date))
+					next_week = get_week_start_end(str(add_days(current_date, 7)))
+					periods.append((curr_week.start, curr_week.end))
+					periods.append((next_week.start, next_week.end))
 				else:
-					first_day = getdate(get_first_day(current_date))
-					last_day = getdate(get_last_day(current_date))
+					# Monthly: current month and next month
+					curr_month_start = get_first_day(current_date)
+					curr_month_end = get_last_day(current_date)
+					next_month_start = get_first_day(add_months(current_date, 1))
+					next_month_end = get_last_day(add_months(current_date, 1))
+					periods.append((curr_month_start, curr_month_end))
+					periods.append((next_month_start, next_month_end))
 
-				# Instead of a full month if the post starts or ends within the month/week use the difference between the start and end date
-				if post.start_date and post.start_date > first_day:
-					first_day = getdate(post.start_date)
-				if post.end_date and post.end_date < last_day:
-					last_day = getdate(post.end_date)
+				for period_start, period_end in periods:
+					first_day = getdate(period_start)
+					last_day = getdate(period_end)
 
-				expected = date_diff(last_day, first_day) + 1
-						
-				if item.rate_type_off == 'Days Off':
-					expected = expected - item.no_of_days_off
+					if post.start_date and post.start_date > first_day:
+						first_day = getdate(post.start_date)
+					if post.end_date and post.end_date < last_day:
+						last_day = getdate(post.end_date)
 
-				post_schedules = get_post_schedules(project=contract.project, post=post, first_day=first_day, last_day=last_day)
-				if not post_schedules:
-					post_message += f"""No post schedules created for Post  ({post.name})\n\n"""
-				elif post_schedules > expected:
-					post_message += f"""More post schedules created from {first_day} to {last_day}, expected: {expected}, created: {post_schedules} for post {post.name}\n\n"""
-				elif post_schedules < expected:
-					post_message += f"""Less post schedules created from {first_day} to {last_day}, expected: {expected}, created: {post_schedules} for post {post.name}\n\n"""
+					expected = date_diff(last_day, first_day) + 1
 
-				if post_message:
-					items.append({
-						'item': item.item_code,
-						'from_date': first_day,
-						'to_date': last_day,
-						'rate_type': item.rate_type,
-						'rate_type_off': item.rate_type_off,
-						'no_of_days_off': item.no_of_days_off,
-						'days_off_category': item.days_off_category,
-						'comment': item_message + post_message
-					})
+					if item.rate_type_off == 'Days Off':
+						expected -= item.no_of_days_off
+
+					post_schedules = get_post_schedules(
+						project=contract.project,
+						post=post,
+						first_day=first_day,
+						last_day=last_day
+					)
+
+					post_message = ""
+					if not post_schedules:
+						post_message += f"""No post schedules created for Post ({post.name}) from {first_day} to {last_day}\n\n"""
+					elif post_schedules > expected:
+						post_message += f"""More post schedules created from {first_day} to {last_day}, expected: {expected}, created: {post_schedules} for post {post.name}\n\n"""
+					elif post_schedules < expected:
+						post_message += f"""Less post schedules created from {first_day} to {last_day}, expected: {expected}, created: {post_schedules} for post {post.name}\n\n"""
+
+					if post_message:
+						items.append({
+							'item': item.item_code,
+							'from_date': first_day,
+							'to_date': last_day,
+							'rate_type': item.rate_type,
+							'rate_type_off': item.rate_type_off,
+							'no_of_days_off': item.no_of_days_off,
+							'days_off_category': item.days_off_category,
+							'comment': item_message + post_message
+						})
 
 	return items
 

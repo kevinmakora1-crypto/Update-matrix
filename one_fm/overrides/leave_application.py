@@ -211,7 +211,7 @@ class LeaveApplicationOverride(LeaveApplication):
             if not template:
                 frappe.msgprint(_("Please set default template for Leave Status Notification in HR Settings."))
                 return
-            parent_doc = frappe.get_doc("Leave Application", self.name)
+            parent_doc = self
             employee = frappe.db.get_value("Employee", self.employee, "employee_name_in_arabic", as_dict=True) or {}
             leave_approver = frappe.db.get_value("Employee", {"company_email": self.leave_approver}, ["employee_name_in_arabic", "employee_name"], as_dict=True) or {}
             leave_type_in_arabic = frappe.db.get_value('Leave Type', self.leave_type, 'custom_leave_type_name_in_arabic')

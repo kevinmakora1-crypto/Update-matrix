@@ -3288,8 +3288,8 @@ def check_employee_permission_on_doc(doc):
                     approver_list.append(approver)
 
                     if session_employee not in approver_list:
-
-                        frappe.throw("You do not have permissions to access this document.")
+                        if not doc.has_permission:
+                            frappe.throw("You do not have permissions to access this document.")
     except Exception as e:
         pass
 

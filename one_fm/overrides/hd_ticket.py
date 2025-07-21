@@ -180,7 +180,7 @@ class HDTicketOverride(HDTicket):
                 "employee_name": employee.employee_name,
                 "ticket_subject": self.subject,
                 "base_url": frappe.utils.get_url(),
-                "doc_type": self.selftype,
+                "doc_type": self.doctype,
                 "doc_name": self.name
             })
             message = frappe.render_template('one_fm/templates/emails/notify_ticket_raiser_receipt.html', context=args)

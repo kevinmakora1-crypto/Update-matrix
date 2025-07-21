@@ -132,3 +132,4 @@ one_fm.patches.v15_0.delete_employee_schedule_for_employee_on_leave
 one_fm.patches.v15_0.update_on_boarding_EMP-ONB-2025-00315
 one_fm.patches.v15_0.update_contracts_end_date
 one_fm.patches.v15_0.add_task_type_for_todo_type
+one_fm.patches.v15_0.create_attendance_check_process_task

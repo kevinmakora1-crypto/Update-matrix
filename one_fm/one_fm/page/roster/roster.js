@@ -1329,7 +1329,7 @@ function render_roster(res, page) {
 			let tooltiptext = ``;
 			let bgclass = ``;
 
-			let is_relieved_this_day = employee_relieving_date && current_day_iter.isSameOrAfter(employee_relieving_date);
+			let is_relieved_this_day = employee_relieving_date && current_day_iter.isAfter(employee_relieving_date);
 
 			if (employees_data[employee_key][date_key] && employees_data[employee_key][date_key].length > 0) {
 				for (let k = 0; k < employees_data[employee_key][date_key].length; k++) {
@@ -1378,7 +1378,7 @@ function render_roster(res, page) {
 						bgclass = "diffdayoffot";
 						data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
 					}
-					else if (attendance && in_list(["Day Off", "On Leave", "Absent", "On Hold"], attendance)) {
+					else if (attendance && in_list(["Day Off", "On Leave", "Absent", "On Hold", "Client Day Off"], attendance)) {
 						data_selectid = `${employee}|${date}|${employee_availability}`;
 						if (attendance == "Absent") {
 							if (roster_type == "Over-Time") { bgclass = bgclass ? `${bgclass}-absentot` : "absentot" }

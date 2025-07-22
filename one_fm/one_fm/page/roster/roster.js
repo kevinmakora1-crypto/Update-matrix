@@ -1329,7 +1329,7 @@ function render_roster(res, page) {
 			let tooltiptext = ``;
 			let bgclass = ``;
 
-			let is_relieved_this_day = employee_relieving_date && current_day_iter.isSameOrAfter(employee_relieving_date);
+			let is_relieved_this_day = employee_relieving_date && current_day_iter.isAfter(employee_relieving_date);
 
 			if (employees_data[employee_key][date_key] && employees_data[employee_key][date_key].length > 0) {
 				for (let k = 0; k < employees_data[employee_key][date_key].length; k++) {

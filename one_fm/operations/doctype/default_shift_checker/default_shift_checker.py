@@ -133,12 +133,13 @@ def create_checker(start_date, end_date, is_day_off_reliever=False, is_weekend_r
 	# Create Default Shift Checker records
 	for employee in query.run(as_dict=True):
 		try:
-			# If start date lies within current month then check for yesterday else check for first day of month (for next month)
 			yesterday_repeat_count = frappe.db.get_value(
 				"Default Shift Checker",
 				{
 					"employee": employee.employee,
-					"start_date": add_days(start_date, -1) if getdate(start_date).month == getdate(nowdate()).month and getdate(start_date).year == getdate(nowdate()).year else get_first_day(start_date)
+					# If start date lies within current month then check for yesterday else check for first day of month (for next month)
+					"start_date": add_days(start_date, -1) if getdate(start_date).month == getdate(nowdate()).month and getdate(start_date).year == getdate(nowdate()).year else get_first_day(start_date),
+					"creation": ["between", [add_days(nowdate(), -1), nowdate()]],
 				},
 				["repeat_count"]
 			)

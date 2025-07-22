@@ -199,7 +199,16 @@ def check_roster_day_off():
 				if day_off_data["day_off_difference"]:
 					duration = day_off_data["monthweek"]
 
-					yesterday_repeat_count = frappe.db.get_value("Roster Day Off Checker", { "employee": employee.name, "monthweek": duration, "date": add_days(today, -1) }, ["repeat_count"])
+					yesterday_repeat_count = frappe.db.get_value(
+						"Roster Day Off Checker",
+						{
+							"employee": employee.name,
+							"monthweek": duration,
+							"date": add_days(today, -1),
+							"creation": ["between", [add_days(nowdate(), -1), nowdate()]],
+						},
+						["repeat_count"]
+					)
 
 					# Delete exising for target duration against employee
 					frappe.delete_doc_if_exists("Roster Day Off Checker", f"OPR-RDOC-{employee.name}-{duration}")

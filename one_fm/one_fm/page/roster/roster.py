@@ -1690,7 +1690,7 @@ def create_employee_schedule():
     today_date = getdate(nowdate())
     target_month_start = get_first_day(add_months(today_date, 1))
     target_month_end = get_last_day(add_months(today_date, 1))
-    weeks = split_into_monday_weeks(target_month_start, target_month_end)
+    weeks = split_into_weeks_with_sunday_as_first_day(target_month_start, target_month_end)
 
     shifts_with_auto_roster = frappe.get_all(
         "Operations Shift",
@@ -1706,8 +1706,7 @@ def create_employee_schedule():
         "Employee",
         filters={
             "shift": ["in", shift_names],
-            "status": "Active",
-			"name": "HR-EMP-00576"
+            "status": "Active"
         },
         fields=[
             "name", "employee_name", "department", "day_off_category", "number_of_days_off",
@@ -1736,24 +1735,24 @@ def create_employee_schedule():
             continue
 
         leave_dates = set(map(getdate, leave_dates_by_employee.get(emp.name, [])))
-        category = emp.day_off_category
+        day_off_category = emp.day_off_category
         num_days_off = emp.number_of_days_off or 0
 
-        if category == "Weekly":
+        if day_off_category == "Weekly":
             for week in weeks:
-                process_schedule_range(emp, week["start"], week["end"], leave_dates, num_days_off, category, shift_doc, role_doc)
+                process_schedule_range(emp, week["start"], week["end"], leave_dates, num_days_off, day_off_category, shift_doc, role_doc)
 
-        elif category == "Monthly":
-            process_schedule_range(emp, target_month_start, target_month_end, leave_dates, num_days_off, category, shift_doc, role_doc)
+        elif day_off_category == "Monthly":
+            process_schedule_range(emp, target_month_start, target_month_end, leave_dates, num_days_off, day_off_category, shift_doc, role_doc)
 
     frappe.db.commit()
 
 
-def process_schedule_range(emp, range_start, range_end, leave_dates, num_days_off, category, shift_doc, role_doc):
+def process_schedule_range(emp, range_start, range_end, leave_dates, num_days_off, day_off_category, shift_doc, role_doc):
     start_date = max(range_start, emp.date_of_joining or date.min)
     end_date = min(range_end, emp.relieving_date or date.max)
 
-    total_days_in_range = date_diff(get_last_day(end_date), get_first_day(start_date)) + 1 if category == "Monthly" else 7 # total days in month/week
+    total_days_in_range = date_diff(get_last_day(end_date), get_first_day(start_date)) + 1 if day_off_category == "Monthly" else 7 # total days in month/week
     active_days = date_diff(end_date, start_date) + 1 # active days within the company considering joining/relieving date
     leave_in_range = {d for d in leave_dates if start_date <= d <= end_date}
 
@@ -1763,8 +1762,6 @@ def process_schedule_range(emp, range_start, range_end, leave_dates, num_days_of
         return
 	
     calculated_no_of_days_off = round(actual_working_days / total_days_in_range * num_days_off)
-	
-    print(actual_working_days, total_days_in_range, num_days_off)
 
     for day_offset in range(active_days):
         current_date = add_days(start_date, day_offset)
@@ -1775,13 +1772,11 @@ def process_schedule_range(emp, range_start, range_end, leave_dates, num_days_of
             current_date,
             start_date,
             active_days,
-            category,
+            day_off_category,
             calculated_no_of_days_off
         )
 
-        print(current_date, "-", availability, "\n")
-
-        # create_or_update_schedule_for_employee(emp, current_date, availability, shift_doc, role_doc)
+        create_or_update_schedule_for_employee(emp, current_date, availability, shift_doc, role_doc)
 
 
 def create_or_update_schedule_for_employee(employee, date_val, availability, operations_shift_doc, operations_role_doc):
@@ -1895,36 +1890,45 @@ def determine_availability(current_date, start_date, total_days, day_off_categor
 
     return "Working"  # Default to working if no category matches
 
-def split_into_monday_weeks(start_date, end_date):
+def split_into_weeks_with_sunday_as_first_day(start_date, end_date):
+    """
+    Splits a given date range into weeks, with each week starting on Sunday.
+
+    Args:
+        start_date (str or datetime.date): The starting date of the range.
+        end_date (str or datetime.date): The ending date of the range.
+
+    Returns:
+        list[dict]: A list of dictionaries, each containing:
+            - "start" (datetime.date): Start date of the week (clipped to `start_date` if necessary).
+            - "end" (datetime.date): End date of the week (clipped to `end_date` if necessary).
+    """
     start = getdate(start_date)
     end = getdate(end_date)
 
-    # Align start to the previous or same Monday
-    weekday = start.weekday()  # Monday = 0
-    start_monday = add_days(start, -weekday)
+    weekday = start.weekday()  # Monday=0 ... Sunday=6
+    days_to_sunday = (weekday + 1) % 7
+    start_sunday = add_days(start, -days_to_sunday)
 
     week_ranges = []
 
-    current = start_monday
+    current = start_sunday
     while current <= end:
         week_start = current
         week_end = add_days(week_start, 6)
 
-        # Clamp to actual date range
         actual_start = max(week_start, start)
         actual_end = min(week_end, end)
 
-        number_of_days = (actual_end - actual_start).days + 1
-
         week_ranges.append({
             "start": getdate(actual_start),
-            "end": getdate(actual_end),
-            "days": number_of_days
+            "end": getdate(actual_end)
         })
 
         current = add_days(week_end, 1)
 
     return week_ranges
+
 
 @frappe.whitelist()
 def get_employee_details(employee_id):

@@ -67,7 +67,7 @@ def add_property_setter(property_setters):
 def get_field_properties():
 	"""ONEFM specific field properties that need to be added to the masters in ERPNext"""
 	field_properties = get_assignment_rule_properties()
-	field_properties.update(get_task_properties())
+	field_properties.extend(get_task_properties())
 	return field_properties
 
 def create_workflows():

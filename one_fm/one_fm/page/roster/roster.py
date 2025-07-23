@@ -3,7 +3,7 @@ import json
 from distutils.util import strtobool
 from collections import defaultdict
 from pandas.core.indexes.datetimes import date_range
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from functools import reduce
 from operator import and_
 
@@ -1684,61 +1684,104 @@ def get_employee_detail(employee_pk):
 
 
 def create_employee_schedule():
-	"""
-	Generate employee schedules for the month after the next.
-	"""
-	# Determine the target month (month after next)
-	today_date = getdate(nowdate())
-	target_month_start = get_first_day(add_months(today_date, 1))
-	target_month_end = get_last_day(add_months(today_date, 1))
+    """
+    Generate employee schedules for the month after the next.
+    """
+    today_date = getdate(nowdate())
+    target_month_start = get_first_day(add_months(today_date, 1))
+    target_month_end = get_last_day(add_months(today_date, 1))
+    weeks = split_into_monday_weeks(target_month_start, target_month_end)
 
-	shifts_with_auto_roster = frappe.get_all(
-	"Operations Shift",
-	filters={"automate_roster": 1},
-	fields=["name"]
-	)
+    shifts_with_auto_roster = frappe.get_all(
+        "Operations Shift",
+        filters={"automate_roster": 1},
+        fields=["name"]
+    )
+    shift_names = [shift["name"] for shift in shifts_with_auto_roster]
 
-	shift_names = [shift["name"] for shift in shifts_with_auto_roster]
+    if not shift_names:
+        return
 
-	if shift_names:
-		employees_auto_roster = frappe.get_all(
-		"Employee",
-		filters={"shift": ["in", shift_names], "status": "Active"}, # Added Active status filter
-		fields=["name", "employee_name", "department", "day_off_category", "number_of_days_off", "custom_operations_role_allocation", "shift"]
-		)
+    employees = frappe.get_all(
+        "Employee",
+        filters={
+            "shift": ["in", shift_names],
+            "status": "Active",
+			"name": "HR-EMP-00576"
+        },
+        fields=[
+            "name", "employee_name", "department", "day_off_category", "number_of_days_off",
+            "custom_operations_role_allocation", "shift", "date_of_joining", "relieving_date"
+        ]
+    )
 
-		for employee_doc in employees_auto_roster:
-			total_days = date_diff(target_month_end, target_month_start) + 1 # Use target_month_end
+    leave_dates_by_employee = get_leave_dates_by_employee_during_date_range(target_month_start, target_month_end)
 
-			if not employee_doc.shift or not employee_doc.custom_operations_role_allocation:
-				frappe.log_error(
-					f"Missing shift or operations role for employee {employee_doc.name}",
-					"Employee Schedule Creation Error"
-				)
-				continue
+    for emp in employees:
+        if not emp.shift or not emp.custom_operations_role_allocation:
+            frappe.log_error(
+                f"Missing shift or operations role for employee {emp.name}",
+                "Employee Schedule Creation Error"
+            )
+            continue
 
-			try: # Add try-except for Doctype fetching
-				operations_shift_doc = frappe.get_doc("Operations Shift", employee_doc.shift, ignore_permissions=True)
-				operations_role_doc = frappe.get_doc("Operations Role", employee_doc.custom_operations_role_allocation, ignore_permissions=True)
-			except frappe.DoesNotExistError:
-				 frappe.log_error(
-					f"Invalid shift or operations role document for employee {employee_doc.name}",
-					"Employee Schedule Creation Error"
-				)
-				 continue
+        try:
+            shift_doc = frappe.get_doc("Operations Shift", emp.shift, ignore_permissions=True)
+            role_doc = frappe.get_doc("Operations Role", emp.custom_operations_role_allocation, ignore_permissions=True)
+        except frappe.DoesNotExistError:
+            frappe.log_error(
+                f"Invalid shift or operations role for employee {emp.name}",
+                "Employee Schedule Creation Error"
+            )
+            continue
+
+        leave_dates = set(map(getdate, leave_dates_by_employee.get(emp.name, [])))
+        category = emp.day_off_category
+        num_days_off = emp.number_of_days_off or 0
+
+        if category == "Weekly":
+            for week in weeks:
+                process_schedule_range(emp, week["start"], week["end"], leave_dates, num_days_off, category, shift_doc, role_doc)
+
+        elif category == "Monthly":
+            process_schedule_range(emp, target_month_start, target_month_end, leave_dates, num_days_off, category, shift_doc, role_doc)
+
+    frappe.db.commit()
 
 
-			for day_offset in range(total_days):
-				current_date = add_days(target_month_start, day_offset)
-				availability = determine_availability(
-					current_date,
-					target_month_start,
-					total_days,
-					employee_doc.day_off_category,
-					employee_doc.number_of_days_off
-				)
-				create_or_update_schedule_for_employee(employee_doc, current_date, availability, operations_shift_doc, operations_role_doc)
-		frappe.db.commit() # Commit once after processing all employees
+def process_schedule_range(emp, range_start, range_end, leave_dates, num_days_off, category, shift_doc, role_doc):
+    start_date = max(range_start, emp.date_of_joining or date.min)
+    end_date = min(range_end, emp.relieving_date or date.max)
+
+    total_days_in_range = date_diff(get_last_day(end_date), get_first_day(start_date)) + 1 if category == "Monthly" else 7 # total days in month/week
+    active_days = date_diff(end_date, start_date) + 1 # active days within the company considering joining/relieving date
+    leave_in_range = {d for d in leave_dates if start_date <= d <= end_date}
+
+    actual_working_days = active_days - len(leave_in_range)
+	
+    if actual_working_days <= 0:
+        return
+	
+    calculated_no_of_days_off = round(actual_working_days / total_days_in_range * num_days_off)
+	
+    print(actual_working_days, total_days_in_range, num_days_off)
+
+    for day_offset in range(active_days):
+        current_date = add_days(start_date, day_offset)
+        if current_date in leave_in_range:
+            continue
+
+        availability = determine_availability(
+            current_date,
+            start_date,
+            active_days,
+            category,
+            calculated_no_of_days_off
+        )
+
+        print(current_date, "-", availability, "\n")
+
+        # create_or_update_schedule_for_employee(emp, current_date, availability, shift_doc, role_doc)
 
 
 def create_or_update_schedule_for_employee(employee, date_val, availability, operations_shift_doc, operations_role_doc):
@@ -1805,6 +1848,35 @@ def create_or_update_schedule_for_employee(employee, date_val, availability, ope
 	except Exception as e:
 		frappe.log_error(f"Error for employee {employee.name} on {date_str}: {str(e)} \nTraceback: {frappe.get_traceback()}", "Employee Schedule Error")
 
+def get_leave_dates_by_employee_during_date_range(start_date, end_date):
+    leave_applications = frappe.db.sql("""
+        SELECT employee, from_date, to_date
+        FROM `tabLeave Application`
+        WHERE leave_type IN ('Annual Leave', 'Leave Without Pay')
+		AND status = 'Approved'
+        AND (
+            (from_date BETWEEN %(start_date)s AND %(end_date)s)
+            OR
+            (to_date BETWEEN %(start_date)s AND %(end_date)s)
+        )
+    """, { "start_date": start_date, "end_date": end_date }, as_dict=True)
+
+    leave_dates_by_employee = {}
+
+    for row in leave_applications:
+        employee = row.employee
+        from_date = getdate(row.from_date)
+        to_date = getdate(row.to_date)
+        
+        days_count = date_diff(to_date, from_date) + 1  # inclusive
+        leave_days = [(add_days(from_date, i)) for i in range(days_count)]
+
+        if employee not in leave_dates_by_employee:
+            leave_dates_by_employee[employee] = set()
+
+        leave_dates_by_employee[employee].update(leave_days)
+
+    return leave_dates_by_employee
 
 def determine_availability(current_date, start_date, total_days, day_off_category, num_days_off):
     """
@@ -1823,6 +1895,36 @@ def determine_availability(current_date, start_date, total_days, day_off_categor
 
     return "Working"  # Default to working if no category matches
 
+def split_into_monday_weeks(start_date, end_date):
+    start = getdate(start_date)
+    end = getdate(end_date)
+
+    # Align start to the previous or same Monday
+    weekday = start.weekday()  # Monday = 0
+    start_monday = add_days(start, -weekday)
+
+    week_ranges = []
+
+    current = start_monday
+    while current <= end:
+        week_start = current
+        week_end = add_days(week_start, 6)
+
+        # Clamp to actual date range
+        actual_start = max(week_start, start)
+        actual_end = min(week_end, end)
+
+        number_of_days = (actual_end - actual_start).days + 1
+
+        week_ranges.append({
+            "start": getdate(actual_start),
+            "end": getdate(actual_end),
+            "days": number_of_days
+        })
+
+        current = add_days(week_end, 1)
+
+    return week_ranges
 
 @frappe.whitelist()
 def get_employee_details(employee_id):

@@ -20,9 +20,11 @@ from one_fm.custom.custom_field.attendance import get_attendance_custom_fields
 from one_fm.custom.custom_field.todo import get_todo_custom_fields
 from one_fm.custom.custom_field.scheduled_job_type import get_scheduled_job_type_custom_fields
 from one_fm.custom.custom_field.task import get_task_custom_fields
+from one_fm.custom.custom_field.asset_category_account import get_asset_category_account_custom_fields
 # Property setter imports
 from one_fm.custom.property_setter.assignment_rule import get_assignment_rule_properties
 from one_fm.custom.property_setter.task import get_task_properties
+from one_fm.custom.property_setter.asset_category_account import get_asset_category_account_properties
 
 def after_install():
 	create_custom_fields(get_custom_fields())
@@ -50,6 +52,7 @@ def get_custom_fields():
 	custom_fields.update(get_todo_custom_fields())
 	custom_fields.update(get_scheduled_job_type_custom_fields())
 	custom_fields.update(get_task_custom_fields())
+	custom_fields.update(get_asset_category_account_custom_fields())
 	return custom_fields
 
 def add_property_setter(property_setters):
@@ -68,6 +71,7 @@ def get_field_properties():
 	"""ONEFM specific field properties that need to be added to the masters in ERPNext"""
 	field_properties = get_assignment_rule_properties()
 	field_properties.extend(get_task_properties())
+	field_properties.extend(get_asset_category_account_properties())
 	return field_properties
 
 def create_workflows():

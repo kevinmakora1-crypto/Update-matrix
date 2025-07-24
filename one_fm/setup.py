@@ -23,12 +23,14 @@ from one_fm.custom.custom_field.task import get_task_custom_fields
 from one_fm.custom.custom_field.asset_category_account import get_asset_category_account_custom_fields
 from one_fm.custom.custom_field.asset_movement import get_asset_movement_custom_fields
 from one_fm.custom.custom_field.asset import get_asset_custom_fields
+from one_fm.custom.custom_field.attendance_request import get_attendance_request_custom_fields
 # Property setter imports
 from one_fm.custom.property_setter.assignment_rule import get_assignment_rule_properties
 from one_fm.custom.property_setter.task import get_task_properties
 from one_fm.custom.property_setter.asset_category_account import get_asset_category_account_properties
 from one_fm.custom.property_setter.asset_finance_book import get_asset_finance_book_properties
 from one_fm.custom.property_setter.asset import get_asset_properties
+from one_fm.custom.property_setter.attendance_request import get_attendance_request_properties
 
 def after_install():
 	create_custom_fields(get_custom_fields())
@@ -59,6 +61,7 @@ def get_custom_fields():
 	custom_fields.update(get_asset_category_account_custom_fields())
 	custom_fields.update(get_asset_custom_fields())
 	custom_fields.update(get_asset_movement_custom_fields())
+	custom_fields.update(get_attendance_request_custom_fields())
 	return custom_fields
 
 def add_property_setter(property_setters):
@@ -80,6 +83,7 @@ def get_field_properties():
 	field_properties.extend(get_asset_category_account_properties())
 	field_properties.extend(get_asset_finance_book_properties())
 	field_properties.extend(get_asset_properties())
+	field_properties.extend(get_attendance_request_properties())
 	return field_properties
 
 def create_workflows():

@@ -25,6 +25,7 @@ from one_fm.custom.custom_field.asset_category_account import get_asset_category
 from one_fm.custom.property_setter.assignment_rule import get_assignment_rule_properties
 from one_fm.custom.property_setter.task import get_task_properties
 from one_fm.custom.property_setter.asset_category_account import get_asset_category_account_properties
+from one_fm.custom.property_setter.asset_finance_book import get_asset_finance_book_properties
 
 def after_install():
 	create_custom_fields(get_custom_fields())
@@ -72,6 +73,7 @@ def get_field_properties():
 	field_properties = get_assignment_rule_properties()
 	field_properties.extend(get_task_properties())
 	field_properties.extend(get_asset_category_account_properties())
+	field_properties.extend(get_asset_finance_book_properties())
 	return field_properties
 
 def create_workflows():

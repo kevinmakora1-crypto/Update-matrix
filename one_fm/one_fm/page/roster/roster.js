@@ -1378,7 +1378,7 @@ function render_roster(res, page) {
 						bgclass = "diffdayoffot";
 						data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
 					}
-					else if (attendance && in_list(["Day Off", "On Leave", "Absent", "On Hold"], attendance)) {
+					else if (attendance && in_list(["Day Off", "On Leave", "Absent", "On Hold", "Client Day Off"], attendance)) {
 						data_selectid = `${employee}|${date}|${employee_availability}`;
 						if (attendance == "Absent") {
 							if (roster_type == "Over-Time") { bgclass = bgclass ? `${bgclass}-absentot` : "absentot" }

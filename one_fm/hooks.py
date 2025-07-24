@@ -741,7 +741,7 @@ scheduler_events = {
 			"one_fm.one_fm.doctype.missing_checkin.missing_checkin.create_missing_checkin_record",
 			"one_fm.api.tasks.notify_approver_about_pending_shift_request"
 		],
-        "0 0 15 * *": [
+        "0 0 1 * *": [
             "one_fm.one_fm.page.roster.roster.create_employee_schedule"
         ],
         "* * * * *": [ # Runs every minute

@@ -44,6 +44,7 @@
       "skip_creation_of_workflow_action": 1,
       "custom_confirm_transition": 0,
       "custom_requires_frontend_input": 0,
+      "condition": "frappe.session.user in [row.user for row in doc.custom_assigned_to]",
       "doctype": "Workflow Transition"
     },
     {

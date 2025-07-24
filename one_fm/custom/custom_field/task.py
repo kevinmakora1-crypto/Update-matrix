@@ -71,8 +71,6 @@ def get_task_custom_fields():
                 "insert_after": "auto_repeat",
                 "label": "Total Expense Claim",
                 "read_only": 1,
-                "fetch_from": "company.total_expense_claim",
-                "fetch_if_empty": 1
             },
             {
                 "fieldname": "custom_reviewer",

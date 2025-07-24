@@ -70,6 +70,8 @@ def get_task_custom_fields():
                 "fieldtype": "Currency",
                 "insert_after": "auto_repeat",
                 "label": "Total Expense Claim",
+                "fetch_from": "project.total_expense_claim",
+                "fetch_if_empty": 1,
                 "read_only": 1,
             },
             {

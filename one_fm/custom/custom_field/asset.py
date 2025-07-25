@@ -1,0 +1,37 @@
+def get_asset_custom_fields():
+    return {
+        "Asset": [
+            {
+                "fieldname": "project",
+                "fieldtype": "Link",
+                "label": "Project",
+                "hidden": 1,
+                "allow_on_submit": 1,
+                "insert_after": "dimension_col_break",
+                "options": "Project"
+            },
+            {
+                "fieldname": "transfer_from_warehouse",
+                "fieldtype": "Section Break",
+                "label": "Transfer from warehouse",
+                "insert_after": "number_of_depreciations_booked"
+            },
+            {
+                "fieldname": "asset_transfer",
+                "fieldtype": "Table",
+                "label": "Asset Transfer",
+                "insert_after": "transfer_from_warehouse",
+                "options": "Asset Transfer Detail"
+            },
+            {
+                "fieldname": "workflow_state",
+                "fieldtype": "Link",
+                "label": "Workflow State",
+                "hidden": 1,
+                "no_copy": 1,
+                "allow_on_submit": 1,
+                "in_list_view": 1,
+                "options": "Workflow State"
+            }
+        ]
+    }

@@ -745,8 +745,7 @@ scheduler_events = {
             "one_fm.one_fm.page.roster.roster.create_employee_schedule"
         ],
         "* * * * *": [ # Runs every minute
-            "one_fm.operations.doctype.process_task.process_task.create_task_on_cron_process_task",
-            "one_fm.overrides.todo.sync_google_tasks_with_todos"
+            "one_fm.operations.doctype.process_task.process_task.create_task_on_cron_process_task"
         ]
 	}
 }

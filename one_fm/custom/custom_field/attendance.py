@@ -10,9 +10,11 @@ def get_attendance_custom_fields():
                 "read_only": 1
             },
             {
-                "fieldname": "column_break_nahps",
-                "fieldtype": "Column Break",
-                "insert_after": "reference_doctype"
+                "fieldname": "reference_doctype",
+                "fieldtype": "Link",
+                "insert_after": "references",
+                "label": "Reference Doctype",
+                "options": "DocType"
             },
             {
                 "fieldname": "reference_docname",
@@ -23,11 +25,9 @@ def get_attendance_custom_fields():
                 "depends_on": "eval:doc.reference_doctype"
             },
             {
-                "fieldname": "reference_doctype",
-                "fieldtype": "Link",
-                "insert_after": "references",
-                "label": "Reference Doctype",
-                "options": "DocType"
+                "fieldname": "column_break_nahps",
+                "fieldtype": "Column Break",
+                "insert_after": "reference_doctype"
             },
             {
                 "fieldname": "references",

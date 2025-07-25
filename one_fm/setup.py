@@ -27,6 +27,9 @@ from one_fm.custom.custom_field.attendance_request import get_attendance_request
 from one_fm.custom.custom_field.attendance import get_attendance_custom_fields
 from one_fm.custom.custom_field.bank_account import get_bank_account_custom_fields
 from one_fm.custom.custom_field.bank import get_bank_custom_fields
+from one_fm.custom.custom_field.batch import get_batch_custom_fields
+from one_fm.custom.custom_field.brand import get_brand_custom_fields
+from one_fm.custom.custom_field.budget import get_budget_custom_fields
 # Property setter imports
 from one_fm.custom.property_setter.assignment_rule import get_assignment_rule_properties
 from one_fm.custom.property_setter.task import get_task_properties
@@ -36,6 +39,7 @@ from one_fm.custom.property_setter.asset import get_asset_properties
 from one_fm.custom.property_setter.attendance_request import get_attendance_request_properties
 from one_fm.custom.property_setter.attendance import get_attendance_properties
 from one_fm.custom.property_setter.bank_account import get_bank_account_properties
+from one_fm.custom.property_setter.budget import get_budget_properties
 
 def after_install():
 	create_custom_fields(get_custom_fields())
@@ -70,6 +74,9 @@ def get_custom_fields():
 	custom_fields.update(get_attendance_custom_fields())
 	custom_fields.update(get_bank_custom_fields())
 	custom_fields.update(get_bank_account_custom_fields())
+	custom_fields.update(get_batch_custom_fields())
+	custom_fields.update(get_brand_custom_fields())
+	custom_fields.update(get_budget_custom_fields())
 	return custom_fields
 
 def add_property_setter(property_setters):
@@ -94,6 +101,7 @@ def get_field_properties():
 	field_properties.extend(get_attendance_request_properties())
 	field_properties.extend(get_attendance_properties())
 	field_properties.extend(get_bank_account_properties())
+	field_properties.extend(get_budget_properties())
 	return field_properties
 
 def create_workflows():

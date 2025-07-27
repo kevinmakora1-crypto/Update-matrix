@@ -288,7 +288,6 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
         });
 
         // Function to update the rank numbers in the first column
-        // This should be defined within the scope where it's used, or globally if needed elsewhere.
         function updateRanks() {
             // Select all direct <tr> children of the sortable tbody
             Array.from(sortableList.children).forEach(function(row, index) {
@@ -299,9 +298,6 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
                 }
             });
         }
-
-        // Initial call to set ranks when the table is first displayed
-        // This ensures ranks are correct even if the initial HTML wasn't perfectly sequential
         updateRanks();
 
     } else {

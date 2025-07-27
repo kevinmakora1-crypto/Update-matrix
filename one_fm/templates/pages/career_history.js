@@ -204,7 +204,7 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
                     <li>Drag the rows to order them from 1 (most important) to 7 (least important).</li>
                     <li>There are no right or wrong answers — your response helps us understand how to align the role with your career goals.</li>
                 </ul>
-                <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden sortable-table">
+                <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden sortable-table" name="rank_and_factors">
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
@@ -503,11 +503,37 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
       me.next_career_history(company_no);
     });
   },
+  // Function to get the current order of factors from the sortable table
+getRankedFactorsData:function() {
+    const rankedFactors = [];
+    const sortableList = document.getElementById('sortableRows'); // Get the tbody by its ID
+
+    if (sortableList) {
+        // Iterate over each table row (<tr>) directly within the sortable tbody
+        Array.from(sortableList.children).forEach(function(row, index) {
+            // Find the cells containing the factor and description.
+            // Based on your HTML: <td>Rank</td> <td>Factor</td> <td>Description</td>
+            const factorCell = row.children[1]; // Second td for Factor
+            const descriptionCell = row.children[2]; // Third td for Description
+
+            if (factorCell && descriptionCell) {
+                rankedFactors.push({
+                    // The rank is simply its current index + 1 in the reordered list
+                    rank: index + 1,
+                    factor: factorCell.textContent.trim(),
+                    description: descriptionCell.textContent.trim()
+                });
+            }
+        });
+    }
+    return rankedFactors;
+},
   submit_career_history: function() {
     // Submit Career History
     var me = this;
     $('.btn-submit-career-history').click(function(){
-      var {career_histories, interest_reason,project_and_technology, manager_and_team,compensation,continuing_growth_rate,jobstretch_and_learning,work_life_balance} =  me.get_details_from_form();
+      var {career_histories, interest_reason} =  me.get_details_from_form();
+      var rank_and_factors = me.getRankedFactorsData()
       var all_best_references = me.get_all_best_references();
       if(!validateBestReferencesAndColleague(all_best_references)){
         return frappe.msgprint(frappe._("Kindly fill the best reference for the most recent job"));
@@ -527,12 +553,7 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
             career_history_details: career_histories,
             best_references: all_best_references,
             interest_reason: interest_reason,
-            project_and_technology: project_and_technology,
-            manager_and_team: manager_and_team,
-            compensation: compensation,
-            continuing_growth_rate: continuing_growth_rate,
-            jobstretch_and_learning: jobstretch_and_learning,
-            work_life_balance: work_life_balance
+            rank_and_factors:rank_and_factors
           },
           btn: this,
           callback: function(r){

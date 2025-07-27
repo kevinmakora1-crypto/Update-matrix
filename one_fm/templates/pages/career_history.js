@@ -189,89 +189,126 @@ career_history = Class.extend({
     });
   },
   
-  show_final_interest_step: function(TOTAL_COMPANY_NO) {
+show_final_interest_step: function(TOTAL_COMPANY_NO) {
+    // Remove existing sections to prevent duplicates if this function is called multiple times.
+    // Be cautious with this selector if 'final-interest-section' elements are meant to persist.
+    // If the table is part of what should be removed and re-added, this is fine.
     $('.final-interest-section').remove();
-        var interestSection = $(`
-            <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
-                <div class="col-lg-12 col-md-12 mb-3">
-                    <label class="form-label">
-                        Rate from 1 to 10 how much you value working with the right leaders and supportive team members.                    </label>
-                    <input type="number" 
-                          name="project_and_technology" 
-                          class="form-control project_and_technology"
-                          min="1" max="10" step="0.1"
-                          required>
-                </div>
-            </div>
-            <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
-                <div class="col-lg-12 col-md-12 mb-3">
-                    <label class="form-label">
-                        On a scale of 1 to 10, how important is working on diverse and technically satisfying projects to you in your next role?
-                    </label>
-                    <input type="number" 
-                          name="manager_and_team" 
-                          class="form-control manager_and_team"
-                          min="1" max="10" step="0.1"
-                          required>
-                </div>
-            </div>
-            <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
-                <div class="col-lg-12 col-md-12 mb-3">
-                    <label class="form-label">
-                        How important is total compensation (including salary, benefits, and bonuses) to you when considering a new job? Rate from 1 to 10.                    </label>
-                    <input type="number" 
-                          name="compensation" 
-                          class="form-control compensation"
-                          min="1" max="10" step="0.1"
-                          required>
-                </div>
-            </div>
-            <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
-                <div class="col-lg-12 col-md-12 mb-3">
-                    <label class="form-label">
-                      On a scale of 1 to 10, how critical is long-term growth and career advancement potential in your next role?                    </label>
-                    <input type="number" 
-                          name="continuing_growth_rate" 
-                          class="form-control continuing_growth_rate"
-                          min="1" max="10" step="0.1"
-                          required>
-                </div>
-            </div>
-            <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
-                <div class="col-lg-12 col-md-12 mb-3">
-                    <label class="form-label">
-                        How important is it to you to take on a role that challenges you and expands your skills and responsibilities? Rate from 1 to 10.                    </label>
-                    <input type="number" 
-                          name="jobstretch_and_learning" 
-                          class="form-control jobstretch_and_learning"
-                          min="1" max="10" step="0.1"
-                          required>
-                </div>
-            </div>
-            <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
-                <div class="col-lg-12 col-md-12 mb-3">
-                    <label class="form-label">
-                        Rate from 1 to 10 how much you prioritize a healthy work/life balance when evaluating a job opportunity.                    </label>
-                    <input type="number" 
-                          name="work_life_balance" 
-                          class="form-control work_life_balance"
-                          min="1" max="10" step="0.1"
-                          required>
-                </div>
-            </div>
-            <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
-                <div class="col-lg-12 col-md-12 mb-3">
-                    <label class="form-label">What makes you interested in this opportunity?</label>
-                    <textarea rows="4" cols="50" 
-                        name="interest_reason" 
-                        class="form-control what_make_your_interested_in_this_opportunity"
-                        required></textarea>
-                </div>
-            </div>
-        `);
 
-        $('.section_' + (TOTAL_COMPANY_NO)).after(interestSection);
-  },
+    var interestSection = $(`
+        <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
+            <div class="col-lg-12 col-md-12 mb-3">
+                <h4> ✅ Instructions for Candidate:</h4>
+                <ul>
+                    <li>Think about what really drives your career decisions.</li>
+                    <li>Drag the rows to order them from 1 (most important) to 7 (least important).</li>
+                    <li>There are no right or wrong answers — your response helps us understand how to align the role with your career goals.</li>
+                </ul>
+                <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden sortable-table">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Factor</th>
+                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sortableRows" class="divide-y divide-gray-200">
+                        <!-- Corrected: Each row needs its own <tr> tag -->
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">1</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Projects & Technology</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">A mix of more satisfying and engaging work</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">2</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Manager & Teams</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Working with the right types of people and leaders</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">3</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Compensation</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Total rewards including salary, benefits, and bonuses</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">4</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Continuing Growth Rate</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Long-term career advancement and opportunity</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">5</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Job Stretch & Learning</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Bigger challenges, scope, and learning potential</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">6</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Work/Life Balance</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Time and flexibility for personal life and well-being</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">7</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Company Mission & Values (optional addition)</td>
+                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Alignment with your personal purpose and values</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
+            <div class="col-lg-12 col-md-12 mb-3">
+                <label class="form-label">What makes you interested in this opportunity?</label>
+                <textarea rows="4" cols="50"
+                    name="interest_reason"
+                    class="form-control what_make_your_interested_in_this_opportunity"
+                    required></textarea>
+            </div>
+        </div>
+    `);
+
+    // Append the new HTML content to the DOM
+    $('.section_' + (TOTAL_COMPANY_NO)).after(interestSection);
+
+    // --- SortableJS Initialization (Corrected) ---
+    // Get the tbody element where the rows are located
+    const sortableList = document.getElementById('sortableRows');
+
+    // Check if the element exists before initializing SortableJS
+    if (sortableList) {
+        new Sortable(sortableList, {
+            animation: 150, // ms, animation speed moving items when sorting, `0` — no animation
+            ghostClass: 'sortable-ghost', // Class name for the drop placeholder
+            chosenClass: 'sortable-chosen', // Class name for the chosen item
+            dragClass: 'sortable-drag', // Class name for the dragging item
+            // handle: '.rank-cell', // Uncomment this if you only want to drag by the rank number cell
+
+            // Callback when an item is dropped
+            onEnd: function (evt) {
+                console.log('Item moved:', evt.oldIndex, 'to', evt.newIndex);
+                updateRanks(); // Call function to re-assign ranks after sorting
+            }
+        });
+
+        // Function to update the rank numbers in the first column
+        // This should be defined within the scope where it's used, or globally if needed elsewhere.
+        function updateRanks() {
+            // Select all direct <tr> children of the sortable tbody
+            Array.from(sortableList.children).forEach(function(row, index) {
+                // Find the cell with the 'rank-cell' class and update its text content
+                const rankCell = row.querySelector('.rank-cell');
+                if (rankCell) {
+                    rankCell.textContent = index + 1;
+                }
+            });
+        }
+
+        // Initial call to set ranks when the table is first displayed
+        // This ensures ranks are correct even if the initial HTML wasn't perfectly sequential
+        updateRanks();
+
+    } else {
+        console.error("Element with ID 'sortableRows' not found after appending. SortableJS not initialized.");
+    }
+    // --- END SortableJS Initialization ---
+},
 
   create_company_section_html: function(company_no) {
     $('.main_section').delay(400).fadeIn();

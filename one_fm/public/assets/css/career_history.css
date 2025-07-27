@@ -19,3 +19,22 @@
         padding: 12vw 2vw 20vh 2vh;
     }
 }
+ .sortable-table tbody tr {
+            cursor: grab; 
+            transition: background-color 0.2s ease;
+        }
+        .sortable-table tbody tr:hover {
+            background-color: #e0e7ff; /* Light blue on hover */
+        }
+        .sortable-table tbody tr.sortable-ghost {
+            opacity: 0.5;
+            background-color: #bfdbfe; /* Blue for the ghost element */
+        }
+        .sortable-table tbody tr.sortable-chosen {
+            background-color: #93c5fd; /* Darker blue for the chosen element */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .sortable-table tbody tr.sortable-drag {
+            background-color: #60a5fa; /* Even darker blue while dragging */
+            box-shadow: 0 8px 10px rgba(0, 0, 0, 0.2);
+        }

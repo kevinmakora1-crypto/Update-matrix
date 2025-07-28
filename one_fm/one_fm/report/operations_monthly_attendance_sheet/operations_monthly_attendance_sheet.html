@@ -1,0 +1,171 @@
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap"
+  rel="stylesheet"
+/>
+
+<style>
+  body {
+    font-family: "Cairo", Helvetica, sans-serif;
+    font-size: 10px;
+    margin: 20px;
+  }
+
+  .attendance-sheet-wrapper {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 7px;
+    table-layout: fixed;
+    border: 1px solid #333;
+  }
+
+  .attendance-sheet-wrapper th,
+  .attendance-sheet-wrapper td {
+    border: 1px solid #333;
+    padding: 4px;
+    word-break: break-word;
+    text-align: center !important;
+    vertical-align: middle !important;
+  }
+
+  .section-header {
+    font-weight: bold;
+    text-align: left;
+  }
+
+  .title-section > td {
+    border: none !important;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  .title-section .logo-cell {
+    padding: 10px !important;
+  }
+
+  .meta-cell {
+    text-align: left;
+    font-size: 10px;
+  }
+
+  .title-section, .meta-section, .header-section td, .staff-duty th {
+    background-color: #f5f5f5;
+  }
+
+  .signatures td {
+    height: 60px !important;
+  }
+
+  .stamps td {
+    height: 40px !important;
+  }
+</style>
+
+<table class="attendance-sheet-wrapper">
+  <!-- Title Row -->
+  <tr class="title-section">
+    <td colspan="5" class="logo-cell">
+      <img src="https://one-fm.com/files/ONEFM_Identity.png" alt="one-fm" />
+    </td>
+    <td colspan="34">Monthly Attendance Sheet</td>
+    <td colspan="5" class="logo-cell">
+      <img src="https://one-fm.com/files/ONEFM_Identity.png" alt="one-fm" />
+    </td>
+  </tr>
+
+  {% var selectedMonth = (report.get_filter("month").options || []).find(i => i.value == report.get_filter("month").value) %}
+
+  <!-- Meta Info -->
+  <tr class="meta-section">
+    <td colspan="5" class="meta-cell">
+      <strong>Project Name:</strong>
+    </td>
+    <td colspan="13" class="meta-cell">{{ report.get_filter_value("project") }}</td>
+    <td colspan="4" class="meta-cell">
+      <strong>Site Name:</strong>
+    </td>
+    <td colspan="13" class="meta-cell">{{ report.get_filter_value("site") }}</td>
+    <td colspan="3" class="meta-cell"><strong>Month:</strong></td>
+    <td colspan="6" class="meta-cell">{{ selectedMonth ? selectedMonth.label : '' }} {{ report.get_filter_value("year") }}</td>
+  </tr>
+
+  
+  {% var monthDays = report.additional_details ? report.additional_details.days : [] %}
+
+  {% var totalColumns = 44; %}
+  {% var fixedColumns = 1 + 2 + 2; %} <!-- S.No + Working Days + Days Off -->
+  {% var dayColumns = monthDays.length; %}
+  {% var dynamicColumns = totalColumns - dayColumns - fixedColumns; %}
+
+  {% var empIdColSpan = Math.floor(dynamicColumns * 3 / 11); %}
+  {% var empNameColSpan = Math.floor(dynamicColumns * 6 / 11); %}
+  {% var shiftColSpan = dynamicColumns - empIdColSpan - empNameColSpan; %}
+
+  <!-- Header -->
+  <tr class="header-section">
+    <th rowspan="2">S.No</th>
+    <th rowspan="2" colspan="{{ empIdColSpan }}">Employee ID</th>
+    <th rowspan="2" colspan="{{ empNameColSpan }}">Employee Name</th>
+    <th rowspan="2" colspan="{{ shiftColSpan }}">Shift</th>
+    {% for (var i = 0; i < monthDays.length; i++) { %}
+      <th>{{ monthDays[i].date }}</th>
+    {% } %}
+    <th rowspan="2" colspan="2">Working Days</th>
+    <th rowspan="2" colspan="2">Days OFF</th>
+  </tr>
+
+  <!-- Header Row 2 -->
+  <tr>
+    {% for (var i = 0; i < monthDays.length; i++) { %}
+      <th>{{ monthDays[i].weekday }}</th>
+    {% } %}
+  </tr>
+
+  <!-- Attendance Data -->
+  {% for row in data %}
+    <tr>
+      <td>1</td>
+      <td colspan="{{ empIdColSpan }}">{{ row.employee_id }}</td>
+      <td colspan="{{ empNameColSpan }}">{{ row.employee_name }}</td>
+      <td colspan="{{ shiftColSpan }}">{{ row.shift }}</td>
+      {% for (var i = 0; i < monthDays.length; i++) { %}
+        {% const status = row[monthDays[i].date]  %}
+          <td>{{ status == "CDO" ? "DO" : status }}</td>    <!-- Render CDO as DO -->
+        {% } %}
+      <td colspan="2">{{ row.working_days }}</td>
+      <td colspan="2">{{ row.off_days }}</td>
+    </tr>
+  {% endfor %}
+
+  <!-- Staff on Duty -->
+  <tr class="staff-duty">
+    <th colspan={{ empIdColSpan + empNameColSpan + shiftColSpan + 1 }}>No. of Staff on Duty</th>
+    {% for (var i = 0; i < monthDays.length; i++) { %}
+      <td>{{ data.reduce((count, att) => att[monthDays[i].date.toString()] === 'P' ? count + 1 : count, 0) }}</td>
+    {% } %}
+    <td colspan="2">-</td>
+    <td colspan="2">-</td>
+  </tr>
+
+  <!-- Signatures -->
+  <tr class="signatures">
+    <td colspan="6">
+      <strong>Supervisor Name & Signature:</strong>
+    </td>
+    <td colspan="16"></td>
+    <td colspan="6">
+      <strong>Client Name & Signature:</strong>
+    </td>
+    <td colspan="16"></td>
+  </tr>
+
+  <!-- Stamps -->
+  <tr class="stamps">
+    <td colspan="6">Stamp</td>
+    <td colspan="16"></td>
+    <td colspan="6">Stamp</td>
+    <td colspan="16"></td>
+  </tr>
+</table>

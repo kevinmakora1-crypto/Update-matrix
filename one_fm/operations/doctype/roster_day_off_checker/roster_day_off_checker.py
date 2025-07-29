@@ -286,19 +286,32 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 			conditions &= EmployeeSchedule.date.isin(working_dates)
 
 		# Calculate no of off days
-		od = frappe.db.sql(frappe.qb.from_(EmployeeSchedule)
+		od = (
+			frappe.qb.from_(Attendance)
 			.select(Count("name").as_("off_days"))
-			.where(conditions & (EmployeeSchedule.employee_availability == "Day Off") & (EmployeeSchedule.day_off_ot == 0))
-			.groupby(EmployeeSchedule.employee),
-		as_dict=1)
-		off_days = off_days + (od[0].off_days if len(od) > 0 else 0)
+			.where(
+				conditions
+				& (Attendance.status == "Day Off")
+				& (Attendance.day_off_ot == 0)
+				& (Attendance.docstatus == 1)
+			)
+			.groupby(Attendance.employee)
+		).run(as_dict=True)
+
+		attendance_off_days = od[0].off_days if od else 0
+		off_days += attendance_off_days
+		availed_off_days = attendance_off_days
 
 		# Calculate no of ot days
-		ot = frappe.db.sql( frappe.qb.from_(EmployeeSchedule)
+		ot = (
+			frappe.qb.from_(Attendance)
 			.select(Count("name").as_("ot_days"))
-			.where(conditions & (EmployeeSchedule.day_off_ot == 1))
-			.groupby(EmployeeSchedule.employee), as_dict=1)
-		ot_days = ot_days + (ot[0].ot_days if len(ot) > 0 else 0)
+			.where(
+				conditions
+				& (Attendance.day_off_ot == 1)
+			)
+			.groupby(Attendance.employee)
+		).run(as_dict=True)
 
 	day_off_diff = ""
 	employee_number_of_days_off = calculated_day_offs

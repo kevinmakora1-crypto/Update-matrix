@@ -4,7 +4,7 @@ from . import __version__ as app_version
 import frappe as _frappe
 from frappe import _
 from hrms.hr.doctype.shift_type.shift_type import ShiftType
-from one_fm.api.doc_methods.shift_type import process_auto_attendance
+
 
 
 app_name = "one_fm"
@@ -118,7 +118,8 @@ doctype_js = {
     "Appraisal": "public/js/doctype_js/appraisal.js",
     "Employee Performance Feedback":"public/js/doctype_js/employee_performance_feedback.js",
     "Leave Allocation": "public/js/doctype_js/leave_allocation.js",
-    "Contact": "public/js/doctype_js/contact.js"
+    "Contact": "public/js/doctype_js/contact.js",
+    "ToDo": "public/js/doctype_js/todo.js"
 }
 doctype_list_js = {
 	"Job Applicant" : "public/js/doctype_js/job_applicant_list.js",
@@ -164,7 +165,7 @@ website_generators = ["Client"]
 # ------------
 
 before_install = "one_fm.install.before_install.execute"
-# after_install = "one_fm.install.after_install"
+after_install = "one_fm.setup.after_install"
 #revert staging
 
 # Desk Notifications
@@ -246,15 +247,6 @@ doc_events = {
 	"Leave Type": {
 		"validate": "one_fm.utils.validate_leave_type_for_one_fm_paid_leave"
 	},
-	"HD Ticket": {
-		"validate": "one_fm.overrides.hd_ticket.validate_hd_ticket",
-		"after_insert":[
-      					"one_fm.overrides.hd_ticket.send_google_chat_notification",
-                  		"one_fm.overrides.hd_ticket.notify_ticket_raiser_of_receipt"
-                    	],
-		"on_change": "one_fm.overrides.hd_ticket.notify_issue_raiser_about_priority",
-		"on_update": "one_fm.overrides.hd_ticket.apply_ticket_escalation"
-	},
 	"Employee Grade": {
 		"validate": "one_fm.one_fm.utils.employee_grade_validate"
 	},
@@ -319,10 +311,14 @@ doc_events = {
 		"validate": [
 			"one_fm.one_fm.project_custom.validate_poc_list",
 			"one_fm.one_fm.project_custom.validate_project",
+			"one_fm.overrides.project.update_project_user_assignment"
 		],
 		"onload": "one_fm.one_fm.project_custom.get_depreciation_expense_amount",
-		"on_update": "one_fm.api.doc_events.on_project_update_switch_shift_site_post_to_inactive"
-	# 	"on_update": "one_fm.api.doc_events.project_on_update"
+		"on_update": [
+						"one_fm.api.doc_events.on_project_update_switch_shift_site_post_to_inactive",
+						"one_fm.api.doc_events.update_project_manager_name"
+					]
+			# 	"on_update": "one_fm.api.doc_events.project_on_update"
 	},
 	"Attendance": {
 		"on_submit": [
@@ -429,20 +425,13 @@ doc_events = {
 	"ToDo": {
 		"validate": "one_fm.overrides.todo.validate_todo",
         "before_save":"one_fm.overrides.todo.before_save",
-        "after_insert":"one_fm.overrides.todo.create_google_task_on_todo_creation",
+        "after_insert":[
+            "one_fm.overrides.todo.create_google_task_on_todo_creation",
+            "one_fm.overrides.todo.send_email_on_todo_created"
+        ],
         "on_update": "one_fm.overrides.todo.update_google_task_on_todo_status_change"
 	},
-	# "Wiki Page": {
-	# 	"after_insert": "one_fm.wiki_chat_bot.main.after_insert_wiki_page"
-	# },
-    "Task": {
-        "validate": "one_fm.overrides.task.validate_task",
-        "after_insert": "one_fm.overrides.task.after_task_insert"
-	},
-	# "Additional Salary" :{
-	# 	"on_submit": "one_fm.grd.utils.validate_date"
-	# }
-    "OAuth Bearer Token": {
+	"OAuth Bearer Token": {
 		"after_insert": "one_fm.api.doc_methods.oauth_bearer_token.revoke_and_delete_existing_tokens",
 	}
 }
@@ -536,8 +525,9 @@ override_doctype_class = {
     "Leave Allocation": "one_fm.overrides.leave_allocation.LeaveAllocationOverride",
     "Interview": "one_fm.overrides.interview.InterviewOverride",
     "Purchase Order": "one_fm.overrides.purchase_order.PurchaseOrderOverride",
-
-    # "User": "one_fm.overrides.user.UserOverride"
+    "HD Ticket": "one_fm.overrides.hd_ticket.HDTicketOverride",
+    "ToDo": "one_fm.overrides.todo.ToDo",
+    "Task": "one_fm.overrides.task.TaskOverride",
 }
 
 
@@ -571,7 +561,10 @@ scheduler_events = {
         "one_fm.developer.doctype.bug_buster.bug_buster.roster_bug_buster",
         'one_fm.utils.set_employee_status',
         'one_fm.utils.set_out_of_office_for_leaves',
-        'one_fm.utils.update_active_employees_assurance_level'
+        'one_fm.utils.update_active_employees_assurance_level',
+        'one_fm.operations.doctype.process_task.process_task.create_task_on_monthly_on_day',
+        'one_fm.operations.doctype.process_task.process_task.trigger_method_from_monthly_on_day_process_task',
+        'one_fm.operations.doctype.process_task.process_task.trigger_method_from_monthly_on_last_day_process_task'
 	],
 	"hourly": [
 		# "one_fm.api.tasks.send_checkin_hourly_reminder",
@@ -618,7 +611,6 @@ scheduler_events = {
 		"0/15 * * * *": [ #At every 15th minute from 0 through 59.”
 			"one_fm.legal.doctype.penalty.penalty.automatic_reject",
 			# 'one_fm.api.tasks.process_attendance',
-			"one_fm.events.email_queue.flush_emails",
 		],
 		"0/5 * * * *": [
 			"one_fm.api.tasks.run_checkin_reminder",
@@ -721,7 +713,6 @@ scheduler_events = {
 			'one_fm.api.tasks.validate_am_shift_assignment'
 		],
 		"15 13 * * *":[ # Attendance Check
-			'one_fm.one_fm.doctype.attendance_check.attendance_check.schedule_attendance_check',
 			'one_fm.one_fm.doctype.attendance_check.attendance_check.attendance_check_pending_approval_check'
 		],
 		"15 12 * * *": [ # create shift assignment
@@ -737,7 +728,7 @@ scheduler_events = {
 			'one_fm.overrides.attendance.mark_day_off_for_yesterday'
 		],
         "55 12 * * *": [ # mark attendance for previous day mark_for_active_employees at 12:45 pm today
-			'one_fm.overrides.attendance.mark_for_active_employees'
+			'one_fm.overrides.attendance.schedule_mark_for_active_employees'
 		],
 		"*/15 * * * *": [ # Update Google Sheet. Runs every 15 mins.
 			'one_fm.one_fm.doctype.google_sheet_data_export.exporter.update_google_sheet_daily'
@@ -750,11 +741,11 @@ scheduler_events = {
 			"one_fm.one_fm.doctype.missing_checkin.missing_checkin.create_missing_checkin_record",
 			"one_fm.api.tasks.notify_approver_about_pending_shift_request"
 		],
-        "0 0 15 * *": [
+        "0 0 1 * *": [
             "one_fm.one_fm.page.roster.roster.create_employee_schedule"
         ],
         "* * * * *": [ # Runs every minute
-            "one_fm.overrides.todo.sync_google_tasks_with_todos"
+            "one_fm.operations.doctype.process_task.process_task.create_task_on_cron_process_task"
         ]
 	}
 }
@@ -838,7 +829,11 @@ fixtures = [
 				)
 			)
 		}
-	}
+	},
+	{
+		"dt": "HD Ticket Template",
+		"filters": [["name", "in",["Default"]]]
+	},
 ]
 
 # before_tests = "one_fm.install.before_tests"
@@ -865,7 +860,7 @@ override_doctype_dashboards = {
     'Project': 'one_fm.overrides.project_dashboard.get_data',
 }
 
-#ShiftType.process_auto_attendance = process_auto_attendance
+
 
 # Required apps before installation
 required_apps = ['frappe', 'erpnext']
@@ -888,15 +883,13 @@ jenv = {
 }
 
 after_migrate = [
-    # "one_fm.after_migrate.execute.comment_timesheet_in_hrms",
     "one_fm.after_migrate.execute.replace_send_birthday_reminder",
     "one_fm.after_migrate.execute.replace_send_anniversary_reminder",
     "one_fm.after_migrate.execute.disable_workflow_emails",
-    # "one_fm.after_migrate.execute.comment_payment_entry_in_hrms",
     "one_fm.after_migrate.execute.comment_process_expired_allocation_in_hrms",
     "one_fm.after_migrate.execute.replace_prompt_message_in_goal",
-    "one_fm.after_migrate.execute.update_hd_ticket_agent",
-    "one_fm.setup.setup.after_migrate"
+    "one_fm.after_migrate.execute.update_all_ticket_features",
+    "one_fm.overrides.scheduled_job_type.update_scheduled_job_type_from_process_task"
 ]
 
 before_migrate = [

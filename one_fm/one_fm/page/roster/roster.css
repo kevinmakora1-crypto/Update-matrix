@@ -230,7 +230,7 @@ body[data-route="roster"] .switch-container {
 
 .customtooltip .customtooltiptext {
   visibility: hidden;
-  width: 200px;
+  width: 220px;
   background-color: black;
   color: #fff;
   text-align: center;
@@ -239,7 +239,7 @@ body[data-route="roster"] .switch-container {
   position: absolute;
   z-index: 1;
   top: 150%;
-  left: 50%;
+  left: 0%;
   margin-left: -60px;
 }
 
@@ -256,4 +256,25 @@ body[data-route="roster"] .switch-container {
 
 .customtooltip:hover .customtooltiptext {
   visibility: visible;
+}
+
+#search-bar-container {
+  min-height: 44px;
+  height: auto;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.input-search {
+  align-self: flex-start !important;
+  flex-grow: 1;
+  max-width: 100%;
+}
+
+.dropdown-content {
+  z-index: 1050;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: absolute;
+  width: 100%;
 }

@@ -813,25 +813,6 @@ def get_employee_record_exists_for_job_offer_or_job_applicant(job_offer=False, j
 	return employee
 
 @frappe.whitelist()
-def change_applicant_erf(job_applicant, old_erf, new_erf):
-	job_applicant_obj = frappe.get_doc("Job Applicant", job_applicant)
-	if job_applicant_obj.one_fm_erf == old_erf and frappe.db.exists("ERF", new_erf):
-		new_erf_obj = frappe.get_doc("ERF", new_erf)
-		job_applicant_obj.one_fm_erf = new_erf
-		job_applicant_obj.job_title = frappe.db.get_value("Job Opening", {'one_fm_erf': new_erf})
-		job_applicant_obj.designation = frappe.db.get_value("Job Opening", job_applicant_obj.job_title, "designation")
-		job_applicant_obj.department = new_erf_obj.department
-		job_applicant_obj.project = new_erf_obj.project
-		job_applicant_obj.one_fm_hiring_method = new_erf_obj.hiring_method
-		job_applicant_obj.interview_round = new_erf_obj.interview_round
-		job_applicant_obj.flags.ignore_mandatory = True
-		job_applicant_obj.save(ignore_permissions=True)
-		job_offer = frappe.db.exists('Job Offer', {'job_applicant': job_applicant, 'docstatus': ['<', 2]})
-		if job_offer:
-			job_offer_obj = frappe.get_doc('Job Offer', job_offer)
-			job_offer_obj.save(ignore_permissions=True)
-
-@frappe.whitelist()
 def send_magic_link_to_applicant_based_on_link_for(name, link_for):
 	applicant_data = frappe.db.get_values("Job Applicant", name, ["applicant_name", "designation"], as_dict=True)
 	if applicant_data and len(applicant_data) > 0:

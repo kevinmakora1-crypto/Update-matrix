@@ -7,30 +7,15 @@ from collections import OrderedDict
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import  add_to_date, cstr, getdate
+from frappe.utils import  add_to_date, cstr, getdate, add_days, add_months, get_first_day, get_last_day, nowdate
 from frappe.permissions import get_doctype_roles
 
 from one_fm.one_fm.page.roster.roster import get_current_user_details
+from one_fm.operations.doctype.operations_shift.operations_shift import get_shift_supervisor
 
 
 class RosterEmployeeActions(Document):
-	def autoname(self):
-		base_name = f"{self.start_date}|{self.end_date}|{self.action_type}|{self.supervisor or self.site_supervisor or self.project_manager}"
-
-		# Check if a document with this name already exists
-		existing = frappe.db.exists("Roster Employee Actions", base_name)
-		if not existing:
-			self.name = base_name
-		else:
-			# Increment until a unique name is found
-			i = 1
-			while True:
-				new_name = f"{base_name}|{i}"
-				if not frappe.db.exists("Roster Employee Actions", new_name):
-					self.name = new_name
-					break
-				i += 1
-
+	pass
 
 @frappe.whitelist()
 def get_permission_query_conditions(user):
@@ -75,51 +60,72 @@ def create_roster_employee_actions():
 	"""
 		This function creates a Roster Employee Actions document and issues notifications to relevant supervisors
 		directing them to schedule employees that are unscheduled and assigned to them.
-		It computes employees not scheduled for the span of two weeks, starting from tomorrow.
+		It computes employees not scheduled for the span of two months, starting from tomorrow.
 	"""
+	tomorrow = add_days(getdate(), 1)
+	next_month = add_months(tomorrow, 1)
 
-	start_date = getdate(add_to_date(cstr(getdate()), days=1)) # start date to be from tomorrow
-	end_date = getdate(add_to_date(start_date, days=14)) # end date to be 14 days after start date
+	durations = [
+		{
+			"start_date": tomorrow,
+			"end_date": get_last_day(tomorrow)
+		},
+		{
+			"start_date": get_first_day(next_month),
+			"end_date": get_last_day(next_month)
+		},
+	]
 
-	employees_not_rostered = get_employees_not_rostered(start_date, end_date)
-	supervisors_not_rostered_employees = get_supervisors_not_rostered_employees(employees_not_rostered, start_date)
+	for duration in durations:
+		start_date = duration["start_date"]
+		end_date = duration["end_date"]
 
-	# for each supervisor, create a roster action
-	for supervisor in supervisors_not_rostered_employees:
-		try:
-			site_supervisor = frappe.get_value('Operations Site', supervisor.site, 'account_supervisor')
-			employees = supervisor.employees.split(",")
-			project_manager = frappe.get_value('Project', supervisor.project, 'account_manager')
+		employees_not_rostered = get_employees_not_rostered(start_date, end_date)
 
-			roster_employee_actions = frappe.new_doc("Roster Employee Actions")
-			roster_employee_actions.start_date = start_date
-			roster_employee_actions.end_date = end_date
-			roster_employee_actions.status = "Pending"
-			roster_employee_actions.action_type = "Roster Employee"
+		for employee, dates in employees_not_rostered.items():
+			try:
+				shift_allocation, site_allocation, project_allocation = frappe.db.get_value("Employee", employee, ["shift", "site", "project"])
 
-			if supervisor.supervisor_source and supervisor.supervisor_source == "Shift":
-				roster_employee_actions.supervisor = supervisor.shift_supervisor
+				shift_supervisor = get_shift_supervisor(shift_allocation)
+				site_supervisor = frappe.db.get_value('Operations Site', site_allocation, 'account_supervisor')
+				project_manager = frappe.db.get_value('Project', project_allocation, 'account_manager')
+
+				sorted_dates = sorted(
+					[datetime.strptime(date.strip(), "%Y-%m-%d") for date in dates]
+				)
+
+				yesterday_repeat_count = frappe.db.get_value(
+					"Roster Employee Actions",
+					{
+						# If start date lies within current month then check for yesterday else check for first day of month (for next month)
+						"start_date": add_days(start_date, -1) if getdate(start_date).month == getdate(nowdate()).month and getdate(start_date).year == getdate(nowdate()).year else get_first_day(start_date),
+						"employee": employee,
+						"creation": ["between", [add_days(nowdate(), -1), nowdate()]],
+					},
+					["repeat_count"]
+				)
+
+				roster_employee_actions = frappe.new_doc("Roster Employee Actions")
+				roster_employee_actions.start_date = start_date
+				roster_employee_actions.end_date = end_date
+				roster_employee_actions.repeat_count = (yesterday_repeat_count or 0) + 1
+				roster_employee_actions.status = "Pending"
+				roster_employee_actions.supervisor = shift_supervisor
 				roster_employee_actions.site_supervisor = site_supervisor
 				roster_employee_actions.project_manager = project_manager
-			elif supervisor.supervisor_source and supervisor.supervisor_source == "Site":
-				roster_employee_actions.site_supervisor = supervisor.shift_supervisor
-				roster_employee_actions.project_manager = project_manager
-			elif supervisor.supervisor_source and supervisor.supervisor_source == "Project":
-				roster_employee_actions.project_manager = supervisor.shift_supervisor
+				roster_employee_actions.shift = shift_allocation
+				roster_employee_actions.site = site_allocation
+				roster_employee_actions.project = project_allocation
+				roster_employee_actions.employee = employee
+				roster_employee_actions.missing_dates = ", ".join([date.strftime("%Y-%m-%d") for date in sorted_dates])
 
-			for employee in employees:
-				sorted_dates = sorted(
-				[datetime.strptime(date.strip(), "%Y-%m-%d") for date in employees_not_rostered.get(employee, [])]
-			)
-				roster_employee_actions.append('employees_not_rostered', {
-					'employee': employee,
-					"missing_dates": ", ".join([date.strftime("%Y-%m-%d") for date in sorted_dates])
-				})
-			roster_employee_actions.save()
-		except Exception as e:
-			frappe.log_error(frappe.get_traceback(), "Error while generating Roster employee actions")
-			continue
-		frappe.db.commit()
+				roster_employee_actions.save()
+
+			except Exception as e:
+				frappe.log_error(frappe.get_traceback(), "Error while generating Roster employee actions")
+				continue
+
+			frappe.db.commit()
 
 def get_employees_not_rostered(start_date, end_date):
 	"""
@@ -257,83 +263,6 @@ def get_employees_on_leave_in_period(start_date, end_date):
 		for leave in leaves
 		for x in range((leave.to_date - leave.from_date).days + 1)
 	]
-
-
-def get_supervisors_not_rostered_employees(employees_not_rostered, date):
-	"""
-		Method to fetch supervisors along with employees who are not rostered (scheduled) for a given date
-		args:
-			employees_not_rostered: Dictionary of employees with the dates(in which they are not rostered)
-			date: date object
-
-		return: List of dict of supervisor and non rostered employees of the supervisor
-		Eg: [{'shift_supervisor': 'HR-EMP-00003', 'supervisor_source': 'Project/Shift/Site','project': 'P1', 'site': 'Site1', 'employees': 'HR-EMP-00001, HR-EMP-00002'}]
-	"""
-	employee_list = list(employees_not_rostered.keys())
-
-	# To create ("HR-EMP-1", "HR-EMP-2", "HR-EMP-3")
-	employee_ids = f"""({",".join([f"'{emp_id}'" for emp_id in employee_list])})"""
-
-
-	query = """
-		SELECT
-			COALESCE(
-				CASE WHEN ess.employee IS NOT NULL THEN oss.supervisor ELSE NULL END,
-				CASE WHEN osi.account_supervisor IS NOT NULL AND osi.account_supervisor != '' THEN osi.account_supervisor ELSE NULL END,
-				p.account_manager
-			) AS shift_supervisor,
-
-			CASE
-				WHEN ess.employee IS NOT NULL THEN 'Shift'
-				WHEN (osi.account_supervisor IS NOT NULL AND osi.account_supervisor != '') THEN 'Site'
-				WHEN p.account_manager IS NOT NULL THEN 'Project'
-				ELSE 'None'
-			END AS supervisor_source,
-
-			os.project As project,
-			os.site AS site,
-			GROUP_CONCAT(DISTINCT e.name) AS employees
-		FROM
-			`tabOperations Shift` AS os
-		LEFT JOIN
-			`tabOperations Site` AS osi ON osi.name = os.site
-		LEFT JOIN
-			`tabProject` AS p ON p.name = os.project
-		LEFT JOIN
-			(
-				SELECT 
-					parent AS shift_name,
-					supervisor,
-					ROW_NUMBER() OVER (PARTITION BY parent ORDER BY idx) AS rn
-				FROM `tabOperations Shift Supervisor`
-				WHERE parenttype = 'Operations Shift'
-			) AS oss ON oss.shift_name = os.name AND oss.rn = 1
-		LEFT JOIN
-			(
-				SELECT
-					es.employee
-				FROM
-					`tabEmployee Schedule` AS es
-				WHERE
-					es.date = '{0}'
-					AND
-					es.employee_availability = 'Working'
-			) AS ess
-			ON ess.employee = oss.supervisor
-		JOIN
-			`tabEmployee` AS e
-			ON e.shift = os.name
-		WHERE
-			os.status = 'Active'
-			AND
-			e.name IN {1}
-		GROUP BY
-		    shift_supervisor, os.site
-	""".format(date, employee_ids)
-	result = frappe.db.sql(query, as_dict=True)
-
-	return result
-
 
 ## Roster Employee Actions code for Roster view below
 @frappe.whitelist()

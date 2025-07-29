@@ -407,19 +407,123 @@ def mark_bulk_attendance(employee, from_date, to_date):
 
     frappe.msgprint(f"Marked Attendance successfully for {employee} between {from_date} and {to_date}")
 
+
+
+def schedule_mark_for_active_employees():
+    frappe.enqueue(mark_for_active_employees, queue='long', timeout=4000)
+
 # Mark attendance for Active Employees
 def mark_for_active_employees(from_date=None, to_date=None):
     if not (from_date and to_date):
         from_date, to_date = add_days(getdate(), -1), add_days(getdate(), -1)
-    active_employees_on_shift = frappe.get_list("Employee", {
+    
+    # Get all active employees
+    active_employees = frappe.get_list("Employee", {
         "status": ["=", "Active"],
-        "employment_type": ["!=", "Service Provider"],},
-        ["name","employee_name"]
-    )
-    for i in active_employees_on_shift:
-        mark_bulk_attendance(i.name, from_date, to_date)
-
+        "attendance_by_timesheet":0,
+    }, ["name", "employee_name", "company", "department", "holiday_list"])
+    
+    # Process employees with schedules/shifts
+    for employee in active_employees:
+        mark_bulk_attendance(employee.name, from_date, to_date)
+    
+    # Process employees without schedules/shifts
+    mark_attendance_for_unscheduled_employees(active_employees, from_date)
+    
     remark_for_active_employees(from_date)
+
+def mark_attendance_for_unscheduled_employees(employees, date):
+    """Creates attendance records for employees who have no schedules or shift assignments.
+    
+    Args:
+        employees (list): List of employee dictionaries containing employee details
+        date (str): Date for which attendance needs to be marked
+    """
+    try:
+        # Get employees who already have attendance marked
+        existing_attendance = frappe.get_all("Attendance", {
+            'attendance_date': date,
+            'roster_type': 'Basic',
+            'status': ['IN', ['Present', 'Holiday', 'On Leave', 'Work From Home', 'On Hold', 'Day Off']]
+        }, pluck="employee")
+        
+        # Get employees with schedules
+        scheduled_employees = frappe.get_all("Employee Schedule", {
+            'date': date,
+            'employee': ['IN', [e.name for e in employees]]
+        }, pluck="employee")
+        
+        # Get employees with shift assignments
+        shift_assigned_employees = frappe.get_all("Shift Assignment", {
+            'start_date': date,
+            'employee': ['IN', [e.name for e in employees]],
+            'docstatus': 1
+        }, pluck="employee")
+        
+        # Combine all employees who have some form of schedule
+        scheduled_or_assigned = set(scheduled_employees + shift_assigned_employees)
+        
+        # Filter out employees who need attendance marked
+        unscheduled_employees = [
+            e for e in employees 
+            if e.name not in existing_attendance 
+            and e.name not in scheduled_or_assigned
+        ]
+        
+        if not unscheduled_employees:
+            return
+            
+        # Create attendance records for unscheduled employees
+        creation = now()
+        owner = frappe.session.user
+        naming_series = 'HR-ATT-.YYYY.-'
+        
+        query = """
+            INSERT INTO `tabAttendance` (
+                `name`, `naming_series`, `employee`, `employee_name`, 
+                `status`, `attendance_date`, `company`, `department`,
+                `roster_type`, `docstatus`, `modified_by`, `owner`,
+                `creation`, `modified`, `comment`, `is_unscheduled`
+            ) VALUES
+        """
+        
+        query_body = ""
+        for emp in unscheduled_employees:
+            # Check if it's a holiday
+            holiday_today = get_holiday_today(date)
+            status = "Absent"
+            comment = "No schedule or shift assignment found"
+            
+            if holiday_today.get(emp.holiday_list):
+                status = "Holiday"
+                comment = f"Holiday - {holiday_today.get(emp.holiday_list)}"
+            
+            name = f"HR-ATT_{date}_{emp.name}_Basic"
+            query_body += f"""
+                (
+                    "{name}", "{naming_series}", "{emp.name}", "{emp.employee_name}",
+                    "{status}", "{date}", "{emp.company}", "{emp.department}",
+                    "Basic", 1, "{owner}", "{owner}",
+                    "{creation}", "{creation}", "{comment}", 1
+                ),"""
+            
+        
+        if query_body:
+            query += query_body[:-1]  # Remove trailing comma
+            query += """
+                ON DUPLICATE KEY UPDATE
+                status = VALUES(status),
+                comment = VALUES(comment),
+                modified = VALUES(modified)
+            """
+            frappe.db.sql(query)
+            frappe.db.commit()
+            
+    except Exception as e:
+        frappe.log_error(
+            message=frappe.get_traceback(),
+            title="Error in mark_attendance_for_unscheduled_employees"
+        )
 
 def remark_for_active_employees(from_date=None):
     if not from_date:from_date=today()

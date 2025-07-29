@@ -14,7 +14,6 @@ from hrms.hr.doctype.job_applicant.job_applicant import create_interview as hrms
 
 
 class JobApplicantOverride(JobApplicant):
-
 	def autoname(self):
 		pass
 
@@ -205,7 +204,6 @@ class NotifyLocalTransfer:
 		except:
 			frappe.log_error(frappe.get_traceback(), "Error while sending notification of local transfer")
 
-
 @frappe.whitelist()
 def create_interview(doc,interview_round):
 	interview = hrms_create_interview(doc, interview_round)
@@ -214,4 +212,81 @@ def create_interview(doc,interview_round):
 		interview.from_time = None
 		interview.to_time = None
 	return interview
-	
+
+@frappe.whitelist()
+def change_applicant_erf(job_applicant, old_erf, new_erf):
+	if not frappe.db.exists("Job Applicant", job_applicant):
+		return
+	if not frappe.db.exists("ERF", new_erf):
+		return
+
+	erf_in_job_applicant = frappe.db.get_value("Job Applicant", job_applicant, "one_fm_erf")
+	if erf_in_job_applicant != old_erf:
+		return
+
+	job_applicant_obj = frappe.get_doc("Job Applicant", job_applicant)
+	new_erf_obj = frappe.get_doc("ERF", new_erf)
+
+	job_title = frappe.db.get_value("Job Opening", {'one_fm_erf': new_erf})
+	designation = frappe.db.get_value("Job Opening", job_title, "designation")
+
+	job_applicant_obj.update({
+		"one_fm_erf": new_erf,
+		"job_title": job_title,
+		"designation": designation,
+		"department": new_erf_obj.department,
+		"project": new_erf_obj.project,
+		"one_fm_hiring_method": new_erf_obj.hiring_method,
+		"interview_round": new_erf_obj.interview_round
+	})
+
+	job_applicant_obj.flags.ignore_mandatory = True
+	job_applicant_obj.save(ignore_permissions=True)
+
+	job_offer = frappe.db.exists('Job Offer', {'job_applicant': job_applicant, 'docstatus': ['<', 2]})
+	if job_offer:
+		update_job_offer_with_erf_change(job_offer, job_applicant_obj, new_erf_obj, new_erf)
+
+def update_job_offer_with_erf_change(job_offer, job_applicant_obj, new_erf_obj, new_erf):
+	operations_shift = {"project": "", "shift_type": "", "site": ""}
+	if new_erf_obj.operations_shift:
+		operations_shift = frappe.db.get_value(
+			"Operations Shift",
+			new_erf_obj.operations_shift,
+			["project", "shift_type", "site"],
+			as_dict=True
+		)
+
+	frappe.db.sql("""
+		UPDATE
+			`tabJob Offer`
+		SET
+			employment_type = %s,
+			applicant_name = %s,
+			day_off_category = %s,
+			number_of_days_off = %s,
+			designation = %s,
+			department = %s,
+			one_fm_erf = %s,
+			shift_working = %s,
+			operations_shift = %s,
+			project = %s,
+			default_shift = %s,
+			operations_site = %s
+		WHERE
+			name = %s
+	""", (
+		job_applicant_obj.employment_type,
+		job_applicant_obj.applicant_name,
+		job_applicant_obj.day_off_category,
+		job_applicant_obj.number_of_days_off,
+		job_applicant_obj.designation,
+		job_applicant_obj.department,
+		new_erf,
+		new_erf_obj.shift_working,
+		new_erf_obj.operations_shift,
+		operations_shift["project"],
+		operations_shift["shift_type"],
+		operations_shift["site"],
+		job_offer
+	))

@@ -7,8 +7,10 @@
  "engine": "InnoDB",
  "field_order": [
   "operations_shift",
-  "column_break_aepi",
-  "count"
+  "column_break_jqzm",
+  "count",
+  "section_break_rzag",
+  "schedule_dates"
  ],
  "fields": [
   {
@@ -20,21 +22,31 @@
    "options": "Operations Shift"
   },
   {
-   "fieldname": "column_break_aepi",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "count",
    "fieldtype": "Int",
    "in_list_view": 1,
    "in_preview": 1,
    "label": "Count"
+  },
+  {
+   "fieldname": "column_break_jqzm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_rzag",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "schedule_dates",
+   "fieldtype": "Small Text",
+   "label": "Employee Schedule Dates",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-02-17 23:10:49.636630",
+ "modified": "2025-07-02 17:36:13.636092",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Default Shift Checker Shift",

@@ -61,13 +61,21 @@ def notify_for_employee_docs_expiry():
             ])
         )
 
-        send_employee_doc_expiry_notification(get_employees_by_expiry_doc(), recipients)
+        if not recipients:
+            return
+
+        notify_days_before = grd_settings.days_before_expiry_to_notify_supervisor or 15
+        employees = get_employees_by_expiry_doc(notify_days_before)
+
+        if employees:
+            send_employee_doc_expiry_notification(employees, recipients)
 
     except Exception as e:
         frappe.log_error(str(e), 'Employee Docs Expiry')
 
-def get_employees_by_expiry_doc():
-    target_expiry_date = add_days(today(), 30)
+def get_employees_by_expiry_doc(notify_days_before):
+    target_expiry_date = add_days(today(), notify_days_before)
+
     expiry_fields = [
         ("work_permit_expiry_date", "Work Permit"),
         ("residency_expiry_date", "Residency"),

@@ -1,0 +1,356 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2023-04-26 21:30:20.871687",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "process_section",
+  "process_name",
+  "is_erp_task",
+  "is_automated",
+  "is_active",
+  "erp_document",
+  "task",
+  "task_type",
+  "is_routine_task",
+  "method",
+  "column_break_im0w3",
+  "frequency",
+  "cron_format",
+  "last_execution",
+  "repeat_on_day",
+  "repeat_on_last_day",
+  "repeat_on_days",
+  "hours_per_frequency",
+  "coordination_needed",
+  "coordination_method",
+  "column_break_vzutu",
+  "start_date",
+  "end_date",
+  "remark",
+  "employee_section",
+  "employee",
+  "column_break_ecn7a",
+  "employee_name",
+  "employee_user",
+  "column_break_pwlz",
+  "department",
+  "reporting_section",
+  "report_frequency",
+  "direct_report_reviewer",
+  "direct_report_reviewer_name",
+  "column_break_ppanu",
+  "reporting_checkin_type",
+  "reference_section",
+  "task_reference",
+  "column_break_rgmau",
+  "auto_repeat_reference"
+ ],
+ "fields": [
+  {
+   "fieldname": "process_name",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Process",
+   "options": "Process",
+   "reqd": 1
+  },
+  {
+   "depends_on": "is_erp_task",
+   "fieldname": "erp_document",
+   "fieldtype": "Link",
+   "label": "ERP Document",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "task",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Task",
+   "reqd": 1
+  },
+  {
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Frequency",
+   "mandatory_depends_on": "is_routine_task",
+   "options": "\nDaily\nWeekly\nMonthly\nCron"
+  },
+  {
+   "description": "Set number of hours take for the task in the frequency",
+   "fieldname": "hours_per_frequency",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Hours per Frequency",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_standard_filter": 1,
+   "label": "Employee",
+   "mandatory_depends_on": "eval:!doc.process_name",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.department",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "description": "Select 'Yes' if needs coordination with other departments / team members for the task.",
+   "fieldname": "coordination_needed",
+   "fieldtype": "Select",
+   "label": "Coordination Needed",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.coordination_needed == 'Yes'",
+   "fieldname": "coordination_method",
+   "fieldtype": "Table MultiSelect",
+   "label": "Coordination Method",
+   "mandatory_depends_on": "eval:doc.coordination_needed == 'Yes'",
+   "options": "Routine Task Coordination Method"
+  },
+  {
+   "fieldname": "column_break_vzutu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "remark",
+   "fieldtype": "Small Text",
+   "label": "Remark"
+  },
+  {
+   "fieldname": "reporting_checkin_type",
+   "fieldtype": "Small Text",
+   "label": "Reporting / Checkin Type"
+  },
+  {
+   "fieldname": "report_frequency",
+   "fieldtype": "Select",
+   "label": "Report Frequency",
+   "options": "\nDaily\nWeekly\nMonthly"
+  },
+  {
+   "fieldname": "direct_report_reviewer",
+   "fieldtype": "Link",
+   "label": "Direct Report Reviewer",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "direct_report_reviewer.employee_name",
+   "fieldname": "direct_report_reviewer_name",
+   "fieldtype": "Data",
+   "label": "Direct Report Reviewer Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ecn7a",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reporting_section",
+   "fieldtype": "Section Break",
+   "label": "Reporting"
+  },
+  {
+   "fieldname": "process_section",
+   "fieldtype": "Section Break",
+   "label": "Process"
+  },
+  {
+   "fieldname": "column_break_ppanu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_im0w3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "P-TASK-.YYYY.-"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "reference_section",
+   "fieldtype": "Section Break",
+   "label": "Reference"
+  },
+  {
+   "fieldname": "task_reference",
+   "fieldtype": "Link",
+   "label": "Task Reference",
+   "options": "Task",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_rgmau",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "auto_repeat_reference",
+   "fieldtype": "Link",
+   "label": "Auto Repeat Reference",
+   "options": "Auto Repeat",
+   "read_only": 1
+  },
+  {
+   "fieldname": "task_type",
+   "fieldtype": "Link",
+   "label": "Task Type",
+   "options": "Task Type",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval: in_list([\"Monthly\", \"Quarterly\", \"Half-yearly\", \"Yearly\"], doc.frequency) && !doc.repeat_on_last_day",
+   "fieldname": "repeat_on_day",
+   "fieldtype": "Int",
+   "label": "Repeat on Day"
+  },
+  {
+   "depends_on": "eval:doc.frequency==='Weekly';",
+   "fieldname": "repeat_on_days",
+   "fieldtype": "Table",
+   "label": "Repeat on Days",
+   "options": "Auto Repeat Day"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.frequency === 'Monthly'",
+   "fieldname": "repeat_on_last_day",
+   "fieldtype": "Check",
+   "label": "Repeat on Last Day of the Month"
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "default": "Today",
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
+  },
+  {
+   "fetch_from": "employee.user_id",
+   "fieldname": "employee_user",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Employee User",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_pwlz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Mark if this process task is developed on ERPNext and select the doctype below",
+   "fieldname": "is_erp_task",
+   "fieldtype": "Check",
+   "label": "Is ERP Task"
+  },
+  {
+   "fieldname": "employee_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "description": "Mark if this process task is fully automated, not requiring an operator to execute.",
+   "fieldname": "is_automated",
+   "fieldtype": "Check",
+   "label": "Is Automated"
+  },
+  {
+   "default": "0",
+   "description": "Mark if this task should be executed between the start date and end date.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "depends_on": "eval: doc.is_automated && doc.is_erp_task",
+   "fieldname": "method",
+   "fieldtype": "Link",
+   "label": "Method",
+   "mandatory_depends_on": "eval: doc.is_automated && doc.is_erp_task",
+   "options": "Method"
+  },
+  {
+   "depends_on": "eval:doc.frequency==='Cron'",
+   "description": "To learn more about Cron formats, click the \"?\" above.\n<pre>*  *  *  *  *\n\u252c  \u252c  \u252c  \u252c  \u252c\n\u2502  \u2502  \u2502  \u2502  \u2502\n\u2502  \u2502  \u2502  \u2502  \u2514 day of week (0 - 6) (0 is Sunday)\n\u2502  \u2502  \u2502  \u2514\u2500\u2500\u2500\u2500\u2500 month (1 - 12)\n\u2502  \u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 day of month (1 - 31)\n\u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 hour (0 - 23)\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 minute (0 - 59)\n\n---\n\n* - Any value\n/ - Step values\n</pre>",
+   "documentation_url": "https://crontab.guru/",
+   "fieldname": "cron_format",
+   "fieldtype": "Data",
+   "label": "Cron Format"
+  },
+  {
+   "depends_on": "eval:doc.frequency==='Cron'",
+   "fieldname": "last_execution",
+   "fieldtype": "Datetime",
+   "label": "Last Execution",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "task_type.is_routine_task",
+   "fieldname": "is_routine_task",
+   "fieldtype": "Check",
+   "label": "Is Routine Task"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-07-17 00:32:27.075265",
+ "modified_by": "Administrator",
+ "module": "Operations",
+ "name": "Process Task",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

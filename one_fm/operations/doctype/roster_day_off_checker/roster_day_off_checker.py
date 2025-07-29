@@ -31,7 +31,7 @@ monthname_dict = {
 class RosterDayOffChecker(Document):
 	pass
 
-def get_annual_leave_dates_by_employee():
+def get_leave_dates_by_employee():
     today = getdate(nowdate())
     
     # First of current month
@@ -43,7 +43,7 @@ def get_annual_leave_dates_by_employee():
     results = frappe.db.sql("""
         SELECT employee, from_date, to_date
         FROM `tabLeave Application`
-        WHERE leave_type = 'Annual Leave'
+        WHERE leave_type IN ('Annual Leave', 'Leave Without Pay')
 		AND status = 'Approved'
         AND (
             (from_date BETWEEN %(start_date)s AND %(end_date)s)
@@ -178,16 +178,16 @@ def check_roster_day_off():
 	# Validate their offs for next 2 months/weeks based on their Day Off Category
 	# If discrepency, create record with each employee info
 	try:
-		Employee = frappe.qb.DocType("Employee")
-		employees = frappe.db.sql(frappe.qb.from_(Employee).select("*").where((Employee.status=="Active") & (Employee.shift_working == 1)), as_dict=1)
-
 		today = getdate()
 
-		annual_leave_days_by_employee = get_annual_leave_dates_by_employee()
+		Employee = frappe.qb.DocType("Employee")
+		employees = frappe.db.sql(frappe.qb.from_(Employee).select("*").where((Employee.status=="Active") & (Employee.shift_working == 1) & ((Employee.relieving_date.isnull()) | (Employee.relieving_date > today))), as_dict=1)
+
+		leave_dates_by_employee = get_leave_dates_by_employee()
 
 		for employee in employees:
-			employee_annual_leave_dates = annual_leave_days_by_employee.get(employee.name)
-			comparison_dates = get_day_off_comparison_dates(employee, employee_annual_leave_dates)
+			employee_leave_dates = leave_dates_by_employee.get(employee.name)
+			comparison_dates = get_day_off_comparison_dates(employee, employee_leave_dates)
 
 			site_supervisor = frappe.db.get_value("Operations Site", employee.site, "account_supervisor")
 			shift_supervisor = get_shift_supervisor(employee.shift)
@@ -199,19 +199,31 @@ def check_roster_day_off():
 				if day_off_data["day_off_difference"]:
 					duration = day_off_data["monthweek"]
 
+					yesterday_repeat_count = frappe.db.get_value(
+						"Roster Day Off Checker",
+						{
+							"employee": employee.name,
+							"monthweek": duration,
+							"date": add_days(today, -1),
+							"creation": ["between", [add_days(nowdate(), -1), nowdate()]],
+						},
+						["repeat_count"]
+					)
+
 					# Delete exising for target duration against employee
 					frappe.delete_doc_if_exists("Roster Day Off Checker", f"OPR-RDOC-{employee.name}-{duration}")
 
 					day_off_checker = frappe.new_doc("Roster Day Off Checker")
 					day_off_checker.date = today
 					day_off_checker.monthweek = duration
+					day_off_checker.repeat_count = (yesterday_repeat_count or 0) + 1
 					day_off_checker.employee = employee.name
 					day_off_checker.shift_supervisor = shift_supervisor
 					day_off_checker.site_supervisor = site_supervisor
 					day_off_checker.project_manager = project_manager
 					day_off_checker.required_number_of_days_off = period["calculated_number_of_days_off"] if period["calculated_number_of_days_off"] != employee.number_of_days_off else ''
-					day_off_checker.roster_days_off = day_off_data["off_days"]
-					day_off_checker.roster_day_off_ot = day_off_data["ot_days"]
+					day_off_checker.rostered_days_off = day_off_data["rostered_off_days"]
+					day_off_checker.rostered_day_off_ot = day_off_data["rostered_ot_days"]
 					day_off_checker.day_off_taken = day_off_data["availed_off_days"]
 					day_off_checker.worked_day_off_ot = day_off_data["availed_ot_days"]
 					day_off_checker.day_off_difference = day_off_data["day_off_difference"]
@@ -228,6 +240,9 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 
 	off_days = 0
 	ot_days = 0
+
+	rostered_off_days = 0
+	rostered_ot_days = 0
 
 	availed_off_days = 0
 	availed_ot_days = 0
@@ -256,16 +271,18 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 			.where(conditions & (Attendance.status == "Day Off") & (Attendance.day_off_ot == 0) & (Attendance.docstatus == 1))
 			.groupby(Attendance.employee),
 		as_dict=1)
-		off_days = off_days + (od[0].off_days if len(od) > 0 else 0)
-		availed_off_days = availed_off_days + off_days
+		attendance_off_days = (od[0].off_days if len(od) > 0 else 0)
+		off_days = off_days + attendance_off_days
+		availed_off_days = attendance_off_days
 
 		# Calculate no of ot days
 		ot = frappe.db.sql( frappe.qb.from_(Attendance)
 			.select(Count("name").as_("ot_days"))
 			.where(conditions & (Attendance.day_off_ot == 1))
 			.groupby(Attendance.employee), as_dict=1)
-		ot_days = ot_days + (ot[0].ot_days if len(ot) > 0 else 0)
-		availed_ot_days = availed_ot_days + ot_days
+		attendance_ot_days = (ot[0].ot_days if len(ot) > 0 else 0)
+		ot_days = ot_days + attendance_ot_days
+		availed_ot_days = attendance_ot_days
 
 	if date_ranges["future"]:
 		"""
@@ -337,6 +354,8 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 		"year": start_date_split[0],
 		"off_days": off_days,
 		"ot_days": ot_days,
+		"rostered_off_days": rostered_off_days,
+		"rostered_ot_days": rostered_ot_days,
 		"availed_off_days": availed_off_days,
 		"availed_ot_days": availed_ot_days,
 		"day_off_difference": day_off_diff
@@ -384,13 +403,15 @@ def get_day_off_details_of_employees(employees):
 	# Get all active employees
 	# Validate their offs for next 2 months
 	try:
+		leave_dates_by_employee = get_leave_dates_by_employee()
 		roster_day_off_data = []
 
 		for employee in employees:
-			comparison_dates = get_day_off_comparison_dates(employee)
+			employee_leave_dates = leave_dates_by_employee.get(employee.name)
+			comparison_dates = get_day_off_comparison_dates(employee, employee_leave_dates)
 
 			for period in comparison_dates:	# Always 2 iterations only because we have just two period for comparison
-				day_off_data = get_employee_day_off_comparison(employee, period["start_date"], period["end_date"], period["calculated_number_of_days_off"])
+				day_off_data = get_employee_day_off_comparison(employee, period["start_date"], period["end_date"], period["calculated_number_of_days_off"], period["working_dates"])
 
 				if day_off_data["day_off_difference"]:
 					roster_day_off_data.append({
@@ -402,6 +423,8 @@ def get_day_off_details_of_employees(employees):
 						"day_off_difference": day_off_data["day_off_difference"],
 						"year": day_off_data["year"],
 						"month": day_off_data["month"],
+						"role":employee.custom_operations_role_allocation,
+						"shift":employee.shift
 					})
 
 		return roster_day_off_data
@@ -434,7 +457,7 @@ def render_day_off_issues_html(roster_day_off_data):
 							<td>{info["monthweek"]}</td>
 							<td>{info["day_off_category"]}</td>
 							<td>{info["day_off_difference"]}</td>
-							<td><a class="btn btn-warning" target="_blank" href="/app/roster?main_view='roster'&sub_view='basic'&roster_type='basic'&department={info["department"]}&employee_id={info["employee_id"]}&month={info["month"]}&year={info["year"]}">Take Action</a></td>
+							<td><a class="btn btn-warning" target="_blank" href="/app/roster?main_view='roster'&sub_view='basic'&roster_type='basic'&department={info["department"]}&employee_id={info["employee_id"]}&operations_role={info["role"]}&month={info["month"]}&year={info["year"]}">Take Action</a></td>
 						</tr>"""
 		html += "</tbody></table>"
 		return html
@@ -490,7 +513,8 @@ def _get_employees_with_join(join_clause, where_clause, user_employee):
 			e.day_off_category,
 			e.number_of_days_off,
 			e.employee_id,
-			e.shift
+			e.shift,
+		    e.custom_operations_role_allocation
 		FROM `tabEmployee` e
 		{join_clause}
 		WHERE

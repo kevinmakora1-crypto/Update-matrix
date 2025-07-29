@@ -1,0 +1,225 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:OWS-EMA-{month}-{year}-{####}",
+ "creation": "2025-05-01 01:01:39.974364",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "designation",
+  "column_break_mmvu",
+  "month",
+  "year",
+  "department",
+  "column_break_dkrc",
+  "reports_to",
+  "reports_to_name",
+  "section_break_bvsc",
+  "goal_update",
+  "section_break_rxco",
+  "accomplishments",
+  "plan_for_next_month",
+  "what_went_well",
+  "what_went_wrong",
+  "initiative_taken",
+  "initiative_to_be_taken",
+  "section_break_3icw",
+  "company",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fetch_if_empty": 1,
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_mmvu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_dkrc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_3icw",
+   "fieldtype": "Section Break",
+   "label": "More Information"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Employee Monthly Action",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "month",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Month",
+   "options": "\nJanuary\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember",
+   "reqd": 1
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Year",
+   "options": "Fiscal Year",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.department",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.reports_to",
+   "fieldname": "reports_to",
+   "fieldtype": "Link",
+   "label": "Reports To",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "reports_to.employee_name",
+   "fieldname": "reports_to_name",
+   "fieldtype": "Data",
+   "label": "Reports To Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_bvsc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "goal_update",
+   "fieldtype": "Table",
+   "label": "Goal Update",
+   "options": "Goal Update"
+  },
+  {
+   "fieldname": "section_break_rxco",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "Explain what you accomplished this month",
+   "fieldname": "accomplishments",
+   "fieldtype": "Small Text",
+   "label": "Accomplishments"
+  },
+  {
+   "description": "List your Plan for Next Month",
+   "fieldname": "plan_for_next_month",
+   "fieldtype": "Small Text",
+   "label": "Plan for Next Month"
+  },
+  {
+   "description": "Explain what went well this month and why and how you will capatilize on it",
+   "fieldname": "what_went_well",
+   "fieldtype": "Small Text",
+   "label": "What Went Well"
+  },
+  {
+   "description": "Explain what did not go well this month and why and how will you fix it",
+   "fieldname": "what_went_wrong",
+   "fieldtype": "Small Text",
+   "label": "What Went Wrong"
+  },
+  {
+   "description": "List at least one initiative you took this month",
+   "fieldname": "initiative_taken",
+   "fieldtype": "Small Text",
+   "label": "Initiative Taken"
+  },
+  {
+   "description": "List at least one initiative you  will take next month",
+   "fieldname": "initiative_to_be_taken",
+   "fieldtype": "Small Text",
+   "label": "Initiative to be taken"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-07-25 13:25:45.927992",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Employee Monthly Action",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

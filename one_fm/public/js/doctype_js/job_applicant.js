@@ -987,7 +987,7 @@ var confirm_erf_change = function(frm, dialog) {
 		function(){
 			// Yes
 			frappe.call({
-				method: "one_fm.hiring.utils.change_applicant_erf",
+				method: "one_fm.overrides.job_applicant.change_applicant_erf",
 				args: {
 					'job_applicant': frm.doc.name,
 					'old_erf': frm.doc.one_fm_erf,

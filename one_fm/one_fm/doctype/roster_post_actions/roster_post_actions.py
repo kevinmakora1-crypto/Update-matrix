@@ -9,7 +9,7 @@ import frappe
 from frappe import _
 from collections import defaultdict
 from frappe.model.document import Document
-from frappe.utils import nowdate, add_to_date, cstr, cint, getdate, get_link_to_form
+from frappe.utils import nowdate, add_to_date, cstr, cint, getdate, get_link_to_form, add_days, add_months, get_first_day, get_last_day
 from one_fm.processor import sendemail
 from frappe.permissions import get_doctype_roles
 from one_fm.one_fm.page.roster.roster import get_current_user_details
@@ -20,7 +20,7 @@ class RosterPostActions(Document):
         user_id = frappe.db.get_value("Employee", self.supervisor, ["user_id"])
         if user_id:
             link = get_link_to_form(self.doctype, self.name)
-            subject = _("New Action to {action_type}.".format(action_type=self.action_type))
+            subject = _("New Action Required")
             message = _("""
 				You have been issued a Roster Post Action.<br>
 				Please review the Post Type for the specified date in the roster, take necessary actions and update the status.<br>
@@ -67,134 +67,156 @@ def get_permission_query_conditions(user):
 def create():
 	frappe.enqueue(create_roster_post_actions, is_async=True, queue='long')
 
-
 def create_roster_post_actions():
     """
     This function creates a Roster Post Actions document that issues actions to supervisors to fill operation roles that are not filled or overfilled for a given date range.
     """
+    tomorrow = add_days(getdate(), 1)
+    next_month = add_months(tomorrow, 1)
 
-    # start date to be from tomorrow
-    start_date = add_to_date(cstr(getdate()), days=1)
-    # end date to be 14 days after start date
-    end_date = add_to_date(start_date, days=14)
+    durations = [
+    	{
+    		"start_date": tomorrow,
+    		"end_date": get_last_day(tomorrow)
+    	},
+    	{
+    		"start_date": get_first_day(next_month),
+    		"end_date": get_last_day(next_month)
+    	},
+    ]
 
-    result_dict = defaultdict(lambda: {
-        "not_filled": [],
-        "over_filled": []
-    })
+    for duration in durations:
+        start_date = duration["start_date"]
+        end_date = duration["end_date"]
 
-    # Fetch post schedules in the date range that are active
-    post_schedules = frappe.db.sql(f"""
-		SELECT ps.name, ps.date, ps.shift, ps.operations_role, ps.post
-        FROM `tabPost Schedule` ps
-        JOIN `tabOperations Shift` osh ON ps.shift = osh.name
-        JOIN `tabOperations Site` os ON ps.site = os.name
-        JOIN `tabOperations Post` op ON ps.post = op.name
-        JOIN `tabOperations Role` opr ON ps.operations_role = opr.name
-        JOIN `tabProject` pr ON opr.project = pr.name
-        WHERE ps.post_status = 'Planned'
-        AND osh.status = 'Active'
-        AND os.status = 'Active'
-        AND op.status = 'Active'
-        AND opr.status = 'Active'
-        AND pr.is_active = 'Yes'
-        AND ps.date BETWEEN '{start_date}' AND '{end_date}'
-        ORDER BY date ASC
-    """, as_dict=1)
+        result_dict = defaultdict(lambda: {
+            "not_filled": [],
+            "over_filled": []
+        })
 
-    # Fetch employee schedules in the date range that are working
-    employee_schedules = frappe.db.sql(f"""
-		SELECT es.date, es.shift, es.operations_role
-        FROM `tabEmployee Schedule` es
-        WHERE es.employee_availability = 'Working'
-        AND es.date BETWEEN '{start_date}' AND '{end_date}'
-        ORDER BY date ASC
-    """, as_dict=1)
+        # Fetch post schedules in the date range that are active
+        post_schedules = frappe.db.sql(f"""
+            SELECT ps.name, ps.date, ps.shift, ps.operations_role, ps.post
+            FROM `tabPost Schedule` ps
+            JOIN `tabOperations Shift` osh ON ps.shift = osh.name
+            JOIN `tabOperations Site` os ON ps.site = os.name
+            JOIN `tabOperations Post` op ON ps.post = op.name
+            JOIN `tabOperations Role` opr ON ps.operations_role = opr.name
+            JOIN `tabProject` pr ON opr.project = pr.name
+            WHERE ps.post_status = 'Planned'
+            AND osh.status = 'Active'
+            AND os.status = 'Active'
+            AND op.status = 'Active'
+            AND opr.status = 'Active'
+            AND pr.is_active = 'Yes'
+            AND ps.date BETWEEN '{start_date}' AND '{end_date}'
+            ORDER BY date ASC
+        """, as_dict=1)
 
-    post_counts = Counter((ps["date"], ps["operations_role"], ps["shift"]) for ps in post_schedules)
-    employee_counts = Counter((es["date"], es["operations_role"], es["shift"]) for es in employee_schedules)
+        # Fetch employee schedules in the date range that are working
+        employee_schedules = frappe.db.sql(f"""
+            SELECT es.date, es.shift, es.operations_role
+            FROM `tabEmployee Schedule` es
+            WHERE es.employee_availability = 'Working'
+            AND es.date BETWEEN '{start_date}' AND '{end_date}'
+            ORDER BY date ASC
+        """, as_dict=1)
 
-    for key, post_count in post_counts.items():
-        emp_count = employee_counts.get(key, 0)  # Default to 0 if no employee schedule exists
-        date, role, shift = key
+        post_counts = Counter((ps["date"], ps["operations_role"], ps["shift"]) for ps in post_schedules)
+        employee_counts = Counter((es["date"], es["operations_role"], es["shift"]) for es in employee_schedules)
 
-        if post_count > emp_count: # If post schedules are more than employee schedules
-            result_dict[(role, shift)]["not_filled"].append({
-                "date": date,
-                "quantity": post_count - emp_count
-            })
+        for key, post_count in post_counts.items():
+            emp_count = employee_counts.get(key, 0)  # Default to 0 if no employee schedule exists
+            date, role, shift = key
 
-    for key, emp_count in employee_counts.items():
-        post_count = post_counts.get(key, 0)  # Default to 0 if no post schedule exists
-        date, role, shift = key
-
-        if emp_count > post_count: # If employee schedules are more than post schedules
-            result_dict[(role, shift)]["over_filled"].append({
-                "date": date,
-                "quantity": emp_count - post_count
-            })
-
-    operations_shifts_info_result = frappe.db.sql("""
-        SELECT
-            op_shift.name AS shift,
-            op_shift.site,
-            op_shift.project,
-            (
-                SELECT oss.supervisor
-                FROM `tabOperations Shift Supervisor` oss
-                WHERE oss.parent = op_shift.name
-                ORDER BY oss.idx ASC
-                LIMIT 1
-            ) AS shift_supervisor,
-            op_site.account_supervisor AS site_supervisor
-        FROM `tabOperations Shift` op_shift
-        LEFT JOIN `tabOperations Site` op_site ON op_site.name = op_shift.site
-        WHERE op_shift.status = 'Active'
-    """, as_dict=True)
-
-    operations_shifts_info = {
-        item["shift"]: item
-        for item in operations_shifts_info_result
-    }
-
-    # Create one Roster Post Actions document per (operations_role, shift)
-    for (role, shift), data in result_dict.items():
-        shift_details = operations_shifts_info.get(shift) # If no shift details are found then it means employee schedules exist for inactive shift which should not
-
-        if (not data["not_filled"] and not data["over_filled"]) or not shift_details:
-            continue
-
-        try:
-
-            roster_post_actions_doc = frappe.new_doc("Roster Post Actions")
-            roster_post_actions_doc.start_date = start_date
-            roster_post_actions_doc.end_date = end_date
-            roster_post_actions_doc.status = "Pending"
-            roster_post_actions_doc.action_type = "Fill Post Type"
-            roster_post_actions_doc.supervisor = shift_details["shift_supervisor"]
-            roster_post_actions_doc.site_supervisor = shift_details["site_supervisor"]
-            roster_post_actions_doc.operations_role = role
-            roster_post_actions_doc.operations_shift = shift
-            roster_post_actions_doc.operations_site = shift_details["site"]
-            roster_post_actions_doc.project = shift_details["project"]
-
-            for i in data["not_filled"]:
-                roster_post_actions_doc.append('operations_roles_not_filled', {
-                    "date": i["date"],
-                    "quantity": i["quantity"]
+            if post_count > emp_count: # If post schedules are more than employee schedules
+                result_dict[(role, shift)]["not_filled"].append({
+                    "date": date,
+                    "quantity": post_count - emp_count
                 })
 
-            for i in data["over_filled"]:
-                roster_post_actions_doc.append('operations_roles_over_filled', {
-                    "date": i["date"],
-                    "quantity": i["quantity"]
+        for key, emp_count in employee_counts.items():
+            post_count = post_counts.get(key, 0)  # Default to 0 if no post schedule exists
+            date, role, shift = key
+
+            if emp_count > post_count: # If employee schedules are more than post schedules
+                result_dict[(role, shift)]["over_filled"].append({
+                    "date": date,
+                    "quantity": emp_count - post_count
                 })
 
-            roster_post_actions_doc.save()
-        except:
-            frappe.log_error(frappe.get_traceback(), "Error while creating roster post actions")
+        operations_shifts_info_result = frappe.db.sql("""
+            SELECT
+                op_shift.name AS shift,
+                op_shift.site,
+                op_shift.project,
+                (
+                    SELECT oss.supervisor
+                    FROM `tabOperations Shift Supervisor` oss
+                    WHERE oss.parent = op_shift.name
+                    ORDER BY oss.idx ASC
+                    LIMIT 1
+                ) AS shift_supervisor,
+                op_site.account_supervisor AS site_supervisor
+            FROM `tabOperations Shift` op_shift
+            LEFT JOIN `tabOperations Site` op_site ON op_site.name = op_shift.site
+            WHERE op_shift.status = 'Active'
+        """, as_dict=True)
 
-    frappe.db.commit()
+        operations_shifts_info = {
+            item["shift"]: item
+            for item in operations_shifts_info_result
+        }
+
+        # Create one Roster Post Actions document per (operations_role, shift)
+        for (role, shift), data in result_dict.items():
+            shift_details = operations_shifts_info.get(shift) # If no shift details are found then it means employee schedules exist for inactive shift which should not
+
+            if (not data["not_filled"] and not data["over_filled"]) or not shift_details:
+                continue
+
+            try:
+                # If start date lies within current month then check for yesterday else check for first day of month (for next month)
+                yesterday_repeat_count = frappe.db.get_value(
+                    "Roster Post Actions",
+                    {
+                        "start_date": add_days(start_date, -1) if getdate(start_date).month == getdate(nowdate()).month and getdate(start_date).year == getdate(nowdate()).year else get_first_day(start_date),
+                        "operations_role": role,
+                        "operations_shift": shift,
+                        "creation": ["between", [add_days(nowdate(), -1), nowdate()]],
+                    },
+                    ["repeat_count"]
+                )
+
+                roster_post_actions_doc = frappe.new_doc("Roster Post Actions")
+                roster_post_actions_doc.start_date = start_date
+                roster_post_actions_doc.end_date = end_date
+                roster_post_actions_doc.repeat_count = (yesterday_repeat_count or 0) + 1
+                roster_post_actions_doc.status = "Pending"
+                roster_post_actions_doc.supervisor = shift_details["shift_supervisor"]
+                roster_post_actions_doc.site_supervisor = shift_details["site_supervisor"]
+                roster_post_actions_doc.operations_role = role
+                roster_post_actions_doc.operations_shift = shift
+                roster_post_actions_doc.operations_site = shift_details["site"]
+                roster_post_actions_doc.project = shift_details["project"]
+
+                for i in data["not_filled"]:
+                    roster_post_actions_doc.append('operations_roles_not_filled', {
+                        "date": i["date"],
+                        "quantity": i["quantity"]
+                    })
+
+                for i in data["over_filled"]:
+                    roster_post_actions_doc.append('operations_roles_over_filled', {
+                        "date": i["date"],
+                        "quantity": i["quantity"]
+                    })
+
+                roster_post_actions_doc.save()
+            except:
+                frappe.log_error(frappe.get_traceback(), "Error while creating roster post actions")
+
+        frappe.db.commit()
 
 
 @frappe.whitelist()

@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 from one_fm.api.api import get_user_roles
 from frappe.desk.form.assign_to import get as get_assignments,add as add_assignment, remove as remove_assignment
+from erpnext.projects.doctype.task.task import Task
 
 """
 List of fields allowed to be modified based on role mentioned.
@@ -10,17 +11,27 @@ PROJECTS_USER_FIELD_MAP = ["status", "completed_by", "exp_start_date", "exp_end_
 """
 USER_ALLOWED_STATUSES = ["Open", "Working", "Pending Review"]
 
-def validate_task(doc, method):
+class TaskOverride(Task):
+    def validate(self):
+        super(TaskOverride, self).validate()
+        validate_task(self)
+
+    def after_insert(self):
+        after_task_insert(self)
+
+
+
+def validate_task(doc):
     # When new doc is added, then sync field after insert
-    if not doc.is_new() and doc.status != "Pending Review":
+    if not doc.is_new() and doc.workflow_state in ["Open", "Working"]:
         sync_assign_to_field(doc)
-    
+
 
     all_asssigned_users = doc.get_assigned_users()
-    assignees = doc.custom_assigned_to 
-    if doc.status == "Pending Review" and assignees:
+    assignees = doc.custom_assigned_to
+    if doc.workflow_state == "Pending Review" and assignees:
         for assignee in assignees:
-            if assignee.user in list(all_asssigned_users):  
+            if assignee.user in list(all_asssigned_users):
                 todos = frappe.get_all(
                     "ToDo",
                     filters={
@@ -31,22 +42,21 @@ def validate_task(doc, method):
                     },
                     pluck="name"
                 )
-
-                if todos: 
-                    frappe.db.set_value("ToDo", {"name": ["in", todos]}, "status", "Closed")
+                if todos:
+                    frappe.db.set_value("ToDo", {"name": ["in", todos]}, "status", "Cancelled")
 
     roles = get_user_roles()
     is_manager = is_project_manager(doc.project) if doc.project else False
     if "Projects User" in roles and "Projects Manager" not in roles and not is_manager and (doc.project or doc.owner != frappe.session.user):
         validate_updated_fields(doc)
-    
-    check_completed_by_and_completed_on(doc,method)
 
-def after_task_insert(doc, method):
+    check_completed_by_and_completed_on(doc)
+
+def after_task_insert(doc):
     sync_assign_to_field(doc)
 
 
-def check_completed_by_and_completed_on(doc, method):
+def check_completed_by_and_completed_on(doc):
     if doc.status == "Pending Review" or doc.status=="Completed":
         if not doc.completed_on or doc.completed_on != frappe.utils.nowdate():
             doc.completed_on = frappe.utils.nowdate()
@@ -77,7 +87,7 @@ def is_project_manager(project):
 def sync_assign_to_field(doc):
     existing_doc_assignments = set([assignment.owner for assignment in get_assignments({'doctype': doc.doctype,'name': doc.name})])
     current_field_assignments = set([assignment.user for assignment in doc.custom_assigned_to])
-    
+
     assignments_to_be_removed = list(existing_doc_assignments - current_field_assignments)
     assignments_to_be_added = list(current_field_assignments - existing_doc_assignments)
 

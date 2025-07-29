@@ -30,6 +30,7 @@ class EmployeeOverride(EmployeeMaster):
         self.set_employee_name()
         set_employee_name(self, method=None)
         self.set_employee_id_based_on_residency()
+        self.validate_reliever()
         self.validate_date()
         self.validate_email()
         self.validate_status()
@@ -135,16 +136,38 @@ class EmployeeOverride(EmployeeMaster):
 
 
     def inform_employee_id_update(self):
+        """
+        Notifies the employee's manager and HR generalists when an employee ID is updated.
+        
+        This method sends administrative notifications to relevant personnel about the employee ID change.
+        It ensures that management is aware of the change and can assist the employee if needed.
+        
+        Notifications sent:
+        - Email to employee's direct manager (reports_to)
+        - Email to HR Generalists
+        - Push notification to manager's mobile app
+        
+        Triggers when:
+        - Employee ID field has changed (detected via has_value_changed)
+        
+        Returns:
+            None
+            
+        Raises:
+            Logs error to frappe error log if notification fails
+        """
         try:
             if self.has_value_changed('employee_id'):
+                old_value = self.get_doc_before_save().employee_id
                 reports_to = self.get_reports_to_user()
                 subject = f"Employee {self.name} employee id changed"
                 description = '''
-                    The Employee ID for {{employee_name}} has been updated to {{employee_id}}.
+                    The Employee ID for {{employee_name}} has been updated from {{old_value}} to {{employee_id}}.
                     Kindly ensure that the Employee is aware of this change so that they can continue to log in
                 '''
                 doc_link = "<p><a href='{0}'>Link to Employee Record</a></p>".format(get_url(self.get_url()))
                 context = self.as_dict()
+                context['old_value'] = old_value
                 recipients = get_hr_generalists()
                 recipients.append(reports_to)
                 context['message_heading'] = ''
@@ -160,6 +183,31 @@ class EmployeeOverride(EmployeeMaster):
             frappe.msgprint("Error Notifying Manager, Please check Error Log for Details")
 
     def notify_employee_id_update(self):
+        """
+        Notifies the employee directly when their employee ID is updated.
+        
+        This method sends personal notifications to the employee about their own employee ID change.
+        It ensures the employee is aware of the change and can continue to access the system.
+        
+        Notifications sent:
+        - Email (if employee prefers company email)
+        - Push notification to employee's mobile app
+        - WhatsApp message with template
+        
+        Triggers when:
+        - Employee ID field has changed (detected via has_value_changed)
+        
+        Message content:
+        - Informs about residency registration completion
+        - Shows old and new employee ID
+        - Provides link to employee record
+        
+        Returns:
+            None
+            
+        Raises:
+            Logs error to frappe error log if notification fails
+        """
         try:
             if self.has_value_changed('employee_id'):
                 context = self.as_dict()
@@ -168,7 +216,7 @@ class EmployeeOverride(EmployeeMaster):
 
                     description = f'''
                         Dear {self.employee_name},
-                        Your residency registration process has been completed and your employee id has been update from {self.get_doc_before_save().employee_id} to {self.employee_id}
+                        Your residency registration process has been completed and your employee id has been updated from {self.get_doc_before_save().employee_id} to {self.employee_id}
                     '''
                     doc_link = "<p><a href='{0}'>Link to Employee Record</a></p>".format(get_url(self.get_url()))
                     context['message_heading'] = ''
@@ -176,7 +224,7 @@ class EmployeeOverride(EmployeeMaster):
                     # sendemail(recipients=[self.user_id], subject=subject, content=msg)
                     send_notification(title=subject,subject=subject,message=msg,category="Alert",recipients=[self.user_id])
 
-                push_message = f"Dear {context.first_name}, Your residency registration process has been completed and your employee ID has been updated  to {self.employee_id}."
+                push_message = f"Dear {context.first_name}, Your residency registration process has been completed and your employee ID has been updated to {self.employee_id}."
                 push_notification_rest_api_for_checkin(employee_id=self.name,title=subject,body=push_message,checkin=False,arriveLate=False,checkout=False)
                 if self.cell_number:
                     if '(' in self.cell_number or ')' in self.cell_number or '+' in self.cell_number:
@@ -206,6 +254,10 @@ class EmployeeOverride(EmployeeMaster):
         if last_doc and last_doc.get('status') == "Active":
             if self.status != "Active":
                 NotifyAttendanceManagerOnStatusChange(employee_object=self).notify_authorities()
+
+    def validate_reliever(self):
+        if self.custom_is_reliever == 1 and self.custom_is_weekend_reliever == 1:
+            frappe.throw("Employee can either marked as Day Off reliever or Weekend reliever")
 
     def validate_status_change(self):
         last_doc = self.get_doc_before_save()

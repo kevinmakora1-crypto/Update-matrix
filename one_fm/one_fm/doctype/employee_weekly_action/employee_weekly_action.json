@@ -1,0 +1,217 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:OWS-EWA-{week}-{year}-{####}",
+ "creation": "2025-05-01 17:21:23.771424",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_bdgc",
+  "employee",
+  "employee_name",
+  "designation",
+  "column_break_nbad",
+  "week",
+  "year",
+  "department",
+  "column_break_askz",
+  "reports_to",
+  "reports_to_name",
+  "progress_and_plans_section",
+  "project_progress_and_plans",
+  "next_week_task_plan_section",
+  "next_week_task_plan",
+  "problems_that_are_stopping_your_work_section",
+  "blockers",
+  "positivity_and_reflection_section",
+  "text_editor_ztre",
+  "more_information_section",
+  "company",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_bdgc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "no_copy": 1,
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fetch_if_empty": 1,
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_nbad",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "week",
+   "fieldtype": "Int",
+   "label": "Week",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Link",
+   "label": "Year",
+   "options": "Fiscal Year",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.department",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_askz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reports_to",
+   "fieldtype": "Link",
+   "label": "Reports To",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "reports_to.employee_name",
+   "fieldname": "reports_to_name",
+   "fieldtype": "Data",
+   "label": "Reports To Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "progress_and_plans_section",
+   "fieldtype": "Section Break",
+   "label": "Progress and Plans"
+  },
+  {
+   "fieldname": "project_progress_and_plans",
+   "fieldtype": "Table",
+   "label": "Project Progress and Plans",
+   "options": "Project Progress and Plans"
+  },
+  {
+   "fieldname": "next_week_task_plan_section",
+   "fieldtype": "Section Break",
+   "label": "Next Week Task Plan"
+  },
+  {
+   "fieldname": "next_week_task_plan",
+   "fieldtype": "Table",
+   "label": "Next Week Task Plan",
+   "options": "Next Week Task Plan",
+   "read_only": 1
+  },
+  {
+   "description": "If a blocker has already been reported in the Employee Daily Action, there is no need to repeat the blocker in the Employee Weekly Action.",
+   "fieldname": "problems_that_are_stopping_your_work_section",
+   "fieldtype": "Section Break",
+   "label": "Problems that are stopping your work"
+  },
+  {
+   "fieldname": "blockers",
+   "fieldtype": "Table",
+   "label": "Blockers",
+   "options": "Blockers"
+  },
+  {
+   "fieldname": "positivity_and_reflection_section",
+   "fieldtype": "Section Break",
+   "label": "Positivity and Reflection"
+  },
+  {
+   "default": "<p><strong>Achievements:</strong></p>\n  <p>What went well today?</p>\n  <p>What were you happy with?</p>\n\n  <p><strong>Challenges:</strong></p>\n  <p>What could have gone better?</p>\n  <p>Tasks you struggled with</p>\n  <p>Areas for skill improvement</p>\n\n  <p><strong>Emotional Check:</strong></p>\n  <p>How did you feel today?</p>\n  <p>Productivity, happiness, stress</p>\n\n  <p><strong>Nurturing Gratitude:</strong></p>\n  <p>What small thing at work are you thankful for today? <em>(e.g., supportive colleagues, reliable tools, interesting tasks)</em></p>\n  <p>Who helped you out recently, and how can you express your appreciation? <em>(e.g., colleague who answered a question, manager who gave feedback, client who provided positive feedback)</em></p>\n\n  <p><strong>Workplace Improvement:</strong></p>\n  <p>Suggestions for workplace improvement</p>\n  <p>Policy or resource needs</p>\n\n  <p><strong>Learning:</strong></p>\n  <p>What did you learn this week?</p>\n  <p>New insights about your work or yourself</p>",
+   "fieldname": "text_editor_ztre",
+   "fieldtype": "Text Editor"
+  },
+  {
+   "fieldname": "more_information_section",
+   "fieldtype": "Section Break",
+   "label": "More Information"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Employee Weekly Action",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-07-25 13:25:14.830109",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Employee Weekly Action",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "autoname": "format:{start_date}|{end_date}|{employee}-{##}",
  "creation": "2021-10-11 13:17:40.746985",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -12,7 +13,7 @@
   "actions",
   "status",
   "column_break_bi2pf",
-  "action_type",
+  "repeat_count",
   "section_break_t1lpn",
   "column_break_wtzd",
   "supervisor",
@@ -25,8 +26,16 @@
   "project_manager",
   "project_manager_name",
   "project_manager_user",
-  "section_break_h7sd9",
-  "employees_not_rostered"
+  "section_break_cysp",
+  "employee",
+  "employee_name",
+  "employee_id",
+  "column_break_domi",
+  "shift",
+  "site",
+  "project",
+  "column_break_hpyv",
+  "missing_dates"
  ],
  "fields": [
   {
@@ -59,30 +68,14 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nCompleted\nOverdue\nCancelled"
-  },
-  {
-   "fieldname": "action_type",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Action Type",
-   "options": "Roster Employee\nReview Roster For Employee\nAnnual Leave\nSuspended\nSick Leave\nEx-Employee"
+   "options": "Pending\nCompleted"
   },
   {
    "fieldname": "supervisor",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
-   "in_standard_filter": 1,
    "label": "Shift  Supervisor",
    "options": "Employee",
-   "read_only": 1
-  },
-  {
-   "fieldname": "employees_not_rostered",
-   "fieldtype": "Table",
-   "ignore_user_permissions": 1,
-   "label": "Employees Not Rostered",
-   "options": "Employees Not Rostered",
    "read_only": 1
   },
   {
@@ -99,10 +92,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "section_break_h7sd9",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "section_break_t1lpn",
    "fieldtype": "Section Break"
   },
@@ -115,6 +104,7 @@
    "fieldname": "site_supervisor_name",
    "fieldtype": "Data",
    "ignore_user_permissions": 1,
+   "in_list_view": 1,
    "label": "Site Supervisor Name",
    "read_only": 1
   },
@@ -122,7 +112,6 @@
    "fieldname": "site_supervisor",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
-   "in_standard_filter": 1,
    "label": "Site Supervisor",
    "options": "Employee",
    "read_only": 1
@@ -174,15 +163,94 @@
   {
    "fieldname": "column_break_wtzd",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_cysp",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_domi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_hpyv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fetch_if_empty": 1,
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.shift",
+   "fetch_if_empty": 1,
+   "fieldname": "shift",
+   "fieldtype": "Link",
+   "label": "Shift Allocation",
+   "options": "Operations Shift",
+   "read_only": 1
+  },
+  {
+   "fieldname": "missing_dates",
+   "fieldtype": "Long Text",
+   "label": "Missing Dates",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "repeat_count",
+   "fieldtype": "Int",
+   "label": "Repeat Count",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.employee_id",
+   "fieldname": "employee_id",
+   "fieldtype": "Data",
+   "label": "Employee ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.site",
+   "fetch_if_empty": 1,
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site Allocation",
+   "options": "Operations Site",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.project",
+   "fetch_if_empty": 1,
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project Allocation",
+   "options": "Project",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-15 16:32:55.572646",
+ "modified": "2025-07-20 10:22:56.733296",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Roster Employee Actions",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

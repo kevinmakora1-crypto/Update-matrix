@@ -1,0 +1,88 @@
+
+<style>
+    table {
+      font-family: Arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+    }
+  
+    th, .notify_ticket_raiser td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+  
+    th {
+      background-color: #f2f2f2;
+      color: #333;
+      width: 30%;
+      text-align: left;
+    }
+  
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+  
+    tr:hover {
+      background-color: #ddd;
+    }
+  
+    .prompt {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      border-radius: 5px;
+      color: #856404;
+      font-weight: bold;
+    }
+  
+    .warning {
+      margin-top: 10px;
+      padding: 12px;
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      border-radius: 5px;
+      color: #721c24;
+      font-weight: bold;
+    }
+  
+    .prompt a {
+      color: #004085;
+      text-decoration: underline;
+    }
+  </style>
+  
+  <h3>{{ header }}</h3>
+  
+  <table>
+    <tbody class="notify_ticket_raiser">
+      <tr>
+        <th>Document Name</th>
+        <td>{{ document_name }}</td>
+      </tr>
+      <tr>
+        <th>Document Type</th>
+        <td>{{ document_type }}</td>
+      </tr>
+      <tr>
+        <th>Status</th>
+        <td>Draft</td>
+      </tr>
+      <tr>
+        <th>Initial Note</th>
+        <td>
+          A new support ticket titled <strong>"{{ title }}"</strong> has been created with a default status of <strong>Draft</strong>.
+        </td>
+      </tr>
+
+    </tbody>
+  </table>
+  
+  <div class="prompt">
+    Please <a href="{{ link_to_form }}">click here</a> to complete the ticket by assigning a priority level and specifying the nature of the request (e.g., Bug, Enhancement, Feature Request).
+  </div>
+  
+  <div class="warning">
+    ⚠️ Please note: If you do not complete these details, the ticket will remain in Draft and will not be worked on.
+  </div>
+  

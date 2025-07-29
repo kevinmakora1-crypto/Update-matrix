@@ -143,7 +143,7 @@ class AttendanceCheck(Document):
         self.validate_justification()
 
     def validate_is_replaced_shift_assignment(self):
-        if self.attendance_status and self.attendance_status != "Absent" and self.shift_assignment:
+        if self.attendance_status and self.attendance_status == "Present" and self.shift_assignment:
             if frappe.db.get_value("Shift Assignment", self.shift_assignment, "is_replaced") == 1:
                 frappe.throw(_(f"{self.employee_name} was replaced for this shift and cannot be marked present."))
 
@@ -393,6 +393,7 @@ def get_absentees_on_date(attendance_date):
         filters={
             'docstatus': 1,
             'status': 'Absent',
+            "is_unscheduled":0,
             'attendance_date': attendance_date,
             "employee": ["not in", frappe.db.get_list('Shift Permission', filters={'date': attendance_date}, pluck='employee')]
         },
@@ -408,26 +409,16 @@ def get_absentees_on_date(attendance_date):
 
 def get_attendance_not_marked_shift_employees(attendance_date):
     # Fetch the list of employees, attendance marked for the date and basic roster
-    attendance_list = frappe.db.get_list("Attendance",
+    
+    # Fetch all the employees who is shift working but no attendance marked
+    return frappe.db.get_all("Attendance",
         filters={
             "attendance_date": attendance_date,
             "roster_type": "Basic",
-            "status": ["not in", ["Absent"]],
-            "docstatus": 1
+            "docstatus": 1,
+            'is_unscheduled':1
         },
         fields=["employee"]
-    )
-    employees = [attendance.employee for attendance in attendance_list]
-
-    # Fetch all the employees who is shift working but no attendance marked
-    return frappe.db.get_list("Employee",
-        filters={
-            "shift_working":1,
-            "status":"Active",
-            "name": ["not in", employees],
-            "date_of_joining": ["<=", attendance_date]
-        },
-        fields=["name as employee"]
     )
 
 def insert_attendance_check_records(details, attendance_date, is_unscheduled=False):
@@ -642,6 +633,7 @@ def assign_attendance_manager(pending_approval_attendance_checks):
         filtered_pending_approval_attendance_check = [i for i in pending_approval_attendance_checks if i.name not in existing_todos ]
         create_todos(attendance_manager_user,filtered_pending_approval_attendance_check)
         notify_manager(attendance_manager_user)
+
 
 def schedule_attendance_check():
     frappe.enqueue(create_attendance_check, queue='long', timeout=7000)

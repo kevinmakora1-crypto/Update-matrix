@@ -211,19 +211,23 @@ def update_google_task_on_todo_status_change(doc, method):
         if not task:
             frappe.log_error(title = "Google task creation failed",message = f"Could not create Google Task for ToDo {doc.name}")
             return
-        task_title = doc.custom_google_task_title
-        task_notes = create_description_for_google_todo(doc)
-        date_obj = datetime.strptime(str(doc.date), "%Y-%m-%d")
-        due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
-        task["title"] = task_title
-        task["notes"] = task_notes
-        task["due"] = due_date
-        if doc.status == "Open":
-            task["status"] = "needsAction"
-        else:
-            task["status"] = "completed"
-        result = service.tasks().update(tasklist="@default",task=doc.custom_google_task_id, body=task).execute()
-        return result
+        
+        try:
+            task_title = doc.custom_google_task_title
+            task_notes = create_description_for_google_todo(doc)
+            date_obj = datetime.strptime(str(doc.date), "%Y-%m-%d")
+            due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
+
+            task["title"] = task_title
+            task["notes"] = task_notes
+            task["due"] = due_date
+            task["status"] = "needsAction" if doc.status == "Open" else "completed"
+
+            result = service.tasks().update(tasklist="@default", task=doc.custom_google_task_id, body=task).execute()
+            return result
+        except Exception:
+            frappe.log_error(title="Google Task Update Failed",message=frappe.get_traceback())
+            return
 
 
 def close_google_task_on_todo_delete(doc, method):

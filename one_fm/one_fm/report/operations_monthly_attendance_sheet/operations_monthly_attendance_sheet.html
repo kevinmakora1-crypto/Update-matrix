@@ -4,11 +4,10 @@
   href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap"
   rel="stylesheet"
 />
+<link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@160..700&display=swap" rel="stylesheet">
 
 <style>
   body {
-    font-family: "Cairo", Helvetica, sans-serif;
-    font-size: 10px;
     margin: 20px;
   }
 
@@ -22,8 +21,9 @@
 
   .attendance-sheet-wrapper th,
   .attendance-sheet-wrapper td {
+    font-family: "Readex Pro", sans-serif;;
     border: 1px solid #333;
-    padding: 4px;
+    padding: 2px;
     word-break: break-word;
     text-align: center !important;
     vertical-align: middle !important;
@@ -35,10 +35,13 @@
   }
 
   .title-section > td {
+    font-family: "Cairo", sans-serif;
     border: none !important;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: bold;
+    font-style: italic;
     text-align: center;
+    color: black;
   }
 
   .title-section .logo-cell {
@@ -55,11 +58,11 @@
   }
 
   .signatures td {
-    height: 60px !important;
+    height: 50px !important;
   }
 
   .stamps td {
-    height: 40px !important;
+    height: 50px !important;
   }
 </style>
 
@@ -69,7 +72,7 @@
     <td colspan="5" class="logo-cell">
       <img src="https://one-fm.com/files/ONEFM_Identity.png" alt="one-fm" />
     </td>
-    <td colspan="34">Monthly Attendance Sheet</td>
+    <td colspan="34">{%= __("Monthly Attendance Sheet") %}</td>
     <td colspan="5" class="logo-cell">
       <img src="https://one-fm.com/files/ONEFM_Identity.png" alt="one-fm" />
     </td>
@@ -95,17 +98,17 @@
   {% var monthDays = report.additional_details ? report.additional_details.days : [] %}
 
   {% var totalColumns = 44; %}
-  {% var fixedColumns = 1 + 2 + 2; %} <!-- S.No + Working Days + Days Off -->
+  {% var fixedColumns = 1 + 2 + 1; %} <!-- S.No + Working Days + Days Off -->
   {% var dayColumns = monthDays.length; %}
   {% var dynamicColumns = totalColumns - dayColumns - fixedColumns; %}
 
-  {% var empIdColSpan = Math.floor(dynamicColumns * 3 / 11); %}
-  {% var empNameColSpan = Math.floor(dynamicColumns * 6 / 11); %}
+  {% var empIdColSpan = Math.floor(dynamicColumns * 4 / 12); %}
+  {% var empNameColSpan = Math.floor(dynamicColumns * 6 / 12); %}
   {% var shiftColSpan = dynamicColumns - empIdColSpan - empNameColSpan; %}
 
   <!-- Header -->
   <tr class="header-section">
-    <th rowspan="2">S.No</th>
+    <th rowspan="2">#</th>
     <th rowspan="2" colspan="{{ empIdColSpan }}">Employee ID</th>
     <th rowspan="2" colspan="{{ empNameColSpan }}">Employee Name</th>
     <th rowspan="2" colspan="{{ shiftColSpan }}">Shift</th>
@@ -113,7 +116,7 @@
       <th>{{ monthDays[i].date }}</th>
     {% } %}
     <th rowspan="2" colspan="2">Working Days</th>
-    <th rowspan="2" colspan="2">Days OFF</th>
+    <th rowspan="2">Days Off</th>
   </tr>
 
   <!-- Header Row 2 -->
@@ -124,20 +127,21 @@
   </tr>
 
   <!-- Attendance Data -->
-  {% for row in data %}
+  {% for (var i = 0; i < data.length; i++) { %}
+    {% const row = data[i] %}
     <tr>
-      <td>1</td>
+      <td>{{ i + 1 }}</td>
       <td colspan="{{ empIdColSpan }}">{{ row.employee_id }}</td>
       <td colspan="{{ empNameColSpan }}">{{ row.employee_name }}</td>
       <td colspan="{{ shiftColSpan }}">{{ row.shift }}</td>
-      {% for (var i = 0; i < monthDays.length; i++) { %}
-        {% const status = row[monthDays[i].date]  %}
+      {% for (var j = 0; j < monthDays.length; j++) { %}
+        {% const status = row[monthDays[j].date]  %}
           <td>{{ status == "CDO" ? "DO" : status }}</td>    <!-- Render CDO as DO -->
         {% } %}
       <td colspan="2">{{ row.working_days }}</td>
-      <td colspan="2">{{ row.off_days }}</td>
+      <td>{{ row.off_days }}</td>
     </tr>
-  {% endfor %}
+  {% } %}
 
   <!-- Staff on Duty -->
   <tr class="staff-duty">
@@ -146,7 +150,7 @@
       <td>{{ data.reduce((count, att) => att[monthDays[i].date.toString()] === 'P' ? count + 1 : count, 0) }}</td>
     {% } %}
     <td colspan="2">-</td>
-    <td colspan="2">-</td>
+    <td>-</td>
   </tr>
 
   <!-- Signatures -->

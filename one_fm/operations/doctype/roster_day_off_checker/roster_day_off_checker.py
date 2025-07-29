@@ -233,7 +233,7 @@ def check_roster_day_off():
 
 
 	except Exception:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(title="Error creating day off checkers", message=frappe.get_traceback())
 
 def get_employee_day_off_comparison(employee, start_date, end_date, calculated_day_offs = 0, working_dates = []):
 	date_ranges = split_date_range_for_past_and_future(start_date, end_date)
@@ -431,7 +431,7 @@ def get_day_off_details_of_employees(employees):
 		return roster_day_off_data
 
 	except Exception:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(title="Error fetching employee day off details", message=frappe.get_traceback())
 
 def render_day_off_issues_html(roster_day_off_data):
 	"""

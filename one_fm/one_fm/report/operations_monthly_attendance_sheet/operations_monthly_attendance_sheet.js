@@ -1,6 +1,16 @@
 // Copyright (c) 2025, omar jaber and contributors
 // For license information, please see license.txt
 
+const status_color_map = {
+	"P": "green",
+	"WFH": "green",
+	"A": "red",
+	"OL": "red",
+	"H": "blue",
+	"DO": "blue",
+	"CDO": "blue"
+};
+
 frappe.query_reports["Operations Monthly Attendance Sheet"] = {
 	"filters": [
 		{
@@ -63,6 +73,10 @@ frappe.query_reports["Operations Monthly Attendance Sheet"] = {
 			}
 		},
 	],
+	formatter: function (value, row, column, data, default_formatter) {
+		value = default_formatter(value, row, column, data);
+		return column.colIndex < 3 ? value : `<span style='color:${status_color_map[value]}'>${value}</span>`;
+	},
 	onload: function (report) {
 		return frappe.call({
 			method: "one_fm.one_fm.report.operations_monthly_attendance_sheet.operations_monthly_attendance_sheet.get_attendance_years",

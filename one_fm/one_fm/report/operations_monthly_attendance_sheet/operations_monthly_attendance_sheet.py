@@ -36,8 +36,10 @@ def execute(filters):
 	if not data:
 		frappe.msgprint(_("No attendance records found for this criteria."), alert=True, indicator="orange")
 		return columns, []
+	
+	message = get_message()
 
-	return columns, data
+	return columns, data, message
 
 
 def get_columns(filters):
@@ -89,6 +91,21 @@ def get_data(filters, attendance_map):
 	data = get_rows(employee_details, filters, attendance_map)
 
 	return data
+
+def get_message():
+	message = ""
+	colors = ["green", "red", "green", "red", "blue", "blue", "blue"]
+
+	count = 0
+	for status, abbr in status_map.items():
+		message += f"""
+			<span style='border-left: 2px solid {colors[count]}; padding-right: 12px; padding-left: 5px; margin-right: 3px;'>
+				{status} - {abbr}
+			</span>
+		"""
+		count += 1
+
+	return message
 
 
 def get_attendance_map(filters):

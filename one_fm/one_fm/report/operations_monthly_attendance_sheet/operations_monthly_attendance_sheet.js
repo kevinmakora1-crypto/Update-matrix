@@ -55,7 +55,26 @@ frappe.query_reports["Operations Monthly Attendance Sheet"] = {
 			label: __("Project"),
 			fieldtype: "Link",
 			options: "Project",
-			reqd: 1
+			reqd: 1,
+			on_change: function (report) {
+				report.refresh();
+				const project = report.get_filter("project").get_value();
+				if (project) {
+					frappe.call({
+						method: "frappe.client.get",
+						args: {
+							doctype: "Project",
+							name: project
+						},
+						callback: function(r) {
+							frappe.query_report.additional_details = {
+								...(report.additional_details || {}),
+								client_logo: r.message.project_image || ""
+							};
+						}
+					});
+				}
+			}
 		},
 		{
 			fieldname: "site",

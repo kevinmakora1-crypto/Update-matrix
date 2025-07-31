@@ -109,7 +109,10 @@
         </td>
         <td colspan="34">{%= __("Monthly Attendance Sheet") %}</td>
         <td colspan="5" class="logo-cell">
-          <img src="https://one-fm.com/files/ONEFM_Identity.png" alt="one-fm" />
+          {% const clientLogo = report.additional_details.client_logo || "" %}
+          {% if clientLogo %}
+            <img src="{{ clientLogo }}" alt="Client Logo" />
+          {% } %}
         </td>
       </tr>
 

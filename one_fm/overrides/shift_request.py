@@ -882,12 +882,22 @@ def check_for_roster(doc):
     new_date_range = [i for i in schedule_date_range]
     if new_date_range:
         for date in new_date_range:
-            if frappe.db.exists("Employee Schedule", {'date': date, 'employee': doc.employee, 'employee_availability': 'Working'}):
+            if frappe.db.exists("Employee Schedule", {'date': date, 'employee': doc.employee, 'employee_availability': 'Working'}) and not frappe.db.exists("Shift Assignment", {"docstatus": 1, "start_date": date, "employee": doc.employee}):
+                frappe.db.sql(
+                    '''
+                    DELETE FROM `tabEmployee Schedule` WHERE
+                    employee = %s AND
+                    date = %s AND
+                    employee_availability = 'Working';
+                    ''', (doc.employee, date)
+                )
+
+                continue
+            
+            elif frappe.db.exists("Employee Schedule", {'date': date, 'employee': doc.employee, 'employee_availability': 'Working'}) and frappe.db.exists("Shift Assignment", {"docstatus": 1, "start_date": date, "employee": doc.employee}):
                 return True
-            elif frappe.db.exists("Shift Assignment", {"docstatus": 1, "start_date": date, "employee": doc.employee}):
-                return True
-            else:
-                return False
+            
+        return False
 
 
 @frappe.whitelist()

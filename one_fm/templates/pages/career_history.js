@@ -9,6 +9,16 @@ $(document).ready(function() {
 
 // Career History
 
+var DEFAULT_RANKED_FACTORS = [
+    "Projects & Technology",
+    "Manager & Teams",
+    "Compensation",
+    "Continuing Growth Rate",
+    "Job Stretch & Learning",
+    "Work/Life Balance",
+    "Company Mission & Values (optional addition)"
+];
+
 career_history = Class.extend({
   init: function(){
     var me = this;
@@ -198,10 +208,11 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
     var interestSection = $(`
         <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
             <div class="col-lg-12 col-md-12 mb-3">
-                <h4> ✅ Instructions for Candidate:</h4>
-                <ul>
+                <label class="form-label">Which career factors are most important to you?<span style="color: red">*</span></label>
+                <h6>Instructions for Candidate:</h6>
+                <ul style="font-size: smaller; font-weight: bold;">
                     <li>Think about what really drives your career decisions.</li>
-                    <li>Drag the rows to order them from 1 (most important) to 7 (least important).</li>
+                    <li>Please drag and drop the rows in the table below to rank the career factors from 1 (most important) to 7 (least important) based on what matters most to you.</li>
                     <li>There are no right or wrong answers — your response helps us understand how to align the role with your career goals.</li>
                 </ul>
                 <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden sortable-table" name="rank_and_factors">
@@ -524,12 +535,21 @@ getRankedFactorsData:function() {
     }
     return rankedFactors;
 },
+
   submit_career_history: function() {
     // Submit Career History
     var me = this;
     $('.btn-submit-career-history').click(function(){
       var {career_histories, interest_reason} =  me.get_details_from_form();
       var rank_and_factors = me.getRankedFactorsData()
+      
+      var isDefaultOrder = rank_and_factors.every(function(row, idx) {
+            return row.factor === DEFAULT_RANKED_FACTORS[idx];
+        });
+
+      if (isDefaultOrder) {
+            return frappe.msgprint(frappe._("Please drag and rank the factors according to your preference before submitting."));
+        }
       var all_best_references = me.get_all_best_references();
       if(!validateBestReferencesAndColleague(all_best_references)){
         return frappe.msgprint(frappe._("Kindly fill the best reference for the most recent job"));

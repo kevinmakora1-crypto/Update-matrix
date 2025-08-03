@@ -113,25 +113,31 @@ def create_google_task_on_todo_creation_in_erp(doc, method):
 
     if not employee_email:
         frappe.throw(_("No assigned user found for this ToDo"))
-    service = get_google_task_service(employee_email)
-    if method=="on_update":
-        pev_emp_email_service = before_save(doc,method)
-        if doc.custom_google_task_id:
-            check_google_task_exists(doc.custom_google_task_id,pev_emp_email_service)
-    task_notes = create_description_for_google_todo(doc)
-    task_title = doc.custom_google_task_title
-    date_obj = datetime.strptime(str(doc.date), "%Y-%m-%d")
-    due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
-    task_body = {
-        "title": task_title,
-        "notes": task_notes,
-        "due": due_date
-    }
-    result = service.tasks().insert(tasklist="@default", body=task_body).execute()
-    task_id = result["id"]
-    doc.custom_google_task_id = task_id
-    doc.save()
-    return result
+
+    try:
+        service = get_google_task_service(employee_email)
+        if method=="on_update":
+            pev_emp_email_service = before_save(doc,method)
+            if doc.custom_google_task_id:
+                check_google_task_exists(doc.custom_google_task_id,pev_emp_email_service)
+        task_notes = create_description_for_google_todo(doc)
+        task_title = doc.custom_google_task_title
+        date_obj = datetime.strptime(str(doc.date), "%Y-%m-%d")
+        due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
+        task_body = {
+            "title": task_title,
+            "notes": task_notes,
+            "due": due_date
+        }
+        result = service.tasks().insert(tasklist="@default", body=task_body).execute()
+        task_id = result["id"]
+        doc.custom_google_task_id = task_id
+        doc.save()
+        return result
+    except Exception as e:
+        frappe.log_error(message = str(e),title = f"Error while create google task from ToDo for {employee_email}")
+
+    return
 
 def check_google_task_exists(task_id,pev_emp_service=None):
     if pev_emp_service:
@@ -205,19 +211,23 @@ def update_google_task_on_todo_status_change(doc, method):
         if not task:
             frappe.log_error(title = "Google task creation failed",message = f"Could not create Google Task for ToDo {doc.name}")
             return
-        task_title = doc.custom_google_task_title
-        task_notes = create_description_for_google_todo(doc)
-        date_obj = datetime.strptime(str(doc.date), "%Y-%m-%d")
-        due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
-        task["title"] = task_title
-        task["notes"] = task_notes
-        task["due"] = due_date
-        if doc.status == "Open":
-            task["status"] = "needsAction"
-        else:
-            task["status"] = "completed"
-        result = service.tasks().update(tasklist="@default",task=doc.custom_google_task_id, body=task).execute()
-        return result
+        
+        try:
+            task_title = doc.custom_google_task_title
+            task_notes = create_description_for_google_todo(doc)
+            date_obj = datetime.strptime(str(doc.date), "%Y-%m-%d")
+            due_date = date_obj.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc).isoformat()
+
+            task["title"] = task_title
+            task["notes"] = task_notes
+            task["due"] = due_date
+            task["status"] = "needsAction" if doc.status == "Open" else "completed"
+
+            result = service.tasks().update(tasklist="@default", task=doc.custom_google_task_id, body=task).execute()
+            return result
+        except Exception:
+            frappe.log_error(title="Google Task Update Failed",message=frappe.get_traceback())
+            return
 
 
 def close_google_task_on_todo_delete(doc, method):
@@ -311,7 +321,7 @@ def sync_google_tasks_for_users(user_emails=[]):
 
             all_google_tasks.extend(user_tasks)
         except Exception as e:
-            frappe.log_error(str(e), f"Failed to fetch tasks for user {user_email}")
+            frappe.log_error(message=str(e), title=f"Failed to fetch tasks for user {user_email}")
 
     # Iterate through all Google tasks and sync them to ERP ToDo
     for google_task in all_google_tasks:

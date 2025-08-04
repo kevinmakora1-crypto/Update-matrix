@@ -24,15 +24,6 @@ def get_employee_incentive_custom_fields():
                 "label": "Wage",
                 "depends_on": "rewarded_by",
                 "read_only": 1
-            },
-            {
-                "fieldname": "workflow_state",
-                "fieldtype": "Link",
-                "insert_after": None,
-                "label": "Workflow State",
-                "options": "Workflow State",
-                "hidden": 1,
-                "no_copy": 1
             }
         ]
     }

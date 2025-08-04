@@ -232,16 +232,6 @@ def get_shift_request_custom_fields():
                 "depends_on": "eval:doc.purpose != 'Assign Day Off'"
             },
             {
-                "fieldname": "workflow_state",
-                "fieldtype": "Link",
-                "label": "Workflow State",
-                "insert_after": "shift_type",
-                "options": "Workflow State",
-                "hidden": 1,
-                "no_copy": 1,
-                "allow_on_submit": 1
-            },
-            {
                 "fieldname": "operations_shift",
                 "fieldtype": "Link",
                 "label": "Operations Shift",

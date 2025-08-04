@@ -24,6 +24,20 @@ def get_item_group_custom_fields():
                 "fieldname": "one_fm_item_group_descriptions",
                 "fieldtype": "Table",
                 "insert_after": "one_fm_item_group_descriptions_sb"
+            },
+            {
+                "label": "Is Fixed Asset",
+                "fieldname": "is_fixed_asset",
+                "insert_after": "column_break_5",
+                "fieldtype": "Check"
+            },
+            {
+                "label": "Asset Category",
+                "fieldname": "asset_category",
+                "insert_after": "is_fixed_asset",
+                "fieldtype": "Link",
+                "options": "Asset Category",
+                "depends_on": "is_fixed_asset"
             }
         ]
     }

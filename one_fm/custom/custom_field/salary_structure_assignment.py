@@ -2,25 +2,35 @@ def get_salary_structure_assignment_custom_fields():
     return {
         "Salary Structure Assignment": [
             {
-                "fieldname": "custom_payroll_type",
-                "fieldtype": "Select",
-                "label": "Payroll Type",
-                "insert_after": "salary_structure",
-                "options": "\nBasic\nOver-Time"
-            },
-            {
-                "fieldname": "custom_salary_structure_assignment_details",
+                "fieldname": "indemnity_calculation_section",
                 "fieldtype": "Section Break",
-                "label": "Salary Structure Assignment Details",
-                "insert_after": "custom_payroll_type",
-                "collapsible": 1
+                "label": "Indemnity Calculation",
+                "insert_after": "variable"
             },
             {
-                "fieldname": "custom_salary_component_assignment_detail",
+                "fieldname": "salary_structure_components",
                 "fieldtype": "Table",
-                "label": "Salary Component Assignment Detail",
-                "insert_after": "custom_salary_structure_assignment_details",
-                "options": "Salary Component Assignment Detail"
+                "label": "Salary Structure Components",
+                "insert_after": "indemnity_calculation_section",
+                "options": "Salary Component Table"
+            },
+            {
+                "fieldname": "section_break_18",
+                "fieldtype": "Section Break",
+                "label": "Indemnity Calculation",
+                "insert_after": "salary_structure_components"
+            },
+            {
+                "fieldname": "indemnity_amount",
+                "fieldtype": "Currency",
+                "label": "Indemnity Amount",
+                "insert_after": "section_break_18"
+            },
+            {
+                "fieldname": "leave_allocation_amount",
+                "fieldtype": "Currency",
+                "label": "Leave Allocation Amount",
+                "insert_after": "indemnity_amount"
             }
         ]
     }

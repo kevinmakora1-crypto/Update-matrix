@@ -165,6 +165,12 @@ def get_job_opening_custom_fields():
                 "options": "ERF",
                 "insert_after": "column_break_5",
                 "reqd": 1
+            },
+            {
+                "label": "Description in Arabic",
+                "fieldname": "description_in_arabic",
+                "insert_after": "description",
+                "fieldtype": "Text Editor"
             }
         ]
     }

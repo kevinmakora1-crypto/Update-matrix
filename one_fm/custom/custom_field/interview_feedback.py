@@ -17,6 +17,14 @@ def get_interview_feedback_custom_fields():
                 "fieldname": "section_break_11",
                 "fieldtype": "Section Break",
                 "insert_after": "interview_question_assessment"
+            },
+            {
+                "label": "Career History",
+                "fieldname": "career_history",
+                "insert_after": "interview_round",
+                "fieldtype": "Link",
+                "options": "Career History",
+                "read_only": 1
             }
         ]
     }

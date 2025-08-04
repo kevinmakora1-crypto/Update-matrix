@@ -352,7 +352,7 @@ def assign_responsibilities(leave_application):
 		reliever_assignment.leave_application = leave_application
 		reliever_assignment.save()
 	except Exception:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(title = 'ERROR ASSIGNING RECORDS',message = frappe.get_traceback())
 
 
 class ReassignRelieverAssignment(Document):
@@ -609,4 +609,4 @@ def reassign_responsibilities(leave_application):
 		reassign_responsiobility = ReassignRelieverAssignment(leave_application=leave_application)
 		reassign_responsiobility.reassign()
 	except Exception:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(title = "ERROR CREATING RELIEVER ASSIGNMENT",message = frappe.get_traceback())

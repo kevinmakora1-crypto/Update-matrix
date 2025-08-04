@@ -631,7 +631,7 @@ def notify_employee(doc, method):
 
 @frappe.whitelist()
 def leave_application_on_cancel(doc, method):
-    today = nowdate()
+    today = getdate()
     if doc.from_date < today :
         frappe.db.set_value("Employee",doc.employee, "status","Active")
     update_employee_hajj_status(doc, method)
@@ -2019,7 +2019,7 @@ def notify_payroll_officer(doc):
         else:
             frappe.throw("Please add Payroll Officer in the HR and Payroll Additional Settings")
     except:
-        frappe.log_error(frappe.get_traceback(), "Error while sending notification of local transfer")
+        frappe.log_error(message = frappe.get_traceback(),title = "Error while sending notification of local transfer")
 
 
 def send_roster_report():
@@ -3418,7 +3418,7 @@ def translate_words(word: str, target_language_code: str="ar") -> str:
             translated = GoogleTranslator(source='auto', target=target_language_code).translate(word)
             return translated
         except:
-            frappe.log_error(frappe.get_traceback(), "Error while translating word")
+            frappe.log_error(message = frappe.get_traceback(), title = "Error while translating word")
             return word
     return word
 
@@ -3511,7 +3511,7 @@ def get_current_shift(employee):
             return False
         return False
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Error while getting current shift")
+        frappe.log_error(message = frappe.get_traceback(), title= "Error while getting current shift")
         return False
 
 
@@ -3694,60 +3694,79 @@ def send_work_anniversary_reminders():
                     reminder_text = get_work_anniversary_reminder_text(others)
                     send_work_anniversary_reminder(person_email, reminder_text, others, message, sender)
 
+
+
 def set_employee_status():
     from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import assign_responsibilities ,reassign_responsibilities
     # Get today's date
     current_date = getdate(today())
+    
 
-    # Fetch approved leave applications where `from_date` is today or earlier, along with the employee's status
-    leave_applications = frappe.get_all('Leave Application',
+
+    # Fetch all relevant leave applications
+    all_leaves = frappe.get_all('Leave Application',
         filters={
             'status': 'Approved',
             'from_date': ['<=', current_date],
             'to_date': ['>=', add_days(current_date, -1)],
-            "leave_type": ["IN", fetch_leave_types_update_employee_status()]
+            "leave_type": ["IN", fetch_leave_types_update_employee_status()],
+            "docstatus":1
         },
-        fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']  # Fetch employee status directly
+        fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']
     )
 
-    if not leave_applications:
+    if not all_leaves:
         frappe.log_error(_("No employees found with approved leave applications for today or earlier."))
         return
+
+    # Split into leaves_ending and leaves_starting
+    leaves_ending = [leave for leave in all_leaves if current_date == add_days(getdate(leave['to_date']), 1) and leave['status'] == "Vacation"]
+    leaves_starting = [leave for leave in all_leaves if current_date == getdate(leave['from_date']) ] 
 
     employees_set_to_vacation = 0
     employees_set_to_active = 0
     try:
-        for leave in leave_applications:
+        # Process leaves_ending first so employees with concurrent leaves are set to 'Active' before setting Back to 'Vacation'
+        for leave in leaves_ending:
             employee = leave['employee']
-            status =  leave['status']
+            status = leave['status']
             from_date = leave['from_date']
             leave_application = leave['name']
-            to_date =  leave['to_date']
+            to_date = leave['to_date']
             reliever = leave.get('custom_reliever_', None)
-            if current_date == getdate(from_date) and status == "Active":
-                frappe.db.set_value('Employee', employee, 'status', 'Vacation')
-                if reliever:
-                    frappe.enqueue(assign_responsibilities, leave_application=leave_application)
-
-                frappe.db.sql(
-                    '''
-                    DELETE FROM `tabEmployee Schedule` WHERE
-                    employee = %s AND
-                    date BETWEEN %s AND %s;
-                    ''', (employee, from_date, to_date)
-                )
-                employees_set_to_vacation += 1
-            elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":
-                frappe.db.set_value('Employee', employee, 'status', 'Active')
-                if reliever and frappe.db.exists("Reliever Assignment", {"name": leave_application}):
-                    frappe.enqueue(reassign_responsibilities, leave_application=leave_application)
+            frappe.db.set_value('Employee', employee, 'status', 'Active')
+            if reliever and frappe.db.exists("Reliever Assignment", {"leave_application": leave_application}):
+                # frappe.enqueue(reassign_responsibilities, leave_application=leave_application)
+                reassign_responsibilities(leave_application=leave_application)
                 employees_set_to_active += 1
+        frappe.db.commit() 
+        # Process leaves_starting
+        for leave in leaves_starting:
+            employee = leave['employee']
+            status = leave['status']
+            from_date = leave['from_date']
+            leave_application = leave['name']
+            to_date = leave['to_date']
+            reliever = leave.get('custom_reliever_', None)
+            frappe.db.set_value('Employee', employee, 'status', 'Vacation')
+            if reliever:
+                # frappe.enqueue(assign_responsibilities, leave_application=leave_application)
+                assign_responsibilities(leave_application=leave_application)
+                employees_set_to_vacation += 1
+            frappe.db.sql(
+                '''
+                DELETE FROM `tabEmployee Schedule` WHERE
+                employee = %s AND
+                date BETWEEN %s AND %s;
+                ''', (employee, from_date, to_date)
+            )
+            
 
         frappe.db.commit()
         frappe.log(_("Employee statuses updated: {0} set to 'Vacation', {1} set to 'Active'.")
                 .format(employees_set_to_vacation, employees_set_to_active))
     except:
-            frappe.log_error(frappe.get_traceback(), "Error occurred while trying to reassign duties")
+        frappe.log_error(message = frappe.get_traceback(),title= "Error occurred while trying to reassign duties")
 
 
 
@@ -3764,7 +3783,7 @@ def is_holiday(employee, date=None, raise_exception=True,include_weekly_off = Fa
             return ((True, message,holidays.weekly_off) if include_weekly_off else (True, message))
         return ((False,"",None) if include_weekly_off else (False, ""))
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Error while validating Holiday")
+        frappe.log_error(message = frappe.get_traceback(), title = "Error while validating Holiday")
         return ((False,"",None) if include_weekly_off else (False, ""))
 
 
@@ -3899,7 +3918,7 @@ def call_to_get_assurance_level(employees):
                 data = response.json()
                 return data.get("data", None)
             else:
-                frappe.log_error(frappe.get_traceback(), response.json())
+                frappe.log_error(title = "ERROR CALLING ASSURANCE API" ,message = frappe.get_traceback())
                 return {"error": response.status_code, "title": response.json()}
         else:
             url = f"https://staging-apiwrapper.one-fm.com/api/DigitalSigning/BulkCheckMobileIdentity"
@@ -3916,14 +3935,14 @@ def call_to_get_assurance_level(employees):
                         all_results.extend(batch_result)
                         frappe.msgprint(f"Batch {i} sent successfully.")
                     else:
-                        frappe.log_error(frappe.get_traceback(), response.json())
+                        frappe.log_error(message = frappe.get_traceback(), title = "Error calling assurance API")
                         return {"error": response.status_code, "title": response.json()}
                 except Exception as e:
-                        frappe.log_error(frappe.get_traceback(), str(e))
+                        frappe.log_error(message = frappe.get_traceback(), title = "Error calling assurance API")
                         return {"error": str(e), "title": "API call failed"}
             return all_results
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(),f"An error occurred while making the API call: {str(e)}")
+        frappe.log_error(message = frappe.get_traceback(),title = f"An error occurred while making the API call: {str(e)}")
         return {"error": str(e), "title": "API Call Failed"}
 
 

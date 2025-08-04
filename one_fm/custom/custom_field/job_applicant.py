@@ -1393,6 +1393,7 @@ def get_job_applicant_custom_fields():
                 "fieldtype": "Link",
                 "insert_after": "one_fm_erf",
                 "label": "Project",
+                "options": "Project",
                 "read_only": 1
             },
             {

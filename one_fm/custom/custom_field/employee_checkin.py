@@ -133,7 +133,42 @@ def get_employee_checkin_custom_fields():
                 "fieldname": "shift_permission",
                 "fieldtype": "Link",
                 "insert_after": "shift_type",
-                "label": "Shift Permission"
+                "label": "Shift Permission",
+                "options": "Shift Permission"
+            },
+            {
+                "fieldname": "column_break_15",
+                "insert_after": "replaced_employee_checkin",
+                "fieldtype": "Column Break"
+            },
+            {
+                "label": "Shift Type",
+                "fieldname": "shift_type",
+                "insert_after": "roster_type",
+                "fieldtype": "Data",
+                "fetch_from": "shift_assignment.shift_type",
+                "fetch_if_empty": 1,
+                "depends_on": "eval:doc.shift_assignment",
+                "read_only": 1,
+                "ignore_user_permissions": 1
+            },
+            {
+                "label": "Shift Details",
+                "fieldname": "shift_details",
+                "insert_after": "shift_actual_end",
+                "fieldtype": "Section Break"
+            },
+            {
+                "label": "Operations Shift",
+                "fieldname": "operations_shift",
+                "insert_after": "shift_assignment",
+                "fieldtype": "Link",
+                "options": "Operations Shift",
+                "fetch_from": "shift_assignment.shift",
+                "fetch_if_empty": 1,
+                "depends_on": "eval:doc.shift_assignment",
+                "read_only": 1,
+                "ignore_user_permissions": 1
             }
         ]
     }

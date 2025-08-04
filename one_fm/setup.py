@@ -47,7 +47,6 @@ from one_fm.custom.custom_field.interview import get_interview_custom_fields
 from one_fm.custom.custom_field.interview_feedback import get_interview_feedback_custom_fields
 from one_fm.custom.custom_field.interview_round import get_interview_round_custom_fields
 from one_fm.custom.custom_field.item import get_item_custom_fields
-from one_fm.custom.custom_field.item_barcode import get_item_barcode_custom_fields
 from one_fm.custom.custom_field.item_group import get_item_group_custom_fields
 from one_fm.custom.custom_field.item_price import get_item_price_custom_fields
 from one_fm.custom.custom_field.job_applicant import get_job_applicant_custom_fields
@@ -128,7 +127,6 @@ from one_fm.custom.property_setter.shift_type import get_shift_type_properties
 from one_fm.custom.property_setter.skill_assessment import get_skill_assessment_properties
 from one_fm.custom.property_setter.stock_entry_detail import get_stock_entry_detail_properties
 from one_fm.custom.property_setter.task import get_task_properties
-from one_fm.custom.property_setter.wiki_page import get_wiki_page_properties
 from one_fm.custom.property_setter.delivery_note import get_delivery_note_properties
 from one_fm.custom.property_setter.delivery_note_item import get_delivery_note_item_properties
 from one_fm.custom.property_setter.depreciation_schedule import get_depreciation_schedule_properties
@@ -248,7 +246,6 @@ def get_custom_fields():
 	custom_fields.update(get_job_offer_custom_fields())
 	custom_fields.update(get_project_custom_fields())
 	custom_fields.update(get_item_custom_fields())
-	custom_fields.update(get_item_barcode_custom_fields())
 	custom_fields.update(get_timesheet_custom_fields())
 	custom_fields.update(get_help_category_custom_fields())
 	custom_fields.update(get_project_type_custom_fields())
@@ -368,7 +365,6 @@ def get_field_properties():
 	field_properties.extend(get_timesheet_detail_properties())
 	field_properties.extend(get_todo_properties())
 	field_properties.extend(get_vehicle_properties())
-	field_properties.extend(get_wiki_page_properties())
 	field_properties.extend(get_warehouse_properties())
 
 	return field_properties

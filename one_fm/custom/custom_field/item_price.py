@@ -2,6 +2,12 @@ def get_item_price_custom_fields():
     return {
         "Item Price": [
             {
+                "label": "Post Detail",
+                "fieldname": "post_detail",
+                "insert_after": "item_description",
+                "fieldtype": "Section Break"
+            },
+            {
                 "fieldname": "gender",
                 "fieldtype": "Link",
                 "insert_after": "post_detail",

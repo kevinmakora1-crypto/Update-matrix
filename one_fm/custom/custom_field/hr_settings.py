@@ -16,6 +16,14 @@ def get_hr_settings_custom_fields():
                 "label": "Payroll Notifications Email",
                 "description": "All payroll related notifications will be forwarded to this email id.",
                 "translatable": 1
+            },
+            {
+                "label": "Annual Leave Threshold",
+                "fieldname": "annual_leave_threshold",
+                "insert_after": "auto_leave_encashment",
+                "fieldtype": "Int",
+                "default": "60",
+                "description": "The minimum number of annual leave days an employee must accumulate before a leave acknowledgment form is automatically generated."
             }
         ]
     }

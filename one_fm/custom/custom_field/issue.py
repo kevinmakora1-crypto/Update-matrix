@@ -36,7 +36,7 @@ def get_issue_custom_fields():
                 "label": "WhatsApp Number",
                 "fieldname": "whatsapp_number",
                 "insert_after": "communication_medium",
-                "fieldtype": "Data"
+                "fieldtype": "Data",
                 "depends_on": "eval:doc.communication_medium == 'WhatsApp'",
                 "mandatory_depends_on": "eval:doc.communication_medium == 'WhatsApp'",
                 "read_only": 1

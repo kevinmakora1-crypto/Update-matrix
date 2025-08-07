@@ -8,10 +8,11 @@ from one_fm.processor import is_user_id_company_prefred_email_in_employee, sende
 from googleapiclient.discovery import build
 from frappe import _
 from google.oauth2 import service_account
+from frappe.desk.doctype.todo.todo import ToDo as FrappeToDo
 
-
-class ToDo(Document):
+class ToDo(FrappeToDo):
     def on_trash(self):
+        super().on_trash()
         close_google_task_on_todo_delete(self, "on_trash")
 
 def validate_todo(doc, method):

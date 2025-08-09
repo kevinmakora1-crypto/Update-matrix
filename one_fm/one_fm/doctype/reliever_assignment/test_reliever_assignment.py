@@ -5,21 +5,26 @@ from __future__ import unicode_literals
 import frappe
 import unittest
 from one_fm.utils import set_employee_status
+from frappe.utils import nowdate, add_to_date, cstr, cint, getdate, get_link_to_form
 
 
 
 class TestRelieverAssignment(unittest.TestCase):
     def setUp(self):
-        # Create Company and Holiday List
+        self.leave_start_date = frappe.utils.getdate()
+        self.leave_end_date = frappe.utils.add_days(self.leave_start_date, 1)
+        self.resumption_date = frappe.utils.add_days(self.leave_start_date, 2)
         
+        
+        # Create Company and Holiday List
+        frappe.flags.in_test = 1
         self.holiday_list = frappe.get_doc({
             "doctype": "Holiday List",
             "holiday_list_name": "Test Holiday List",
             "from_date": "2025-01-01",
             "to_date": "2025-12-31",
             "holidays": [
-                {"description": "New Year", "holiday_date": "2025-01-01"},
-                {"description": "Republic Day", "holiday_date": "2025-01-26"}
+                {"description": "New Year", "holiday_date": "2025-01-01"}
             ]
         }).insert(ignore_permissions=True)
         self.company = frappe.get_doc({
@@ -119,13 +124,35 @@ class TestRelieverAssignment(unittest.TestCase):
             "one_fm_basic_salary": 100
         }).insert(ignore_permissions=True)
 		
-        # Create Salary Components
+        # Create Contacts and Users
+        self.user_contact1 = frappe.get_doc({
+            "doctype": "Contact",
+            "first_name": "Alice"})
+        self.user_contact2 = frappe.get_doc({
+            "doctype": "Contact",
+            "first_name": "Bob"})
+        self.user_contact3 = frappe.get_doc({
+            "doctype": "Contact",
+            "first_name": "Charlie"})
         
-        # Create Salary Structure
+        self.user_contact1.insert(ignore_permissions=True)
+        
+        self.user_contact1.append('email_ids', {
+            "email_id": "alice@example.com"})
+        
+        self.user_contact2.insert(ignore_permissions=True)
+        self.user_contact2.append('email_ids', {
+            "email_id": "bob@example.com",})
+        
+        self.user_contact3.insert(ignore_permissions=True)
+        self.user_contact3.append('email_ids', {
+            "email_id": "charlie@example.com"})
+        
         self.user1 = frappe.get_doc({
             "doctype": "User",
             "email": "alice@example.com",
             "first_name": "Alice",
+            "last_name": "Rambo",
             "enabled": 1
         }).insert(ignore_permissions=True)
         self.employee1.user_id = self.user1.name
@@ -162,6 +189,7 @@ class TestRelieverAssignment(unittest.TestCase):
         # Create Leave Types
         self.leave_type = frappe.get_doc({
             "doctype": "Leave Type",
+            "one_fm_is_paid_annual_leave":0,
             "leave_type_name": "Annual Leave",
             "custom_update_employee_status_to_vacation": 1,
             "is_annual_leave": 1
@@ -172,30 +200,26 @@ class TestRelieverAssignment(unittest.TestCase):
             "doctype": "Leave Allocation",
             "employee": self.employee1.name,
             "leave_type": self.leave_type.name,
-            "from_date": "2025-01-01",
-            "to_date": "2025-12-31",
+            "from_date": add_to_date(getdate(),days=-10),
+            "to_date": add_to_date(getdate(),year=1),
             "new_leaves_allocated": 30
         }).insert(ignore_permissions=True)
         self.leave_allocation.submit()
-
+        
+        frappe.db.set_value("HR and Payroll Additional Settings",None, "default_leave_application_operator", self.employee3.user_id)
         # Create Leave Application
         self.leave_application = frappe.get_doc({
             "doctype": "Leave Application",
             "employee": self.employee1.name,
             "leave_type": self.leave_type.name,
-            "from_date": "2025-07-01",
-            "to_date": "2025-07-06",
+            "from_date": self.leave_start_date,
+            "to_date": self.leave_end_date,
+            "resumption_date": self.resumption_date,
             "status": "Approved",
             "workflow_state": "Approved",
             "custom_reliever_": self.employee2.name
         }).insert(ignore_permissions=True)
 
-        # Create a sample ToDo
-        self.todo = frappe.get_doc({
-            "doctype": "ToDo",
-            "description": "Test ToDo for Reliever Assignment",
-            "allocated_to": self.employee1.user_id if hasattr(self.employee1, 'user_id') else None
-        }).insert(ignore_permissions=True)
 
     def test_set_employee_status(self):
         # Simulate set_employee_status
@@ -203,9 +227,24 @@ class TestRelieverAssignment(unittest.TestCase):
         # Reload employee1 and check status
         self.employee1.reload()
         self.assertEqual(self.employee1.status, "Vacation")
-
+        
+    def cancel_assignments(self):
+        #Cancel The salary structure assignment
+        all_user_perms = frappe.get_all("User Permission", filters={"allow": "Employee"})
+        for each in all_user_perms:
+            user_doc = frappe.get_doc("User Permission", each.name)
+            user_doc.delete()
+        all_strucs = frappe.get_all("Salary Structure Assignment", filters={"dostatus": 1})
+        for each in all_strucs:
+            doc = frappe.get_doc("Salary Structure Assignment", each.name)
+            doc.cancel()
+            doc.delete()
+        #Cancel the 
+            
     def tearDown(self):
         # Clean up created records
+        frappe.db.set_value("HR and Payroll Additional Settings",None, "default_leave_application_operator",None)
+        self.cancel_assignments()
         for doc in [self.leave_application, self.leave_allocation, self.leave_type, self.salary_structure, self.basic, self.housing, self.employee1, self.employee2, self.employee3, self.department1, self.department2, self.holiday_list, self.company, self.todo]:
             try:
                 if doc.docstatus == 1:

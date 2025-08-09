@@ -3700,9 +3700,6 @@ def set_employee_status():
     from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import assign_responsibilities ,reassign_responsibilities
     # Get today's date
     current_date = getdate(today())
-    
-
-
     # Fetch all relevant leave applications
     all_leaves = frappe.get_all('Leave Application',
         filters={

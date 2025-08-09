@@ -10,6 +10,21 @@ from frappe.utils import nowdate, add_to_date, cstr, cint, getdate, get_link_to_
 
 
 class TestRelieverAssignment(unittest.TestCase):
+    def create_gender(self):
+        frappe.get_doc({
+        "doctype": "Gender",
+        "gender":"Female",
+        "custom_maternity_required":0,
+        }).insert(ignore_permissions=True)
+        
+        frappe.get_doc({
+        "doctype": "Gender",
+        "gender":"Male",
+        "custom_maternity_required":0,
+        }).insert(ignore_permissions=True)
+        
+        frappe.db.commit()
+            
     def setUp(self):
         self.leave_start_date = frappe.utils.getdate()
         self.leave_end_date = frappe.utils.add_days(self.leave_start_date, 1)
@@ -50,6 +65,8 @@ class TestRelieverAssignment(unittest.TestCase):
             "company": self.company.name
         }).insert(ignore_permissions=True)
         
+        
+        self.create_gender()
         self.basic = frappe.get_doc({
             "doctype": "Salary Component",
             "salary_component_abbr":"B",

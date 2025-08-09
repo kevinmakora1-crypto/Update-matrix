@@ -17,6 +17,7 @@ class TestRelieverAssignment(unittest.TestCase):
         
         
         # Create Company and Holiday List
+        frappe.local.flags.ignore_chart_of_accounts = 1
         frappe.flags.in_test = 1
         self.holiday_list = frappe.get_doc({
             "doctype": "Holiday List",

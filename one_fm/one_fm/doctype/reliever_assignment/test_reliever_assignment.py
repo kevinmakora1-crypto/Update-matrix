@@ -49,9 +49,14 @@ class TestRelieverAssignment(unittest.TestCase):
             "department_code":"IDOUEO1234",
             "company": self.company.name
         }).insert(ignore_permissions=True)
-        self.basic = frappe.get_doc("Salary Component","Basic")
-        #Because Basic is created by default, we can use it directly
-  
+        
+        self.basic = frappe.get_doc({
+            "doctype": "Salary Component",
+            "salary_component_abbr":"B",
+            "salary_component": "Basic",
+            "type": "Earning",
+            "company": self.company.name
+        }).insert(ignore_permissions=True)
         self.housing = frappe.get_doc({
             "doctype": "Salary Component",
             "salary_component_abbr":"H",

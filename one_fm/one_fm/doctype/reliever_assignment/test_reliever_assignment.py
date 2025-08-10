@@ -224,7 +224,7 @@ class TestRelieverAssignment(unittest.TestCase):
             "employee": self.employee1.name,
             "leave_type": self.leave_type.name,
             "from_date": add_to_date(getdate(),days=-10),
-            "to_date": add_to_date(getdate(),year=1),
+            "to_date": add_to_date(getdate(),years=1),
             "new_leaves_allocated": 30
         }).insert(ignore_permissions=True)
         self.leave_allocation.submit()

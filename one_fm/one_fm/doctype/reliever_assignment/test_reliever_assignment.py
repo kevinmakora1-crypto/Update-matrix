@@ -230,6 +230,10 @@ class TestRelieverAssignment(unittest.TestCase):
         self.leave_allocation.submit()
         
         frappe.db.set_value("HR and Payroll Additional Settings",None, "default_leave_application_operator", self.employee3.user_id)
+        is_active_workflow = frappe.get_all("Workflow", filters={"is_active": 1, "document_type": "Leave Application"}, fields=["name"])
+        if is_active_workflow:
+            #Disable the workflow for Leave Application
+            frappe.db.set_value("Workflow", is_active_workflow[0].name, "is_active", 0)
         # Create Leave Application
         self.leave_application = frappe.get_doc({
             "doctype": "Leave Application",

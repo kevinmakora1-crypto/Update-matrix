@@ -41,8 +41,5 @@ def execute():
                 
         except Exception as e:
             frappe.log_error(f"Error assigning responsibilities for {name}: {str(e)}")
-        else:
-            continue
-
     
     frappe.db.commit()

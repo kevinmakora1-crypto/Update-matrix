@@ -174,7 +174,7 @@ def create_description_for_google_todo(doc):
         Reference DocType: {todo_doc_type}
         Reference Name: {todo_reference_link}
         """
-        if warning_msg.strip() not in task_notes:
+        if warning_msg not in task_notes:
             task_notes += warning_msg
     return task_notes
 
@@ -235,7 +235,7 @@ def update_google_task_on_todo_status_change(doc, method):
 
 def close_google_task_on_todo_delete(doc):
     """Mark Google Task as completed when ToDo is deleted. Logs errors and returns status."""
-    if not getattr(doc, "custom_google_task_id", None):
+    if not doc.custom_google_task_id:
         return {"status": "skipped", "message": "No Google Task ID"}
     employee_email = getattr(doc, "allocated_to", None)
     if not employee_email:

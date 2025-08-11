@@ -107,105 +107,107 @@
 } %}
 {% var pages = chunk(data, CHUNK_SIZE); %}
 
-{% for (var p = 0; p < pages.length; p++) { %}
-  <div class="attendance-page">
-    <table class="attendance-sheet-wrapper">
-      <!-- Title Row -->
-      <tr class="title-section">
-        <td colspan="5" class="logo-cell">
-          <img src="https://one-fm.com/files/ONEFM_Identity.png" alt="one-fm" />
-        </td>
-        <td colspan="34">{%= __("Monthly Attendance Sheet") %}</td>
-        <td colspan="5" class="logo-cell">
-          {% const clientLogo = report.additional_details.client_logo || "" %}
-          {% if clientLogo %}
-            <img src="{{ clientLogo }}" alt="Client Logo" />
-          {% } %}
-        </td>
-      </tr>
-
-      <!-- Meta Info -->
-      <tr class="meta-section">
-        <td colspan="5" class="meta-cell"><strong>Project Name:</strong></td>
-        <td colspan="13" class="meta-cell">{{ report.get_filter_value("project") }}</td>
-        <td colspan="4" class="meta-cell"><strong>Site Name:</strong></td>
-        <td colspan="13" class="meta-cell">{{ report.get_filter_value("site") }}</td>
-        <td colspan="3" class="meta-cell"><strong>Month:</strong></td>
-        <td colspan="6" class="meta-cell">{{ selectedMonth }} {{ report.get_filter_value("year") }}</td>
-      </tr>
-
-      <!-- Header -->
-      <tr class="header-section">
-        <th rowspan="2">#</th>
-        <th rowspan="2" colspan="{{ empIdColSpan }}">Employee ID</th>
-        <th rowspan="2" colspan="{{ empNameColSpan }}">Employee Name</th>
-        <th rowspan="2" colspan="{{ shiftColSpan }}">Shift</th>
-        {% for (var i = 0; i < monthDays.length; i++) { %}
-          <th>{{ monthDays[i].date }}</th>
-        {% } %}
-        <th rowspan="2" colspan="2">Working Days</th>
-        <th rowspan="2">Days Off</th>
-      </tr>
-      <tr>
-        {% for (var i = 0; i < monthDays.length; i++) { %}
-          <th>{{ monthDays[i].weekday }}</th>
-        {% } %}
-      </tr>
-
-      <!-- Attendance Rows -->
-      {% var pageData = pages[p]; %}
-      {% for (var i = 0; i < pageData.length; i++) { %}
-        {% var row = pageData[i]; %}
-        <tr>
-          <td>{{ p * CHUNK_SIZE + i + 1 }}</td>
-          <td colspan="{{ empIdColSpan }}">{{ row.employee_id }}</td>
-          <td colspan="{{ empNameColSpan }}">{{ row.employee_name }}</td>
-          <td colspan="{{ shiftColSpan }}">{{ row.shift }}</td>
-          {% for (var j = 0; j < monthDays.length; j++) { %}
-            {% var status = row[monthDays[j].date]; %}
-            <td>{{ status == "CDO" ? "DO" : status }}</td>
-          {% } %}
-          <td colspan="2">{{ row.working_days }}</td>
-          <td>{{ row.off_days }}</td>
+<div>
+  {% for (var p = 0; p < pages.length; p++) { %}
+    <div class="attendance-page">
+      <table class="attendance-sheet-wrapper">
+        <!-- Title Row -->
+        <tr class="title-section">
+          <td colspan="5" class="logo-cell">
+            <img src="https://one-fm.com/files/ONEFM_Identity.png" alt="one-fm" />
+          </td>
+          <td colspan="34">{%= __("Monthly Attendance Sheet") %}</td>
+          <td colspan="5" class="logo-cell">
+            {% const clientLogo = report.additional_details.client_logo || "" %}
+            {% if clientLogo %}
+              <img src="{{ clientLogo }}" alt="Client Logo" />
+            {% } %}
+          </td>
         </tr>
-      {% } %}
-
-      <!-- Staff on Duty -->
-      <tr class="staff-duty">
-        <th colspan="{{ empIdColSpan + empNameColSpan + shiftColSpan + 1 }}">No. of Staff on Duty</th>
-        {% for (var i = 0; i < monthDays.length; i++) { %}
-          <td>{{ pageData.reduce((count, att) => att[monthDays[i].date.toString()] === 'P' ? count + 1 : count, 0) }}</td>
-        {% } %}
-        <td colspan="2">-</td>
-        <td>-</td>
-      </tr>
-
-      <!-- Signatures -->
-      <tr class="signatures">
-        <td colspan="6"><strong>Supervisor Name & Signature:</strong></td>
-        <td colspan="16"></td>
-        <td colspan="6"><strong>Client Name & Signature:</strong></td>
-        <td colspan="16"></td>
-      </tr>
-
-      <!-- Stamps -->
-      <tr class="stamps">
-        <td colspan="6">Stamp</td>
-        <td colspan="16"></td>
-        <td colspan="6">Stamp</td>
-        <td colspan="16"></td>
-      </tr>
-
-      <!-- Status Map -->
-       <tr>
-        <td colspan="44" class="legend">
-          {% for (var s = 0; s < statusMap.length; s++) { %}
-            <span>
-              {{ statusMap[s].key }} - {{ statusMap[s].status }}
-            </span>
+  
+        <!-- Meta Info -->
+        <tr class="meta-section">
+          <td colspan="5" class="meta-cell"><strong>Project Name:</strong></td>
+          <td colspan="13" class="meta-cell">{{ report.get_filter_value("project") }}</td>
+          <td colspan="4" class="meta-cell"><strong>Site Name:</strong></td>
+          <td colspan="13" class="meta-cell">{{ report.get_filter_value("site") }}</td>
+          <td colspan="3" class="meta-cell"><strong>Month:</strong></td>
+          <td colspan="6" class="meta-cell">{{ selectedMonth }} {{ report.get_filter_value("year") }}</td>
+        </tr>
+  
+        <!-- Header -->
+        <tr class="header-section">
+          <th rowspan="2">#</th>
+          <th rowspan="2" colspan="{{ empIdColSpan }}">Employee ID</th>
+          <th rowspan="2" colspan="{{ empNameColSpan }}">Employee Name</th>
+          <th rowspan="2" colspan="{{ shiftColSpan }}">Shift</th>
+          {% for (var i = 0; i < monthDays.length; i++) { %}
+            <th>{{ monthDays[i].date }}</th>
           {% } %}
-        </td>
-      </tr>
-    </table>
-  </div>
-{% } %}
+          <th rowspan="2" colspan="2">Working Days</th>
+          <th rowspan="2">Days Off</th>
+        </tr>
+        <tr>
+          {% for (var i = 0; i < monthDays.length; i++) { %}
+            <th>{{ monthDays[i].weekday }}</th>
+          {% } %}
+        </tr>
+  
+        <!-- Attendance Rows -->
+        {% var pageData = pages[p]; %}
+        {% for (var i = 0; i < pageData.length; i++) { %}
+          {% var row = pageData[i]; %}
+          <tr>
+            <td>{{ p * CHUNK_SIZE + i + 1 }}</td>
+            <td colspan="{{ empIdColSpan }}">{{ row.employee_id }}</td>
+            <td colspan="{{ empNameColSpan }}">{{ row.employee_name }}</td>
+            <td colspan="{{ shiftColSpan }}">{{ row.shift }}</td>
+            {% for (var j = 0; j < monthDays.length; j++) { %}
+              {% var status = row[monthDays[j].date]; %}
+              <td>{{ status == "CDO" ? "DO" : status }}</td>
+            {% } %}
+            <td colspan="2">{{ row.working_days }}</td>
+            <td>{{ row.off_days }}</td>
+          </tr>
+        {% } %}
+  
+        <!-- Staff on Duty -->
+        <tr class="staff-duty">
+          <th colspan="{{ empIdColSpan + empNameColSpan + shiftColSpan + 1 }}">No. of Staff on Duty</th>
+          {% for (var i = 0; i < monthDays.length; i++) { %}
+            <td>{{ pageData.reduce((count, att) => att[monthDays[i].date.toString()] === 'P' ? count + 1 : count, 0) }}</td>
+          {% } %}
+          <td colspan="2">-</td>
+          <td>-</td>
+        </tr>
+  
+        <!-- Signatures -->
+        <tr class="signatures">
+          <td colspan="6"><strong>Supervisor Name & Signature:</strong></td>
+          <td colspan="16"></td>
+          <td colspan="6"><strong>Client Name & Signature:</strong></td>
+          <td colspan="16"></td>
+        </tr>
+  
+        <!-- Stamps -->
+        <tr class="stamps">
+          <td colspan="6">Stamp</td>
+          <td colspan="16"></td>
+          <td colspan="6">Stamp</td>
+          <td colspan="16"></td>
+        </tr>
+  
+        <!-- Status Map -->
+         <tr>
+          <td colspan="44" class="legend">
+            {% for (var s = 0; s < statusMap.length; s++) { %}
+              <span>
+                {{ statusMap[s].key }} - {{ statusMap[s].status }}
+              </span>
+            {% } %}
+          </td>
+        </tr>
+      </table>
+    </div>
+  {% } %}
+</div>

@@ -10,7 +10,6 @@ from calendar import monthrange
 status_map = {
 	"Present": "P",
 	"Absent": "A",
-	"Work From Home": "WFH",
 	"On Leave": "OL",
 	"Holiday": "H",
 	"Day Off": "DO",
@@ -244,12 +243,13 @@ def get_attendance_status(filters, employee_attendance):
 		for day in range(1, total_days + 1):
 			status = status_dict.get(day)
 
-			if status == "Present":
+			if status in ["Present", "Work From Home"]:
 				working_days += 1
 			elif status in ["Day Off", "Client Day Off"]:
 				off_days += 1
 
-			abbr = status_map.get(status, "")
+			# For operations team, WFH is considered as present
+			abbr = "P" if status == "Work From Home" else status_map.get(status, "")
 			row[cstr(day)] = abbr
 
 		row["working_days"] = working_days

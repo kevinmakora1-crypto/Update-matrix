@@ -3,7 +3,6 @@
 
 const status_color_map = {
 	"P": "green",
-	"WFH": "green",
 	"A": "red",
 	"OL": "red",
 	"H": "blue",

@@ -254,7 +254,15 @@ class TestRelieverAssignment(unittest.TestCase):
         # Reload employee1 and check status
         self.employee1.reload()
         self.assertEqual(self.employee1.status, "Vacation")
-        
+
+        # Reload ToDo and ensure it was reassigned to reliever (employee2's user)
+        self.todo.reload()
+        self.assertEqual(
+            self.todo.allocated_to,
+            self.employee2.user_id,
+            f"ToDo was not reassigned to reliever: expected {self.employee2.user_id}, got {self.todo.allocated_to}"
+        )
+
     def cancel_assignments(self):
         #Cancel The salary structure assignment
         all_user_perms = frappe.get_all("User Permission", filters={"allow": "Employee"})

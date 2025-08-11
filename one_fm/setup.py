@@ -30,6 +30,7 @@ from one_fm.custom.custom_field.bank import get_bank_custom_fields
 from one_fm.custom.custom_field.batch import get_batch_custom_fields
 from one_fm.custom.custom_field.brand import get_brand_custom_fields
 from one_fm.custom.custom_field.budget import get_budget_custom_fields
+from one_fm.custom.custom_field.hr_settings import get_hr_settings_fields
 # Property setter imports
 from one_fm.custom.property_setter.assignment_rule import get_assignment_rule_properties
 from one_fm.custom.property_setter.task import get_task_properties
@@ -77,6 +78,7 @@ def get_custom_fields():
 	custom_fields.update(get_batch_custom_fields())
 	custom_fields.update(get_brand_custom_fields())
 	custom_fields.update(get_budget_custom_fields())
+	custom_fields.update(get_hr_settings_fields())
 	return custom_fields
 
 def add_property_setter(property_setters):

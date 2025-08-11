@@ -246,6 +246,7 @@ class TestRelieverAssignment(unittest.TestCase):
             "workflow_state": "Approved",
             "custom_reliever_": self.employee2.name
         }).insert(ignore_permissions=True)
+        self.leave_application.submit()
 
 
     def test_set_employee_status(self):

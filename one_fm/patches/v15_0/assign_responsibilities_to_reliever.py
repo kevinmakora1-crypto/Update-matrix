@@ -24,14 +24,11 @@ def execute():
             "custom_reliever_": ["is", "set"],
             "to_date": [">=", today()],
         },
-        fields=['employee', "employee_name", "employee.status", 'custom_reliever_', 'name'],
-        distinct=True,
-        order_by="employee, creation desc"
+        fields=["employee.status", 'name'],
     )
 
     
     if not leave_applications:
-        frappe.logger().info("No leave applications found matching criteria")
         return
     
     for leave_app in leave_applications:

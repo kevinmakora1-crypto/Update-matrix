@@ -261,7 +261,7 @@ class TestRelieverAssignment(unittest.TestCase):
         for each in all_user_perms:
             user_doc = frappe.get_doc("User Permission", each.name)
             user_doc.delete()
-        all_strucs = frappe.get_all("Salary Structure Assignment", filters={"dostatus": 1})
+        all_strucs = frappe.get_all("Salary Structure Assignment", filters={"docstatus": 1})
         for each in all_strucs:
             doc = frappe.get_doc("Salary Structure Assignment", each.name)
             doc.cancel()

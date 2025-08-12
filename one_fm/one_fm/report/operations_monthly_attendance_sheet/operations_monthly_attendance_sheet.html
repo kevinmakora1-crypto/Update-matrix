@@ -12,11 +12,8 @@
     /* Margin should be separate because frappe is reading styles like this */
     margin-left: 5mm;
     margin-right: 5mm;
-    margin-top: 5mm;
-    margin-bottom: 5mm;
-  }
-
-  .print-format, p {
+    margin-top: 0mm;
+    margin-bottom: 0mm;
     font-size: 7px;
     font-family: "Readex Pro", sans-serif;
   }
@@ -42,12 +39,12 @@
     text-align: left;
   }
 
-  .title-section > td {
+  .title-section td {
     font-family: "Cairo", sans-serif !important;
     border: none !important;
-    font-size: 18px;
-    font-weight: bold;
-    font-style: italic;
+    font-size: 18px !important;
+    font-weight: bold !important;
+    font-style: italic !important;
     text-align: center;
     color: black;
   }
@@ -86,6 +83,7 @@
   @media print {
     .attendance-page {
       page-break-after: always;
+      margin-top: 10mm !important;
     }
   }
 </style>

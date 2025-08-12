@@ -538,13 +538,15 @@ class ReassignRelieverAssignment(Document):
 		for reference in relievers_todo:
 			reference_type = reference["reference_type"]
 			reference_name = reference["reference_name"]
-			todo_to_update = frappe.get_doc(reference_type, {'name': reference_name})
-			if hasattr(todo_to_update, 'employee') and todo_to_update.employee:
-				emp_details = frappe.get_doc('Employee',todo_to_update.employee)
-				if emp_details.reports_to == self.on_leave_employee:
-					if reference.allocated_to is not None:
-						frappe.db.set_value(ToDo, reference.name, 'allocated_to', self._employee_user_id)
-						self.reassign_docs_related_to_todos(reference_type,reference_name)
+			
+			if reference_type and reference_name:
+				todo_to_update = frappe.get_doc(reference_type, {'name': reference_name})
+				if hasattr(todo_to_update, 'employee') and todo_to_update.employee:
+					emp_details = frappe.get_doc('Employee',todo_to_update.employee)
+					if emp_details.reports_to == self.on_leave_employee:
+						if reference.allocated_to is not None:
+							frappe.db.set_value(ToDo, reference.name, 'allocated_to', self._employee_user_id)
+							self.reassign_docs_related_to_todos(reference_type,reference_name)
 
 
 	def reassign_docs_related_to_todos(self,reference_type,reference_name):

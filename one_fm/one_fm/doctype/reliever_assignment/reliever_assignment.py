@@ -26,6 +26,7 @@ class RelieverAssignment(Document):
 		self.assign_todos()
 		self.assign_projects()
 		self.assign_operations_site()
+		self.assign_process_tasks()
 		self.get_single_doctypes()
 		self.get_approval_doctypes()
 		# Update status after transferring responsibilities
@@ -77,6 +78,25 @@ class RelieverAssignment(Document):
 
 		reliever_user.add_roles(roles_to_be_assigned)
 
+	def assign_process_tasks(self):
+		ProcessTask = DocType("Process Task")
+		process_tasks = (
+			frappe.qb.from_(ProcessTask)
+			.select(ProcessTask.name)
+			.where((ProcessTask.direct_report_reviewer == self.on_leave_employee))
+		).run(as_dict=True)
+
+
+		if len(process_tasks) > 0:
+			# Log data for reversal
+			self.add_assigned_documents("Process Task", "Docfield", process_tasks, fieldname="direct_report_reviewer")
+
+			frappe.qb.update(ProcessTask ).set(
+				ProcessTask.direct_report_reviewer, self.reliever).set(
+				ProcessTask.direct_report_reviewer_name, self.reliever_name).set(
+				ProcessTask.modified, now()).where(
+				ProcessTask.direct_report_reviewer == self.on_leave_employee
+			).run()
 
 	def assign_reportees(self):
 		Employee = DocType("Employee")
@@ -441,7 +461,6 @@ class ReassignRelieverAssignment(Document):
 						.where(OperationsSite.status == "Active").run()
 
 
-
 	def reassign_department_approvals(self,data):
 		DepartmentApprover = DocType(data.reference_doctype)
 		doclist_to_reassign = [name.get('name')for name in json.loads(data.doclist)]
@@ -450,6 +469,7 @@ class ReassignRelieverAssignment(Document):
 				.set(DepartmentApprover.approver, self._employee_user_id) \
 				.set(DepartmentApprover.modified, now()) \
 				.where(DepartmentApprover.name.isin(doclist_to_reassign)).run()
+			
 	
 	def reassign_single_doctype(self,data):
 		Singles = DocType("Singles")
@@ -462,6 +482,20 @@ class ReassignRelieverAssignment(Document):
 			   (Singles.field == record_field))
 		).run()
 		frappe.clear_cache(doctype=record_doc_type)
+
+		
+	def reassign_process_tasks(self,data):
+		ProcessTask = DocType(data.reference_doctype)
+		fieldname = data.fieldname
+		doclist_to_reassign = [name.get('name')for name in json.loads(data.doclist)]
+
+		if doclist_to_reassign and fieldname == "direct_report_reviewer":
+			frappe.qb.update(ProcessTask ).set(
+					ProcessTask.direct_report_reviewer, self.on_leave_employee).set(
+					ProcessTask.direct_report_reviewer_name, self.on_leave_employee_name).set(
+					ProcessTask.modified, now()).where(
+					ProcessTask.name.isin(doclist_to_reassign)).run()
+			
 
 	def reassign(self):
 		leave_application = frappe.get_value("Leave Application", self.leave_application, "name")
@@ -478,6 +512,8 @@ class ReassignRelieverAssignment(Document):
 				self.reassign_todos(data)
 			elif data.reference_doctype == "Project":
 				self.reassign_projects(data)
+			elif data.reference_doctype == "Process Task":
+				self.reassign_process_tasks(data)
 			elif data.reference_doctype == "Operations Site":
 				self.reassign_operations_site(data)
 			elif data.reference_doctype == "Department Approver":

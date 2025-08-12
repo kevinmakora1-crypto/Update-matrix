@@ -4,7 +4,7 @@
 import frappe
 from frappe import _
 from frappe.query_builder.functions import Extract
-from frappe.utils import cint, cstr, getdate
+from frappe.utils import cint, cstr, getdate, nowdate
 from calendar import monthrange
 
 status_map = {
@@ -12,8 +12,7 @@ status_map = {
 	"Absent": "A",
 	"On Leave": "OL",
 	"Holiday": "H",
-	"Day Off": "DO",
-	"Client Day Off": "CDO"
+	"Day Off": "DO"
 }
 
 day_abbr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -93,12 +92,13 @@ def get_data(filters, attendance_map):
 
 def get_message():
 	message = ""
-	colors = ["green", "red", "green", "red", "blue", "blue", "blue"]
+	colors_map = { "P": "green","A": "red","OL": "red","H": "blue","DO": "blue","CDO": "blue" }
+	legend_status_map = { **status_map, "Work From Home": "P", "Client Day Off": "CDO" }
 
 	count = 0
-	for status, abbr in status_map.items():
+	for status, abbr in legend_status_map.items():
 		message += f"""
-			<span style='border-left: 2px solid {colors[count]}; padding-right: 12px; padding-left: 5px; margin-right: 3px;'>
+			<span style='border-left: 2px solid {colors_map[abbr]}; padding-right: 12px; padding-left: 5px; margin-right: 3px;'>
 				{status} - {abbr}
 			</span>
 		"""
@@ -214,7 +214,7 @@ def get_rows(employee_details, filters, attendance_map):
 			continue
 
 		attendance_for_employee = get_attendance_status(
-			filters, employee_attendance
+			filters, employee, employee_attendance
 		)
 		# set employee details in the first row
 		for record in attendance_for_employee:
@@ -224,7 +224,7 @@ def get_rows(employee_details, filters, attendance_map):
 
 	return records
 
-def get_attendance_status(filters, employee_attendance):
+def get_attendance_status(filters, employee, employee_attendance):
 	"""Returns list of shift-wise attendance status for employee
 	[
 	        {'shift': 'Morning Shift', 1: 'A', 2: 'P', 3: 'A'....},
@@ -234,6 +234,8 @@ def get_attendance_status(filters, employee_attendance):
 	total_days = monthrange(cint(filters.year), cint(filters.month))[1]
 	attendance_values = []
 
+	attendance_status_map = { **status_map, "Work From Home": "P", "Client Day Off": "CDO" }
+
 	for shift, status_dict in employee_attendance.items():
 		row = {"shift": shift}
 
@@ -242,14 +244,21 @@ def get_attendance_status(filters, employee_attendance):
 
 		for day in range(1, total_days + 1):
 			status = status_dict.get(day)
+			date = f"{cstr(filters.year)}-{cstr(filters.month)}-{cstr(day)}"
+
+			if not status and getdate(date) <= getdate(nowdate()):
+				status = frappe.db.get_value("Attendance", {
+					"employee": employee,
+					"attendance_date": date,
+					"docstatus": 1
+				}, "status")
 
 			if status in ["Present", "Work From Home"]:
 				working_days += 1
 			elif status in ["Day Off", "Client Day Off"]:
 				off_days += 1
 
-			# For operations team, WFH is considered as present
-			abbr = "P" if status == "Work From Home" else status_map.get(status, "")
+			abbr = attendance_status_map.get(status, "")
 			row[cstr(day)] = abbr
 
 		row["working_days"] = working_days

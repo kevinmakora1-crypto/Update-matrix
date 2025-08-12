@@ -7,17 +7,30 @@
 <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@160..700&display=swap" rel="stylesheet">
 
 <style>
+  /* ==== Print Format Styles Start (Affecting the printed/pdf report) === */
+  .print-format {
+    /* Margin should be separate because frappe is reading styles like this */
+    margin-left: 5mm;
+    margin-right: 5mm;
+    margin-top: 5mm;
+    margin-bottom: 5mm;
+  }
+
+  .print-format, p {
+    font-size: 7px;
+    font-family: "Readex Pro", sans-serif;
+  }
+  /* === Print Format Styles End === */
+
   .attendance-sheet-wrapper {
     width: 100%;
     border-collapse: collapse;
-    font-size: 7px;
     table-layout: fixed;
     border: 1px solid #333;
   }
 
   .attendance-sheet-wrapper th,
   .attendance-sheet-wrapper td {
-    font-family: "Readex Pro", sans-serif;
     border: 1px solid #333;
     padding: 4px !important;
     text-align: center !important;
@@ -30,7 +43,7 @@
   }
 
   .title-section > td {
-    font-family: "Cairo", sans-serif;
+    font-family: "Cairo", sans-serif !important;
     border: none !important;
     font-size: 18px;
     font-weight: bold;
@@ -77,7 +90,7 @@
   }
 </style>
 
-{% var CHUNK_SIZE = 35; %}
+{% var CHUNK_SIZE = 30; %}
 
 {% var monthDays = report.additional_details ? report.additional_details.days : [] %}
 {% var statusMap = report.additional_details ? report.additional_details.status_map : [] %}

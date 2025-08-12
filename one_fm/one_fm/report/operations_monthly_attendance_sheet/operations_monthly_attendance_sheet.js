@@ -140,7 +140,7 @@ function attach_status_map () {
 		callback: function (res) {
 			frappe.query_report.additional_details = {
 				...(report.additional_details || {}),
-				status_map: Object.entries(res.message).map(([status, key]) => ({ status, key })).filter(i => i.key !== "CDO")
+				status_map: Object.entries(res.message).map(([status, key]) => ({ status, key }))
 			};
 		},
 	});

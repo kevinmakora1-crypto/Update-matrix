@@ -82,12 +82,13 @@ def validate_google_task_title(doc):
 def set_todo_type_from_refernce_doc(doc):
     """Set the ToDo type from the referenced document, or default to 'Action'."""
     if not (doc.reference_type and doc.reference_name):
-        return
-    meta = frappe.get_meta(doc.reference_type)
-    if doc.reference_type in ["Project", "Task"] and meta.has_field("type"):
-        doc.type = frappe.db.get_value(doc.reference_type, doc.reference_name, "type")
-    else:
-        doc.type = "Action"
+        return    
+    if doc.reference_type in ["Project", "Task"]:
+        meta = frappe.get_meta(doc.reference_type)
+        if meta.has_field("type"):
+            doc.type = frappe.db.get_value(doc.reference_type, doc.reference_name, "type")
+            return
+    doc.type = "Action"
 
 def is_google_task_synchronization_enabled():
     return frappe.db.get_single_value("ONEFM General Setting", "google_task_synchronization_enabled")

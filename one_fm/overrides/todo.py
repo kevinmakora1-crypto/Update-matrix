@@ -14,9 +14,9 @@ class ToDo(FrappeToDo):
         """Override trash to also close Google Task if present."""
         super().on_trash()
         try:
-            close_google_task_on_todo_delete(self)
+            delete_google_task_on_todo_delete(self)
         except Exception as e:
-            frappe.log_error(message=f"Failed to close Google Task on ToDo trash: {e}", title="ToDo on_trash Error")
+            frappe.log_error(message=f"Failed to delete Google Task on ToDo trash: {e}", title="ToDo on_trash Error")
 
 def validate_todo(doc, method):
     notify_todo_status_change(doc)
@@ -233,28 +233,33 @@ def update_google_task_on_todo_status_change(doc, method):
     except Exception:
         frappe.log_error(title="Google Task Update Failed", message=frappe.get_traceback())
 
-
-def close_google_task_on_todo_delete(doc):
-    """Mark Google Task as completed when ToDo is deleted. Logs errors and returns status."""
+    
+def delete_google_task_on_todo_delete(doc):
     if not doc.custom_google_task_id:
         return {"status": "skipped", "message": "No Google Task ID"}
     employee_email = getattr(doc, "allocated_to", None)
     if not employee_email:
         frappe.throw(_("No assigned user found for this ToDo"))
-    try:
-        service = get_google_task_service(employee_email)
-        if not service:
-            return {"status": "error", "message": "Google service unavailable"}
-        task = service.tasks().get(tasklist="@default", task=doc.custom_google_task_id).execute()
-        task["status"] = "completed"
-        service.tasks().update(tasklist="@default", task=doc.custom_google_task_id, body=task).execute()
-        return {"status": "success"}
-    except Exception as e:
-        frappe.log_error(
-            message=f"Failed to close Google Task '{doc.custom_google_task_id}' for ToDo {doc.name}: {frappe.utils.get_traceback()}",
-            title="Google Task Closure Error"
-        )
-        return {"status": "error", "message": f"Failed to close Google Task: {e}"}
+    result = {}
+    if doc.custom_google_task_id:
+        employee_email = doc.allocated_to
+        if not employee_email:
+            frappe.throw(_("No assigned user found for this ToDo"))
+        try:
+            service = get_google_task_service(employee_email)
+            response = service.tasks().delete(tasklist="@default", task=doc.custom_google_task_id).execute()
+            # Google Tasks API delete returns an empty dict on success
+            if response == {}:
+                result = {"status": "deleted"}
+            else:
+                result = {"status": "unknown", "response": response}
+        except Exception as e:
+            frappe.log_error(
+                message=f"Failed to delete Google Task '{doc.custom_google_task_id}' for ToDo {doc.name}: {frappe.utils.get_traceback()}",
+                title="Google Task Deletion Error"
+            )
+            result = {"status": "error", "message": f"Failed to delete Google Task: {e}"}
+    return result
 
 def get_mapped_status_from_google_task(task):
     """

@@ -13,7 +13,7 @@ from frappe.desk.doctype.todo.todo import ToDo as FrappeToDo
 class ToDo(FrappeToDo):
     def on_trash(self):
         super().on_trash()
-        close_google_task_on_todo_delete(self, "on_trash")
+        delete_google_task_on_todo_delete(self)
 
 def validate_todo(doc, method):
     notify_todo_status_change(doc)
@@ -160,10 +160,10 @@ def create_description_for_google_todo(doc):
         task_notes +=f"""
         Hey you cant update this task on Google Task, Close the task in ERPNext
 
-		ToDo Reference: {todo_reference}
-		Reference DocType: {todo_doc_type}
-		Reference Name: {todo_reference_link}
-		"""
+        ToDo Reference: {todo_reference}
+        Reference DocType: {todo_doc_type}
+        Reference Name: {todo_reference_link}
+        """
     return task_notes
 
 def convert_html_to_plain_text(html_content):
@@ -231,7 +231,7 @@ def update_google_task_on_todo_status_change(doc, method):
             return
 
 
-def close_google_task_on_todo_delete(doc, method):
+def delete_google_task_on_todo_delete(doc):
     result = {}
     if doc.custom_google_task_id:
         employee_email = doc.allocated_to
@@ -239,15 +239,14 @@ def close_google_task_on_todo_delete(doc, method):
             frappe.throw(_("No assigned user found for this ToDo"))
         try:
             service = get_google_task_service(employee_email)
-            task = service.tasks().get(tasklist="@default", task=doc.custom_google_task_id).execute()
-            task["status"] = "completed"
-            result = service.tasks().update(tasklist="@default",task=doc.custom_google_task_id, body=task).execute()
+            service.tasks().delete(tasklist="@default", task=doc.custom_google_task_id).execute()
+            result = {"status": "deleted"}
         except Exception as e:
             frappe.log_error(
-                message=f"Failed to close Google Task '{doc.custom_google_task_id}' for ToDo {doc.name}: {frappe.utils.get_traceback()}",
-                title="Google Task Closure Error"
+                message=f"Failed to delete Google Task '{doc.custom_google_task_id}' for ToDo {doc.name}: {frappe.utils.get_traceback()}",
+                title="Google Task Deletion Error"
             )
-            result = {"status": "error", "message": f"Failed to close Google Task: {e}"}
+            result = {"status": "error", "message": f"Failed to delete Google Task: {e}"}
     return result
 
 def get_mapped_status_from_google_task(task):

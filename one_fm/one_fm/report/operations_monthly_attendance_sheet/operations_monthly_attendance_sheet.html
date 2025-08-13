@@ -12,9 +12,9 @@
     /* Margin should be separate because frappe is reading styles like this */
     margin-left: 5mm;
     margin-right: 5mm;
-    margin-top: 0mm;
+    margin-top: 5mm;
     margin-bottom: 0mm;
-    font-size: 7px;
+    font-size: 7px !important;
     font-family: "Readex Pro", sans-serif;
   }
   /* === Print Format Styles End === */
@@ -83,7 +83,9 @@
   @media print {
     .attendance-page {
       page-break-after: always;
-      margin-top: 10mm !important;
+    }
+    .attendance-page:not(:first-child) { /* Because first one is alreading getting the margin from print format margin's above */
+      margin-top: 5mm !important;
     }
   }
 </style>

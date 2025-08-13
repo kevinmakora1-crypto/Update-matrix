@@ -12,7 +12,7 @@
     /* Margin should be separate because frappe is reading styles like this */
     margin-left: 5mm;
     margin-right: 5mm;
-    margin-top: 5mm;
+    margin-top: 10mm;
     margin-bottom: 0mm;
     font-size: 7px !important;
     font-family: "Readex Pro", sans-serif;
@@ -85,12 +85,12 @@
       page-break-after: always;
     }
     .attendance-page:not(:first-child) { /* Because first one is alreading getting the margin from print format margin's above */
-      margin-top: 5mm !important;
+      margin-top: 10mm !important;
     }
   }
 </style>
 
-{% var CHUNK_SIZE = 30; %}
+{% var CHUNK_SIZE = 20; %}
 
 {% var monthDays = report.additional_details ? report.additional_details.days : [] %}
 {% var statusMap = report.additional_details ? report.additional_details.status_map : [] %}

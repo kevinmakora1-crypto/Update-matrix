@@ -164,6 +164,7 @@ class TestShiftAssignment(FrappeTestCase):
                 "subitem_group":  self.item_group.name, 
                 "service_type": self.service_type.name,
                 "is_stock_item": 0,
+                "stock_uom":"Nos",
                 "is_sales_item": 1,
                 "is_purchase_item": 0,
                 "default_unit_of_measure": "Nos",

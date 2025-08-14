@@ -3,8 +3,10 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import getdate,add_days
-from one_fm.utils import  get_approver
+from frappe.utils import getdate, add_days, today
+
+from one_fm.processor import sendemail
+from one_fm.utils import  get_approver, get_approver
 
 class EmployeeDailyAction(Document):
 	def validate(self):
@@ -64,3 +66,86 @@ class EmployeeDailyAction(Document):
 
 	def on_submit(self):
 		self.create_blockers()
+
+
+class NotifyReportsToOnAbsenceOfReport:
+
+	def __init__(self):
+		self.yesterday = add_days(today(), -1)
+		self.non_compliant_employees = self.fetch_non_compliant_employees
+
+	@property
+	def fetch_yesterday_reports_employee(self):
+		return frappe.db.get_list("Employee Daily Action", filters={"date": self.date, "docstatus": 1}, pluck="employee")
+	
+	@property
+	def fetch_non_compliant_employees(self):
+		return frappe.db.get_list("Employee", filters={
+			"status": "Active",
+			"is_in_ows": "Yes",
+			"name": ["NOT IN", self.fetch_yesterday_reports_employee],
+		},
+		fields=["name", "attendance_by_timesheet", "shift_working", "holiday_list", "employee_name"]
+		)
+	
+
+	@property
+	def shift_working_employee_schedule(self):
+		shift_working_employees = [obj.name for obj in self.non_compliant_employees if obj.shift_working]
+		return frappe.db.get_all("Employee Schedule", filters={
+			"date": self.yesterday,
+			"employee": ["IN", shift_working_employees],
+			"employee_availability": "Working",
+		}, pluck="employee")
+	
+	@property
+	def leave_attendance(self):
+		attendance_employees = [obj.name for obj in self.non_compliant_employees if not obj.shift_working]
+		return frappe.db.get_all("Attendance", filters={
+			"date": self.yesterday,
+			"status": "On Leave",
+			"employee": ["IN", attendance_employees]
+		}, pluck="employee")
+	
+	
+	@property
+	def yesterday_holiday_status(self):
+		holidays = {obj.holiday_list for obj in self.non_compliant_employees if not obj.shift_working}
+		holiday_lists = frappe.get_all(
+			"Holiday List",
+			filters=[
+				["Holiday", "holiday_date", "=", self.yesterday],
+				["name", "in", list(holidays)]
+			],
+			fields=["name", "holiday_list_name"]
+		)
+		return holiday_lists
+	
+
+	
+	def send_notification_mail(self, recipient, employee_name):
+		msg = frappe.render_template('one_fm/templates/emails/employee_daily_action_check.html', 
+							   context={"employee_name": employee_name, "yesterday": self.yesterday})
+		sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
+		sendemail(sender=sender, recipients= recipient,
+            content=msg, subject="Employee Daily Action Check", delayed=False, is_scheduler_email=True)
+
+
+	def notify_employee(self):
+		if self.non_compliant_employees:
+			employee_schedules = self.shift_working_employee_schedule
+			leave_attendance = self.leave_attendance
+			holiday_status = self.yesterday_holiday_status
+
+			for obj in self.non_compliant_employees:
+				if obj.shift_working:
+					if obj.name in employee_schedules:
+						self.send_notification_mail(employee_name=obj.employee_name)
+				else:
+					if obj.holiday_list not in holiday_status and  obj.name not in leave_attendance:
+						self.send_notification_mail(employee_name=obj.employee_name)
+
+
+
+
+		

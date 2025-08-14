@@ -69,6 +69,17 @@ class TestShiftAssignment(FrappeTestCase):
                 "shift_type":"Day",
                 "end_time": "17:00:00"},
         )
+        self.base_shift_type = _get_or_create(
+            "Shift Type",
+            name='"Standard|Morning|08:00:00-17:00:00|9 hours"',
+            fields={"shift_type_name": "AM",
+                "start_time": "08:00:00",
+                "duration":9,
+                "edit_start_time_and_end_time":0,
+                "shift_type":"Day",
+                "end_time": "17:00:00"},
+        )
+        frappe.db.set_value("Shift Type", self.base_shift_type.name, "name", '"Standard|Morning|08:00:00-17:00:00|9 hours"')   
         if not frappe.db.exists("Shift Type", "AM Shift"):
             _get_or_create(
                 "Shift Type",

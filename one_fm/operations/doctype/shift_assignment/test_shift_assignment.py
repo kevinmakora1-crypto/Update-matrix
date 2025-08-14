@@ -9,6 +9,7 @@ from one_fm.api.tasks import assign_am_shift
 frappe.flags.in_test = 1  # ensure test mode for all operations
 
 
+
 def _get_or_create(dt, name=None, fields=None):
     try:
         fields = fields or {}
@@ -42,6 +43,7 @@ class TestShiftAssignment(FrappeTestCase):
                 "default_currency": "KWD",
             },
         )
+        frappe.defaults.set_user_default("company",'Administrator', self.company.name)
         self.holiday_list = _get_or_create(
             "Holiday List",
             name="Test Custom Holiday List",

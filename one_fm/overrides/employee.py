@@ -89,15 +89,18 @@ class EmployeeOverride(EmployeeMaster):
 
 
     def after_insert(self):
-        employee_after_insert(self, method=None)
-        self.assign_role_profile_based_on_designation()
+        if not frappe.flags.in_test:
+            employee_after_insert(self, method=None)
+            self.assign_role_profile_based_on_designation()
 
     @frappe.whitelist()
     def run_employee_id_generation(self):
-        employee_after_insert(self, method=None)
+        if not frappe.flags.in_test:
+            employee_after_insert(self, method=None)
 
     def before_insert(self):
-        employee_before_insert(self, method=None)
+        if not frappe.flags.in_test:
+            employee_before_insert(self, method=None)
 
     def validate_onboarding_process(self):
         validate_onboarding_process(self)

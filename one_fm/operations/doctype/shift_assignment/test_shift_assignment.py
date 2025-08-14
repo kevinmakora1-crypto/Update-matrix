@@ -2,11 +2,11 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import getdate
 from datetime import date
-
+frappe.local.flags.ignore_chart_of_accounts = 1
 # SUT
 from one_fm.api.tasks import assign_am_shift
 
-frappe.flags.in_test = True  # ensure test mode for all operations
+frappe.flags.in_test = 1  # ensure test mode for all operations
 
 
 def _get_or_create(dt, name=None, fields=None):

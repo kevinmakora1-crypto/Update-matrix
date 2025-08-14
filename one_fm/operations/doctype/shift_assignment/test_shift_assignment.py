@@ -4,6 +4,7 @@ from frappe.utils import getdate
 from datetime import date
 frappe.local.flags.ignore_chart_of_accounts = 1
 # SUT
+from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 from one_fm.api.tasks import assign_am_shift
 
 frappe.flags.in_test = 1  # ensure test mode for all operations
@@ -58,6 +59,15 @@ class TestShiftAssignment(FrappeTestCase):
             name="Security Operations - TOF",
             fields={"department_code":"RANDO1234","department_name": "Security Operations","company": self.company.name},
         )
+        create_custom_fields({
+            "Shift Request": [
+                {
+                    "fieldname": "workflow_state",
+                    "fieldtype": "Data",
+                    "label": "Workflow State"
+                },
+            ]
+        } )
 
         # Shift Type (AM)
         # Create both "AM" and "AM Shift" names for robustness across implementations
@@ -167,7 +177,7 @@ class TestShiftAssignment(FrappeTestCase):
         )
         self.item_type = _get_or_create(
             "Item Type",
-            name="Security Services - Guard",
+            name="Security Items",
             fields={"item_type": "Security Items",
                     },
         )
@@ -191,7 +201,7 @@ class TestShiftAssignment(FrappeTestCase):
         )
         self.operations_shift = _get_or_create(
             "Operations Shift",
-            name="Main Gate - Guard - AM",
+            name="Security-Main Gate-Day-1",
             fields={
                 "service_type": self.service_type.name,
                 "shift_number": 1,
@@ -207,7 +217,7 @@ class TestShiftAssignment(FrappeTestCase):
         # Operations Role
         self.operations_role = _get_or_create(
             "Operations Role",
-            name="Guard",
+            name="Guard-Security-Main Gate-Day-1",
             fields={"company": self.company.name,
                     "project": self.project.name,
                     "post_name": "Guard",
@@ -268,11 +278,13 @@ class TestShiftAssignment(FrappeTestCase):
                 "employee_availability": "Working",
                 "operations_role": self.operations_role.name,
                 "shift_type": self.shift_type.name,
-                "operations_shift": self.operations_shift.name,
+                "shift": self.operations_shift.name,
                 "roster_type": "Basic",
             },
         )
         self.employee_schedule.save()
+        #Add Workflow state field to shift request
+        
 
     def tearDown(self):
         # Clean up in reverse dependency order where possible; ignore errors if doctypes differ

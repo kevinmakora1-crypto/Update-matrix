@@ -214,6 +214,16 @@ class TestShiftAssignment(FrappeTestCase):
                 "employee_type_name": "Full-time",
             }
         )
+        #Create Gender
+        self.gender = _get_or_create(
+            "Gender",
+            name="Female",
+            fields={
+                "gender":"Female",
+                "custom_maternity_required":0,
+            }
+        )
+        
         # Employee
         self.employee = _get_or_create(
             "Employee",
@@ -226,7 +236,7 @@ class TestShiftAssignment(FrappeTestCase):
             "department": self.department.name,
             "date_of_birth": "1990-01-01",
             "date_of_joining": "2020-01-01",
-            "gender": "Female",
+            "gender": self.gender.name,
             "status": "Active",
             "naming_series": "HR-EMP-",
             "employment_type": self.employment_type.name,

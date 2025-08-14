@@ -87,6 +87,11 @@ class TestShiftAssignment(FrappeTestCase):
             name="PROJ-0001",
             fields={"project_name": "Main Gate Project", "company": self.company.name, "is_active": "Yes"},
         )
+        self.item_uom = _get_or_create(
+            "UOM",
+            name="Nos",
+            fields={"uom_name": "Nos","is_active": 1,"docstatus":0,"enabled":1,"uom_name":"Nos","must_be_whole_number":1},
+        )
 
         
         #Contact for POS in Ops Site

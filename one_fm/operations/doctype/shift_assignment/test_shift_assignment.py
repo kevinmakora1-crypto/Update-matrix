@@ -7,7 +7,7 @@ frappe.local.flags.ignore_chart_of_accounts = 1
 from one_fm.api.tasks import assign_am_shift
 
 frappe.flags.in_test = 1  # ensure test mode for all operations
-
+frappe.session.user = "Administrator"  # set a valid user for permissions
 
 
 def _get_or_create(dt, name=None, fields=None):
@@ -350,6 +350,9 @@ class TestShiftAssignment(FrappeTestCase):
         # Project assertion only if the field exists on Shift Assignment in this instance
         if frappe.get_meta("Shift Assignment").has_field("project"):
             self.assertEqual(sa.project, self.project.name)
+            
+        if frappe.get_meta("Shift Assignment").has_field("company"):
+            self.assertEqual(sa.company, self.company.name)
 
     # def test_assignment_for_existing_shift(self):
     #     # First assignment succeeds

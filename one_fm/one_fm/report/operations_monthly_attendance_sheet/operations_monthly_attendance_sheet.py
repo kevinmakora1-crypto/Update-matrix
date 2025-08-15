@@ -4,17 +4,15 @@
 import frappe
 from frappe import _
 from frappe.query_builder.functions import Extract
-from frappe.utils import cint, cstr, getdate
+from frappe.utils import cint, cstr, getdate, nowdate
 from calendar import monthrange
 
 status_map = {
 	"Present": "P",
 	"Absent": "A",
-	"Work From Home": "WFH",
 	"On Leave": "OL",
 	"Holiday": "H",
-	"Day Off": "DO",
-	"Client Day Off": "CDO"
+	"Day Off": "DO"
 }
 
 day_abbr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -94,12 +92,13 @@ def get_data(filters, attendance_map):
 
 def get_message():
 	message = ""
-	colors = ["green", "red", "green", "red", "blue", "blue", "blue"]
+	colors_map = { "P": "green","A": "red","OL": "red","H": "blue","DO": "blue","CDO": "blue" }
+	legend_status_map = { **status_map, "Work From Home": "P", "Client Day Off": "CDO" }
 
 	count = 0
-	for status, abbr in status_map.items():
+	for status, abbr in legend_status_map.items():
 		message += f"""
-			<span style='border-left: 2px solid {colors[count]}; padding-right: 12px; padding-left: 5px; margin-right: 3px;'>
+			<span style='border-left: 2px solid {colors_map[abbr]}; padding-right: 12px; padding-left: 5px; margin-right: 3px;'>
 				{status} - {abbr}
 			</span>
 		"""
@@ -111,24 +110,25 @@ def get_message():
 def get_attendance_map(filters):
 	"""Returns a dictionary of employee wise attendance map as per shifts for all the days of the month like
 	{
-	    'employee1': {
-	            'Morning Shift': {1: 'Present', 2: 'Absent', ...}
-	            'Evening Shift': {1: 'Absent', 2: 'Present', ...}
-	    },
-	    'employee2': {
-	            'Afternoon Shift': {1: 'Present', 2: 'Absent', ...}
-	            'Night Shift': {1: 'Absent', 2: 'Absent', ...}
-	    },
-	    'employee3': {
-	            None: {1: 'On Leave'}
-	    }
+		'employee1': {
+				'Morning': {1: 'Present', 2: 'Absent', ...}
+				'Evening': {1: 'Absent', 2: 'Present', ...}
+		},
+		'employee2': {
+				'Afternoon': {1: 'Present', 2: 'Absent', ...}
+				'Night': {1: 'Absent', 2: 'Absent', ...}
+		},
+		'employee3': {
+				None: {1: 'On Leave'}
+		}
 	}
 	"""
-	attendance_list = get_attendance_records(filters)
+	non_day_off_attendance_records = get_non_day_off_attendance_records(filters)
+
 	attendance_map = {}
 	leave_map = {}
 
-	for d in attendance_list:
+	for d in non_day_off_attendance_records:
 		if d.status == "On Leave":
 			leave_map.setdefault(d.employee, {}).setdefault(d.shift, []).append(d.day_of_month)
 			continue
@@ -152,36 +152,66 @@ def get_attendance_map(filters):
 
 	return attendance_map
 
+def get_non_day_off_attendance_records(filters):
+	Attendance = frappe.qb.DocType("Attendance")
+	OperationsShift = frappe.qb.DocType("Operations Shift")
 
-def get_attendance_records(filters):
-    Attendance = frappe.qb.DocType("Attendance")
-    OperationsShift = frappe.qb.DocType("Operations Shift")
+	query = (
+		frappe.qb.from_(Attendance)
+		.join(OperationsShift)
+		.on(Attendance.operations_shift == OperationsShift.name)
+		.select(
+			Attendance.employee,
+			Extract("day", Attendance.attendance_date).as_("day_of_month"),
+			Attendance.status,
+			OperationsShift.shift_classification.as_("shift"),
+		)
+		.where(
+			(Attendance.docstatus == 1)
+			& (Extract("month", Attendance.attendance_date) == filters.month)
+			& (Extract("year", Attendance.attendance_date) == filters.year)
+			& ~(Attendance.status.isin(["Day Off", "Client Day Off"]))
+		)
+		.orderby(Attendance.employee, Attendance.attendance_date)
+	)
 
-    query = (
-        frappe.qb.from_(Attendance)
-        .join(OperationsShift)
-        .on(Attendance.operations_shift == OperationsShift.name)
-        .select(
-            Attendance.employee,
-            Extract("day", Attendance.attendance_date).as_("day_of_month"),
-            Attendance.status,
-            OperationsShift.shift_classification.as_("shift"),
-        )
-        .where(
-            (Attendance.docstatus == 1)
-            & (Extract("month", Attendance.attendance_date) == filters.month)
-            & (Extract("year", Attendance.attendance_date) == filters.year)
-        )
-        .orderby(Attendance.employee, Attendance.attendance_date)
-    )
+	if filters.get("project"):
+		query = query.where(Attendance.project == filters.project)
 
-    if filters.get("project"):
-        query = query.where(Attendance.project == filters.project)
+	if filters.get("site"):
+		query = query.where(Attendance.site == filters.site)
 
-    if filters.get("site"):
-        query = query.where(Attendance.site == filters.site)
+	return query.run(as_dict=True)
 
-    return query.run(as_dict=1)
+def get_day_off_attendance_map(filters):
+	Attendance = frappe.qb.DocType("Attendance")
+
+	query = (
+		frappe.qb.from_(Attendance)
+		.select(
+			Attendance.employee,
+			Extract("day", Attendance.attendance_date).as_("day_of_month"),
+			Attendance.status,
+		)
+		.where(
+			(Attendance.docstatus == 1)
+			& (Extract("month", Attendance.attendance_date) == filters.month)
+			& (Extract("year", Attendance.attendance_date) == filters.year)
+			& (Attendance.status.isin(["Day Off", "Client Day Off"]))
+		)
+		.orderby(Attendance.employee, Attendance.attendance_date)
+	)
+
+	day_off_records = query.run(as_dict=True)
+
+	day_off_map = {}
+
+	for record in day_off_records:
+		day_off_map.setdefault(record.employee, {})[record.day_of_month] = record.status
+
+	print("="*100,day_off_records, day_off_map)
+		
+	return day_off_map
 
 def get_employee_details():
 	Employee = frappe.qb.DocType("Employee")
@@ -215,7 +245,7 @@ def get_rows(employee_details, filters, attendance_map):
 			continue
 
 		attendance_for_employee = get_attendance_status(
-			filters, employee_attendance
+			filters, employee, employee_attendance
 		)
 		# set employee details in the first row
 		for record in attendance_for_employee:
@@ -225,15 +255,18 @@ def get_rows(employee_details, filters, attendance_map):
 
 	return records
 
-def get_attendance_status(filters, employee_attendance):
+def get_attendance_status(filters, employee, employee_attendance):
 	"""Returns list of shift-wise attendance status for employee
 	[
-	        {'shift': 'Morning Shift', 1: 'A', 2: 'P', 3: 'A'....},
-	        {'shift': 'Evening Shift', 1: 'P', 2: 'A', 3: 'P'....}
+			{'shift': 'Morning', 1: 'A', 2: 'P', 3: 'A'....},
+			{'shift': 'Evening', 1: 'P', 2: 'A', 3: 'P'....}
 	]
 	"""
+	day_off_attendance_map = get_day_off_attendance_map(filters)
 	total_days = monthrange(cint(filters.year), cint(filters.month))[1]
 	attendance_values = []
+
+	attendance_status_map = { **status_map, "Work From Home": "P", "Client Day Off": "CDO" }
 
 	for shift, status_dict in employee_attendance.items():
 		row = {"shift": shift}
@@ -244,12 +277,16 @@ def get_attendance_status(filters, employee_attendance):
 		for day in range(1, total_days + 1):
 			status = status_dict.get(day)
 
-			if status == "Present":
+			# if status is not found in attendance records, check day off attendance map
+			if not status:
+				status = day_off_attendance_map.get(employee, {}).get(day, "")
+
+			if status in ["Present", "Work From Home"]:
 				working_days += 1
 			elif status in ["Day Off", "Client Day Off"]:
 				off_days += 1
 
-			abbr = status_map.get(status, "")
+			abbr = attendance_status_map.get(status, "")
 			row[cstr(day)] = abbr
 
 		row["working_days"] = working_days
@@ -284,3 +321,8 @@ def get_report_additional_day_details(month, year):
 		days.append({"date": date, "weekday": weekday})
 
 	return days
+
+@frappe.whitelist()
+def get_attendance_status_map():
+	"""Returns the status map for attendance"""
+	return status_map

@@ -76,16 +76,6 @@ def get_shift_request_custom_fields():
                 "read_only": 1
             },
             {
-                "fieldname": "shift_approver",
-                "fieldtype": "Link",
-                "label": "Shift Approver",
-                "insert_after": "company_name",
-                "options": "User",
-                "fetch_from": "approver",
-                "hidden": 1,
-                "read_only": 1
-            },
-            {
                 "fieldname": "shift",
                 "fieldtype": "Link",
                 "label": "Shift",
@@ -243,13 +233,62 @@ def get_shift_request_custom_fields():
                 "mandatory_depends_on": "eval:doc.purpose != 'Assign Day Off';",
                 "reqd": 1
             },
+           {
+                "name": "Shift Request-custom_approval",
+                "label": "Approval",
+                "fieldname": "custom_approval",
+                "insert_after": "amended_from",
+                "fieldtype": "Section Break"
+            },
             {
-                "fieldname": "custom_shift_approvers",
-                "fieldtype": "Table MultiSelect",
-                "label": "Shift Approvers",
-                "insert_after": "shift_approver",
-                "options": "Shift Request Approvers",
-                "read_only": 1
-            }
+                "name": "Shift Request-custom_reports_to",
+                "label": "Reports To",
+                "fieldname": "custom_reports_to",
+                "insert_after": "custom_approval",
+                "fieldtype": "Link",
+                "options": "Employee",
+                "fetch_from": "employee.reports_to",
+                "read_only": 1,
+                "ignore_user_permissions": 1
+            },
+            {
+                "name": "Shift Request-custom_reports_to_user",
+                "label": "Reports To User",
+                "fieldname": "custom_reports_to_user",
+                "insert_after": "custom_reports_to",
+                "fieldtype": "Link",
+                "options": "User",
+                "fetch_from": "custom_reports_to.user_id",
+                "read_only": 1,
+                "ignore_user_permissions": 1
+            },
+            {
+                "name": "Shift Request-custom_column_break_ggqao",
+                "label": "",
+                "fieldname": "custom_column_break_ggqao",
+                "insert_after": "custom_reports_to_user",
+                "fieldtype": "Column Break"
+            },
+            {
+                "name": "Shift Request-custom_project_manager",
+                "label": "Project Manager",
+                "fieldname": "custom_project_manager",
+                "insert_after": "custom_column_break_ggqao",
+                "fieldtype": "Link",
+                "options": "Employee",
+                "fetch_from": "project.account_manager",
+                "read_only": 1,
+                "ignore_user_permissions": 1
+            },
+            {"name": "Shift Request-custom_project_manager_user",
+                "label": "Project Manager User",
+                "fieldname": "custom_project_manager_user",
+                "insert_after": "custom_project_manager",
+                "fieldtype": "Link",
+                "fetch_from": "custom_project_manager.user_id",
+                "read_only": 1,
+                "options": "User",
+                "ignore_user_permissions": 1
+             }
         ]
     }

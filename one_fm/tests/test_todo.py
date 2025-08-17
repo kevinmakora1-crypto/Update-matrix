@@ -146,7 +146,7 @@ class TestToDoOverrides(FrappeTestCase):
         todo_mod.set_todo_type_from_refernce_doc(self.doc)
         self.assertEqual(self.doc.type, "")
     
-    @patch("frappe.utils.get_url_to_form", side_effect=lambda doctype, name: f"http://one_fm.15/app/{doctype.lower()}/{name}")
+    @patch("frappe.utils.get_url_to_form", side_effect=lambda doctype, name: f"/app/{doctype.lower()}/{name}")
     def test_create_description_for_google_todo(self, mock_get_url_to_form):
         # Only description
         self.doc.description = "<p>Desc</p>"
@@ -161,7 +161,7 @@ class TestToDoOverrides(FrappeTestCase):
         self.doc.reference_name = "TASK-001"
         self.doc.name = "TODO-001"
         with patch("one_fm.overrides.todo.convert_html_to_plain_text", return_value="Desc") as mock_convert, \
-            patch("frappe.utils.get_url_to_form", side_effect=lambda doctype, name: f"http://one_fm.15/app/{doctype.lower()}/{name}"):
+            patch("frappe.utils.get_url_to_form", side_effect=lambda doctype, name: f"/app/{doctype.lower()}/{name}"):
             result = todo_mod.create_description_for_google_todo(self.doc)
             self.assertIn("Hey you can't update this task", result)
             self.assertIn("TODO-001", result)

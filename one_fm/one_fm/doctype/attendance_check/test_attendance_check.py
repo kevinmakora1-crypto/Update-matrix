@@ -155,24 +155,16 @@ class TestAttendanceCheck(FrappeTestCase):
 		}).insert(ignore_permissions=True)
 
 	def tearDown(self):
-		# Helper to safely delete a doc if it exists
-		def safe_delete(doctype, name):
-			if name and frappe.db.exists(doctype, name):
-				doc = frappe.get_doc(doctype, name)
-				if hasattr(doc, "cancel") and doc.docstatus == 1:
-					doc.cancel()
-				frappe.delete_doc(doctype, name)
-
-		for ac_name in frappe.db.get_list("Attendance Check", pluck="name"):
-			safe_delete("Attendance Check", ac_name)
-		safe_delete("Attendance", getattr(self.attendance, "name", None))
-		safe_delete("Shift Assignment", getattr(self.shift_assignment, "name", None))
-		safe_delete("Attendance Request", getattr(self.attendance_request, "name", None))
-		safe_delete("Shift Permission", getattr(self.shift_permission, "name", None))
-		safe_delete("Employee", getattr(self.employee, "name", None))
-		safe_delete("Employee", getattr(self.shift_supervisor, "name", None))
-		safe_delete("Shift Type", getattr(self.shift_type, "name", None))
-		safe_delete("Shift", getattr(self.shift, "name", None))
+		# Bulk delete test records (bypasses hooks, safe for test data only)
+		frappe.db.sql("DELETE FROM `tabAttendance Check` WHERE employee=%s", self.employee.name)
+		frappe.db.sql("DELETE FROM `tabAttendance` WHERE name=%s", self.attendance.name)
+		frappe.db.sql("DELETE FROM `tabShift Assignment` WHERE name=%s", self.shift_assignment.name)
+		frappe.db.sql("DELETE FROM `tabAttendance Request` WHERE name=%s", self.attendance_request.name)
+		frappe.db.sql("DELETE FROM `tabShift Permission` WHERE name=%s", self.shift_permission.name)
+		frappe.db.sql("DELETE FROM `tabEmployee` WHERE name IN (%s, %s)", (self.employee.name, self.shift_supervisor.name))
+		frappe.db.sql("DELETE FROM `tabShift Type` WHERE name=%s", self.shift_type.name)
+		frappe.db.sql("DELETE FROM `tabOperations Shift` WHERE name=%s", self.shift.name)
+		frappe.db.commit()
 
 	def test_insert_attendance_check_record(self):
 		details = [{

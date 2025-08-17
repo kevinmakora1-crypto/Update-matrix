@@ -195,7 +195,13 @@ class NotifyReportsToOnAbsenceOfReport:
 			else:
 				if employee.holiday_list not in holiday_status and employee.name not in leave_attendance:
 					recipient = get_approver_user(employee.name)
-					should_notify = True
+			if (
+				(employee.shift_working and employee.name in employee_schedules)
+				or
+				(not employee.shift_working and employee.holiday_list not in holiday_status and employee.name not in leave_attendance)
+			):
+				recipient = get_approver_user(employee.name)
+				should_notify = True
 			
 			if should_notify and recipient:
 				self.send_notification_mail(

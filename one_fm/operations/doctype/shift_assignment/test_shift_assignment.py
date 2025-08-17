@@ -59,15 +59,7 @@ class TestShiftAssignment(FrappeTestCase):
             name="Security Operations - TOF",
             fields={"department_code":"RANDO1234","department_name": "Security Operations","company": self.company.name},
         )
-        create_custom_fields({
-            "Shift Request": [
-                {
-                    "fieldname": "workflow_state",
-                    "fieldtype": "Data",
-                    "label": "Workflow State"
-                },
-            ]
-        } )
+        
 
         # Shift Type (AM)
         # Create both "AM" and "AM Shift" names for robustness across implementations

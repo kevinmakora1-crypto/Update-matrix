@@ -60,12 +60,28 @@ class TestAttendanceCheck(FrappeTestCase):
             "one_fm_basic_salary": 1200
         }).insert(ignore_permissions=True)
 
-		# Create Shift Type
-		self.shift_type = frappe.get_doc({
-			"doctype": "Shift Type",
-			"start_time": "06:00:00",
-			"end_time": "14:00:00"
-		}).insert(ignore_permissions=True)
+		# Check for existing Shift Type
+		shift_type_name = "Morning"
+		start_time = "06:00:00"
+		end_time = "14:00:00"
+		existing_shift_type = frappe.db.get_value(
+			"Shift Type",
+			{
+				"shift_type": shift_type_name,
+				"start_time": start_time,
+				"end_time": end_time
+			},
+			"name"
+		)
+		if existing_shift_type:
+			self.shift_type = frappe.get_doc("Shift Type", existing_shift_type)
+		else:
+			self.shift_type = frappe.get_doc({
+				"doctype": "Shift Type",
+				"shift_type": shift_type_name,
+				"start_time": start_time,
+				"end_time": end_time
+			}).insert(ignore_permissions=True)
 
 		# Create a Shift document for reference
 		self.shift = frappe.get_doc({
@@ -139,15 +155,24 @@ class TestAttendanceCheck(FrappeTestCase):
 		}).insert(ignore_permissions=True)
 
 	def tearDown(self):
-		frappe.delete_doc("Attendance Check", frappe.db.get_list("Attendance Check", pluck="name"))
-		frappe.delete_doc("Attendance", self.attendance.name)
-		frappe.delete_doc("Shift Assignment", self.shift_assignment.name)
-		frappe.delete_doc("Attendance Request", self.attendance_request.name)
-		frappe.delete_doc("Shift Permission", self.shift_permission.name)
-		frappe.delete_doc("Employee", self.employee.name)
-		frappe.delete_doc("Employee", self.shift_supervisor.name)
-		frappe.delete_doc("Shift Type", self.shift_type.name)
-		frappe.delete_doc("Shift", self.shift.name)
+		# Helper to safely delete a doc if it exists
+		def safe_delete(doctype, name):
+			if name and frappe.db.exists(doctype, name):
+				doc = frappe.get_doc(doctype, name)
+				if hasattr(doc, "cancel") and doc.docstatus == 1:
+					doc.cancel()
+				frappe.delete_doc(doctype, name)
+
+		for ac_name in frappe.db.get_list("Attendance Check", pluck="name"):
+			safe_delete("Attendance Check", ac_name)
+		safe_delete("Attendance", getattr(self.attendance, "name", None))
+		safe_delete("Shift Assignment", getattr(self.shift_assignment, "name", None))
+		safe_delete("Attendance Request", getattr(self.attendance_request, "name", None))
+		safe_delete("Shift Permission", getattr(self.shift_permission, "name", None))
+		safe_delete("Employee", getattr(self.employee, "name", None))
+		safe_delete("Employee", getattr(self.shift_supervisor, "name", None))
+		safe_delete("Shift Type", getattr(self.shift_type, "name", None))
+		safe_delete("Shift", getattr(self.shift, "name", None))
 
 	def test_insert_attendance_check_record(self):
 		details = [{

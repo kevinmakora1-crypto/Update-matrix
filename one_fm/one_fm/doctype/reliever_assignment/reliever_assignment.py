@@ -26,7 +26,7 @@ class RelieverAssignment(Document):
 		self.assign_todos()
 		self.assign_projects()
 		self.assign_operations_site()
-		self.assign_routine_tasks()
+		self.assign_process_tasks()
 		self.get_single_doctypes()
 		self.get_approval_doctypes()
 		# Update status after transferring responsibilities
@@ -78,6 +78,25 @@ class RelieverAssignment(Document):
 
 		reliever_user.add_roles(roles_to_be_assigned)
 
+	def assign_process_tasks(self):
+		ProcessTask = DocType("Process Task")
+		process_tasks = (
+			frappe.qb.from_(ProcessTask)
+			.select(ProcessTask.name)
+			.where((ProcessTask.direct_report_reviewer == self.on_leave_employee))
+		).run(as_dict=True)
+
+
+		if len(process_tasks) > 0:
+			# Log data for reversal
+			self.add_assigned_documents("Process Task", "Docfield", process_tasks, fieldname="direct_report_reviewer")
+
+			frappe.qb.update(ProcessTask ).set(
+				ProcessTask.direct_report_reviewer, self.reliever).set(
+				ProcessTask.direct_report_reviewer_name, self.reliever_name).set(
+				ProcessTask.modified, now()).where(
+				ProcessTask.direct_report_reviewer == self.on_leave_employee
+			).run()
 
 	def assign_reportees(self):
 		Employee = DocType("Employee")
@@ -208,46 +227,6 @@ class RelieverAssignment(Document):
 				OperationsSite.account_supervisor_name, self.reliever_name).set(
 				OperationsSite.modified, now()).where(
 				OperationsSite.account_supervisor == self.on_leave_employee).where(OperationsSite.status == "Active").run()
-
-
-	def assign_routine_tasks(self):
-		RoutineTask = DocType("Routine Task")
-		routine_tasks = (
-			frappe.qb.from_(RoutineTask)
-			.select(RoutineTask.name)
-			.where((RoutineTask.employee == self.on_leave_employee))
-		).run(as_dict=True)
-		
-
-		if len(routine_tasks) > 0:
-			# Log data for reversal
-			self.add_assigned_documents("Routine Task", "Docfield", routine_tasks, fieldname="employee")
-
-			frappe.qb.update(RoutineTask).set(
-				RoutineTask.employee, self.reliever).set(
-				RoutineTask.employee_name, self.reliever_name).set(
-				RoutineTask.modified, now()).where(
-				RoutineTask.employee == self.on_leave_employee
-			).run()
-
-		# If employee_on_leave is set as Direct Report Reviewer in Routine Task
-		routine_tasks_reviewer = (
-			frappe.qb.from_(RoutineTask)
-			.select(RoutineTask.name)
-			.where((RoutineTask.direct_report_reviewer == self.on_leave_employee))
-		).run(as_dict=True)
-		
-
-		if len(routine_tasks_reviewer) > 0:
-			# Log data for reversal
-			self.add_assigned_documents("Routine Task", "Docfield", routine_tasks_reviewer, fieldname="direct_report_reviewer")
-
-			frappe.qb.update(RoutineTask).set(
-				RoutineTask.direct_report_reviewer, self.reliever).set(
-				RoutineTask.direct_report_reviewer_name, self.reliever_name).set(
-				RoutineTask.modified, now()).where(
-				RoutineTask.direct_report_reviewer == self.on_leave_employee
-			).run()
 
 
 	def add_assigned_documents(self, reference_doctype, based_on, doclist, fieldname=None, reference_docname=None):
@@ -453,23 +432,6 @@ class ReassignRelieverAssignment(Document):
 					OperationsSite.name.isin(doclist_to_reassign))\
 						.where(OperationsSite.status == "Active").run()
 
-	def reassign_routine_tasks(self,data):
-		RoutineTask = DocType(data.reference_doctype)
-		fieldname = data.fieldname
-		doclist_to_reassign = [name.get('name')for name in json.loads(data.doclist)]
-		if doclist_to_reassign and fieldname == "employee":
-			frappe.qb.update(RoutineTask).set(
-					RoutineTask.employee, self.on_leave_employee).set(
-					RoutineTask.employee_name, self.on_leave_employee_name).set(
-					RoutineTask.modified, now()).where(
-					RoutineTask.name.isin(doclist_to_reassign)).run()
-		elif doclist_to_reassign and fieldname == "direct_report_reviewer":
-			frappe.qb.update(RoutineTask).set(
-					RoutineTask.direct_report_reviewer, self.on_leave_employee).set(
-					RoutineTask.direct_report_reviewer_name, self.on_leave_employee_name).set(
-					RoutineTask.modified, now()).where(
-					RoutineTask.name.isin(doclist_to_reassign)
-				).run()
 
 	def reassign_department_approvals(self,data):
 		DepartmentApprover = DocType(data.reference_doctype)
@@ -479,6 +441,7 @@ class ReassignRelieverAssignment(Document):
 				.set(DepartmentApprover.approver, self._employee_user_id) \
 				.set(DepartmentApprover.modified, now()) \
 				.where(DepartmentApprover.name.isin(doclist_to_reassign)).run()
+			
 	
 	def reassign_single_doctype(self,data):
 		Singles = DocType("Singles")
@@ -491,6 +454,20 @@ class ReassignRelieverAssignment(Document):
 			   (Singles.field == record_field))
 		).run()
 		frappe.clear_cache(doctype=record_doc_type)
+
+		
+	def reassign_process_tasks(self,data):
+		ProcessTask = DocType(data.reference_doctype)
+		fieldname = data.fieldname
+		doclist_to_reassign = [name.get('name')for name in json.loads(data.doclist)]
+
+		if doclist_to_reassign and fieldname == "direct_report_reviewer":
+			frappe.qb.update(ProcessTask ).set(
+					ProcessTask.direct_report_reviewer, self.on_leave_employee).set(
+					ProcessTask.direct_report_reviewer_name, self.on_leave_employee_name).set(
+					ProcessTask.modified, now()).where(
+					ProcessTask.name.isin(doclist_to_reassign)).run()
+			
 
 	def reassign(self):
 		leave_application = frappe.get_value("Leave Application", self.leave_application, "name")
@@ -507,10 +484,10 @@ class ReassignRelieverAssignment(Document):
 				self.reassign_todos(data)
 			elif data.reference_doctype == "Project":
 				self.reassign_projects(data)
+			elif data.reference_doctype == "Process Task":
+				self.reassign_process_tasks(data)
 			elif data.reference_doctype == "Operations Site":
 				self.reassign_operations_site(data)
-			elif data.reference_doctype == "Routine Task":
-				self.reassign_routine_tasks(data)
 			elif data.reference_doctype == "Department Approver":
 				self.reassign_department_approvals(data)
 			else:
@@ -533,13 +510,15 @@ class ReassignRelieverAssignment(Document):
 		for reference in relievers_todo:
 			reference_type = reference["reference_type"]
 			reference_name = reference["reference_name"]
-			todo_to_update = frappe.get_doc(reference_type, {'name': reference_name})
-			if hasattr(todo_to_update, 'employee') and todo_to_update.employee:
-				emp_details = frappe.get_doc('Employee',todo_to_update.employee)
-				if emp_details.reports_to == self.on_leave_employee:
-					if reference.allocated_to is not None:
-						frappe.db.set_value(ToDo, reference.name, 'allocated_to', self._employee_user_id)
-						self.reassign_docs_related_to_todos(reference_type,reference_name)
+			
+			if reference_type and reference_name:
+				todo_to_update = frappe.get_doc(reference_type, {'name': reference_name})
+				if hasattr(todo_to_update, 'employee') and todo_to_update.employee:
+					emp_details = frappe.get_doc('Employee',todo_to_update.employee)
+					if emp_details.reports_to == self.on_leave_employee:
+						if reference.allocated_to is not None:
+							frappe.db.set_value(ToDo, reference.name, 'allocated_to', self._employee_user_id)
+							self.reassign_docs_related_to_todos(reference_type,reference_name)
 
 
 	def reassign_docs_related_to_todos(self,reference_type,reference_name):

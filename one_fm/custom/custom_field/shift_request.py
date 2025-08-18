@@ -234,14 +234,12 @@ def get_shift_request_custom_fields():
                 "reqd": 1
             },
            {
-                "name": "Shift Request-custom_approval",
                 "label": "Approval",
                 "fieldname": "custom_approval",
                 "insert_after": "amended_from",
                 "fieldtype": "Section Break"
             },
             {
-                "name": "Shift Request-custom_reports_to",
                 "label": "Reports To",
                 "fieldname": "custom_reports_to",
                 "insert_after": "custom_approval",
@@ -252,7 +250,6 @@ def get_shift_request_custom_fields():
                 "ignore_user_permissions": 1
             },
             {
-                "name": "Shift Request-custom_reports_to_user",
                 "label": "Reports To User",
                 "fieldname": "custom_reports_to_user",
                 "insert_after": "custom_reports_to",
@@ -263,14 +260,12 @@ def get_shift_request_custom_fields():
                 "ignore_user_permissions": 1
             },
             {
-                "name": "Shift Request-custom_column_break_ggqao",
                 "label": "",
                 "fieldname": "custom_column_break_ggqao",
                 "insert_after": "custom_reports_to_user",
                 "fieldtype": "Column Break"
             },
             {
-                "name": "Shift Request-custom_project_manager",
                 "label": "Project Manager",
                 "fieldname": "custom_project_manager",
                 "insert_after": "custom_column_break_ggqao",
@@ -280,7 +275,7 @@ def get_shift_request_custom_fields():
                 "read_only": 1,
                 "ignore_user_permissions": 1
             },
-            {"name": "Shift Request-custom_project_manager_user",
+            {
                 "label": "Project Manager User",
                 "fieldname": "custom_project_manager_user",
                 "insert_after": "custom_project_manager",

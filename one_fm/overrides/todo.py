@@ -36,7 +36,7 @@ def notify_todo_status_change(doc):
 def build_notification_subject_content(doc, user):
     """Builds subject and content for notification email."""
     subject = _("{0}({1}) assignment is {2}".format(doc.reference_type, doc.reference_name, doc.status))
-    email_content = _(f"""
+    email_content = _("""
         The assignment referenced to {0}({1}) is {2} by {3}. See Details Below <br>
         <p>Description: {4} </p> <br>
         <p>Date of Allocation:{5}</p> <br>

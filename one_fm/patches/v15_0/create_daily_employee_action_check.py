@@ -41,7 +41,7 @@ def execute():
         "method": method,
         "frequency": "Cron",
         "cron_format": "0 4 * * *",
-        "hours_per_frequency": 0.1,
+        "hours_per_frequency": 0.5,
         "coordination_needed": "No",
         "start_date": "2025-08-18",
         "doctype": "Process Task"

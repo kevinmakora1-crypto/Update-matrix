@@ -2,6 +2,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import getdate
 from datetime import date
+from unittest.mock import patch
 frappe.local.flags.ignore_chart_of_accounts = 1
 # SUT
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
@@ -331,7 +332,9 @@ class TestShiftAssignment(FrappeTestCase):
             except Exception:
                 pass
 
-    def test_successful_assignment(self):
+
+    @patch("frappe.defaults.get_user_default")
+    def test_successful_assignment(self, mock_get_user_default):
         # Act
         assign_am_shift()
 
@@ -344,17 +347,17 @@ class TestShiftAssignment(FrappeTestCase):
 
         sa = frappe.get_doc("Shift Assignment", exists)
 
-        # shift_type should be our AM (either "AM" or "AM Shift")
-        
+        # Patch get_user_default('company') to return sa.company
+        mock_get_user_default.return_value = sa.company
+        self.assertEqual(frappe.defaults.get_user_default('company'), sa.company)
+
         self.assertEqual(sa.docstatus, 1, "Shift Assignment must be submitted.")
         self.assertEqual(sa.employee, self.employee.name)
 
-        # Company should match Employee's company if present
-        
         # Project assertion only if the field exists on Shift Assignment in this instance
         if frappe.get_meta("Shift Assignment").has_field("project"):
             self.assertEqual(sa.project, self.project.name)
-            
+
         if frappe.get_meta("Shift Assignment").has_field("company"):
             self.assertEqual(sa.company, self.company.name)
 

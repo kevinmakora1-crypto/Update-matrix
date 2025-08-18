@@ -335,6 +335,9 @@ class TestShiftAssignment(FrappeTestCase):
 
     @patch("frappe.defaults.get_user_default")
     def test_successful_assignment(self, mock_get_user_default):
+        # Patch get_user_default('company') to return the expected company before the function call
+        mock_get_user_default.return_value = self.company.name
+
         # Act
         assign_am_shift()
 
@@ -347,9 +350,8 @@ class TestShiftAssignment(FrappeTestCase):
 
         sa = frappe.get_doc("Shift Assignment", exists)
 
-        # Patch get_user_default('company') to return sa.company
-        mock_get_user_default.return_value = sa.company
-        self.assertEqual(frappe.defaults.get_user_default('company'), sa.company)
+        # The mock should return the expected company
+        self.assertEqual(frappe.defaults.get_user_default('company'), self.company.name)
 
         self.assertEqual(sa.docstatus, 1, "Shift Assignment must be submitted.")
         self.assertEqual(sa.employee, self.employee.name)

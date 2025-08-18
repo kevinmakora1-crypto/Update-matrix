@@ -634,9 +634,6 @@ scheduler_events = {
 		"45 10 * * *": [
 			'one_fm.utils.send_travel_agent_email'
 		],
-        "00 4 * * *": [ 
-			"one_fm.one_fm.doctype.employee_daily_action.employee_daily_action.run_employee_daily_action_check_notifications"
-		],
 		"10 4 * * *": [ #“At 04:10.”
 			'one_fm.utils.check_grp_operator_submission_four',
 			'one_fm.operations.doctype.post_scheduler_checker.post_scheduler_checker.schedule_roster_checker',

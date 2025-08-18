@@ -240,25 +240,28 @@ class TestShiftAssignment(FrappeTestCase):
             }
         )
         
-        # Employee
-        self.employee = _get_or_create(
-            "Employee",
-            fields={
-                "first_name": "Alice",
-                "one_fm_first_name_in_arabic": "أليس",
-                "last_name": "Sample Last",
-                "one_fm_last_name_in_arabic": "عينة",
-                "company": self.company.name,
-                "department": self.department.name,
-                "date_of_birth": "1990-01-01",
-                "date_of_joining": "2020-01-01",
-                "gender": self.gender.name,
-                "status": "Active",
-                "naming_series": "HR-EMP-",
-                "employment_type": self.employment_type.name,
-                "one_fm_basic_salary": 100
-            },
-        )
+        # Patch Employee before_insert and after_insert so they are not called during test Employee creation
+        from erpnext.setup.doctype.employee.employee import Employee
+        with patch.object(Employee, "before_insert", return_value=None), \
+             patch.object(Employee, "after_insert", return_value=None):
+            self.employee = _get_or_create(
+                "Employee",
+                fields={
+                    "first_name": "Alice",
+                    "one_fm_first_name_in_arabic": "أليس",
+                    "last_name": "Sample Last",
+                    "one_fm_last_name_in_arabic": "عينة",
+                    "company": self.company.name,
+                    "department": self.department.name,
+                    "date_of_birth": "1990-01-01",
+                    "date_of_joining": "2020-01-01",
+                    "gender": self.gender.name,
+                    "status": "Active",
+                    "naming_series": "HR-EMP-",
+                    "employment_type": self.employment_type.name,
+                    "one_fm_basic_salary": 100
+                },
+            )
 
         # Target date for assignment
         self.shift_date = getdate()

@@ -241,9 +241,9 @@ class TestShiftAssignment(FrappeTestCase):
         )
         
         # Patch Employee before_insert and after_insert so they are not called during test Employee creation
-        from erpnext.setup.doctype.employee.employee import Employee
-        with patch.object(Employee, "before_insert", return_value=None), \
-             patch.object(Employee, "after_insert", return_value=None):
+        from one_fm.overrides.employee import EmployeeOverride
+        with patch.object(EmployeeOverride, "before_insert", return_value=None), \
+             patch.object(EmployeeOverride, "after_insert", return_value=None):
             self.employee = _get_or_create(
                 "Employee",
                 fields={

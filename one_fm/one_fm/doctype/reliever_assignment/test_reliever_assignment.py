@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 import frappe
 import unittest
+from unittest.mock import patch
 from one_fm.utils import set_employee_status
 from frappe.utils import nowdate, add_to_date, cstr, cint, getdate, get_link_to_form
 
@@ -146,7 +147,7 @@ class TestRelieverAssignment(unittest.TestCase):
             "job_offer_salary_structure": "Test Salary Structure",
             "one_fm_basic_salary": 100
         }).insert(ignore_permissions=True)
-		
+        
         # Create Contacts and Users
         self.user_contact1 = frappe.get_doc({
             "doctype": "Contact",
@@ -249,7 +250,9 @@ class TestRelieverAssignment(unittest.TestCase):
         self.leave_application.submit()
 
 
-    def test_set_employee_status(self):
+    @patch("one_fm.utils.fetch_leave_types_update_employee_status")
+    def test_set_employee_status(self, mock_fetch_leave_types):
+        mock_fetch_leave_types.return_value = set(self.leave_type.name)
         # Simulate set_employee_status
         set_employee_status()
         # Reload employee1 and check status

@@ -208,8 +208,6 @@ def get_day_off_attendance_map(filters):
 
 	for record in day_off_records:
 		day_off_map.setdefault(record.employee, {})[record.day_of_month] = record.status
-
-	print("="*100,day_off_records, day_off_map)
 		
 	return day_off_map
 

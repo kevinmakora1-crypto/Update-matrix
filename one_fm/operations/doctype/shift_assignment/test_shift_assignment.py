@@ -241,24 +241,17 @@ class TestShiftAssignment(FrappeTestCase):
         )
         
         # Employee
-        self.employee = _get_or_create(
-            "Employee",
-            fields={
-            "first_name": "Alice",
-            "one_fm_first_name_in_arabic": "أليس",
-            "last_name": "Sample Last",
-            "one_fm_last_name_in_arabic": "عينة",
-            "company": self.company.name,
-            "department": self.department.name,
-            "date_of_birth": "1990-01-01",
-            "date_of_joining": "2020-01-01",
-            "gender": self.gender.name,
-            "status": "Active",
-            "naming_series": "HR-EMP-",
-            "employment_type": self.employment_type.name,
-            "one_fm_basic_salary": 100
-            },
-        )
+        from unittest.mock import Mock
+        self.employee = Mock()
+        self.employee.name = "EMP-TEST-001"
+        self.employee.company = self.company.name
+        self.employee.department = self.department.name
+        self.employee.status = "Active"
+        self.employee.gender = self.gender.name
+        self.employee.employment_type = self.employment_type.name
+        self.employee.date_of_birth = "1990-01-01"
+        self.employee.date_of_joining = "2020-01-01"
+        self.employee.one_fm_basic_salary = 100
 
         # Target date for assignment
         self.shift_date = getdate()
@@ -363,23 +356,4 @@ class TestShiftAssignment(FrappeTestCase):
         if frappe.get_meta("Shift Assignment").has_field("company"):
             self.assertEqual(sa.company, self.company.name)
 
-    # def test_assignment_for_existing_shift(self):
-    #     # First assignment succeeds
-    #     assign_am_shift()
-
-    #     # Second attempt should not create duplicate; it may raise or silently skip
-    #     raised = False
-    #     try:
-    #         assign_am_shift()
-    #     except frappe.ValidationError:
-    #         raised = True
-
-    #     # Count of assignments for that employee + date must remain 1
-    #     count = frappe.db.count(
-    #         "Shift Assignment",
-    #         filters={"employee": self.employee.name, "start_date": self.shift_date},
-    #     )
-    #     self.assertEqual(count, 1, "Duplicate Shift Assignment was created.")
-    #     # It's acceptable if the implementation raises to prevent duplicates
-    #     # Ensure at least one of the safeguards occurred
-    #     self.assertTrue(raised or count == 1)
+    

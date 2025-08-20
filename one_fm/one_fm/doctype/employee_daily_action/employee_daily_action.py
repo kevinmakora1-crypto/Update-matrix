@@ -80,21 +80,17 @@ class NotifyReportsToOnAbsenceOfReport:
 	@property
 	def non_compliant_employees(self):
 		if self._non_compliant_employees is None:
-			reported_employees = set(frappe.db.get_list(
+			reported_employees = frappe.db.get_list(
 				"Employee Daily Action", 
 				filters={"date": self.yesterday, "docstatus": 1}, 
 				pluck="employee"
-			))
-			
-			all_employees = frappe.db.get_list("Employee", filters={
+			)
+
+			self._non_compliant_employees = frappe.db.get_list("Employee", filters={
 				"status": "Active",
 				"is_in_ows": "Yes",
+				"name": ["NOT IN", reported_employees]
 			}, fields=["name", "attendance_by_timesheet", "shift_working", "holiday_list", "employee_name"])
-			
-			self._non_compliant_employees = [
-				emp for emp in all_employees 
-				if emp.name not in reported_employees
-			]
 		
 		return self._non_compliant_employees
 

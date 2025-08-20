@@ -136,6 +136,7 @@ one_fm.patches.v15_0.add_shift_request_custom_field
 one_fm.patches.v15_0.remove_shift_request_custom_field
 one_fm.patches.v15_0.update_shift_request_pending_approver_to_pending_approval
 one_fm.patches.v15_0.assign_responsibilities_to_reliever
+one_fm.patches.v15_0.create_daily_employee_action_check
 one_fm.patches.v15_0.add_shift_request_assignment_rule
 one_fm.patches.v15_0.update_shift_request_workflow
 

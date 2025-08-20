@@ -78,6 +78,6 @@ class TestAssignPMShift(unittest.TestCase):
         mock_create_shift_assignment.assert_called()
         mock_log_error.assert_not_called()
 
-        # You can also add more specific assertions, such as checking the arguments passed to create_shift_assignment
-        # self.assertTrue(mock_create_shift_assignment.called)
-        # self.assertEqual(mock_create_shift_assignment.call_args[0][0][0]['employee'], 'EMP-001')
+        # checking the arguments passed to create_shift_assignment
+        self.assertTrue(mock_create_shift_assignment.called)
+        self.assertEqual(mock_create_shift_assignment.call_args[0][0][0]['employee'], 'EMP-001')

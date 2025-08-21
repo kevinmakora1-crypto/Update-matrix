@@ -753,8 +753,15 @@ def assign_am_shift():
 	non_shift = fetch_non_shift(date, "AM")
 	if non_shift:
 		roster.extend(non_shift)
-
-	create_shift_assignment(roster, date, 'AM')
+  
+	todays_leaves = get_today_leaves(str(date))
+	employees_on_vacation = [i.name for i in frappe.db.get_list("Employee", {'status':'Vacation'})]
+	for i in employees_on_vacation:
+		if i not in todays_leaves:
+			todays_leaves.append(i)
+	roster = [i for i in roster if i.get('employee') not in todays_leaves]
+	if roster:
+         create_shift_assignment(roster, date, 'AM')
 
 
 def assign_pm_shift():
@@ -775,14 +782,23 @@ def assign_pm_shift():
 			AND ES.employee IN(
 				SELECT name from `tabEmployee`
 				WHERE status = "Active"
-    			AND employment_type IN {employment_type})
+				AND employment_type IN {employment_type})
 	""".format(date=cstr(date), employment_type=tuple(employment_type)), as_dict=1)
 
 	non_shift = fetch_non_shift(date, "PM")
 	if non_shift:
 		roster.extend(non_shift)
 
-	create_shift_assignment(roster, date, 'PM')
+	todays_leaves = get_today_leaves(str(date))
+	employees_on_vacation = [i.name for i in frappe.db.get_list("Employee", {'status':'Vacation'})]
+	for i in employees_on_vacation:
+		if i not in todays_leaves:
+			todays_leaves.append(i)
+	roster = [i for i in roster if i.get('employee') not in todays_leaves]
+
+	if roster:
+		create_shift_assignment(roster, date, 'PM')
+
 
 
 def end_previous_shifts(time):
@@ -857,12 +873,12 @@ def create_shift_assignment(roster, date, time):
 			sites_list_dict[i.name] = i.site_location
 
 		# remove employees with approved leaves
-		todays_leaves = get_today_leaves(str(date))
-		employees_on_vacation = [i.name for i in frappe.db.get_list("Employee", {'status':'Vacation'})]
-		for i in employees_on_vacation:
-			if not i in todays_leaves:
-				todays_leaves.append(i)
-		roster = [i for i in roster if not i.employee in todays_leaves]
+		# todays_leaves = get_today_leaves(str(date))
+		# employees_on_vacation = [i.name for i in frappe.db.get_list("Employee", {'status':'Vacation'})]
+		# for i in employees_on_vacation:
+		# 	if not i in todays_leaves:
+		# 		todays_leaves.append(i)
+		# roster = [i for i in roster if not i.employee in todays_leaves]
 		if roster:
 			query_head = """
 				INSERT INTO `tabShift Assignment` (`name`, `company`, `docstatus`, `employee`, `employee_name`, `shift_type`, `site`, `project`, `status`,

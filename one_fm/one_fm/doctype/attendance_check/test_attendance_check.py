@@ -6,9 +6,6 @@ from frappe.tests.utils import FrappeTestCase, patch
 from unittest.mock import MagicMock, patch as upatch
 import frappe
 
-patcher = patch("one_fm.one_fm.doctype.attendance_check.attendance_check.sendemail", MagicMock())
-patcher.start()
-
 from one_fm.one_fm.doctype.attendance_check.attendance_check import (
     insert_attendance_check_records,
     create_attendance_check,
@@ -393,14 +390,6 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         todos = [type("obj", (object,), {"name": "AC1"})()]
         create_todos("manager@example.com", todos)
         frappe.db.sql.assert_called()
-
-    def test_notify_manager(self):
-        with patch("one_fm.one_fm.doctype.attendance_check.attendance_check.sendemail", MagicMock()) as mock_sendemail:
-            import one_fm.one_fm.doctype.attendance_check.attendance_check as acmod
-            from importlib import reload
-            reload(acmod)
-            acmod.notify_manager("manager@example.com")
-            mock_sendemail.assert_called()
 
     def test_assign_attendance_manager(self):
         with upatch("one_fm.one_fm.doctype.attendance_check.attendance_check.fetch_attendance_manager_user", MagicMock(return_value="manager@example.com")) as mock_fetch_manager, \

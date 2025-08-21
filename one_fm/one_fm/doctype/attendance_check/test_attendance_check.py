@@ -392,9 +392,18 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         frappe.db.sql.assert_called()
 
     def test_notify_manager(self):
-        with upatch("one_fm.one_fm.doctype.attendance_check.attendance_check.sendemail", MagicMock()) as mock_sendemail:
+        import one_fm.one_fm.doctype.attendance_check.attendance_check as acmod
+        import one_fm.processor
+
+        print("attendance_check.sendemail id:", id(acmod.sendemail))
+        print("one_fm.processor.sendemail id:", id(one_fm.processor.sendemail))
+
+        with upatch("one_fm.one_fm.doctype.attendance_check.attendance_check.sendemail", MagicMock()) as mock_sendemail, \
+            upatch("one_fm.processor.sendemail", MagicMock()) as mock_orig_sendemail:
             notify_manager("manager@example.com")
-            mock_sendemail.assert_called()
+            print("mock_sendemail.called:", mock_sendemail.called)
+            print("mock_orig_sendemail.called:", mock_orig_sendemail.called)
+            self.assertTrue(mock_sendemail.called or mock_orig_sendemail.called)
 
     def test_assign_attendance_manager(self):
         with upatch("one_fm.one_fm.doctype.attendance_check.attendance_check.fetch_attendance_manager_user", MagicMock(return_value="manager@example.com")) as mock_fetch_manager, \

@@ -5,6 +5,7 @@
 from frappe.tests.utils import FrappeTestCase, patch
 from unittest.mock import MagicMock, patch as upatch
 import frappe
+from importlib import reload
 
 from one_fm.one_fm.doctype.attendance_check.attendance_check import (
     insert_attendance_check_records,
@@ -42,6 +43,7 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.patcher_db_get_single_value = upatch("frappe.db.get_single_value", MagicMock(return_value="PenaltyType"))
         self.patcher_enqueue = upatch("frappe.enqueue", MagicMock())
         self.patcher_get_value = upatch("frappe.db.get_value", MagicMock(return_value="shift_type_1"))
+        self.patcher_sendemail = upatch("one_fm.one_fm.doctype.attendance_check.attendance_check.sendemail", MagicMock())
 
         self.patcher_get_doc.start()
         self.patcher_get_all.start()
@@ -60,6 +62,7 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.patcher_db_get_single_value.start()
         self.patcher_enqueue.start()
         self.patcher_get_value.start()
+        self.patcher_sendemail.start()
 
         # Setup mock employee/attendance objects
         self.employee = MagicMock(name="EMP001")
@@ -392,18 +395,9 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         frappe.db.sql.assert_called()
 
     def test_notify_manager(self):
-        import one_fm.one_fm.doctype.attendance_check.attendance_check as acmod
-        import one_fm.processor
-
-        print("attendance_check.sendemail id:", id(acmod.sendemail))
-        print("one_fm.processor.sendemail id:", id(one_fm.processor.sendemail))
-
-        with upatch("one_fm.one_fm.doctype.attendance_check.attendance_check.sendemail", MagicMock()) as mock_sendemail, \
-            upatch("one_fm.processor.sendemail", MagicMock()) as mock_orig_sendemail:
-            notify_manager("manager@example.com")
-            print("mock_sendemail.called:", mock_sendemail.called)
-            print("mock_orig_sendemail.called:", mock_orig_sendemail.called)
-            self.assertTrue(mock_sendemail.called or mock_orig_sendemail.called)
+        notify_manager("manager@example.com")
+        from one_fm.one_fm.doctype.attendance_check.attendance_check import sendemail
+        sendemail.assert_called()
 
     def test_assign_attendance_manager(self):
         with upatch("one_fm.one_fm.doctype.attendance_check.attendance_check.fetch_attendance_manager_user", MagicMock(return_value="manager@example.com")) as mock_fetch_manager, \

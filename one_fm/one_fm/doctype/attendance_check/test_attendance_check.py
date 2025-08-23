@@ -2,7 +2,7 @@
 # See license.txt
 
 # import frappe
-from frappe.tests.utils import FrappeTestCase, patch
+from frappe.tests.utils import FrappeTestCase
 from unittest.mock import MagicMock, patch as upatch
 import frappe
 
@@ -41,7 +41,6 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.patcher_db_get_value = upatch("frappe.db.get_value", MagicMock(return_value="shift_type_1"))
         self.patcher_db_get_single_value = upatch("frappe.db.get_single_value", MagicMock(return_value="PenaltyType"))
         self.patcher_enqueue = upatch("frappe.enqueue", MagicMock())
-        self.patcher_get_value = upatch("frappe.db.get_value", MagicMock(return_value="shift_type_1"))
 
         self.patcher_get_doc.start()
         self.patcher_get_all.start()
@@ -59,7 +58,6 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.patcher_db_get_value.start()
         self.patcher_db_get_single_value.start()
         self.patcher_enqueue.start()
-        self.patcher_get_value.start()
 
         # Setup mock employee/attendance objects
         self.employee = MagicMock(name="EMP001")
@@ -75,7 +73,9 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.shift_supervisor = MagicMock(name="SUP001")
 
     def tearDown(self):
-        upatch.stopall()
+        # Stop only patchers started in this test class
+        for patcher in getattr(self, "patchers", []):
+            patcher.stop()
 
     def test_insert_attendance_check_record(self):
         frappe.get_last_doc.return_value = MagicMock(
@@ -375,19 +375,27 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
             mock_insert.assert_called()
 
     def test_fetch_existing_todos(self):
-        frappe.get_all.return_value = [type("obj", (object,), {"reference_name": "AC001"})()]
+        mock_todo = MagicMock()
+        mock_todo.reference_name = "AC001"
+        frappe.get_all.return_value = [mock_todo]
         todos = fetch_existing_todos("testuser@example.com")
         self.assertIn("AC001", todos)
 
     def test_create_split_query(self):
-        todos = [type("obj", (object,), {"name": "AC1"})(), type("obj", (object,), {"name": "AC2"})()]
+        mock_todo1 = MagicMock()
+        mock_todo1.name = "AC1"
+        mock_todo2 = MagicMock()
+        mock_todo2.name = "AC2"
+        todos = [mock_todo1, mock_todo2]
         queries = create_split_query(todos, 1, "manager@example.com", "2025-08-20", "2025-08-20 08:00:00")
         self.assertEqual(len(queries), 2)
         self.assertTrue("INSERT INTO `tabToDo`" in queries[0])
 
     @upatch("frappe.db.sql", MagicMock())
     def test_create_todos(self):
-        todos = [type("obj", (object,), {"name": "AC1"})()]
+        mock_todo = MagicMock()
+        mock_todo.name = "AC1"
+        todos = [mock_todo]
         create_todos("manager@example.com", todos)
         frappe.db.sql.assert_called()
 
@@ -395,7 +403,9 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         with upatch("one_fm.one_fm.doctype.attendance_check.attendance_check.fetch_attendance_manager_user", MagicMock(return_value="manager@example.com")) as mock_fetch_manager, \
             upatch("one_fm.one_fm.doctype.attendance_check.attendance_check.notify_manager", MagicMock()) as mock_notify_manager, \
             upatch("one_fm.one_fm.doctype.attendance_check.attendance_check.create_todos", MagicMock()) as mock_create_todos:
-            pending = [type("obj", (object,), {"name": "AC1"})()]
+            mock_todo = MagicMock()
+            mock_todo.name = "AC1"
+            pending = [mock_todo]
             assign_attendance_manager(pending)
             mock_create_todos.assert_called()
             mock_notify_manager.assert_called()

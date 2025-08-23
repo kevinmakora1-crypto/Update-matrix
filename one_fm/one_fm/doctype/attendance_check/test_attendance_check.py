@@ -72,7 +72,7 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.shift = MagicMock(name="SHIFT001")
         self.shift_supervisor = MagicMock(name="SUP001")
         
-    def get_value_side_effect(*args, **kwargs):
+    def get_value_side_effect(self, *args, **kwargs):
         if args[0] == "DocType":
             return {"doctype": args[1]}
         # default for other calls

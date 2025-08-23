@@ -82,7 +82,7 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
                 "issingle": 0,
                 "istable": 0,
                 "custom": 0,
-                "fields": [MagicMock(fieldname="test_field")],
+                "fields": [{"fieldname": "test_field"}],
             }
         # Handle positional arguments for DocType
         if args and args[0] == "DocType":

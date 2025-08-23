@@ -75,9 +75,7 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.shift_supervisor = MagicMock(name="SUP001")
 
     def tearDown(self):
-        # Stop only patchers started in this test class
-        for patcher in getattr(self, "patchers", []):
-            patcher.stop()
+        upatch.stopall()
 
     def test_insert_attendance_check_record(self):
         frappe.get_last_doc.return_value = MagicMock(

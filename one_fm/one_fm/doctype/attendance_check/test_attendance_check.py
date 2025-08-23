@@ -41,7 +41,6 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.patcher_db_get_value = upatch("frappe.db.get_value", MagicMock(return_value="shift_type_1"))
         self.patcher_db_get_single_value = upatch("frappe.db.get_single_value", MagicMock(return_value="PenaltyType"))
         self.patcher_enqueue = upatch("frappe.enqueue", MagicMock())
-        self.patcher_get_value = upatch("frappe.db.get_value", MagicMock(return_value="shift_type_1"))
 
         self.patcher_get_doc.start()
         self.patcher_get_all.start()
@@ -59,7 +58,6 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.patcher_db_get_value.start()
         self.patcher_db_get_single_value.start()
         self.patcher_enqueue.start()
-        self.patcher_get_value.start()
 
         # Setup mock employee/attendance objects
         self.employee = MagicMock(name="EMP001")

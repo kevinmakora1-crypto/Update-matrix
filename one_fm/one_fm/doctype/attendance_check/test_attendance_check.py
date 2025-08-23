@@ -73,9 +73,21 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.shift_supervisor = MagicMock(name="SUP001")
         
     def get_value_side_effect(self, *args, **kwargs):
-        if args[0] == "DocType":
+        # Handle keyword arguments for DocType meta
+        if kwargs.get("doctype") == "DocType":
+            return {
+                "doctype": kwargs.get("filters"),
+                "name": kwargs.get("filters"),
+                "module": "core",
+                "issingle": 0,
+                "istable": 0,
+                "custom": 0,
+                "fields": [],
+            }
+        # Handle positional arguments for DocType
+        if args and args[0] == "DocType":
             return {"doctype": args[1]}
-        # default for other calls
+        # Default for other calls
         return "shift_type_1"
 
     def tearDown(self):

@@ -38,9 +38,10 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.patcher_get_last_doc = upatch("frappe.get_last_doc", MagicMock())
         self.patcher_flags = upatch("frappe.flags", MagicMock())
         self.patcher_sendmail = upatch("frappe.sendmail", MagicMock())
-        self.patcher_db_get_value = upatch("frappe.db.get_value", MagicMock(side_effect=self.get_value_side_effect))
+        self.patcher_db_get_value = upatch("frappe.db.get_value", MagicMock(return_value="shift_type_1"))
         self.patcher_db_get_single_value = upatch("frappe.db.get_single_value", MagicMock(return_value="PenaltyType"))
         self.patcher_enqueue = upatch("frappe.enqueue", MagicMock())
+        self.patcher_get_value = upatch("frappe.db.get_value", MagicMock(return_value="shift_type_1"))
 
         self.patcher_get_doc.start()
         self.patcher_get_all.start()
@@ -58,6 +59,7 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.patcher_db_get_value.start()
         self.patcher_db_get_single_value.start()
         self.patcher_enqueue.start()
+        self.patcher_get_value.start()
 
         # Setup mock employee/attendance objects
         self.employee = MagicMock(name="EMP001")
@@ -71,24 +73,6 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.shift_type = MagicMock(name="SHIFT_TYPE_1")
         self.shift = MagicMock(name="SHIFT001")
         self.shift_supervisor = MagicMock(name="SUP001")
-        
-    def get_value_side_effect(self, *args, **kwargs):
-        # Handle keyword arguments for DocType meta
-        if kwargs.get("doctype") == "DocType":
-            return {
-                "doctype": kwargs.get("filters"),
-                "name": kwargs.get("filters"),
-                "module": "core",
-                "issingle": 0,
-                "istable": 0,
-                "custom": 0,
-                "fields": [{"fieldname": "test_field"}],
-            }
-        # Handle positional arguments for DocType
-        if args and args[0] == "DocType":
-            return {"doctype": args[1]}
-        # Default for other calls
-        return "shift_type_1"
 
     def tearDown(self):
         # Stop only patchers started in this test class

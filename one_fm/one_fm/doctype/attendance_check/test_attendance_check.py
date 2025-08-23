@@ -38,7 +38,7 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.patcher_get_last_doc = upatch("frappe.get_last_doc", MagicMock())
         self.patcher_flags = upatch("frappe.flags", MagicMock())
         self.patcher_sendmail = upatch("frappe.sendmail", MagicMock())
-        self.patcher_db_get_value = upatch("frappe.db.get_value", MagicMock(return_value="shift_type_1"))
+        self.patcher_db_get_value = upatch("frappe.db.get_value", MagicMock(side_effect=self.get_value_side_effect))
         self.patcher_db_get_single_value = upatch("frappe.db.get_single_value", MagicMock(return_value="PenaltyType"))
         self.patcher_enqueue = upatch("frappe.enqueue", MagicMock())
 
@@ -71,6 +71,12 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.shift_type = MagicMock(name="SHIFT_TYPE_1")
         self.shift = MagicMock(name="SHIFT001")
         self.shift_supervisor = MagicMock(name="SUP001")
+        
+    def get_value_side_effect(*args, **kwargs):
+        if args[0] == "DocType":
+            return {"doctype": args[1]}
+        # default for other calls
+        return "shift_type_1"
 
     def tearDown(self):
         # Stop only patchers started in this test class

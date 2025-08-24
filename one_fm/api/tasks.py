@@ -787,7 +787,6 @@ def assign_pm_shift():
 
 def end_previous_shifts(time):
 	shift_type = get_shift_type(time)
-	
 	query = f"""
 		UPDATE `tabShift Assignment`
 		SET end_date=DATE(end_datetime)

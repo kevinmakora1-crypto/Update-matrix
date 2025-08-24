@@ -14,6 +14,3 @@ def get_columns():
         _("From Date") + ":Date:150",
         _("To Date") + ":Date:150",
     ]
-
-
-    

@@ -4086,7 +4086,7 @@ def get_consecutive_absences_data(filters=None):
         from_date = frappe.utils.getdate(filters.get("from_date"))
         to_date = frappe.utils.getdate(filters.get("to_date"))
         days_diff = (to_date - from_date).days + 1
-        if days_diff != 7:
+        if days_diff < 7:
             return []
     else:
         to_date = datetime.now().date()
@@ -4137,7 +4137,10 @@ def send_absences_notification():
     subject = "Employees have been absent for 7 consecutive days."
     category = "Report"
     attendance_manager = get_employee_user_id(frappe.db.get_single_value("ONEFM General Setting", "attendance_manager"))
-    recipients=[attendance_manager]
+    if not attendance_manager:
+        frappe.log_error("Attendance Manager user not found. Notification not sent.", "send_absences_notification")
+        return
+    recipients = [attendance_manager]
     for user in recipients:
         notification = frappe.new_doc("Notification Log")
         notification.title = title

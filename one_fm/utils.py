@@ -48,7 +48,8 @@ from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import (
     expire_allocation, create_leave_ledger_entry
 )
 
-from one_fm.api.notification import create_notification_log
+from one_fm.api.notification import create_notification_log, get_employee_user_id
+
 from one_fm.processor import sendemail
 from one_fm.one_fm.payroll_utils import get_user_list_by_role
 from one_fm.operations.doctype.operations_shift.operations_shift import get_shift_supervisor
@@ -4074,3 +4075,80 @@ def get_workflow_action_buttons_html(doc, user):
 
 def fetch_leave_types_update_employee_status():
     return set(frappe.db.get_list("Leave Type", {"custom_update_employee_status_to_vacation": True}, pluck="name"))
+
+
+def get_consecutive_absences_data(filters=None):
+    """
+    Finds and returns a list of employees with 7 or more consecutive absences,
+    including the start and end dates of the absence period.
+    """
+    if filters and filters.get("from_date") and filters.get("to_date"):
+        from_date = frappe.utils.getdate(filters.get("from_date"))
+        to_date = frappe.utils.getdate(filters.get("to_date"))
+        days_diff = (to_date - from_date).days + 1
+        if days_diff != 7:
+            return []
+    else:
+        to_date = datetime.now().date()
+        from_date = to_date - timedelta(days=6)
+
+    # Query employees who are absent for all 7 days in the given range
+    absent_periods = frappe.db.sql("""
+        SELECT
+            employee,
+            employee_name,
+            COUNT(name) as absent_days,
+            MIN(attendance_date) as from_date,
+            MAX(attendance_date) as to_date
+        FROM
+            `tabAttendance`
+        WHERE
+            status = 'Absent'
+            AND attendance_date BETWEEN %(from_date)s AND %(to_date)s
+        GROUP BY
+            employee
+        HAVING
+            COUNT(name) = 7
+    """, {'from_date': from_date, 'to_date': to_date}, as_dict=True)
+
+    return absent_periods
+
+
+def check_consecutive_absences_task():
+    """
+    Scheduled job that checks for employees absent for 7 consecutive days.
+    If found, it triggers the report and notification.
+    """
+    
+    # Get the data for the report
+    absent_employees = get_consecutive_absences_data()
+
+    if absent_employees:
+        send_absences_notification()
+        
+def send_absences_notification():
+    """
+    Sends an ERPNext notification to a specified recipient.
+    """
+    report_link_url = "/app/query-report/7-Day Consecutive Absences"
+    clickable_link = f'<a href="{report_link_url}">View 7-Day Consecutive Absences Report</a>'
+    message = f"A new report has been generated for employees with 7 consecutive absences. <br><br> {clickable_link}"
+    title = "7-Day Consecutive Absences Alert"
+    subject = "Employees have been absent for 7 consecutive days."
+    category = "Report"
+    attendance_manager = get_employee_user_id(frappe.db.get_single_value("ONEFM General Setting", "attendance_manager"))
+    recipients=[attendance_manager]
+    for user in recipients:
+        notification = frappe.new_doc("Notification Log")
+        notification.title = title
+        notification.subject = subject
+        notification.email_content = message
+        notification.document_type = "Notification Log"
+        notification.for_user = user
+        notification.document_name = " "
+        notification.category = category
+        notification.one_fm_mobile_app = 1
+        notification.save(ignore_permissions=True)
+        notification.document_name = notification.name
+        notification.save(ignore_permissions=True)
+        frappe.db.commit()

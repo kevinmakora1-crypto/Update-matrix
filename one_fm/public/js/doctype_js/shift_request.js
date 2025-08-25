@@ -59,7 +59,7 @@ frappe.ui.form.on('Shift Request', {
 function set_update_request_btn(frm) {
 	if(frm.doc.docstatus == 1 && frm.doc.workflow_state == 'Approved' && !frm.doc.update_request){
 		frappe.db.get_value('Employee', frm.doc.employee, 'user_id', function(r) {
-			reports_approvers = frm.doc.custom_reports_to_user
+			reports_approvers = frm.doc.custom_reports_to_user;
 			project_manager = frm.doc.custom_project_manager_user;
 			if(reports_approvers  === frappe.session.user ||project_manager === frappe.session.user || (r.user_id && frappe.session.user == r.user_id)){
 				frm.add_custom_button(__('Update Request'), function() {

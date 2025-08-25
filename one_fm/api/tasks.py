@@ -2116,7 +2116,7 @@ def notify_approver_about_pending_shift_request(is_scheduled_event=True):
 	one_hour = date_time + timedelta(minutes=60)
 
 	pending_shift_request = frappe.db.sql("""
-										SELECT sr.name,employee_name,sr.custom_reports_to_user,sr.custom_project_manager_user 
+										SELECT sr.name, employee_name, sr.custom_reports_to_user, sr.custom_project_manager_user 
 										FROM `tabShift Request` sr 
 										LEFT JOIN `tabOperations Shift` os ON sr.operations_shift = os.name
 										WHERE sr.workflow_state = 'Pending Approval' 

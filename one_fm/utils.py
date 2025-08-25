@@ -4094,11 +4094,12 @@ def get_consecutive_absences_data(filters=None):
     Finds and returns a list of employees with 7 or more consecutive absences,
     including the start and end dates of the absence period, and department.
     """
+    CONSECUTIVE_ABSENCE_THRESHOLD = 7
     if filters and filters.get("start_date") and filters.get("end_date"):
         start_date = frappe.utils.getdate(filters.get("start_date"))
         end_date = frappe.utils.getdate(filters.get("end_date"))
         days_diff = (end_date - start_date).days + 1
-        if days_diff < 7:
+        if days_diff < CONSECUTIVE_ABSENCE_THRESHOLD:
             return []
     else:
         end_date = datetime.now().date()
@@ -4135,7 +4136,7 @@ def get_consecutive_absences_data(filters=None):
         GROUP BY
             t1.employee, t2.department
         HAVING
-            COUNT(t1.name) >= 7
+            COUNT(t1.name) >= {CONSECUTIVE_ABSENCE_THRESHOLD}
     """, query_filters, as_dict=True)
     
     return absent_periods
@@ -4147,7 +4148,7 @@ def send_absences_notification(absent_employees):
     """
     report_link_url = "/app/query-report/7-Day Consecutive Absences"
     clickable_link = f'<a href="{report_link_url}">Click to view report.</a>'
-    message= ""
+    message = ""
     for employees in absent_employees:
         message += f"{employees.employee_name} {employees.department} has been marked absent for 7 consecutive days.<br>"
     message += clickable_link

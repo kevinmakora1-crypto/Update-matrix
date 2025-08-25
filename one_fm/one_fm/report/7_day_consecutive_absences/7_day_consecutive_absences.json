@@ -1,5 +1,6 @@
 {
  "add_total_row": 0,
+ "add_translate_data": 0,
  "columns": [],
  "creation": "2025-08-24 12:09:37.189176",
  "disabled": 0,
@@ -10,7 +11,7 @@
  "is_standard": "Yes",
  "letter_head": "ONEFM",
  "letterhead": null,
- "modified": "2025-08-24 13:41:03.696715",
+ "modified": "2025-08-26 00:16:10.032208",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "7-Day Consecutive Absences",
@@ -18,7 +19,7 @@
  "prepared_report": 0,
  "ref_doctype": "Attendance",
  "report_name": "7-Day Consecutive Absences",
- "report_script": "import frappe\nfrom datetime import datetime, timedelta\n\ndef check_consecutive_absences():\n    \"\"\"\n    Checks for employees absent for 7 consecutive days and generates a report.\n    \"\"\"\n    seven_days_ago = datetime.now().date() - timedelta(days=7)\n\n    # Frappe query to find employees absent for 7 consecutive days\n    # This is a conceptual query, you may need to adjust based on your schema\n    absent_employees = frappe.db.sql(\"\"\"\n        SELECT\n            employee, employee_name, COUNT(name) as absent_days\n        FROM\n            `tabAttendance`\n        WHERE\n            status = 'Absent'\n            AND attendance_date > '{seven_days_ago}'\n        GROUP BY\n            employee\n        HAVING\n            COUNT(name) >= 7\n    \"\"\", {'seven_days_ago': seven_days_ago}, as_dict=True)\n\n    if absent_employees:\n        # Generate the report and send the notification\n        create_absences_report(absent_employees)\n        send_absences_notification()",
+ "report_script": "",
  "report_type": "Script Report",
  "roles": [
   {

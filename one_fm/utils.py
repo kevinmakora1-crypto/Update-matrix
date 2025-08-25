@@ -4077,43 +4077,6 @@ def fetch_leave_types_update_employee_status():
     return set(frappe.db.get_list("Leave Type", {"custom_update_employee_status_to_vacation": True}, pluck="name"))
 
 
-def get_consecutive_absences_data(filters=None):
-    """
-    Finds and returns a list of employees with 7 or more consecutive absences,
-    including the start and end dates of the absence period.
-    """
-    if filters and filters.get("from_date") and filters.get("to_date"):
-        from_date = frappe.utils.getdate(filters.get("from_date"))
-        to_date = frappe.utils.getdate(filters.get("to_date"))
-        days_diff = (to_date - from_date).days + 1
-        if days_diff < 7:
-            return []
-    else:
-        to_date = datetime.now().date()
-        from_date = to_date - timedelta(days=6)
-
-    # Query employees who are absent for all 7 days in the given range
-    absent_periods = frappe.db.sql("""
-        SELECT
-            employee,
-            employee_name,
-            COUNT(name) as absent_days,
-            MIN(attendance_date) as from_date,
-            MAX(attendance_date) as to_date
-        FROM
-            `tabAttendance`
-        WHERE
-            status = 'Absent'
-            AND attendance_date BETWEEN %(from_date)s AND %(to_date)s
-        GROUP BY
-            employee
-        HAVING
-            COUNT(name) = 7
-    """, {'from_date': from_date, 'to_date': to_date}, as_dict=True)
-
-    return absent_periods
-
-
 def check_consecutive_absences_task():
     """
     Scheduled job that checks for employees absent for 7 consecutive days.
@@ -4124,17 +4087,72 @@ def check_consecutive_absences_task():
     absent_employees = get_consecutive_absences_data()
 
     if absent_employees:
-        send_absences_notification()
-        
-def send_absences_notification():
+        send_absences_notification(absent_employees)
+
+def get_consecutive_absences_data(filters=None):
+    """
+    Finds and returns a list of employees with 7 or more consecutive absences,
+    including the start and end dates of the absence period, and department.
+    """
+    if filters and filters.get("start_date") and filters.get("end_date"):
+        start_date = frappe.utils.getdate(filters.get("start_date"))
+        end_date = frappe.utils.getdate(filters.get("end_date"))
+        days_diff = (end_date - start_date).days + 1
+        if days_diff < 7:
+            return []
+    else:
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=9)    
+
+    conditions = ""
+    query_filters = {'start_date': start_date, 'end_date': end_date}
+
+    if filters and filters.get("employee"):
+        conditions += " AND t1.employee = %(employee)s"
+        query_filters['employee'] = filters.get('employee')
+
+    if filters and filters.get("department"):
+        conditions += " AND t2.department = %(department)s"
+        query_filters['department'] = filters.get('department')
+
+    absent_periods = frappe.db.sql(f"""
+        SELECT
+            t1.employee,
+            t1.employee_name,
+            t2.department,
+            MIN(t1.attendance_date) as start_date,
+            MAX(t1.attendance_date) as end_date,
+            COUNT(t1.name) as no_of_days
+        FROM
+            `tabAttendance` t1
+        JOIN
+            `tabEmployee` t2 ON t1.employee = t2.name
+        WHERE
+            t1.status = 'Absent'
+            AND t1.attendance_date BETWEEN %(start_date)s AND %(end_date)s
+            AND t2.status = 'Active'
+            {conditions}
+        GROUP BY
+            t1.employee, t2.department
+        HAVING
+            COUNT(t1.name) >= 7
+    """, query_filters, as_dict=True)
+    
+    return absent_periods
+
+     
+def send_absences_notification(absent_employees):
     """
     Sends an ERPNext notification to a specified recipient.
     """
     report_link_url = "/app/query-report/7-Day Consecutive Absences"
-    clickable_link = f'<a href="{report_link_url}">View 7-Day Consecutive Absences Report</a>'
-    message = f"A new report has been generated for employees with 7 consecutive absences. <br><br> {clickable_link}"
-    title = "7-Day Consecutive Absences Alert"
-    subject = "Employees have been absent for 7 consecutive days."
+    clickable_link = f'<a href="{report_link_url}">Click to view report.</a>'
+    message= ""
+    for employees in absent_employees:
+        message += f"{employees.employee_name} {employees.department} has been marked absent for 7 consecutive days.<br>"
+    message += clickable_link
+    title = "7 Days Absence Alert"
+    subject = "7 Days Absence Alert"
     category = "Report"
     attendance_manager = get_employee_user_id(frappe.db.get_single_value("ONEFM General Setting", "attendance_manager"))
     if not attendance_manager:
@@ -4150,7 +4168,7 @@ def send_absences_notification():
         notification.for_user = user
         notification.document_name = " "
         notification.category = category
-        notification.one_fm_mobile_app = 1
+        notification.one_fm_mobile_app = 0
         notification.save(ignore_permissions=True)
         notification.document_name = notification.name
         notification.save(ignore_permissions=True)

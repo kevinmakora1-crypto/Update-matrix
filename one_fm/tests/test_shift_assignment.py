@@ -16,14 +16,14 @@ def _get_or_create(dt, name=None, fields=None):
     try:
         fields = fields or {}
         if name and frappe.db.exists(dt, name):
-            print("Using existing document:", dt, name)
+            
             return frappe.get_doc(dt, name)
         else:
-            print("Creating new document:", dt)
+            
             doc = frappe.get_doc({"doctype": dt, **fields})
             doc.insert()
         # tests may run on lean fixtures; relax permissions/mandatory to create minimal graph
-        print("Document created:", doc.doctype, doc.name)
+        
         return doc
     except frappe.ValidationError as e:
         if "already exists" in str(e):

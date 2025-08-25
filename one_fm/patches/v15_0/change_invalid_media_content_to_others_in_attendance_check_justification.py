@@ -8,7 +8,6 @@ def execute():
         fields=["name"]
     )
     for rec in records:
-        print(rec)
         # Update justification to 'Other' and set other_reason
         frappe.db.set_value("Attendance Check", rec.name, {
             "justification": "Other",

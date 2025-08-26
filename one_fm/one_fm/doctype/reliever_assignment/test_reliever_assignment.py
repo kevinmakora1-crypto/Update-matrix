@@ -31,8 +31,8 @@ class TestRelieverAssignment(unittest.TestCase):
     def setUp(self,mock_close_ack):
         mock_close_ack.return_value = None
         self.leave_start_date = frappe.utils.getdate()
-        self.leave_end_date = frappe.utils.add_days(self.leave_start_date, 1)
-        self.resumption_date = frappe.utils.add_days(self.leave_start_date, 2)
+        self.leave_end_date = frappe.utils.getdate()
+        self.resumption_date = frappe.utils.add_days(self.leave_start_date, 1)
         
         
         # Create Company and Holiday List
@@ -303,6 +303,11 @@ class TestRelieverAssignment(unittest.TestCase):
 
     def cancel_assignments(self):
         #Cancel The salary structure assignment
+        all_attendance = frappe.get_all("Attendance", filters={"docstatus": 1})
+        for each in all_attendance:
+            doc = frappe.get_doc("Attendance", each.name)
+            doc.cancel()
+            doc.delete()
         all_user_perms = frappe.get_all("User Permission", filters={"allow": "Employee"})
         for each in all_user_perms:
             user_doc = frappe.get_doc("User Permission", each.name)

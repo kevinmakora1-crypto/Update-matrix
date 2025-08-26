@@ -3740,7 +3740,6 @@ def set_employee_status():
         # Process leaves_starting
         for leave in leaves_starting:
             employee = leave['employee']
-            status = leave['status']
             from_date = leave['from_date']
             leave_application = leave['name']
             to_date = leave['to_date']

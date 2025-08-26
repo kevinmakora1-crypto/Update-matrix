@@ -3718,7 +3718,7 @@ def set_employee_status():
 
     # Split into leaves_ending and leaves_starting
     leaves_ending = [leave for leave in all_leaves if current_date == add_days(getdate(leave['to_date']), 1) and leave['status'] == "Vacation"]
-    leaves_starting = [leave for leave in all_leaves if current_date == getdate(leave['from_date']) ] 
+    leaves_starting = [leave for leave in all_leaves if current_date == getdate(leave['from_date'])]
 
     employees_set_to_vacation = 0
     employees_set_to_active = 0
@@ -3740,7 +3740,6 @@ def set_employee_status():
         # Process leaves_starting
         for leave in leaves_starting:
             employee = leave['employee']
-            status = leave['status']
             from_date = leave['from_date']
             leave_application = leave['name']
             to_date = leave['to_date']

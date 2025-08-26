@@ -3715,9 +3715,31 @@ def set_employee_status():
         },
         fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']
     )
+    leaves_starting_today = frappe.get_all('Leave Application',
+        filters={
+            'status': 'Approved',
+            'from_date': current_date,
+            "leave_type": ["IN", fetch_leave_types_update_employee_status()],
+            "docstatus":1
+        },
+        fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']
+    )
+    leaves_ending_yesterday = frappe.get_all('Leave Application',
+        filters={
+            'status': 'Approved',
+            'to_date': add_days(current_date, -1),
+            "leave_type": ["IN", fetch_leave_types_update_employee_status()],
+            "docstatus":1
+        },
+        fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']
+    )
     print("\n\n\n\n\n")
     print("ALL LEAVES")
     print(all_leaves)
+    print("LEAVES STARTING TODAY")
+    print(leaves_starting_today)
+    print("LEAVES ENDING YESTERDAY")
+    print(leaves_ending_yesterday)
     print("\n\n\n\n\n")
     if not all_leaves:
         frappe.log_error(_("No employees found with approved leave applications for today or earlier."))

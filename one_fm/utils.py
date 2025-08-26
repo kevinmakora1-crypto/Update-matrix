@@ -3704,6 +3704,10 @@ def set_employee_status():
     print("Running set_employee_status")
     print("\n\n\n\n\n")
     current_date = getdate(today())
+    print("\n\n\n\n\n")
+    print("APPLICABLE LEAVE TYPES")
+    print(fetch_leave_types_update_employee_status())
+    print("\n\n\n\n\n")
     # Fetch all relevant leave applications
     all_leaves = frappe.get_all('Leave Application',
         filters={
@@ -3722,7 +3726,7 @@ def set_employee_status():
             
             "docstatus":1
         },
-        fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']
+        fields=['employee', 'leave_type', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']
     )
     leaves_ending_yesterday = frappe.get_all('Leave Application',
         filters={

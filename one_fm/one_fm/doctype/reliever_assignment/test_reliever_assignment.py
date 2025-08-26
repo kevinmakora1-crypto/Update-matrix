@@ -279,8 +279,9 @@ class TestRelieverAssignment(unittest.TestCase):
         self.leave_application.submit()
 
 
+    @patch("one_fm.overrides.leave_application.LeaveApplicationOverride.close_leave_acknowledgement_if_below_threshold", return_value=None)
     @patch("one_fm.utils.fetch_leave_types_update_employee_status")
-    def test_set_employee_status(self, mock_fetch_leave_types):
+    def test_set_employee_status(self, mock_fetch_leave_types, mock_close_ack):
         mock_fetch_leave_types.return_value = set(self.leave_type.name)
         # Simulate set_employee_status
         set_employee_status()

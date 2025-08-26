@@ -3696,9 +3696,13 @@ def send_work_anniversary_reminders():
 
 
 
+@frappe.whitelist()
 def set_employee_status():
     from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import assign_responsibilities ,reassign_responsibilities
     # Get today's date
+    print("\n\n\n\n\n")
+    print("Running set_employee_status")
+    print("\n\n\n\n\n")
     current_date = getdate(today())
     # Fetch all relevant leave applications
     all_leaves = frappe.get_all('Leave Application',
@@ -3711,7 +3715,10 @@ def set_employee_status():
         },
         fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']
     )
-
+    print("\n\n\n\n\n")
+    print("ALL LEAVES")
+    print(all_leaves)
+    print("\n\n\n\n\n")
     if not all_leaves:
         frappe.log_error(_("No employees found with approved leave applications for today or earlier."))
         return
@@ -3719,7 +3726,13 @@ def set_employee_status():
     # Split into leaves_ending and leaves_starting
     leaves_ending = [leave for leave in all_leaves if current_date == add_days(getdate(leave['to_date']), 1) and leave['status'] == "Vacation"]
     leaves_starting = [leave for leave in all_leaves if current_date == getdate(leave['from_date'])]
-
+    print("\n\n\n\n\n")
+    print("AFTER SPLITING")
+    print("leaves_starting")
+    print(leaves_starting)
+    print("leaves_ending")
+    print(leaves_ending)
+    print("\n\n\n\n\n")
     employees_set_to_vacation = 0
     employees_set_to_active = 0
     try:
@@ -3746,6 +3759,9 @@ def set_employee_status():
             reliever = leave.get('custom_reliever_', None)
             frappe.db.set_value('Employee', employee, 'status', 'Vacation')
             if reliever:
+                print("\n\n\n\n\n")
+                print("ABOUT TO CREATE RELIEVER ASSIGNMENT")
+                print("\n\n\n\n\n")
                 # frappe.enqueue(assign_responsibilities, leave_application=leave_application)
                 assign_responsibilities(leave_application=leave_application)
                 employees_set_to_vacation += 1
@@ -3762,6 +3778,10 @@ def set_employee_status():
         frappe.log(_("Employee statuses updated: {0} set to 'Vacation', {1} set to 'Active'.")
                 .format(employees_set_to_vacation, employees_set_to_active))
     except:
+        print("\n\n\n\n\n")
+        print("ERROR OCCURED")
+        print(frappe.get_traceback())
+        print("\n\n\n\n\n")
         frappe.log_error(message = frappe.get_traceback(),title= "Error occurred while trying to reassign duties")
 
 

@@ -278,6 +278,9 @@ class TestRelieverAssignment(unittest.TestCase):
             "custom_reliever_": self.employee2.name
         }).insert(ignore_permissions=True)
         self.leave_application.submit()
+        self.leave_application.db_set("status", "Approved")
+        self.leave_application.db_set("workflow_state", "Approved")
+        
 
 
     

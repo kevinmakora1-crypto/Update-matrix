@@ -3733,6 +3733,13 @@ def set_employee_status():
         },
         fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']
     )
+    all_leaves_ = frappe.get_all('Leave Application',
+        filters={
+            'status': 'Approved',
+            "docstatus":1
+        },
+        fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']
+    )
     print("\n\n\n\n\n")
     print("ALL LEAVES")
     print(all_leaves)
@@ -3740,6 +3747,8 @@ def set_employee_status():
     print(leaves_starting_today)
     print("LEAVES ENDING YESTERDAY")
     print(leaves_ending_yesterday)
+    print("ALL LEAVES ON SYSTEM")
+    print(all_leaves_)
     print("\n\n\n\n\n")
     if not all_leaves:
         frappe.log_error(_("No employees found with approved leave applications for today or earlier."))

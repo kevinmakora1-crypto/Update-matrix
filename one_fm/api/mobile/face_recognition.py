@@ -86,7 +86,7 @@ def verify(video, log_type, skip_attendance, latitude, longitude):
         # Call service stub and get response
         res = random.choice(stubs).FaceRecognition(req)
         
-        if res.verification == "FAILED" and 'Invalid media content' in res.data:
+        if res.verification == "FAILED":
             frappe.enqueue('one_fm.operations.doctype.face_recognition_log.face_recognition_log.create_face_recognition_log',
             **{'data':{'employee':employee, 'log_type':log_type, 'verification':res.verification,
                 'message':res.message, 'data':res.data, 'source': 'Checkin'}})

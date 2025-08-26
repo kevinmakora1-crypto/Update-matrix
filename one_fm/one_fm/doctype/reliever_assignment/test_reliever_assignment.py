@@ -27,8 +27,9 @@ class TestRelieverAssignment(unittest.TestCase):
             }).insert(ignore_permissions=True)
         
         frappe.db.commit()
-            
-    def setUp(self):
+    @patch("one_fm.overrides.leave_application.LeaveApplicationOverride.close_leave_acknowledgement_if_below_threshold", return_value=None)
+    def setUp(self,mock_close_ack):
+        mock_close_ack.return_value = None
         self.leave_start_date = frappe.utils.getdate()
         self.leave_end_date = frappe.utils.add_days(self.leave_start_date, 1)
         self.resumption_date = frappe.utils.add_days(self.leave_start_date, 2)
@@ -279,11 +280,11 @@ class TestRelieverAssignment(unittest.TestCase):
         self.leave_application.submit()
 
 
-    @patch("one_fm.overrides.leave_application.LeaveApplicationOverride.close_leave_acknowledgement_if_below_threshold", return_value=None)
+    
     @patch("one_fm.utils.fetch_leave_types_update_employee_status")
-    def test_set_employee_status(self, mock_fetch_leave_types, mock_close_ack):
+    def test_set_employee_status(self, mock_fetch_leave_types):
         mock_fetch_leave_types.return_value = set(self.leave_type.name)
-        mock_close_ack.return_value = None
+        
         # Simulate set_employee_status
         set_employee_status()
         # Reload employee1 and check status

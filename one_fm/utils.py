@@ -48,7 +48,8 @@ from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import (
     expire_allocation, create_leave_ledger_entry
 )
 
-from one_fm.api.notification import create_notification_log
+from one_fm.api.notification import create_notification_log, get_employee_user_id
+
 from one_fm.processor import sendemail
 from one_fm.one_fm.payroll_utils import get_user_list_by_role
 from one_fm.operations.doctype.operations_shift.operations_shift import get_shift_supervisor
@@ -4074,3 +4075,102 @@ def get_workflow_action_buttons_html(doc, user):
 
 def fetch_leave_types_update_employee_status():
     return set(frappe.db.get_list("Leave Type", {"custom_update_employee_status_to_vacation": True}, pluck="name"))
+
+
+def check_consecutive_absences_task():
+    """
+    Scheduled job that checks for employees absent for 7 consecutive days.
+    If found, it triggers the report and notification.
+    """
+    
+    # Get the data for the report
+    absent_employees = get_consecutive_absences_data()
+
+    if absent_employees:
+        send_absences_notification(absent_employees)
+
+def get_consecutive_absences_data(filters=None):
+    """
+    Finds and returns a list of employees with 7 or more consecutive absences,
+    including the start and end dates of the absence period, and department.
+    """
+    CONSECUTIVE_ABSENCE_THRESHOLD = 7
+    if filters and filters.get("start_date") and filters.get("end_date"):
+        start_date = frappe.utils.getdate(filters.get("start_date"))
+        end_date = frappe.utils.getdate(filters.get("end_date"))
+        days_diff = (end_date - start_date).days + 1
+        if days_diff < CONSECUTIVE_ABSENCE_THRESHOLD:
+            return []
+    else:
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=9)    
+
+    conditions = ""
+    query_filters = {'start_date': start_date, 'end_date': end_date}
+
+    if filters and filters.get("employee"):
+        conditions += " AND t1.employee = %(employee)s"
+        query_filters['employee'] = filters.get('employee')
+
+    if filters and filters.get("department"):
+        conditions += " AND t2.department = %(department)s"
+        query_filters['department'] = filters.get('department')
+
+    absent_periods = frappe.db.sql(f"""
+        SELECT
+            t1.employee,
+            t1.employee_name,
+            t2.department,
+            MIN(t1.attendance_date) as start_date,
+            MAX(t1.attendance_date) as end_date,
+            COUNT(t1.name) as no_of_days
+        FROM
+            `tabAttendance` t1
+        JOIN
+            `tabEmployee` t2 ON t1.employee = t2.name
+        WHERE
+            t1.status = 'Absent'
+            AND t1.attendance_date BETWEEN %(start_date)s AND %(end_date)s
+            AND t2.status = 'Active'
+            {conditions}
+        GROUP BY
+            t1.employee, t2.department
+        HAVING
+            COUNT(t1.name) >= {CONSECUTIVE_ABSENCE_THRESHOLD}
+    """, query_filters, as_dict=True)
+    
+    return absent_periods
+
+     
+def send_absences_notification(absent_employees):
+    """
+    Sends an ERPNext notification to a specified recipient.
+    """
+    report_link_url = "/app/query-report/7-Day Consecutive Absences"
+    clickable_link = f'<a href="{report_link_url}">Click to view report.</a>'
+    message = ""
+    for employees in absent_employees:
+        message += f"{employees.employee_name} {employees.department} has been marked absent for 7 consecutive days.<br>"
+    message += clickable_link
+    title = "7 Days Absence Alert"
+    subject = "7 Days Absence Alert"
+    category = "Report"
+    attendance_manager = get_employee_user_id(frappe.db.get_single_value("ONEFM General Setting", "attendance_manager"))
+    if not attendance_manager:
+        frappe.log_error("Attendance Manager user not found. Notification not sent.", "send_absences_notification")
+        return
+    recipients = [attendance_manager]
+    for user in recipients:
+        notification = frappe.new_doc("Notification Log")
+        notification.title = title
+        notification.subject = subject
+        notification.email_content = message
+        notification.document_type = "Notification Log"
+        notification.for_user = user
+        notification.document_name = " "
+        notification.category = category
+        notification.one_fm_mobile_app = 0
+        notification.save(ignore_permissions=True)
+        notification.document_name = notification.name
+        notification.save(ignore_permissions=True)
+        frappe.db.commit()

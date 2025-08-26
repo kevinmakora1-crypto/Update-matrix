@@ -290,7 +290,9 @@ class TestRelieverAssignment(unittest.TestCase):
         # Reload employee1 and check status
         self.employee1.reload()
         self.assertEqual(self.employee1.status, "Vacation")
-
+		# Check if reliever assignment was created
+        reliever_assignment = frappe.get_all("Reliever Assignment", filters={"on_leave_employee": self.employee1.name, "reliever": self.employee2.name, "leave_application": self.leave_application.name})
+        self.assertTrue(reliever_assignment, "Reliever Assignment was not created")
         # Reload ToDo and ensure it was reassigned to reliever (employee2's user)
         self.todo.reload()
         # self.assertEqual(

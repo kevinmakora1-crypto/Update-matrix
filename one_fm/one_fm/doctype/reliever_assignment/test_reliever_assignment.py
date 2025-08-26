@@ -286,9 +286,8 @@ class TestRelieverAssignment(unittest.TestCase):
 
 
     
-    @patch("one_fm.utils.fetch_leave_types_update_employee_status")
+    
     def test_set_employee_status(self, mock_fetch_leave_types):
-        mock_fetch_leave_types.return_value = set(self.leave_type.name)
         
         # Simulate set_employee_status
         set_employee_status()

@@ -3719,7 +3719,7 @@ def set_employee_status():
         filters={
             'status': 'Approved',
             'from_date': current_date,
-            "leave_type": ["IN", fetch_leave_types_update_employee_status()],
+            
             "docstatus":1
         },
         fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']
@@ -3728,7 +3728,7 @@ def set_employee_status():
         filters={
             'status': 'Approved',
             'to_date': add_days(current_date, -1),
-            "leave_type": ["IN", fetch_leave_types_update_employee_status()],
+            
             "docstatus":1
         },
         fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']
@@ -3736,6 +3736,7 @@ def set_employee_status():
     all_leaves_ = frappe.get_all('Leave Application',
         filters={
             'status': 'Approved',
+            "leave_type": ["IN", fetch_leave_types_update_employee_status()],
             "docstatus":1
         },
         fields=['employee', 'employee.status', 'from_date', 'to_date', 'custom_reliever_', 'name']

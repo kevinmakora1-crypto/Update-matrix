@@ -280,6 +280,8 @@ class TestRelieverAssignment(unittest.TestCase):
         self.leave_application.submit()
         self.leave_application.db_set("status", "Approved")
         self.leave_application.db_set("workflow_state", "Approved")
+        self.leave_type.db_set("custom_update_employee_status_to_vacation", 1)
+        frappe.db.commit()
         
 
 

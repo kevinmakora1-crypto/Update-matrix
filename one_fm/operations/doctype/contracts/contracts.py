@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2020, omar jaber and contributors
+# Copyright (c) 2020, ONE FM and contributors
 # For license information, please see license.txt
 
 # days_off was hidden because it reset to 0 on save for no reason

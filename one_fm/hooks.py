@@ -9,7 +9,7 @@ from hrms.hr.doctype.shift_type.shift_type import ShiftType
 
 app_name = "one_fm"
 app_title = "One Fm"
-app_publisher = "omar jaber"
+app_publisher = "ONE FM"
 app_description = "One Facility Management is a leader in the fields of commercial automation and integrated security management systems providing the latest in products and services in these fields"
 app_icon = "octicon octicon-file-directory"
 app_color = "grey"

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021, omar jaber and contributors
+# Copyright (c) 2021, ONE FM and contributors
 # For license information, please see license.txt
 
 from __future__ import unicode_literals

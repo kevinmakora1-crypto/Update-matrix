@@ -161,7 +161,7 @@ def send_contact_email(contact_name, contact_email, contact_subject, contact_mes
     """.format(contact_name, contact_email, contact_subject, contact_message)
 
     try:
-        sendemail(sender=sender, recipients= 'omar.ja93@gmail.com',
+        sendemail(sender=sender, recipients= 'develop@one-fm.com',
             content=message_details, subject=contact_subject)
 
         sendemail(sender=sender, recipients= contact_email,

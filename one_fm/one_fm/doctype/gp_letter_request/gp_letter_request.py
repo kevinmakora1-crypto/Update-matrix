@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2020, omar jaber and contributors
+# Copyright (c) 2020, ONE FM and contributors
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
@@ -30,7 +30,7 @@ class GPLetterRequest(Document):
         page_link = self.get_page_link()
         msg = frappe.render_template('one_fm/templates/emails/gp_letter_request.html', context={"page_link": page_link})
         sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
-        recipient = 'omar.ja93@gmail.com'
+        recipient = 'develop@one-fm.com'
         sendemail(sender=sender, recipients= recipient,
             content=msg, subject="Employment Details", delayed=False)
         self.db_set("sent_date", frappe.utils.now())

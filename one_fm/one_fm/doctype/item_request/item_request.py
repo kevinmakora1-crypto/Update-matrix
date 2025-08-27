@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2019, omar jaber and contributors
+# Copyright (c) 2019, ONE FM and contributors
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
@@ -67,12 +67,12 @@ class ItemRequest(Document):
         msg_mng = frappe.render_template('one_fm/templates/emails/item_request_mng.html', context={"page_link": page_link})
 
         # sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
-        sender = "omar.ja93@gmail.com" or None
+        sender = "develop@one-fm.com" or None
         prefered_email_employee = frappe.get_value("Employee", filters = {"name": self.employee}, fieldname = "prefered_email")
         prefered_email_manager = frappe.get_value("Employee", filters = {"name": frappe.session.user}, fieldname = "prefered_email")
 
         # stock manager
-        frappe.publish_realtime(event='msgprint', message='New Item Request has been approved, please check next step from <a href="{0}">Here</a> for your Action'.format(page_link), user='omar.ja93@gmail.com')
+        frappe.publish_realtime(event='msgprint', message='New Item Request has been approved, please check next step from <a href="{0}">Here</a> for your Action'.format(page_link), user='develop@one-fm.com')
 
         # employee who create
         frappe.publish_realtime(event='msgprint', message='Your Item Request has been approved, and its now under stock review', user=prefered_email_employee)

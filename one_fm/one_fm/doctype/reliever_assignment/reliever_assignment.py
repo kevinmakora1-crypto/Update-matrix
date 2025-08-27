@@ -19,14 +19,9 @@ class RelieverAssignment(Document):
 
 	def before_insert(self):
 		self.validate_leave_application()
-		print("\n\n\n\n\n")
-		print("DONE WITH BEFORE INSERT")
-		print("\n\n\n\n\n")
+		
 		
 	def after_insert(self):
-		print("\n\n\n\n\n")
-		print("STARTING AFTER INSERT")
-		print("\n\n\n\n\n")
 		self.assign_roles()
 		self.assign_reportees()
 		self.assign_todos()
@@ -35,9 +30,7 @@ class RelieverAssignment(Document):
 		self.assign_routine_tasks()
 		self.get_single_doctypes()
 		self.get_approval_doctypes()
-		print("\n\n\n\n\n")
-		print("DONE ASSIGNING ALL RECORDS")
-		print("\n\n\n\n\n")
+		
 		# Update status after transferring responsibilities
 		self.update_status("Transferred")
 		self.save()
@@ -117,10 +110,7 @@ class RelieverAssignment(Document):
 				& (ToDo.status == "Open")
 			).orderby(ToDo.reference_type, order=frappe.qb.asc)
 		).run(as_dict=True)
-		print("\n\n\n\n\n")
-		print("OPEN TODOS")
-		print(open_todos)
-		print("\n\n\n\n\n")
+		
 		if len(open_todos) > 0:
 			# Log data for reversal
 			self.add_assigned_documents("ToDo", "Docfield", open_todos, fieldname="allocated_to")

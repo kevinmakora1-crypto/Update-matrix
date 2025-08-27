@@ -216,7 +216,7 @@
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Supplier Purchase Order",
- "owner": "omar.ja93@gmail.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "cancel": 1,

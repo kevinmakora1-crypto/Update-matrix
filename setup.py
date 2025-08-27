@@ -16,7 +16,7 @@ setup(
 	name='one_fm',
 	version=version,
 	description='One Facility Management is a leader in the fields of commercial automation and integrated security management systems providing the latest in products and services in these fields',
-	author='omar jaber',
+	author='ONE FM',
 	author_email='develop@one-fm.com',
 	packages=find_packages(),
 	zip_safe=False,

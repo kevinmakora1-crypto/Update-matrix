@@ -27,9 +27,16 @@ def execute(filters):
 	if not attendance_map:
 		frappe.msgprint(_("No attendance records found."), alert=True, indicator="orange")
 		return [], []
+	
+	schedule_map = {}
+	if filters.get("include_future_attendance"):
+		schedule_map = get_schedule_map(filters)
+		if not schedule_map:
+			frappe.msgprint(_("No schedule records found."), alert=True, indicator="orange")
+			return [], []
 
 	columns = get_columns(filters)
-	data = get_data(filters, attendance_map)
+	data = get_data(filters, attendance_map, schedule_map)
 
 	if not data:
 		frappe.msgprint(_("No attendance records found for this criteria."), alert=True, indicator="orange")
@@ -84,9 +91,9 @@ def get_columns_for_days(filters):
 	return days
 
 
-def get_data(filters, attendance_map):
+def get_data(filters, attendance_map, schedule_map):
 	employee_details = get_employee_details()
-	data = get_rows(employee_details, filters, attendance_map)
+	data = get_rows(employee_details, filters, attendance_map, schedule_map)
 
 	return data
 
@@ -211,6 +218,111 @@ def get_day_off_attendance_map(filters):
 		
 	return day_off_map
 
+
+def get_schedule_map(filters):
+	"""Returns a dictionary of employee wise schedule map as per shifts for all the days of the month like
+	{
+		'employee1': {
+				'Morning': {1: 'Present', 2: 'Absent', ...}
+				'Evening': {1: 'Absent', 2: 'Present', ...}
+		},
+		'employee2': {
+				'Afternoon': {1: 'Present', 2: 'Absent', ...}
+				'Night': {1: 'Absent', 2: 'Absent', ...}
+		},
+		'employee3': {
+				None: {1: 'On Leave'}
+		}
+	}
+	"""
+	non_day_off_schedule_records = get_non_day_off_schedule_records(filters)
+
+	schedule_map = {}
+	leave_map = {}
+
+	for d in non_day_off_schedule_records:
+		if d.status in ["Annual Leave"]:
+			leave_map.setdefault(d.employee, {}).setdefault(d.shift, []).append(d.day_of_month)
+			continue
+
+		if d.shift is None:
+			d.shift = ""
+
+		schedule_map.setdefault(d.employee, {}).setdefault(d.shift, {})
+		schedule_map[d.employee][d.shift][d.day_of_month] = d.status
+
+	# leave is applicable for the entire day so all shifts should show the leave entry
+	for employee, leave_days in leave_map.items():
+		for assigned_shift, days in leave_days.items():
+			# no schedule records exist except leaves
+			if employee not in schedule_map:
+				schedule_map.setdefault(employee, {}).setdefault(assigned_shift, {})
+
+			for day in days:
+				for shift in schedule_map[employee].keys():
+					schedule_map[employee][shift][day] = "Annual Leave"
+
+	return schedule_map
+
+def get_non_day_off_schedule_records(filters):
+	EmployeeSchedule = frappe.qb.DocType("Employee Schedule")
+	OperationsShift = frappe.qb.DocType("Operations Shift")
+
+	query = (
+		frappe.qb.from_(EmployeeSchedule)
+		.join(OperationsShift)
+		.on(EmployeeSchedule.shift == OperationsShift.name)
+		.select(
+			EmployeeSchedule.employee,
+			Extract("day", EmployeeSchedule.date).as_("day_of_month"),
+			EmployeeSchedule.employee_availability.as_("status"),
+			OperationsShift.shift_classification.as_("shift"),
+		)
+		.where(
+			(EmployeeSchedule.date >= nowdate())
+			& (Extract("month", EmployeeSchedule.date) == filters.month)
+			& (Extract("year", EmployeeSchedule.date) == filters.year)
+			& ~(EmployeeSchedule.employee_availability.isin(["Day Off", "Client Day Off"]))
+		)
+		.orderby(EmployeeSchedule.employee, EmployeeSchedule.date)
+	)
+
+	if filters.get("project"):
+		query = query.where(EmployeeSchedule.project == filters.project)
+
+	if filters.get("site"):
+		query = query.where(EmployeeSchedule.site == filters.site)
+
+	return query.run(as_dict=True)
+
+def get_day_off_schedule_map(filters):
+	EmployeeSchedule = frappe.qb.DocType("Employee Schedule")
+
+	query = (
+		frappe.qb.from_(EmployeeSchedule)
+		.select(
+			EmployeeSchedule.employee,
+			Extract("day", EmployeeSchedule.date).as_("day_of_month"),
+			EmployeeSchedule.employee_availability.as_("status"),
+		)
+		.where(
+			(EmployeeSchedule.date >= nowdate())
+			& (Extract("month", EmployeeSchedule.date) == filters.month)
+			& (Extract("year", EmployeeSchedule.date) == filters.year)
+			& (EmployeeSchedule.employee_availability.isin(["Day Off", "Client Day Off"]))
+		)
+		.orderby(EmployeeSchedule.employee, EmployeeSchedule.date)
+	)
+
+	day_off_records = query.run(as_dict=True)
+
+	day_off_map = {}
+
+	for record in day_off_records:
+		day_off_map.setdefault(record.employee, {})[record.day_of_month] = record.status
+		
+	return day_off_map
+
 def get_employee_details():
 	Employee = frappe.qb.DocType("Employee")
 	query = (
@@ -233,18 +345,26 @@ def get_employee_details():
 	return emp_map
 
 
-def get_rows(employee_details, filters, attendance_map):
+def get_rows(employee_details, filters, attendance_map, schedule_map):
 	records = []
+
+	day_off_attendance_map = get_day_off_attendance_map(filters)
+	day_off_schedule_map = get_day_off_schedule_map(filters) if filters.get("include_future_attendance") else {}
 
 	for employee, details in employee_details.items():
 
 		employee_attendance = attendance_map.get(employee)
-		if not employee_attendance:
+		employee_schedule = schedule_map.get(employee)
+
+		employee_day_off_attendance = day_off_attendance_map.get(employee, {})
+		employee_day_off_schedule = day_off_schedule_map.get(employee, {})
+
+		if not (employee_attendance or employee_schedule):
+			# no attendance or schedule records found for employee
 			continue
 
-		attendance_for_employee = get_attendance_status(
-			filters, employee, employee_attendance
-		)
+		attendance_for_employee = get_attendance_status(filters, employee_attendance, employee_day_off_attendance, employee_schedule, employee_day_off_schedule)
+
 		# set employee details in the first row
 		for record in attendance_for_employee:
 			record.update({"employee_id": details.employee_id, "employee_name": details.employee_name})
@@ -253,33 +373,48 @@ def get_rows(employee_details, filters, attendance_map):
 
 	return records
 
-def get_attendance_status(filters, employee, employee_attendance):
+def get_attendance_status(filters, employee_non_day_off_attendance, employee_day_off_attendance, employee_non_day_off_schedule, employee_day_off_schedule):
 	"""Returns list of shift-wise attendance status for employee
 	[
 			{'shift': 'Morning', 1: 'A', 2: 'P', 3: 'A'....},
 			{'shift': 'Evening', 1: 'P', 2: 'A', 3: 'P'....}
 	]
 	"""
-	day_off_attendance_map = get_day_off_attendance_map(filters)
 	total_days = monthrange(cint(filters.year), cint(filters.month))[1]
 	attendance_values = []
 
-	attendance_status_map = { **status_map, "Work From Home": "P", "Client Day Off": "CDO" }
+	attendance_status_map = { 
+		**status_map, 
+		"Work From Home": "P", 
+		"Working": "P", 
+		"Client Day Off": "CDO",
+		"Sick Leave": "OL",
+		"Annual Leave": "OL",
+		"Emergency Leave": "OL"
+	}
 
-	for shift, status_dict in employee_attendance.items():
+	employee_non_day_off_attendance = employee_non_day_off_attendance or {}
+	employee_non_day_off_schedule = employee_non_day_off_schedule or {}
+
+	shifts = set(employee_non_day_off_attendance.keys()) | set(employee_non_day_off_schedule.keys())
+
+	for shift in shifts:
 		row = {"shift": shift}
+
+		# Merge Attendance and Schedule statuses
+		attendance_dict = { **employee_non_day_off_attendance.get(shift, {}), **employee_non_day_off_schedule.get(shift, {}) }
 
 		working_days = 0
 		off_days = 0
 
 		for day in range(1, total_days + 1):
-			status = status_dict.get(day)
+			status = attendance_dict.get(day)
 
-			# if status is not found in attendance records, check day off attendance map
+			# if status is not found in non day attendance records, check day off attendance
 			if not status:
-				status = day_off_attendance_map.get(employee, {}).get(day, "")
+				status = employee_day_off_attendance.get(day, "") or employee_day_off_schedule.get(day, "")
 
-			if status in ["Present", "Work From Home"]:
+			if status in ["Present", "Working", "Work From Home"]:
 				working_days += 1
 			elif status in ["Day Off", "Client Day Off"]:
 				off_days += 1

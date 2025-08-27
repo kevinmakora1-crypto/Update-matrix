@@ -201,6 +201,8 @@ def process_shift_assignment(doc, event=None):
     if doc.workflow_state == 'Approved' and doc.docstatus == 1:
         if  doc.purpose == "Assign Day Off":
             assign_day_off(doc)
+        elif  doc.purpose == "Assign Client Day Off":
+            assign_client_day_off(doc)
         elif doc.purpose == 'Replace Existing Assignment':
             if doc.roster_type == "Basic" and cstr(doc.from_date) <= cstr(getdate()) <= cstr(doc.to_date):
                 shift_assignemnt = frappe.get_list("Shift Assignment", filters=[['employee', '=', doc.employee],
@@ -632,6 +634,36 @@ def assign_day_off(shift_request):
             schedule.employee = shift_request.employee
             schedule.date = start_date
             schedule.employee_availability = 'Day Off'
+            schedule.save()
+            start_date += delta
+    frappe.db.commit()
+
+def assign_client_day_off(shift_request):
+    shift_assignment = frappe.get_list('Shift Assignment',{'employee': shift_request.employee, 'start_date': shift_request.from_date},['name', "start_date"])
+    if shift_assignment:
+        for s in shift_assignment:
+            frappe.db.sql("""DELETE FROM `tabEmployee Checkin` WHERE employee=%s AND shift_assignment=%s""",(shift_request.employee, s.name))
+            if s.start_date >= getdate():
+                frappe.db.sql("""DELETE from `tabShift Assignment` WHERE name=%s""", (s.name,))
+
+    employee_schedule = frappe.get_list('Employee Schedule', {'employee': shift_request.employee,'date': ["between", (shift_request.from_date, shift_request.to_date)]}, ['name', 'roster_type'])
+    if employee_schedule:
+        for es in employee_schedule:
+            if es.roster_type == "Basic":
+                schedule = frappe.get_doc("Employee Schedule", es.name)
+                schedule.employee_availability = 'Client Day Off'
+                schedule.save()
+            else:
+                frappe.delete_doc("Employee Schedule", es.name)
+    else:
+        start_date = datetime.datetime.strptime(shift_request.from_date, '%Y-%m-%d')
+        end_date = datetime.datetime.strptime(shift_request.to_date, '%Y-%m-%d')
+        delta = datetime.timedelta(days=1)
+        while start_date <= end_date:
+            schedule = frappe.new_doc("Employee Schedule")
+            schedule.employee = shift_request.employee
+            schedule.date = start_date
+            schedule.employee_availability = 'Client Day Off'
             schedule.save()
             start_date += delta
     frappe.db.commit()

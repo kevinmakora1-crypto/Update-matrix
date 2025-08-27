@@ -1,4 +1,4 @@
-# Copyright (c) 2022, omar jaber, Anthony Emmanuel and contributors
+# Copyright (c) 2022, ONE FM and Contributors
 # For license information, please see license.txt
 
 import frappe

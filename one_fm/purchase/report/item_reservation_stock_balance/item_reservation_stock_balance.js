@@ -1,4 +1,4 @@
-// Copyright (c) 2021, omar jaber, Anthony Emmanuel and contributors
+// Copyright (c) 2021, ONE FM and Contributors
 // For license information, please see license.txt
 /* eslint-disable */
 

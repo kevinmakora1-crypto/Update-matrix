@@ -1173,7 +1173,7 @@ def pam_salary_certificate_expiry_date():
                 "description": "PAM Salary Certificate will Expire after {0} day".format(date_difference),
                 "reference_type": "PAM Salary Certificate",
                 "reference_name": pam[0],
-                "owner": 'omar.ja93@gmail.com',
+                "owner": 'develop@one-fm.com',
                 "date": pam[1]
             }).insert(ignore_permissions=True)
 
@@ -1197,7 +1197,7 @@ def pam_authorized_signatory():
                 "description": "PAM Authorized Signatory will Expire after {0} day".format(date_difference),
                 "reference_type": "PAM Authorized Signatory List",
                 "reference_name": pam[0],
-                "owner": 'omar.ja93@gmail.com',
+                "owner": 'develop@one-fm.com',
                 "date": pam[1]
             }).insert(ignore_permissions=True)
 

@@ -17,6 +17,17 @@
     font-size: 7px !important;
     font-family: "Readex Pro", sans-serif;
   }
+
+  /* Override the existing styles */
+  .print-format td img {
+    max-height: 50px;
+    max-width: 100%;
+    height: auto !important;
+    width: auto !important;
+    object-fit: contain;
+    display: block;
+    margin: auto; 
+  }
   /* === Print Format Styles End === */
 
   .attendance-table {
@@ -188,15 +199,17 @@
           </tr>
         {% } %}
   
-        <!-- Staff on Duty -->
-        <tr class="staff-duty">
-          <th colspan="{{ empIdColSpan + empNameColSpan + shiftColSpan + 1 }}">No. of Staff on Duty</th>
-          {% for (var i = 0; i < monthDays.length; i++) { %}
-            <td>{{ pageData.reduce((count, att) => att[monthDays[i].date.toString()] === 'P' ? count + 1 : count, 0) }}</td>
-          {% } %}
-          <td colspan="2">-</td>
-          <td>-</td>
-        </tr>
+        <!-- Staff on Duty (On Last Page Only) -->
+        {% if (p == (pages.length - 1)) { %}
+          <tr class="staff-duty">
+            <th colspan="{{ empIdColSpan + empNameColSpan + shiftColSpan + 1 }}">No. of Staff on Duty</th>
+            {% for (var n = 0; n < monthDays.length; n++) { %}
+              <td>{{ data.reduce((count, att) => att[monthDays[n].date.toString()] === 'P' ? count + 1 : count, 0) }}</td>
+            {% } %}
+            <td colspan="2">{{ data.reduce((acc, rec) => acc + (rec.working_days || 0), 0) }}</td>
+            <td>{{ data.reduce((acc, rec) => acc + (rec.off_days || 0), 0) }}</td>
+          </tr>
+        {% } %}
   
         <!-- Signatures -->
         <tr class="signatures">

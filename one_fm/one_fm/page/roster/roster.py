@@ -360,7 +360,7 @@ def get_employee_leave_attendance(employees, start_date):
         from_date = getdate(leave.from_date)
         to_date = getdate(leave.to_date)
         days_count = date_diff(to_date, from_date) + 1  # inclusive
-        leave_days = [(add_days(from_date, i)).strftime("%Y-%m-%d") for i in range(days_count)]
+        leave_days = [add_days(from_date, i) for i in range(days_count)]
         # Add leave days to attendance_dict, ensuring uniqueness
         if leave.employee in attendance_dict:
             attendance_dict[leave.employee].extend(leave_days)

@@ -1173,7 +1173,6 @@ def pam_salary_certificate_expiry_date():
                 "description": "PAM Salary Certificate will Expire after {0} day".format(date_difference),
                 "reference_type": "PAM Salary Certificate",
                 "reference_name": pam[0],
-                "owner": 'develop@one-fm.com',
                 "date": pam[1]
             }).insert(ignore_permissions=True)
 
@@ -1197,7 +1196,6 @@ def pam_authorized_signatory():
                 "description": "PAM Authorized Signatory will Expire after {0} day".format(date_difference),
                 "reference_type": "PAM Authorized Signatory List",
                 "reference_name": pam[0],
-                "owner": 'develop@one-fm.com',
                 "date": pam[1]
             }).insert(ignore_permissions=True)
 
@@ -4082,7 +4080,7 @@ def check_consecutive_absences_task():
     Scheduled job that checks for employees absent for 7 consecutive days.
     If found, it triggers the report and notification.
     """
-    
+
     # Get the data for the report
     absent_employees = get_consecutive_absences_data()
 
@@ -4103,7 +4101,7 @@ def get_consecutive_absences_data(filters=None):
             return []
     else:
         end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=9)    
+        start_date = end_date - timedelta(days=9)
 
     conditions = ""
     query_filters = {'start_date': start_date, 'end_date': end_date}
@@ -4138,10 +4136,10 @@ def get_consecutive_absences_data(filters=None):
         HAVING
             COUNT(t1.name) >= {CONSECUTIVE_ABSENCE_THRESHOLD}
     """, query_filters, as_dict=True)
-    
+
     return absent_periods
 
-     
+
 def send_absences_notification(absent_employees):
     """
     Sends an ERPNext notification to a specified recipient.

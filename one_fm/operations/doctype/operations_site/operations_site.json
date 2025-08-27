@@ -70,6 +70,7 @@
   {
    "fieldname": "account_supervisor",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Site Supervisor",
    "options": "Employee"
   },
@@ -194,7 +195,7 @@
   }
  ],
  "links": [],
- "modified": "2023-05-04 21:58:18.376106",
+ "modified": "2025-08-27 18:00:27.356342",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Operations Site",

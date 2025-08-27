@@ -287,7 +287,7 @@ class TestRelieverAssignment(unittest.TestCase):
 
     
     
-    def test_set_employee_status(self, mock_fetch_leave_types):
+    def test_set_employee_status(self):
         
         # Simulate set_employee_status
         set_employee_status()

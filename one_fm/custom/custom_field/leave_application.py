@@ -132,6 +132,14 @@ def get_leave_application_custom_fields():
                 "label": "Leave Extension Request",
                 "options": "Leave Extension Request",
                 "read_only": 1
+            },
+            {
+                "fieldname": "custom_google_event_id",
+                "fieldtype": "Data",
+                "insert_after": "custom_leave_extension_request",
+                "label": "Google Event ID",
+                "read_only": 1,
+                "translatable": 1
             }
         ]
     }

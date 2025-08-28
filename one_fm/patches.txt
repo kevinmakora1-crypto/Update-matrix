@@ -118,7 +118,7 @@ one_fm.patches.v15_0.add_roster_index #03-06-2025
 one_fm.patches.v15_0.delete_all_roaster_day_off_checker_records
 one_fm.patches.v15_0.update_operation_post_start_and_end_date
 one_fm.patches.v15_0.add_custom_process_field_property_setter
-one_fm.patches.v15_0.add_update_custom_field #ToDo field
+one_fm.patches.v15_0.add_update_custom_field #ToDo field # added new field to leave application (custom_google_event_id)
 one_fm.patches.v15_0.add_update_property_setter #2025-05-20
 one_fm.patches.v15_0.add_update_assignment_rule #2025-07-2
 one_fm.patches.v15_0.add_update_workflow #2025-06-04

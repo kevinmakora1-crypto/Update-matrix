@@ -3,7 +3,16 @@
 
 frappe.ui.form.on('Onboard Employee', {
 	
-	
+	onload: function(frm) {
+		// using frm.set_query to set_query for the operations shift field based on active shifts
+		frm.set_query('operations_shift', function() {
+			return {
+				filters: {
+					"status": "Active"
+				}
+			};
+		});
+	},
 	refresh: function(frm) {
 		show_hide_fields(frm)
 		set_progress_html(frm);

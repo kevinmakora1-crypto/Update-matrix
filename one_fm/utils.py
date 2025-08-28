@@ -3547,18 +3547,6 @@ def fetch_attendance_manager_user() -> str:
             return attendance_manager_user
     return ""
 
-def custom_toggle_notifications(user: str, enable: bool = False):
-    try:
-        settings = frappe.get_doc("Notification Settings", user)
-    except frappe.DoesNotExistError:
-        frappe.clear_last_message()
-        return
-
-    if settings.enabled != enable:
-        settings.enabled = enable
-        settings.flags.ignore_permissions = 1
-        settings.save()
-
 def get_standard_notification_template(description, doc_link):
     message_html = '<p>{{message_heading}}'
     msg_details = [

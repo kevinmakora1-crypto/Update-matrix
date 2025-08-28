@@ -499,6 +499,7 @@ website_route_rules = [
 # }
 
 override_doctype_class = {
+    "User": "one_fm.overrides.user.UserOverride",
     "Leave Policy Assignment": "one_fm.overrides.leave_policy_assignment.LeavePolicyAssignmentOverride",
 	"Attendance Request": "one_fm.overrides.attendance_request.AttendanceRequestOverride",
 	"Attendance": "one_fm.overrides.attendance.AttendanceOverride",

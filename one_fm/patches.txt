@@ -142,6 +142,7 @@ one_fm.patches.v15_0.update_shift_request_workflow
 one_fm.patches.v15_0.change_invalid_media_content_to_others_in_attendance_check_justification
 one_fm.patches.v15_0.update_shift_permission_workflow_conditions
 one_fm.patches.v15_0.update_shift_request_purpose_field
+one_fm.patches.v15_0.unset_mobile_no_disabled_user
 one_fm.patches.v15_0.update_shift_request_assignment_rule
 
 

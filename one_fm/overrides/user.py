@@ -14,4 +14,4 @@ class UserOverride(User):
         # If user is disabled, clear mobile number
         # This ensures no mobile is stored for disabled users
         if not self.enabled:
-            self.mobile_no = ""
+            self.mobile_no = None

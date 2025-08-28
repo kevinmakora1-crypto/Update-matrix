@@ -9,11 +9,11 @@ from hrms.hr.doctype.shift_type.shift_type import ShiftType
 
 app_name = "one_fm"
 app_title = "One Fm"
-app_publisher = "omar jaber"
+app_publisher = "ONE FM"
 app_description = "One Facility Management is a leader in the fields of commercial automation and integrated security management systems providing the latest in products and services in these fields"
 app_icon = "octicon octicon-file-directory"
 app_color = "grey"
-app_email = "omar.ja93@gmail.com"
+app_email = "develop@one-fm.com"
 app_license = "MIT"
 app_logo_url = "/assets/one_fm/assets/img/logo-img/ONEFM_Identity_Gray.png"
 # Includes in <head>
@@ -400,7 +400,6 @@ doc_events = {
     "Shift Request":{
         "before_save":[
             "one_fm.overrides.shift_request.fill_to_date",
-            "one_fm.overrides.shift_request.send_shift_request_mail",
             "one_fm.overrides.shift_request.validate_from_date"
         ],
         "on_update": [
@@ -500,6 +499,7 @@ website_route_rules = [
 # }
 
 override_doctype_class = {
+    "User": "one_fm.overrides.user.UserOverride",
     "Leave Policy Assignment": "one_fm.overrides.leave_policy_assignment.LeavePolicyAssignmentOverride",
 	"Attendance Request": "one_fm.overrides.attendance_request.AttendanceRequestOverride",
 	"Attendance": "one_fm.overrides.attendance.AttendanceOverride",

@@ -14,7 +14,7 @@ from erpnext.crm.utils import get_open_todos
 from one_fm.api.api import push_notification_rest_api_for_leave_application
 from one_fm.api.tasks import remove_assignment
 from one_fm.overrides.employee import NotifyAttendanceManagerOnStatusChange
-from one_fm.utils import get_approver_user, leave_application_on_cancel,fetch_leave_types_update_employee_status, get_workflow_action_buttons_html
+from one_fm.utils import get_approver_user, leave_application_on_cancel, fetch_leave_types_update_employee_status, get_workflow_action_buttons_html, cancel_calendar_event, disable_out_of_office
 from hrms.hr.utils import get_holidays_for_employee
 from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import ReassignRelieverAssignment, reassign_responsibilities
 
@@ -473,7 +473,6 @@ class LeaveApplicationOverride(LeaveApplication):
                 frappe.log_error(frappe.get_traceback(),"Error Sending Notification")
 
     def on_cancel(self):
-        from one_fm.utils import disable_out_of_office, cancel_calendar_event
         emp = frappe.get_doc("Employee", self.employee)
         if self.status == "Cancelled"  and self.leave_type == 'Annual Leave' and getdate(self.from_date) <= getdate() <= getdate(self.to_date):
             emp.status = "Active"

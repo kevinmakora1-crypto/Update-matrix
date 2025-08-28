@@ -753,15 +753,8 @@ def assign_am_shift():
 	non_shift = fetch_non_shift(date, "AM")
 	if non_shift:
 		roster.extend(non_shift)
-  
-	todays_leaves = get_today_leaves(str(date))
-	employees_on_vacation = [i.name for i in frappe.db.get_list("Employee", {'status':'Vacation'})]
-	for i in employees_on_vacation:
-		if i not in todays_leaves:
-			todays_leaves.append(i)
-	roster = [i for i in roster if i.get('employee') not in todays_leaves]
-	if roster:
-         create_shift_assignment(roster, date, 'AM')
+
+	create_shift_assignment(roster, date, 'AM')
 
 
 def assign_pm_shift():

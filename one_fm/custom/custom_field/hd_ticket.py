@@ -36,6 +36,20 @@ def get_hd_ticket_custom_fields():
                 "fetch_from": "custom_process.process_owner",
                 "read_only": 1,
                 "in_list_view": 1
+            },
+            {
+                "fieldname": "planning_prompts_count",
+                "fieldtype": "Int",
+                "label": "Planning Prompts Count",
+                "insert_after": "resolution_date",
+                "depends_on": "eval:doc.ticket_type == 'Bug'"
+            },
+            {
+                "fieldname": "execution_prompt_count",
+                "fieldtype": "Int",
+                "label": "Execution Prompt Count",
+                "insert_after": "planning_prompts_count",
+                "depends_on": "eval:doc.ticket_type == 'Bug'"
             }
         ]
     }

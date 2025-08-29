@@ -144,6 +144,7 @@ one_fm.patches.v15_0.update_shift_permission_workflow_conditions
 one_fm.patches.v15_0.update_shift_request_purpose_field
 one_fm.patches.v15_0.unset_mobile_no_disabled_user
 one_fm.patches.v15_0.update_shift_request_assignment_rule
+one_fm.patches.v15_0.update_hd_ticket_prompt_fields
 
 
 [post_model_sync]

@@ -24,7 +24,7 @@ def get_hd_ticket_custom_fields():
                 "fieldtype": "Data",
                 "label": "GitHub Issue",
                 "insert_after": "custom_dev_ticket",
-                "read_only": 1,
+                "read_only": 1
             },
             {
                 "fieldname": "custom_bug_buster",

@@ -4071,6 +4071,27 @@ def fetch_leave_types_update_employee_status():
 
 # --- Calendar: Block leave period ---
 def add_calendar_event(employee_email, start_date, end_date, employee_name, leave_application_name):
+    """
+    Create a Google Calendar event for an employee's leave period.
+
+    This function adds an "Out of Office" event to the employee's Google Calendar
+    for the specified leave period, saves the event ID in the Leave Application document,
+    and commits the changes to the database.
+
+    Args:
+        employee_email (str): The email address of the employee.
+        start_date (datetime.date): The start date of the leave.
+        end_date (datetime.date): The end date of the leave.
+        employee_name (str): The name of the employee.
+        leave_application_name (str): The name of the Leave Application document.
+
+    Side Effects:
+        - Creates a calendar event in Google Calendar.
+        - Stores the event ID in the Leave Application record.
+        - Commits changes to the database.
+        - Displays a message to the user.
+        - Logs errors if any occur.
+    """
     try:
         service = get_service(
             employee_email,
@@ -4107,6 +4128,24 @@ def add_calendar_event(employee_email, start_date, end_date, employee_name, leav
 
 
 def cancel_calendar_event(employee_email, leave_application_name):
+    """
+    Cancel the Google Calendar event associated with a leave application.
+
+    This function fetches the event ID stored in the Leave Application document,
+    deletes the corresponding event from the employee's Google Calendar, and
+    clears the event ID from the Leave Application record.
+
+    Args:
+        employee_email (str): The email address of the employee whose calendar event should be cancelled.
+        leave_application_name (str): The name of the Leave Application document.
+
+    Side Effects:
+        - Deletes the calendar event from Google Calendar.
+        - Updates the Leave Application record to remove the event ID.
+        - Commits changes to the database.
+        - Displays a message to the user.
+        - Logs errors if any occur.
+    """
     try:
         # fetch saved event id
         event_id = frappe.db.get_value("Leave Application", leave_application_name, "custom_google_event_id")

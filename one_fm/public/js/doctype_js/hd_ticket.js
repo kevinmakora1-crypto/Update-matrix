@@ -13,7 +13,7 @@ const add_github_issue_button = (frm) => {
         <a href="${frm.doc.custom_github_issue_url}" class="btn btn-primary" target="_blank">View GitHub Issue</a>`;
         frm.dashboard.add_section(el, __("GitHub Issue"));
       }
-    } else if (["Open", "Replied"].includes(frm.doc.status)) {
+    } else if (["Open", "Replied"].includes(frm.doc.status) && frappe.session.user==frm.doc.custom_bug_buster) {
       frm.add_custom_button(
         "GitHub Issue",
         () => {

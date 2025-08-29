@@ -326,7 +326,7 @@ def create_dev_ticket(name, description):
             return {'error': 'Dev Ticket Error', 'message': f"Dev ticket could not be created:\n{error_msg}"}
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Dev Ticket Creation Error")
+        frappe.log_error(message=frappe.get_traceback(), title="Dev Ticket Creation Error")
         return {'error': 'Dev Ticket Error', 'message': f"Dev ticket could not be created:\n {str(e)}"}
 
 
@@ -442,9 +442,9 @@ def create_github_issue(name, description):
             return {'status': 'success', 'github_issue_url': issue_url}
         else:
             error_msg = response.json().get("message") or response.text
-            frappe.log_error(f"GitHub Issue Creation Error: {error_msg}", "GitHub Integration")
+            frappe.log_error(message=f"GitHub Issue Creation Error: {error_msg}", title="GitHub Integration")
             return {'error': 'GitHub Issue Error', 'message': f"GitHub issue could not be created:\n{error_msg}"}
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "GitHub Issue Creation Error")
+        frappe.log_error(message=frappe.get_traceback(), title="GitHub Issue Creation Error")
         return {'error': 'GitHub Issue Error', 'message': f"GitHub issue could not be created:\n {str(e)}"}

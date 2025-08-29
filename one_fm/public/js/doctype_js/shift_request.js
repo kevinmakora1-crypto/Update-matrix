@@ -1,4 +1,4 @@
-// Copyright (c) 2021, omar jaber and contributors
+// Copyright (c) 2021, ONE FM and contributors
 // For license information, please see license.txt
 
 frappe.ui.form.on('Shift Request', {
@@ -59,8 +59,9 @@ frappe.ui.form.on('Shift Request', {
 function set_update_request_btn(frm) {
 	if(frm.doc.docstatus == 1 && frm.doc.workflow_state == 'Approved' && !frm.doc.update_request){
 		frappe.db.get_value('Employee', frm.doc.employee, 'user_id', function(r) {
-			approvers = frm.doc.custom_shift_approvers.map(approver => approver.user);
-			if(approvers.includes(frappe.session.user) || (r.user_id && frappe.session.user == r.user_id)){
+			reports_approvers = frm.doc.custom_reports_to_user;
+			project_manager = frm.doc.custom_project_manager_user;
+			if(reports_approvers  === frappe.session.user ||project_manager === frappe.session.user || (r.user_id && frappe.session.user == r.user_id)){
 				frm.add_custom_button(__('Update Request'), function() {
 					update_request(frm);
 				});
@@ -126,12 +127,6 @@ function set_approver(frm){
             callback: function(r) {
                 if(r.message){
                     frm.set_value("approver",r.message[0])
-					frm.set_value("shift_approver",r.message[0])
-					frm.clear_table("custom_shift_approvers");
-					for(let i=0; i<r.message.length; i++){
-						frm.add_child("custom_shift_approvers", {"user": r.message[i]});
-					}
-					frm.refresh_field("custom_shift_approvers");
                 }
             }
         });

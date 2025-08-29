@@ -24,7 +24,7 @@ def get_shift_request_custom_fields():
                 "fieldtype": "Select",
                 "label": "Purpose",
                 "insert_after": "employee_name",
-                "options": " \nAssign Day Off\nAssign Unrostered Employee\nReplace Existing Assignment\nUpdate Existing Assignment\nDay Off Overtime",
+                "options": " \nAssign Day Off\nAssign Client Day Off\nAssign Unrostered Employee\nReplace Existing Assignment\nUpdate Existing Assignment\nDay Off Overtime",
                 "reqd": 1,
                 "translatable": 1
             },
@@ -73,16 +73,6 @@ def get_shift_request_custom_fields():
                 "insert_after": "roster_type",
                 "options": "Company",
                 "fetch_from": "employee.company",
-                "read_only": 1
-            },
-            {
-                "fieldname": "shift_approver",
-                "fieldtype": "Link",
-                "label": "Shift Approver",
-                "insert_after": "company_name",
-                "options": "User",
-                "fetch_from": "approver",
-                "hidden": 1,
                 "read_only": 1
             },
             {
@@ -243,13 +233,57 @@ def get_shift_request_custom_fields():
                 "mandatory_depends_on": "eval:doc.purpose != 'Assign Day Off';",
                 "reqd": 1
             },
+           {
+                "label": "Approval",
+                "fieldname": "custom_approval",
+                "insert_after": "amended_from",
+                "fieldtype": "Section Break"
+            },
             {
-                "fieldname": "custom_shift_approvers",
-                "fieldtype": "Table MultiSelect",
-                "label": "Shift Approvers",
-                "insert_after": "shift_approver",
-                "options": "Shift Request Approvers",
-                "read_only": 1
-            }
+                "label": "Reports To",
+                "fieldname": "custom_reports_to",
+                "insert_after": "custom_approval",
+                "fieldtype": "Link",
+                "options": "Employee",
+                "fetch_from": "employee.reports_to",
+                "read_only": 1,
+                "ignore_user_permissions": 1
+            },
+            {
+                "label": "Reports To User",
+                "fieldname": "custom_reports_to_user",
+                "insert_after": "custom_reports_to",
+                "fieldtype": "Link",
+                "options": "User",
+                "fetch_from": "custom_reports_to.user_id",
+                "read_only": 1,
+                "ignore_user_permissions": 1
+            },
+            {
+                "label": "",
+                "fieldname": "custom_column_break_ggqao",
+                "insert_after": "custom_reports_to_user",
+                "fieldtype": "Column Break"
+            },
+            {
+                "label": "Project Manager",
+                "fieldname": "custom_project_manager",
+                "insert_after": "custom_column_break_ggqao",
+                "fieldtype": "Link",
+                "options": "Employee",
+                "fetch_from": "project.account_manager",
+                "read_only": 1,
+                "ignore_user_permissions": 1
+            },
+            {
+                "label": "Project Manager User",
+                "fieldname": "custom_project_manager_user",
+                "insert_after": "custom_project_manager",
+                "fieldtype": "Link",
+                "fetch_from": "custom_project_manager.user_id",
+                "read_only": 1,
+                "options": "User",
+                "ignore_user_permissions": 1
+             }
         ]
     }

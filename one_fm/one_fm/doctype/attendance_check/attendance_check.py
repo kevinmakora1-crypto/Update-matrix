@@ -1,4 +1,4 @@
-# Copyright (c) 2023, omar jaber and contributors
+# Copyright (c) 2023, ONE FM and contributors
 # For license information, please see license.txt
 from datetime import datetime, timedelta
 
@@ -168,7 +168,7 @@ class AttendanceCheck(Document):
                 self.mobile_brand = ""
                 self.mobile_model = ""
 
-            if self.justification in ["Invalid media content","Out-of-site location", "User not assigned to shift"]:
+            if self.justification in ["Out-of-site location", "User not assigned to shift"]:
                 if not self.screenshot:
                     frappe.throw("Please Attach ScreenShot")
             else:

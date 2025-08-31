@@ -9,7 +9,6 @@ class TestShiftAssignmentIntegration(unittest.TestCase):
     def setUp(self):
         """
         Prepare test environment:
-        - Clean up any previous test data (only records with TEST_ prefix)
         - Insert required dummy data for employees, shift types, site, and shift requests
         - Ensure the default shift type required by business logic is present
         """
@@ -18,17 +17,6 @@ class TestShiftAssignmentIntegration(unittest.TestCase):
         self.shift_type_name = "TEST_PM Shift"
         self.site_name = "TEST_Site"
         self.test_date = "2025-08-29"
-
-        # Clean up only test data
-        for table, field in [
-            ("Employee", "name"),
-            ("Shift Type", "name"),
-            ("Operations Site", "name"),
-            ("Shift Assignment", "employee"),
-            ("Shift Request", "employee")
-        ]:
-            frappe.db.sql(f"DELETE FROM `tab{table}` WHERE {field} LIKE 'TEST_%'")
-        frappe.db.commit()
 
         # Insert dummy employees
         frappe.db.sql("INSERT INTO `tabEmployee` (name, employee_name) VALUES ('TEST_EMP001', 'John Doe')")
@@ -66,11 +54,11 @@ class TestShiftAssignmentIntegration(unittest.TestCase):
         Clean up only test data created during the test (records with TEST_ prefix)
         """
         for table, field in [
-            ("Shift Assignment", "employee"),
-            ("Shift Request", "employee"),
             ("Employee", "name"),
             ("Shift Type", "name"),
-            ("Operations Site", "name")
+            ("Operations Site", "name"),
+            ("Shift Assignment", "employee"),
+            ("Shift Request", "employee")
         ]:
             frappe.db.sql(f"DELETE FROM `tab{table}` WHERE {field} LIKE 'TEST_%'")
         frappe.db.commit()
@@ -121,12 +109,23 @@ class TestShiftAssignmentIntegration(unittest.TestCase):
     def test_create_shift_assignment_with_shift_request(self):
         """
         Test: create_shift_assignment creates assignment for employee with approved shift request.
+        Also confirms that if the shift request has a different site, the assignment uses the site from the shift request, not the roster.
         """
+        # Insert a new site for testing shift request override
+        frappe.db.sql("INSERT INTO `tabOperations Site` (name, site_location) VALUES ('TEST_Site_B', 'Location B')")
+        frappe.db.commit()
+        # Insert a shift request for the employee for TEST_Site_B
+        frappe.db.sql(f"""
+            INSERT INTO `tabShift Request` (name, employee, from_date, to_date, shift_type, workflow_state, roster_type, operations_shift, site, docstatus)
+            VALUES ('TEST_SR3', '{self.roster_employee_name}', '{self.test_date}', '{self.test_date}', '{self.shift_type_name}', 'Approved', 'Basic', 'PM Shift', 'TEST_Site_B', 1)
+        """)
+        frappe.db.commit()
+        # Roster contains site A, but shift request is for site B
         roster = [frappe._dict({
             "employee": self.roster_employee_name,
             "employee_name": "John Doe",
             "shift_type": self.shift_type_name,
-            "site": self.site_name,
+            "site": self.site_name,  # site A
             "department": "Operations",
             "roster_type": "Basic",
             "shift": "PM Shift"
@@ -134,6 +133,9 @@ class TestShiftAssignmentIntegration(unittest.TestCase):
         create_shift_assignment(roster, self.test_date, "PM")
         record_exists = frappe.db.exists("Shift Assignment", {"employee": self.roster_employee_name})
         self.assertIsNotNone(record_exists)
+        # Confirm the assignment site is TEST_Site_B (from shift request), not TEST_Site (from roster)
+        assignment_site = frappe.db.get_value("Shift Assignment", {"employee": self.roster_employee_name, "start_date": self.test_date}, "site")
+        self.assertEqual(assignment_site, "TEST_Site_B")
         
     def test_create_shift_assignment_day_off_overtime(self):
         """

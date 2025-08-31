@@ -144,7 +144,7 @@ class TestOvertimeShiftAssignment(FrappeTestCase):
         frappe.db.commit()
         date = str(self.today)
         time = now_time_str
-        roster = frappe.get_all("Employee Schedule", {"date": date, "employee_availability": "Working" , "roster_type": "Over-Time", "is_replaced": 0}, ["*"])
+        roster = frappe.get_all("Employee Schedule", {"date": date, "employee_availability": "Working", "roster_type": "Over-Time", "is_replaced": 0}, ["*"])
         process_overtime_shift(roster, date, time)
         frappe.db.commit()
         old_shift = frappe.get_doc("Shift Assignment", old_assignment_name)
@@ -174,7 +174,6 @@ class TestOvertimeShiftAssignment(FrappeTestCase):
         # Create a Shift Assignment for the employee (needed for business logic)
         shift_assignment_name = f"Test Shift Assignment {self.employee_no_shift_name} {self.today}"
         frappe.db.sql("DELETE FROM `tabShift Assignment` WHERE name=%s", (shift_assignment_name,))
-        # ...existing code...
         frappe.db.sql("""
             INSERT INTO `tabShift Assignment` (
                 name, company, docstatus, employee, employee_name, shift_type, site, project, status,

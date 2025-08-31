@@ -40,7 +40,7 @@ class TestOvertimeShiftAssignment(FrappeTestCase):
         self.shift_type_start_time = f"{start_hour:02d}:{start_minute:02d}:{start_second:02d}"
         self.shift_type_end_time = f"{end_hour:02d}:{end_minute:02d}:{end_second:02d}"
         frappe.db.sql("DELETE FROM `tabShift Type` WHERE name=%s", (self.shift_type_name,))
-        frappe.get_doc({
+        shift_type_doc = frappe.get_doc({
             "doctype": "Shift Type",
             "name": self.shift_type_name,
             "shift_type": self.shift_type_value,
@@ -48,7 +48,11 @@ class TestOvertimeShiftAssignment(FrappeTestCase):
             "start_time": self.shift_type_start_time,
             "end_time": self.shift_type_end_time,
             "roster_type": "Over-Time"
-        }).insert(ignore_permissions=True, ignore_mandatory=True)
+        })
+        shift_type_doc.insert(ignore_permissions=True, ignore_mandatory=True)
+        frappe.db.commit()
+        # Always use the actual name assigned by Frappe ORM
+        self.shift_type_name = shift_type_doc.name
 
         # Create Department
         self.department_name = f"Test Department {unique_suffix}"
@@ -84,18 +88,17 @@ class TestOvertimeShiftAssignment(FrappeTestCase):
         frappe.db.sql("INSERT INTO `tabProject` (name, project_name) VALUES (%s, %s)", (self.project_name, self.project_name))
         frappe.db.sql("INSERT INTO `tabOperations Site` (name, site_name, project) VALUES (%s, %s, %s)", (self.site_name, self.site_name, self.project_name))
 
-        # Create Operations Shift
+        # Create Operations Shift using direct SQL to avoid autoname and mandatory field errors
         self.operations_shift_name = f"Test Operations Shift {unique_suffix}"
         frappe.db.sql("DELETE FROM `tabOperations Shift` WHERE name=%s", (self.operations_shift_name,))
-        frappe.get_doc({
-            "doctype": "Operations Shift",
-            "name": self.operations_shift_name,
-            "shift_type": self.shift_type_name,
-            "site": self.site_name,
-            "project": self.project_name,
-            "shift_request_status": "Approved"
-        }).insert(ignore_permissions=True, ignore_mandatory=True)
-
+        frappe.db.sql("""
+            INSERT INTO `tabOperations Shift`
+            (name, shift_type, site, project, service_type, shift_classification, shift_number)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (
+            self.operations_shift_name, self.shift_type_name, self.site_name, self.project_name,
+            "Security", "General", 1
+        ))
         frappe.db.commit()
 
     def tearDown(self):
@@ -114,32 +117,30 @@ class TestOvertimeShiftAssignment(FrappeTestCase):
     @patch('frappe.enqueue')
     def test_overtime_with_existing_assignment(self, mock_enqueue):
         """
-        Test the scenario where an employee has an existing shift assignment that has ended.
-        It should set the old assignment to "Inactive" and create a new overtime assignment.
+        Test: If time matches shift end_time, assignment is set to Inactive and new one is created.
         """
-        # Create an existing Shift Assignment for the employee using direct SQL
         old_assignment_name = f"Test Shift Assignment {self.employee_name} {self.today}"
         frappe.db.sql("DELETE FROM `tabShift Assignment` WHERE name=%s", (old_assignment_name,))
         from frappe.utils import add_to_date, now_datetime
-        # Set both end_time and end_datetime to match exactly as 'HH:MM:SS' string
-        past_time_obj = add_to_date(now_datetime(), hours=-2)
-        past_time_str = past_time_obj.strftime("%H:%M:%S")
-        end_datetime_past = f"{self.today} {past_time_str}"
-        frappe.db.sql("UPDATE `tabShift Type` SET end_time=%s WHERE name=%s", (past_time_str, self.shift_type_name))
-        values = (
-            0,  # docstatus
-            old_assignment_name, self.employee_name, self.employee_name, self.today, self.today,
-            end_datetime_past, self.shift_type_name, "Active", "Over-Time",
-            None,  # shift_request
-            self.site_name, self.project_name, self.operations_shift_name, None, "Test Company"
-        )
-        print("DEBUG: test_overtime_with_existing_assignment values len:", len(values), "values:", values)
+        # Set end_time and time to match
+        match_time_obj = add_to_date(now_datetime(), hours=1)
+        match_time_str = match_time_obj.strftime("%H:%M:%S")
+        end_datetime_match = f"{self.today} {match_time_str}"
+        frappe.db.sql("UPDATE `tabShift Type` SET end_time=%s WHERE name=%s", (match_time_str, self.shift_type_name))
+        frappe.db.commit()
         frappe.db.sql("""
             INSERT INTO `tabShift Assignment` (
-                docstatus, name, employee, employee_name, start_date, end_date, end_datetime, shift_type, status, roster_type, shift_request, site, project, shift, company
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, values)
-        # Create an Employee Schedule for the overtime shift using direct SQL
+                name, company, docstatus, employee, employee_name, shift_type, site, project, status,
+                shift_classification, site_location, start_date, start_datetime, end_datetime, department,
+                shift, operations_role, post_abbrv, roster_type, owner, modified_by, creation, modified,
+                shift_request, check_in_site, check_out_site, custom_day_off_ot
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            old_assignment_name, "Test Company", 0, self.employee_name, self.employee_name, self.shift_type_name, self.site_name, self.project_name, "Active",
+            self.shift_type_name, "", self.today, end_datetime_match, end_datetime_match, self.department_name,
+            self.operations_shift_name, "", "", "Over-Time", "Administrator", "Administrator", now_datetime(), now_datetime(),
+            None, "", "", 0
+        ))
         emp_schedule_name = f"Test Emp Schedule {self.employee_name} {self.today}"
         frappe.db.sql("DELETE FROM `tabEmployee Schedule` WHERE name=%s", (emp_schedule_name,))
         frappe.db.sql("""
@@ -150,68 +151,52 @@ class TestOvertimeShiftAssignment(FrappeTestCase):
             emp_schedule_name, self.employee_name, "Working", "Over-Time", self.today, self.shift_type_name, self.site_name, self.project_name, self.operations_shift_name
         ))
         frappe.db.commit()
-
-        # After inserting old assignment, print end_datetime value and type
-        old_shift_pre = frappe.get_doc("Shift Assignment", old_assignment_name)
-        print(f"DEBUG: Pre-function, old_shift.end_datetime={old_shift_pre.end_datetime} type={type(old_shift_pre.end_datetime)}")
-        # Call process_overtime_shift directly to see debug output
         date = str(self.today)
-        time = past_time_str
+        time = match_time_str
+        # Print the test time and DB value for end_time
+        db_end_time = frappe.get_value("Shift Type", self.shift_type_name, "end_time")
+        print(f"TEST: match_time_str={match_time_str}, DB end_time={db_end_time}")
         roster = frappe.get_all("Employee Schedule", {"date": date, "employee_availability": "Working" , "roster_type": "Over-Time", "is_replaced": 0}, ["*"])
         process_overtime_shift(roster, date, time)
         frappe.db.commit()
-        # Debug output
+        # Reload old_shift from DB to get latest status
         old_shift = frappe.get_doc("Shift Assignment", old_assignment_name)
-        print(f"DEBUG: After function, old_shift.status={old_shift.status}")
-        print(f"DEBUG: After function, old_shift.end_datetime={old_shift.end_datetime} type={type(old_shift.end_datetime)}")
+        old_shift.reload()  # Ensure ORM object is up-to-date
         new_assignments = frappe.get_all("Shift Assignment", filters={
             "employee": self.employee_name,
             "roster_type": "Over-Time"
         })
-        print(f"DEBUG: After function, new_assignments count={len(new_assignments)}")
-        # Assertions
+        print(f"TEST ASSERT: old_shift.status={old_shift.status}")
         self.assertEqual(old_shift.status, "Inactive")
-        self.assertEqual(len(new_assignments), 1)
+        self.assertEqual(len(new_assignments), 2)
 
     @patch('frappe.enqueue')
     def test_overtime_with_existing_assignment_not_ended(self, mock_enqueue):
         """
-        Test the scenario where an employee has an existing shift assignment that has NOT ended.
-        No new overtime assignment should be created, and the existing one should remain active.
+        Test: If time does NOT match shift end_time, assignment remains Active and no new one is created.
         """
-        # Create a Shift Type that ends at a different time (not matching now_time)
-        shift_type_not_ended_name = f"Test Shift Type Not Ended {self.today} {self.shift_type_start_time}-{self.shift_type_end_time}"
-        frappe.db.sql("DELETE FROM `tabShift Type` WHERE name=%s", (shift_type_not_ended_name,))
-        # Set end_time to a value different from now_time
-        # Set not_ended_time to a value different from now_time, both as 'HH:MM:SS' strings
+        old_assignment_name = f"Test Shift Assignment {self.employee_name} {self.today} Not Ended"
+        frappe.db.sql("DELETE FROM `tabShift Assignment` WHERE name=%s", (old_assignment_name,))
+        from frappe.utils import add_to_date, now_datetime
+        # Set end_time to a value different from time
         now_time_obj = add_to_date(now_datetime(), hours=1)
         now_time_str = now_time_obj.strftime("%H:%M:%S")
         not_ended_time = "23:59:59" if now_time_str != "23:59:59" else "00:00:00"
-        frappe.db.sql("""
-            INSERT INTO `tabShift Type` (
-                name, shift_type, start_time, end_time
-            ) VALUES (%s, %s, %s, %s)
-        """, (
-            shift_type_not_ended_name, "Morning", self.shift_type_start_time, not_ended_time
-        ))
-        # Create an existing Shift Assignment for the employee with the new shift type using direct SQL
-        old_assignment_name = f"Test Shift Assignment {self.employee_name} {self.today} Not Ended"
-        frappe.db.sql("DELETE FROM `tabShift Assignment` WHERE name=%s", (old_assignment_name,))
+        frappe.db.sql("UPDATE `tabShift Type` SET end_time=%s WHERE name=%s", (not_ended_time, self.shift_type_name))
         not_ended_datetime = f"{self.today} {now_time_str}"
-        values = (
-            0,  # docstatus
-            old_assignment_name, self.employee_name, self.employee_name, self.today, self.today,
-            not_ended_datetime, shift_type_not_ended_name, "Active", "Over-Time",
-            None,  # shift_request
-            self.site_name, self.project_name, self.operations_shift_name, None, "Test Company"
-        )
-        print("DEBUG: test_overtime_with_existing_assignment_not_ended values len:", len(values), "values:", values)
         frappe.db.sql("""
             INSERT INTO `tabShift Assignment` (
-                docstatus, name, employee, employee_name, start_date, end_date, end_datetime, shift_type, status, roster_type, shift_request, site, project, shift, company
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, values)
-        # Create an Employee Schedule for the overtime shift using direct SQL
+                name, company, docstatus, employee, employee_name, shift_type, site, project, status,
+                shift_classification, site_location, start_date, start_datetime, end_datetime, department,
+                shift, operations_role, post_abbrv, roster_type, owner, modified_by, creation, modified,
+                shift_request, check_in_site, check_out_site, custom_day_off_ot
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            old_assignment_name, "Test Company", 0, self.employee_name, self.employee_name, self.shift_type_name, self.site_name, self.project_name, "Active",
+            self.shift_type_name, "", self.today, not_ended_datetime, not_ended_datetime, self.department_name,
+            self.operations_shift_name, "", "", "Over-Time", "Administrator", "Administrator", now_datetime(), now_datetime(),
+            None, "", "", 0
+        ))
         emp_schedule_name = f"Test Emp Schedule {self.employee_name} {self.today} Not Ended"
         frappe.db.sql("DELETE FROM `tabEmployee Schedule` WHERE name=%s", (emp_schedule_name,))
         frappe.db.sql("""
@@ -222,32 +207,18 @@ class TestOvertimeShiftAssignment(FrappeTestCase):
             emp_schedule_name, self.employee_name, "Working", "Over-Time", self.today, self.shift_type_name, self.site_name, self.project_name, self.operations_shift_name
         ))
         frappe.db.commit()
-
-        # After inserting old assignment, print end_datetime value and type
-        old_shift_pre = frappe.get_doc("Shift Assignment", old_assignment_name)
-        print(f"DEBUG: Pre-function, old_shift.end_datetime={old_shift_pre.end_datetime} type={type(old_shift_pre.end_datetime)}")
-        # Call process_overtime_shift directly to see debug output
         date = str(self.today)
         time = now_time_str
         roster = frappe.get_all("Employee Schedule", {"date": date, "employee_availability": "Working" , "roster_type": "Over-Time", "is_replaced": 0}, ["*"])
         process_overtime_shift(roster, date, time)
         frappe.db.commit()
-        # Debug output
         old_shift = frappe.get_doc("Shift Assignment", old_assignment_name)
-        print(f"DEBUG: After function, old_shift.status={old_shift.status}")
-        print(f"DEBUG: After function, old_shift.end_datetime={old_shift.end_datetime} type={type(old_shift.end_datetime)}")
         new_assignments = frappe.get_all("Shift Assignment", filters={
             "employee": self.employee_name,
             "roster_type": "Over-Time"
         })
-        print(f"DEBUG: After function, new_assignments count={len(new_assignments)}")
-        # Assertions
         self.assertEqual(old_shift.status, "Active")
-        self.assertEqual(len(new_assignments), 0)
-
-        # Clean up the extra shift type
-        frappe.db.sql("DELETE FROM `tabShift Type` WHERE name=%s", (shift_type_not_ended_name,))
-        frappe.db.commit()
+        self.assertEqual(len(new_assignments), 1)
 
     @patch('frappe.enqueue')
     def test_overtime_without_existing_assignment(self, mock_enqueue):
@@ -268,19 +239,20 @@ class TestOvertimeShiftAssignment(FrappeTestCase):
         # Create a Shift Assignment for the employee (needed for business logic)
         shift_assignment_name = f"Test Shift Assignment {self.employee_no_shift_name} {self.today}"
         frappe.db.sql("DELETE FROM `tabShift Assignment` WHERE name=%s", (shift_assignment_name,))
-        values = (
-            0,  # docstatus
-            shift_assignment_name, self.employee_no_shift_name, self.employee_no_shift_name, self.today, self.today,
-            f"{self.today} {self.now_time}", self.shift_type_name, "Active", "Over-Time",
-            None,  # shift_request
-            self.site_name, self.project_name, self.operations_shift_name, None, "Test Company"
-        )
-        print("DEBUG: test_overtime_without_existing_assignment values len:", len(values), "values:", values)
+        # ...existing code...
         frappe.db.sql("""
             INSERT INTO `tabShift Assignment` (
-                docstatus, name, employee, employee_name, start_date, end_date, end_datetime, shift_type, status, roster_type, shift_request, site, project, shift, company
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, values)
+                name, company, docstatus, employee, employee_name, shift_type, site, project, status,
+                shift_classification, site_location, start_date, start_datetime, end_datetime, department,
+                shift, operations_role, post_abbrv, roster_type, owner, modified_by, creation, modified,
+                shift_request, check_in_site, check_out_site, custom_day_off_ot
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            shift_assignment_name, "Test Company", 0, self.employee_no_shift_name, self.employee_no_shift_name, self.shift_type_name, self.site_name, self.project_name, "Active",
+            self.shift_type_name, "", self.today, f"{self.today} {self.now_time}", f"{self.today} {self.now_time}", self.department_name,
+            self.operations_shift_name, "", "", "Over-Time", "Administrator", "Administrator", now_datetime(), now_datetime(),
+            None, "", "", 0
+        ))
         frappe.db.commit()
         
         # Mock `frappe.enqueue` to call the `process_overtime_shift` function directly
@@ -325,12 +297,16 @@ class TestOvertimeShiftAssignment(FrappeTestCase):
         frappe.db.sql("DELETE FROM `tabShift Assignment` WHERE name=%s", (shift_assignment_name,))
         frappe.db.sql("""
             INSERT INTO `tabShift Assignment` (
-                name, employee, employee_name, start_date, end_date, end_datetime, shift_type, status, roster_type, shift_request, site, project, shift, company
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                name, company, docstatus, employee, employee_name, shift_type, site, project, status,
+                shift_classification, site_location, start_date, start_datetime, end_datetime, department,
+                shift, operations_role, post_abbrv, roster_type, owner, modified_by, creation, modified,
+                shift_request, check_in_site, check_out_site, custom_day_off_ot
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            shift_assignment_name, self.employee_name, self.employee_name, self.today, self.today,
-            f"{self.today} {self.now_time}", self.shift_type_name, "Active", "Over-Time", shift_request_name,
-            self.site_name, self.project_name, self.operations_shift_name, "Test Company"
+            shift_assignment_name, "Test Company", 0, self.employee_name, self.employee_name, self.shift_type_name, self.site_name, self.project_name, "Active",
+            self.shift_type_name, "", self.today, f"{self.today} {self.now_time}", f"{self.today} {self.now_time}", self.department_name,
+            self.operations_shift_name, "", "", "Over-Time", "Administrator", "Administrator", now_datetime(), now_datetime(),
+            shift_request_name, "", "", 0
         ))
         frappe.db.commit()
 
@@ -348,15 +324,30 @@ class TestOvertimeShiftAssignment(FrappeTestCase):
         })
         self.assertEqual(len(new_assignments), 1)
         
-    # @patch('frappe.enqueue')
-    # def test_no_overtime_shifts_available(self, mock_enqueue):
-    #     """
-    #     Test the scenario where there are no Employee Schedules or Shift Requests
-    #     for overtime on the given day. The function should not create any new shifts.
-    #     """
-    #     # No Employee Schedule or Shift Request created (empty roster)
-    #     frappe.db.commit()
-    #     # ...existing code...
+    @patch('frappe.enqueue')
+    def test_no_overtime_shifts_available(self, mock_enqueue):
+        """
+        Test the scenario where there are no Employee Schedules or Shift Requests
+        for overtime on the given day. The function should not create any new shifts.
+        """
+        # No Employee Schedule or Shift Request created (empty roster)
+        frappe.db.commit()
+        # Mock `frappe.enqueue` to call the `process_overtime_shift` function directly
+        mock_enqueue.side_effect = lambda fn, **kwargs: fn(kwargs['roster'], kwargs['date'], kwargs['time'])
+        # Execute the function (should not create any new assignments)
+        overtime_shift_assignment()
+        frappe.db.commit()
+        # Assert that no new shift assignments were created for either test employee
+        assignments_emp1 = frappe.get_all("Shift Assignment", filters={
+            "employee": self.employee_name,
+            "roster_type": "Over-Time"
+        })
+        assignments_emp2 = frappe.get_all("Shift Assignment", filters={
+            "employee": self.employee_no_shift_name,
+            "roster_type": "Over-Time"
+        })
+        self.assertEqual(len(assignments_emp1), 0)
+        self.assertEqual(len(assignments_emp2), 0)
 
     @patch('frappe.enqueue')
     def test_inactive_employee(self, mock_enqueue):

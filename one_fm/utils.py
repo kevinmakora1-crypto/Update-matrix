@@ -3755,7 +3755,7 @@ def is_holiday(employee, date=None, raise_exception=True,include_weekly_off = Fa
         return ((False,"",None) if include_weekly_off else (False, ""))
 
 
-def get_gmail_service(employee_email):
+def get_service(employee_email, api, version, scopes):
     credentials_path = frappe.get_site_path('private', 'files', 'gcp.json')
     credentials_dict = None
     try:
@@ -3765,17 +3765,17 @@ def get_gmail_service(employee_email):
         frappe.log_error(f"Error reading Google credentials: {str(e)}")
         return
 
-    credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=['https://www.googleapis.com/auth/gmail.settings.basic'])
+    credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=scopes)
 
     delegated_credentials = credentials.with_subject(employee_email)
 
-    service = build('gmail', 'v1', credentials=delegated_credentials)
+    service = build(api, version, credentials=delegated_credentials)
     return service
 
 
 def set_out_of_office(employee_email, start_date, end_date, custom_reliever_name, custom_reliever, employee_name):
     try:
-        service = get_gmail_service(employee_email)
+        service = get_service(employee_email, 'gmail', 'v1', ['https://www.googleapis.com/auth/gmail.settings.basic'])
 
         start_date_rfc3339 = start_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
         end_date_rfc3339 = end_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
@@ -3793,12 +3793,12 @@ def set_out_of_office(employee_email, start_date, end_date, custom_reliever_name
         service.users().settings().updateVacation(userId='me', body=vacation_settings).execute()
         frappe.msgprint(f"Out-of-office set for {employee_email} from {start_date} to {end_date}.")
     except Exception as e:
-        frappe.log_error(str(e), "Failed to set out-of-office")
+        frappe.log_error(title="Failed to set out-of-office", message=str(e))
 
 
 def disable_out_of_office(employee_email):
     try:
-        service = get_gmail_service(employee_email)
+        service = get_service(employee_email, 'gmail', 'v1', ['https://www.googleapis.com/auth/gmail.settings.basic'])
 
         vacation_settings = {
             "enableAutoReply": False
@@ -3807,34 +3807,40 @@ def disable_out_of_office(employee_email):
         service.users().settings().updateVacation(userId='me', body=vacation_settings).execute()
         frappe.msgprint(f"Out-of-office disabled for {employee_email}.")
     except Exception as e:
-        frappe.log_error(str(e), "Failed to disable out-of-office")
+        frappe.log_error(title="Failed to disable out-of-office", message=str(e))
 
 
 def set_out_of_office_for_leaves():
     today = datetime.now().date()
 
     # Query Leave records
-    leaves = frappe.get_all('Leave Application', filters=[
-        ['from_date', '<=', today], ['to_date', '>=', today], ['status', '=', 'Approved']
-    ], fields=['employee.company_email', 'from_date', 'to_date', 'custom_reliever_name', 'custom_reliever_.user_id', 'employee.employee_name'])
+    leaves = frappe.get_all('Leave Application', filters={
+        'from_date': ['<=', today],
+        'to_date': ['>=', today],
+        'status': ['=', 'Approved'],
+        'leave_type': ['IN', fetch_leave_types_update_employee_status()]
+    }, fields=['employee.user_id', 'from_date', 'to_date', 'custom_reliever_', 'employee.employee_name', 'name'])
 
     for leave in leaves:
-        employee_email = leave['company_email']
+        employee_email = leave['user_id']
         from_date = leave['from_date']
         to_date = leave['to_date']
-        custom_reliever_name = leave['custom_reliever_name']
-        custom_reliever = leave['user_id']
         employee_name = leave['employee_name']
+        reliever_id = leave['custom_reliever_']
+        leave_application_name = leave['name']
+
+        custom_reliever_name = ''
+        custom_reliever = ''
+        if reliever_id:
+            reliever = frappe.get_doc('Employee', reliever_id)
+            custom_reliever_name = reliever.employee_name
+            custom_reliever = reliever.user_id
 
         if employee_email:
 
-            # If today's date matches the start date, set out-of-office
-            if today == from_date:
-                set_out_of_office(employee_email, from_date, to_date, custom_reliever_name, custom_reliever, employee_name)
+            set_out_of_office(employee_email, from_date, to_date, custom_reliever_name, custom_reliever, employee_name)
+            add_calendar_event(employee_email, from_date, to_date, employee_name, leave_application_name)
 
-            # If today's date matches the end date, disable out-of-office
-            if today == add_days(to_date, 1):
-                disable_out_of_office(employee_email)
 
 
 def update_assurance_level_task():
@@ -4063,6 +4069,107 @@ def fetch_leave_types_update_employee_status():
     return set(frappe.db.get_list("Leave Type", {"custom_update_employee_status_to_vacation": True}, pluck="name"))
 
 
+# --- Calendar: Block leave period ---
+def add_calendar_event(employee_email, start_date, end_date, employee_name, leave_application_name):
+    """
+    Create a Google Calendar event for an employee's leave period.
+
+    This function adds an "Out of Office" event to the employee's Google Calendar
+    for the specified leave period, saves the event ID in the Leave Application document,
+    and commits the changes to the database.
+
+    Args:
+        employee_email (str): The email address of the employee.
+        start_date (datetime.date): The start date of the leave.
+        end_date (datetime.date): The end date of the leave.
+        employee_name (str): The name of the employee.
+        leave_application_name (str): The name of the Leave Application document.
+
+    Side Effects:
+        - Creates a calendar event in Google Calendar.
+        - Stores the event ID in the Leave Application record.
+        - Commits changes to the database.
+        - Displays a message to the user.
+        - Logs errors if any occur.
+    """
+    try:
+        service = get_service(
+            employee_email,
+            "calendar",
+            "v3",
+            ["https://www.googleapis.com/auth/calendar"]
+        )
+
+        event = {
+            "summary": f"Out of Office - {employee_name}",
+            "start": {
+                "dateTime": start_date.strftime('%Y-%m-%dT00:00:00'),
+                "timeZone": "Asia/Kuwait"
+            },
+            "end": {
+                "dateTime": (end_date + timedelta(days=1)).strftime('%Y-%m-%dT00:00:00'),
+                "timeZone": "Asia/Kuwait"
+            },
+            "transparency": "opaque",
+            "eventType": "outOfOffice",
+            "visibility": "default"
+        }
+        
+        created_event = service.events().insert(calendarId='primary', body=event).execute()
+        event_id = created_event.get("id")
+
+        frappe.db.set_value("Leave Application", leave_application_name, "custom_google_event_id", event_id)
+        frappe.db.commit()
+
+
+        frappe.msgprint(f"Calendar event created for {employee_email} leave.")
+    except Exception as e:
+        frappe.log_error(title="Failed to create calendar event", message=str(e))
+
+
+def cancel_calendar_event(employee_email, leave_application_name):
+    """
+    Cancel the Google Calendar event associated with a leave application.
+
+    This function fetches the event ID stored in the Leave Application document,
+    deletes the corresponding event from the employee's Google Calendar, and
+    clears the event ID from the Leave Application record.
+
+    Args:
+        employee_email (str): The email address of the employee whose calendar event should be cancelled.
+        leave_application_name (str): The name of the Leave Application document.
+
+    Side Effects:
+        - Deletes the calendar event from Google Calendar.
+        - Updates the Leave Application record to remove the event ID.
+        - Commits changes to the database.
+        - Displays a message to the user.
+        - Logs errors if any occur.
+    """
+    try:
+        # fetch saved event id
+        event_id = frappe.db.get_value("Leave Application", leave_application_name, "custom_google_event_id")
+        if not event_id:
+            frappe.msgprint(f"No event ID found for Leave Application {leave_application_name}")
+            return
+
+        service = get_service(
+            employee_email,
+            "calendar",
+            "v3",
+            ["https://www.googleapis.com/auth/calendar"]
+        )
+
+        service.events().delete(calendarId='primary', eventId=event_id).execute()
+
+        frappe.db.set_value("Leave Application", leave_application_name, "custom_google_event_id", None)
+        frappe.db.commit()
+
+        frappe.msgprint(f"Out-of-office event {event_id} deleted for {employee_email}")
+    except Exception as e:
+        frappe.log_error(title="Failed to cancel calendar event", message=str(e))
+
+        
 def check_consecutive_absences_task():
     """
     Scheduled job that checks for employees absent for 7 consecutive days.

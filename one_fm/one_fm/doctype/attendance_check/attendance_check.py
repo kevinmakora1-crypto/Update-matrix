@@ -168,7 +168,7 @@ class AttendanceCheck(Document):
                 self.mobile_brand = ""
                 self.mobile_model = ""
 
-            if self.justification in ["Out-of-site location", "User not assigned to shift"]:
+            if self.justification in ["Out-of-site location", "User not assigned to shift","Forgot to check in","Checked in and out at the same time"]:
                 if not self.screenshot:
                     frappe.throw("Please Attach ScreenShot")
             else:

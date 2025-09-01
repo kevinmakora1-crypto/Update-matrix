@@ -154,7 +154,7 @@ class LeaveApplicationOverride(LeaveApplication):
                     WHERE employee = %s
                     AND is_active = 1
                     """
-            frappe.db.sql(query, (self.employee,))
+                frappe.db.sql(query, (self.employee,))
 
 
     def validate_applicable_after(self):

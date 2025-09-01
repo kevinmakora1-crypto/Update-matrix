@@ -90,6 +90,11 @@ frappe.query_reports["Operations Monthly Attendance Sheet"] = {
 				};
 			}
 		},
+		{
+			fieldname: "include_future_attendance",
+			label: __("Include Future Attendance"),
+			fieldtype: "Check",
+		},
 	],
 	formatter: function (value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);

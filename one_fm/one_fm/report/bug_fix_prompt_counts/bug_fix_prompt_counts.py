@@ -12,7 +12,7 @@ def execute(filters=None):
         {"fieldname": "planning_prompts_count", "label": "Planning Prompts Count", "fieldtype": "Int", "width": 150},
         {"fieldname": "execution_prompt_count", "label": "Execution Prompt Count", "fieldtype": "Int", "width": 150},
         {"fieldname": "custom_bug_buster", "label": "Bug Buster", "fieldtype": "Link", "options": "User", "width": 150},
-        {"fieldname": "resolution", "label": "Resolution", "fieldtype": "Small Text", "width": 300},
+        {"fieldname": "resolution_details", "label": "Resolution", "fieldtype": "Small Text", "width": 300},
     ]
 
     conditions = "WHERE ticket_type = 'Bug'"
@@ -26,7 +26,7 @@ def execute(filters=None):
             planning_prompts_count,
             execution_prompt_count,
             custom_bug_buster,
-            resolution
+            resolution_details
         FROM
             `tabHD Ticket`
         {conditions}

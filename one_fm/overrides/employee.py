@@ -265,7 +265,6 @@ class EmployeeOverride(EmployeeMaster):
             if self.status != "Active":
                 status_validate = StatusChangeVaccumValidate(employee_object=self)
                 message = status_validate.message()
-                print(message)
                 if message:
                     frappe.throw(message)
 
@@ -353,8 +352,7 @@ class NotifyAttendanceManagerOnStatusChange:
 
     @property
     def _operations_shift_supervisor(self) -> list:
-        operation_shifts = get_supervisor_operations_shifts(self.employee_object.name)
-        return list(chain.from_iterable(operation_shifts)) if operation_shifts else list()
+        return get_supervisor_operations_shifts(self.employee_object.name)
 
     @property
     def _operations_site_supervisor(self) -> list:

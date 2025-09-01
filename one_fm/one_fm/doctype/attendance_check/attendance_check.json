@@ -346,12 +346,12 @@
    "mandatory_depends_on": "eval:doc.justification == \"Mobile isn't supporting the app\""
   },
   {
-   "depends_on": "eval:[\"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\", \"Forgot to check in\"].includes(doc.justification)",
+   "depends_on": "eval:[\"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\",\"Checked in and out at the same time\"].includes(doc.justification)",
    "description": "Upload screenshot with the same issue!",
    "fieldname": "screenshot",
    "fieldtype": "Attach",
    "label": "Screenshot",
-   "mandatory_depends_on": "eval:[\"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\", \"Forgot to check in\"].includes(doc.justification)"
+   "mandatory_depends_on": "eval:[\"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\",\"Checked in and out at the same time\"].includes(doc.justification)"
   },
   {
    "depends_on": "eval:doc.justification == \"Other\"",
@@ -412,7 +412,7 @@
    "link_fieldname": "reference_docname"
   }
  ],
- "modified": "2025-09-01 23:08:53.560064",
+ "modified": "2025-09-01 13:52:06.466291",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Attendance Check",

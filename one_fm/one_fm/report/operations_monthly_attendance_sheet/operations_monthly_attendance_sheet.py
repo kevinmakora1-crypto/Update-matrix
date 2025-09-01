@@ -31,9 +31,6 @@ def execute(filters):
 	schedule_map = {}
 	if filters.get("include_future_attendance"):
 		schedule_map = get_schedule_map(filters)
-		if not schedule_map:
-			frappe.msgprint(_("No schedule records found."), alert=True, indicator="orange")
-			return [], []
 
 	columns = get_columns(filters)
 	data = get_data(filters, attendance_map, schedule_map)

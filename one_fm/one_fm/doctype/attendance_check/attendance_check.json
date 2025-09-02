@@ -392,7 +392,7 @@
    "fieldname": "support_ticket_no",
    "fieldtype": "Link",
    "label": "Support Ticket No",
-   "mandatory_depends_on": "eval:doc.justification == \"Employees insist that he/she did check in or out\"",
+   "mandatory_depends_on": "eval:doc.raised_issue_to_support_team == \"Yes\"",
    "options": "HD Ticket"
   },
   {
@@ -412,7 +412,7 @@
    "link_fieldname": "reference_docname"
   }
  ],
- "modified": "2025-09-02 00:01:07.771409",
+ "modified": "2025-09-02 13:07:08.308817",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Attendance Check",

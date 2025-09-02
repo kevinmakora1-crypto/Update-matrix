@@ -29,7 +29,8 @@ class HDTicketOverride(HDTicket):
     def after_insert(self):
         super().after_insert()
         self.send_google_chat_notification()
-        self.notify_ticket_raiser_of_receipt()
+        if self.status ==  "Open":
+            self.notify_ticket_raiser_of_receipt()
 
     def send_mail_for_completion(self):
         if self.is_new() and self.status == "Draft":
@@ -37,7 +38,9 @@ class HDTicketOverride(HDTicket):
             context = dict(
                 document_name=self.name,
                 document_type=self.doctype,
-                link_to_form=frappe.utils.get_url(f"/helpdesk/edit-ticket/{self.name}")
+                link_to_form=frappe.utils.get_url(f"/helpdesk/edit-ticket/{self.name}"),
+                title=self.subject,
+                header="Complete Ticket Details"
             )
             msg = frappe.render_template('one_fm/templates/emails/notify_issue_raiser_to_complete_ticket_details.html', context=context)
             frappe.enqueue(method=sendemail, queue="short", recipients=self.raised_by, subject=subject, content=msg, is_external_mail=True, is_scheduler_email=True)
@@ -220,7 +223,7 @@ class HDTicketOverride(HDTicket):
         # If communication is incoming, then it is a reply from customer, and ticket must
         # be reopened.
 
-        if not self.is_new() and c.sent_or_received == "Received":
+        if not self.is_new() and c.sent_or_received == "Received" and self.status != "Draft":
             self.status = "Open"
 
         # If communication is outgoing, it must be a reply from agent
@@ -369,6 +372,7 @@ def update_ticket(name: str, updates: str):
 
     doc.save(ignore_permissions=True)
     frappe.db.commit()
+    doc.notify_ticket_raiser_of_receipt()
 
     return {
         "message": "Operation Successful",

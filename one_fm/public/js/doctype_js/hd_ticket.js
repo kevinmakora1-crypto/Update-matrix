@@ -17,14 +17,119 @@ const add_github_issue_button = (frm) => {
       frm.add_custom_button(
         "GitHub Issue",
         () => {
-          frappe.confirm(
-            "Are you sure you want to create a GitHub issue?",
-            () => {
+          let d = new frappe.ui.Dialog({
+            title: __("New GitHub Issue"),
+            fields: [
+              {
+                label: __("Environment"),
+                fieldname: "environment",
+                fieldtype: "Select",
+                options: ["Production", "Staging", "Test Production"],
+                reqd: 1,
+              },
+              {
+                label: __("Problem Description"),
+                fieldname: "problem_description",
+                fieldtype: "Text Editor",
+                default: frm.doc.description,
+              },
+              {
+                label: __("Steps to Reproduce"),
+                fieldname: "steps_to_reproduce",
+                fieldtype: "Text Editor",
+                reqd: 1,
+              },
+              {
+                label: __("Expected Result"),
+                fieldname: "expected_result",
+                fieldtype: "Text Editor",
+                reqd: 1,
+              },
+              {
+                label: __("Actual Result"),
+                fieldname: "actual_result",
+                fieldtype: "Text Editor",
+                reqd: 1,
+              },
+              {
+                label: __("Technical Context"),
+                fieldname: "technical_context",
+                fieldtype: "Section Break",
+              },
+              {
+                label: __("Affected DocType(s)"),
+                fieldname: "affected_doctypes",
+                fieldtype: "Small Text",
+              },
+              {
+                label: __("Affected Files"),
+                fieldname: "affected_files",
+                fieldtype: "Small Text",
+              },
+              {
+                label: __("Additional Information"),
+                fieldname: "additional_information",
+                fieldtype: "Section Break",
+              },
+              {
+                label: __("Error Logs"),
+                fieldname: "error_logs",
+                fieldtype: "Text Editor",
+              },
+              {
+                label: __("Browser/System Info"),
+                fieldname: "browser_system_info",
+                fieldtype: "Text Editor",
+              },
+              {
+                label: __("DataContext"),
+                fieldname: "data_context",
+                fieldtype: "Text Editor",
+              },
+            ],
+            primary_action_label: __("Create Issue"),
+            primary_action(values) {
+              const description = `
+### Environment:
+${values.environment}
+
+### Problem Description:
+${values.problem_description}
+
+### Steps to Reproduce:
+${values.steps_to_reproduce}
+
+### Expected Result:
+${values.expected_result}
+
+### Actual Result:
+${values.actual_result}
+
+### Technical Context:
+**Affected DocType(s):** ${values.affected_doctypes}
+**Affected Files:** ${values.affected_files}
+
+### Additional Information:
+**Error Logs:**
+\`\`\`
+${values.error_logs}
+\`\`\`
+
+**Browser/System Info:**
+${values.browser_system_info}
+
+**DataContext:**
+${values.data_context}
+`;
+
               frappe.call({
                 method: "one_fm.overrides.hd_ticket.create_github_issue",
                 freeze: true,
                 freeze_message: "Creating GitHub Issue",
-                args: { name: frm.doc.name, description: frm.doc.description },
+                args: {
+                  name: frm.doc.name,
+                  description: description,
+                },
                 callback: function (r) {
                   if (r.message.status == "success") {
                     frappe.msgprint("GitHub issue created successfully");
@@ -33,9 +138,10 @@ const add_github_issue_button = (frm) => {
                   }
                 },
               });
+              d.hide();
             },
-            () => null
-          );
+          });
+          d.show();
         },
         "Create"
       );

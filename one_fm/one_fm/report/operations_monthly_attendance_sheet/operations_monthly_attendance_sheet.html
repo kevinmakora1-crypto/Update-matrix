@@ -17,21 +17,36 @@
     font-size: 7px !important;
     font-family: "Readex Pro", sans-serif;
   }
+
+  /* Override the existing styles */
+  .print-format td img {
+    max-height: 50px;
+    max-width: 100%;
+    height: auto !important;
+    width: auto !important;
+    object-fit: contain;
+    display: block;
+    margin: auto; 
+  }
   /* === Print Format Styles End === */
 
-  .attendance-sheet-wrapper {
+  .attendance-table {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
     border: 1px solid #333;
   }
 
-  .attendance-sheet-wrapper th,
-  .attendance-sheet-wrapper td {
+  .attendance-table th,
+  .attendance-table td {
     border: 1px solid #333;
     padding: 4px !important;
     text-align: center !important;
     vertical-align: middle !important;
+  }
+
+  .attendance-table .empty-attendance-cell {
+    background-color: #b9b9b9;
   }
 
   .section-header {
@@ -120,10 +135,12 @@
 } %}
 {% var pages = chunk(data, CHUNK_SIZE); %}
 
+{% var dateWiseDutyStaff = {} %}
+
 <div>
   {% for (var p = 0; p < pages.length; p++) { %}
     <div class="attendance-page">
-      <table class="attendance-sheet-wrapper">
+      <table class="attendance-table">
         <!-- Title Row -->
         <tr class="title-section">
           <td colspan="5" class="logo-cell">
@@ -177,22 +194,27 @@
             <td colspan="{{ shiftColSpan }}">{{ row.shift }}</td>
             {% for (var j = 0; j < monthDays.length; j++) { %}
               {% var status = row[monthDays[j].date]; %}
-              <td>{{ status == "CDO" ? "DO" : status }}</td>
+              <td class="{{ status ? "" : "empty-attendance-cell" }}">{{ status == "CDO" ? "DO" : status }}</td>
+              {% if (status == "P") { %}
+                {% dateWiseDutyStaff[monthDays[j].date] = (dateWiseDutyStaff[monthDays[j].date] || 0) + 1 %}
+              {% } %}
             {% } %}
             <td colspan="2">{{ row.working_days }}</td>
             <td>{{ row.off_days }}</td>
           </tr>
         {% } %}
   
-        <!-- Staff on Duty -->
-        <tr class="staff-duty">
-          <th colspan="{{ empIdColSpan + empNameColSpan + shiftColSpan + 1 }}">No. of Staff on Duty</th>
-          {% for (var i = 0; i < monthDays.length; i++) { %}
-            <td>{{ pageData.reduce((count, att) => att[monthDays[i].date.toString()] === 'P' ? count + 1 : count, 0) }}</td>
-          {% } %}
-          <td colspan="2">-</td>
-          <td>-</td>
-        </tr>
+        <!-- Staff on Duty (On Last Page Only) -->
+        {% if (p == (pages.length - 1)) { %}
+          <tr class="staff-duty">
+            <th colspan="{{ empIdColSpan + empNameColSpan + shiftColSpan + 1 }}">No. of Staff on Duty</th>
+            {% for (var n = 0; n < monthDays.length; n++) { %}
+              <td>{{ dateWiseDutyStaff[monthDays[n].date] || 0 }}</td>
+            {% } %}
+            <td colspan="2">{{ data.reduce((acc, rec) => acc + (rec.working_days || 0), 0) }}</td>
+            <td>{{ data.reduce((acc, rec) => acc + (rec.off_days || 0), 0) }}</td>
+          </tr>
+        {% } %}
   
         <!-- Signatures -->
         <tr class="signatures">

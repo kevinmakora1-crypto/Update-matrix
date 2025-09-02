@@ -620,4 +620,4 @@ def get_website_info_data():
 
 def send_email_tst():
     msg = """Hiii this is tst email"""
-    frappe.sendmail(recipients="omar.ja93@gmail.com", sender="omar.ja93@gmail.com", content=msg, subject="test subject")
+    frappe.sendmail(recipients="develop@one-fm.com", sender="develop@one-fm.com", content=msg, subject="test subject")

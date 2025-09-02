@@ -1,4 +1,4 @@
-# Copyright (c) 2025, omar jaber and Contributors
+# Copyright (c) 2025, ONE FM and Contributors
 # See license.txt
 
 from datetime import date

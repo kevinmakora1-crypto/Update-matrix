@@ -4,45 +4,32 @@ from frappe.utils import getdate
 from json import dumps
 from httplib2 import Http
 from frappe.desk.form.assign_to import get as get_assignments,add as add_assignment
-
 from helpdesk.helpdesk.doctype.hd_ticket.hd_ticket import HDTicket
-
 from one_fm.processor import sendemail
 from one_fm.api.doc_events import get_employee_user_id
 from one_fm.utils import response
 
-
-
-
-
 class HDTicketOverride(HDTicket):
-
     def before_insert(self):
         self.set_im_mail_ticket_to_draft()
 
-        
     def validate(self):
         super().validate()
         self.validate_hd_ticket()
         self.send_mail_for_completion()
 
-
     def on_change(self):
         self.notify_issue_raiser_about_priority()
-
 
     def on_update(self):
         super().on_update()
         self.apply_ticket_escalation()
         self.notify_ticket_raiser_of_resolution_details()
 
-
     def after_insert(self):
         super().after_insert()
         self.send_google_chat_notification()
         self.notify_ticket_raiser_of_receipt()
-
-
 
     def send_mail_for_completion(self):
         if self.is_new() and self.status == "Draft":
@@ -55,11 +42,9 @@ class HDTicketOverride(HDTicket):
             msg = frappe.render_template('one_fm/templates/emails/notify_issue_raiser_to_complete_ticket_details.html', context=context)
             frappe.enqueue(method=sendemail, queue="short", recipients=self.raised_by, subject=subject, content=msg, is_external_mail=True, is_scheduler_email=True)
 
-
     def set_im_mail_ticket_to_draft(self):
         if frappe.flags.in_receive or not self.via_customer_portal:
             self.status = "Draft"
-
 
     def validate_hd_ticket(self):
         bug_buster = frappe.get_all("Bug Buster",{'docstatus':1,'from_date':['<=',getdate()],'to_date':['>=',getdate()]},['employee'])
@@ -71,11 +56,8 @@ class HDTicketOverride(HDTicket):
         if (self.status == "Closed" or self.status == "Resolved") and not self.resolution_details:
             frappe.throw(_("Please fill in Resolution Details before closing the ticket."))
 
-
-
     def send_google_chat_notification(self):
         """Hangouts Chat incoming webhook to send the Issues Created, in Card Format."""
-
         # Fetch the Key and Token for the API
         try:
             default_api_integration = frappe.get_doc("Default API Integration")
@@ -145,9 +127,6 @@ class HDTicketOverride(HDTicket):
         except Exception as e:
              frappe.log_error(frappe.get_traceback(), "Error while sending google notification")
 
-    
-
-
     def notify_ticket_raiser_of_resolution_details(self):
         if self.status == "Closed":
             previous_doc = self.get_doc_before_save() # Check if status was just changed to Closed
@@ -169,8 +148,6 @@ class HDTicketOverride(HDTicket):
                 except Exception as e:
                     frappe.log_error(message=frappe.get_traceback(), title="HD Ticket")
 
-
-
     def notify_ticket_raiser_of_receipt(self):
         try:
             subject = f"HD Ticket {self.name} Raised"
@@ -187,8 +164,6 @@ class HDTicketOverride(HDTicket):
             frappe.enqueue(method=sendemail, queue="short", recipients=self.raised_by, subject=subject, content=message, is_external_mail=True, is_scheduler_email=True)
         except Exception as e:
             frappe.log_error(message=frappe.get_traceback(), title="HD Ticket")
-
-
 
     def notify_issue_raiser_about_priority(self):
         if self.ticket_type == "Bug":
@@ -210,7 +185,6 @@ class HDTicketOverride(HDTicket):
                     )
                     msg = frappe.render_template('one_fm/templates/emails/notify_ticket_raiser_about_priority.html', context=context)
                     frappe.enqueue(method=sendemail, queue="short", recipients=self.raised_by, subject=title, content=msg, is_external_mail=True, is_scheduler_email=True)
-
 
     def apply_ticket_escalation(self):
         if self.agreement_status != 'Failed':
@@ -242,7 +216,6 @@ class HDTicketOverride(HDTicket):
                 'description': _('HD Ticket {0} has been assigned to you due to escalation for failed SLA').format(self.name),
             })
 
-
     def on_communication_update(self, c):
         # If communication is incoming, then it is a reply from customer, and ticket must
         # be reopened.
@@ -265,8 +238,6 @@ class HDTicketOverride(HDTicket):
         self.description = self.description or c.content
         # Save the ticket, allowing for hooks to run.
         self.save()
-
-
 
 @frappe.whitelist()
 def create_dev_ticket(name, description):
@@ -355,11 +326,11 @@ def create_dev_ticket(name, description):
             return {'error': 'Dev Ticket Error', 'message': f"Dev ticket could not be created:\n{error_msg}"}
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Dev Ticket Creation Error")
+        frappe.log_error(message=frappe.get_traceback(), title="Dev Ticket Creation Error")
         return {'error': 'Dev Ticket Error', 'message': f"Dev ticket could not be created:\n {str(e)}"}
 
 
-CLEANER = re.compile('<.*?>') 
+CLEANER = re.compile('<.*?>')
 
 def cleanhtml(raw_html):
   cleantext = re.sub(CLEANER, '', raw_html)
@@ -378,8 +349,6 @@ def get_ticket_details(name: str):
         "status_code": 200,
         "data": hd_ticket,
     }
-
-
 
 @frappe.whitelist()
 def update_ticket(name: str, updates: str):
@@ -426,15 +395,56 @@ def _fetch_list(doctype):
 def get_ticket_type():
     return _fetch_list("HD Ticket Type")
 
-
 @frappe.whitelist()
 def get_priority():
     return _fetch_list("HD Ticket Priority")
-
 
 @frappe.whitelist()
 def get_process():
     return _fetch_list("Process")
 
+@frappe.whitelist()
+def create_github_issue(name, description):
+    """
+    Create a GitHub issue from an HD Ticket
+    """
+    try:
+        doc = frappe.get_doc("HD Ticket", name)
+        doc_link = frappe.utils.get_url(f"/app/hd-ticket/{doc.name}")
 
-    
+        # Use fallback if description is not provided
+        description = cleanhtml(description) or doc.subject
+
+        # Get GitHub credentials from site_config.json
+        github_token = frappe.conf.get("github_api_token")
+        github_repo_owner = frappe.conf.get("github_repo_owner")
+        github_repo_name = frappe.conf.get("github_repo_name")
+
+        if not all([github_token, github_repo_owner, github_repo_name]):
+            frappe.throw("GitHub credentials not found in site_config.json")
+
+        headers = {
+            "Authorization": f"token {github_token}",
+            "Content-Type": "application/json"
+        }
+
+        data = {
+            "title": doc.subject,
+            "body": f"**From HD Ticket:** [{doc.name}]({doc_link})\n\n**Description:**\n{description}"
+        }
+
+        url = f"https://api.github.com/repos/{github_repo_owner}/{github_repo_name}/issues"
+        response = requests.post(url, headers=headers, json=data, timeout=10)
+
+        if response.status_code == 201:
+            issue_url = response.json().get("html_url")
+            doc.db_set('custom_github_issue_url', issue_url)
+            return {'status': 'success', 'github_issue_url': issue_url}
+        else:
+            error_msg = response.json().get("message") or response.text
+            frappe.log_error(message=f"GitHub Issue Creation Error: {error_msg}", title="GitHub Integration")
+            return {'error': 'GitHub Issue Error', 'message': f"GitHub issue could not be created:\n{error_msg}"}
+
+    except Exception as e:
+        frappe.log_error(message=frappe.get_traceback(), title="GitHub Issue Creation Error")
+        return {'error': 'GitHub Issue Error', 'message': f"GitHub issue could not be created:\n {str(e)}"}

@@ -1,9 +1,18 @@
-// Copyright (c) 2021, omar jaber and contributors
+// Copyright (c) 2021, ONE FM and contributors
 // For license information, please see license.txt
 
 frappe.ui.form.on('Onboard Employee', {
 	
-	
+	onload: function(frm) {
+		// using frm.set_query to filter the operations shift field based on active shifts
+		frm.set_query('operations_shift', function() {
+			return {
+				filters: {
+					"status": "Active"
+				}
+			};
+		});
+	},
 	refresh: function(frm) {
 		show_hide_fields(frm)
 		set_progress_html(frm);

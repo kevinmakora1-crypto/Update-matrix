@@ -1,4 +1,4 @@
-# Copyright (c) 2024, omar jaber and contributors
+# Copyright (c) 2024, ONE FM and contributors
 # For license information, please see license.txt
 
 import json, time
@@ -27,7 +27,7 @@ class RelieverAssignment(Document):
 		self.assign_todos()
 		self.assign_projects()
 		self.assign_operations_site()
-		self.assign_routine_tasks()
+		self.assign_process_tasks()
 		self.get_single_doctypes()
 		self.get_approval_doctypes()
 		
@@ -80,6 +80,25 @@ class RelieverAssignment(Document):
 
 		reliever_user.add_roles(roles_to_be_assigned)
 
+	def assign_process_tasks(self):
+		ProcessTask = DocType("Process Task")
+		process_tasks = (
+			frappe.qb.from_(ProcessTask)
+			.select(ProcessTask.name)
+			.where((ProcessTask.direct_report_reviewer == self.on_leave_employee))
+		).run(as_dict=True)
+
+
+		if len(process_tasks) > 0:
+			# Log data for reversal
+			self.add_assigned_documents("Process Task", "Docfield", process_tasks, fieldname="direct_report_reviewer")
+
+			frappe.qb.update(ProcessTask ).set(
+				ProcessTask.direct_report_reviewer, self.reliever).set(
+				ProcessTask.direct_report_reviewer_name, self.reliever_name).set(
+				ProcessTask.modified, now()).where(
+				ProcessTask.direct_report_reviewer == self.on_leave_employee
+			).run()
 
 	def assign_reportees(self):
 		Employee = DocType("Employee")
@@ -157,29 +176,15 @@ class RelieverAssignment(Document):
 					replaced_with = self.reliever_name
 					value_to_replace =self.on_leave_employee_name 
 				self.add_assigned_documents(todo.reference_type, "Docfield", todo, fieldname=fieldname)
-				# Shift Request uses table multiselect field for approvers
-				if todo.reference_type == "Shift Request":
-					ShiftRequest = DocType("Shift Request")
-					ShiftRequestApprovers = DocType("Shift Request Approvers")
-					frappe.qb.update(ShiftRequestApprovers) \
-						.join(ShiftRequest) \
-						.on(ShiftRequest.name == ShiftRequestApprovers.parent) \
-						.set(ShiftRequestApprovers.user, replaced_with) \
-						.where(ShiftRequestApprovers.parent == todo.reference_name) \
-						.where(ShiftRequestApprovers.parentfield == "custom_shift_approvers") \
-						.where(ShiftRequestApprovers.user == value_to_replace)\
-						.where(ShiftRequest.workflow_state.isin(status_to_check)) \
+				ReferenceType = DocType(todo.reference_type)
+				for fieldname in fieldnames:						
+					frappe.qb.update(ReferenceType) \
+						.set(ReferenceType[fieldname], replaced_with) \
+						.set(ReferenceType.modified, now()) \
+						.where(ReferenceType.name == todo.reference_name) \
+						.where(ReferenceType[fieldname] == value_to_replace) \
+						.where(ReferenceType[status_field].isin(status_to_check)) \
 					.run()
-				else:
-					ReferenceType = DocType(todo.reference_type)
-					for fieldname in fieldnames:						
-						frappe.qb.update(ReferenceType) \
-							.set(ReferenceType[fieldname], replaced_with) \
-							.set(ReferenceType.modified, now()) \
-							.where(ReferenceType.name == todo.reference_name) \
-							.where(ReferenceType[fieldname] == value_to_replace) \
-							.where(ReferenceType[status_field].isin(status_to_check)) \
-						.run()
 
 
 	def assign_projects(self):
@@ -224,46 +229,6 @@ class RelieverAssignment(Document):
 				OperationsSite.account_supervisor_name, self.reliever_name).set(
 				OperationsSite.modified, now()).where(
 				OperationsSite.account_supervisor == self.on_leave_employee).where(OperationsSite.status == "Active").run()
-
-
-	def assign_routine_tasks(self):
-		RoutineTask = DocType("Routine Task")
-		routine_tasks = (
-			frappe.qb.from_(RoutineTask)
-			.select(RoutineTask.name)
-			.where((RoutineTask.employee == self.on_leave_employee))
-		).run(as_dict=True)
-		
-
-		if len(routine_tasks) > 0:
-			# Log data for reversal
-			self.add_assigned_documents("Routine Task", "Docfield", routine_tasks, fieldname="employee")
-
-			frappe.qb.update(RoutineTask).set(
-				RoutineTask.employee, self.reliever).set(
-				RoutineTask.employee_name, self.reliever_name).set(
-				RoutineTask.modified, now()).where(
-				RoutineTask.employee == self.on_leave_employee
-			).run()
-
-		# If employee_on_leave is set as Direct Report Reviewer in Routine Task
-		routine_tasks_reviewer = (
-			frappe.qb.from_(RoutineTask)
-			.select(RoutineTask.name)
-			.where((RoutineTask.direct_report_reviewer == self.on_leave_employee))
-		).run(as_dict=True)
-		
-
-		if len(routine_tasks_reviewer) > 0:
-			# Log data for reversal
-			self.add_assigned_documents("Routine Task", "Docfield", routine_tasks_reviewer, fieldname="direct_report_reviewer")
-
-			frappe.qb.update(RoutineTask).set(
-				RoutineTask.direct_report_reviewer, self.reliever).set(
-				RoutineTask.direct_report_reviewer_name, self.reliever_name).set(
-				RoutineTask.modified, now()).where(
-				RoutineTask.direct_report_reviewer == self.on_leave_employee
-			).run()
 
 
 	def add_assigned_documents(self, reference_doctype, based_on, doclist, fieldname=None, reference_docname=None):
@@ -412,29 +377,15 @@ class ReassignRelieverAssignment(Document):
 						if "name" in fieldname:
 							replaced_with = self.on_leave_employee_name
 							value_to_replace = self.reliever_name
-						# Shift Request uses table multiselect field for approvers
-						if todo.get('reference_type') == "Shift Request":
-							ShiftRequest = DocType("Shift Request")
-							ShiftRequestApprovers = DocType("Shift Request Approvers")
-							frappe.qb.update(ShiftRequestApprovers) \
-								.join(ShiftRequest) \
-								.on(ShiftRequest.name == ShiftRequestApprovers.parent) \
-								.set(ShiftRequestApprovers.user, replaced_with) \
-								.where(ShiftRequestApprovers.parent == todo.get('reference_name')) \
-								.where(ShiftRequestApprovers.parentfield == "custom_shift_approvers") \
-								.where(ShiftRequestApprovers.user == value_to_replace)\
-								.where(ShiftRequest.workflow_state.isin(status_to_check)) \
+						ReferenceType = DocType(todo.get('reference_type'))
+						for fieldname in fieldnames:
+							frappe.qb.update(ReferenceType) \
+								.set(ReferenceType[fieldname], replaced_with) \
+								.set(ReferenceType.modified, now()) \
+								.where(ReferenceType.name == todo.get('reference_name')) \
+								.where(ReferenceType[fieldname] == value_to_replace) \
+								.where(ReferenceType[status_field].isin(status_to_check)) \
 							.run()
-						else:
-							ReferenceType = DocType(todo.get('reference_type'))
-							for fieldname in fieldnames:
-								frappe.qb.update(ReferenceType) \
-									.set(ReferenceType[fieldname], replaced_with) \
-									.set(ReferenceType.modified, now()) \
-									.where(ReferenceType.name == todo.get('reference_name')) \
-									.where(ReferenceType[fieldname] == value_to_replace) \
-									.where(ReferenceType[status_field].isin(status_to_check)) \
-								.run()
 		
 	def reassign_roles(self, data):
 		doclist = json.loads(data.doclist)
@@ -483,23 +434,6 @@ class ReassignRelieverAssignment(Document):
 					OperationsSite.name.isin(doclist_to_reassign))\
 						.where(OperationsSite.status == "Active").run()
 
-	def reassign_routine_tasks(self,data):
-		RoutineTask = DocType(data.reference_doctype)
-		fieldname = data.fieldname
-		doclist_to_reassign = [name.get('name')for name in json.loads(data.doclist)]
-		if doclist_to_reassign and fieldname == "employee":
-			frappe.qb.update(RoutineTask).set(
-					RoutineTask.employee, self.on_leave_employee).set(
-					RoutineTask.employee_name, self.on_leave_employee_name).set(
-					RoutineTask.modified, now()).where(
-					RoutineTask.name.isin(doclist_to_reassign)).run()
-		elif doclist_to_reassign and fieldname == "direct_report_reviewer":
-			frappe.qb.update(RoutineTask).set(
-					RoutineTask.direct_report_reviewer, self.on_leave_employee).set(
-					RoutineTask.direct_report_reviewer_name, self.on_leave_employee_name).set(
-					RoutineTask.modified, now()).where(
-					RoutineTask.name.isin(doclist_to_reassign)
-				).run()
 
 	def reassign_department_approvals(self,data):
 		DepartmentApprover = DocType(data.reference_doctype)
@@ -509,6 +443,7 @@ class ReassignRelieverAssignment(Document):
 				.set(DepartmentApprover.approver, self._employee_user_id) \
 				.set(DepartmentApprover.modified, now()) \
 				.where(DepartmentApprover.name.isin(doclist_to_reassign)).run()
+			
 	
 	def reassign_single_doctype(self,data):
 		Singles = DocType("Singles")
@@ -522,12 +457,27 @@ class ReassignRelieverAssignment(Document):
 		).run()
 		frappe.clear_cache(doctype=record_doc_type)
 
+		
+	def reassign_process_tasks(self,data):
+		ProcessTask = DocType(data.reference_doctype)
+		fieldname = data.fieldname
+		doclist_to_reassign = [name.get('name')for name in json.loads(data.doclist)]
+
+		if doclist_to_reassign and fieldname == "direct_report_reviewer":
+			frappe.qb.update(ProcessTask ).set(
+					ProcessTask.direct_report_reviewer, self.on_leave_employee).set(
+					ProcessTask.direct_report_reviewer_name, self.on_leave_employee_name).set(
+					ProcessTask.modified, now()).where(
+					ProcessTask.name.isin(doclist_to_reassign)).run()
+			
+
 	def reassign(self):
 		leave_application = frappe.get_value("Leave Application", self.leave_application, "name")
 		datas = (frappe.qb.from_("Reliever Assignment Document")\
 		.select('*')\
 		.where(frappe.qb.Field('parent')==leave_application)\
 		.where(frappe.qb.Field('parentfield')=='assigned_documents')).run(as_dict=1)
+		
 		for data in datas:
 			if data.reference_doctype == "User":
 				self.reassign_roles(data)
@@ -537,10 +487,10 @@ class ReassignRelieverAssignment(Document):
 				self.reassign_todos(data)
 			elif data.reference_doctype == "Project":
 				self.reassign_projects(data)
+			elif data.reference_doctype == "Process Task":
+				self.reassign_process_tasks(data)
 			elif data.reference_doctype == "Operations Site":
 				self.reassign_operations_site(data)
-			elif data.reference_doctype == "Routine Task":
-				self.reassign_routine_tasks(data)
 			elif data.reference_doctype == "Department Approver":
 				self.reassign_department_approvals(data)
 			else:
@@ -563,48 +513,46 @@ class ReassignRelieverAssignment(Document):
 		for reference in relievers_todo:
 			reference_type = reference["reference_type"]
 			reference_name = reference["reference_name"]
-			todo_to_update = frappe.get_doc(reference_type, {'name': reference_name})
-			if hasattr(todo_to_update, 'employee') and todo_to_update.employee:
-				emp_details = frappe.get_doc('Employee',todo_to_update.employee)
-				if emp_details.reports_to == self.on_leave_employee:
-					if reference.allocated_to is not None:
-						frappe.db.set_value(ToDo, reference.name, 'allocated_to', self._employee_user_id)
-						self.reassign_docs_related_to_todos(reference_type,reference_name)
+			
+			if reference_type and reference_name:
+				todo_to_update = frappe.get_doc(reference_type, {'name': reference_name})
+				if hasattr(todo_to_update, 'employee') and todo_to_update.employee:
+					emp_details = frappe.get_doc('Employee',todo_to_update.employee)
+					if emp_details.reports_to == self.on_leave_employee:
+						if reference.allocated_to is not None:
+							frappe.db.set_value(ToDo, reference.name, 'allocated_to', self._employee_user_id)
+							self.reassign_docs_related_to_todos(reference_type,reference_name)
 
 
-	def reassign_docs_related_to_todos(self,reference_type,reference_name):
-		Doctype = frappe.get_doc('Reliever Assignment Settings',{'reference_doctype':reference_type})
-		matching_docs = [doc for doc in Doctype.as_dict().documents if doc.get('reference_doctype') == reference_type][0]
-		if matching_docs:
-			status_to_check =(matching_docs.statuses).split(',')
-			status_field = matching_docs.status_field
-			replaced_with = self.on_leave_employee if matching_docs["link_fieldtype"] == "Employee" else self._employee_user_id
-			value_to_replace = self.reliever if matching_docs["link_fieldtype"] == "Employee" else self._reliever_user_id
-			fieldnames = matching_docs['fieldnames'].split(",")
-			for fieldname in fieldnames:
-				if "name" in fieldname:
-						value_to_replace = self.reliever_name
-						replaced_with = self.on_leave_employee_name 
-				if reference_type == "Shift Request":
-					ShiftRequest = DocType("Shift Request")
-					ShiftRequestApprovers = DocType("Shift Request Approvers")
-					frappe.qb.update(ShiftRequestApprovers) \
-							.join(ShiftRequest) \
-							.on(ShiftRequest.name == ShiftRequestApprovers.parent) \
-							.set(ShiftRequestApprovers.user, replaced_with) \
-							.where(ShiftRequestApprovers.parent == reference_name) \
-							.where(ShiftRequestApprovers.parentfield == "custom_shift_approvers") \
-							.where(ShiftRequestApprovers.user == value_to_replace) \
-							.where(ShiftRequest.workflow_state.isin(status_to_check)).run()
-				else:
-					ReferenceType = DocType(reference_type)
-					for fieldname in fieldnames:
-						frappe.qb.update(ReferenceType) \
-									.set(ReferenceType[fieldname], replaced_with) \
-									.set(ReferenceType.modified, now()) \
-									.where(ReferenceType.name == reference_name) \
-									.where(ReferenceType[fieldname] == value_to_replace) \
-									.where(ReferenceType[status_field].isin(status_to_check)).run()
+	def reassign_docs_related_to_todos(self, reference_type, reference_name):
+		Doctype = frappe.get_doc('Reliever Assignment Settings', {'reference_doctype': reference_type})
+		matching_docs_list = [doc for doc in Doctype.as_dict().documents if doc.get('reference_doctype') == reference_type]
+		
+		if not matching_docs_list:
+			frappe.log_error(f"No matching documents found for reference_doctype: {reference_type}")
+			return 
+		
+		matching_docs = matching_docs_list[0]
+		
+		status_to_check = (matching_docs.statuses).split(',')
+		status_field = matching_docs.status_field
+		replaced_with = self.on_leave_employee if matching_docs["link_fieldtype"] == "Employee" else self._employee_user_id
+		value_to_replace = self.reliever if matching_docs["link_fieldtype"] == "Employee" else self._reliever_user_id
+		fieldnames = matching_docs['fieldnames'].split(",")
+		
+		for fieldname in fieldnames:
+			if "name" in fieldname:
+				value_to_replace = self.reliever_name
+				replaced_with = self.on_leave_employee_name 
+			
+			ReferenceType = DocType(reference_type)
+			
+			frappe.qb.update(ReferenceType) \
+				.set(ReferenceType[fieldname], replaced_with) \
+				.set(ReferenceType.modified, now()) \
+				.where(ReferenceType.name == reference_name) \
+				.where(ReferenceType[fieldname] == value_to_replace) \
+				.where(ReferenceType[status_field].isin(status_to_check)).run()
 
 def reassign_responsibilities(leave_application):
 	try:

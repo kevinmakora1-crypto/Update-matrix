@@ -1,4 +1,4 @@
-// Copyright (c) 2025, omar jaber and contributors
+// Copyright (c) 2025, ONE FM and contributors
 // For license information, please see license.txt
 
 const status_color_map = {
@@ -89,6 +89,11 @@ frappe.query_reports["Operations Monthly Attendance Sheet"] = {
 					}
 				};
 			}
+		},
+		{
+			fieldname: "include_future_attendance",
+			label: __("Include Future Attendance"),
+			fieldtype: "Check",
 		},
 	],
 	formatter: function (value, row, column, data, default_formatter) {

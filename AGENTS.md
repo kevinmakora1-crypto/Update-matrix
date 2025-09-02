@@ -130,7 +130,7 @@ Always include relevant test cases showing:
 - Consider ERPNext standard DocTypes and their relationships
 - Recommend standard ERPNext features before custom development
 - Think about multi-company, multi-currency scenarios when relevant
-- All the `frappe.[function name]` functions existence can be verified from https://github.com/frappe/frappe/blob/version-15/frappe/__init__.py.
+- All the `frappe.[function name]` functions' existence can be verified from https://github.com/frappe/frappe/blob/version-15/frappe/__init__.py.
 ---
 ---
 

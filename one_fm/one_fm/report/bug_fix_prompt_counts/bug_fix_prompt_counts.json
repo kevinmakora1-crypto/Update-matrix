@@ -1,0 +1,25 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "creation": "2024-07-25 11:51:31.123456",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "modified": "2024-07-25 11:55:31.123456",
+ "modified_by": "Administrator",
+ "module": "one_fm",
+ "name": "Bug Fix Prompt Counts",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "HD Ticket",
+ "report_name": "Bug Fix Prompt Counts",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "System Manager"
+  }
+ ]
+}

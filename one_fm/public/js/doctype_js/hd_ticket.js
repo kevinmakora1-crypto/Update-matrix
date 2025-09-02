@@ -38,18 +38,21 @@ const add_github_issue_button = (frm) => {
                 fieldname: "steps_to_reproduce",
                 fieldtype: "Text Editor",
                 reqd: 1,
+                default: `<p>1. [First step] </p><p><br></p><p>2. [Second step] </p><p><br></p><p>3. [Specific action that causes the issue] </p>`
               },
               {
                 label: __("Expected Result"),
                 fieldname: "expected_result",
                 fieldtype: "Text Editor",
                 reqd: 1,
+                default: "<p>[What you expected to happen]</p>"
               },
               {
                 label: __("Actual Result"),
                 fieldname: "actual_result",
                 fieldtype: "Text Editor",
                 reqd: 1,
+                default: "<p>[What actually happens - include error messages/screenshots]</p>"
               },
               {
                 label: __("Technical Context"),
@@ -60,11 +63,13 @@ const add_github_issue_button = (frm) => {
                 label: __("Affected DocType(s)"),
                 fieldname: "affected_doctypes",
                 fieldtype: "Small Text",
+                default: "[Specific ERPNext doctypes involved]"
               },
               {
                 label: __("Affected Files"),
                 fieldname: "affected_files",
                 fieldtype: "Small Text",
+                default: "[If known - specific Python/JS files]"
               },
               {
                 label: __("Additional Information"),
@@ -75,52 +80,55 @@ const add_github_issue_button = (frm) => {
                 label: __("Error Logs"),
                 fieldname: "error_logs",
                 fieldtype: "Text Editor",
+                default: "<p>[Paste relevant error logs]</p>"
               },
               {
                 label: __("Browser/System Info"),
                 fieldname: "browser_system_info",
                 fieldtype: "Text Editor",
+                default: "<p>[If frontend issue]</p>"
               },
               {
                 label: __("DataContext"),
                 fieldname: "data_context",
                 fieldtype: "Text Editor",
+                default: "<p>[Specific records/data involved]</p>"
               },
             ],
             primary_action_label: __("Create Issue"),
             primary_action(values) {
               const description = `
-### Environment:
-${values.environment}
+                ### Environment:
+                ${values.environment}
 
-### Problem Description:
-${values.problem_description}
+                ### Problem Description:
+                ${values.problem_description}
 
-### Steps to Reproduce:
-${values.steps_to_reproduce}
+                ### Steps to Reproduce:
+                ${values.steps_to_reproduce}
 
-### Expected Result:
-${values.expected_result}
+                ### Expected Result:
+                ${values.expected_result}
 
-### Actual Result:
-${values.actual_result}
+                ### Actual Result:
+                ${values.actual_result}
 
-### Technical Context:
-**Affected DocType(s):** ${values.affected_doctypes}
-**Affected Files:** ${values.affected_files}
+                ### Technical Context:
+                **Affected DocType(s):** ${values.affected_doctypes}
+                **Affected Files:** ${values.affected_files}
 
-### Additional Information:
-**Error Logs:**
-\`\`\`
-${values.error_logs}
-\`\`\`
+                ### Additional Information:
+                **Error Logs:**
+                \`\`\`
+                ${values.error_logs}
+                \`\`\`
 
-**Browser/System Info:**
-${values.browser_system_info}
+                **Browser/System Info:**
+                ${values.browser_system_info}
 
-**DataContext:**
-${values.data_context}
-`;
+                **DataContext:**
+                ${values.data_context}
+              `;
 
               frappe.call({
                 method: "one_fm.overrides.hd_ticket.create_github_issue",

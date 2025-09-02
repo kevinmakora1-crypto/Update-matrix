@@ -475,6 +475,7 @@ class ReassignRelieverAssignment(Document):
 		.select('*')\
 		.where(frappe.qb.Field('parent')==leave_application)\
 		.where(frappe.qb.Field('parentfield')=='assigned_documents')).run(as_dict=1)
+		
 		for data in datas:
 			if data.reference_doctype == "User":
 				self.reassign_roles(data)
@@ -521,27 +522,35 @@ class ReassignRelieverAssignment(Document):
 							self.reassign_docs_related_to_todos(reference_type,reference_name)
 
 
-	def reassign_docs_related_to_todos(self,reference_type,reference_name):
-		Doctype = frappe.get_doc('Reliever Assignment Settings',{'reference_doctype':reference_type})
-		matching_docs = [doc for doc in Doctype.as_dict().documents if doc.get('reference_doctype') == reference_type][0]
-		if matching_docs:
-			status_to_check =(matching_docs.statuses).split(',')
-			status_field = matching_docs.status_field
-			replaced_with = self.on_leave_employee if matching_docs["link_fieldtype"] == "Employee" else self._employee_user_id
-			value_to_replace = self.reliever if matching_docs["link_fieldtype"] == "Employee" else self._reliever_user_id
-			fieldnames = matching_docs['fieldnames'].split(",")
-			for fieldname in fieldnames:
-				if "name" in fieldname:
-						value_to_replace = self.reliever_name
-						replaced_with = self.on_leave_employee_name 
-				ReferenceType = DocType(reference_type)
-				for fieldname in fieldnames:
-					frappe.qb.update(ReferenceType) \
-						.set(ReferenceType[fieldname], replaced_with) \
-						.set(ReferenceType.modified, now()) \
-						.where(ReferenceType.name == reference_name) \
-						.where(ReferenceType[fieldname] == value_to_replace) \
-						.where(ReferenceType[status_field].isin(status_to_check)).run()
+	def reassign_docs_related_to_todos(self, reference_type, reference_name):
+		Doctype = frappe.get_doc('Reliever Assignment Settings', {'reference_doctype': reference_type})
+		matching_docs_list = [doc for doc in Doctype.as_dict().documents if doc.get('reference_doctype') == reference_type]
+		
+		if not matching_docs_list:
+			frappe.log_error(f"No matching documents found for reference_doctype: {reference_type}")
+			return 
+		
+		matching_docs = matching_docs_list[0]
+		
+		status_to_check = (matching_docs.statuses).split(',')
+		status_field = matching_docs.status_field
+		replaced_with = self.on_leave_employee if matching_docs["link_fieldtype"] == "Employee" else self._employee_user_id
+		value_to_replace = self.reliever if matching_docs["link_fieldtype"] == "Employee" else self._reliever_user_id
+		fieldnames = matching_docs['fieldnames'].split(",")
+		
+		for fieldname in fieldnames:
+			if "name" in fieldname:
+				value_to_replace = self.reliever_name
+				replaced_with = self.on_leave_employee_name 
+			
+			ReferenceType = DocType(reference_type)
+			
+			frappe.qb.update(ReferenceType) \
+				.set(ReferenceType[fieldname], replaced_with) \
+				.set(ReferenceType.modified, now()) \
+				.where(ReferenceType.name == reference_name) \
+				.where(ReferenceType[fieldname] == value_to_replace) \
+				.where(ReferenceType[status_field].isin(status_to_check)).run()
 
 def reassign_responsibilities(leave_application):
 	try:

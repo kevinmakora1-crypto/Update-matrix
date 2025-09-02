@@ -3724,6 +3724,7 @@ def set_employee_status():
                     ''', (employee, from_date, to_date)
                 )
                 employees_set_to_vacation += 1
+
             elif current_date == add_days(getdate(to_date), 1) and status == "Vacation":
                 frappe.db.set_value('Employee', employee, 'status', 'Active')
                 if reliever and frappe.db.exists("Reliever Assignment", {"name": leave_application}):

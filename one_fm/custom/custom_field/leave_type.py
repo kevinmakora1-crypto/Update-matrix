@@ -16,6 +16,12 @@ def get_leave_type_custom_fields():
                 "label": "Is Paid Maternity Leave"
             },
             {
+                "fieldname": "custom_update_employee_status_to_vacation",
+                "fieldtype": "Check",
+                "insert_after": "custom_is_maternity",
+                "label": "Update Employee Status to Vacation"
+            },
+            {
                 "fieldname": "custom_leave_type_name_in_arabic",
                 "fieldtype": "Data",
                 "insert_after": "leave_type_name",

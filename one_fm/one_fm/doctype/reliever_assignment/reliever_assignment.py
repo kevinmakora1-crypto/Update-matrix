@@ -20,6 +20,7 @@ class RelieverAssignment(Document):
 	def before_insert(self):
 		self.validate_leave_application()
 		
+		
 	def after_insert(self):
 		self.assign_roles()
 		self.assign_reportees()
@@ -29,6 +30,7 @@ class RelieverAssignment(Document):
 		self.assign_process_tasks()
 		self.get_single_doctypes()
 		self.get_approval_doctypes()
+		
 		# Update status after transferring responsibilities
 		self.update_status("Transferred")
 		self.save()
@@ -127,7 +129,7 @@ class RelieverAssignment(Document):
 				& (ToDo.status == "Open")
 			).orderby(ToDo.reference_type, order=frappe.qb.asc)
 		).run(as_dict=True)
-
+		
 		if len(open_todos) > 0:
 			# Log data for reversal
 			self.add_assigned_documents("ToDo", "Docfield", open_todos, fieldname="allocated_to")
@@ -317,7 +319,7 @@ def assign_responsibilities(leave_application):
 		reliever_assignment.leave_application = leave_application
 		reliever_assignment.save()
 	except Exception:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(title = 'ERROR ASSIGNING RECORDS',message = frappe.get_traceback())
 
 
 class ReassignRelieverAssignment(Document):
@@ -557,4 +559,4 @@ def reassign_responsibilities(leave_application):
 		reassign_responsiobility = ReassignRelieverAssignment(leave_application=leave_application)
 		reassign_responsiobility.reassign()
 	except Exception:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(title = "ERROR CREATING RELIEVER ASSIGNMENT",message = frappe.get_traceback())

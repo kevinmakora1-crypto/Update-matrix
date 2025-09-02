@@ -20,7 +20,6 @@
    "reqd": 1
   },
   {
-   "fetch_from": "description.factors",
    "fieldname": "factors",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -46,7 +45,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-09-03 01:32:31.636673",
+ "modified": "2025-09-03 02:32:19.582607",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Rank and Factors",

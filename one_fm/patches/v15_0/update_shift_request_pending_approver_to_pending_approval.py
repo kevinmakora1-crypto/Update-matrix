@@ -7,7 +7,7 @@ def execute():
     pending_workflow = frappe.get_all(
         "Shift Request",
         filters={"workflow_state": "Pending Approver"},
-        fields=["name", "parent"]
+        fields=["name"]
     )
     if pending_workflow:
         update_existing_pending_approver_to_pending_approval(pending_workflow)

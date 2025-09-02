@@ -20,6 +20,13 @@ def get_hd_ticket_custom_fields():
                 "translatable": 1
             },
             {
+                "fieldname": "custom_github_issue_url",
+                "fieldtype": "Data",
+                "label": "GitHub Issue",
+                "insert_after": "custom_dev_ticket",
+                "read_only": 1
+            },
+            {
                 "fieldname": "custom_bug_buster",
                 "fieldtype": "Link",
                 "insert_after": "ticket_split_from",

@@ -117,7 +117,7 @@ one_fm.patches.v15_0.add_roster_index #03-06-2025
 one_fm.patches.v15_0.delete_all_roaster_day_off_checker_records
 one_fm.patches.v15_0.update_operation_post_start_and_end_date
 one_fm.patches.v15_0.add_custom_process_field_property_setter
-one_fm.patches.v15_0.add_update_custom_field #ToDo field
+one_fm.patches.v15_0.add_update_custom_field #ToDo field # added new field to leave application (custom_google_event_id)
 one_fm.patches.v15_0.add_update_property_setter #2025-05-20
 one_fm.patches.v15_0.add_update_assignment_rule #2025-07-2
 one_fm.patches.v15_0.add_update_workflow #2025-06-04
@@ -142,8 +142,10 @@ one_fm.patches.v15_0.update_shift_request_workflow
 one_fm.patches.v15_0.change_invalid_media_content_to_others_in_attendance_check_justification
 one_fm.patches.v15_0.update_shift_permission_workflow_conditions
 one_fm.patches.v15_0.update_shift_request_purpose_field
+one_fm.patches.v15_0.unset_mobile_no_disabled_user
 one_fm.patches.v15_0.update_shift_request_assignment_rule
 one_fm.patches.v15_0.revert_responsibilities
+one_fm.patches.v15_0.update_hd_ticket_prompt_fields
 one_fm.patches.v15_0.create_absentees_report_process_task
 
 

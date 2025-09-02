@@ -499,6 +499,7 @@ website_route_rules = [
 # }
 
 override_doctype_class = {
+    "User": "one_fm.overrides.user.UserOverride",
     "Leave Policy Assignment": "one_fm.overrides.leave_policy_assignment.LeavePolicyAssignmentOverride",
 	"Attendance Request": "one_fm.overrides.attendance_request.AttendanceRequestOverride",
 	"Attendance": "one_fm.overrides.attendance.AttendanceOverride",
@@ -851,7 +852,8 @@ after_migrate = [
     "one_fm.after_migrate.execute.comment_process_expired_allocation_in_hrms",
     "one_fm.after_migrate.execute.replace_prompt_message_in_goal",
     "one_fm.after_migrate.execute.update_all_ticket_features",
-    "one_fm.overrides.scheduled_job_type.update_scheduled_job_type_from_process_task"
+    "one_fm.overrides.scheduled_job_type.update_scheduled_job_type_from_process_task",
+    "one_fm.after_migrate.execute.disable_email_and_sync_on_developer_mode"
 ]
 
 before_migrate = [

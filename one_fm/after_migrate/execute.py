@@ -635,3 +635,39 @@ def update_all_ticket_features():
         run_command("bench restart", cwd=bench_path)
     else:
         print("No changes detected. Skipping build and restart.")
+
+def disable_email_and_sync_on_developer_mode():
+    if not frappe.conf.get("developer_mode"):
+        return
+    disable_email_accounts_on_developer_mode()
+    disable_sync_on_developer_mode()
+
+def disable_email_accounts_on_developer_mode():
+    if not frappe.conf.get("developer_mode"):
+        return
+    email_accounts = frappe.get_all("Email Account", pluck="name")
+    for account in email_accounts:
+        frappe.db.set_value(
+            "Email Account",
+            account,
+            {
+                "enable_outgoing": 0,
+                "default_outgoing": 0,
+                "enable_incoming": 0,
+                "default_incoming": 0
+            }
+        )
+        print(f"Disabled Email Account: {account}")
+    print("All Email Accounts have been disabled.")
+
+def disable_sync_on_developer_mode():
+    if not frappe.conf.get("developer_mode"):
+        return
+    sync_ = frappe.db.get_single_value("ONEFM General Setting", "google_task_synchronization_enabled")
+    if sync_:
+        frappe.db.set_single_value(
+            "ONEFM General Setting",
+            "google_task_synchronization_enabled",
+            0
+        )
+        print(f"Disabled Google Task Synchronization")

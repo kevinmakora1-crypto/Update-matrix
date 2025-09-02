@@ -329,7 +329,7 @@ def create_dev_ticket(name, description):
             return {'error': 'Dev Ticket Error', 'message': f"Dev ticket could not be created:\n{error_msg}"}
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Dev Ticket Creation Error")
+        frappe.log_error(message=frappe.get_traceback(), title="Dev Ticket Creation Error")
         return {'error': 'Dev Ticket Error', 'message': f"Dev ticket could not be created:\n {str(e)}"}
 
 
@@ -406,3 +406,49 @@ def get_priority():
 @frappe.whitelist()
 def get_process():
     return _fetch_list("Process")
+
+@frappe.whitelist()
+def create_github_issue(name, description):
+    """
+    Create a GitHub issue from an HD Ticket
+    """
+    try:
+        doc = frappe.get_doc("HD Ticket", name)
+        doc_link = frappe.utils.get_url(f"/app/hd-ticket/{doc.name}")
+
+        # Use fallback if description is not provided
+        description = cleanhtml(description) or doc.subject
+
+        # Get GitHub credentials from site_config.json
+        github_token = frappe.conf.get("github_api_token")
+        github_repo_owner = frappe.conf.get("github_repo_owner")
+        github_repo_name = frappe.conf.get("github_repo_name")
+
+        if not all([github_token, github_repo_owner, github_repo_name]):
+            frappe.throw("GitHub credentials not found in site_config.json")
+
+        headers = {
+            "Authorization": f"token {github_token}",
+            "Content-Type": "application/json"
+        }
+
+        data = {
+            "title": doc.subject,
+            "body": f"**From HD Ticket:** [{doc.name}]({doc_link})\n\n**Description:**\n{description}"
+        }
+
+        url = f"https://api.github.com/repos/{github_repo_owner}/{github_repo_name}/issues"
+        response = requests.post(url, headers=headers, json=data, timeout=10)
+
+        if response.status_code == 201:
+            issue_url = response.json().get("html_url")
+            doc.db_set('custom_github_issue_url', issue_url)
+            return {'status': 'success', 'github_issue_url': issue_url}
+        else:
+            error_msg = response.json().get("message") or response.text
+            frappe.log_error(message=f"GitHub Issue Creation Error: {error_msg}", title="GitHub Integration")
+            return {'error': 'GitHub Issue Error', 'message': f"GitHub issue could not be created:\n{error_msg}"}
+
+    except Exception as e:
+        frappe.log_error(message=frappe.get_traceback(), title="GitHub Issue Creation Error")
+        return {'error': 'GitHub Issue Error', 'message': f"GitHub issue could not be created:\n {str(e)}"}

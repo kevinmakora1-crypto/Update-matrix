@@ -1,5 +1,14 @@
 frappe.ui.form.on('Job Offer', {
   refresh(frm) {
+    // Ensure that only Active Shifts are shown in operations_shift field
+    frm.set_query('operations_shift', function() {
+			return {
+				filters: {
+					"status": "Active"
+				}
+			};
+		});
+
     if(frm.is_new()){
       frm.set_value('offer_date', frappe.datetime.now_date());
     }
@@ -129,6 +138,8 @@ frappe.ui.form.on('Job Offer', {
     set_filters(frm);
   },
 });
+
+
 
 var set_filters = function(frm) {
   var filters = {};

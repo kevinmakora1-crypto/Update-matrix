@@ -1,9 +1,336 @@
-# Copyright (c) 2024, ONE FM and Contributors
+# -*- coding: utf-8 -*-
+# Copyright (c) 2025, ONE-F-M and Contributors
 # See license.txt
+from __future__ import unicode_literals
+import frappe
+import unittest
+from unittest.mock import patch
+from one_fm.utils import set_employee_status
+from frappe.utils import nowdate, add_to_date, cstr, cint, getdate, get_link_to_form
 
-# import frappe
-from frappe.tests.utils import FrappeTestCase
 
 
-class TestRelieverAssignment(FrappeTestCase):
-	pass
+class TestRelieverAssignment(unittest.TestCase):
+    def create_gender(self):
+        if not frappe.db.exists("Gender","Female"):
+            frappe.get_doc({
+            "doctype": "Gender",
+            "gender":"Female",
+            "custom_maternity_required":0,
+            }).insert(ignore_permissions=True)
+            
+        if not frappe.db.exists("Gender","Male"):
+            frappe.get_doc({
+            "doctype": "Gender",
+            "gender":"Male",
+            "custom_maternity_required":0,
+            }).insert(ignore_permissions=True)
+        
+        frappe.db.commit()
+    @patch("one_fm.overrides.leave_application.LeaveApplicationOverride.close_leave_acknowledgement_if_below_threshold", return_value=None)
+    def setUp(self,mock_close_ack):
+        mock_close_ack.return_value = None
+        self.leave_start_date = frappe.utils.getdate()
+        self.leave_end_date = frappe.utils.getdate()
+        self.resumption_date = frappe.utils.add_days(self.leave_start_date, 1)
+        
+        
+        # Create Company and Holiday List
+        frappe.local.flags.ignore_chart_of_accounts = 1
+        frappe.flags.in_test = 1
+        if not frappe.db.exists("Holiday List", "Test Holiday List"):
+            self.holiday_list = frappe.get_doc({
+                "doctype": "Holiday List",
+                "holiday_list_name": "Test Holiday List",
+                "from_date": "2025-01-01",
+                "to_date": "2025-12-31",
+                "holidays": [
+                    {"description": "New Year", "holiday_date": "2025-01-01"}
+                ]
+            }).insert(ignore_permissions=True)
+        else:
+            self.holiday_list = frappe.get_doc("Holiday List", "Test Holiday List")
+        
+        
+        if not frappe.db.exists("Company", "Test Company"):
+            self.company = frappe.get_doc({
+                "doctype": "Company",
+                "company_name": "Test Company",
+                "abbr": "TC",
+                "default_currency": "KWD",
+                "country": "Kuwait",
+                "default_holiday_list": self.holiday_list.name
+            }).insert(ignore_permissions=True)
+        else:
+            self.company = frappe.get_doc("Company", "Test Company")
+        
+        # Create Departments
+        if not frappe.db.exists("Department", "Accounts - TC"):
+            self.department1 = frappe.get_doc({
+                "doctype": "Department",
+                "department_code":"RANDO1234",
+                "department_name": "Accounts",
+                "company": self.company.name
+            }).insert(ignore_permissions=True)
+        else:
+            self.department1 = frappe.get_doc("Department", "Accounts - TC")
+        if not frappe.db.exists("Department", "HR - TC"):
+            self.department2 = frappe.get_doc({
+                "doctype": "Department",
+                "department_name": "HR",
+                "department_code":"IDOUEO1234",
+                "company": self.company.name
+            }).insert(ignore_permissions=True)
+        else:
+            self.department2 = frappe.get_doc("Department", "HR - TC")
+        
+        
+        self.create_gender()
+        if not frappe.db.exists("Salary Component", "Basic"):
+            # Create Salary Components
+            self.basic = frappe.get_doc({
+                "doctype": "Salary Component",
+                "salary_component_abbr":"B",
+                "salary_component": "Basic",
+                "type": "Earning",
+                "company": self.company.name
+            }).insert(ignore_permissions=True)
+        else:
+            self.basic = frappe.get_doc("Salary Component", "Basic")
+        if not frappe.db.exists("Salary Component", "Housing"):
+            # Create Salary Components
+            self.housing = frappe.get_doc({
+                "doctype": "Salary Component",
+                "salary_component_abbr":"H",
+                "salary_component": "Housing",
+                "type": "Earning",
+                "company": self.company.name
+            }).insert(ignore_permissions=True)
+        else:
+            self.housing = frappe.get_doc("Salary Component", "Housing")
+        
+
+        # Create Salary Structure
+        self.salary_structure = frappe.get_doc({
+            "doctype": "Salary Structure",
+            "name": "Test Salary Structure",
+            "company": self.company.name,
+            "is_active": "Yes",
+            "earnings": [
+                {"salary_component": self.basic.name, "amount": 100},
+                {"salary_component": self.housing.name, "amount": 50}
+            ]
+        }).insert(ignore_permissions=True)
+        self.salary_structure.submit()
+        # Create Employees
+        from one_fm.overrides.employee import EmployeeOverride
+        with patch.object(EmployeeOverride, "before_insert", return_value=None), \
+             patch.object(EmployeeOverride, "after_insert", return_value=None):
+            self.employee1 = frappe.get_doc({
+                "doctype": "Employee",
+                "first_name": "Alice",
+                "one_fm_first_name_in_arabic": "أليس",
+                "last_name": "Sample Last",
+                "one_fm_last_name_in_arabic": "عينة",
+                "company": self.company.name,
+                "department": self.department1.name,
+                "date_of_birth": "1990-01-01",
+                "date_of_joining": "2020-01-01",
+                "gender": "Female",
+                "status": "Active",
+                "naming_series": "HR-EMP-",
+                "employment_type": "Full-time",
+                "job_offer_salary_structure": "Test Salary Structure",
+                "one_fm_basic_salary": 100
+            }).insert(ignore_permissions=True)
+            self.employee2 = frappe.get_doc({
+                "doctype": "Employee",
+                "first_name": "Bob",
+                "one_fm_first_name_in_arabic": "بوب",
+                "last_name": "Sample Last",
+                "one_fm_last_name_in_arabic": "عينة",
+                "company": self.company.name,
+                "department": self.department2.name,
+                "date_of_birth": "1991-01-01",
+                "date_of_joining": "2020-01-01",
+                "gender": "Male",
+                "status": "Active",
+                "naming_series": "HR-EMP-",
+                "employment_type": "Full-time",
+                "job_offer_salary_structure": "Test Salary Structure",
+                "one_fm_basic_salary": 100
+            }).insert(ignore_permissions=True)
+            self.employee3 = frappe.get_doc({
+                "doctype": "Employee",
+                "first_name": "Charlie",
+                "one_fm_first_name_in_arabic": "تشارلي",
+                "last_name": "Sample Last",
+                "one_fm_last_name_in_arabic": "عينة",
+                "company": self.company.name,
+                "department": self.department1.name,
+                "date_of_birth": "1992-01-01",
+                "date_of_joining": "2020-01-01",
+                "gender": "Male",
+                "status": "Active",
+                "naming_series": "HR-EMP-",
+                "employment_type": "Full-time",
+                "job_offer_salary_structure": "Test Salary Structure",
+                "one_fm_basic_salary": 100
+            }).insert(ignore_permissions=True)
+            
+        # Create Contacts and Users
+        self.user_contact1 = frappe.get_doc({
+            "doctype": "Contact",
+            "first_name": "Alice"})
+        self.user_contact2 = frappe.get_doc({
+            "doctype": "Contact",
+            "first_name": "Bob"})
+        self.user_contact3 = frappe.get_doc({
+            "doctype": "Contact",
+            "first_name": "Charlie"})
+        
+        self.user_contact1.insert(ignore_permissions=True)
+        
+        self.user_contact1.append('email_ids', {
+            "email_id": "alice@example.com"})
+        
+        self.user_contact2.insert(ignore_permissions=True)
+        self.user_contact2.append('email_ids', {
+            "email_id": "bob@example.com",})
+        
+        self.user_contact3.insert(ignore_permissions=True)
+        self.user_contact3.append('email_ids', {
+            "email_id": "charlie@example.com"})
+        
+        self.user1 = frappe.get_doc({
+            "doctype": "User",
+            "email": "alice@example.com",
+            "first_name": "Alice",
+            "last_name": "Rambo",
+            "enabled": 1
+        }).insert(ignore_permissions=True)
+        self.employee1.user_id = self.user1.name
+        self.employee1.save(ignore_permissions=True)
+
+        self.user2 = frappe.get_doc({
+            "doctype": "User",
+            "email": "bob@example.com",
+            "first_name": "Bob",
+            "enabled": 1
+        }).insert(ignore_permissions=True)
+        self.employee2.user_id = self.user2.name
+        self.employee2.save(ignore_permissions=True)
+
+        self.user3 = frappe.get_doc({
+            "doctype": "User",
+            "email": "charlie@example.com",
+            "first_name": "Charlie",
+            "enabled": 1
+        }).insert(ignore_permissions=True)
+        self.employee3.user_id = self.user3.name
+        self.employee3.save(ignore_permissions=True)
+
+
+        # Create a sample ToDo
+        self.todo = frappe.get_doc({
+            "doctype": "ToDo",
+            "notify_allocated_to_via_email":0,
+            "description": "Test ToDo for Reliever Assignment",
+            "allocated_to": self.employee1.user_id if hasattr(self.employee1, 'user_id') else None
+        }).insert(ignore_permissions=True)
+        
+
+        # Create Leave Types
+        self.leave_type = frappe.get_doc({
+            "doctype": "Leave Type",
+            "one_fm_is_paid_annual_leave":0,
+            "leave_type_name": "Annual Leave",
+            "custom_update_employee_status_to_vacation": 1,
+            "is_annual_leave": 1
+        }).insert(ignore_permissions=True)
+
+        # Create Leave Allocation
+        self.leave_allocation = frappe.get_doc({
+            "doctype": "Leave Allocation",
+            "employee": self.employee1.name,
+            "leave_type": self.leave_type.name,
+            "from_date": add_to_date(getdate(),days=-10),
+            "to_date": add_to_date(getdate(),years=1),
+            "new_leaves_allocated": 30
+        }).insert(ignore_permissions=True)
+        self.leave_allocation.submit()
+        
+        frappe.db.set_value("HR and Payroll Additional Settings",None, "default_leave_application_operator", self.employee3.user_id)
+        is_active_workflow = frappe.get_all("Workflow", filters={"is_active": 1, "document_type": "Leave Application"}, fields=["name"])
+        if is_active_workflow:
+            #Disable the workflow for Leave Application
+            frappe.db.set_value("Workflow", is_active_workflow[0].name, "is_active", 0)
+        # Create Leave Application
+        self.leave_application = frappe.get_doc({
+            "doctype": "Leave Application",
+            "employee": self.employee1.name,
+            "leave_type": self.leave_type.name,
+            "from_date": self.leave_start_date,
+            "to_date": self.leave_end_date,
+            "resumption_date": self.resumption_date,
+            "status": "Approved",
+            "workflow_state": "Approved",
+            "custom_reliever_": self.employee2.name
+        }).insert(ignore_permissions=True)
+        self.leave_application.submit()
+        self.leave_application.db_set("status", "Approved")
+        self.leave_application.db_set("workflow_state", "Approved")
+        self.leave_type.db_set("custom_update_employee_status_to_vacation", 1)
+        frappe.db.commit()
+        
+
+
+    
+    
+    def test_set_employee_status(self):
+        
+        # Simulate set_employee_status
+        set_employee_status()
+        # Reload employee1 and check status
+        self.employee1.reload()
+        self.assertEqual(self.employee1.status, "Vacation")
+		# Check if reliever assignment was created
+        reliever_assignment = frappe.get_all("Reliever Assignment", filters={"on_leave_employee": self.employee1.name, "reliever": self.employee2.name, "leave_application": self.leave_application.name})
+        self.assertTrue(reliever_assignment, "Reliever Assignment was not created")
+        # Reload ToDo and ensure it was reassigned to reliever (employee2's user)
+        self.todo.reload()
+        self.assertEqual(
+            self.todo.allocated_to,
+            self.employee2.user_id,
+            f"ToDo was not reassigned to reliever: expected {self.employee2.user_id}, got {self.todo.allocated_to}"
+        )
+
+    def cancel_assignments(self):
+        #Cancel The salary structure assignment
+        all_attendance = frappe.get_all("Attendance", filters={"docstatus": 1})
+        for each in all_attendance:
+            doc = frappe.get_doc("Attendance", each.name)
+            doc.cancel()
+            doc.delete()
+        all_user_perms = frappe.get_all("User Permission", filters={"allow": "Employee"})
+        for each in all_user_perms:
+            user_doc = frappe.get_doc("User Permission", each.name)
+            user_doc.delete()
+        all_strucs = frappe.get_all("Salary Structure Assignment", filters={"docstatus": 1})
+        for each in all_strucs:
+            doc = frappe.get_doc("Salary Structure Assignment", each.name)
+            doc.cancel()
+            doc.delete()
+        #Cancel the 
+            
+    def tearDown(self):
+        # Clean up created records
+        frappe.db.set_value("HR and Payroll Additional Settings",None, "default_leave_application_operator",None)
+        self.cancel_assignments()
+        for doc in [self.leave_application, self.leave_allocation, self.leave_type, self.salary_structure, self.basic, self.housing, self.employee1, self.employee2, self.employee3, self.department1, self.department2, self.holiday_list, self.company, self.todo]:
+            try:
+                if doc.docstatus == 1:
+                    doc.cancel()
+                doc.delete()
+            except Exception:
+                pass

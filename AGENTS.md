@@ -356,7 +356,7 @@ DEBUGGING TEST FAILURES:
 - Verify test data setup in setUp() method
 - Ensure proper cleanup in tearDown() method
 - Test database state before and after operations
-- All the `frappe.[function name]` functions existence can be verified from https://github.com/frappe/frappe/blob/version-15/frappe/__init__.py.
+- All the `frappe.[function name]` functions' existence can be verified from https://github.com/frappe/frappe/blob/version-15/frappe/__init__.py.
 
 </testing_instructions>
 

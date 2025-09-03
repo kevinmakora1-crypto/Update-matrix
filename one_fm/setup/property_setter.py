@@ -72,10 +72,12 @@ from one_fm.custom.property_setter.todo import get_todo_properties
 from one_fm.custom.property_setter.vehicle import get_vehicle_properties
 from one_fm.custom.property_setter.warehouse import get_warehouse_properties
 from one_fm.custom.property_setter.job_offer import get_job_offer_properties
+from one_fm.custom.property_setter.employee import get_employee_properties
 
 def get_field_properties():
 	"""ONEFM specific field properties that need to be added to the masters in ERPNext"""
 	field_properties = get_assignment_rule_properties()
+	field_properties.extend(get_employee_properties())
 	field_properties.extend(get_asset_category_account_properties())
 	field_properties.extend(get_asset_finance_book_properties())
 	field_properties.extend(get_asset_properties())

@@ -392,11 +392,11 @@
    "fieldname": "support_ticket_no",
    "fieldtype": "Link",
    "label": "Support Ticket No",
-   "mandatory_depends_on": "eval:doc.raised_issue_to_support_team == \"Yes\"",
+   "mandatory_depends_on": "eval:doc.raised_issue_to_support_team == \"Yes\" && doc.justification == \"Employees insist that he/she did check in or out\"",
    "options": "HD Ticket"
   },
   {
-   "depends_on": "eval:[\"Forgot to check in\",\"Checked in and out at the same time\"].includes(doc.justification)",
+   "depends_on": "eval:[\"Forg`ot to check in\",\"Checked in and out at the same time\"].includes(doc.justification)",
    "fieldname": "penalty_serial_no",
    "fieldtype": "Link",
    "label": "Penalty Serial No",
@@ -412,7 +412,7 @@
    "link_fieldname": "reference_docname"
   }
  ],
- "modified": "2025-09-03 11:43:08.116467",
+ "modified": "2025-09-04 10:35:51.339565",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Attendance Check",

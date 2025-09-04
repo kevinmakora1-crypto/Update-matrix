@@ -396,7 +396,7 @@
    "options": "HD Ticket"
   },
   {
-   "depends_on": "eval:[\"Forg`ot to check in\",\"Checked in and out at the same time\"].includes(doc.justification)",
+   "depends_on": "eval:[\"Forgot to check in\",\"Checked in and out at the same time\"].includes(doc.justification)",
    "fieldname": "penalty_serial_no",
    "fieldtype": "Link",
    "label": "Penalty Serial No",

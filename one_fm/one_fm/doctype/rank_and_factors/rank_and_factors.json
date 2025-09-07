@@ -30,7 +30,7 @@
   {
    "fetch_from": "factors.description",
    "fieldname": "description",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Description",
    "options": "Career Move Factors",
@@ -45,7 +45,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-09-03 02:32:19.582607",
+ "modified": "2025-09-07 11:53:30.101043",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Rank and Factors",

@@ -15,7 +15,7 @@ from frappe.permissions import get_doctype_roles
 from one_fm.one_fm.page.roster.roster import get_current_user_details
 
 class RosterPostActions(Document):
-    ...
+    pass
 
 
 

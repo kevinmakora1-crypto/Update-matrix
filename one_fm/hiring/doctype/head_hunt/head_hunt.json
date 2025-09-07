@@ -15,7 +15,7 @@
   "column_break_7",
   "lead_owner",
   "status",
-  "sugested_position",
+  "suggested_position",
   "date",
   "applicants_details_section",
   "items",
@@ -112,26 +112,26 @@
    "read_only": 1
   },
   {
-   "fieldname": "sugested_position",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Sugested Position",
-   "options": "Designation"
-  },
-  {
    "fieldname": "date",
    "fieldtype": "Date",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Date"
+  },
+  {
+   "fieldname": "suggested_position",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Suggested Position",
+   "options": "Designation"
   }
  ],
  "grid_page_length": 50,
  "icon": "fa fa-user",
  "is_submittable": 1,
  "links": [],
- "modified": "2025-09-07 10:05:50.461573",
+ "modified": "2025-09-07 10:33:49.463527",
  "modified_by": "Administrator",
  "module": "Hiring",
  "name": "Head Hunt",

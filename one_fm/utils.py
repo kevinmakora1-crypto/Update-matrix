@@ -4338,7 +4338,8 @@ def send_enrollment_status():
 			(Employee.attendance_by_timesheet != 1) &
 			(Employee.auto_attendance == 0) &
 			(Employee.enrolled == 0) &
-			(Employee.site.isnotnull())
+			(Employee.site.isnotnull()) &
+			(Employee.date_of_joining <= today())
 		)
 	).run(as_dict=True)
 

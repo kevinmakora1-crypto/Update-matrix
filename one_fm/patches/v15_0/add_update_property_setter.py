@@ -1,5 +1,5 @@
 import frappe
-from one_fm.setup import (
+from one_fm.setup.property_setter import (
     get_field_properties, add_property_setter
 )
 

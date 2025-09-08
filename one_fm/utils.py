@@ -4337,6 +4337,7 @@ def send_enrollment_status():
 			(Employee.status == "Active") &
 			(Employee.attendance_by_timesheet != 1) &
 			(Employee.auto_attendance == 0) &
+			(Employee.enrolled == 0) &
 			(Employee.site.isnotnull())
 		)
 	).run(as_dict=True)

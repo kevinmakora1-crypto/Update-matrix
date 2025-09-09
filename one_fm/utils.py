@@ -3294,12 +3294,12 @@ def check_employee_permission_on_doc(doc):
         pass
 
 
-def post_login(self):
+def post_login(self, session_end: str | None = None, audit_user: str | None = None):
     self.run_trigger("on_login")
     validate_ip_address(self.user)
     self.validate_hour()
     self.get_user_info()
-    self.make_session()
+    self.make_session(session_end=session_end, audit_user=audit_user)
     self.setup_boot_cache()
     self.set_user_info()
 
@@ -4337,7 +4337,9 @@ def send_enrollment_status():
 			(Employee.status == "Active") &
 			(Employee.attendance_by_timesheet != 1) &
 			(Employee.auto_attendance == 0) &
-			(Employee.site.isnotnull())
+			(Employee.enrolled == 0) &
+			(Employee.site.isnotnull()) &
+			(Employee.date_of_joining <= today())
 		)
 	).run(as_dict=True)
 

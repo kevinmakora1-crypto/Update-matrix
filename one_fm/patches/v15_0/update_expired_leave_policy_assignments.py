@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 import frappe
 from frappe.utils import getdate, add_days, add_years, today
 
@@ -6,7 +5,7 @@ def execute():
     """
     Update expired leave policy assignments for active employees.
     """
-    frappe.log_error("Leave Policy Patch Started", "Leave Policy")
+    print("Leave Policy Patch Started")
     today_date = getdate(today())
 
     active_employees = frappe.get_all("Employee", filters={"status": "Active"}, pluck="name")
@@ -72,10 +71,10 @@ def execute():
                         leave_policy_assignment.leaves_allocated = False
                         leave_policy_assignment.save(ignore_permissions=True)
                         leave_policy_assignment.submit()
-                        frappe.log_error(f"Created new Leave Policy Assignment for {doc.employee} from {effective_from} to {new_effective_to}", "Leave Policy")
+                        print(f"Created new Leave Policy Assignment for {doc.employee} from {effective_from} to {new_effective_to}")
 
                     effective_to = new_effective_to
 
         except Exception as e:
-            frappe.log_error(f"Failed to create leave policy assignment for employee {doc.employee}: {e}", "Leave Policy Error")
+            print(f"Failed to create leave policy assignment for employee {doc.employee}: {e}")
             continue

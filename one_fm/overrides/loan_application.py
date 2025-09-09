@@ -20,17 +20,17 @@ class LoanApplicationOverride(LoanApplication):
 
         # 1. Validate under_company_residency
         if not employee.get("under_company_residency"):
-            frappe.throw(_(f"{employee.get('employee_name')} is not under company's residency. Only employees under the company's residency are eligible for loan."))
+            frappe.throw(_("{0} is not under company's residency. Only employees under the company's residency are eligible for loan.").format(employee.get('employee_name')))
 
         # 2. Validate monthly salary against maximum salary threshold in Loan Product
         max_salary_threshold = frappe.db.get_value("Loan Product", self.loan_product, "custom_maximum_salary_threshold")
         monthly_salary = self.get_employee_monthly_salary(employee.name)
         if max_salary_threshold and monthly_salary >= flt(max_salary_threshold):
-            frappe.throw(_(f"{employee.get('employee_name')}'s salary is more than the loan application salary threshold. Only employees earning less than {max_salary_threshold} are eligible for loan."))
+            frappe.throw(_("{0}'s salary is more than the loan application salary threshold. Only employees earning less than {1} are eligible for loan.").format(employee.get('employee_name'), max_salary_threshold))
 
         # 3. Validate monthly salary against loan amount
         if monthly_salary < flt(self.loan_amount):
-            frappe.throw(_(f"Loan Amount cannot exceed Employee's monthly gross salary of {monthly_salary}"))
+            frappe.throw(_("{0}'s Loan Amount cannot exceed their monthly gross salary of {1}.").format(employee.get('employee_name'), monthly_salary))
 
         # 4. Validate no loan granted in last 2 years
         recent_loan = frappe.db.get_value(
@@ -49,9 +49,9 @@ class LoanApplicationOverride(LoanApplication):
             next_eligible_date = add_years(last_loan_date, 2)
             if next_eligible_date > getdate(nowdate()):
                 frappe.throw(_(
-                    f"Employee does not qualify for a Loan until {next_eligible_date}."
-                ))
-                
+                    "Employee does not qualify for a Loan until {0}."
+                ).format(next_eligible_date))
+
         # 5. Validate annual leave balance is at least half of allocation
         self.validate_annual_leave_balance(employee.name)
 
@@ -89,4 +89,4 @@ class LoanApplicationOverride(LoanApplication):
         )
 
         if flt(balance) < (flt(allocation) / 2):
-            frappe.throw(_(f"Insufficient Annual Leave Balance. Employee needs to have at least annual leave balance of {flt(allocation) / 2} days."))
+            frappe.throw(_("Insufficient Annual Leave Balance. Employee needs to have at least annual leave balance of {0} days.").format(flt(allocation) / 2))

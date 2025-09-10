@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-09-10 20:03:48.550315",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "experience_type",
+  "experience_title",
+  "assessment_question",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "experience_type",
+   "fieldtype": "Link",
+   "label": "Experience Type",
+   "options": "Experience Type"
+  },
+  {
+   "fieldname": "experience_title",
+   "fieldtype": "Data",
+   "label": "Experience Title"
+  },
+  {
+   "fieldname": "assessment_question",
+   "fieldtype": "Link",
+   "label": "Assessment Question",
+   "options": "Assessment Questions"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-09-10 20:05:51.640228",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Career History Freshers Experience",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

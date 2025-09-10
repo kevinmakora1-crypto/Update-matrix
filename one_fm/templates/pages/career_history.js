@@ -328,6 +328,14 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
     <h3 class="mx-auto">Hello, {{job_applicant.applicant_name}}, tell us about the ${stringifyNumber(company_no)} company you worked for!</h3>
     <div class="row mx-auto col-lg-12 col-md-12 mb-3 company_${company_no} border-top">
         <div class="my-3 col-lg-12 col-md-12">
+          <label class="form-label">Are you a Fresher or Experienced?</label>
+          <select class="form-control fresher_experienced_select_${company_no}">
+            <option value="" disabled selected>Select</option>
+            <option value="Fresher">Fresher</option>
+            <option value="Experienced">Experienced</option>
+          </select>
+        </div>
+        <div class="my-3 col-lg-12 col-md-12">
         <label class="form-label">What was the company's name? </label>
         <input type="text" class="form-control company_${company_no}_name" placeholder="Enter the ${stringifyNumber(company_no)} Company Name"/>
         </div>

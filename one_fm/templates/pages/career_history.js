@@ -323,7 +323,7 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
       $('.back-btn').fadeIn();
       this.back_career_history(company_no);
     }
-    var company_section_html = `
+  var company_section_html = `
     <div class="section_${company_no}">
     <h3 class="mx-auto">Hello, {{job_applicant.applicant_name}}, tell us about the ${stringifyNumber(company_no)} company you worked for!</h3>
     <div class="row mx-auto col-lg-12 col-md-12 mb-3 company_${company_no} border-top">
@@ -468,6 +468,158 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
     this.set_promotion_section_html(company_no, 1);
     this.on_change_still_working_on_same_company(company_no);
     this.on_click_add_more_contact_person(company_no);
+
+    // Add logic to show/hide tags based on Fresher/Experienced selection
+    $(`.fresher_experienced_select_${company_no}`).on('change', function() {
+      var selected = $(this).val();
+      var companyRow = $(`.company_${company_no}`);
+      if (!selected) {
+        // Hide all fields except the fresher/experienced selector
+        companyRow.children().hide();
+        companyRow.children().first().show();
+        companyRow.find('.learning-journey-block').hide();
+        $('.final-interest-section').hide();
+      } else if (selected === 'Fresher') {
+        // Hide all fields except the fresher/experienced selector
+        companyRow.children().hide();
+        companyRow.children().first().show();
+        // Insert Learning and Development Journey heading and Activity type select if not already present
+        if (companyRow.find('.learning-journey-block').length === 0) {
+          var learningHtml = `
+            <div class="learning-journey-block my-3 col-lg-12 col-md-12">
+              <h6 class="learning-journey-heading mb-3">Learning and Development Journey</h6>
+              <div class="learning-journey-items"></div>
+              <div class="add-another-ldj-block mb-3" style="display:none">
+                <label class="form-label">Add another Learning and Development Journey?</label>
+                <select class="form-control add_another_ldj_select_${company_no}">
+                  <option value="" selected disabled>Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div class="shoves-tugs-block" style="display:none">
+                <div class="mb-3">
+                  <label class="form-label">Shoves</label>
+                  <textarea class="form-control shoves_input_${company_no}" rows="2" placeholder="Describe your shoves..."></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Tugs</label>
+                  <textarea class="form-control tugs_input_${company_no}" rows="2" placeholder="Describe your tugs..."></textarea>
+                </div>
+              </div>
+            </div>`;
+          companyRow.children().first().after(learningHtml);
+          // Helper to add a new Activity Type selector and questions
+          function addLearningJourneyItem(ldjIndex) {
+            var $items = companyRow.find('.learning-journey-items');
+            var $ldj = $(`
+              <div class="ldj-item mb-3" data-ldj-index="${ldjIndex}">
+                <div class="mb-3">
+                  <label class="form-label">Activity type</label>
+                  <select class="form-control activity_type_select_${company_no}_${ldjIndex}">
+                    <option value="" selected>None</option>
+                  </select>
+                </div>
+                <div class="assessment-questions-block"></div>
+              </div>
+            `);
+            $items.append($ldj);
+
+            // Fetch Experience Type options from backend
+            frappe.call({
+              method: 'frappe.client.get_list',
+              args: {
+                doctype: 'Experience Type',
+                fields: ['name'],
+                limit_page_length: 100
+              },
+              callback: function(r) {
+                var $select = $ldj.find(`.activity_type_select_${company_no}_${ldjIndex}`);
+                $select.empty();
+                $select.append('<option value="" selected>None</option>');
+                if (r.message && r.message.length) {
+                  r.message.forEach(function(row) {
+                    var label = row.name;
+                    $select.append(`<option value="${label}">${label}</option>`);
+                  });
+                } else {
+                  $select.append('<option value="" disabled>No options found</option>');
+                }
+              }
+            });
+
+            // Add change handler to fetch and show questions for selected activity type
+            $ldj.on('change', `.activity_type_select_${company_no}_${ldjIndex}`, function() {
+              var selectedType = $(this).val();
+              var $questionsBlock = $ldj.find('.assessment-questions-block');
+              $questionsBlock.empty();
+              if (!selectedType) return;
+              frappe.call({
+                method: 'frappe.client.get',
+                args: {
+                  doctype: 'Experience Type',
+                  name: selectedType
+                },
+                callback: function(res) {
+                  if (res.message && res.message.assessment_questions && res.message.assessment_questions.length) {
+                    res.message.assessment_questions.forEach(function(q, idx) {
+                      var qHtml = `
+                        <div class="mb-3">
+                          <label class="form-label">${q.experience_type_question || 'Question ' + (idx+1)}</label>
+                          <textarea class="form-control activity_type_question_${company_no}_${ldjIndex}_${idx+1}" rows="2" placeholder="Your answer..."></textarea>
+                        </div>
+                      `;
+                      $questionsBlock.append(qHtml);
+                    });
+                  } else {
+                    $questionsBlock.append('<div class="text-muted">No questions found for this activity type.</div>');
+                  }
+                }
+              });
+            });
+          }
+
+          // Add the first Learning Journey item
+          var ldjCount = 1;
+          addLearningJourneyItem(ldjCount);
+          companyRow.find('.add-another-ldj-block').hide();
+          companyRow.find('.shoves-tugs-block').hide();
+
+          // Handler for Add another Learning and Development Journey?
+          companyRow.on('change', `.add_another_ldj_select_${company_no}`, function() {
+            var val = $(this).val();
+            if (val === 'Yes') {
+              ldjCount++;
+              addLearningJourneyItem(ldjCount);
+              companyRow.find('.shoves-tugs-block').hide();
+              companyRow.find('.add-another-ldj-block').hide(); // Hide until next Activity type is selected
+            } else if (val === 'No') {
+              companyRow.find('.shoves-tugs-block').show();
+            } else {
+              companyRow.find('.shoves-tugs-block').hide();
+            }
+          });
+
+          // Show 'Add another Learning and Development Journey?' only after Activity type is selected
+          companyRow.on('change', `.activity_type_select_${company_no}_1`, function() {
+            var selectedType = $(this).val();
+            if (selectedType) {
+              companyRow.find('.add-another-ldj-block').show();
+            } else {
+              companyRow.find('.add-another-ldj-block').hide();
+            }
+          });
+        } else {
+          companyRow.find('.learning-journey-block').show();
+        }
+        $('.final-interest-section').hide();
+      } else if (selected === 'Experienced') {
+        // Show all fields except fresher-specific fields
+        companyRow.children().show();
+        companyRow.find('.learning-journey-block').hide();
+        $('.final-interest-section').show();
+      }
+    });
   },
   on_click_add_more_contact_person: function(company_no) {
     var company_contact_html = `
@@ -487,7 +639,7 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
         <label>What is the phone number of the second contact person?</label>
         <input type="text" class="form-control second_contact_phone_${company_no}" placeholder="Phone number with country code"/>
       </div>
-    `
+    `;
     $(`.btn_add_more_contact_${company_no}`).click(function(){
       $(`.btn_add_more_contact_${company_no}`).fadeOut();
       $(company_contact_html).insertAfter(`.add_more_contact_${company_no}`);
@@ -515,11 +667,154 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
       $(`.section_${company_no}`).fadeOut();
       $(`.section_${company_no-1}`).fadeIn();
       $('.next-btn').fadeIn();
+        $('.main_section').delay(400).fadeIn();
+        if(company_no>=2){
+          $('.back-btn').fadeIn();
+          this.back_career_history(company_no);
+        }
+        var company_section_html = `
+        <div class="section_${company_no}">
+        <h3 class="mx-auto">Hello, {{job_applicant.applicant_name}}, tell us about the ${stringifyNumber(company_no)} company you worked for!</h3>
+        <div class="row mx-auto col-lg-12 col-md-12 mb-3 company_${company_no} border-top">
+            <div class="my-3 col-lg-12 col-md-12">
+              <label class="form-label">Are you a Fresher or Experienced?</label>
+              <select class="form-control fresher_experienced_select_${company_no}">
+                <option value="" disabled selected>Select</option>
+                <option value="Fresher">Fresher</option>
+                <option value="Experienced">Experienced</option>
+              </select>
+            </div>
+            <div class="my-3 col-lg-12 col-md-12">
+            <label class="form-label">What was the company's name? </label>
+            <input type="text" class="form-control company_${company_no}_name" placeholder="Enter the ${stringifyNumber(company_no)} Company Name"/>
+            </div>
+
+            <div class="my-3 col-lg-12 col-md-12">
+            <label class="form-label">Which country did you get employed in?</label> <br>
+              <select class="form-control country_of_company_${company_no}">
+              <option>Select Country</option>
+              {% for country in country_list %}
+              <option>{{country.name}}</option>
+              {% endfor %}
+            </select>
+            </div>
+            <div class="mb-3 col-lg-12 col-md-12">
+            <label class="form-label">When did you join the company?</label>
+            <input type="date" class="form-control joined_company${company_no}"/>
+            </div>
+
+            <div class="mb-3 col-lg-12 col-md-12">
+            <label class="form-label">What was your first salary at this company?</label>
+            <input type="text" class="form-control salary_company${company_no}" placeholder="Enter your Salary in KWD"/>
+            </div>
+
+          <div class="col-lg-12 col-md-12">
+            <hr class="my-5"/>
+          </div>
+
+          <div class="mb-3 col-lg-12 col-md-12">
+            <label  class="form-label">What was your starting job title?</label>
+            <input type="text" class="form-control starting_job_title_company_${company_no}" placeholder="Enter the Job Title"/>
+          </div>
+
+
+         <div class="col-lg-12 col-md-12 mb-3">
+            <label class="form-label">What was your employment type?</label>
+            <select class="custom-select employment_type_company_${company_no}">
+            <option value="" disabled selected>Select Employment Type</option>
+              {% for type in employment_type_list %}
+              <option value="{{ type }}">{{ type }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+
+          <div class="mb-3 col-lg-12 col-md-12">
+            <label class="form-label">Briefly describe your responsibilities in this role</label>
+            <textarea class="form-control responsibilities_company_${company_no}" rows="4" placeholder="E.g. Managed a team of 5, handled client reports, etc."></textarea>
+          </div>
+
+
+          <div class="mt-5 promotion_section_${company_no}" style="width: 100%">
+
+          </div>
+
+          <div class="col-lg-12 col-md-12 mb-3">
+            <label>Tell us about contact person details from ${stringifyNumber(company_no)} company you worked!</label>
+          </div>
+          <div class="col-lg-6 col-md-6 mb-3">
+            <label>Full name</label>
+            <input type="text" class="form-control first_contact_name_${company_no}" placeholder="Full Name"/>
+          </div>
+          <div class="col-lg-6 col-md-6 mb-3">
+            <label>Email</label>
+            <input type="text" class="form-control first_contact_email_${company_no}" placeholder="Email"/>
+          </div>
+          <div class="col-lg-6 col-md-6 mb-3">
+            <label>Designation</label>
+            <input type="text" class="form-control first_contact_designation_${company_no}" placeholder="Designation"/>
+          </div>
+          <div class="col-lg-6 col-md-6 mb-3">
+            <label>Phone number with country code</label>
+            <input type="text" class="form-control first_contact_phone_${company_no}" placeholder="Phone number with country code"/>
+          </div>
+          <div class="col-lg-12 col-md-12 mb-3 add_more_contact_${company_no}">
+            <button class="btn btn-dark float-left btn_add_more_contact_${company_no}" type="button">{{ _(" + Add more contact person") }}</button>
+          </div>
+          <div class="col-lg-12 col-md-12 mb-3">
+            <label>Tell us some details about your best boss from ${stringifyNumber(company_no)} company you worked</label>
+          </div>
+          <div class="col-lg-6 col-md-6 mb-3">
+            <label>Full name</label>
+            <input type="text" class="form-control best_boss_name_${company_no}" placeholder="Full Name"/>
+          </div>
+          <div class="col-lg-6 col-md-6 mb-3">
+            <label>Email</label>
+            <input type="text" class="form-control best_boss_email_${company_no}" placeholder="Email"/>
+          </div>
+          <div class="col-lg-6 col-md-6 mb-3">
+            <label>Phone number with country code</label>
+            <input type="text" class="form-control best_boss_phone_${company_no}" placeholder="Phone number with country code"/>
+          </div>
+          <div class="col-lg-6 col-md-6 mb-3">
+            <label>Why is He/She the best?</label>
+            <input type="text" class="form-control why_best_boss${company_no}" placeholder="Why is he/she the best?"/>
+          </div>
+
+           <div class="col-lg-12 col-md-12 mb-3 mt-5" style="width: 100%">
+            <label> Tell us some details about your best colleague from ${stringifyNumber(company_no)} company you worked</label>
+          </div>
+          <div class="col-lg-6 col-md-6 mb-3">
+            <label>Full name</label>
+            <input type="text" class="form-control best_colleague_name_${company_no}" placeholder="Full Name"/>
+          </div>
+          <div class="col-lg-6 col-md-6 mb-3">
+            <label>Email</label>
+            <input type="text" class="form-control best_colleague_email_${company_no}" placeholder="Email"/>
+          </div>
+          <div class="col-lg-6 col-md-6 mb-3">
+            <label>Phone number with country code</label>
+            <input type="text" class="form-control best_colleague_phone_${company_no}" placeholder="Phone number with country code"/>
+          </div>
+          <div class="col-lg-6 col-md-6 mb-3">
+            <label>Why is He/She the best?</label>
+            <input type="text" class="form-control why_best_colleague${company_no}" placeholder="Why is he/she the best?"/>
+          </div>
+          <div class="col-lg-12 col-md-12 mb-3">
+            <label>Are you still working for the same company?</label>
+            <select class="custom-select still_working_on_same_company_${company_no}">
+            <option value="0">Choose</option>
+            <option value="1">Yes</option>
+            <option value="2">No</option>
+            </select>
+          </div>
+      </div>
+      </div>`;
       me.next_career_history(company_no);
     });
   },
   // Function to get the current order of factors from the sortable table
-getRankedFactorsData:function() {
+  getRankedFactorsData: function() {
     const rankedFactors = [];
     const sortableList = document.getElementById('sortableRows'); // Get the tbody by its ID
 
@@ -542,7 +837,7 @@ getRankedFactorsData:function() {
         });
     }
     return rankedFactors;
-},
+  },
 
   submit_career_history: function() {
     // Submit Career History

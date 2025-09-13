@@ -34,6 +34,7 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("roster_employee_actions_site_supervisor.json"))
 	create_assignment_rule(get_assignment_rule_json_file("shift_request_pending_approval_project_manager.json"))
 	create_assignment_rule(get_assignment_rule_json_file("shift_request_pending_approval_reports_to.json"))
+	create_assignment_rule(get_assignment_rule_json_file("review_and_approve_loan_application_senior_accountant.json"))
 
 def delete_assignment_rules():
 	delete_assignment_rule(get_assignment_rule_json_file("roster_post_action_site_supervisor.json"))
@@ -67,3 +68,4 @@ def delete_assignment_rules():
 	delete_assignment_rule(get_assignment_rule_json_file("roster_employee_actions_site_supervisor.json"))
 	delete_assignment_rule(get_assignment_rule_json_file("shift_request_pending_approval_project_manager.json"))
 	delete_assignment_rule(get_assignment_rule_json_file("shift_request_pending_approval_reports_to.json"))
+	delete_assignment_rule(get_assignment_rule_json_file("review_and_approve_loan_application_senior_accountant.json"))

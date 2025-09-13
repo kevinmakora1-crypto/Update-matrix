@@ -57,6 +57,7 @@ def create_workflows():
 	create_workflow(get_workflow_json_file("subcontract_staff_request.json"))
 	create_workflow(get_workflow_json_file("onboard_subcontract_employee.json"))
 	create_workflow(get_workflow_json_file("leave_extension_request.json"))
+	create_workflow(get_workflow_json_file("loan_application.json"))
 
 def delete_workflows():
 	delete_workflow(get_workflow_json_file("erf.json"))
@@ -113,3 +114,4 @@ def delete_workflows():
 	delete_workflow(get_workflow_json_file("subcontract_staff_request.json"))
 	delete_workflow(get_workflow_json_file("onboard_subcontract_employee.json"))
 	delete_workflow(get_workflow_json_file("leave_extension_request.json"))
+	delete_workflow(get_workflow_json_file("loan_application.json"))

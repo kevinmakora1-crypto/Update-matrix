@@ -528,6 +528,7 @@ override_doctype_class = {
     "HD Ticket": "one_fm.overrides.hd_ticket.HDTicketOverride",
     "ToDo": "one_fm.overrides.todo.ToDo",
     "Task": "one_fm.overrides.task.TaskOverride",
+    "Loan Application": "one_fm.overrides.loan_application.LoanApplicationOverride"
 }
 
 

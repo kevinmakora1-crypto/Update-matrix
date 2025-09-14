@@ -346,12 +346,12 @@
    "mandatory_depends_on": "eval:doc.justification == \"Mobile isn't supporting the app\""
   },
   {
-   "depends_on": "eval:[\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\"].includes(doc.justification)",
+   "depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\"].includes(doc.justification)",
    "description": "Upload screenshot with the same issue!",
    "fieldname": "screenshot",
    "fieldtype": "Attach",
    "label": "Screenshot",
-   "mandatory_depends_on": "eval:[\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\"].includes(doc.justification)"
+   "mandatory_depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\"].includes(doc.justification)"
   },
   {
    "depends_on": "eval:doc.justification == \"Other\"",
@@ -392,16 +392,15 @@
    "fieldname": "support_ticket_no",
    "fieldtype": "Link",
    "label": "Support Ticket No",
-   "mandatory_depends_on": "eval:doc.raised_issue_to_support_team == \"Yes\"",
+   "mandatory_depends_on": "eval:doc.raised_issue_to_support_team == \"Yes\" && doc.justification == \"Employees insist that he/she did check in or out\"",
    "options": "HD Ticket"
   },
   {
    "depends_on": "eval:[\"Forgot to check in\",\"Checked in and out at the same time\"].includes(doc.justification)",
    "fieldname": "penalty_serial_no",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Penalty Serial No",
-   "mandatory_depends_on": "eval:[\"Forgot to check in\",\"Checked in and out at the same time\"].includes(doc.justification)",
-   "options": "Penalty"
+   "mandatory_depends_on": "eval:[\"Forgot to check in\",\"Checked in and out at the same time\"].includes(doc.justification)"
   }
  ],
  "in_create": 1,
@@ -412,7 +411,7 @@
    "link_fieldname": "reference_docname"
   }
  ],
- "modified": "2025-09-02 13:07:08.308817",
+ "modified": "2025-09-08 16:01:31.309905",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Attendance Check",

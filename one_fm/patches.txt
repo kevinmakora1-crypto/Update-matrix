@@ -161,5 +161,4 @@ one_fm.patches.v15_0.add_task_assignment_rule
 one_fm.patches.v15_0.attendance_check_create
 one_fm.patches.v15_0.add_values_to_rank_factor_table
 one_fm.patches.v15_0.update_existing_designation_to_main_head_hunt_doctype
-
-
+one_fm.patches.v15_0.attendance_check_create #09-09-2025

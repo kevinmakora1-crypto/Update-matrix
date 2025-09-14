@@ -1,13 +1,14 @@
 frappe.ui.form.on('Loan', {
     refresh: function(frm) {
-        frm.add_custom_button(__('Additional Repayment'), function() {
-            if (frm.doc.docstatus == 1 && frm.doc.repay_from_salary && frm.doc.applicant_type == 'Employee'){
+    if (frm.doc.docstatus == 1 && 
+            frm.doc.repay_from_salary && 
+            frm.doc.applicant_type == 'Employee' && 
+            ['Partially Disbursed', 'Disbursed'].includes(frm.doc.status)) {
+            frm.add_custom_button(__('Additional Repayment'), function() {
                 show_additional_repayment_dialog(frm);
-            }
-            
-        }, __('Create'));
-        
+    }, __('Create'));
     }
+}
 });
 
 function show_additional_repayment_dialog(frm) {

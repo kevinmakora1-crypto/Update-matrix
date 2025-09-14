@@ -78,7 +78,7 @@ def create_additional_repayment(parent_doc, date, repayment_account, paid_amount
         repayment_doc.submit()
         
         update_loan_outstanding_amount(loan_dict)
-        update_loan_repayment_schedule(loan_dict.name)
+        update_loan_repayment_schedule(loan_dict)
         
         frappe.db.commit()
         
@@ -100,9 +100,9 @@ def create_additional_repayment(parent_doc, date, repayment_account, paid_amount
         )
         frappe.throw(_("Error creating additional repayment: {0}").format(error_msg))
 
+
 def update_loan_outstanding_amount(loan_dict):
     try:
-        print(loan_dict)
         total_repaid = frappe.db.sql("""
             SELECT SUM(amount_paid) as total
             FROM `tabLoan Repayment`
@@ -111,7 +111,6 @@ def update_loan_outstanding_amount(loan_dict):
             AND docstatus = 1
             AND amount_paid > 0
         """, (loan_dict.name, loan_dict.applicant))[0][0] or 0
-        print(total_repaid)
         
         frappe.db.sql("""
             UPDATE `tabLoan`
@@ -121,7 +120,6 @@ def update_loan_outstanding_amount(loan_dict):
         """, (flt(total_repaid), flt(total_repaid), loan_dict.name))
         
         if flt(total_repaid) >= flt(loan_dict.loan_amount):
-            print("Got Here", "\n" * 6)
             frappe.db.set_value("Loan", loan_dict.name, "status", "Closed")
             
     except Exception as e:
@@ -130,7 +128,10 @@ def update_loan_outstanding_amount(loan_dict):
             title="Loan Outstanding Update Error"
         )
 
-def update_loan_repayment_schedule(loan_name):
+
+
+
+def update_loan_repayment_schedule(loan_dict):
     try:
         total_additional_payments = frappe.db.sql("""
             SELECT SUM(amount_paid) as total
@@ -139,16 +140,15 @@ def update_loan_repayment_schedule(loan_name):
             AND docstatus = 1
             AND repay_from_salary = 0
             AND amount_paid > 0
-        """, (loan_name,))[0][0] or 0
+        """, (loan_dict.name,))[0][0] or 0
         
         if total_additional_payments <= 0:
             return
         
-        loan_repayment_schedule_doc = frappe.db.get_value("Loan Repayment Schedule", {"loan": loan_name}, "name")
+        loan_repayment_schedule_doc = frappe.db.get_value("Loan Repayment Schedule", {"loan": loan_dict.name}, "name")
         if not loan_repayment_schedule_doc:
             return
         
-        # Get current schedule data
         current_schedules = frappe.db.sql("""
             SELECT name, payment_date, number_of_days, total_payment, principal_amount, 
                    interest_amount, balance_loan_amount, is_accrued, idx,
@@ -160,32 +160,26 @@ def update_loan_repayment_schedule(loan_name):
         
         if not current_schedules:
             return
+
         
-        loan_amount = frappe.db.get_value("Loan Repayment Schedule", loan_repayment_schedule_doc, "loan_amount")
+        loan_amount = loan_dict.loan_amount - total_additional_payments
         
-        # Calculate original values by adding back the additional payments
         original_schedules = []
         for schedule in current_schedules:
             current_total = flt(schedule.total_payment)
             current_additional = flt(schedule.current_additional)
             
-            # Original total = current total + what was already paid additionally
             original_total = current_total + current_additional
             
-            # If there's an original total, calculate original principal and interest proportionally
             if original_total > 0 and current_total > 0:
-                # Current values are proportional to original
                 ratio = current_total / original_total
                 original_principal = flt(schedule.principal_amount) / ratio if ratio > 0 else flt(schedule.principal_amount)
                 original_interest = flt(schedule.interest_amount) / ratio if ratio > 0 else flt(schedule.interest_amount)
             elif current_additional > 0:
-                # If current is 0 but additional was paid, estimate original values
-                # This is a fallback - ideally we'd store original values
-                original_principal = current_additional * 0.8  # Assume 80% principal
-                original_interest = current_additional * 0.2   # Assume 20% interest
+                original_principal = current_additional * 0.8
+                original_interest = current_additional * 0.2
                 original_total = current_additional
             else:
-                # No payments at all
                 original_principal = flt(schedule.principal_amount)
                 original_interest = flt(schedule.interest_amount)
                 original_total = current_total
@@ -203,7 +197,6 @@ def update_loan_repayment_schedule(loan_name):
         remaining_payment = flt(total_additional_payments)
         new_schedule_data = []
         
-        # Process from last to first for additional payments
         for i in range(len(original_schedules) - 1, -1, -1):
             schedule = original_schedules[i]
             
@@ -212,7 +205,6 @@ def update_loan_repayment_schedule(loan_name):
             original_interest = schedule['original_interest']
             
             if remaining_payment <= 0:
-                # No more additional payment
                 new_schedule_data.append({
                     'payment_date': schedule['payment_date'],
                     'number_of_days': schedule['number_of_days'],
@@ -224,7 +216,6 @@ def update_loan_repayment_schedule(loan_name):
                     'custom_amount_paid_via_additional_payment': 0
                 })
             elif remaining_payment >= original_total:
-                # Entire schedule paid by additional payment
                 new_schedule_data.append({
                     'payment_date': schedule['payment_date'],
                     'number_of_days': schedule['number_of_days'],
@@ -237,7 +228,6 @@ def update_loan_repayment_schedule(loan_name):
                 })
                 remaining_payment -= original_total
             else:
-                # Partial payment
                 payment_applied = remaining_payment
                 amount_still_owed = original_total - payment_applied
                 
@@ -258,22 +248,13 @@ def update_loan_repayment_schedule(loan_name):
                 })
                 remaining_payment = 0
         
-        # Sort back to original order
         new_schedule_data.sort(key=lambda x: x['idx'])
         
-        # Recalculate balance loan amounts
-        # Balance should reflect: loan_amount - total_additional_payments - cumulative_principal_from_salary
-        total_additional_paid = flt(total_additional_payments)
-        current_balance = flt(loan_amount) - total_additional_paid
-        
+        current_balance = flt(loan_amount)
         for data in new_schedule_data:
-            # Only reduce balance by principal that will be paid from salary (not additional payments)
-            salary_principal = flt(data['principal_amount'])  # This is what still needs to be paid from salary
-            
+            current_balance -= flt(data['principal_amount'])
             data['balance_loan_amount'] = max(0, current_balance)
-            current_balance -= salary_principal
         
-        # Clear and rebuild schedule
         frappe.db.sql("DELETE FROM `tabRepayment Schedule` WHERE parent = %s", (loan_repayment_schedule_doc,))
         
         for data in new_schedule_data:

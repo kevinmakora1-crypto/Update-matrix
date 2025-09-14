@@ -29,7 +29,8 @@ def create_additional_repayment(parent_doc, date, repayment_account, paid_amount
         loan_dict = frappe.db.get_value(
             'Loan', 
             parent_doc, 
-            ['name', 'applicant', 'loan_product', 'rate_of_interest', 'status', 'docstatus',"loan_amount"], 
+            ['name', 'applicant', 'loan_product', 'rate_of_interest', 'status', 'docstatus',"loan_amount", 
+             "total_payment"], 
             as_dict=True
         )
         
@@ -119,7 +120,7 @@ def update_loan_outstanding_amount(loan_dict):
             WHERE name = %s
         """, (flt(total_repaid), flt(total_repaid), loan_dict.name))
         
-        if flt(total_repaid) >= flt(loan_dict.loan_amount):
+        if flt(total_repaid) >= flt(loan_dict.total_payment):
             frappe.db.set_value("Loan", loan_dict.name, "status", "Closed")
             
     except Exception as e:
@@ -162,7 +163,7 @@ def update_loan_repayment_schedule(loan_dict):
             return
 
         
-        loan_amount = loan_dict.loan_amount - total_additional_payments
+        loan_amount = loan_dict.total_payment - total_additional_payments
         
         original_schedules = []
         for schedule in current_schedules:

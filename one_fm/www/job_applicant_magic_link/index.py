@@ -316,8 +316,8 @@ def upload_image():
             response_data['civil_id_front']=civil_id_front
             # update record
             job_applicant = frappe.get_doc(reference_doctype, reference_docname)
-            if civil_id_front.get('date_of_birth'):job_applicant.db_set('one_fm_date_of_birth', civil_id_front.get('birth_date'))
-            if civil_id_front.get('civil_id_number'):job_applicant.db_set('one_fm_cid_number', civil_id_front.get('civil_id_no'))
+            if civil_id_front.get('date_of_birth'):job_applicant.db_set('one_fm_date_of_birth', civil_id_front.get('date_of_birth'))
+            if civil_id_front.get('civil_id_number'):job_applicant.db_set('one_fm_cid_number', civil_id_front.get('civil_id_number'))
             if civil_id_front.get('expiry_date'):job_applicant.db_set('one_fm_cid_expire', civil_id_front.get('expiry_date'))
             if civil_id_front.get('name'):job_applicant.db_set('applicant_name', civil_id_front.get('name'))
             if civil_id_front.get('passport_number'):job_applicant.db_set('one_fm_passport_number', civil_id_front.get('passport_number'))

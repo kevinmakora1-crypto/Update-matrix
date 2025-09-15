@@ -278,7 +278,7 @@ def set_loan_repayment(doc: "SalarySlip"):
 
     if not doc.get("loans"):
         doc.set("loans", [])
-    else :
+    else:
         doc.has_multiple_salary_structure = 1
 
     for payment in doc.get("loans", []):

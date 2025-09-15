@@ -50,14 +50,13 @@ def get_week_dates(offset=0):
     return start_of_week.strftime('%Y-%m-%d'), end_of_week.strftime('%Y-%m-%d')
 
 @frappe.whitelist()
-def fetch_todos(employee: str, is_current: bool = True):
+def fetch_todos(employee: str):
     try:
-        start_date, end_date = get_week_dates(offset=0 if is_current else 1)
         allocated_to = frappe.db.get_value("Employee", employee, "user_id")
         if not allocated_to:
             return response("User Not Found", 404)
 
-        week_todos = get_to_do_linked_projects(start_date, end_date, allocated_to)
+        week_todos = get_to_do_linked_projects(allocated_to)
         return response("Success", 200, week_todos)
 
     except Exception:
@@ -67,14 +66,13 @@ def fetch_todos(employee: str, is_current: bool = True):
         )
         return response("Error", 400)
 
-def get_to_do_linked_projects(start_date, end_date, allocated_to):
+def get_to_do_linked_projects(allocated_to):
     query = '''
         select
             p.name as project, t.name as todo, t.type, t.description, t.date, t.reference_name, t.reference_type
         from
             `tabProject` p, `tabToDo` t
         where
-            t.reference_type = "Project" and t.reference_name = p.name and t.date between '{0}' and '{1}'
-            and t.allocated_to = '{2}' and t.status='Open'
+            t.reference_type = "Project" and t.reference_name = p.name and t.allocated_to = '{0}' and t.status='Open'
     '''
-    return frappe.db.sql(query.format(start_date, end_date, allocated_to), as_dict=True)
+    return frappe.db.sql(query.format(allocated_to), as_dict=True)

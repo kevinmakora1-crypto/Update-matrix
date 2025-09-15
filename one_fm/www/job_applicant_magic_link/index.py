@@ -3,7 +3,8 @@ from PIL import Image
 from google.cloud import vision
 from frappe.utils import cstr
 import frappe.sessions
-from mindee import Client, documents
+from mindee import ClientV2, InferenceParameters, PathInput
+
 
 from dateutil.parser import parse
 from frappe import _
@@ -138,27 +139,41 @@ def upload_image():
 
         # get data from mindee
         try:
-            mindee_client = Client(api_key=frappe.local.conf.mindee_passport_api)
-            input_doc = mindee_client.doc_from_path(full_path+filename)
-            result = input_doc.parse(documents.TypePassportV1)
+            mindee_client = ClientV2(api_key=frappe.local.conf.mindee_passport_api)
+            passport_model_id = frappe.local.conf.passport_model_id
+            input_doc = PathInput(full_path+filename)
+            passport_params = InferenceParameters(
+                # ID of the model, required.
+                model_id=passport_model_id,
+                # Options: set to `True` or `False` to override defaults
+                # Enhance extraction accuracy with Retrieval-Augmented Generation.
+                rag=None,
+                # Extract the full text content from the document as strings.
+                raw_text=None,
+                # Calculate bounding box polygons for all fields.
+                polygon=None,
+                # Boost the precision and accuracy of all extractions.
+                # Calculate confidence scores for all fields.
+                confidence=None,
+                )
+            passport_response = mindee_client.enqueue_and_get_inference(
+            input_doc,passport_params
+            )
+            passport_fields: dict = passport_response.inference.result.fields
             # Print a brief summary of the parsed data
-            mindee_doc = result.document
+            
             result_dict = frappe._dict(dict(
-                birth_place=mindee_doc.birth_place.value,
-                expiry_date=mindee_doc.expiry_date.value,
-                full_name=mindee_doc.full_name.value,
-                given_names=[i.value for i in mindee_doc.given_names],
-                is_expired=mindee_doc.is_expired(),
-                mrz=mindee_doc.mrz.value,
-                mrz1=mindee_doc.mrz1.value,
-                mrz2=mindee_doc.mrz2.value,
-                type=mindee_doc.type,
-                birth_date=mindee_doc.birth_date.value,
-                country=mindee_doc.country.value,
-                gender=mindee_doc.gender.value,
-                id_number=mindee_doc.id_number.value,
-                issuance_date=mindee_doc.issuance_date.value,
-                surname=mindee_doc.surname.value
+                birth_place=passport_fields.place_of_birth.value,
+                expiry_date=passport_fields.date_of_expiry.value,
+                given_names= passport_fields.given_names.value,
+                mrz1=passport_fields.mrz_line_1.value,
+                mrz2=passport_fields.mrz_line_2.value,
+                birth_date=passport_fields.date_of_birth.value,
+                country=passport_fields.issuing_country.value,
+                gender=passport_fields.gender.value,
+                id_number=passport_fields.passport_number.value,
+                issuance_date=passport_fields.date_of_issue.value,
+                surname=passport_fields.surnames.value
             ))
             # result_dict = frappe._dict({'birth_place': 'ORAIFITE', 'expiry_date': '2033-02-06', 'full_name': 'EMMANUEL ANTHONY', 'given_names': ['EMMANUEL', 'CHIEMEKA'], 'is_expired': False, 'mrz': 'P<NGAANTHONY<<EMMANUEL<CHIEMEKA<<<<<<<<<<<<<B504093262NGA9303070M330206070324917405<<<46', 'mrz1': 'P<NGAANTHONY<<EMMANUEL<CHIEMEKA<<<<<<<<<<<<<', 'mrz2': 'B504093262NGA9303070M330206070324917405<<<46', 'type': 'passport', 'birth_date': '1993-03-07', 'country': 'NGA', 'gender': 'M', 'id_number': 'B50409326', 'issuance_date': '2023-02-07', 'surname': 'ANTHONY'})
             country_code = frappe.db.get_value("Country", {'code_alpha3':result_dict.country}, 'name')
@@ -266,33 +281,51 @@ def upload_image():
 
         # process file detection
         try:
-            # Init a new client and add your custom endpoint (document)
-            mindee_client = Client(api_key=frappe.local.conf.mindee_passport_api).add_endpoint(
-                account_name="onefm",
-                endpoint_name="kuwait_civil_id_front",
+            mindee_client = ClientV2(api_key=frappe.local.conf.mindee_passport_api)
+            civil_id_model = frappe.local.conf.civil_id_model_id
+            civil_input_doc = PathInput(full_path+filename)
+            civil_params = InferenceParameters(
+                # ID of the model, required.
+                model_id=civil_id_model,
+                # Options: set to `True` or `False` to override defaults
+                # Enhance extraction accuracy with Retrieval-Augmented Generation.
+                rag=None,
+                # Extract the full text content from the document as strings.
+                raw_text=None,
+                # Calculate bounding box polygons for all fields.
+                polygon=None,
+                # Boost the precision and accuracy of all extractions.
+                # Calculate confidence scores for all fields.
+                confidence=None,
+                )
+            civil_id_response = mindee_client.enqueue_and_get_inference(
+            civil_input_doc,civil_params
             )
-
-            # Load a file from disk and parse it.
-            # The endpoint name must be specified since it cannot be determined from the class.
-            result = mindee_client.doc_from_path(
-                frappe.utils.get_bench_path()+'/sites/'+cstr(frappe.local.site)+'/public/'+file_url
-            ).parse(documents.TypeCustomV1, endpoint_name="kuwait_civil_id_front")
-
+            civil_id_fields: dict = civil_id_response.inference.result.fields
+            # Print a brief summary of the parsed data
+            
+            
+            
+            
+            # Init a new client and add your custom endpoint (document)
+           
             civil_id_front = {} #{'birth_date': '1999-12-28', 'civil_id_no': '299122801358', 'expiry_date': '2028-01-30', 'name': 'ALI', 'nationality': 'KWT', 'passport_number': '', 'sex': ''}
             # Iterate over all the fields in the document
-            for field_name, field_values in result.document.fields.items():
+            for field_name, field_values in civil_id_fields.items():
                 civil_id_front[field_name] = str(field_values)
             response_data['civil_id_front']=civil_id_front
             # update record
             job_applicant = frappe.get_doc(reference_doctype, reference_docname)
-            if civil_id_front.get('birth_date'):job_applicant.db_set('one_fm_date_of_birth', civil_id_front.get('birth_date'))
-            if civil_id_front.get('civil_id_no'):job_applicant.db_set('one_fm_cid_number', civil_id_front.get('civil_id_no'))
+            if civil_id_front.get('date_of_birth'):job_applicant.db_set('one_fm_date_of_birth', civil_id_front.get('birth_date'))
+            if civil_id_front.get('civil_id_number'):job_applicant.db_set('one_fm_cid_number', civil_id_front.get('civil_id_no'))
             if civil_id_front.get('expiry_date'):job_applicant.db_set('one_fm_cid_expire', civil_id_front.get('expiry_date'))
             if civil_id_front.get('name'):job_applicant.db_set('applicant_name', civil_id_front.get('name'))
             if civil_id_front.get('passport_number'):job_applicant.db_set('one_fm_passport_number', civil_id_front.get('passport_number'))
-            if civil_id_front.get('sex'):
-                if civil_id_front.get('sex')=='M':sex="Male"
-                elif civil_id_front.get('sex')=="F":sex="Female"
+            if civil_id_front.get('gender'):
+                if civil_id_front.get('gender').startswith('f') or civil_id_front.get('gender').startswith('F'):
+                    sex="Female"
+                elif  civil_id_front.get('gender').startswith('m') or civil_id_front.get('gender').startswith('M'):
+                    sex="Male"
                 else:sex="Other"
                 job_applicant.db_set('one_fm_gender', sex)
             if civil_id_front.get('nationality'):

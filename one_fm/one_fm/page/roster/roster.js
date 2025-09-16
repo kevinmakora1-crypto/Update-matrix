@@ -2569,9 +2569,9 @@ function schedule_change_post(page) {
 					update_roster_view(element_name, page);
 					$(".filterhideshow").addClass("d-none");
 
-					if (!("_server_messages" in res)) { // Check if not server messages from frappe.throw
+					
 						updateEmployeeDefaults(employees, values);
-					}
+
 				}
 			});
 		}
@@ -2718,10 +2718,7 @@ async function updateEmployeeDefaults(employees, data) {
 	// Use a Map to store only unique employee records
 	let uniqueEmployeeIDs = [...new Set(employees.map(emp => emp.employee))];
 
-	let validProjects = await frappe.db.get_list("Project", {
-		filters: { "custom_exclude_from_default_shift_checker": ["!=", 1] },
-		fields: ["name"] // Specify fields
-	});
+	let validProjects = await frappe.xcall("one_fm.one_fm.page.roster.roster.get_all_projects");
 
 	// Extract project names (IDs) that are valid
 	let validProjectIDs = validProjects.map(project => project.name);

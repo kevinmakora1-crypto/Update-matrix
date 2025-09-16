@@ -95,6 +95,8 @@ class AttendanceCheck(Document):
             from
                 `tabAttendance Request`
             where
+                employee = '{self.employee}'
+                and
                 '{self.date}'
                 between
                 from_date

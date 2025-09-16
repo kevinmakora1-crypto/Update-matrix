@@ -2032,3 +2032,13 @@ def bulk_employee_record_update(updates):
 		"updated_employees": updated_records_names,
 		"failed_updates": failed_updates
 	}
+
+
+@frappe.whitelist()
+def get_all_projects():
+    return frappe.get_list(
+        "Project",
+        filters={"custom_exclude_from_default_shift_checker": ["!=", 1]},
+        fields=["name"],
+        limit_page_length=1000
+    )

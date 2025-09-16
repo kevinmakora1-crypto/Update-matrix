@@ -31,6 +31,7 @@ class SalarySlipOverride(SalarySlip):
         else:
             self.get_working_days_details(lwp=self.leave_without_pay)
 
+
         self.set_salary_structure_assignment()
         self.calculate_net_pay()
         self.compute_year_to_date()
@@ -50,6 +51,7 @@ class SalarySlipOverride(SalarySlip):
                     ),
                     alert=True,
                 )
+
 
     def process_salary_structure(self, for_preview=0):
         """Calculate salary after salary structure details have been updated"""
@@ -520,14 +522,15 @@ def salary_slip_before_submit(doc, method):
 
 def set_earnings_and_deduction_with_respect_to_payroll_cycle(doc, method):
     all_assignments = is_multiple_salary_structure(doc)
-    if len(all_assignments)>1:
+    if len(all_assignments) > 1:
         doc.has_multiple_salary_structure = 1
         doc = generate_split_payroll(doc,all_assignments)
         update_earning_deductions(doc)
         doc.set_totals()
         doc.compute_year_to_date()
     else:
-        doc.has_multiple_salary_structure = 0
+        if not doc.loans:
+            doc.has_multiple_salary_structure = 0
         last_salary_slip = get_last_salary_slip(doc.employee)
         if last_salary_slip and len(last_salary_slip) > 0:
             payroll_based_on = frappe.db.get_value("Payroll Settings", None, "payroll_based_on")

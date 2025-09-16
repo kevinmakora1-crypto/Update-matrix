@@ -15,8 +15,7 @@ frappe.ui.form.on("Employee Weekly Action", {
       frm.events.clear_plans_table(frm)
       if(frm.doc.employee){
         fetch_employee_reports_to(frm);
-        load_todos(frm, true);
-        load_todos(frm, false);
+        load_todos(frm);
       }
     },
     clear_plans_table(frm) {
@@ -55,29 +54,52 @@ const get_week_and_year = () => {
     return { week: weekNumber, year: adjustedDate.getFullYear() };
 };
 
-const load_todos = (frm, is_current) => {
+const load_todos = (frm) => {
     frappe.call({
         method: "one_fm.one_fm.doctype.employee_weekly_action.employee_weekly_action.fetch_todos",
-        args: { employee:frm.doc.employee, is_current:is_current },
+        args: { employee:frm.doc.employee },
         callback: function (r) {
             if (r && r.status_code === 200 && Array.isArray(r.data)) {
-                const fieldname = is_current ? 'project_progress_and_plans' : 'next_week_task_plan';
+                const getWeekDateRange = (offset = 0) => {
+                    const now = new Date();
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const dayOfWeek = today.getDay(); // 0 for Sunday
+                    const firstDay = new Date(today);
+                    firstDay.setDate(today.getDate() - dayOfWeek + (offset * 7));
+                    const lastDay = new Date(firstDay);
+                    lastDay.setDate(firstDay.getDate() + 6);
+
+                    const formatDate = d => d.toISOString().split('T')[0];
+                    return { start: formatDate(firstDay), end: formatDate(lastDay) };
+                }
+
+                const thisWeek = getWeekDateRange(0);
+                const nextWeek = getWeekDateRange(1);
 
                 r.data.forEach(item => {
                     let description = "";
                     if (item.description){
                       description = item.description.replace(/<[^>]*>/g, "").trim();
                     }
-                    const row = frm.add_child(fieldname);
-                    row.project = item.project;
-                    row.todo = item.name;
-                    row.todo_title = description;
-                    if (!is_current && item.date) {
+
+                    if (item.date <= thisWeek.end) {
+                        const row = frm.add_child('project_progress_and_plans');
+                        row.project = item.project;
+                        row.todo = item.name;
+                        row.todo_title = description;
+                    }
+
+                    if (item.date >= nextWeek.start && item.date <= nextWeek.end) {
+                        const row = frm.add_child('next_week_task_plan');
+                        row.project = item.project;
+                        row.todo = item.name;
+                        row.todo_title = description;
                         row.due_date = item.date;
                     }
                 });
 
-                frm.refresh_field(fieldname);
+                frm.refresh_field('project_progress_and_plans');
+                frm.refresh_field('next_week_task_plan');
             } else {
                 console.warn('No data returned from fetch_todos:', r);
             }

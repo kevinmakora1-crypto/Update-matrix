@@ -1288,7 +1288,6 @@ def get_job_applicant_custom_fields():
             },
             {
                 "collapsible": 1,
-                "hidden": 1,
                 "fieldname": "one_fm_visa_and_residency_section",
                 "fieldtype": "Section Break",
                 "insert_after": "one_fm_centralized_number",

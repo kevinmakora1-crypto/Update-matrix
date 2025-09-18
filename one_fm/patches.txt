@@ -155,6 +155,7 @@ one_fm.patches.v15_0.add_loan_application_workflow
 one_fm.patches.v15_0.add_loan_product_property_setter
 one_fm.patches.v15_0.update_expired_leave_policy_assignments
 one_fm.patches.v15_0.add_update_custom_field #2025-09-12
+one_fm.patches.v15_0.add_update_custom_field # Update Purchase Order Other Conditions label to Notes
 
 [post_model_sync]
 one_fm.patches.v15_0.create_attendance_check_process_task #re run again

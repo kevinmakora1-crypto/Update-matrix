@@ -127,7 +127,7 @@ def get_purchase_order_custom_fields():
             },
             {
                 "fieldname": "other_conditions",
-                "label": "Other Conditions",
+                "label": "Notes",
                 "fieldtype": "Text Editor",
                 "insert_after": "terms",
                 "translatable": 1

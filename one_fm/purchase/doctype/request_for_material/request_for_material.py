@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 import frappe
+import json
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import flt, get_url, get_fullname
@@ -39,6 +40,15 @@ class RequestforMaterial(BuyingController):
 		self.set_title()
 		self.validate_item_qty()
 		# self.validate_item_reservation()
+
+        def _initialize_custom_quantities(self):
+                """
+                Initializes the custom RFP and pending quantities for each item
+                when the Request for Material is submitted.
+                """
+                for item in self.items:
+                        item.custom_rfp_quantity = 0
+                        item.custom_pending_quantity = item.qty
 
 	def validate_item_reservation(self):
 		# validate item reservation
@@ -159,6 +169,7 @@ class RequestforMaterial(BuyingController):
 			self.notify_material_requester()
 
 	def on_submit(self):
+                self._initialize_custom_quantities()
 		self.validate_item_qty()
 		self.assign_for_technical_verification()
 		if self.workflow_state == 'Approved' and frappe.session.user == self.request_for_material_approver:
@@ -537,6 +548,40 @@ def make_delivery_note(source_name, target_doc=None):
 	}, target_doc)
 
 	return doclist
+
+@frappe.whitelist()
+def create_partial_request_for_purchase(source_name, items):
+    """
+    Creates a Request for Purchase for a subset of items from a Request for Material.
+    :param source_name: The name of the source Request for Material.
+    :param items: A list of dicts of items to include in the RFP.
+    """
+    if isinstance(items, str):
+        items = json.loads(items)
+
+    source_doc = frappe.get_doc("Request for Material", source_name)
+
+    rfp = frappe.new_doc("Request for Purchase")
+    rfp.company = source_doc.company
+    rfp.request_for_material = source_name
+    rfp.warehouse = source_doc.t_warehouse
+
+    for item_data in items:
+        source_item_doc = frappe.get_doc("Request for Material Item", item_data.get('request_for_material_item'))
+        rfp.append("items", {
+            "item_code": item_data.get('item_code'),
+            "qty": item_data.get('qty'),
+            "item_name": source_item_doc.item_name,
+            "description": source_item_doc.requested_description,
+            "uom": source_item_doc.uom,
+            "schedule_date": source_item_doc.schedule_date,
+            "request_for_material": source_name,
+            "request_for_material_item": item_data.get('request_for_material_item'),
+            "custom_request_for_material_item": item_data.get('request_for_material_item')
+        })
+
+    rfp.insert(ignore_permissions=True)
+    return rfp
 
 @frappe.whitelist()
 def make_request_for_purchase(source_name, target_doc=None):

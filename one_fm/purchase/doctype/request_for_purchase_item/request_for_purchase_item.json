@@ -19,7 +19,8 @@
   "col_break2",
   "schedule_date",
   "request_for_material",
-  "request_for_material_item"
+  "request_for_material_item",
+  "custom_request_for_material_item"
  ],
  "fields": [
   {
@@ -109,6 +110,16 @@
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Request For Material Item"
+  },
+  {
+   "fieldname": "custom_request_for_material_item",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Request for Material Item Link",
+   "no_copy": 1,
+   "options": "Request for Material Item",
+   "permlevel": 0,
+   "read_only": 1
   },
   {
    "fieldname": "column_break_2",

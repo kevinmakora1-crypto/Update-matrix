@@ -51,8 +51,6 @@ def execute():
             "hours_per_frequency": 0.5,
             "coordination_needed": "No",
             "start_date": frappe.utils.today(),
-            "department": "Operations - ONEFM",
-            "employee": "HR-EMP-00114",
             "repeat_on_day": 0,
             "repeat_on_days": [],
             "repeat_on_last_day": 0,

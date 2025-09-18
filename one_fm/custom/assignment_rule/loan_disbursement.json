@@ -9,9 +9,7 @@
   "unassign_condition": "",
   "close_condition": "docstatus == 1",
   "rule": "Based on Process Task",
-  "custom_routine_task": "P-TASK-2025-00009",
   "due_date_based_on": "posting_date",
-  "last_user": "a.magar@one-fm.com",
   "doctype": "Assignment Rule",
   "assignment_days": [
     { "day": "Monday", "doctype": "Assignment Rule Day" },

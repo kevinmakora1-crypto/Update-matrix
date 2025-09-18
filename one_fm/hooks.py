@@ -119,7 +119,8 @@ doctype_js = {
     "Employee Performance Feedback":"public/js/doctype_js/employee_performance_feedback.js",
     "Leave Allocation": "public/js/doctype_js/leave_allocation.js",
     "Contact": "public/js/doctype_js/contact.js",
-    "ToDo": "public/js/doctype_js/todo.js"
+    "ToDo": "public/js/doctype_js/todo.js",
+    "Loan": "public/js/doctype_js/loan.js"
 }
 doctype_list_js = {
 	"Job Applicant" : "public/js/doctype_js/job_applicant_list.js",
@@ -528,7 +529,8 @@ override_doctype_class = {
     "HD Ticket": "one_fm.overrides.hd_ticket.HDTicketOverride",
     "ToDo": "one_fm.overrides.todo.ToDo",
     "Task": "one_fm.overrides.task.TaskOverride",
-    "Loan Application": "one_fm.overrides.loan_application.LoanApplicationOverride"
+    "Loan Application": "one_fm.overrides.loan_application.LoanApplicationOverride",
+    "Loan": "one_fm.overrides.loan.LoanOverride"
 }
 
 

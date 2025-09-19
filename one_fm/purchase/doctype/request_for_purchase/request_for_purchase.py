@@ -26,9 +26,12 @@ class RequestforPurchase(Document):
 
 	def validate(self):
 		self._update_linked_rfm_quantities()
-
+  
+	def on_trash(self):
+		self._update_linked_rfm_quantities(delete_event=True)
+  
 	def on_cancel(self):
-		self._update_linked_rfm_quantities()
+		self._update_linked_rfm_quantities(delete_event=True)
 
 	def assign_purchase_officer(self):
 		purchase_officers = get_users_with_role_permitted_to_doctype('Purchase Officer', self.doctype)
@@ -93,7 +96,7 @@ class RequestforPurchase(Document):
 		self.db_set('notified_the_rfm_requester', True)
 		frappe.msgprint(_("Notification sent to RFM Requester"))
 
-	def _update_linked_rfm_quantities(self):
+	def _update_linked_rfm_quantities(self,delete_event = False):
 		"""
 		Recalculates the custom_rfp_quantity and custom_pending_quantity
 		on the source Request for Material based on all linked RFPs.
@@ -106,6 +109,9 @@ class RequestforPurchase(Document):
 
 		# Get the sum of quantities for all items from all non-cancelled RFPs
 		# linked to the specific Request for Material in a single query.
+		delete_condition =""
+		if delete_event:
+			delete_condition = " AND rfpi.parent != %(current_rfp)s "
 		rfp_item_totals = frappe.db.sql("""
 			SELECT
 				rfpi.custom_request_for_material_item,
@@ -116,10 +122,10 @@ class RequestforPurchase(Document):
 				`tabRequest for Purchase` AS rfp ON rfpi.parent = rfp.name
 			WHERE
 				rfp.request_for_material = %(rfm_name)s
-				AND rfp.docstatus != 2
+				AND rfp.docstatus != 2 """ + delete_condition + """
 			GROUP BY
 				rfpi.custom_request_for_material_item
-		""", {"rfm_name": rfm_name}, as_dict=1)
+		""", {"rfm_name": rfm_name,'current_rfp':self.name}, as_dict=1)
 
 		rfp_totals_map = {
 			d.custom_request_for_material_item: d.total_rfp_qty
@@ -139,7 +145,7 @@ class RequestforPurchase(Document):
 				}, update_modified=False)
 
 		# After updating all items, update the modified timestamp on the parent RFM
-		frappe.db.update("Request for Material", rfm_name)
+		# frappe.db.update("Request for Material", rfm_name)
 
 def create_notification_log(subject, message, for_users, reference_doc):
 	if 'Administrator' in for_users:

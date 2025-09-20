@@ -19,6 +19,7 @@ class GenerateContractComplianceChecker:
 		self.monthly_info = self.get_month_info()
 		self.week_info = self.get_week_info()
 		self.yesterday = frappe.utils.add_days(frappe.utils.today(), -1)
+		self.day_before_yesterday = frappe.utils.add_days(frappe.utils.today(), -2)
 		self.today = frappe.utils.today()
 
 	def get_contracts_list(self):
@@ -38,31 +39,46 @@ class GenerateContractComplianceChecker:
 			return 0
 		
 		if is_monthly:
-			attendance_count = frappe.db.count('Attendance', {
-				'roster_type': "Basic",
-				"status": "Present",
-				"attendance_date": ["between", [self.monthly_info['first_day'], self.yesterday]],
-				"operations_role": ["in", operations_role]
-			})
-			schedule_count = frappe.db.count('Employee Schedule', {
-				'roster_type': "Basic",
-				"employee_availability": "Working",
-				"date": ["between", [self.yesterday, self.monthly_info['last_day']]],
-				"operations_role": ["in", operations_role]
-			})
+			if self.day_before_yesterday >= self.monthly_info['first_day']:
+				attendance_count = frappe.db.count('Attendance', {
+					'roster_type': "Basic",
+					"status": "Present",
+					"attendance_date": ["between", [self.monthly_info['first_day'], self.day_before_yesterday]],
+					"operations_role": ["in", operations_role]
+				})
+			else:
+				attendance_count = 0
+			
+			if self.yesterday <= self.monthly_info['last_day']:
+				schedule_count = frappe.db.count('Employee Schedule', {
+					'roster_type': "Basic",
+					"employee_availability": "Working",
+					"date": ["between", [self.yesterday, self.monthly_info['last_day']]],
+					"operations_role": ["in", operations_role]
+				})
+			else:
+				schedule_count = 0
+				
 		else:
-			attendance_count = frappe.db.count('Attendance', {
-				'roster_type': "Basic",
-				"status": "Present",
-				"attendance_date": ["between", [self.week_info['first_day'], self.yesterday]],
-				"operations_role": ["in", operations_role]
-			})
-			schedule_count = frappe.db.count('Employee Schedule', {
-				'roster_type': "Basic",
-				"employee_availability": "Working",
-				"date": ["between", [self.today, self.week_info['last_day']]],
-				"operations_role": ["in", operations_role]
-			})
+			if self.day_before_yesterday >= self.week_info['first_day']:
+				attendance_count = frappe.db.count('Attendance', {
+					'roster_type': "Basic",
+					"status": "Present",
+					"attendance_date": ["between", [self.week_info['first_day'], self.day_before_yesterday]],
+					"operations_role": ["in", operations_role]
+				})
+			else:
+				attendance_count = 0
+			
+			if self.yesterday <= self.week_info['last_day']:
+				schedule_count = frappe.db.count('Employee Schedule', {
+					'roster_type': "Basic",
+					"employee_availability": "Working",
+					"date": ["between", [self.yesterday, self.week_info['last_day']]],
+					"operations_role": ["in", operations_role]
+				})
+			else:
+				schedule_count = 0
 		
 		return attendance_count + schedule_count
 	
@@ -113,7 +129,9 @@ class GenerateContractComplianceChecker:
 	def get_week_info():
 		date = getdate(frappe.utils.today())
 		weekday = date.weekday()
-		first_day = add_days(date, -weekday)
+		days_to_sunday = (weekday + 1) % 7
+		first_day = add_days(date, -days_to_sunday)
+		
 		return {
 			'first_day': first_day,
 			'last_day': add_days(first_day, 6)
@@ -165,7 +183,6 @@ class GenerateContractComplianceChecker:
 		
 		for contract, compliance_details in contract_groups.items():
 			self.create_compliance_checker(contract, compliance_details)
-
 
 
 def generate_contract_compliance_checker():

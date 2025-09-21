@@ -144,6 +144,7 @@ def make_quotation_comparison_sheet(source_name, target_doc=None):
 def create_purchase_order(**args):
 	args = frappe._dict(args)
 
+
 	rfp_item = frappe.db.get_value(
 		"Request for Purchase Quotation Item",
 		{
@@ -176,6 +177,11 @@ def create_purchase_order(**args):
 	po.conversion_factor = args.conversion_factor or 1
 	po.supplier_warehouse = args.supplier_warehouse or None
 	po.one_fm_request_for_purchase = args.request_for_purchase
+	po.request_for_material = frappe.db.get_value(
+		"Request for Purchase",
+		args.request_for_purchase,
+		"request_for_material"
+	)
 	po.is_subcontracted = False
 
 	po.append("items", {

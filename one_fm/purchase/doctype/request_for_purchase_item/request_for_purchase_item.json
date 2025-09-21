@@ -13,7 +13,6 @@
   "section_break_5",
   "description",
   "quantity",
-  "column_break_lugk",
   "qty",
   "uom",
   "purchased_quantity",
@@ -135,11 +134,6 @@
    "in_list_view": 1,
    "label": "Purchased Quantity",
    "non_negative": 1,
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_lugk",
-   "fieldtype": "Column Break",
    "read_only": 1
   }
  ],

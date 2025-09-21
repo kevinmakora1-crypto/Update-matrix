@@ -13,6 +13,7 @@
   "section_break_5",
   "description",
   "quantity",
+  "column_break_lugk",
   "qty",
   "uom",
   "purchased_quantity",
@@ -135,17 +136,24 @@
    "label": "Purchased Quantity",
    "non_negative": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_lugk",
+   "fieldtype": "Column Break",
+   "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "istable": 1,
  "links": [],
- "modified": "2025-03-02 15:10:10.976879",
+ "modified": "2025-09-21 09:16:26.218400",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Purchase Item",
  "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

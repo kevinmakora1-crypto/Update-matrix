@@ -136,8 +136,9 @@ frappe.ui.form.on('Request for Purchase', {
         if (frm.selected_workflow_action === 'Cancel') {
             return new Promise((resolve, reject) => {
                 clear_all_overlays();
+                
                 frappe.call({
-                    method: 'one_fm.purchase.doctype.request_for_purchase.request_for_purchase.check_related_pos_before_cancel_endpoint',
+                    method: 'one_fm.purchase.doctype.request_for_purchase.request_for_purchase.check_related_pos_before_cancel',
                     args: {
                         doc: JSON.stringify(frm.doc)
                     },
@@ -150,6 +151,8 @@ frappe.ui.form.on('Request for Purchase', {
                                     show_mixed_po_blocking_dialog(frm, r.message, reject);
                                 } else if (r.message.type === 'approved_only') {
                                     show_approved_po_blocking_dialog(frm, r.message, reject);
+                                } else if (r.message.type === 'draft_pending_confirmation' || r.message.type === 'draft_confirmation') {
+                                    show_draft_pending_confirmation_dialog(frm, r.message, resolve, reject);
                                 }
                             }, 200);
                         } else {
@@ -166,7 +169,6 @@ frappe.ui.form.on('Request for Purchase', {
             });
         }
     }
-
 });
 
 
@@ -199,6 +201,7 @@ function show_mixed_po_blocking_dialog(frm, data, reject) {
                 fieldtype: 'HTML',
                 fieldname: 'message',
                 options: `<div class="alert alert-danger">
+                    <p><strong>Mixed Purchase Order Stages Detected:</strong></p>
                     <p>${data.message}</p>
                 </div>`
             }
@@ -245,7 +248,41 @@ function show_approved_po_blocking_dialog(frm, data, reject) {
     dialog.show();
 }
 
-
+function show_draft_pending_confirmation_dialog(frm, data, resolve, reject) {
+    let dialog = new frappe.ui.Dialog({
+        title: __(data.title),
+        indicator: 'orange',
+        size: 'medium',
+        fields: [
+            {
+                fieldtype: 'HTML',
+                fieldname: 'message',
+                options: `<div class="alert alert-warning">
+                    <p>${data.message}</p>
+                </div>`
+            }
+        ],
+        primary_action_label: __('Yes, Proceed'),
+        primary_action: function() {
+            dialog.hide();
+            clear_all_overlays();
+ 
+            frappe.msgprint(__('RFP will be cancelled and related Purchase Orders will be deleted.'));
+            resolve();
+        },
+        secondary_action_label: __('No, Cancel'),
+        secondary_action: function() {
+            dialog.hide();
+            clear_all_overlays();
+            reject();
+        },
+        onhide: function() {
+            clear_all_overlays();
+        }
+    });
+    
+    dialog.show();
+}
 
 var set_intro_related_to_status = function(frm) {
 	if (frm.doc.docstatus == 1){

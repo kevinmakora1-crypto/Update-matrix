@@ -133,35 +133,93 @@ frappe.ui.form.on('Request for Purchase', {
 		set_supplier_to_items_to_order(frm);
 	},
 	before_workflow_action: function(frm) {
-		console.log("got here")
         if (frm.selected_workflow_action === 'Cancel') {
             return new Promise((resolve, reject) => {
+                clear_all_overlays();
                 frappe.call({
-                    method: 'one_fm.purchase.doctype.request_for_purchase.request_for_purchase.check_approved_pos_before_cancel',
+                    method: 'one_fm.purchase.doctype.request_for_purchase.request_for_purchase.check_related_pos_before_cancel_endpoint',
                     args: {
                         doc: JSON.stringify(frm.doc)
                     },
                     callback: function(r) {
-                        resolve();
+                        if (r.message && r.message.error) {
+                            clear_all_overlays();
+                            
+                            setTimeout(() => {
+                                if (r.message.type === 'mixed') {
+                                    show_mixed_po_blocking_dialog(frm, r.message, reject);
+                                } else if (r.message.type === 'approved_only') {
+                                    show_approved_po_blocking_dialog(frm, r.message, reject);
+                                }
+                            }, 200);
+                        } else {
+                            resolve();
+                        }
                     },
                     error: function(r) {
-                        if (r.message && r.message.includes('RFP Cancellation blocked. Approved Purchase Order found.')) {
-                            show_approved_po_blocking_dialog(frm, r.message, reject);
-                        } else {
-                            frappe.msgprint(r.message);
-                            reject();
-                        }
+                        clear_all_overlays();
+                        console.log("Error occurred:", r.message);
+                        frappe.msgprint(r.message || "An error occurred");
+                        reject();
                     }
                 });
             });
         }
     }
+
 });
 
 
-function show_approved_po_blocking_dialog(frm, error_message, reject) {
+function clear_all_overlays() {
+    $('.modal-backdrop').remove();
+    $('.modal').removeClass('show').hide();
+    $('body').removeClass('modal-open');
+    $('.modal-open').removeClass('modal-open');
+    $('.freeze').remove();
+    $('.overlay').remove();
+    
+    $('body').css({
+        'padding-right': '',
+        'overflow': '',
+        'position': '',
+        'margin-right': ''
+    });
+    
+    $('.workflow-overlay').remove();
+    $('.frappe-overlay').remove();
+}
+
+function show_mixed_po_blocking_dialog(frm, data, reject) {
     let dialog = new frappe.ui.Dialog({
-        title: __('RFP Cancellation blocked. Approved Purchase Order found.'),
+        title: __(data.title),
+        indicator: 'red',
+        size: 'large',
+        fields: [
+            {
+                fieldtype: 'HTML',
+                fieldname: 'message',
+                options: `<div class="alert alert-danger">
+                    <p>${data.message}</p>
+                </div>`
+            }
+        ],
+        primary_action_label: __('OK'),
+        primary_action: function() {
+            dialog.hide();
+            clear_all_overlays();
+            reject();
+        },
+        onhide: function() {
+            clear_all_overlays();
+        }
+    });
+    
+    dialog.show();
+}
+
+function show_approved_po_blocking_dialog(frm, data, reject) {
+    let dialog = new frappe.ui.Dialog({
+        title: __(data.title),
         indicator: 'red',
         size: 'medium',
         fields: [
@@ -169,19 +227,25 @@ function show_approved_po_blocking_dialog(frm, error_message, reject) {
                 fieldtype: 'HTML',
                 fieldname: 'message',
                 options: `<div class="alert alert-danger">
-                    <p>${error_message}</p>
+                    <p>${data.message}</p>
                 </div>`
             }
         ],
         primary_action_label: __('OK'),
         primary_action: function() {
             dialog.hide();
+            clear_all_overlays();
             reject();
+        },
+        onhide: function() {
+            clear_all_overlays();
         }
     });
     
     dialog.show();
 }
+
+
 
 var set_intro_related_to_status = function(frm) {
 	if (frm.doc.docstatus == 1){

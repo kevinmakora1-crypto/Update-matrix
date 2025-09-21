@@ -131,8 +131,57 @@ frappe.ui.form.on('Request for Purchase', {
 	},
 	supplier: function(frm) {
 		set_supplier_to_items_to_order(frm);
-	}
+	},
+	before_workflow_action: function(frm) {
+		console.log("got here")
+        if (frm.selected_workflow_action === 'Cancel') {
+            return new Promise((resolve, reject) => {
+                frappe.call({
+                    method: 'one_fm.purchase.doctype.request_for_purchase.request_for_purchase.check_approved_pos_before_cancel',
+                    args: {
+                        doc: JSON.stringify(frm.doc)
+                    },
+                    callback: function(r) {
+                        resolve();
+                    },
+                    error: function(r) {
+                        if (r.message && r.message.includes('RFP Cancellation blocked. Approved Purchase Order found.')) {
+                            show_approved_po_blocking_dialog(frm, r.message, reject);
+                        } else {
+                            frappe.msgprint(r.message);
+                            reject();
+                        }
+                    }
+                });
+            });
+        }
+    }
 });
+
+
+function show_approved_po_blocking_dialog(frm, error_message, reject) {
+    let dialog = new frappe.ui.Dialog({
+        title: __('RFP Cancellation blocked. Approved Purchase Order found.'),
+        indicator: 'red',
+        size: 'medium',
+        fields: [
+            {
+                fieldtype: 'HTML',
+                fieldname: 'message',
+                options: `<div class="alert alert-danger">
+                    <p>${error_message}</p>
+                </div>`
+            }
+        ],
+        primary_action_label: __('OK'),
+        primary_action: function() {
+            dialog.hide();
+            reject();
+        }
+    });
+    
+    dialog.show();
+}
 
 var set_intro_related_to_status = function(frm) {
 	if (frm.doc.docstatus == 1){

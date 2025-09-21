@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import frappe
+import frappe, json
 from frappe import _
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
@@ -86,6 +86,52 @@ class RequestforPurchase(Document):
 		create_notification_log(subject, message, [rfm.requested_by], rfm)
 		self.db_set('notified_the_rfm_requester', True)
 		frappe.msgprint(_("Notification sent to RFM Requester"))
+
+	def before_workflow_action(self):
+		if frappe.local.form_dict.get('workflow_action') == 'Cancel':
+			self.check_approved_pos_before_cancel()
+
+	def check_approved_pos_before_cancel(self):
+		approved_pos = frappe.db.get_list('Purchase Order', {
+			'one_fm_request_for_purchase': self.name,
+			'docstatus': 1,
+			'workflow_state': 'Approved'
+		}, ['name'])
+		
+		if approved_pos:
+			po_list = ", ".join([po.name for po in approved_pos])
+			frappe.throw(
+				_("Please note that {0} has related Purchase Orders ({1}) in Approved stage. To proceed, you must first cancel these Purchase Orders. Cancellation of this RFP is not allowed until all related POs are cancelled.").format(
+					self.name, po_list
+				),
+				title=_("RFP Cancellation blocked. Approved Purchase Order found."),
+				exc=frappe.ValidationError
+			)
+
+@frappe.whitelist()
+def check_approved_pos_before_cancel(doc):
+    doc_dict = json.loads(doc)
+    
+    approved_pos = frappe.db.get_list('Purchase Order', {
+        'one_fm_request_for_purchase': doc_dict.get('name'),
+        'docstatus': 1,
+        'workflow_state': 'Approved'
+    }, ['name'])
+    
+    if approved_pos:
+        po_list = ", ".join([po.name for po in approved_pos])
+        frappe.throw(
+            _("Please note that {0} has related Purchase Orders ({1}) in Approved stage. To proceed, you must first cancel these Purchase Orders. Cancellation of this RFP is not allowed until all related POs are cancelled.").format(
+                doc_dict.get('name'), po_list
+            ),
+            title=_("RFP Cancellation blocked. Approved Purchase Order found."),
+            exc=frappe.ValidationError
+        )
+    
+    return True
+
+
+
 
 def create_notification_log(subject, message, for_users, reference_doc):
 	if 'Administrator' in for_users:

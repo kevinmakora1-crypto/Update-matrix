@@ -230,16 +230,23 @@ function load_js(page) {
 							depends_on: "eval:doc.post_status == 'Plan Post'",
 						},
 						{
+							label: "Selected Days Only",
+							fieldname: "selected_days_only",
+							fieldtype: "Check",
+							depends_on: "eval:doc.post_status == 'Plan Post'",
+						},
+						{
 							label: "Plan From Date",
 							fieldname: "plan_from_date",
 							fieldtype: "Date",
-							default: date
+							default: date,
+							depends_on: "eval:!doc.selected_days_only",
 						},
 						{
 							label: "Plan Till Date",
 							fieldname: "plan_end_date",
 							fieldtype: "Date",
-							depends_upon: "eval:doc.project_end_date==0",
+							depends_on: "eval:doc.project_end_date==0 && !doc.selected_days_only",
 							onchange: function () {
 								let plan_end_date = d.get_value("plan_end_date");
 								if (plan_end_date && moment(plan_end_date).isBefore(moment(frappe.datetime.nowdate()))) {
@@ -268,7 +275,7 @@ function load_js(page) {
 							label: "Cancel Till Date",
 							fieldname: "cancel_end_date",
 							fieldtype: "Date",
-							depends_upon: "eval:doc.project_end_date==0",
+							depends_on: "eval:doc.project_end_date==0",
 							onchange: function () {
 								let plan_end_date = d.get_value("cancel_end_date");
 								if (plan_end_date && moment(plan_end_date).isBefore(moment(frappe.datetime.nowdate()))) {
@@ -319,7 +326,7 @@ function load_js(page) {
 						{ "label": "Tuesday", "fieldname": "tuesday", "fieldtype": "Check" },
 						{ "label": "Friday", "fieldname": "friday", "fieldtype": "Check" },
 						{ "fieldtype": "Section Break", "fieldname": "sb2", "depends_on": "eval:doc.post_status=='Post Off' && doc.repeat!= 'Does not repeat' && doc.repeat!= 'Selected Days Only'" },
-						{ "label": "Repeat Till", "fieldtype": "Date", "fieldname": "repeat_till", "depends_upon": "eval:doc.project_end_date==0" },
+						{ "label": "Repeat Till", "fieldtype": "Date", "fieldname": "repeat_till", "depends_on": "eval:doc.project_end_date==0" },
 						{
 							fieldname: "sb2",
 							fieldtype: "Section Break",
@@ -2569,9 +2576,9 @@ function schedule_change_post(page) {
 					update_roster_view(element_name, page);
 					$(".filterhideshow").addClass("d-none");
 
-					if (!("_server_messages" in res)) { // Check if not server messages from frappe.throw
+					
 						updateEmployeeDefaults(employees, values);
-					}
+
 				}
 			});
 		}
@@ -2718,10 +2725,7 @@ async function updateEmployeeDefaults(employees, data) {
 	// Use a Map to store only unique employee records
 	let uniqueEmployeeIDs = [...new Set(employees.map(emp => emp.employee))];
 
-	let validProjects = await frappe.db.get_list("Project", {
-		filters: { "custom_exclude_from_default_shift_checker": ["!=", 1] },
-		fields: ["name"] // Specify fields
-	});
+	let validProjects = await frappe.xcall("one_fm.one_fm.page.roster.roster.get_all_projects");
 
 	// Extract project names (IDs) that are valid
 	let validProjectIDs = validProjects.map(project => project.name);

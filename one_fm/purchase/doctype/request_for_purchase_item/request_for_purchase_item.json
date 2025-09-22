@@ -19,7 +19,8 @@
   "col_break2",
   "schedule_date",
   "request_for_material",
-  "request_for_material_item"
+  "request_for_material_item",
+  "custom_request_for_material_item"
  ],
  "fields": [
   {
@@ -111,6 +112,16 @@
    "label": "Request For Material Item"
   },
   {
+   "fieldname": "custom_request_for_material_item",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Request for Material Item Link",
+   "no_copy": 1,
+   "options": "Request for Material Item",
+   "permlevel": 0,
+   "read_only": 1
+  },
+  {
    "fieldname": "column_break_2",
    "fieldtype": "Column Break"
   },
@@ -137,15 +148,17 @@
    "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "istable": 1,
  "links": [],
- "modified": "2025-03-02 15:10:10.976879",
+ "modified": "2025-09-21 09:16:26.218400",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Purchase Item",
  "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

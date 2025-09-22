@@ -63,17 +63,57 @@ class RequestforPurchase(Document):
 		if items and len(items) > 0:
 			frappe.throw(_("Items <b>Items Order</b> are greater in quantity than requested in rows {0}".format(items)))
 
+		
 	@frappe.whitelist()
 	def make_purchase_order_for_quotation(self, warehouse=None):
 		self.validate_items_to_order()
+		created_pos = []
+		skipped_items = []
+		
 		if self.items_to_order:
 			wh = warehouse if warehouse else self.warehouse
+			
+			supplier_groups = {}
 			for item in self.items_to_order:
-				if item.t_warehouse:
-					wh = item.t_warehouse
-				create_purchase_order(supplier=item.supplier, request_for_purchase=self.name, item_code=item.item_code,
-					qty=item.qty, rate=item.rate, delivery_date=item.delivery_date, uom=item.uom, description=item.description,
-					warehouse=wh, quotation=item.quotation, do_not_submit=True)
+				if item.supplier not in supplier_groups:
+					supplier_groups[item.supplier] = []
+				
+				supplier_groups[item.supplier].append({
+					"item_code": item.item_code,
+					"qty": item.qty,
+					"rate": item.rate,
+					"delivery_date": item.delivery_date,
+					"uom": item.uom,
+					"description": item.description,
+					"warehouse": item.t_warehouse if item.t_warehouse else wh,
+					"quotation": item.quotation,
+					"item_name": getattr(item, 'item_name', None)
+				})
+			
+			for supplier, items_list in supplier_groups.items():
+				po = create_purchase_order(
+					supplier=supplier,
+					request_for_purchase=self.name,
+					warehouse=wh,
+					items_list=items_list,
+					do_not_submit=True
+				)
+				
+				if po:
+					created_pos.append(po.name)
+				else:
+					skipped_items.extend([item["item_code"] for item in items_list])
+		
+		if created_pos:
+			frappe.msgprint(f"Created Purchase Orders: {', '.join(created_pos)}")
+		
+		if skipped_items:
+			frappe.msgprint(f"Skipped items (no pending quantity): {', '.join(skipped_items)}")
+		
+		return {
+			'created_pos': created_pos,
+			'skipped_items': skipped_items
+		}
 
 	@frappe.whitelist()
 	def notify_the_rfm_requester(self):
@@ -339,64 +379,82 @@ def make_quotation_comparison_sheet(source_name, target_doc=None):
 	doclist.request_for_quotation = rfq if rfq else ''
 	return doclist
 
+
 def create_purchase_order(**args):
-	args = frappe._dict(args)
+    args = frappe._dict(args)
+    
+    items_to_process = args.get('items_list', [args])
+    valid_items = []
+    
+    for item_args in items_to_process:
+        item_args = frappe._dict(item_args)
+        
+        rfp_item = frappe.db.get_value(
+            "Request for Purchase Quotation Item",
+            {
+                "parent": args.request_for_purchase,
+                "item_code": item_args.item_code
+            },
+            ["qty", "ordered_qty", "pending_qty"],
+            as_dict=True
+        )
+        
+        if not rfp_item:
+            frappe.msgprint(f"Item {item_args.item_code} not found in Request for Purchase {args.request_for_purchase}")
+            continue
+        
+        available_qty = rfp_item.pending_qty or (rfp_item.qty - (rfp_item.ordered_qty or 0))
+        
+        if available_qty <= 0:
+            frappe.msgprint(f"No pending quantity available for item {item_args.item_code}. All quantities have been ordered.")
+            continue
+        
+        po_qty = min(item_args.qty, available_qty)
+        
+        if po_qty <= 0:
+            frappe.msgprint(f"Calculated quantity is zero for item {item_args.item_code}. Skipping.")
+            continue
+        
+        if po_qty != item_args.qty:
+            frappe.msgprint(f"Requested quantity {item_args.qty} reduced to available pending quantity {po_qty} for item {item_args.item_code}")
+        
+        valid_items.append({
+            "item_code": item_args.item_code,
+            "item_name": item_args.get("item_name") or frappe.db.get_value("Item", item_args.item_code, "item_name"),
+            "description": item_args.description,
+            "uom": item_args.uom,
+            "qty": po_qty,
+            "rate": item_args.rate,
+            "amount": po_qty * item_args.rate,
+            "schedule_date": getdate(item_args.delivery_date) if (item_args.delivery_date and getdate(nowdate()) < getdate(item_args.delivery_date)) else getdate(nowdate()),
+            "expected_delivery_date": item_args.delivery_date
+        })
+    
+    if not valid_items:
+        return None
+    
+    po = frappe.new_doc("Purchase Order")
+    po.transaction_date = nowdate()
+    po.set_warehouse = args.warehouse
+    po.quotation = args.quotation
+    po.supplier = args.supplier
+    po.is_subcontracted = args.is_subcontracted or "No"
+    po.conversion_factor = args.conversion_factor or 1
+    po.supplier_warehouse = args.supplier_warehouse or None
+    po.one_fm_request_for_purchase = args.request_for_purchase
+    po.request_for_material = frappe.db.get_value(
+        "Request for Purchase",
+        args.request_for_purchase,
+        "request_for_material"
+    )
+    po.is_subcontracted = False
 
-
-	rfp_item = frappe.db.get_value(
-		"Request for Purchase Quotation Item",
-		{
-			"parent": args.request_for_purchase,
-			"item_code": args.item_code
-		},
-		["qty", "ordered_qty", "pending_qty"],
-		as_dict=True
-	)
-	
-	if not rfp_item:
-		frappe.throw(f"Item {args.item_code} not found in Request for Purchase {args.request_for_purchase}")
-	
-	available_qty = rfp_item.pending_qty or (rfp_item.qty - (rfp_item.ordered_qty or 0))
-	
-	if available_qty <= 0:
-		frappe.throw(f"No pending quantity available for item {args.item_code}. All quantities have been ordered.")
-	
-	po_qty = min(args.qty, available_qty)
-	
-	if po_qty != args.qty:
-		frappe.msgprint(f"Requested quantity {args.qty} reduced to available pending quantity {po_qty} for item {args.item_code}")
-	
-	po = frappe.new_doc("Purchase Order")
-	po.transaction_date = nowdate()
-	po.set_warehouse = args.warehouse
-	po.quotation = args.quotation
-	po.supplier = args.supplier
-	po.is_subcontracted = args.is_subcontracted or "No"
-	po.conversion_factor = args.conversion_factor or 1
-	po.supplier_warehouse = args.supplier_warehouse or None
-	po.one_fm_request_for_purchase = args.request_for_purchase
-	po.request_for_material = frappe.db.get_value(
-		"Request for Purchase",
-		args.request_for_purchase,
-		"request_for_material"
-	)
-	po.is_subcontracted = False
-
-	po.append("items", {
-		"item_code": args.item_code,
-		"item_name": args.get("item_name") or frappe.db.get_value("Item", args.item_code, "item_name"),
-		"description": args.description,
-		"uom": args.uom,
-		"qty": po_qty,
-		"rate": args.rate,
-		"amount": po_qty * args.rate,
-		"schedule_date": getdate(args.delivery_date) if (args.delivery_date and getdate(nowdate()) < getdate(args.delivery_date)) else getdate(nowdate()),
-		"expected_delivery_date": args.delivery_date
-	})
-	
-	if not args.do_not_save:
-		po.save(ignore_permissions=True)
-		if not args.do_not_submit:
-			po.submit()
-	
-	return po
+    for item in valid_items:
+        po.append("items", item)
+    
+    if not args.do_not_save:
+        po.save(ignore_permissions=True)
+        if not args.do_not_submit:
+            po.submit()
+    
+    return po

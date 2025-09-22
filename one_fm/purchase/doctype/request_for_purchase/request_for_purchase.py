@@ -24,6 +24,15 @@ class RequestforPurchase(Document):
 	def on_submit(self):
 		self.assign_purchase_officer()
 
+	def validate(self):
+		self._update_linked_rfm_quantities()
+  
+	def on_trash(self):
+		self._update_linked_rfm_quantities(delete_event=True)
+  
+	def on_cancel(self):
+		self._update_linked_rfm_quantities(delete_event=True)
+
 	def assign_purchase_officer(self):
 		purchase_officers = get_users_with_role_permitted_to_doctype('Purchase Officer', self.doctype)
 		if purchase_officers:
@@ -86,6 +95,57 @@ class RequestforPurchase(Document):
 		create_notification_log(subject, message, [rfm.requested_by], rfm)
 		self.db_set('notified_the_rfm_requester', True)
 		frappe.msgprint(_("Notification sent to RFM Requester"))
+
+	def _update_linked_rfm_quantities(self,delete_event = False):
+		"""
+		Recalculates the custom_rfp_quantity and custom_pending_quantity
+		on the source Request for Material based on all linked RFPs.
+		This method is called from hooks to ensure data is always in sync.
+		"""
+		if not self.request_for_material:
+			return
+
+		rfm_name = self.request_for_material
+
+		# Get the sum of quantities for all items from all non-cancelled RFPs
+		# linked to the specific Request for Material in a single query.
+		delete_condition =""
+		if delete_event:
+			delete_condition = " AND rfpi.parent != %(current_rfp)s "
+		rfp_item_totals = frappe.db.sql("""
+			SELECT
+				rfpi.custom_request_for_material_item,
+				SUM(rfpi.qty) as total_rfp_qty
+			FROM
+				`tabRequest for Purchase Item` AS rfpi
+			JOIN
+				`tabRequest for Purchase` AS rfp ON rfpi.parent = rfp.name
+			WHERE
+				rfp.request_for_material = %(rfm_name)s
+				AND rfp.docstatus != 2 """ + delete_condition + """
+			GROUP BY
+				rfpi.custom_request_for_material_item
+		""", {"rfm_name": rfm_name,'current_rfp':self.name}, as_dict=1)
+
+		rfp_totals_map = {
+			d.custom_request_for_material_item: d.total_rfp_qty
+			for d in rfp_item_totals if d.custom_request_for_material_item
+		}
+
+		rfm_doc = frappe.get_doc("Request for Material", rfm_name)
+		for item in rfm_doc.items:
+			total_ordered_qty = rfp_totals_map.get(item.name, 0)
+			pending_qty = item.qty - total_ordered_qty
+
+			# Update RFM item fields directly to avoid triggering circular hooks
+			if (item.custom_rfp_quantity != total_ordered_qty or item.custom_pending_quantity != pending_qty):
+				frappe.db.set_value("Request for Material Item", item.name, {
+					"custom_rfp_quantity": total_ordered_qty,
+					"custom_pending_quantity": pending_qty
+				}, update_modified=False)
+
+		# After updating all items, update the modified timestamp on the parent RFM
+		# frappe.db.update("Request for Material", rfm_name)
 
 
 	def before_cancel(self):

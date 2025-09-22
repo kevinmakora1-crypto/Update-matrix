@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import frappe
+import frappe, json
 from frappe import _
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
@@ -146,6 +146,104 @@ class RequestforPurchase(Document):
 
 		# After updating all items, update the modified timestamp on the parent RFM
 		# frappe.db.update("Request for Material", rfm_name)
+
+
+	def before_cancel(self):
+		if self.workflow_state == "Rejected":
+			self.check_related_pos_before_cancel()
+
+
+	def check_related_pos_before_cancel(self):
+		approved_pos = frappe.db.get_list('Purchase Order', {
+			'one_fm_request_for_purchase': self.name,
+			'docstatus': 1,
+			'workflow_state': 'Approved'
+		}, ['name'])
+		
+		pending_pos = frappe.db.get_list('Purchase Order', {
+			'one_fm_request_for_purchase': self.name,
+			'docstatus': ['in', [0, 1]],
+			'workflow_state': ['in', ['Pending Purchase Manager', 'Pending Finance Approver']]
+		}, ['name', 'workflow_state'])
+
+		if approved_pos and pending_pos:
+			approved_list = ", ".join([po.name for po in approved_pos])
+			pending_list = ", ".join([po.name for po in pending_pos])
+			frappe.throw(
+				_("Please note that {0} has related Purchase Orders in different stages: {1} > Pending Approval, {2} > Approved. Cancellation of this RFP is not allowed while Approved POs exist. You must first cancel the Approved POs.").format(
+					self.name, pending_list, approved_list
+				),
+				title=_("Cancellation Blocked – Mixed Purchase Order Stages Found"),
+				exc=frappe.ValidationError
+			)
+		elif approved_pos:
+			po_list = ", ".join([po.name for po in approved_pos])
+			frappe.throw(
+				_("Please note that {0} has related Purchase Orders ({1}) in Approved stage. To proceed, you must first cancel these Purchase Orders. Cancellation of this RFP is not allowed until all related POs are cancelled.").format(
+					self.name, po_list
+				),
+				title=_("RFP Cancellation blocked. Approved Purchase Order found."),
+				exc=frappe.ValidationError
+			)
+		elif pending_pos:
+			self.delete_related_pos(pending_pos)
+
+
+	def delete_related_pos(self, related_pos):
+		for po in related_pos:
+			try:
+				po_doc = frappe.get_doc('Purchase Order', po.name)
+				
+				if po_doc.docstatus == 1:
+					po_doc.cancel()
+				
+				frappe.delete_doc('Purchase Order', po.name, force=1)
+				
+			except Exception as e:
+				frappe.log_error(f"Error deleting PO {po.name}: {str(e)}")
+				frappe.throw(_("Error deleting Purchase Order {0}: {1}").format(po.name, str(e)))
+
+
+
+@frappe.whitelist()
+def check_related_pos_before_cancel_endpoint(doc):
+    doc_dict = json.loads(doc)
+    
+    approved_pos = frappe.db.get_list('Purchase Order', {
+        'one_fm_request_for_purchase': doc_dict.get('name'),
+        'docstatus': 1,
+        'workflow_state': 'Approved'
+    }, ['name'])
+    
+    pending_pos = frappe.db.get_list('Purchase Order', {
+        'one_fm_request_for_purchase': doc_dict.get('name'),
+        'docstatus': ['in', [0, 1]],
+        'workflow_state': ['in', ['Pending Purchase Manager', 'Pending Finance Approver']]
+    }, ['name', 'workflow_state'])
+    
+    if approved_pos and pending_pos:
+        approved_list = ", ".join([po.name for po in approved_pos])
+        pending_list = ", ".join([po.name for po in pending_pos])
+        return {
+            'error': True,
+            'type': 'mixed',
+            'title': 'Cancellation Blocked – Mixed Purchase Order Stages Found',
+            'message': f"Please note that {doc_dict.get('name')} has related Purchase Orders in different stages: {pending_list} > Pending Approval, {approved_list} > Approved. Cancellation of this RFP is not allowed while Approved POs exist. You must first cancel the Approved POs.",
+            'approved_list': approved_list,
+            'pending_list': pending_list
+        }
+    elif approved_pos:
+        po_list = ", ".join([po.name for po in approved_pos])
+        return {
+            'error': True,
+            'type': 'approved_only',
+            'title': 'RFP Cancellation blocked. Approved Purchase Order found.',
+            'message': f"Please note that {doc_dict.get('name')} has related Purchase Orders ({po_list}) in Approved stage. To proceed, you must first cancel these Purchase Orders. Cancellation of this RFP is not allowed until all related POs are cancelled.",
+            'approved_list': po_list
+        }
+    
+    return {'error': False}
+
 
 def create_notification_log(subject, message, for_users, reference_doc):
 	if 'Administrator' in for_users:

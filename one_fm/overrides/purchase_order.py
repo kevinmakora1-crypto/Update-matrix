@@ -88,12 +88,15 @@ class PurchaseOrderOverride(PurchaseOrder):
 
     def on_submit(self):
         self.update_purchased_quantities()
+        self.update_ordered_and_pending_quantities()
     
     def on_update_after_submit(self):
         self.update_purchased_quantities()
+        self.update_ordered_and_pending_quantities()
 
     def on_cancel(self):
         self.update_purchased_quantities()
+        self.update_ordered_and_pending_quantities()
 
     def update_purchased_quantities(self):
         if not self.one_fm_request_for_purchase:
@@ -130,6 +133,49 @@ class PurchaseOrderOverride(PurchaseOrder):
             # If Request for Material exists, update the corresponding quantity
             if request_for_material:
                 update_purchased_qty(new_qty, request_for_material, obj.item_code, "Request for Material Item", "purchased_qty")
+
+
+    def update_ordered_and_pending_quantities(self):
+        if not self.one_fm_request_for_purchase:
+            return
+        
+        purchase_orders = frappe.db.get_list(
+            "Purchase Order", 
+            filters={"one_fm_request_for_purchase": self.one_fm_request_for_purchase, "docstatus": 1},
+            pluck='name'
+        )
+        
+        rfp_items = frappe.db.get_all(
+            "Request for Purchase Quotation Item",
+            filters={"parent": self.one_fm_request_for_purchase},
+            fields=["name", "item_code", "qty", "ordered_qty", "pending_qty"]
+        )
+        
+        for rfp_item in rfp_items:
+            item_ordered_qty = frappe.db.get_all(
+                "Purchase Order Item", 
+                filters={
+                    "parent": ["IN", purchase_orders], 
+                    "item_code": rfp_item.item_code, 
+                    "parentfield": "items"
+                },
+                pluck="qty"
+            )
+            
+            total_ordered = sum(item_ordered_qty) if item_ordered_qty else 0
+            pending_qty = max(0, rfp_item.qty - total_ordered)
+            
+            frappe.db.set_value(
+                "Request for Purchase Quotation Item", 
+                rfp_item.name, 
+                {
+                    "ordered_qty": total_ordered,
+                    "pending_qty": pending_qty
+                }
+            )
+        
+        frappe.db.commit()
+
 
 
 def update_purchased_qty(new_qty, parent, item_code, doctype, qty_field):

@@ -24,6 +24,15 @@ class RequestforPurchase(Document):
 	def on_submit(self):
 		self.assign_purchase_officer()
 
+	def validate(self):
+		self._update_linked_rfm_quantities()
+  
+	def on_trash(self):
+		self._update_linked_rfm_quantities(delete_event=True)
+  
+	def on_cancel(self):
+		self._update_linked_rfm_quantities(delete_event=True)
+
 	def assign_purchase_officer(self):
 		purchase_officers = get_users_with_role_permitted_to_doctype('Purchase Officer', self.doctype)
 		if purchase_officers:
@@ -87,11 +96,61 @@ class RequestforPurchase(Document):
 		self.db_set('notified_the_rfm_requester', True)
 		frappe.msgprint(_("Notification sent to RFM Requester"))
 
+	def _update_linked_rfm_quantities(self,delete_event = False):
+		"""
+		Recalculates the custom_rfp_quantity and custom_pending_quantity
+		on the source Request for Material based on all linked RFPs.
+		This method is called from hooks to ensure data is always in sync.
+		"""
+		if not self.request_for_material:
+			return
+
+		rfm_name = self.request_for_material
+
+		# Get the sum of quantities for all items from all non-cancelled RFPs
+		# linked to the specific Request for Material in a single query.
+		delete_condition =""
+		if delete_event:
+			delete_condition = " AND rfpi.parent != %(current_rfp)s "
+		rfp_item_totals = frappe.db.sql("""
+			SELECT
+				rfpi.custom_request_for_material_item,
+				SUM(rfpi.qty) as total_rfp_qty
+			FROM
+				`tabRequest for Purchase Item` AS rfpi
+			JOIN
+				`tabRequest for Purchase` AS rfp ON rfpi.parent = rfp.name
+			WHERE
+				rfp.request_for_material = %(rfm_name)s
+				AND rfp.docstatus != 2 """ + delete_condition + """
+			GROUP BY
+				rfpi.custom_request_for_material_item
+		""", {"rfm_name": rfm_name,'current_rfp':self.name}, as_dict=1)
+
+		rfp_totals_map = {
+			d.custom_request_for_material_item: d.total_rfp_qty
+			for d in rfp_item_totals if d.custom_request_for_material_item
+		}
+
+		rfm_doc = frappe.get_doc("Request for Material", rfm_name)
+		for item in rfm_doc.items:
+			total_ordered_qty = rfp_totals_map.get(item.name, 0)
+			pending_qty = item.qty - total_ordered_qty
+
+			# Update RFM item fields directly to avoid triggering circular hooks
+			if (item.custom_rfp_quantity != total_ordered_qty or item.custom_pending_quantity != pending_qty):
+				frappe.db.set_value("Request for Material Item", item.name, {
+					"custom_rfp_quantity": total_ordered_qty,
+					"custom_pending_quantity": pending_qty
+				}, update_modified=False)
+
+		# After updating all items, update the modified timestamp on the parent RFM
+		# frappe.db.update("Request for Material", rfm_name)
+
 
 	def before_cancel(self):
 		if self.workflow_state == "Rejected":
 			self.check_related_pos_before_cancel()
-
 
 	def check_related_pos_before_cancel(self):
 		approved_pos = frappe.db.get_list('Purchase Order', {
@@ -100,34 +159,48 @@ class RequestforPurchase(Document):
 			'workflow_state': 'Approved'
 		}, ['name'])
 		
+		draft_pos = frappe.db.get_list('Purchase Order', {
+			'one_fm_request_for_purchase': self.name,
+			'docstatus': ['in', [0, 1]],
+			'workflow_state': 'Draft'
+		}, ['name'])
+		
 		pending_pos = frappe.db.get_list('Purchase Order', {
 			'one_fm_request_for_purchase': self.name,
 			'docstatus': ['in', [0, 1]],
 			'workflow_state': ['in', ['Pending Purchase Manager', 'Pending Finance Approver']]
 		}, ['name', 'workflow_state'])
+		
+		if approved_pos:
+			if pending_pos:
+				approved_list = ", ".join([po.name for po in approved_pos])
+				other_list = ", ".join([po.name for po in pending_pos])
+				frappe.throw(
+					_("Please note that {0} has related Purchase Orders in different stages: {1} > Pending Approval, {2} > Approved. Cancellation of this RFP is not allowed while Approved POs exist. You must first cancel the Approved POs.").format(
+						self.name, other_list, approved_list
+					),
+					title=_("Cancellation Blocked – Mixed Purchase Order Stages Found"),
+					exc=frappe.ValidationError
+				)
+			else:
+				po_list = ", ".join([po.name for po in approved_pos])
+				frappe.throw(
+					_("Please note that {0} has related Purchase Orders ({1}) in Approved stage. To proceed, you must first cancel these Purchase Orders. Cancellation of this RFP is not allowed until all related POs are cancelled.").format(
+						self.name, po_list
+					),
+					title=_("RFP Cancellation blocked. Approved Purchase Order found."),
+					exc=frappe.ValidationError
+				)
 
-		if approved_pos and pending_pos:
-			approved_list = ", ".join([po.name for po in approved_pos])
-			pending_list = ", ".join([po.name for po in pending_pos])
-			frappe.throw(
-				_("Please note that {0} has related Purchase Orders in different stages: {1} > Pending Approval, {2} > Approved. Cancellation of this RFP is not allowed while Approved POs exist. You must first cancel the Approved POs.").format(
-					self.name, pending_list, approved_list
-				),
-				title=_("Cancellation Blocked – Mixed Purchase Order Stages Found"),
-				exc=frappe.ValidationError
-			)
-		elif approved_pos:
-			po_list = ", ".join([po.name for po in approved_pos])
-			frappe.throw(
-				_("Please note that {0} has related Purchase Orders ({1}) in Approved stage. To proceed, you must first cancel these Purchase Orders. Cancellation of this RFP is not allowed until all related POs are cancelled.").format(
-					self.name, po_list
-				),
-				title=_("RFP Cancellation blocked. Approved Purchase Order found."),
-				exc=frappe.ValidationError
-			)
+		elif draft_pos and pending_pos:
+			all_draft_pending = draft_pos + pending_pos
+			self.delete_related_pos(all_draft_pending)
+
+		elif draft_pos:
+			self.delete_related_pos(draft_pos)
+
 		elif pending_pos:
 			self.delete_related_pos(pending_pos)
-
 
 	def delete_related_pos(self, related_pos):
 		for po in related_pos:
@@ -146,7 +219,7 @@ class RequestforPurchase(Document):
 
 
 @frappe.whitelist()
-def check_related_pos_before_cancel_endpoint(doc):
+def check_related_pos_before_cancel(doc):
     doc_dict = json.loads(doc)
     
     approved_pos = frappe.db.get_list('Purchase Order', {
@@ -155,31 +228,58 @@ def check_related_pos_before_cancel_endpoint(doc):
         'workflow_state': 'Approved'
     }, ['name'])
     
+    draft_pos = frappe.db.get_list('Purchase Order', {
+        'one_fm_request_for_purchase': doc_dict.get('name'),
+        'docstatus': ['in', [0, 1]],
+        'workflow_state': 'Draft'
+    }, ['name'])
+    
     pending_pos = frappe.db.get_list('Purchase Order', {
         'one_fm_request_for_purchase': doc_dict.get('name'),
         'docstatus': ['in', [0, 1]],
         'workflow_state': ['in', ['Pending Purchase Manager', 'Pending Finance Approver']]
     }, ['name', 'workflow_state'])
     
-    if approved_pos and pending_pos:
-        approved_list = ", ".join([po.name for po in approved_pos])
-        pending_list = ", ".join([po.name for po in pending_pos])
+    if approved_pos:
+        all_other_pos = draft_pos + pending_pos
+        if all_other_pos:
+            approved_list = ", ".join([po.name for po in approved_pos])
+            other_list = ", ".join([po.name for po in all_other_pos])
+            return {
+                'error': True,
+                'type': 'mixed',
+                'title': 'Cancellation Blocked – Mixed Purchase Order Stages Found',
+                'message': f"Please note that {doc_dict.get('name')} has related Purchase Orders in different stages: {other_list} > Pending Approval, {approved_list} > Approved. Cancellation of this RFP is not allowed while Approved POs exist. You must first cancel the Approved POs.",
+                'approved_list': approved_list,
+                'other_list': other_list
+            }
+        else:
+            po_list = ", ".join([po.name for po in approved_pos])
+            return {
+                'error': True,
+                'type': 'approved_only',
+                'title': 'RFP Cancellation blocked. Approved Purchase Order found.',
+                'message': f"Please note that {doc_dict.get('name')} has related Purchase Orders ({po_list}) in Approved stage. To proceed, you must first cancel these Purchase Orders. Cancellation of this RFP is not allowed until all related POs are cancelled.",
+                'approved_list': po_list
+            }
+    elif draft_pos and pending_pos:
+        all_draft_pending = draft_pos + pending_pos
+        po_list = ", ".join([po.name for po in all_draft_pending])
         return {
             'error': True,
-            'type': 'mixed',
-            'title': 'Cancellation Blocked – Mixed Purchase Order Stages Found',
-            'message': f"Please note that {doc_dict.get('name')} has related Purchase Orders in different stages: {pending_list} > Pending Approval, {approved_list} > Approved. Cancellation of this RFP is not allowed while Approved POs exist. You must first cancel the Approved POs.",
-            'approved_list': approved_list,
-            'pending_list': pending_list
+            'type': 'draft_pending_confirmation',
+            'title': 'Purchase Order is in Pending Approval Stage',
+            'message': f"Please note that {doc_dict.get('name')} has related Purchase Orders ({po_list}) currently in Pending Approval stage. Cancelling this RFP will automatically delete these Purchase Orders. Do you want to proceed?",
+            'draft_pending_list': po_list
         }
-    elif approved_pos:
-        po_list = ", ".join([po.name for po in approved_pos])
+    elif draft_pos:
+        po_list = ", ".join([po.name for po in draft_pos])
         return {
             'error': True,
-            'type': 'approved_only',
-            'title': 'RFP Cancellation blocked. Approved Purchase Order found.',
-            'message': f"Please note that {doc_dict.get('name')} has related Purchase Orders ({po_list}) in Approved stage. To proceed, you must first cancel these Purchase Orders. Cancellation of this RFP is not allowed until all related POs are cancelled.",
-            'approved_list': po_list
+            'type': 'draft_confirmation',
+            'title': 'Purchase Order is in Pending Approval Stage',
+            'message': f"Please note that {doc_dict.get('name')} has related Purchase Orders ({po_list}) currently in Pending Approval stage. Cancelling this RFP will automatically delete these Purchase Orders. Do you want to proceed?",
+            'draft_list': po_list
         }
     
     return {'error': False}
@@ -241,35 +341,62 @@ def make_quotation_comparison_sheet(source_name, target_doc=None):
 
 def create_purchase_order(**args):
 	args = frappe._dict(args)
-	po_id = frappe.db.exists('Purchase Order',
-		{'one_fm_request_for_purchase': args.request_for_purchase, 'docstatus': ['<', 2], 'supplier': args.supplier}
+
+
+	rfp_item = frappe.db.get_value(
+		"Request for Purchase Quotation Item",
+		{
+			"parent": args.request_for_purchase,
+			"item_code": args.item_code
+		},
+		["qty", "ordered_qty", "pending_qty"],
+		as_dict=True
 	)
-	if po_id:
-		po = frappe.get_doc('Purchase Order', po_id)
-	else:
-		po = frappe.new_doc("Purchase Order")
-		po.transaction_date = nowdate()
-		po.set_warehouse = args.warehouse
-		po.quotation = args.quotation
-		po.supplier = args.supplier
-		po.is_subcontracted = args.is_subcontracted or "No"
-		po.conversion_factor = args.conversion_factor or 1
-		po.supplier_warehouse = args.supplier_warehouse or None
-		po.one_fm_request_for_purchase = args.request_for_purchase
-		po.is_subcontracted = False
+	
+	if not rfp_item:
+		frappe.throw(f"Item {args.item_code} not found in Request for Purchase {args.request_for_purchase}")
+	
+	available_qty = rfp_item.pending_qty or (rfp_item.qty - (rfp_item.ordered_qty or 0))
+	
+	if available_qty <= 0:
+		frappe.throw(f"No pending quantity available for item {args.item_code}. All quantities have been ordered.")
+	
+	po_qty = min(args.qty, available_qty)
+	
+	if po_qty != args.qty:
+		frappe.msgprint(f"Requested quantity {args.qty} reduced to available pending quantity {po_qty} for item {args.item_code}")
+	
+	po = frappe.new_doc("Purchase Order")
+	po.transaction_date = nowdate()
+	po.set_warehouse = args.warehouse
+	po.quotation = args.quotation
+	po.supplier = args.supplier
+	po.is_subcontracted = args.is_subcontracted or "No"
+	po.conversion_factor = args.conversion_factor or 1
+	po.supplier_warehouse = args.supplier_warehouse or None
+	po.one_fm_request_for_purchase = args.request_for_purchase
+	po.request_for_material = frappe.db.get_value(
+		"Request for Purchase",
+		args.request_for_purchase,
+		"request_for_material"
+	)
+	po.is_subcontracted = False
 
 	po.append("items", {
 		"item_code": args.item_code,
-		"item_name": args.item_name,
+		"item_name": args.get("item_name") or frappe.db.get_value("Item", args.item_code, "item_name"),
 		"description": args.description,
 		"uom": args.uom,
-		"qty": args.qty,
+		"qty": po_qty,
 		"rate": args.rate,
-		"amount": args.qty * args.rate,
+		"amount": po_qty * args.rate,
 		"schedule_date": getdate(args.delivery_date) if (args.delivery_date and getdate(nowdate()) < getdate(args.delivery_date)) else getdate(nowdate()),
 		"expected_delivery_date": args.delivery_date
 	})
+	
 	if not args.do_not_save:
 		po.save(ignore_permissions=True)
 		if not args.do_not_submit:
 			po.submit()
+	
+	return po

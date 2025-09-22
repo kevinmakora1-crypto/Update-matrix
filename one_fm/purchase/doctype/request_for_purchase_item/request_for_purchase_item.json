@@ -16,6 +16,7 @@
   "qty",
   "uom",
   "purchased_quantity",
+  "rfm_quantity",
   "col_break2",
   "schedule_date",
   "request_for_material",
@@ -118,7 +119,6 @@
    "label": "Request for Material Item Link",
    "no_copy": 1,
    "options": "Request for Material Item",
-   "permlevel": 0,
    "read_only": 1
   },
   {
@@ -156,13 +156,21 @@
    "no_copy": 1,
    "options": "Request for Material Item",
    "read_only": 1
+  },
+  {
+   "fetch_from": "custom_request_for_material_item.qty",
+   "fieldname": "rfm_quantity",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "RFM Quantity",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "istable": 1,
  "links": [],
- "modified": "2025-09-21 09:16:26.218400",
- "modified_by": "Administrator",
+ "modified": "2025-09-22 14:30:27.544983",
+ "modified_by": "c.akeru@one-fm.com",
  "module": "Purchase",
  "name": "Request for Purchase Item",
  "naming_rule": "Expression (old style)",

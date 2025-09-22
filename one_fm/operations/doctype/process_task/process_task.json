@@ -90,7 +90,7 @@
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Hours per Frequency",
-   "reqd": 1
+   "mandatory_depends_on": "frequency"
   },
   {
    "fieldname": "employee",
@@ -329,7 +329,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-17 00:32:27.075265",
+ "modified": "2025-09-22 14:35:27.075265",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process Task",

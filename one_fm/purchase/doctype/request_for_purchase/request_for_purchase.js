@@ -201,7 +201,6 @@ function show_mixed_po_blocking_dialog(frm, data, reject) {
                 fieldtype: 'HTML',
                 fieldname: 'message',
                 options: `<div class="alert alert-danger">
-                    <p><strong>Mixed Purchase Order Stages Detected:</strong></p>
                     <p>${data.message}</p>
                 </div>`
             }

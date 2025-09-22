@@ -115,6 +115,7 @@ career_history = Class.extend({
   on_change_still_working_on_same_company: function(company_no) {
     var me = this;
     $(".still_working_on_same_company_"+(company_no.toString())).on("change", function(){
+        console.log("Dropdown changed!", $(this).val());
       var still_working = $(".still_working_on_same_company_"+(company_no.toString())).val();
       $(".reason_why_leave_job_"+(company_no.toString())).remove();
       $(".factors_in_new_job_"+(company_no.toString())).remove();
@@ -129,8 +130,8 @@ career_history = Class.extend({
           <label class="form-label">What are the factors you are looking for in a new job?</label>
           <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text"></textarea>
         </div>`;
-        $(".company_"+(company_no.toString())).append(reason_why_leave_job_html);
-        $(".company_"+(company_no.toString())).append(factors_in_new_job);
+        $(".company_details_"+(company_no.toString())).append(reason_why_leave_job_html);
+        $(".company_details_"+(company_no.toString())).append(factors_in_new_job);
         me.show_final_interest_step(company_no.toString());
         $('.submit-btn').fadeIn();
       }
@@ -155,7 +156,7 @@ career_history = Class.extend({
         <option value="2">Yes</option>
       </select>
     </div>`
-    $(".company_"+(company_no.toString())).append(are_you_still_working_html);
+    $(".company_details_"+(company_no.toString())).append(are_you_still_working_html);
     this.on_change_are_you_still_working(company_no)
   },
   when_did_you_left_the_company: function(company_no) {
@@ -163,13 +164,14 @@ career_history = Class.extend({
       <label  class="form-label">When did you leave the company?<span style="color: red">*</span></label>
       <input type="date" class="form-control when_did_you_left_${company_no}_date"/>
     </div>`
-    $(".company_"+(company_no.toString())).append(when_did_you_left_the_company_html);
+    $(".company_details_"+(company_no.toString())).append(when_did_you_left_the_company_html);
   },
   on_change_are_you_still_working: function(company_no) {
     var me = this;
     $(`.are_you_still_working_${company_no}_select`).on("change", function(){
       var are_you_still_working = $(`.are_you_still_working_${company_no}_select`).val();
       $(".factors_in_new_job_"+(company_no.toString())).remove();
+      $(".shoves-tugs-block").remove();
       if(are_you_still_working == 2){
         $('.final-interest-section').remove();
         $('.submit-btn').fadeOut();
@@ -187,146 +189,150 @@ career_history = Class.extend({
           <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text"></textarea>
         </div>`;
         $('.next-btn').fadeOut();
-        $(".company_"+(company_no.toString())).append(factors_in_new_job);
+        $(".company_details_"+(company_no.toString())).append(factors_in_new_job);
+        $(".company_details_"+(company_no.toString())).append(get_shoves_tugs_html(company_no));
         $('.submit-btn').fadeIn();
         for (let i = company_no; i < TOTAL_COMPANY_NO; i++) {
           $(".company_"+((i+1).toString())).remove();
-
         }
         TOTAL_COMPANY_NO = company_no;
         me.show_final_interest_step(TOTAL_COMPANY_NO);
       }
     });
   },
-  
-show_final_interest_step: function(TOTAL_COMPANY_NO) {
-    // Remove existing sections to prevent duplicates if this function is called multiple times.
-    // Be cautious with this selector if 'final-interest-section' elements are meant to persist.
-    // If the table is part of what should be removed and re-added, this is fine.
-    $('.final-interest-section').remove();
+  show_final_interest_step: function(TOTAL_COMPANY_NO) {
+      // Remove existing sections to prevent duplicates if this function is called multiple times.
+      // Be cautious with this selector if 'final-interest-section' elements are meant to persist.
+      // If the table is part of what should be removed and re-added, this is fine.
+      $('.final-interest-section').remove();
 
-    var interestSection = $(`
-        <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
-            <div class="col-lg-12 col-md-12 mb-3">
-                <label class="form-label">Which career factors are most important to you?<span style="color: red">*</span></label>
-                <h6>Instructions for Candidate:</h6>
-                <ul style="font-size: smaller; font-weight: bold;">
-                    <li>Think about what really drives your career decisions.</li>
-                    <li>Please drag and drop the rows in the table below to rank the career factors from 1 (most important) to 7 (least important) based on what matters most to you.</li>
-                    <li>There are no right or wrong answers — your response helps us understand how to align the role with your career goals.</li>
-                </ul>
-                <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden sortable-table" name="rank_and_factors">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Factor</th>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                        </tr>
-                    </thead>
-                    <tbody id="sortableRows" class="divide-y divide-gray-200">
-                        <!-- Corrected: Each row needs its own <tr> tag -->
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">1</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Projects & Technology</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">A mix of more satisfying and engaging work</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">2</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Manager & Teams</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Working with the right types of people and leaders</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">3</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Compensation</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Total rewards including salary, benefits, and bonuses</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">4</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Continuing Growth Rate</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Long-term career advancement and opportunity</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">5</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Job Stretch & Learning</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Bigger challenges, scope, and learning potential</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">6</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Work/Life Balance</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Time and flexibility for personal life and well-being</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">7</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Company Mission & Values (optional addition)</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Alignment with your personal purpose and values</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
-            <div class="col-lg-12 col-md-12 mb-3">
-                <label class="form-label">What makes you interested in this opportunity?</label>
-                <textarea rows="4" cols="50"
-                    name="interest_reason"
-                    class="form-control what_make_your_interested_in_this_opportunity"
-                    required></textarea>
-            </div>
-        </div>
-    `);
+      var interestSection = $(`
+          <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
+              <div class="col-lg-12 col-md-12 mb-3">
+                  <label class="form-label">Which career factors are most important to you?<span style="color: red">*</span></label>
+                  <h6>Instructions for Candidate:</h6>
+                  <ul style="font-size: smaller; font-weight: bold;">
+                      <li>Think about what really drives your career decisions.</li>
+                      <li>Please drag and drop the rows in the table below to rank the career factors from 1 (most important) to 7 (least important) based on what matters most to you.</li>
+                      <li>There are no right or wrong answers — your response helps us understand how to align the role with your career goals.</li>
+                  </ul>
+                  <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden sortable-table" name="rank_and_factors">
+                      <thead class="bg-gray-50">
+                          <tr>
+                              <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                              <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Factor</th>
+                              <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                          </tr>
+                      </thead>
+                      <tbody id="sortableRows" class="divide-y divide-gray-200">
+                          <!-- Corrected: Each row needs its own <tr> tag -->
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">1</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Projects & Technology</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">A mix of more satisfying and engaging work</td>
+                          </tr>
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">2</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Manager & Teams</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Working with the right types of people and leaders</td>
+                          </tr>
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">3</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Compensation</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Total rewards including salary, benefits, and bonuses</td>
+                          </tr>
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">4</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Continuing Growth Rate</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Long-term career advancement and opportunity</td>
+                          </tr>
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">5</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Job Stretch & Learning</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Bigger challenges, scope, and learning potential</td>
+                          </tr>
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">6</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Work/Life Balance</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Time and flexibility for personal life and well-being</td>
+                          </tr>
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">7</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Company Mission & Values (optional addition)</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Alignment with your personal purpose and values</td>
+                          </tr>
+                      </tbody>
+                  </table>
+              </div>
+          </div>
+          <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
+              <div class="col-lg-12 col-md-12 mb-3">
+                  <label class="form-label">What makes you interested in this opportunity?</label>
+                  <textarea rows="4" cols="50"
+                      name="interest_reason"
+                      class="form-control what_make_your_interested_in_this_opportunity"
+                      required></textarea>
+              </div>
+          </div>
+      `);
 
-    // Append the new HTML content to the DOM
-    $('.section_' + (TOTAL_COMPANY_NO)).after(interestSection);
+      // Append the new HTML content to the DOM
+      $('.section_' + (TOTAL_COMPANY_NO)).after(interestSection);
 
-    // --- SortableJS Initialization (Corrected) ---
-    // Get the tbody element where the rows are located
-    const sortableList = document.getElementById('sortableRows');
+      // --- SortableJS Initialization (Corrected) ---
+      // Get the tbody element where the rows are located
+      const sortableList = document.getElementById('sortableRows');
 
-    // Check if the element exists before initializing SortableJS
-    if (sortableList) {
-        new Sortable(sortableList, {
-            animation: 150, // ms, animation speed moving items when sorting, `0` — no animation
-            ghostClass: 'sortable-ghost', // Class name for the drop placeholder
-            chosenClass: 'sortable-chosen', // Class name for the chosen item
-            dragClass: 'sortable-drag', // Class name for the dragging item
-            // handle: '.rank-cell', // Uncomment this if you only want to drag by the rank number cell
+      // Check if the element exists before initializing SortableJS
+      if (sortableList) {
+          new Sortable(sortableList, {
+              animation: 150, // ms, animation speed moving items when sorting, `0` — no animation
+              ghostClass: 'sortable-ghost', // Class name for the drop placeholder
+              chosenClass: 'sortable-chosen', // Class name for the chosen item
+              dragClass: 'sortable-drag', // Class name for the dragging item
+              // handle: '.rank-cell', // Uncomment this if you only want to drag by the rank number cell
 
-            // Callback when an item is dropped
-            onEnd: function (evt) {
-                console.log('Item moved:', evt.oldIndex, 'to', evt.newIndex);
-                updateRanks(); // Call function to re-assign ranks after sorting
-            }
-        });
+              // Callback when an item is dropped
+              onEnd: function (evt) {
+                  console.log('Item moved:', evt.oldIndex, 'to', evt.newIndex);
+                  updateRanks(); // Call function to re-assign ranks after sorting
+              }
+          });
 
-        // Function to update the rank numbers in the first column
-        function updateRanks() {
-            // Select all direct <tr> children of the sortable tbody
-            Array.from(sortableList.children).forEach(function(row, index) {
-                // Find the cell with the 'rank-cell' class and update its text content
-                const rankCell = row.querySelector('.rank-cell');
-                if (rankCell) {
-                    rankCell.textContent = index + 1;
-                }
-            });
-        }
-        updateRanks();
+          // Function to update the rank numbers in the first column
+          function updateRanks() {
+              // Select all direct <tr> children of the sortable tbody
+              Array.from(sortableList.children).forEach(function(row, index) {
+                  // Find the cell with the 'rank-cell' class and update its text content
+                  const rankCell = row.querySelector('.rank-cell');
+                  if (rankCell) {
+                      rankCell.textContent = index + 1;
+                  }
+              });
+          }
+          updateRanks();
 
-    } else {
-        console.error("Element with ID 'sortableRows' not found after appending. SortableJS not initialized.");
-    }
-    // --- END SortableJS Initialization ---
-},
-
+      } else {
+          console.error("Element with ID 'sortableRows' not found after appending. SortableJS not initialized.");
+      }
+      // --- END SortableJS Initialization ---
+  },
   create_company_section_html: function(company_no) {
     $('.main_section').delay(400).fadeIn();
     if(company_no>=2){
       $('.back-btn').fadeIn();
       this.back_career_history(company_no);
     }
-  var company_section_html = `
+    var company_section_html = `
     <div class="section_${company_no}">
-    <h3 class="mx-auto">Hello, {{job_applicant.applicant_name}}, tell us about the ${stringifyNumber(company_no)} company you worked for!</h3>
-    <div class="row mx-auto col-lg-12 col-md-12 mb-3 company_${company_no} border-top">
+      <h3 class="mx-auto">
+        Hello, {{job_applicant.applicant_name}}, tell us about the
+        ${stringifyNumber(company_no)} company you worked for!
+      </h3>
+
+      <div
+        class="row border-top"
+      >
         <div class="my-3 col-lg-12 col-md-12">
           <label class="form-label">Are you a Fresher or Experienced?</label>
           <select class="form-control fresher_experienced_select_${company_no}">
@@ -335,291 +341,14 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
             <option value="Experienced">Experienced</option>
           </select>
         </div>
-        <div class="my-3 col-lg-12 col-md-12">
-        <label class="form-label">What was the company's name? </label>
-        <input type="text" class="form-control company_${company_no}_name" placeholder="Enter the ${stringifyNumber(company_no)} Company Name"/>
-        </div>
-
-        <div class="my-3 col-lg-12 col-md-12">
-        <label class="form-label">Which country did you get employed in?</label> <br>
-          <select class="form-control country_of_company_${company_no}">
-          <option>Select Country</option>
-          {% for country in country_list %}
-          <option>{{country.name}}</option>
-          {% endfor %}
-        </select>
-        </div>
-        <div class="mb-3 col-lg-12 col-md-12">
-        <label class="form-label">When did you join the company?</label>
-        <input type="date" class="form-control joined_company${company_no}"/>
-        </div>
-
-        <div class="mb-3 col-lg-12 col-md-12">
-        <label class="form-label">What was your first salary at this company?</label>
-        <input type="text" class="form-control salary_company${company_no}" placeholder="Enter your Salary in KWD"/>
-        </div>
-
-      <div class="col-lg-12 col-md-12">
-        <hr class="my-5"/>
       </div>
 
-      <div class="mb-3 col-lg-12 col-md-12">
-        <label  class="form-label">What was your starting job title?</label>
-        <input type="text" class="form-control starting_job_title_company_${company_no}" placeholder="Enter the Job Title"/>
-      </div>
-
-
-     <div class="col-lg-12 col-md-12 mb-3">
-        <label class="form-label">What was your employment type?</label>
-        <select class="custom-select employment_type_company_${company_no}">
-        <option value="" disabled selected>Select Employment Type</option>
-          {% for type in employment_type_list %}
-          <option value="{{ type }}">{{ type }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-
-
-      <div class="mb-3 col-lg-12 col-md-12">
-        <label class="form-label">Briefly describe your responsibilities in this role</label>
-        <textarea class="form-control responsibilities_company_${company_no}" rows="4" placeholder="E.g. Managed a team of 5, handled client reports, etc."></textarea>
-      </div>
-
-
-      <div class="mt-5 promotion_section_${company_no}" style="width: 100%">
-
-      </div>
-
-      <div class="col-lg-12 col-md-12 mb-3">
-        <label>Tell us about contact person details from ${stringifyNumber(company_no)} company you worked!</label>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Full name</label>
-        <input type="text" class="form-control first_contact_name_${company_no}" placeholder="Full Name"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Email</label>
-        <input type="text" class="form-control first_contact_email_${company_no}" placeholder="Email"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Designation</label>
-        <input type="text" class="form-control first_contact_designation_${company_no}" placeholder="Designation"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Phone number with country code</label>
-        <input type="text" class="form-control first_contact_phone_${company_no}" placeholder="Phone number with country code"/>
-      </div>
-      <div class="col-lg-12 col-md-12 mb-3 add_more_contact_${company_no}">
-        <button class="btn btn-dark float-left btn_add_more_contact_${company_no}" type="button">{{ _(" + Add more contact person") }}</button>
-      </div>
-      <div class="col-lg-12 col-md-12 mb-3">
-        <label>Tell us some details about your best boss from ${stringifyNumber(company_no)} company you worked</label>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Full name</label>
-        <input type="text" class="form-control best_boss_name_${company_no}" placeholder="Full Name"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Email</label>
-        <input type="text" class="form-control best_boss_email_${company_no}" placeholder="Email"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Phone number with country code</label>
-        <input type="text" class="form-control best_boss_phone_${company_no}" placeholder="Phone number with country code"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Why is He/She the best?</label>
-        <input type="text" class="form-control why_best_boss${company_no}" placeholder="Why is he/she the best?"/>
-      </div>
-
-       <div class="col-lg-12 col-md-12 mb-3 mt-5" style="width: 100%">
-        <label> Tell us some details about your best colleague from ${stringifyNumber(company_no)} company you worked</label>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Full name</label>
-        <input type="text" class="form-control best_colleague_name_${company_no}" placeholder="Full Name"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Email</label>
-        <input type="text" class="form-control best_colleague_email_${company_no}" placeholder="Email"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Phone number with country code</label>
-        <input type="text" class="form-control best_colleague_phone_${company_no}" placeholder="Phone number with country code"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Why is He/She the best?</label>
-        <input type="text" class="form-control why_best_colleague${company_no}" placeholder="Why is he/she the best?"/>
-      </div>
-      <div class="col-lg-12 col-md-12 mb-3">
-        <label>Are you still working for the same company?</label>
-        <select class="custom-select still_working_on_same_company_${company_no}">
-        <option value="0">Choose</option>
-        <option value="1">Yes</option>
-        <option value="2">No</option>
-        </select>
-      </div>
-  </div>
-
-  </div>`;
+      <div class="row company_details_${company_no}"></div>
+    </div>
+    `;
     $(".main_section").append(company_section_html);
     TOTAL_COMPANY_NO += 1;
-    this.set_promotion_section_html(company_no, 1);
-    this.on_change_still_working_on_same_company(company_no);
-    this.on_click_add_more_contact_person(company_no);
-
-    // Add logic to show/hide tags based on Fresher/Experienced selection
-    $(`.fresher_experienced_select_${company_no}`).on('change', function() {
-      var selected = $(this).val();
-      var companyRow = $(`.company_${company_no}`);
-      if (!selected) {
-        // Hide all fields except the fresher/experienced selector
-        companyRow.children().hide();
-        companyRow.children().first().show();
-        companyRow.find('.learning-journey-block').hide();
-        $('.final-interest-section').hide();
-      } else if (selected === 'Fresher') {
-        // Hide all fields except the fresher/experienced selector
-        companyRow.children().hide();
-        companyRow.children().first().show();
-        // Insert Learning and Development Journey heading and Activity type select if not already present
-        if (companyRow.find('.learning-journey-block').length === 0) {
-          var learningHtml = `
-            <div class="learning-journey-block my-3 col-lg-12 col-md-12">
-              <h6 class="learning-journey-heading mb-3">Learning and Development Journey</h6>
-              <div class="learning-journey-items"></div>
-              <div class="add-another-ldj-block mb-3" style="display:none">
-                <label class="form-label">Add another Learning and Development Journey?</label>
-                <select class="form-control add_another_ldj_select_${company_no}">
-                  <option value="" selected disabled>Select</option>
-                  <option value="Yes">Yes</option>
-                  <option value="No">No</option>
-                </select>
-              </div>
-              <div class="shoves-tugs-block" style="display:none">
-                <div class="mb-3">
-                  <label class="form-label">Shoves</label>
-                  <textarea class="form-control shoves_input_${company_no}" rows="2" placeholder="Describe your shoves..."></textarea>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Tugs</label>
-                  <textarea class="form-control tugs_input_${company_no}" rows="2" placeholder="Describe your tugs..."></textarea>
-                </div>
-              </div>
-            </div>`;
-          companyRow.children().first().after(learningHtml);
-          // Helper to add a new Activity Type selector and questions
-          function addLearningJourneyItem(ldjIndex) {
-            var $items = companyRow.find('.learning-journey-items');
-            var $ldj = $(`
-              <div class="ldj-item mb-3" data-ldj-index="${ldjIndex}">
-                <div class="mb-3">
-                  <label class="form-label">Activity type</label>
-                  <select class="form-control activity_type_select_${company_no}_${ldjIndex}">
-                    <option value="" selected>None</option>
-                  </select>
-                </div>
-                <div class="assessment-questions-block"></div>
-              </div>
-            `);
-            $items.append($ldj);
-
-            // Fetch Experience Type options from backend
-            frappe.call({
-              method: 'frappe.client.get_list',
-              args: {
-                doctype: 'Experience Type',
-                fields: ['name'],
-                limit_page_length: 100
-              },
-              callback: function(r) {
-                var $select = $ldj.find(`.activity_type_select_${company_no}_${ldjIndex}`);
-                $select.empty();
-                $select.append('<option value="" selected>None</option>');
-                if (r.message && r.message.length) {
-                  r.message.forEach(function(row) {
-                    var label = row.name;
-                    $select.append(`<option value="${label}">${label}</option>`);
-                  });
-                } else {
-                  $select.append('<option value="" disabled>No options found</option>');
-                }
-              }
-            });
-
-            // Add change handler to fetch and show questions for selected activity type
-            $ldj.on('change', `.activity_type_select_${company_no}_${ldjIndex}`, function() {
-              var selectedType = $(this).val();
-              var $questionsBlock = $ldj.find('.assessment-questions-block');
-              $questionsBlock.empty();
-              if (!selectedType) return;
-              frappe.call({
-                method: 'frappe.client.get',
-                args: {
-                  doctype: 'Experience Type',
-                  name: selectedType
-                },
-                callback: function(res) {
-                  if (res.message && res.message.assessment_questions && res.message.assessment_questions.length) {
-                    res.message.assessment_questions.forEach(function(q, idx) {
-                      var qHtml = `
-                        <div class="mb-3">
-                          <label class="form-label">${q.experience_type_question || 'Question ' + (idx+1)}</label>
-                          <textarea class="form-control activity_type_question_${company_no}_${ldjIndex}_${idx+1}" rows="2" placeholder="Your answer..."></textarea>
-                        </div>
-                      `;
-                      $questionsBlock.append(qHtml);
-                    });
-                  } else {
-                    $questionsBlock.append('<div class="text-muted">No questions found for this activity type.</div>');
-                  }
-                }
-              });
-            });
-          }
-
-          // Add the first Learning Journey item
-          var ldjCount = 1;
-          addLearningJourneyItem(ldjCount);
-          companyRow.find('.add-another-ldj-block').hide();
-          companyRow.find('.shoves-tugs-block').hide();
-
-          // Handler for Add another Learning and Development Journey?
-          companyRow.on('change', `.add_another_ldj_select_${company_no}`, function() {
-            var val = $(this).val();
-            if (val === 'Yes') {
-              ldjCount++;
-              addLearningJourneyItem(ldjCount);
-              companyRow.find('.shoves-tugs-block').hide();
-              companyRow.find('.add-another-ldj-block').hide(); // Hide until next Activity type is selected
-            } else if (val === 'No') {
-              companyRow.find('.shoves-tugs-block').show();
-            } else {
-              companyRow.find('.shoves-tugs-block').hide();
-            }
-          });
-
-          // Show 'Add another Learning and Development Journey?' only after Activity type is selected
-          companyRow.on('change', `.activity_type_select_${company_no}_1`, function() {
-            var selectedType = $(this).val();
-            if (selectedType) {
-              companyRow.find('.add-another-ldj-block').show();
-            } else {
-              companyRow.find('.add-another-ldj-block').hide();
-            }
-          });
-        } else {
-          companyRow.find('.learning-journey-block').show();
-        }
-        $('.final-interest-section').hide();
-      } else if (selected === 'Experienced') {
-        // Show all fields except fresher-specific fields
-        companyRow.children().show();
-        companyRow.find('.learning-journey-block').hide();
-        $('.final-interest-section').show();
-      }
-    });
+    this.on_change_experience_type(company_no);
   },
   on_click_add_more_contact_person: function(company_no) {
     var company_contact_html = `
@@ -639,7 +368,7 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
         <label>What is the phone number of the second contact person?</label>
         <input type="text" class="form-control second_contact_phone_${company_no}" placeholder="Phone number with country code"/>
       </div>
-    `;
+    `
     $(`.btn_add_more_contact_${company_no}`).click(function(){
       $(`.btn_add_more_contact_${company_no}`).fadeOut();
       $(company_contact_html).insertAfter(`.add_more_contact_${company_no}`);
@@ -667,178 +396,34 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
       $(`.section_${company_no}`).fadeOut();
       $(`.section_${company_no-1}`).fadeIn();
       $('.next-btn').fadeIn();
-        $('.main_section').delay(400).fadeIn();
-        if(company_no>=2){
-          $('.back-btn').fadeIn();
-          this.back_career_history(company_no);
-        }
-        var company_section_html = `
-        <div class="section_${company_no}">
-        <h3 class="mx-auto">Hello, {{job_applicant.applicant_name}}, tell us about the ${stringifyNumber(company_no)} company you worked for!</h3>
-        <div class="row mx-auto col-lg-12 col-md-12 mb-3 company_${company_no} border-top">
-            <div class="my-3 col-lg-12 col-md-12">
-              <label class="form-label">Are you a Fresher or Experienced?</label>
-              <select class="form-control fresher_experienced_select_${company_no}">
-                <option value="" disabled selected>Select</option>
-                <option value="Fresher">Fresher</option>
-                <option value="Experienced">Experienced</option>
-              </select>
-            </div>
-            <div class="my-3 col-lg-12 col-md-12">
-            <label class="form-label">What was the company's name? </label>
-            <input type="text" class="form-control company_${company_no}_name" placeholder="Enter the ${stringifyNumber(company_no)} Company Name"/>
-            </div>
-
-            <div class="my-3 col-lg-12 col-md-12">
-            <label class="form-label">Which country did you get employed in?</label> <br>
-              <select class="form-control country_of_company_${company_no}">
-              <option>Select Country</option>
-              {% for country in country_list %}
-              <option>{{country.name}}</option>
-              {% endfor %}
-            </select>
-            </div>
-            <div class="mb-3 col-lg-12 col-md-12">
-            <label class="form-label">When did you join the company?</label>
-            <input type="date" class="form-control joined_company${company_no}"/>
-            </div>
-
-            <div class="mb-3 col-lg-12 col-md-12">
-            <label class="form-label">What was your first salary at this company?</label>
-            <input type="text" class="form-control salary_company${company_no}" placeholder="Enter your Salary in KWD"/>
-            </div>
-
-          <div class="col-lg-12 col-md-12">
-            <hr class="my-5"/>
-          </div>
-
-          <div class="mb-3 col-lg-12 col-md-12">
-            <label  class="form-label">What was your starting job title?</label>
-            <input type="text" class="form-control starting_job_title_company_${company_no}" placeholder="Enter the Job Title"/>
-          </div>
-
-
-         <div class="col-lg-12 col-md-12 mb-3">
-            <label class="form-label">What was your employment type?</label>
-            <select class="custom-select employment_type_company_${company_no}">
-            <option value="" disabled selected>Select Employment Type</option>
-              {% for type in employment_type_list %}
-              <option value="{{ type }}">{{ type }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-
-          <div class="mb-3 col-lg-12 col-md-12">
-            <label class="form-label">Briefly describe your responsibilities in this role</label>
-            <textarea class="form-control responsibilities_company_${company_no}" rows="4" placeholder="E.g. Managed a team of 5, handled client reports, etc."></textarea>
-          </div>
-
-
-          <div class="mt-5 promotion_section_${company_no}" style="width: 100%">
-
-          </div>
-
-          <div class="col-lg-12 col-md-12 mb-3">
-            <label>Tell us about contact person details from ${stringifyNumber(company_no)} company you worked!</label>
-          </div>
-          <div class="col-lg-6 col-md-6 mb-3">
-            <label>Full name</label>
-            <input type="text" class="form-control first_contact_name_${company_no}" placeholder="Full Name"/>
-          </div>
-          <div class="col-lg-6 col-md-6 mb-3">
-            <label>Email</label>
-            <input type="text" class="form-control first_contact_email_${company_no}" placeholder="Email"/>
-          </div>
-          <div class="col-lg-6 col-md-6 mb-3">
-            <label>Designation</label>
-            <input type="text" class="form-control first_contact_designation_${company_no}" placeholder="Designation"/>
-          </div>
-          <div class="col-lg-6 col-md-6 mb-3">
-            <label>Phone number with country code</label>
-            <input type="text" class="form-control first_contact_phone_${company_no}" placeholder="Phone number with country code"/>
-          </div>
-          <div class="col-lg-12 col-md-12 mb-3 add_more_contact_${company_no}">
-            <button class="btn btn-dark float-left btn_add_more_contact_${company_no}" type="button">{{ _(" + Add more contact person") }}</button>
-          </div>
-          <div class="col-lg-12 col-md-12 mb-3">
-            <label>Tell us some details about your best boss from ${stringifyNumber(company_no)} company you worked</label>
-          </div>
-          <div class="col-lg-6 col-md-6 mb-3">
-            <label>Full name</label>
-            <input type="text" class="form-control best_boss_name_${company_no}" placeholder="Full Name"/>
-          </div>
-          <div class="col-lg-6 col-md-6 mb-3">
-            <label>Email</label>
-            <input type="text" class="form-control best_boss_email_${company_no}" placeholder="Email"/>
-          </div>
-          <div class="col-lg-6 col-md-6 mb-3">
-            <label>Phone number with country code</label>
-            <input type="text" class="form-control best_boss_phone_${company_no}" placeholder="Phone number with country code"/>
-          </div>
-          <div class="col-lg-6 col-md-6 mb-3">
-            <label>Why is He/She the best?</label>
-            <input type="text" class="form-control why_best_boss${company_no}" placeholder="Why is he/she the best?"/>
-          </div>
-
-           <div class="col-lg-12 col-md-12 mb-3 mt-5" style="width: 100%">
-            <label> Tell us some details about your best colleague from ${stringifyNumber(company_no)} company you worked</label>
-          </div>
-          <div class="col-lg-6 col-md-6 mb-3">
-            <label>Full name</label>
-            <input type="text" class="form-control best_colleague_name_${company_no}" placeholder="Full Name"/>
-          </div>
-          <div class="col-lg-6 col-md-6 mb-3">
-            <label>Email</label>
-            <input type="text" class="form-control best_colleague_email_${company_no}" placeholder="Email"/>
-          </div>
-          <div class="col-lg-6 col-md-6 mb-3">
-            <label>Phone number with country code</label>
-            <input type="text" class="form-control best_colleague_phone_${company_no}" placeholder="Phone number with country code"/>
-          </div>
-          <div class="col-lg-6 col-md-6 mb-3">
-            <label>Why is He/She the best?</label>
-            <input type="text" class="form-control why_best_colleague${company_no}" placeholder="Why is he/she the best?"/>
-          </div>
-          <div class="col-lg-12 col-md-12 mb-3">
-            <label>Are you still working for the same company?</label>
-            <select class="custom-select still_working_on_same_company_${company_no}">
-            <option value="0">Choose</option>
-            <option value="1">Yes</option>
-            <option value="2">No</option>
-            </select>
-          </div>
-      </div>
-      </div>`;
       me.next_career_history(company_no);
     });
   },
   // Function to get the current order of factors from the sortable table
-  getRankedFactorsData: function() {
-    const rankedFactors = [];
-    const sortableList = document.getElementById('sortableRows'); // Get the tbody by its ID
+  getRankedFactorsData:function() {
+      const rankedFactors = [];
+      const sortableList = document.getElementById('sortableRows'); // Get the tbody by its ID
 
-    if (sortableList) {
-        // Iterate over each table row (<tr>) directly within the sortable tbody
-        Array.from(sortableList.children).forEach(function(row, index) {
-            // Find the cells containing the factor and description.
-            // Based on your HTML: <td>Rank</td> <td>Factor</td> <td>Description</td>
-            const factorCell = row.children[1]; // Second td for Factor
-            const descriptionCell = row.children[2]; // Third td for Description
+      if (sortableList) {
+          // Iterate over each table row (<tr>) directly within the sortable tbody
+          Array.from(sortableList.children).forEach(function(row, index) {
+              // Find the cells containing the factor and description.
+              // Based on your HTML: <td>Rank</td> <td>Factor</td> <td>Description</td>
+              const factorCell = row.children[1]; // Second td for Factor
+              const descriptionCell = row.children[2]; // Third td for Description
 
-            if (factorCell && descriptionCell) {
-                rankedFactors.push({
-                    // The rank is simply its current index + 1 in the reordered list
-                    rank: index + 1,
-                    factor: factorCell.textContent.trim(),
-                    description: descriptionCell.textContent.trim()
-                });
-            }
-        });
-    }
-    return rankedFactors;
+              if (factorCell && descriptionCell) {
+                  rankedFactors.push({
+                      // The rank is simply its current index + 1 in the reordered list
+                      rank: index + 1,
+                      factor: factorCell.textContent.trim(),
+                      description: descriptionCell.textContent.trim()
+                  });
+              }
+          });
+      }
+      return rankedFactors;
   },
-
   submit_career_history: function() {
     // Submit Career History
     var me = this;
@@ -854,9 +439,6 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
             return frappe.msgprint(frappe._("Please drag and rank the factors according to your preference before submitting."));
         }
       var all_best_references = me.get_all_best_references();
-      if(!validateBestReferencesAndColleague(all_best_references)){
-        return frappe.msgprint(frappe._("Kindly fill the best reference for the most recent job"));
-      }
 
       if(!validateResponsibilities(career_histories)){
         return frappe.msgprint(frappe._("Kindly fill the responsibility for the most recent job"));
@@ -999,8 +581,242 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
     let jobstretch_and_learning = $('[name="jobstretch_and_learning"]').val();
     let work_life_balance = $('[name="work_life_balance"]').val();
     return {career_histories, interest_reason,project_and_technology, manager_and_team,compensation,continuing_growth_rate,jobstretch_and_learning,work_life_balance};
+  },
+  on_change_experience_type: function (company_no) {
+    const me = this;
+    $(`.fresher_experienced_select_${company_no}`).on('change', function() {
+      const selectedExperienceType = $(this).val();
+      const companyDetailsElement = $(`.company_details_${company_no}`);
+      if (selectedExperienceType === 'Fresher') {
+         $('.next-btn').remove();
+        const fresherDetailsHTML = `
+        <div class="learning-journey-block my-3 col-lg-12 col-md-12">
+          <h6 class="learning-journey-heading">
+            Learning and Development Journey
+          </h6>
+          <div class="learning-journey-items mb-5"></div>
+          <button class="btn btn-primary mb-3 add-learning-and-development-journey">Add Learning and Development Journey</button>
+          ${get_shoves_tugs_html(company_no)}
+        </div>
+        `;
+        companyDetailsElement.html(fresherDetailsHTML);
+        me.on_click_add_learning_and_development_journey(company_no);
+        me.show_final_interest_step(company_no); // Reuse for Freshers
+          // Show submit button by default for Fresher
+          $('.submit-btn').fadeIn();
+      } else if (selectedExperienceType === 'Experienced') {
+        $('.final-interest-section').remove();
+        $('.submit-btn').fadeOut();
+        const experienceDetailsHTML = `
+        <div class="my-3 col-lg-12 col-md-12">
+          <label class="form-label">What was the company's name? </label>
+          <input
+            type="text"
+            class="form-control company_${company_no}_name"
+            placeholder="Enter the ${stringifyNumber(company_no)} Company Name"
+          />
+        </div>
+        <div class="my-3 col-lg-12 col-md-12">
+          <label class="form-label">Which country did you get employed in?</label>
+          <br />
+          <select class="form-control country_of_company_${company_no}">
+            <option>Select Country</option>
+          </select>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12">
+          <label class="form-label">When did you join the company?</label>
+          <input type="date" class="form-control joined_company${company_no}" />
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12">
+          <label class="form-label">What was your first salary at this company?</label>
+          <input
+            type="text"
+            class="form-control salary_company${company_no}"
+            placeholder="Enter your Salary in KWD"
+          />
+        </div>
+        <div class="col-lg-12 col-md-12">
+          <hr class="my-5" />
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12">
+          <label class="form-label">What was your starting job title?</label>
+          <input
+            type="text"
+            class="form-control starting_job_title_company_${company_no}"
+            placeholder="Enter the Job Title"
+          />
+        </div>
+        <div class="col-lg-12 col-md-12 mb-3">
+          <label class="form-label">What was your employment type?</label>
+          <select class="custom-select employment_type_company_${company_no}">
+            <option value="" disabled selected>Select Employment Type</option>
+          </select>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12">
+          <label class="form-label"
+            >Briefly describe your responsibilities in this role</label>
+          <textarea
+            class="form-control responsibilities_company_${company_no}"
+            rows="4"
+            placeholder="E.g. Managed a team of 5, handled client reports, etc."
+          ></textarea>
+        </div>
+        <div class="mt-5 promotion_section_${company_no}" style="width: 100%"></div>
+        <div class="col-lg-12 col-md-12 mb-3">
+          <label>Tell us about contact person details from ${stringifyNumber(company_no)} company you worked!</label>
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Full name</label>
+          <input type="text" class="form-control first_contact_name_${company_no}" placeholder="Full Name" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Email</label>
+          <input type="text" class="form-control first_contact_email_${company_no}" placeholder="Email" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Designation</label>
+          <input type="text" class="form-control first_contact_designation_${company_no}" placeholder="Designation" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Phone number with country code</label>
+          <input type="text" class="form-control first_contact_phone_${company_no}" placeholder="Phone number with country code" />
+        </div>
+        <div class="col-lg-12 col-md-12 mb-3 add_more_contact_${company_no}">
+          <button class="btn btn-dark float-left btn_add_more_contact_${company_no}" type="button">+ Add more contact person</button>
+        </div>
+        <div class="col-lg-12 col-md-12 mb-3">
+          <label>Tell us some details about your best boss from ${stringifyNumber(company_no)} company you worked</label>
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Full name</label>
+          <input type="text" class="form-control best_boss_name_${company_no}" placeholder="Full Name" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Email</label>
+          <input type="text" class="form-control best_boss_email_${company_no}" placeholder="Email" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Phone number with country code</label>
+          <input type="text" class="form-control best_boss_phone_${company_no}" placeholder="Phone number with country code" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Why is He/She the best?</label>
+          <input type="text" class="form-control why_best_boss${company_no}" placeholder="Why is he/she the best?" />
+        </div>
+        <div class="col-lg-12 col-md-12 mb-3 mt-5" style="width: 100%">
+          <label>Tell us some details about your best colleague from ${stringifyNumber(company_no)} company you worked</label>
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Full name</label>
+          <input type="text" class="form-control best_colleague_name_${company_no}" placeholder="Full Name" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Email</label>
+          <input type="text" class="form-control best_colleague_email_${company_no}" placeholder="Email" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Phone number with country code</label>
+          <input type="text" class="form-control best_colleague_phone_${company_no}" placeholder="Phone number with country code" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Why is He/She the best?</label>
+          <input type="text" class="form-control why_best_colleague${company_no}" placeholder="Why is he/she the best?" />
+        </div>
+        <div class="col-lg-12 col-md-12 mb-3">
+          <label>Are you still working for the same company?</label>
+          <select class="custom-select still_working_on_same_company_${company_no}">
+            <option value="0">Choose</option>
+            <option value="1">Yes</option>
+            <option value="2">No</option>
+          </select>
+        </div>
+        `;
+        companyDetailsElement.html(experienceDetailsHTML);
+        me.set_promotion_section_html(company_no, 1);
+        me.on_change_still_working_on_same_company(company_no);
+        me.on_click_add_more_contact_person(company_no);
+      }
+    })
+  },
+  on_click_add_learning_and_development_journey: function(company_no) {
+    const me = this;
+    let activityTypes = [];
+
+    // Fetch activity types from the server
+    frappe.call({
+      method: "frappe.client.get_list",
+      args: {
+        doctype: "Experience Type",
+        limit_page_length: 100,
+      },
+      callback: function (r) {
+        activityTypes = r.message;
+      },
+    });
+
+    $(`.add-learning-and-development-journey`).click(function(e) {
+      e.preventDefault();
+
+      const learningJourneyItemsContainer = $(`.learning-journey-items`);
+      const currentItemCount = learningJourneyItemsContainer.children().length;
+
+      // If more than 1 journey items are added then no need for showes and tugs
+      if (currentItemCount >= 1) {
+        $(`.shoves-tugs-block`).fadeOut();
+      }
+
+      const learningJourneyItem = `
+        <div class="learning-journey-item mb-3" data-item-index="${currentItemCount + 1}">
+          <div class="mb-3">
+            <label class="form-label">Activity type</label>
+            <select class="form-control activity_type_select_${company_no}_${currentItemCount + 1}">
+              <option value="" selected disabled>None</option>
+              ${activityTypes.map(type => `<option value="${type.name}">${type.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="assessment-questions"></div>
+        </div>
+      `;
+
+      learningJourneyItemsContainer.append(learningJourneyItem);
+
+      me.on_change_learning_and_development_journey_activity_type(company_no, currentItemCount + 1);
+    })
+  },
+  on_change_learning_and_development_journey_activity_type: function(company_no, item_no) {
+    $(`.activity_type_select_${company_no}_${item_no}`).on('change', function() {
+      const selectedActivityType = $(this).val();
+      
+      if (selectedActivityType) {
+        frappe.call({
+          method: "frappe.client.get",
+          args: {
+            doctype: "Experience Type",
+            name: selectedActivityType
+          },
+          callback: function(r) {
+            const assessmentQuestions = r.message.assessment_questions || [];
+            const questionsContainer = $(`.activity_type_select_${company_no}_${item_no}`).closest('.learning-journey-item').find('.assessment-questions');
+            
+            let questionsHTML = '';
+            assessmentQuestions.forEach((question, index) => {
+              questionsHTML += `
+                <div class="mb-3">
+                  <label class="form-label">${question.experience_type_question}</label>
+                  <textarea class="form-control assessment_question_${company_no}_${item_no}_${index + 1}" rows="2" placeholder="Your answer..."></textarea>
+                </div>
+              `;
+            });
+
+            questionsContainer.html(questionsHTML);
+          }
+        });
+      }
+    });
   }
 });
+
+
 
 function stringifyNumber(n) {
   var special = ['Zeroth', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth', 'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth', 'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth'];
@@ -1026,7 +842,24 @@ function validateEndDate(data){
   return !data;
 }
 
-function validateBestReferencesAndColleague(data) {
-  // Best reference is now non-mandatory
-  return true;
-  }
+// Helper to generate Shoves and Tugs block HTML
+function get_shoves_tugs_html(company_no) {
+  return `<div class="shoves-tugs-block my-3 col-lg-12 col-md-12">
+    <div class="mb-3">
+      <label class="form-label">Shoves</label>
+      <textarea
+        class="form-control shoves_input_${company_no}"
+        rows="2"
+        placeholder="Describe your shoves..."
+      ></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Tugs</label>
+      <textarea
+        class="form-control tugs_input_${company_no}"
+        rows="2"
+        placeholder="Describe your tugs..."
+      ></textarea>
+    </div>
+  </div>`;
+}

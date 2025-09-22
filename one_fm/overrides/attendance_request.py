@@ -88,35 +88,14 @@ class AttendanceRequestOverride(AttendanceRequest):
 			shift_assignment = self.get_shift_assignment(attendance_date)
 			working_hours = frappe.db.get_value('Shift Type', shift_assignment.shift_type, 'duration')  if shift_assignment  else 8
 			# check if attendance exists
-			attendance_name = super(AttendanceRequestOverride, self).get_attendance_record(attendance_date)
+			attendance_name = self.get_attendance_doc(attendance_date)
 			status = "Present" if self.reason == "On Duty" else "Work From Home"
 			if attendance_name:
 				# update existing attendance, change the status
-				doc = frappe.get_doc("Attendance", attendance_name)
+				doc = frappe.get_doc("Attendance", attendance_name.name)
 				old_status = doc.status
 
-				if old_status != 'Present':
-					doc.db_set({
-						"status": status,
-						"attendance_request": self.name,
-						"working_hours": working_hours,
-						"reference_doctype":"Attendance Request",
-						"reference_docname":self.name})
-					text = _("Changed the status from {0} to {1} via Attendance Request").format(
-						frappe.bold(old_status), frappe.bold(status)
-					)
-					doc.add_comment(comment_type="Info", text=text)
-
-					frappe.msgprint(
-						_("Updated status from {0} to {1} for date {2} in the attendance record {3}").format(
-							frappe.bold(old_status),
-							frappe.bold(status),
-							frappe.bold(format_date(attendance_date)),
-							get_link_to_form("Attendance", doc.name),
-						),
-						title=_("Attendance Updated"),
-					)
-				elif old_status == 'Present' and status == "Work From Home":
+				if old_status != status:
 					doc.db_set({
 						"status": status,
 						"attendance_request": self.name,

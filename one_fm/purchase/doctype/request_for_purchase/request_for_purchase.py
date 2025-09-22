@@ -241,35 +241,62 @@ def make_quotation_comparison_sheet(source_name, target_doc=None):
 
 def create_purchase_order(**args):
 	args = frappe._dict(args)
-	po_id = frappe.db.exists('Purchase Order',
-		{'one_fm_request_for_purchase': args.request_for_purchase, 'docstatus': ['<', 2], 'supplier': args.supplier}
+
+
+	rfp_item = frappe.db.get_value(
+		"Request for Purchase Quotation Item",
+		{
+			"parent": args.request_for_purchase,
+			"item_code": args.item_code
+		},
+		["qty", "ordered_qty", "pending_qty"],
+		as_dict=True
 	)
-	if po_id:
-		po = frappe.get_doc('Purchase Order', po_id)
-	else:
-		po = frappe.new_doc("Purchase Order")
-		po.transaction_date = nowdate()
-		po.set_warehouse = args.warehouse
-		po.quotation = args.quotation
-		po.supplier = args.supplier
-		po.is_subcontracted = args.is_subcontracted or "No"
-		po.conversion_factor = args.conversion_factor or 1
-		po.supplier_warehouse = args.supplier_warehouse or None
-		po.one_fm_request_for_purchase = args.request_for_purchase
-		po.is_subcontracted = False
+	
+	if not rfp_item:
+		frappe.throw(f"Item {args.item_code} not found in Request for Purchase {args.request_for_purchase}")
+	
+	available_qty = rfp_item.pending_qty or (rfp_item.qty - (rfp_item.ordered_qty or 0))
+	
+	if available_qty <= 0:
+		frappe.throw(f"No pending quantity available for item {args.item_code}. All quantities have been ordered.")
+	
+	po_qty = min(args.qty, available_qty)
+	
+	if po_qty != args.qty:
+		frappe.msgprint(f"Requested quantity {args.qty} reduced to available pending quantity {po_qty} for item {args.item_code}")
+	
+	po = frappe.new_doc("Purchase Order")
+	po.transaction_date = nowdate()
+	po.set_warehouse = args.warehouse
+	po.quotation = args.quotation
+	po.supplier = args.supplier
+	po.is_subcontracted = args.is_subcontracted or "No"
+	po.conversion_factor = args.conversion_factor or 1
+	po.supplier_warehouse = args.supplier_warehouse or None
+	po.one_fm_request_for_purchase = args.request_for_purchase
+	po.request_for_material = frappe.db.get_value(
+		"Request for Purchase",
+		args.request_for_purchase,
+		"request_for_material"
+	)
+	po.is_subcontracted = False
 
 	po.append("items", {
 		"item_code": args.item_code,
-		"item_name": args.item_name,
+		"item_name": args.get("item_name") or frappe.db.get_value("Item", args.item_code, "item_name"),
 		"description": args.description,
 		"uom": args.uom,
-		"qty": args.qty,
+		"qty": po_qty,
 		"rate": args.rate,
-		"amount": args.qty * args.rate,
+		"amount": po_qty * args.rate,
 		"schedule_date": getdate(args.delivery_date) if (args.delivery_date and getdate(nowdate()) < getdate(args.delivery_date)) else getdate(nowdate()),
 		"expected_delivery_date": args.delivery_date
 	})
+	
 	if not args.do_not_save:
 		po.save(ignore_permissions=True)
 		if not args.do_not_submit:
 			po.submit()
+	
+	return po

@@ -21,7 +21,7 @@ def _make_applicant_lead(doc, item):
 	lead.gender = item.gender
 	lead.nationality = item.nationality
 	lead.mobile_no = item.mobile_no
-	lead.sugested_position = item.sugested_position
+	lead.sugested_position = doc.suggested_position
 	lead.lead_owner_type = doc.lead_owner_type
 	lead.lead_owner_dt = doc.lead_owner_dt
 	lead.lead_owner = doc.lead_owner

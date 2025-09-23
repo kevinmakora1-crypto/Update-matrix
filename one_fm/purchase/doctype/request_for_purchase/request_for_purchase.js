@@ -5,6 +5,16 @@ frappe.ui.form.on('Request for Purchase', {
 	refresh: function(frm) {
 		set_intro_related_to_status(frm);
 		frm.events.make_custom_buttons(frm);
+
+		if (frm.doc.status === "Approved") {
+        const fields = ["qty", "t_warehouse", "description", "schedule_date"];
+        fields.forEach(field => {
+            frm.fields_dict["items"].grid.set_column_disp(field, false); // disables editing in grid
+            frm.fields_dict["items"].grid.set_column_read_only(field, true); // sets as read-only
+        });
+    }
+
+
 	},
 	make_custom_buttons: function(frm) {
 		if (frm.doc.docstatus == 1 && frappe.user.has_role('Purchase Officer')){

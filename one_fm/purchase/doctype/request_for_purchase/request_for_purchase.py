@@ -23,10 +23,14 @@ class RequestforPurchase(Document):
 
 	def on_submit(self):
 		self.assign_purchase_officer()
-	
+		self._update_linked_rfm_quantities()
+  
 	def on_update_after_submit(self):
 		self._update_linked_rfm_quantities()
-
+  
+	def after_insert(self):
+		self._update_linked_rfm_quantities()
+  
 	def on_update(self):
 		self._update_linked_rfm_quantities()
   
@@ -146,14 +150,15 @@ class RequestforPurchase(Document):
 			if one.custom_request_for_material_item:
 				other_pr_rows = frappe.get_all(one.doctype,{'custom_request_for_material_item':one.custom_request_for_material_item,'parent': ['!=', self.name],'docstatus': ['!=', 2]},['parent','qty'])
 				if other_pr_rows:
-					total_qty = sum([row.qty for row in other_pr_rows]) + one.qty
+					total_qty = sum([row.qty for row in other_pr_rows])
+				total_qty += one.qty
 				if one.rfm_quantity>0:
 					rfm_qty = one.rfm_quantity
 				else:
 					rfm_item = frappe.db.get_value("Request for Material Item", one.custom_request_for_material_item, ["qty", "custom_pending_quantity"], as_dict=True)
 					rfm_qty = rfm_item.qty
 				if  total_qty > rfm_qty:
-					frappe.throw(_("Setting Row {0}: Quantity as {1} for item {2} will make the total quantity from across various Requests for Purchase as {3} and will the exceed quantity {4} in the linked Request for Material").format(one.idx, one.qty, one.item_name, total_qty,rfm_qty ), title=_("Quantity Exceeds Pending Quantity"))
+					frappe.throw(_("Setting Row {0}: Quantity as <b>{1}</b> for item <b>{2}</b> will make the total quantity from across various Requests for Purchase as <b>{3}</b> and will the exceed quantity <b>{4}</b> in the linked Request for Material").format(one.idx, one.qty, one.item_name, total_qty,rfm_qty ), title=_("Quantity Exceeds Pending Quantity"))
 	
 	def _update_linked_rfm_quantities(self,delete_event = False):
 		"""

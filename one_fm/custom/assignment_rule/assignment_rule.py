@@ -14,7 +14,7 @@ def get_assignment_rule_json_file(file_name):
     folder = frappe.get_app_path("one_fm", "custom", "assignment_rule")
     return get_json_file(file_name, folder)
 
-def create_assignment_rule(assignment_rule:dict):
+def create_assignment_rule(assignment_rule:dict, process_task_name:str=None):
     """
     Create or update an Assignment Rule based on the provided dictionary.
 
@@ -46,6 +46,8 @@ def create_assignment_rule(assignment_rule:dict):
     assignment_rule_name = assignment_rule["name"]
 
     try:
+        if process_task_name:
+            assignment_rule["custom_routine_task"] = process_task_name
         if not frappe.db.exists("Assignment Rule", assignment_rule_name):
             frappe.get_doc(assignment_rule).insert(ignore_permissions=True)
         else:

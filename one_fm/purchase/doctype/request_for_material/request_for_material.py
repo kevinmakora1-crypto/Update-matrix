@@ -623,6 +623,4 @@ def make_request_for_purchase(source_name, target_doc=None):
         }
     }, target_doc,set_missing_values)
     doclist.save()
-    doclist.submit()
-    
     return doclist

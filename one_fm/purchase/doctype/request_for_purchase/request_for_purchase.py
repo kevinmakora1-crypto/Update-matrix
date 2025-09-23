@@ -23,8 +23,11 @@ class RequestforPurchase(Document):
 
 	def on_submit(self):
 		self.assign_purchase_officer()
+	
+	def on_update_after_submit(self):
+		self._update_linked_rfm_quantities()
 
-	def validate(self):
+	def on_update(self):
 		self._update_linked_rfm_quantities()
   
 	def on_trash(self):
@@ -135,13 +138,30 @@ class RequestforPurchase(Document):
 		create_notification_log(subject, message, [rfm.requested_by], rfm)
 		self.db_set('notified_the_rfm_requester', True)
 		frappe.msgprint(_("Notification sent to RFM Requester"))
-
+  
+	def validate_rfm_quantity(self):
+		for one in self.items:
+			rfm_qty = None
+			total_qty = 0
+			if one.custom_request_for_material_item:
+				other_pr_rows = frappe.get_all(one.doctype,{'custom_request_for_material_item':one.custom_request_for_material_item,'parent': ['!=', self.name],'docstatus': ['!=', 2]},['parent','qty'])
+				if other_pr_rows:
+					total_qty = sum([row.qty for row in other_pr_rows]) + one.qty
+				if one.rfm_quantity>0:
+					rfm_qty = one.rfm_quantity
+				else:
+					rfm_item = frappe.db.get_value("Request for Material Item", one.custom_request_for_material_item, ["qty", "custom_pending_quantity"], as_dict=True)
+					rfm_qty = rfm_item.qty
+				if  total_qty > rfm_qty:
+					frappe.throw(_("Setting Row {0}: Quantity as {1} for item {2} will make the total quantity from across various Requests for Purchase as {3} and will the exceed quantity {4} in the linked Request for Material").format(one.idx, one.qty, one.item_name, total_qty,rfm_qty ), title=_("Quantity Exceeds Pending Quantity"))
+	
 	def _update_linked_rfm_quantities(self,delete_event = False):
 		"""
 		Recalculates the custom_rfp_quantity and custom_pending_quantity
 		on the source Request for Material based on all linked RFPs.
 		This method is called from hooks to ensure data is always in sync.
 		"""
+		self.validate_rfm_quantity()
 		if not self.request_for_material:
 			return
 
@@ -173,13 +193,18 @@ class RequestforPurchase(Document):
 		}
 
 		rfm_doc = frappe.get_doc("Request for Material", rfm_name)
-		for item in rfm_doc.items:
-			total_ordered_qty = rfp_totals_map.get(item.name, 0)
-			pending_qty = item.qty - total_ordered_qty
+
+		# Build a map of item_name to total_rfp_qty from self.items
+		
+		
+
+		for rfm_item in rfm_doc.items:
+			total_ordered_qty = rfp_totals_map.get(rfm_item.name, 0)
+			pending_qty = rfm_item.qty - total_ordered_qty
 
 			# Update RFM item fields directly to avoid triggering circular hooks
-			if (item.custom_rfp_quantity != total_ordered_qty or item.custom_pending_quantity != pending_qty):
-				frappe.db.set_value("Request for Material Item", item.name, {
+			if (rfm_item.custom_rfp_quantity != total_ordered_qty or rfm_item.custom_pending_quantity != pending_qty):
+				frappe.db.set_value("Request for Material Item", rfm_item.name, {
 					"custom_rfp_quantity": total_ordered_qty,
 					"custom_pending_quantity": pending_qty
 				}, update_modified=False)

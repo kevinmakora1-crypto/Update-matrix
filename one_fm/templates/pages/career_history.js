@@ -786,7 +786,6 @@ career_history = Class.extend({
   on_change_learning_and_development_journey_activity_type: function(company_no, item_no) {
     $(`.activity_type_select_${company_no}_${item_no}`).on('change', function() {
       const selectedActivityType = $(this).val();
-      
       if (selectedActivityType) {
         frappe.call({
           method: "frappe.client.get",
@@ -797,19 +796,20 @@ career_history = Class.extend({
           callback: function(r) {
             const assessmentQuestions = r.message.assessment_questions || [];
             const questionsContainer = $(`.activity_type_select_${company_no}_${item_no}`).closest('.learning-journey-item').find('.assessment-questions');
-            
-            let questionsHTML = '';
+            let questionsHTML = `
+              <div class="mb-3">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-control activity_title_${company_no}_${item_no}" placeholder="Enter title..." />
+              </div>
+            `;
             assessmentQuestions.forEach((question, index) => {
               questionsHTML += `
                 <div class="mb-3">
-                  <label class="form-label">Title</label>
-                  <input type="text" class="form-control activity_title_${company_no}_${item_no}_${index + 1}" placeholder="Enter title..." />
                   <label class="form-label">${question.experience_type_question}</label>
                   <textarea class="form-control assessment_question_${company_no}_${item_no}_${index + 1}" rows="2" placeholder="Your answer..."></textarea>
                 </div>
               `;
             });
-
             questionsContainer.html(questionsHTML);
           }
         });

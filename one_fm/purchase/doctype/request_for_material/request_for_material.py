@@ -581,7 +581,7 @@ def create_partial_request_for_purchase(source_name, items):
         })
 
     rfp.insert(ignore_permissions=True)
-    rfp._update_linked_rfm_quantities()
+    
     return rfp
 
 @frappe.whitelist()
@@ -621,6 +621,8 @@ def make_request_for_purchase(source_name, target_doc=None):
             "postprocess": update_item,
             "condition": lambda doc: (doc.custom_rfp_quantity < doc.qty and doc.reject_item==0)
         }
-    }, target_doc,set_missing_values)
+    }, target_doc)
     doclist.save()
+    frappe.db.commit()
+    
     return doclist

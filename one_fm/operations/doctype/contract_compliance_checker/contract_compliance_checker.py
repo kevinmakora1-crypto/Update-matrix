@@ -18,9 +18,9 @@ class GenerateContractComplianceChecker:
 		self.data = []
 		self.monthly_info = self.get_month_info()
 		self.week_info = self.get_week_info()
-		self.yesterday = frappe.utils.add_days(frappe.utils.today(), -1)
-		self.day_before_yesterday = frappe.utils.add_days(frappe.utils.today(), -2)
-		self.today = frappe.utils.today()
+		self.yesterday = getdate(frappe.utils.add_days(frappe.utils.today(), -1))
+		self.day_before_yesterday = getdate(frappe.utils.add_days(frappe.utils.today(), -2))
+		self.today = getdate(frappe.utils.today())
 
 	def get_contracts_list(self):
 		return frappe.db.sql("""
@@ -79,7 +79,7 @@ class GenerateContractComplianceChecker:
 				})
 			else:
 				schedule_count = 0
-		
+
 		return attendance_count + schedule_count
 	
 	def calculate_compliance(self, contract_data, is_monthly=True):
@@ -164,12 +164,17 @@ class GenerateContractComplianceChecker:
 		contracts_list = self.get_contracts_list()
 		
 		for contract in contracts_list:
-			if contract.days_off_category == "Monthly":
-				status, data = self.calculate_compliance(contract, is_monthly=True)
-			elif contract.days_off_category == "Weekly":
-				status, data = self.calculate_compliance(contract, is_monthly=False)
-			else:
-				continue
+			try:
+				if contract.days_off_category == "Monthly":
+					status, data = self.calculate_compliance(contract, is_monthly=True)
+				elif contract.days_off_category == "Weekly":
+					status, data = self.calculate_compliance(contract, is_monthly=False)
+				else:
+					continue
+			except Exception as e:
+				frappe.log_error(frappe.get_traceback(), "Contract Compliance Checker Execution")
+				pass
+
 			
 			if status:
 				self.data.append(data)

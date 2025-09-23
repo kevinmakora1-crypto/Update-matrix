@@ -499,10 +499,27 @@ career_history = Class.extend({
   },
   get_details_from_form: function() {
     var career_histories = [];
-    
+    let isFresher = false;
+    // Check experience type for each company
     for (let company_no = 1; company_no <= TOTAL_COMPANY_NO; company_no++) {
+      const expType = $(`.fresher_experienced_select_${company_no}`).val();
+      if (expType === 'Fresher') {
+        isFresher = true;
+        // For fresher, check at least one activity type is selected
+        let hasActivity = false;
+        $(`.learning-journey-items .learning-journey-item`).each(function() {
+          const activityType = $(this).find(`.activity_type_select_${company_no}_1, .activity_type_select_${company_no}_2, .activity_type_select_${company_no}_3`).val();
+          if (activityType) hasActivity = true;
+        });
+        if (!hasActivity) {
+          frappe.msgprint(frappe._("Please add at least one Learning and Development Activity Type."));
+          return {};
+        }
+        // Optionally, collect activity data here if needed
+        continue; // Skip rest of validations for fresher
+      }
+      // Experienced: run all validations as before
       var career_history = {};
-      
       career_history['company_name'] = $(`.company_${company_no}_name`).val();
       career_history['country_of_employment'] = $(`.country_of_company_${company_no}`).val();
       career_history['start_date'] = $(`.joined_company${company_no}`).val();
@@ -510,49 +527,33 @@ career_history = Class.extend({
       career_history['responsibility_one'] = $(`.responsibilities_company_${company_no}`).val();
       career_history['job_title'] = $(`.starting_job_title_company_${company_no}`).val();
       career_history['employment_type'] = $(`.employment_type_company_${company_no}`).val();
-
       career_history['first_contact_name'] = $(`.first_contact_name_${company_no}`).val();
       career_history['first_contact_email'] = $(`.first_contact_email_${company_no}`).val();
       career_history['first_contact_phone'] = $(`.first_contact_phone_${company_no}`).val();
       career_history['first_contact_designation'] = $(`.first_contact_designation_${company_no}`).val();
-
       career_history['second_contact_name'] = $(`.second_contact_name_${company_no}`).val();
       career_history['second_contact_email'] = $(`.second_contact_email_${company_no}`).val();
       career_history['second_contact_phone'] = $(`.second_contact_phone_${company_no}`).val();
       career_history['second_contact_designation'] = $(`.second_contact_designation_${company_no}`).val(); 
-
       if(!career_history['start_date']){
-        return frappe.msgprint(frappe._("Kindly fill the date of joining field."));
+        frappe.msgprint(frappe._("Kindly fill the date of joining field."));
+        return {};
       }
-      
-      /*
-        Still working in same company
-        value="1" if selected 'Yes'
-        value="2" if selected 'No'
-      */
       if($(`.still_working_on_same_company_${company_no}`).val() == 1){
         career_history['reason_for_leaving_job'] = $(`.reason_why_leave_job_${company_no}_text`).val();
       }
       else{
         career_history['left_the_company'] = $(`.when_did_you_left_${company_no}_date`).val();
         if(validateEndDate(career_history['left_the_company'])){
-          return frappe.msgprint(frappe._("Kindly fill the when did you leave the company field."));
+          frappe.msgprint(frappe._("Kindly fill the when did you leave the company field."));
+          return {};
         }
       }
       career_history['factors_in_new_job'] = $(`.factors_in_new_job_${company_no}_text`).val();
-
-      // Set Promotion Details
       var max_promotion = PROMOTIONS_IN_COMPANY[company_no];
       var promotions = [];
       for (let promotion_no = 1; promotion_no <= max_promotion; promotion_no++) {
         var promotion = {};
-        /*
-        Got any Promotion or Salary Increase
-        value="0" if selected 'No, I did not get any promotion or salary increase'
-        value="1" if selected 'Yes, I Got a Promotion with a Salary Increase'
-        value="2" if selected 'Yes, Only Got a Promotion'
-        value="3" if selected 'Yes, Only Got a Salary Increase'
-        */
         var got_promoted = $(`.promotion_select_${company_no}${promotion_no}`).val();
         if(got_promoted > 0){
           promotion['start_date'] = $(`.date_of_promotion_${company_no}${promotion_no}`).val();
@@ -570,7 +571,6 @@ career_history = Class.extend({
         promotions.push(promotion);
       }
       career_history['promotions'] = promotions;
-
       career_histories.push(career_history);
     }
     let interest_reason = $('[name="interest_reason"]').val();
@@ -617,11 +617,13 @@ career_history = Class.extend({
           />
         </div>
         <div class="my-3 col-lg-12 col-md-12">
-          <label class="form-label">Which country did you get employed in?</label>
-          <br />
-          <select class="form-control country_of_company_${company_no}">
-            <option>Select Country</option>
-          </select>
+          <label class="form-label">Which country did you get employed in?</label> <br>
+              <select class="form-control country_of_company_${company_no}">
+              <option>Select Country</option>
+              {% for country in country_list %}
+              <option>{{country.name}}</option>
+              {% endfor %}
+            </select>
         </div>
         <div class="mb-3 col-lg-12 col-md-12">
           <label class="form-label">When did you join the company?</label>
@@ -648,9 +650,12 @@ career_history = Class.extend({
         </div>
         <div class="col-lg-12 col-md-12 mb-3">
           <label class="form-label">What was your employment type?</label>
-          <select class="custom-select employment_type_company_${company_no}">
+            <select class="custom-select employment_type_company_${company_no}">
             <option value="" disabled selected>Select Employment Type</option>
-          </select>
+              {% for type in employment_type_list %}
+              <option value="{{ type }}">{{ type }}</option>
+              {% endfor %}
+            </select>
         </div>
         <div class="mb-3 col-lg-12 col-md-12">
           <label class="form-label"

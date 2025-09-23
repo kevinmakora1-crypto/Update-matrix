@@ -79,7 +79,7 @@ class GenerateContractComplianceChecker:
 				})
 			else:
 				schedule_count = 0
-		print(self.yesterday, self.day_before_yesterday, self.week_info['first_day'], self.week_info['last_day'])
+
 		return attendance_count + schedule_count
 	
 	def calculate_compliance(self, contract_data, is_monthly=True):

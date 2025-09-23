@@ -802,6 +802,8 @@ career_history = Class.extend({
             assessmentQuestions.forEach((question, index) => {
               questionsHTML += `
                 <div class="mb-3">
+                  <label class="form-label">Title</label>
+                  <input type="text" class="form-control activity_title_${company_no}_${item_no}_${index + 1}" placeholder="Enter title..." />
                   <label class="form-label">${question.experience_type_question}</label>
                   <textarea class="form-control assessment_question_${company_no}_${item_no}_${index + 1}" rows="2" placeholder="Your answer..."></textarea>
                 </div>

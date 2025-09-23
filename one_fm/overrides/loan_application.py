@@ -109,7 +109,7 @@ class LoanApplicationOverride(LoanApplication):
             "loan_amount": self.loan_amount,
             "company": self.company,
             "posting_date": nowdate(),
-            "status": "Approved"
+            "status": "Sanctioned"
         })
         loan.insert(ignore_permissions=True)
         frappe.msgprint(_("Loan {0} created from Loan Application {1}.").format(loan.name, self.name))

@@ -24,15 +24,15 @@ class GenerateContractComplianceChecker:
 
 	def get_contracts_list(self):
 		return frappe.db.sql("""
-			SELECT ci.parent, ci.count, ci.item_code, ci.days_off_category, ci.no_of_days_off 
+			SELECT ci.parent, ci.count, ci.item_code, ci.days_off_category, ci.no_of_days_off, c.project
 			FROM `tabContract Item` ci
 			INNER JOIN `tabContracts` c ON ci.parent = c.name
 			WHERE ci.rate_type_off = %s AND ci.parentfield = %s AND ci.parenttype = %s
 			AND c.workflow_state = %s
 		""", ("Days Off", "items", "Contracts", "Active"), as_dict=1)
 	
-	def get_operations_role(self, sale_item):
-		return frappe.db.get_list('Operations Role', {'sale_item': sale_item, 'status': 'Active'}, pluck='name')
+	def get_operations_role(self, sale_item, project):
+		return frappe.db.get_list('Operations Role', {'sale_item': sale_item, 'status': 'Active', "project": project}, pluck='name')
 	
 	def get_total_count(self, operations_role, is_monthly=True):
 		if not operations_role:
@@ -83,7 +83,7 @@ class GenerateContractComplianceChecker:
 		return attendance_count + schedule_count
 	
 	def calculate_compliance(self, contract_data, is_monthly=True):
-		operations_role = self.get_operations_role(contract_data.item_code)
+		operations_role = self.get_operations_role(contract_data.item_code, contract_data.project)
 		total_count = self.get_total_count(operations_role, is_monthly)
 		
 		if is_monthly:

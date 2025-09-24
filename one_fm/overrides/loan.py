@@ -131,7 +131,6 @@ def update_loan_outstanding_amount(loan_dict):
 
 
 
-
 def update_loan_repayment_schedule(loan_dict):
     try:
         total_additional_payments = frappe.db.sql("""
@@ -162,125 +161,28 @@ def update_loan_repayment_schedule(loan_dict):
         if not current_schedules:
             return
 
-        
-        loan_amount = loan_dict.total_payment - total_additional_payments
-        
-        original_schedules = []
-        for schedule in current_schedules:
-            current_total = flt(schedule.total_payment)
-            current_additional = flt(schedule.current_additional)
-            
-            original_total = current_total + current_additional
-            
-            if original_total > 0 and current_total > 0:
-                ratio = current_total / original_total
-                original_principal = flt(schedule.principal_amount) / ratio if ratio > 0 else flt(schedule.principal_amount)
-                original_interest = flt(schedule.interest_amount) / ratio if ratio > 0 else flt(schedule.interest_amount)
-            elif current_additional > 0:
-                original_principal = current_additional * 0.8
-                original_interest = current_additional * 0.2
-                original_total = current_additional
-            else:
-                original_principal = flt(schedule.principal_amount)
-                original_interest = flt(schedule.interest_amount)
-                original_total = current_total
-            
-            original_schedules.append({
-                'payment_date': schedule.payment_date,
-                'number_of_days': schedule.number_of_days,
-                'original_total': original_total,
-                'original_principal': original_principal,
-                'original_interest': original_interest,
-                'is_accrued': schedule.is_accrued,
-                'idx': schedule.idx
-            })
-        
         remaining_payment = flt(total_additional_payments)
-        new_schedule_data = []
-        
-        for i in range(len(original_schedules) - 1, -1, -1):
-            schedule = original_schedules[i]
+
+        for i in range(len(current_schedules) - 1, -1, -1):
+            schedule = current_schedules[i]
             
-            original_total = schedule['original_total']
-            original_principal = schedule['original_principal']
-            original_interest = schedule['original_interest']
+            original_total = flt(schedule.total_payment)
+            custom_payment = 0
             
             if remaining_payment <= 0:
-                new_schedule_data.append({
-                    'payment_date': schedule['payment_date'],
-                    'number_of_days': schedule['number_of_days'],
-                    'total_payment': original_total,
-                    'principal_amount': original_principal,
-                    'interest_amount': original_interest,
-                    'is_accrued': schedule['is_accrued'],
-                    'idx': schedule['idx'],
-                    'custom_amount_paid_via_additional_payment': 0
-                })
+                custom_payment = 0
             elif remaining_payment >= original_total:
-                new_schedule_data.append({
-                    'payment_date': schedule['payment_date'],
-                    'number_of_days': schedule['number_of_days'],
-                    'total_payment': 0,
-                    'principal_amount': 0,
-                    'interest_amount': 0,
-                    'is_accrued': schedule['is_accrued'],
-                    'idx': schedule['idx'],
-                    'custom_amount_paid_via_additional_payment': original_total
-                })
+                custom_payment = original_total
                 remaining_payment -= original_total
             else:
-                payment_applied = remaining_payment
-                amount_still_owed = original_total - payment_applied
-                
-                ratio = amount_still_owed / original_total
-                new_principal = original_principal * ratio
-                new_interest = original_interest * ratio
-                new_total = new_principal + new_interest
-                
-                new_schedule_data.append({
-                    'payment_date': schedule['payment_date'],
-                    'number_of_days': schedule['number_of_days'],
-                    'total_payment': new_total,
-                    'principal_amount': new_principal,
-                    'interest_amount': new_interest,
-                    'is_accrued': schedule['is_accrued'],
-                    'idx': schedule['idx'],
-                    'custom_amount_paid_via_additional_payment': payment_applied
-                })
+                custom_payment = remaining_payment
                 remaining_payment = 0
-        
-        new_schedule_data.sort(key=lambda x: x['idx'])
-        
-        current_balance = flt(loan_amount)
-        for data in new_schedule_data:
-            current_balance -= flt(data['principal_amount'])
-            data['balance_loan_amount'] = max(0, current_balance)
-        
-        frappe.db.sql("DELETE FROM `tabRepayment Schedule` WHERE parent = %s", (loan_repayment_schedule_doc,))
-        
-        for data in new_schedule_data:
+            
             frappe.db.sql("""
-                INSERT INTO `tabRepayment Schedule`
-                (name, parent, parenttype, parentfield, payment_date, number_of_days,
-                 total_payment, principal_amount, interest_amount, balance_loan_amount,
-                 is_accrued, idx, custom_amount_paid_via_additional_payment)
-                VALUES (%(name)s, %(parent)s, 'Loan Repayment Schedule', 'repayment_schedule',
-                        %(payment_date)s, %(number_of_days)s, %(total_payment)s,
-                        %(principal_amount)s, %(interest_amount)s, %(balance_loan_amount)s,
-                        %(is_accrued)s, %(idx)s, %(custom_amount_paid_via_additional_payment)s)
-            """, {
-                'name': frappe.generate_hash(length=10),
-                'parent': loan_repayment_schedule_doc,
-                'payment_date': data['payment_date'],
-                'number_of_days': data['number_of_days'],
-                'total_payment': data['total_payment'],
-                'principal_amount': data['principal_amount'],
-                'interest_amount': data['interest_amount'],
-                'balance_loan_amount': data['balance_loan_amount'],
-                'is_accrued': data['is_accrued'],
-                'idx': data['idx'],
-                'custom_amount_paid_via_additional_payment': data['custom_amount_paid_via_additional_payment']
-            })
+                UPDATE `tabRepayment Schedule`
+                SET custom_amount_paid_via_additional_payment = %s
+                WHERE name = %s
+            """, (custom_payment, schedule.name))
         
     except Exception as e:
         frappe.log_error(

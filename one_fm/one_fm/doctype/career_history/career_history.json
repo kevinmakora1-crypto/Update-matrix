@@ -6,6 +6,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "candidate_type",
   "naming_series",
   "job_applicant",
   "applicant_name",
@@ -32,6 +33,7 @@
   "about_the_opportunity",
   "what_are_the_factors_you_are_looking_for_in_a_new_job",
   "amended_from",
+  "learning_and_development_journey",
   "rank_and_factors"
  ],
  "fields": [
@@ -53,8 +55,8 @@
    "fieldname": "career_history_company",
    "fieldtype": "Table",
    "label": "Career History",
-   "options": "Career History Company",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.candidate_type !== \"Fresher\"",
+   "options": "Career History Company"
   },
   {
    "fetch_from": "job_applicant.one_fm_erf",
@@ -81,6 +83,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.candidate_type == \"Experienced\"",
    "fieldname": "career_history_company_section",
    "fieldtype": "Section Break",
    "label": "Career History Company"
@@ -147,6 +150,7 @@
    "label": "Total Number of Promotions and Salary Changes"
   },
   {
+   "depends_on": "eval:doc.candidate_type == \"Experienced\"",
    "fieldname": "section_break_8",
    "fieldtype": "Section Break"
   },
@@ -189,12 +193,27 @@
    "fieldtype": "Table",
    "label": "Rank and Factors",
    "options": "Rank and Factors"
+  },
+  {
+   "fieldname": "candidate_type",
+   "fieldtype": "Select",
+   "label": "Candidate Type",
+   "options": "Fresher\nExperienced",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.candidate_type == \"Fresher\"",
+   "fieldname": "learning_and_development_journey",
+   "fieldtype": "Table",
+   "ignore_user_permissions": 1,
+   "label": "Learning and Development Journey",
+   "options": "Career History Freshers Experience"
   }
  ],
  "grid_page_length": 50,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-09-03 01:53:03.747059",
+ "modified": "2025-09-24 03:23:53.358563",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Career History",

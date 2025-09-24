@@ -159,6 +159,8 @@ one_fm.patches.v15_0.add_loan_disbursement_assignment_rule
 one_fm.patches.v15_0.add_update_custom_field #2025-09-22
 one_fm.patches.v15_0.approve_pending_attendance_check
 one_fm.patches.v15_0.create_loan_process_task
+one_fm.patches.v15_0.delete_issue_log_custom_field_error_log
+one_fm.patches.v15_0.create_hd_ticket_custom_field_error_log
 
 [post_model_sync]
 one_fm.patches.v15_0.create_attendance_check_process_task #re run again

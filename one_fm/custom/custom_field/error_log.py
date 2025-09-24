@@ -7,7 +7,7 @@ def get_error_log_custom_fields():
                 "insert_after": "error",
                 "label": "HD Ticket",
                 "read_only": 1,
-                "options":"HD Ticket"
+                "options": "HD Ticket"
             }
         ]
     }

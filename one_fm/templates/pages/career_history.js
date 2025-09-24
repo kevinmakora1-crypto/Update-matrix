@@ -115,7 +115,7 @@ career_history = Class.extend({
   on_change_still_working_on_same_company: function(company_no) {
     var me = this;
     $(".still_working_on_same_company_"+(company_no.toString())).on("change", function(){
-        console.log("Dropdown changed!", $(this).val());
+        var still_working = $(".still_working_on_same_company_"+(company_no.toString())).val();
       var still_working = $(".still_working_on_same_company_"+(company_no.toString())).val();
       $(".reason_why_leave_job_"+(company_no.toString())).remove();
       $(".factors_in_new_job_"+(company_no.toString())).remove();
@@ -428,34 +428,56 @@ career_history = Class.extend({
     // Submit Career History
     var me = this;
     $('.btn-submit-career-history').click(function(){
-      var {career_histories, interest_reason} =  me.get_details_from_form();
-      var rank_and_factors = me.getRankedFactorsData()
-      
-      var isDefaultOrder = rank_and_factors.every(function(row, idx) {
-            return row.factor === DEFAULT_RANKED_FACTORS[idx];
-        });
+      var formData = me.get_details_from_form();
 
-      if (isDefaultOrder) {
-            return frappe.msgprint(frappe._("Please drag and rank the factors according to your preference before submitting."));
+      var fresher_args = null;
+      var exper_args = null;
+      var should_submit = false;
+      if (formData.fresher_details) {
+        // Fresher: build args
+        var fresherData = formData.fresher_details;
+        var rank_and_factors = fresherData.ranked_factors || [];
+        var interest_reason = fresherData.interest_reason;
+        var job_applicant = $('#job_applicant').attr("data");
+        fresher_args = {
+          job_applicant: job_applicant,
+          career_history_details: JSON.stringify([fresherData]),
+          best_references: JSON.stringify([]),
+          interest_reason: interest_reason,
+          rank_and_factors: JSON.stringify(rank_and_factors)
+        };
+        should_submit = !!job_applicant;
+      } else {
+        var {career_histories, interest_reason} =  formData;
+        var rank_and_factors = me.getRankedFactorsData();
+        var isDefaultOrder = rank_and_factors.every(function(row, idx) {
+              return row.factor === DEFAULT_RANKED_FACTORS[idx];
+          });
+        if (isDefaultOrder) {
+              return frappe.msgprint(frappe._("Please drag and rank the factors according to your preference before submitting."));
+          }
+        var all_best_references = me.get_all_best_references();
+        if(!validateResponsibilities(career_histories)){
+          return frappe.msgprint(frappe._("Kindly fill the responsibility for the most recent job"));
         }
-      var all_best_references = me.get_all_best_references();
-
-      if(!validateResponsibilities(career_histories)){
-        return frappe.msgprint(frappe._("Kindly fill the responsibility for the most recent job"));
+        exper_args = {
+          job_applicant: $('#job_applicant').attr("data"),
+          career_history_details: JSON.stringify(career_histories),
+          best_references: JSON.stringify(all_best_references),
+          interest_reason: interest_reason,
+          rank_and_factors: JSON.stringify(rank_and_factors)
+        };
+        should_submit = $('#job_applicant').attr("data") && career_histories.length > 0;
       }
+
       // POST Career History if all the conditions are satisfied
-      if ($('#job_applicant').attr("data") && career_histories.length > 0){
+      var args_to_send = fresher_args || exper_args;
+      if (should_submit && args_to_send) {
         frappe.freeze();
         frappe.call({
           type: "POST",
           method: "one_fm.templates.pages.career_history.create_recruitment_documents",
-          args: {
-            job_applicant: $('#job_applicant').attr("data"),
-            career_history_details: career_histories,
-            best_references: all_best_references,
-            interest_reason: interest_reason,
-            rank_and_factors:rank_and_factors
-          },
+          args: args_to_send,
           btn: this,
           callback: function(r){
             frappe.unfreeze();
@@ -465,11 +487,10 @@ career_history = Class.extend({
             }
           }
         });
-      }
-      else{
+      } else {
         frappe.msgprint(frappe._("Please fill all the details to submit the career history."));
       }
-    });
+  });
   },
   intro_btn: function(me) {
     // Create Comapany Section
@@ -499,24 +520,64 @@ career_history = Class.extend({
   },
   get_details_from_form: function() {
     var career_histories = [];
+    let fresher_details = null;
     let isFresher = false;
     // Check experience type for each company
+    let expType = null;
     for (let company_no = 1; company_no <= TOTAL_COMPANY_NO; company_no++) {
-      const expType = $(`.fresher_experienced_select_${company_no}`).val();
+      expType = $(`.fresher_experienced_select_${company_no}`).val();
       if (expType === 'Fresher') {
         isFresher = true;
-        // For fresher, check at least one activity type is selected
-        let hasActivity = false;
+        // For fresher, check at least one activity type is selected (robust)
+        let learning_journey = [];
+        // Fix: check for any select with class containing 'activity_type_select_' and a value, regardless of company_no
+        let hasActivity = $(".learning-journey-items select").filter(function(){
+          return $(this).val() && $(this).attr('class') && $(this).attr('class').indexOf('activity_type_select_') !== -1;
+        }).length > 0;
         $(`.learning-journey-items .learning-journey-item`).each(function() {
-          const activityType = $(this).find(`.activity_type_select_${company_no}_1, .activity_type_select_${company_no}_2, .activity_type_select_${company_no}_3`).val();
-          if (activityType) hasActivity = true;
+          // Find the select and input for activity type and title inside this item
+          let activityType = $(this).find("select").filter(function(){
+            return $(this).attr('class') && $(this).attr('class').indexOf('activity_type_select_') !== -1;
+          }).val();
+          let activity_title = $(this).find("input").filter(function(){
+            return $(this).attr('class') && $(this).attr('class').indexOf('activity_title_') !== -1;
+          }).val();
+          let questions = [];
+          $(this).find("textarea").filter(function(){
+            return $(this).attr('class') && $(this).attr('class').indexOf('assessment_question_') !== -1;
+          }).each(function() {
+            let label = $(this).prev("label").text().trim();
+            let answer = $(this).val();
+            questions.push({ label: label, answer: answer });
+          });
+          if (activityType) {
+            learning_journey.push({
+              activity_type: activityType,
+              activity_title: activity_title,
+              questions: questions
+            });
+          }
         });
         if (!hasActivity) {
           frappe.msgprint(frappe._("Please add at least one Learning and Development Activity Type."));
           return {};
         }
-        // Optionally, collect activity data here if needed
-        continue; // Skip rest of validations for fresher
+        // Collect shoves and tugs
+        let shoves = $(`.shoves_input_${company_no}`).val();
+        let tugs = $(`.tugs_input_${company_no}`).val();
+        // Collect ranked factors
+        let ranked_factors = this.getRankedFactorsData ? this.getRankedFactorsData() : [];
+        // Collect interest reason
+        let interest_reason = $('[name="interest_reason"]').val();
+        fresher_details = {
+          expType: expType,
+          learning_journey: learning_journey,
+          shoves: shoves,
+          tugs: tugs,
+          ranked_factors: ranked_factors,
+          interest_reason: interest_reason
+        };
+        break; // Only one fresher section expected
       }
       // Experienced: run all validations as before
       var career_history = {};
@@ -580,7 +641,10 @@ career_history = Class.extend({
     let continuing_growth_rate = $('[name="continuing_growth_rate"]').val();
     let jobstretch_and_learning = $('[name="jobstretch_and_learning"]').val();
     let work_life_balance = $('[name="work_life_balance"]').val();
-    return {career_histories, interest_reason,project_and_technology, manager_and_team,compensation,continuing_growth_rate,jobstretch_and_learning,work_life_balance};
+    if (isFresher && fresher_details) {
+      return { fresher_details, expType };
+    }
+    return {career_histories, interest_reason, expType, project_and_technology, manager_and_team,compensation,continuing_growth_rate,jobstretch_and_learning,work_life_balance};
   },
   on_change_experience_type: function (company_no) {
     const me = this;

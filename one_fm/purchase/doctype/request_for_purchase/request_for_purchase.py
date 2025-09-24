@@ -286,6 +286,76 @@ class RequestforPurchase(Document):
 				frappe.log_error(f"Error deleting PO {po.name}: {str(e)}")
 				frappe.throw(_("Error deleting Purchase Order {0}: {1}").format(po.name, str(e)))
 
+	@frappe.whitelist()
+	def update_rfp_items(self, updated_items, reason):
+		if self.docstatus != 1:
+			frappe.throw(_("Items can only be updated in a submitted document."))
+
+		updated_items_data = json.loads(updated_items)
+
+		# Create a map for quick lookup
+		original_items_map = {item.name: item for item in self.items_to_order}
+		updated_items_map = {item['name']: item for item in updated_items_data}
+
+		# Validation phase
+		for item_data in updated_items_data:
+			original_item = original_items_map.get(item_data['name'])
+			new_qty = frappe.utils.flt(item_data['qty'])
+
+			if new_qty > original_item.qty:
+				frappe.throw(_("Cannot increase quantity for item {0}. Original: {1}, New: {2}").format(original_item.item_code, original_item.qty, new_qty))
+
+			ordered_qty = frappe.db.get_value("Purchase Order Item", {"request_for_purchase": self.name, "item_code": original_item.item_code, "docstatus": 1}, "sum(qty)") or 0
+			if new_qty < ordered_qty:
+				frappe.throw(_("New quantity for item {0} cannot be less than the already ordered quantity ({1}).").format(original_item.item_code, ordered_qty))
+
+		# Check for removed items
+		for name, original_item in original_items_map.items():
+			if name not in updated_items_map:
+				ordered_qty = frappe.db.get_value("Purchase Order Item", {"request_for_purchase": self.name, "item_code": original_item.item_code, "docstatus": 1}, "sum(qty)") or 0
+				if ordered_qty > 0:
+					frappe.throw(_("Cannot remove item {0} as it has already been ordered.").format(original_item.item_code))
+
+		# Update phase
+		self.set('items_to_order', [])
+		for item_data in updated_items_data:
+			self.append('items_to_order', {
+				'item_code': item_data['item_code'],
+				'item_name': item_data['item_name'],
+				'qty': item_data['qty'],
+				'rate': item_data['rate'],
+				'delivery_date': item_data.get('delivery_date'),
+				'supplier': item_data.get('supplier'),
+				'description': item_data.get('description'),
+				'uom': item_data.get('uom'),
+				't_warehouse': item_data.get('t_warehouse'),
+				'quotation': item_data.get('quotation'),
+				'qty_requested': item_data.get('qty_requested')
+			})
+
+		# Propagate changes to draft POs
+		draft_pos = frappe.get_all("Purchase Order", filters={"one_fm_request_for_purchase": self.name, "docstatus": 0}, fields=["name"])
+		for po_name in draft_pos:
+			po_doc = frappe.get_doc("Purchase Order", po_name.name)
+			po_doc.set('items', [])
+			for item_data in updated_items_data:
+				if po_doc.supplier == item_data.get('supplier'):
+					po_doc.append('items', {
+						'item_code': item_data['item_code'],
+						'qty': item_data['qty'],
+						'rate': item_data['rate']
+						# Copy other relevant fields
+					})
+
+			if not po_doc.items:
+				frappe.delete_doc("Purchase Order", po_doc.name)
+			else:
+				po_doc.save()
+
+		self.add_comment("Comment", reason)
+		self.save()
+		frappe.msgprint(_("Request for Purchase updated successfully."))
+
 
 
 @frappe.whitelist()

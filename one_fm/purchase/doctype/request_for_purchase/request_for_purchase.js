@@ -18,6 +18,57 @@ frappe.ui.form.on('Request for Purchase', {
 	},
 	make_custom_buttons: function(frm) {
 		if (frm.doc.docstatus == 1 && frappe.user.has_role('Purchase Officer')){
+			if(frm.doc.workflow_state === 'Approved') {
+				frm.add_custom_button(__("Update Items"), () => {
+					let d = new frappe.ui.Dialog({
+						title: __("Update Items"),
+						fields: [
+							{
+								fieldname: 'items_to_order',
+								fieldtype: 'Table',
+								label: __("Items"),
+								data: frm.doc.items_to_order,
+								fields: [
+									{ fieldname: 'item_code', fieldtype: 'Data', label: 'Item Code', in_list_view: 1, read_only: 1 },
+									{ fieldname: 'item_name', fieldtype: 'Data', label: 'Item Name', in_list_view: 1, read_only: 1 },
+									{ fieldname: 'qty', fieldtype: 'Float', label: 'Quantity', in_list_view: 1 },
+									{ fieldname: 'rate', fieldtype: 'Currency', label: 'Rate', in_list_view: 1, read_only: 1 },
+								]
+							}
+						],
+						primary_action_label: __("Update"),
+						primary_action(values) {
+							frappe.prompt(
+								[{
+									fieldtype: 'Data',
+									label: __('Reason for Update'),
+									fieldname: 'reason',
+									reqd: 1
+								}],
+								(data) => {
+									frappe.call({
+										method: "one_fm.purchase.doctype.request_for_purchase.request_for_purchase.update_rfp_items",
+										args: {
+											name: frm.doc.name,
+											updated_items: JSON.stringify(values.items_to_order),
+											reason: data.reason
+										},
+										callback: function(r) {
+											if (!r.exc) {
+												frm.reload_doc();
+												frappe.msgprint(__("Items updated successfully."));
+											}
+										}
+									});
+								}, __("Reason for Update")
+							);
+							d.hide();
+						}
+					});
+					d.show();
+				});
+			}
+
 			if(frm.doc.items.length > frm.doc.items_to_order.length && !frm.doc.notified_the_rfm_requester){
 				frm.add_custom_button(__("Notify the Requester"),
 					() => frm.events.notify_the_rfm_requester(frm));

@@ -144,8 +144,12 @@ def create_career_history_from_portal(job_applicant, career_history_details, int
             row = career_history.append('learning_and_development_journey', {})
             row.activity_type = entry.get('activity_type')
             row.experience_title = entry.get('activity_title')
-            row.assessment_question = q.get('label')  # label as question
-            row.description = q.get('answer')         # answer as description
+            assessment_question_name = frappe.db.get_value("Assessment Questions", {"label": q.get("label")}, "name")
+            if assessment_question_name:
+                row.assessment_question = assessment_question_name
+            else:
+                row.assessment_question = None
+            row.description = q.get('answer')        
 
         
 

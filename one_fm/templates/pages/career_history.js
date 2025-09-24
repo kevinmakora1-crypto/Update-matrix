@@ -115,7 +115,6 @@ career_history = Class.extend({
   on_change_still_working_on_same_company: function(company_no) {
     var me = this;
     $(".still_working_on_same_company_"+(company_no.toString())).on("change", function(){
-        var still_working = $(".still_working_on_same_company_"+(company_no.toString())).val();
       var still_working = $(".still_working_on_same_company_"+(company_no.toString())).val();
       $(".reason_why_leave_job_"+(company_no.toString())).remove();
       $(".factors_in_new_job_"+(company_no.toString())).remove();
@@ -607,7 +606,7 @@ career_history = Class.extend({
         career_history['left_the_company'] = $(`.when_did_you_left_${company_no}_date`).val();
         if(validateEndDate(career_history['left_the_company'])){
           frappe.msgprint(frappe._("Kindly fill the when did you leave the company field."));
-          return {};
+          return false;
         }
       }
       career_history['factors_in_new_job'] = $(`.factors_in_new_job_${company_no}_text`).val();

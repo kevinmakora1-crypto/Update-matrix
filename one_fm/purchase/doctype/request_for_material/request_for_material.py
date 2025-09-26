@@ -589,7 +589,7 @@ def make_request_for_purchase(source_name, target_doc=None):
     
     def set_missing_values(source, target):
         if not target.get("items"):
-            frappe.throw(_("Cannot create a Request for Purchase with no items. Please specify Item Code for at least one item."))
+            frappe.throw(_("Cannot create RFP. At least one line item must have a specified Item Code."))
         target.run_method('_update_linked_rfm_quantities')
         
         

@@ -255,7 +255,8 @@ class SalarySlipOverride(SalarySlip):
             fields=["COUNT(*) as marked_days"],
         )[0].marked_days
         return unmarked_days
-
+    
+    
 @if_lending_app_installed
 def set_loan_repayment(doc: "SalarySlip"):
     doc.total_loan_repayment = 0
@@ -324,7 +325,6 @@ def calculate_hybrid_amounts(loan_name, start_date, end_date):
 
 
 def calculate_schedule_based_amounts(loan_name, start_date, end_date):
-    """Calculate amounts based on repayment schedule for loans without accrued interest"""
     amounts = {
         "interest_amount": 0.0,
         "payable_principal_amount": 0.0,
@@ -335,7 +335,11 @@ def calculate_schedule_based_amounts(loan_name, start_date, end_date):
         return amounts
     
     due_schedules = frappe.db.sql("""
-        SELECT principal_amount, interest_amount
+        SELECT 
+            principal_amount, 
+            interest_amount,
+            total_payment,
+            IFNULL(custom_amount_paid_via_additional_payment, 0) as additional_payment
         FROM `tabRepayment Schedule`
         WHERE parent = %s 
         AND payment_date >= %s
@@ -345,11 +349,19 @@ def calculate_schedule_based_amounts(loan_name, start_date, end_date):
     """, (schedule_doc, start_date, end_date), as_dict=True)
     
     for schedule in due_schedules:
-        amounts["payable_principal_amount"] += flt(schedule.principal_amount)
-        amounts["interest_amount"] += flt(schedule.interest_amount)
+        remaining_total = flt(schedule.total_payment) - flt(schedule.additional_payment)
+        
+        if remaining_total > 0:
+            original_total = flt(schedule.total_payment)
+            ratio = remaining_total / original_total if original_total > 0 else 0
+            
+            remaining_principal = flt(schedule.principal_amount) * ratio
+            remaining_interest = flt(schedule.interest_amount) * ratio
+            
+            amounts["payable_principal_amount"] += remaining_principal
+            amounts["interest_amount"] += remaining_interest
     
     return amounts
-
 
 @frappe.whitelist()
 def get_ot_days(employee, start_date, end_date):

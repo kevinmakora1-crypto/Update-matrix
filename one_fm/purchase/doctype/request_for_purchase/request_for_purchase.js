@@ -5,6 +5,16 @@ frappe.ui.form.on('Request for Purchase', {
 	refresh: function(frm) {
 		set_intro_related_to_status(frm);
 		frm.events.make_custom_buttons(frm);
+
+		if (frm.doc.status === "Approved") {
+        const fields = ["qty", "t_warehouse", "description", "schedule_date"];
+        fields.forEach(field => {
+            frm.fields_dict["items"].grid.set_column_disp(field, false); // disables editing in grid
+            frm.fields_dict["items"].grid.set_column_read_only(field, true); // sets as read-only
+        });
+    }
+
+
 	},
 	make_custom_buttons: function(frm) {
 		if (frm.doc.docstatus == 1 && frappe.user.has_role('Purchase Officer')){
@@ -131,8 +141,157 @@ frappe.ui.form.on('Request for Purchase', {
 	},
 	supplier: function(frm) {
 		set_supplier_to_items_to_order(frm);
-	}
+	},
+	before_workflow_action: function(frm) {
+        if (frm.selected_workflow_action === 'Cancel') {
+            return new Promise((resolve, reject) => {
+                clear_all_overlays();
+                
+                frappe.call({
+                    method: 'one_fm.purchase.doctype.request_for_purchase.request_for_purchase.check_related_pos_before_cancel',
+                    args: {
+                        doc: JSON.stringify(frm.doc)
+                    },
+                    callback: function(r) {
+                        if (r.message && r.message.error) {
+                            clear_all_overlays();
+                            
+                            setTimeout(() => {
+                                if (r.message.type === 'mixed') {
+                                    show_mixed_po_blocking_dialog(frm, r.message, reject);
+                                } else if (r.message.type === 'approved_only') {
+                                    show_approved_po_blocking_dialog(frm, r.message, reject);
+                                } else if (r.message.type === 'draft_pending_confirmation' || r.message.type === 'draft_confirmation') {
+                                    show_draft_pending_confirmation_dialog(frm, r.message, resolve, reject);
+                                }
+                            }, 200);
+                        } else {
+                            resolve();
+                        }
+                    },
+                    error: function(r) {
+                        clear_all_overlays();
+                        console.log("Error occurred:", r.message);
+                        frappe.msgprint(r.message || "An error occurred");
+                        reject();
+                    }
+                });
+            });
+        }
+    }
 });
+
+
+function clear_all_overlays() {
+    $('.modal-backdrop').remove();
+    $('.modal').removeClass('show').hide();
+    $('body').removeClass('modal-open');
+    $('.modal-open').removeClass('modal-open');
+    $('.freeze').remove();
+    $('.overlay').remove();
+    
+    $('body').css({
+        'padding-right': '',
+        'overflow': '',
+        'position': '',
+        'margin-right': ''
+    });
+    
+    $('.workflow-overlay').remove();
+    $('.frappe-overlay').remove();
+}
+
+function show_mixed_po_blocking_dialog(frm, data, reject) {
+    let dialog = new frappe.ui.Dialog({
+        title: __(data.title),
+        indicator: 'red',
+        size: 'large',
+        fields: [
+            {
+                fieldtype: 'HTML',
+                fieldname: 'message',
+                options: `<div class="alert alert-danger">
+                    <p>${data.message}</p>
+                </div>`
+            }
+        ],
+        primary_action_label: __('OK'),
+        primary_action: function() {
+            dialog.hide();
+            clear_all_overlays();
+            reject();
+        },
+        onhide: function() {
+            clear_all_overlays();
+        }
+    });
+    
+    dialog.show();
+}
+
+function show_approved_po_blocking_dialog(frm, data, reject) {
+    let dialog = new frappe.ui.Dialog({
+        title: __(data.title),
+        indicator: 'red',
+        size: 'medium',
+        fields: [
+            {
+                fieldtype: 'HTML',
+                fieldname: 'message',
+                options: `<div class="alert alert-danger">
+                    <p>${data.message}</p>
+                </div>`
+            }
+        ],
+        primary_action_label: __('OK'),
+        primary_action: function() {
+            dialog.hide();
+            clear_all_overlays();
+            reject();
+        },
+        onhide: function() {
+            clear_all_overlays();
+        }
+    });
+    
+    dialog.show();
+}
+
+function show_draft_pending_confirmation_dialog(frm, data, resolve, reject) {
+    let dialog = new frappe.ui.Dialog({
+        title: __(data.title),
+        indicator: 'orange',
+        size: 'medium',
+        fields: [
+            {
+                fieldtype: 'HTML',
+                fieldname: 'message',
+                options: `<div class="alert alert-warning">
+                    <p>${data.message}</p>
+                </div>`
+            }
+        ],
+        primary_action_label: __('Yes, Proceed'),
+        primary_action: function() {
+            dialog.hide();
+            clear_all_overlays();
+ 
+            frappe.msgprint(__('RFP will be cancelled and related Purchase Orders will be deleted.'));
+            resolve();
+        },
+        secondary_action_label: __('No, Cancel'),
+        secondary_action: function() {
+            dialog.hide();
+            clear_all_overlays();
+            reject();
+        },
+        onhide: function() {
+            clear_all_overlays();
+        }
+    });
+    
+    dialog.show();
+}
 
 var set_intro_related_to_status = function(frm) {
 	if (frm.doc.docstatus == 1){

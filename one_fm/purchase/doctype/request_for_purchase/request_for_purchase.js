@@ -8,10 +8,10 @@ frappe.ui.form.on('Request for Purchase', {
 
 		if (frm.doc.status === "Approved") {
         const fields = ["qty", "t_warehouse", "description", "schedule_date"];
-        fields.forEach(field => {
-            frm.fields_dict["items"].grid.set_column_disp(field, false); // disables editing in grid
-            frm.fields_dict["items"].grid.set_column_read_only(field, true); // sets as read-only
-        });
+        // fields.forEach(field => {
+        //     frm.fields_dict["items"].grid.set_column_disp(field, false); // disables editing in grid
+        //     frm.fields_dict["items"].grid.set_column_read_only(field, true); // sets as read-only
+        // });
     }
 
 
@@ -51,9 +51,10 @@ frappe.ui.form.on('Request for Purchase', {
 								}],
 								(data) => {
 									frappe.call({
-										method: "one_fm.purchase.doctype.request_for_purchase.request_for_purchase.update_rfp_items",
+										doc: frm.doc,
+										method: "update_rfp_items",
 										args: {
-											name: frm.doc.name,
+											
 											updated_items: JSON.stringify(updated_items),
 											reason: data.reason
 										},

@@ -51,7 +51,7 @@ class EmployeeOverride(EmployeeMaster):
                     "Employee", self.name, existing_user_id)
         employee_validate_attendance_by_timesheet(self, method=None)
         validate_leaves(self)
-
+        self.validate_relieving_date()
 
     def toggle_auto_attendance(self):
         try:
@@ -62,8 +62,6 @@ class EmployeeOverride(EmployeeMaster):
                         frappe.throw("You Are Not Permitted To Toggle Auto-Attendance")
         except Exception as e:
             frappe.log_error(title = f"{str(e)}", message = frappe.get_traceback())
-
-
 
     def set_employee_id_based_on_residency(self):
         if self.employee_id:
@@ -83,10 +81,25 @@ class EmployeeOverride(EmployeeMaster):
             if prev_enrollment != self.enrolled:
                 frappe.throw(f"Enrollment field is read-only and cannot be modified.")
 
+    def validate_relieving_date(self):
+        if "one_fm_password_management" not in frappe.get_installed_apps():
+            return
+        if self.relieving_date and self.user_id:
+            is_owner = frappe.db.exists(
+                "Password Management",
+                {
+                    "credentials_owner": self.user_id,
+                    "docstatus": ("!=", 2) # Not cancelled
+                }
+            )
+            if is_owner:
+                frappe.throw(
+                    _("Employee is still listed as Credentials Owner in Password Management Records. Please reassign ownership before setting Relieving Date.")
+                )
+
     def before_save(self):
         self.assign_role_profile_based_on_designation()
         # get_assurance_level_of_employee(self)
-
 
     def after_insert(self):
         employee_after_insert(self, method=None)
@@ -132,8 +145,7 @@ class EmployeeOverride(EmployeeMaster):
         self.update_subcontract_onboard()
         self.inform_employee_id_update()
         self.notify_employee_id_update()
-
-
+        self.remove_user_on_employee_left()
 
     def inform_employee_id_update(self):
         """
@@ -248,6 +260,27 @@ class EmployeeOverride(EmployeeMaster):
         subcontract_onboard = frappe.db.exists("Onboard Subcontract Employee", {"employee": self.name, "enrolled": ['!=', '1']})
         if subcontract_onboard and self.enrolled:
             frappe.db.set_value("Onboard Subcontract Employee", subcontract_onboard, "enrolled", self.enrolled)
+
+    def remove_user_on_employee_left(self):
+        if self.status != "Left":
+            return
+        if "one_fm_password_management" not in frappe.get_installed_apps():
+            return
+        # Check if status has been changed to 'Left'
+        if self.status == "Left" and self.get_doc_before_save().status != "Left":
+            if self.user_id:
+                try:
+                    frappe.db.sql("""
+                        DELETE
+                        FROM
+                            `tabPassword Management User`
+                        WHERE
+                            user = %s
+                    """, (self.user_id))
+                    frappe.msgprint(f"User {self.user_id} removed from all Password Management records.")
+                except Exception as e:
+                    message = f"Failed to remove user {self.user_id} from Password Management {user_access.parent}"
+                    frappe.log_error(message=message+f": {e}", title=message)
 
     def notify_attendance_manager_on_status_change(self):
         last_doc = self.get_doc_before_save()

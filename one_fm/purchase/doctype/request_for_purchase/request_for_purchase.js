@@ -20,24 +20,28 @@ frappe.ui.form.on('Request for Purchase', {
 		if (frm.doc.docstatus == 1 && frappe.user.has_role('Purchase Officer')){
 			if(frm.doc.workflow_state === 'Approved') {
 				frm.add_custom_button(__("Update Items"), () => {
-					let d = new frappe.ui.Dialog({
+					let dialog = new frappe.ui.Dialog({
 						title: __("Update Items"),
 						fields: [
 							{
-								fieldname: 'items_to_order',
-								fieldtype: 'Table',
-								label: __("Items"),
-								data: frm.doc.items_to_order,
-								fields: [
-									{ fieldname: 'item_code', fieldtype: 'Data', label: 'Item Code', in_list_view: 1, read_only: 1 },
-									{ fieldname: 'item_name', fieldtype: 'Data', label: 'Item Name', in_list_view: 1, read_only: 1 },
-									{ fieldname: 'qty', fieldtype: 'Float', label: 'Quantity', in_list_view: 1 },
-									{ fieldname: 'rate', fieldtype: 'Currency', label: 'Rate', in_list_view: 1, read_only: 1 },
-								]
+								fieldname: 'items_html',
+								fieldtype: 'HTML'
 							}
 						],
 						primary_action_label: __("Update"),
-						primary_action(values) {
+						primary_action: () => {
+							let updated_items = [];
+							dialog.get_field('items_html').$wrapper.find('tbody tr').each(function() {
+								let row = $(this);
+								updated_items.push({
+									name: row.data('name'),
+									item_code: row.data('item-code'),
+									item_name: row.find('.item-name-cell').text(),
+									qty: row.find('.qty-input').val(),
+									rate: row.find('.rate-cell').text()
+								});
+							});
+
 							frappe.prompt(
 								[{
 									fieldtype: 'Data',
@@ -50,7 +54,7 @@ frappe.ui.form.on('Request for Purchase', {
 										method: "one_fm.purchase.doctype.request_for_purchase.request_for_purchase.update_rfp_items",
 										args: {
 											name: frm.doc.name,
-											updated_items: JSON.stringify(values.items_to_order),
+											updated_items: JSON.stringify(updated_items),
 											reason: data.reason
 										},
 										callback: function(r) {
@@ -58,14 +62,51 @@ frappe.ui.form.on('Request for Purchase', {
 												frm.reload_doc();
 												frappe.msgprint(__("Items updated successfully."));
 											}
-										}
+										},
+										freeze: true,
+										freeze_message: __("Updating Items...")
 									});
 								}, __("Reason for Update")
 							);
-							d.hide();
+							dialog.hide();
 						}
 					});
-					d.show();
+
+					let table_html = `
+						<table class="table table-bordered">
+							<thead>
+								<tr>
+									<th>${__('Item Code')}</th>
+									<th>${__('Item Name')}</th>
+									<th>${__('Quantity')}</th>
+									<th>${__('Rate')}</th>
+									<th></th>
+								</tr>
+							</thead>
+							<tbody>
+							</tbody>
+						</table>`;
+					dialog.get_field('items_html').$wrapper.html(table_html);
+					let tbody = dialog.get_field('items_html').$wrapper.find('tbody');
+
+					frm.doc.items_to_order.forEach(item => {
+						let row_html = `
+							<tr data-name="${item.name}" data-item-code="${item.item_code}">
+								<td>${item.item_code}</td>
+								<td class="item-name-cell">${item.item_name}</td>
+								<td><input type="number" class="form-control qty-input" value="${item.qty}"></td>
+								<td class="rate-cell">${item.rate}</td>
+								<td><button class="btn btn-danger btn-xs remove-item">${__("Remove")}</button></td>
+							</tr>
+						`;
+						tbody.append(row_html);
+					});
+
+					dialog.get_field('items_html').$wrapper.on('click', '.remove-item', function() {
+						$(this).closest('tr').remove();
+					});
+
+					dialog.show();
 				});
 			}
 

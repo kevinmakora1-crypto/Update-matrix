@@ -85,17 +85,25 @@ class EmployeeOverride(EmployeeMaster):
         if "one_fm_password_management" not in frappe.get_installed_apps():
             return
         if self.relieving_date and self.user_id:
-            is_owner = frappe.db.exists(
+            owner_credentials = frappe.get_all(
                 "Password Management",
                 {
                     "credentials_owner": self.user_id,
                     "docstatus": ("!=", 2) # Not cancelled
-                }
+                },
+                as_list=1
             )
-            if is_owner:
-                frappe.throw(
-                    _("Employee is still listed as Credentials Owner in Password Management Records. Please reassign ownership before setting Relieving Date.")
+            if owner_credentials:
+                links = [
+                    f"<a href='{get_url_to_form('Password Management', cred[0])}' target='_blank'>[{cred[0]}]</a>"
+                    for cred in owner_credentials
+                ]
+                message = (
+                    "Employee is still listed as Credentials Owner in the following Password Management Records:<br/>"
+                    + ", ".join(links) +
+                    "<br/><br/>Please reassign ownership before setting Relieving Date."
                 )
+                frappe.throw(message)
 
     def before_save(self):
         self.assign_role_profile_based_on_designation()

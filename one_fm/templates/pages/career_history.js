@@ -324,7 +324,7 @@ career_history = Class.extend({
     }
     var company_section_html = `
     <div class="section_${company_no}">
-      <h3 class="mx-auto">Hello, {{job_applicant.applicant_name}}, alone</h3>
+      <h3 class="mx-auto">Hello, {{job_applicant.applicant_name}}!</h3>
 
       <div
         class="row border-top"

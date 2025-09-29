@@ -305,6 +305,7 @@ class RequestforPurchase(Document):
 			},
 			fields=["name"]
 		)
+		
 		item_po_map = {}
 		po_docs = {}
 		for po_row in draft_pos:
@@ -320,6 +321,8 @@ class RequestforPurchase(Document):
 				item_po_map[item.item_code].append((po, item))
 		# For each item_code in the dict, reduce qty across POs (never increase, never add new rows)
 		for item_code, new_total_qty in item_qty_dict.items():
+			ordered_quantity = self.get_ordered_qty_for_item(item_code)
+			new_total_qty = max(0, new_total_qty - ordered_quantity)
 			po_items = item_po_map.get(item_code, [])
 			po_items.sort(key=lambda x: x[0].name)
 			current_total = sum(i.qty for _, i in po_items)

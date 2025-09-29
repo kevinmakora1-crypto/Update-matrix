@@ -616,12 +616,13 @@ def make_request_for_purchase(source_name, target_doc=None):
                 ["requested_description", "description"],
                 ["requested_item_name", "item_name"],
                 ["name", "request_for_material_item"],
+                ["name", "custom_request_for_material_item"],
                 ["parent", "request_for_material"]
             ],
             "postprocess": update_item,
             "condition": lambda doc: (doc.custom_rfp_quantity < doc.qty and doc.reject_item==0)
         }
-    }, target_doc)
+    }, target_doc,set_missing_values)
     doclist.save()
     frappe.db.commit()
     

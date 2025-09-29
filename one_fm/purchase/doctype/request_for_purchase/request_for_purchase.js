@@ -6,15 +6,16 @@ frappe.ui.form.on('Request for Purchase', {
 		set_intro_related_to_status(frm);
 		frm.events.make_custom_buttons(frm);
 
-		if (frm.doc.status === "Approved") {
-        const fields = ["qty", "t_warehouse", "description", "schedule_date"];
-        // fields.forEach(field => {
-        //     frm.fields_dict["items"].grid.set_column_disp(field, false); // disables editing in grid
-        //     frm.fields_dict["items"].grid.set_column_read_only(field, true); // sets as read-only
-        // });
-    }
+		
 
-
+		if (frm.doc.workflow_state === "Approved" && frm.doc.docstatus === 1) {
+			if (frm.fields_dict["items"] && frm.fields_dict["items"].grid) {
+				frm.fields_dict["items"].grid.update_docfield_property("qty", "read_only", 1);
+			}
+			if (frm.fields_dict["items_to_order"] && frm.fields_dict["items_to_order"].grid) {
+				frm.fields_dict["items_to_order"].grid.update_docfield_property("qty", "read_only", 1);
+			}
+		}
 	},
 	make_custom_buttons: function(frm) {
 		if (frm.doc.docstatus == 1 && frappe.user.has_role('Purchase Officer')){
@@ -70,8 +71,8 @@ frappe.ui.form.on('Request for Purchase', {
 											if (qty < ordered_qty) {
 												invalid_rows.push(`${item_code || item_name}: New quantity (${qty}) cannot be less than ordered quantity (${ordered_qty})`);
 											}
-											if (qty > (ordered_qty + pending_qty+rfp_qty_cell)) {
-												invalid_rows.push(`${item_code || item_name}: New quantity (${qty}) cannot be greater than ordered quantity, pending quantity and quantity in this RFP (${ordered_qty + pending_qty + rfp_qty_cell})`);
+											if (qty > (pending_qty+rfp_qty_cell)) {
+												invalid_rows.push(`${item_code || item_name}: New quantity (${qty}) cannot be greater than ordered quantity, pending quantity and quantity in this RFP (${pending_qty + rfp_qty_cell})`);
 											}
 											updated_items.push({
 												name,

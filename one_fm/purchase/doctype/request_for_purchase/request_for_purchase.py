@@ -351,7 +351,7 @@ class RequestforPurchase(Document):
 			"Purchase Order Item",
 			{
 				"item_code": item_code,
-				"parent": ["in", [po.name for po in frappe.db.get_list("Purchase Order", {"one_fm_request_for_purchase": self.name, "docstatus": 1}, pluck="name")]]
+				"parent": ["in", [po for po in frappe.db.get_list("Purchase Order", {"one_fm_request_for_purchase": self.name, "docstatus": 1}, pluck="name")]]
 			},
 			"sum(qty)"
 		) or 0
@@ -362,8 +362,7 @@ class RequestforPurchase(Document):
 	def update_rfp_items(self, updated_items, reason):
 		updated_item_names = {}
 		removed_item_names = {}
-		if self.docstatus != 1:
-			frappe.throw(_("Items can only be updated in a submitted document."))
+		
 
 		updated_items_data = json.loads(updated_items)
 		updated_items_map = {item['name']: item for item in updated_items_data}
@@ -374,8 +373,7 @@ class RequestforPurchase(Document):
 			if item.name in updated_items_map:
 				new_qty = frappe.utils.flt(updated_items_map[item.name]['qty'])
 
-				if new_qty > item.qty:
-					frappe.throw(_("Cannot increase quantity for item {0}. Original: {1}, New: {2}").format(item.item_code, item.qty, new_qty))
+				
 
 				ordered_qty = self.get_ordered_qty_for_item(item.item_code)
 				if new_qty < ordered_qty:
@@ -408,17 +406,9 @@ class RequestforPurchase(Document):
 
 		# Propagate changes to draft POs
 		#return the names and quantity of the updated and removed items as a string
-		reason = ""
-		if updated_item_names:
-			reason =   "\n\nUpdated Items:\n"
-			for item_code, qty in updated_item_names.items():
-				reason += f"- {item_code}: {qty}\n"
-		if removed_item_names:
-			reason += "\nRemoved Items:\n"
-			for item_code, qty in removed_item_names.items():
-				reason += f"- {item_code}: {qty}\n"
-		reason += "Reason for Post Approval Item Update: " + reason
-		# self.add_comment("Comment", reason)
+		
+		reason = "Reason for Item Update: " + reason
+		self.add_comment("Comment", reason)
 		self.save()
 		version = frappe.new_doc("Version")
 		if version.update_version_info(self.get_doc_before_save(), self):

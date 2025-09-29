@@ -1062,9 +1062,9 @@ def send_contract_reminders(is_scheduled_event=True):
         is_scheduled_event -> Boolean (Default True) If method is triggered from anywhere else than the scheduled event, Pass "False" to avoid email trigger check from "ONEFM General Setting"
     """
     try:
-        contracts_due_internal_notification = frappe.get_all("Contracts",{'contract_end_internal_notification_date':getdate()},['contract_end_internal_notification',\
+        contracts_due_internal_notification = frappe.get_all("Contracts",{'contract_end_internal_notification_date':getdate(), 'workflow_state': 'Active'},['contract_end_internal_notification',\
             'contract_end_internal_notification_date','engagement_type','contract_termination_decision_period','contract_termination_decision_period_date','name','start_date','end_date','duration','client'])
-        contracts_due_termination_notification = frappe.get_all("Contracts",{'contract_termination_decision_period_date':getdate()},['contract_end_internal_notification',\
+        contracts_due_termination_notification = frappe.get_all("Contracts",{'contract_termination_decision_period_date':getdate(), 'workflow_state': 'Active'},['contract_end_internal_notification',\
             'contract_end_internal_notification_date','engagement_type','contract_termination_decision_period','contract_termination_decision_period_date','name','start_date','end_date','duration','client'])
 
         relevant_roles = ["Finance Manager",'Legal Manager','Projects Manager','Operations Manager']

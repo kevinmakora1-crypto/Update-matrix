@@ -3,4 +3,4 @@ from one_fm.one_fm.doctype.attendance_check.attendance_check import create_atten
 
 
 def execute():
-    frappe.enqueue(create_attendance_check,attendance_date="2025-07-28", queue='long', timeout=7000)
+    frappe.enqueue(create_attendance_check,attendance_date="2025-09-07", queue='long', timeout=7000)

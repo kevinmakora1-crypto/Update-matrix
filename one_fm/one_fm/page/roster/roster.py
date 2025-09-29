@@ -925,7 +925,7 @@ def edit_post(posts, values):
 		if args.plan_end_date and cint(args.project_end_date):
 			frappe.throw(_("Cannot set both project end date and custom end date!"))
 
-		if not args.plan_end_date and not cint(args.project_end_date):
+		if not args.plan_end_date and not cint(args.project_end_date) and not cint(args.selected_days_only):
 			frappe.throw(_("Please set an end date!"))
 
 		plan_post(posts, args)
@@ -974,6 +974,11 @@ def plan_post(posts, args):
 	# Extract unique posts
 	unique_posts_list = list(set(post["post"] for post in posts_list))
 
+	# Post wise dates mapping
+	post_wise_dates = defaultdict(list)
+	for post in posts_list:
+		post_wise_dates[post["post"]].append(pd.to_datetime(post["date"]))
+
 	# Fetch all projects linked to posts
 	post_projects = {
 		p["name"]: p["project"] for p in frappe.get_all(
@@ -984,7 +989,7 @@ def plan_post(posts, args):
 	}
 
 	# If project_end_date is set, get contract end dates in bulk
-	if cint(args.project_end_date) and not args.plan_end_date:
+	if cint(args.project_end_date) and not args.plan_end_date and not cint(args.selected_days_only):
 		project_names = list(post_projects.values())
 		if project_names:
 			contract_end_dates = frappe.get_all(
@@ -1006,18 +1011,11 @@ def plan_post(posts, args):
 				 frappe.throw(_("No projects found to determine project end date, and no specific end date provided."))
 
 
-	if not end_date_val:
+	if not end_date_val and not cint(args.selected_days_only):
 		frappe.throw(_("No end date specified."))
 
 	# Collect all dates and posts for bulk processing
-	existing_schedules = frappe.get_all(
-		"Post Schedule",
-		filters={
-			"date": ["between", [args.plan_from_date, end_date_val]],
-			"post": ["in", unique_posts_list]
-		},
-		fields=["name", "post", "date"]
-	)
+	existing_schedules = get_existing_post_schedules_for_plan_post(args, end_date_val, posts_list)
 
 	# Create a set for quick lookup
 	existing_schedules_set = {(s["post"], cstr(s["date"])): s["name"] for s in existing_schedules}
@@ -1055,7 +1053,9 @@ def plan_post(posts, args):
 				site_val = post_details_val["site"]
 				project_detail_val = post_details_val["project"]
 
-		for date_item in pd.date_range(start=args.plan_from_date, end=end_date_val):
+		dates_to_plan = post_wise_dates.get(post_name_iter2, []) if cint(args.selected_days_only) else pd.date_range(start=args.plan_from_date, end=end_date_val)
+
+		for date_item in dates_to_plan:
 			date_str = cstr(date_item.date())
 			if (post_name_iter2, date_str) in existing_schedules_set:
 				delete_post_list.append(existing_schedules_set[(post_name_iter2, date_str)])
@@ -1176,6 +1176,27 @@ def post_off(posts, args):
 		existing_schedules_set = {(s["post"], cstr(s["date"])): s["name"] for s in existing_schedules}
 
 		insert_post_schedule(args, unique_posts_list, existing_schedules_set, end_date_val, posts_list)
+
+def get_existing_post_schedules_for_plan_post(args, end_date, posts_list):
+	# Extract unique posts
+	unique_posts_list = list(set(post["post"] for post in posts_list))
+
+	if cint(args.selected_days_only):
+		# Loop through posts_list and for each post, check if a schedule exists for the specified dates
+		schedules = []
+		for post in posts_list:
+			if frappe.db.exists("Post Schedule", {"post": post["post"], "date": post["date"]}):
+				schedules.append(frappe.get_value("Post Schedule", {"post": post["post"], "date": post["date"]}, ["name", "post", "date"], as_dict=True))
+		return schedules
+	else:
+		return frappe.get_all(
+			"Post Schedule",
+			filters={
+				"date": ["between", [args.plan_from_date, end_date]],
+				"post": ["in", unique_posts_list]
+			},
+			fields=["name", "post", "date"]
+		)
 
 def get_post_porjects(unique_posts_list):
 	if not unique_posts_list: return {}
@@ -2032,3 +2053,13 @@ def bulk_employee_record_update(updates):
 		"updated_employees": updated_records_names,
 		"failed_updates": failed_updates
 	}
+
+
+@frappe.whitelist()
+def get_all_projects():
+    return frappe.get_list(
+        "Project",
+        filters={"custom_exclude_from_default_shift_checker": ["!=", 1]},
+        fields=["name"],
+        limit_page_length=1000
+    )

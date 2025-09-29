@@ -90,3 +90,26 @@ class LoanApplicationOverride(LoanApplication):
 
         if flt(balance) < (flt(allocation) / 2):
             frappe.throw(_("Insufficient Annual Leave Balance. Employee needs to have at least annual leave balance of {0} days.").format(flt(allocation) / 2))
+
+    def on_submit(self):
+        self.create_loan_from_application()
+
+    def create_loan_from_application(self):
+        # Check if a Loan already exists for this application
+        existing_loan = frappe.db.get_value("Loan", {"loan_application": self.name})
+        if existing_loan:
+            frappe.throw(_("A Loan {0} already exists for this application.").format(existing_loan))
+
+        loan = frappe.get_doc({
+            "doctype": "Loan",
+            "loan_application": self.name,
+            "applicant_type": self.applicant_type,
+            "applicant": self.applicant,
+            "loan_product": self.loan_product,
+            "loan_amount": self.loan_amount,
+            "company": self.company,
+            "posting_date": nowdate(),
+            "status": "Sanctioned"
+        })
+        loan.insert(ignore_permissions=True)
+        frappe.msgprint(_("Loan {0} created from Loan Application {1}.").format(loan.name, self.name))

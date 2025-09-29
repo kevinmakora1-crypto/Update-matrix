@@ -21,6 +21,8 @@
   "col_break2",
   "request_for_material",
   "request_for_material_item",
+  "pending_qty",
+  "ordered_qty",
   "quotation_section",
   "quotation",
   "supplier",
@@ -176,17 +178,31 @@
    "fieldtype": "Float",
    "label": "Quantity Requested",
    "read_only": 1
+  },
+  {
+   "fieldname": "pending_qty",
+   "fieldtype": "Int",
+   "label": "Pending Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ordered_qty",
+   "fieldtype": "Int",
+   "label": "Ordered Quantity",
+   "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "istable": 1,
  "links": [],
- "modified": "2023-05-30 08:27:51.080212",
+ "modified": "2025-09-21 09:19:17.037317",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Purchase Quotation Item",
  "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

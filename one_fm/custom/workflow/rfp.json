@@ -42,7 +42,7 @@
       "state": "Rejected",
       "doc_status": "2",
       "update_field": "status",
-      "update_value": "Rjected",
+      "update_value": "Rejected",
       "is_optional_state": 0,
       "avoid_status_override": 0,
       "allow_edit": "Purchase Manager",

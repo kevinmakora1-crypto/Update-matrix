@@ -129,8 +129,8 @@ career_history = Class.extend({
           <label class="form-label">What are the factors you are looking for in a new job?</label>
           <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text"></textarea>
         </div>`;
-        $(".company_"+(company_no.toString())).append(reason_why_leave_job_html);
-        $(".company_"+(company_no.toString())).append(factors_in_new_job);
+        $(".company_details_"+(company_no.toString())).append(reason_why_leave_job_html);
+        $(".company_details_"+(company_no.toString())).append(factors_in_new_job);
         me.show_final_interest_step(company_no.toString());
         $('.submit-btn').fadeIn();
       }
@@ -155,7 +155,7 @@ career_history = Class.extend({
         <option value="2">Yes</option>
       </select>
     </div>`
-    $(".company_"+(company_no.toString())).append(are_you_still_working_html);
+    $(".company_details_"+(company_no.toString())).append(are_you_still_working_html);
     this.on_change_are_you_still_working(company_no)
   },
   when_did_you_left_the_company: function(company_no) {
@@ -163,13 +163,14 @@ career_history = Class.extend({
       <label  class="form-label">When did you leave the company?<span style="color: red">*</span></label>
       <input type="date" class="form-control when_did_you_left_${company_no}_date"/>
     </div>`
-    $(".company_"+(company_no.toString())).append(when_did_you_left_the_company_html);
+    $(".company_details_"+(company_no.toString())).append(when_did_you_left_the_company_html);
   },
   on_change_are_you_still_working: function(company_no) {
     var me = this;
     $(`.are_you_still_working_${company_no}_select`).on("change", function(){
       var are_you_still_working = $(`.are_you_still_working_${company_no}_select`).val();
       $(".factors_in_new_job_"+(company_no.toString())).remove();
+      $(".shoves-tugs-block").remove();
       if(are_you_still_working == 2){
         $('.final-interest-section').remove();
         $('.submit-btn').fadeOut();
@@ -187,11 +188,11 @@ career_history = Class.extend({
           <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text"></textarea>
         </div>`;
         $('.next-btn').fadeOut();
-        $(".company_"+(company_no.toString())).append(factors_in_new_job);
+        $(".company_details_"+(company_no.toString())).append(factors_in_new_job);
+        $(".company_details_"+(company_no.toString())).append(get_shoves_tugs_html(company_no));
         $('.submit-btn').fadeIn();
         for (let i = company_no; i < TOTAL_COMPANY_NO; i++) {
           $(".company_"+((i+1).toString())).remove();
-
         }
         TOTAL_COMPANY_NO = company_no;
         me.show_final_interest_step(TOTAL_COMPANY_NO);
@@ -426,37 +427,56 @@ career_history = Class.extend({
     // Submit Career History
     var me = this;
     $('.btn-submit-career-history').click(function(){
-      var {career_histories, interest_reason} =  me.get_details_from_form();
-      var rank_and_factors = me.getRankedFactorsData()
-      
-      var isDefaultOrder = rank_and_factors.every(function(row, idx) {
-            return row.factor === DEFAULT_RANKED_FACTORS[idx];
-        });
+      var formData = me.get_details_from_form();
 
-      if (isDefaultOrder) {
-            return frappe.msgprint(frappe._("Please drag and rank the factors according to your preference before submitting."));
+      var fresher_args = null;
+      var exper_args = null;
+      var should_submit = false;
+      if (formData.fresher_details) {
+        // Fresher: build args
+        var fresherData = formData.fresher_details;
+        var rank_and_factors = fresherData.ranked_factors || [];
+        var interest_reason = fresherData.interest_reason;
+        var job_applicant = $('#job_applicant').attr("data");
+        fresher_args = {
+          job_applicant: job_applicant,
+          career_history_details: JSON.stringify([fresherData]),
+          best_references: JSON.stringify([]),
+          interest_reason: interest_reason,
+          rank_and_factors: JSON.stringify(rank_and_factors)
+        };
+        should_submit = !!job_applicant;
+      } else {
+        var {career_histories, interest_reason} =  formData;
+        var rank_and_factors = me.getRankedFactorsData();
+        var isDefaultOrder = rank_and_factors.every(function(row, idx) {
+              return row.factor === DEFAULT_RANKED_FACTORS[idx];
+          });
+        if (isDefaultOrder) {
+              return frappe.msgprint(frappe._("Please drag and rank the factors according to your preference before submitting."));
+          }
+        var all_best_references = me.get_all_best_references();
+        if(!validateResponsibilities(career_histories)){
+          return frappe.msgprint(frappe._("Kindly fill the responsibility for the most recent job"));
         }
-      var all_best_references = me.get_all_best_references();
-      if(!validateBestReferencesAndColleague(all_best_references)){
-        return frappe.msgprint(frappe._("Kindly fill the best reference for the most recent job"));
+        exper_args = {
+          job_applicant: $('#job_applicant').attr("data"),
+          career_history_details: JSON.stringify(career_histories),
+          best_references: JSON.stringify(all_best_references),
+          interest_reason: interest_reason,
+          rank_and_factors: JSON.stringify(rank_and_factors)
+        };
+        should_submit = $('#job_applicant').attr("data") && career_histories.length > 0;
       }
 
-      if(!validateResponsibilities(career_histories)){
-        return frappe.msgprint(frappe._("Kindly fill the responsibility for the most recent job"));
-      }
       // POST Career History if all the conditions are satisfied
-      if ($('#job_applicant').attr("data") && career_histories.length > 0){
+      var args_to_send = fresher_args || exper_args;
+      if (should_submit && args_to_send) {
         frappe.freeze();
         frappe.call({
           type: "POST",
           method: "one_fm.templates.pages.career_history.create_recruitment_documents",
-          args: {
-            job_applicant: $('#job_applicant').attr("data"),
-            career_history_details: career_histories,
-            best_references: all_best_references,
-            interest_reason: interest_reason,
-            rank_and_factors:rank_and_factors
-          },
+          args: args_to_send,
           btn: this,
           callback: function(r){
             frappe.unfreeze();
@@ -466,11 +486,10 @@ career_history = Class.extend({
             }
           }
         });
-      }
-      else{
+      } else {
         frappe.msgprint(frappe._("Please fill all the details to submit the career history."));
       }
-    });
+  });
   },
   intro_btn: function(me) {
     // Create Comapany Section
@@ -500,10 +519,67 @@ career_history = Class.extend({
   },
   get_details_from_form: function() {
     var career_histories = [];
-    
+    let fresher_details = null;
+    let isFresher = false;
+    // Check experience type for each company
+    let expType = null;
     for (let company_no = 1; company_no <= TOTAL_COMPANY_NO; company_no++) {
+      expType = $(`.fresher_experienced_select_${company_no}`).val();
+      if (expType === 'Fresher') {
+        isFresher = true;
+        // For fresher, check at least one activity type is selected (robust)
+        let learning_journey = [];
+        // Fix: check for any select with class containing 'activity_type_select_' and a value, regardless of company_no
+        let hasActivity = $(".learning-journey-items select").filter(function(){
+          return $(this).val() && $(this).attr('class') && $(this).attr('class').indexOf('activity_type_select_') !== -1;
+        }).length > 0;
+        $(`.learning-journey-items .learning-journey-item`).each(function() {
+          // Find the select and input for activity type and title inside this item
+          let activityType = $(this).find("select").filter(function(){
+            return $(this).attr('class') && $(this).attr('class').indexOf('activity_type_select_') !== -1;
+          }).val();
+          let activity_title = $(this).find("input").filter(function(){
+            return $(this).attr('class') && $(this).attr('class').indexOf('activity_title_') !== -1;
+          }).val();
+          let questions = [];
+          $(this).find("textarea").filter(function(){
+            return $(this).attr('class') && $(this).attr('class').indexOf('assessment_question_') !== -1;
+          }).each(function() {
+            let label = $(this).prev("label").text().trim();
+            let answer = $(this).val();
+            questions.push({ label: label, answer: answer });
+          });
+          if (activityType) {
+            learning_journey.push({
+              activity_type: activityType,
+              activity_title: activity_title,
+              questions: questions
+            });
+          }
+        });
+        if (!hasActivity) {
+          frappe.msgprint(frappe._("Please add at least one Learning and Development Activity Type."));
+          return {};
+        }
+        // Collect shoves and tugs
+        let shoves = $(`.shoves_input_${company_no}`).val();
+        let tugs = $(`.tugs_input_${company_no}`).val();
+        // Collect ranked factors
+        let ranked_factors = this.getRankedFactorsData ? this.getRankedFactorsData() : [];
+        // Collect interest reason
+        let interest_reason = $('[name="interest_reason"]').val();
+        fresher_details = {
+          expType: expType,
+          learning_journey: learning_journey,
+          shoves: shoves,
+          tugs: tugs,
+          ranked_factors: ranked_factors,
+          interest_reason: interest_reason
+        };
+        break; // Only one fresher section expected
+      }
+      // Experienced: run all validations as before
       var career_history = {};
-      
       career_history['company_name'] = $(`.company_${company_no}_name`).val();
       career_history['country_of_employment'] = $(`.country_of_company_${company_no}`).val();
       career_history['start_date'] = $(`.joined_company${company_no}`).val();
@@ -511,49 +587,33 @@ career_history = Class.extend({
       career_history['responsibility_one'] = $(`.responsibilities_company_${company_no}`).val();
       career_history['job_title'] = $(`.starting_job_title_company_${company_no}`).val();
       career_history['employment_type'] = $(`.employment_type_company_${company_no}`).val();
-
       career_history['first_contact_name'] = $(`.first_contact_name_${company_no}`).val();
       career_history['first_contact_email'] = $(`.first_contact_email_${company_no}`).val();
       career_history['first_contact_phone'] = $(`.first_contact_phone_${company_no}`).val();
       career_history['first_contact_designation'] = $(`.first_contact_designation_${company_no}`).val();
-
       career_history['second_contact_name'] = $(`.second_contact_name_${company_no}`).val();
       career_history['second_contact_email'] = $(`.second_contact_email_${company_no}`).val();
       career_history['second_contact_phone'] = $(`.second_contact_phone_${company_no}`).val();
       career_history['second_contact_designation'] = $(`.second_contact_designation_${company_no}`).val(); 
-
       if(!career_history['start_date']){
-        return frappe.msgprint(frappe._("Kindly fill the date of joining field."));
+        frappe.msgprint(frappe._("Kindly fill the date of joining field."));
+        return {};
       }
-      
-      /*
-        Still working in same company
-        value="1" if selected 'Yes'
-        value="2" if selected 'No'
-      */
       if($(`.still_working_on_same_company_${company_no}`).val() == 1){
         career_history['reason_for_leaving_job'] = $(`.reason_why_leave_job_${company_no}_text`).val();
       }
       else{
         career_history['left_the_company'] = $(`.when_did_you_left_${company_no}_date`).val();
         if(validateEndDate(career_history['left_the_company'])){
-          return frappe.msgprint(frappe._("Kindly fill the when did you leave the company field."));
+          frappe.msgprint(frappe._("Kindly fill the when did you leave the company field."));
+          return false;
         }
       }
       career_history['factors_in_new_job'] = $(`.factors_in_new_job_${company_no}_text`).val();
-
-      // Set Promotion Details
       var max_promotion = PROMOTIONS_IN_COMPANY[company_no];
       var promotions = [];
       for (let promotion_no = 1; promotion_no <= max_promotion; promotion_no++) {
         var promotion = {};
-        /*
-        Got any Promotion or Salary Increase
-        value="0" if selected 'No, I did not get any promotion or salary increase'
-        value="1" if selected 'Yes, I Got a Promotion with a Salary Increase'
-        value="2" if selected 'Yes, Only Got a Promotion'
-        value="3" if selected 'Yes, Only Got a Salary Increase'
-        */
         var got_promoted = $(`.promotion_select_${company_no}${promotion_no}`).val();
         if(got_promoted > 0){
           promotion['start_date'] = $(`.date_of_promotion_${company_no}${promotion_no}`).val();
@@ -571,7 +631,6 @@ career_history = Class.extend({
         promotions.push(promotion);
       }
       career_history['promotions'] = promotions;
-
       career_histories.push(career_history);
     }
     let interest_reason = $('[name="interest_reason"]').val();
@@ -581,48 +640,36 @@ career_history = Class.extend({
     let continuing_growth_rate = $('[name="continuing_growth_rate"]').val();
     let jobstretch_and_learning = $('[name="jobstretch_and_learning"]').val();
     let work_life_balance = $('[name="work_life_balance"]').val();
-    return {career_histories, interest_reason,project_and_technology, manager_and_team,compensation,continuing_growth_rate,jobstretch_and_learning,work_life_balance};
+    if (isFresher && fresher_details) {
+      return { fresher_details, expType };
+    }
+    return {career_histories, interest_reason, expType, project_and_technology, manager_and_team,compensation,continuing_growth_rate,jobstretch_and_learning,work_life_balance};
   },
   on_change_experience_type: function (company_no) {
     const me = this;
     $(`.fresher_experienced_select_${company_no}`).on('change', function() {
       const selectedExperienceType = $(this).val();
       const companyDetailsElement = $(`.company_details_${company_no}`);
-      
       if (selectedExperienceType === 'Fresher') {
+         $('.next-btn').remove();
         const fresherDetailsHTML = `
         <div class="learning-journey-block my-3 col-lg-12 col-md-12">
           <h6 class="learning-journey-heading">
             Learning and Development Journey
           </h6>
-          
           <div class="learning-journey-items mb-5"></div>
-
           <button class="btn btn-primary mb-3 add-learning-and-development-journey">Add Learning and Development Journey</button>
-
-          <div class="shoves-tugs-block">
-            <div class="mb-3">
-              <label class="form-label">Shoves</label>
-              <textarea
-                class="form-control shoves_input_${company_no}"
-                rows="2"
-                placeholder="Describe your shoves..."
-              ></textarea>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Tugs</label>
-              <textarea
-                class="form-control tugs_input_${company_no}"
-                rows="2"
-                placeholder="Describe your tugs..."
-              ></textarea>
-            </div>
-          </div>
+          ${get_shoves_tugs_html(company_no)}
         </div>
         `;
         companyDetailsElement.html(fresherDetailsHTML);
         me.on_click_add_learning_and_development_journey(company_no);
+        me.show_final_interest_step(company_no); // Reuse for Freshers
+          // Show submit button by default for Fresher
+          $('.submit-btn').fadeIn();
       } else if (selectedExperienceType === 'Experienced') {
+        $('.final-interest-section').remove();
+        $('.submit-btn').fadeOut();
         const experienceDetailsHTML = `
         <div class="my-3 col-lg-12 col-md-12">
           <label class="form-label">What was the company's name? </label>
@@ -632,23 +679,19 @@ career_history = Class.extend({
             placeholder="Enter the ${stringifyNumber(company_no)} Company Name"
           />
         </div>
-
         <div class="my-3 col-lg-12 col-md-12">
-          <label class="form-label">Which country did you get employed in?</label>
-          <br />
-          <select class="form-control country_of_company_${company_no}">
-            <option>Select Country</option>
-            {% for country in country_list %}
-            <option>{{country.name}}</option>
-            {% endfor %}
-          </select>
+          <label class="form-label">Which country did you get employed in?</label> <br>
+              <select class="form-control country_of_company_${company_no}">
+              <option>Select Country</option>
+              {% for country in country_list %}
+              <option>{{country.name}}</option>
+              {% endfor %}
+            </select>
         </div>
-
         <div class="mb-3 col-lg-12 col-md-12">
           <label class="form-label">When did you join the company?</label>
           <input type="date" class="form-control joined_company${company_no}" />
         </div>
-
         <div class="mb-3 col-lg-12 col-md-12">
           <label class="form-label">What was your first salary at this company?</label>
           <input
@@ -657,11 +700,9 @@ career_history = Class.extend({
             placeholder="Enter your Salary in KWD"
           />
         </div>
-
         <div class="col-lg-12 col-md-12">
           <hr class="my-5" />
         </div>
-
         <div class="mb-3 col-lg-12 col-md-12">
           <label class="form-label">What was your starting job title?</label>
           <input
@@ -670,168 +711,85 @@ career_history = Class.extend({
             placeholder="Enter the Job Title"
           />
         </div>
-
         <div class="col-lg-12 col-md-12 mb-3">
           <label class="form-label">What was your employment type?</label>
-          <select class="custom-select employment_type_company_${company_no}">
+            <select class="custom-select employment_type_company_${company_no}">
             <option value="" disabled selected>Select Employment Type</option>
-            {% for type in employment_type_list %}
-            <option value="{{ type }}">{{ type }}</option>
-            {% endfor %}
-          </select>
+              {% for type in employment_type_list %}
+              <option value="{{ type }}">{{ type }}</option>
+              {% endfor %}
+            </select>
         </div>
-
         <div class="mb-3 col-lg-12 col-md-12">
           <label class="form-label"
-            >Briefly describe your responsibilities in this role</label
-          >
+            >Briefly describe your responsibilities in this role</label>
           <textarea
             class="form-control responsibilities_company_${company_no}"
             rows="4"
             placeholder="E.g. Managed a team of 5, handled client reports, etc."
           ></textarea>
         </div>
-
         <div class="mt-5 promotion_section_${company_no}" style="width: 100%"></div>
-
         <div class="col-lg-12 col-md-12 mb-3">
-          <label
-            >Tell us about contact person details from ${stringifyNumber(company_no)}
-            company you worked!</label
-          >
+          <label>Tell us about contact person details from ${stringifyNumber(company_no)} company you worked!</label>
         </div>
-
         <div class="col-lg-6 col-md-6 mb-3">
           <label>Full name</label>
-          <input
-            type="text"
-            class="form-control first_contact_name_${company_no}"
-            placeholder="Full Name"
-          />
+          <input type="text" class="form-control first_contact_name_${company_no}" placeholder="Full Name" />
         </div>
-
         <div class="col-lg-6 col-md-6 mb-3">
           <label>Email</label>
-          <input
-            type="text"
-            class="form-control first_contact_email_${company_no}"
-            placeholder="Email"
-          />
+          <input type="text" class="form-control first_contact_email_${company_no}" placeholder="Email" />
         </div>
-
         <div class="col-lg-6 col-md-6 mb-3">
           <label>Designation</label>
-          <input
-            type="text"
-            class="form-control first_contact_designation_${company_no}"
-            placeholder="Designation"
-          />
+          <input type="text" class="form-control first_contact_designation_${company_no}" placeholder="Designation" />
         </div>
-
         <div class="col-lg-6 col-md-6 mb-3">
           <label>Phone number with country code</label>
-          <input
-            type="text"
-            class="form-control first_contact_phone_${company_no}"
-            placeholder="Phone number with country code"
-          />
+          <input type="text" class="form-control first_contact_phone_${company_no}" placeholder="Phone number with country code" />
         </div>
-
         <div class="col-lg-12 col-md-12 mb-3 add_more_contact_${company_no}">
-          <button
-            class="btn btn-dark float-left btn_add_more_contact_${company_no}"
-            type="button"
-          >
-            {{ _(" + Add more contact person") }}
-          </button>
+          <button class="btn btn-dark float-left btn_add_more_contact_${company_no}" type="button">+ Add more contact person</button>
         </div>
-
         <div class="col-lg-12 col-md-12 mb-3">
-          <label
-            >Tell us some details about your best boss from
-            ${stringifyNumber(company_no)} company you worked</label
-          >
+          <label>Tell us some details about your best boss from ${stringifyNumber(company_no)} company you worked</label>
         </div>
-
         <div class="col-lg-6 col-md-6 mb-3">
           <label>Full name</label>
-          <input
-            type="text"
-            class="form-control best_boss_name_${company_no}"
-            placeholder="Full Name"
-          />
+          <input type="text" class="form-control best_boss_name_${company_no}" placeholder="Full Name" />
         </div>
-
         <div class="col-lg-6 col-md-6 mb-3">
           <label>Email</label>
-          <input
-            type="text"
-            class="form-control best_boss_email_${company_no}"
-            placeholder="Email"
-          />
+          <input type="text" class="form-control best_boss_email_${company_no}" placeholder="Email" />
         </div>
-
         <div class="col-lg-6 col-md-6 mb-3">
           <label>Phone number with country code</label>
-          <input
-            type="text"
-            class="form-control best_boss_phone_${company_no}"
-            placeholder="Phone number with country code"
-          />
+          <input type="text" class="form-control best_boss_phone_${company_no}" placeholder="Phone number with country code" />
         </div>
-
         <div class="col-lg-6 col-md-6 mb-3">
           <label>Why is He/She the best?</label>
-          <input
-            type="text"
-            class="form-control why_best_boss${company_no}"
-            placeholder="Why is he/she the best?"
-          />
+          <input type="text" class="form-control why_best_boss${company_no}" placeholder="Why is he/she the best?" />
         </div>
-
         <div class="col-lg-12 col-md-12 mb-3 mt-5" style="width: 100%">
-          <label>
-            Tell us some details about your best colleague from
-            ${stringifyNumber(company_no)} company you worked</label
-          >
+          <label>Tell us some details about your best colleague from ${stringifyNumber(company_no)} company you worked</label>
         </div>
-
         <div class="col-lg-6 col-md-6 mb-3">
           <label>Full name</label>
-          <input
-            type="text"
-            class="form-control best_colleague_name_${company_no}"
-            placeholder="Full Name"
-          />
+          <input type="text" class="form-control best_colleague_name_${company_no}" placeholder="Full Name" />
         </div>
-
         <div class="col-lg-6 col-md-6 mb-3">
           <label>Email</label>
-          <input
-            type="text"
-            class="form-control best_colleague_email_${company_no}"
-            placeholder="Email"
-          />
+          <input type="text" class="form-control best_colleague_email_${company_no}" placeholder="Email" />
         </div>
-
         <div class="col-lg-6 col-md-6 mb-3">
           <label>Phone number with country code</label>
-          <input
-            type="text"
-            class="form-control best_colleague_phone_${company_no}"
-            placeholder="Phone number with country code"
-          />
+          <input type="text" class="form-control best_colleague_phone_${company_no}" placeholder="Phone number with country code" />
         </div>
-
         <div class="col-lg-6 col-md-6 mb-3">
           <label>Why is He/She the best?</label>
-          <input
-            type="text"
-            class="form-control why_best_colleague${company_no}"
-            placeholder="Why is he/she the best?"
-          />
+          <input type="text" class="form-control why_best_colleague${company_no}" placeholder="Why is he/she the best?" />
         </div>
-
         <div class="col-lg-12 col-md-12 mb-3">
           <label>Are you still working for the same company?</label>
           <select class="custom-select still_working_on_same_company_${company_no}">
@@ -896,7 +854,6 @@ career_history = Class.extend({
   on_change_learning_and_development_journey_activity_type: function(company_no, item_no) {
     $(`.activity_type_select_${company_no}_${item_no}`).on('change', function() {
       const selectedActivityType = $(this).val();
-      
       if (selectedActivityType) {
         frappe.call({
           method: "frappe.client.get",
@@ -907,8 +864,12 @@ career_history = Class.extend({
           callback: function(r) {
             const assessmentQuestions = r.message.assessment_questions || [];
             const questionsContainer = $(`.activity_type_select_${company_no}_${item_no}`).closest('.learning-journey-item').find('.assessment-questions');
-            
-            let questionsHTML = '';
+            let questionsHTML = `
+              <div class="mb-3">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-control activity_title_${company_no}_${item_no}" placeholder="Enter title..." />
+              </div>
+            `;
             assessmentQuestions.forEach((question, index) => {
               questionsHTML += `
                 <div class="mb-3">
@@ -917,7 +878,6 @@ career_history = Class.extend({
                 </div>
               `;
             });
-
             questionsContainer.html(questionsHTML);
           }
         });
@@ -925,6 +885,8 @@ career_history = Class.extend({
     });
   }
 });
+
+
 
 function stringifyNumber(n) {
   var special = ['Zeroth', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth', 'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth', 'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth'];
@@ -950,7 +912,24 @@ function validateEndDate(data){
   return !data;
 }
 
-function validateBestReferencesAndColleague(data) {
-  // Best reference is now non-mandatory
-  return true;
-  }
+// Helper to generate Shoves and Tugs block HTML
+function get_shoves_tugs_html(company_no) {
+  return `<div class="shoves-tugs-block my-3 col-lg-12 col-md-12">
+    <div class="mb-3">
+      <label class="form-label">Shoves</label>
+      <textarea
+        class="form-control shoves_input_${company_no}"
+        rows="2"
+        placeholder="Describe your shoves..."
+      ></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Tugs</label>
+      <textarea
+        class="form-control tugs_input_${company_no}"
+        rows="2"
+        placeholder="Describe your tugs..."
+      ></textarea>
+    </div>
+  </div>`;
+}

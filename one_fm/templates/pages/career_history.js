@@ -617,7 +617,8 @@ career_history = Class.extend({
       career_history['second_contact_name'] = $(`.second_contact_name_${company_no}`).val();
       career_history['second_contact_email'] = $(`.second_contact_email_${company_no}`).val();
       career_history['second_contact_phone'] = $(`.second_contact_phone_${company_no}`).val();
-      career_history['second_contact_designation'] = $(`.second_contact_designation_${company_no}`).val(); 
+      career_history['second_contact_designation'] = $(`.second_contact_designation_${company_no}`).val();
+      career_history['expType'] = expType;
       if(!career_history['start_date']){
         frappe.msgprint(frappe._("Kindly fill the date of joining field."));
         return {};

@@ -73,6 +73,21 @@ def get_leave_dates_by_employee():
 
     return leave_days_by_employee
 
+def get_employee_absent_dates(employee, start_date, end_date):
+    absent_dates = frappe.get_all(
+        "Attendance",
+        filters=[
+            ["employee", "=", employee],
+            ["docstatus", "=", 1],
+            ["attendance_date", "between", [start_date, end_date]],
+            ["status", "=", "Absent"]
+        ],
+		fields=["attendance_date"],
+    )
+
+    return [record.attendance_date for record in absent_dates]
+
+
 def get_day_off_comparison_dates(employee, total_leave_dates):
     today = getdate()
     comparison_periods = []
@@ -82,7 +97,9 @@ def get_day_off_comparison_dates(employee, total_leave_dates):
     joining_date = employee.date_of_joining or date.min
     relieving_date = employee.relieving_date or date.max
 
-    def add_period(start, end, total_days):
+    def add_period(start, end):
+        total_days = date_diff(end, start) + 1  # inclusive
+
         # Clamp dates within employee tenure
         start_date = max(start, joining_date)
         end_date = min(end, relieving_date)
@@ -90,14 +107,17 @@ def get_day_off_comparison_dates(employee, total_leave_dates):
         if start_date > end_date:
             return
 
+        # Consider non-absent days count as total days for this period
+        absent_dates = get_employee_absent_dates(employee.name, start_date, end_date)
+
         working_dates = []
         leave_dates_in_period = []
-		
+
         current = start_date
         while current <= end_date:
             if current in total_leave_dates:
                 leave_dates_in_period.append(current)
-            else:
+            elif current not in absent_dates:
                 working_dates.append(current)
             current += timedelta(days=1)
 
@@ -109,27 +129,28 @@ def get_day_off_comparison_dates(employee, total_leave_dates):
             "end_date": end_date,
             "calculated_number_of_days_off": round(calculated_days_off),
             "leave_dates": leave_dates_in_period,
-            "working_dates": working_dates
+            "working_dates": working_dates,
+			"absent_dates": absent_dates
         })
 
     if employee.day_off_category == "Monthly":
         # Current month
-        add_period(get_first_day(today), get_last_day(today), 30)
+        add_period(get_first_day(today), get_last_day(today))
 
         # Next month
         next_month = add_months(today, 1)
-        add_period(get_first_day(next_month), get_last_day(next_month), 30)
+        add_period(get_first_day(next_month), get_last_day(next_month))
 
     elif employee.day_off_category == "Weekly":
         # First week (starting from tomorrow)
         week1_start = add_days(today, 1)
         week1_end = add_days(week1_start, 6)
-        add_period(week1_start, week1_end, 7)
+        add_period(week1_start, week1_end)
 
         # Second week
         week2_start = add_days(week1_end, 1)
         week2_end = add_days(week2_start, 6)
-        add_period(week2_start, week2_end, 7)
+        add_period(week2_start, week2_end)
 
     return comparison_periods
 

@@ -96,6 +96,13 @@ class MOM(Document):
 				op_task.description = issue.description
 				op_task.priority = issue.priority
 				op_task.project = self.project 
+
+				# Clear and append child table rows properly
+				op_task.custom_assigned_to = []
+				if issue.user:
+					op_task.append("custom_assigned_to", {
+						"user": issue.user
+					})
 				op_task.save(ignore_permissions=True)
 
 				add_assignment({

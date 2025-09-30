@@ -316,11 +316,31 @@ career_history = Class.extend({
       }
       // --- END SortableJS Initialization ---
   },
-  create_company_section_html: function(company_no) {
+  create_company_section_html: function(company_no, preselected_experience_type = null) {
     $('.main_section').delay(400).fadeIn();
     if(company_no>=2){
       $('.back-btn').fadeIn();
       this.back_career_history(company_no);
+    }
+    var experience_select_html = `
+      <div class="my-3 col-lg-12 col-md-12">
+        <label class="form-label">Are you a Fresher or Experienced?</label>
+        <select class="form-control fresher_experienced_select_${company_no}">
+          <option value="" disabled selected>Select</option>
+          <option value="Fresher">Fresher</option>
+          <option value="Experienced">Experienced</option>
+        </select>
+      </div>
+    `;
+    // If preselected_experience_type is provided, hide the select and set its value
+    if (preselected_experience_type) {
+      experience_select_html = `
+        <input type="hidden" class="fresher_experienced_select_${company_no}" value="${preselected_experience_type}" />
+        <div class="my-3 col-lg-12 col-md-12">
+          <label class="form-label">Experience Type:</label>
+          <span style="font-weight:bold;">${preselected_experience_type}</span>
+        </div>
+      `;
     }
     var company_section_html = `
     <div class="section_${company_no}">
@@ -329,14 +349,7 @@ career_history = Class.extend({
       <div
         class="row border-top"
       >
-        <div class="my-3 col-lg-12 col-md-12">
-          <label class="form-label">Are you a Fresher or Experienced?</label>
-          <select class="form-control fresher_experienced_select_${company_no}">
-            <option value="" disabled selected>Select</option>
-            <option value="Fresher">Fresher</option>
-            <option value="Experienced">Experienced</option>
-          </select>
-        </div>
+      ${experience_select_html}
       </div>
 
       <div class="row company_details_${company_no}"></div>
@@ -344,7 +357,11 @@ career_history = Class.extend({
     `;
     $(".main_section").append(company_section_html);
     TOTAL_COMPANY_NO += 1;
-    this.on_change_experience_type(company_no);
+      if (preselected_experience_type) {
+      this.on_change_experience_type(company_no, preselected_experience_type);
+    } else {
+      this.on_change_experience_type(company_no);
+    }
   },
   on_click_add_more_contact_person: function(company_no) {
     var company_contact_html = `
@@ -376,12 +393,18 @@ career_history = Class.extend({
     $('.btn-next-career-history').click(function(){
       $(`.section_${company_no-1}`).fadeOut();
       $('.next-btn').fadeOut();
+
+      var prev_type = $(`.fresher_experienced_select_${company_no-1}`).val();
       if($(`.section_${company_no}`).length){
         $(`.section_${company_no}`).delay(400).fadeIn();
       }
       else{
-        me.create_company_section_html(company_no);
-      }
+          if (prev_type === "Experienced") {
+          me.create_company_section_html(company_no, "Experienced");
+        } else {
+          me.create_company_section_html(company_no);
+        }
+        }
 
     });
   },
@@ -565,13 +588,16 @@ career_history = Class.extend({
         let ranked_factors = this.getRankedFactorsData ? this.getRankedFactorsData() : [];
         // Collect interest reason
         let interest_reason = $('[name="interest_reason"]').val();
+        // Collect factors in new job for Fresher
+        let factors_in_new_job = $(`.factors_in_new_job_${company_no}_text`).val();
         fresher_details = {
           expType: expType,
           learning_journey: learning_journey,
           shoves: shoves,
           tugs: tugs,
           ranked_factors: ranked_factors,
-          interest_reason: interest_reason
+          interest_reason: interest_reason,
+          factors_in_new_job: factors_in_new_job
         };
         break; // Only one fresher section expected
       }
@@ -642,10 +668,15 @@ career_history = Class.extend({
     }
     return {career_histories, interest_reason, expType, project_and_technology, manager_and_team,compensation,continuing_growth_rate,jobstretch_and_learning,work_life_balance};
   },
-  on_change_experience_type: function (company_no) {
+  on_change_experience_type: function (company_no, forced_type = null) {
     const me = this;
+    if (forced_type) {
+      setTimeout(function() {
+        $(`.fresher_experienced_select_${company_no}`).val(forced_type).trigger('change');
+      }, 0);
+    }
     $(`.fresher_experienced_select_${company_no}`).on('change', function() {
-      const selectedExperienceType = $(this).val();
+      const selectedExperienceType = forced_type || $(this).val();
       const companyDetailsElement = $(`.company_details_${company_no}`);
       if (selectedExperienceType === 'Fresher') {
         heading_html = '<h3 class="mx-auto">Hello, {{job_applicant.applicant_name}}, tell us about your learning and development journey!</h3>';
@@ -659,6 +690,10 @@ career_history = Class.extend({
           <div class="learning-journey-items mb-5"></div>
           <button class="btn btn-primary mb-3 add-learning-and-development-journey">Add Learning and Development Journey</button>
           ${get_shoves_tugs_html(company_no)}
+        </div>
+        <div class="mx-auto col-lg-12 col-md-12 factors_in_new_job_${company_no}">
+          <label class="form-label">What are the factors you are looking for in a new job?</label>
+          <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text"></textarea>
         </div>
         `;
         companyDetailsElement.html(fresherDetailsHTML);

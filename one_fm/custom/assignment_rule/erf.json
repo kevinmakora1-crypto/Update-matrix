@@ -19,6 +19,14 @@
         {
             "user": "g.john@one-fm.com",
             "doctype": "Assignment Rule User"
+        },
+        {
+            "user": "p.rao@one-fm.com",
+            "doctype": "Assignment Rule User"
+        },
+        {
+            "user": "f.dawood@one-fm.com",
+            "doctype": "Assignment Rule User"
         }
     ],
     "assignment_days": [

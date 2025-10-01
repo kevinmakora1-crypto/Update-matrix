@@ -5,3 +5,4 @@ def execute():
     create_workflow(get_workflow_json_file("erf.json"))
     create_workflow(get_workflow_json_file("leave_acknowledgement_form.json"))
     create_workflow(get_workflow_json_file("purchase_order.json"))
+    create_workflow(get_workflow_json_file("erf.json"))

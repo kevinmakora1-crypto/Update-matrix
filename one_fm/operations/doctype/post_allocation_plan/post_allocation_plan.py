@@ -12,6 +12,13 @@ import itertools, time
 class PostAllocationPlan(Document):
 	pass
 
+
+@frappe.whitelist()
+def filter_employees(doctype, txt, searchfield, start, page_len, filters):
+    employees = frappe.get_all("Employee Schedule", {'date': filters.get("date"), 'shift': filters.get("operations_shift"), 'employee_availability': 'Working'}, ["employee", "employee_name"])
+    return [[i.employee,i.employee_name] for i in employees]
+    
+
 @frappe.whitelist()
 def filter_posts(doctype, txt, searchfield, start, page_len, filters):
 	return frappe.db.sql("""
@@ -20,7 +27,7 @@ def filter_posts(doctype, txt, searchfield, start, page_len, filters):
 		WHERE 
 			post_status="Planned"
 		AND shift=%(shift)s
-		AND date=%(date)s 
+		AND date>=%(date)s 
 	""", {
 		'shift': frappe.db.escape(filters.get("operations_shift")),
 		'date': frappe.db.escape(filters.get("date"))
@@ -28,27 +35,27 @@ def filter_posts(doctype, txt, searchfield, start, page_len, filters):
 
 @frappe.whitelist()
 def get_table_data(operations_shift, date):
-	employees = frappe.get_all("Employee Schedule", {'date': date, 'shift': operations_shift, 'employee_availability': 'Working'}, ["employee", "employee_name"])
+	# employees = frappe.get_all("Employee Schedule", {'date': date, 'shift': operations_shift, 'employee_availability': 'Working'}, ["employee", "employee_name"])
 	posts = get_posts(operations_shift, date)
-	post_list = {}
+	post_list = [i.post for i in posts]
 
-	for key, group in itertools.groupby(posts, key=lambda x: (x['priority_level'])):
-		post_details_list = []
+	# for key, group in itertools.groupby(posts, key=lambda x: (x['priority_level'])):
+	# 	post_details_list = []
 		# Sort descending by length of skills in post
-		priority_posts = sorted(list(group), key=post_sorting, reverse=True)
-		for post in priority_posts:
-			post_data = get_post_data_map(post)
-			post_details_list.append(post_data)
+		# priority_posts = sorted(list(group), key=post_sorting, reverse=True)
+		# for post in priority_posts:
+		# 	post_data = get_post_data_map(post)
+		# 	post_details_list.append(post_data)
 
-		post_list.update({key: post_details_list})	
+		# post_list.update({key: post_details_list})	
 
-	employee_details_list = []
-	for employee in employees:
-		employee_skills = get_employee_data_map(employee, operations_shift, date)
-		employee_details_list.append(employee_skills)		
+	# employee_details_list = []
+	# for employee in employees:
+	# 	employee_skills = get_employee_data_map(employee, operations_shift, date)
+	# 	employee_details_list.append(employee_skills)		
 
 	return {
-		'employees': employee_details_list, 
+		# 'employees': employee_details_list, 
 		'posts': post_list
 	}
 

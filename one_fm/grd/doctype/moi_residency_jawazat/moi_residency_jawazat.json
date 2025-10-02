@@ -391,7 +391,7 @@
   {
    "fieldname": "grd_operator",
    "fieldtype": "Link",
-   "label": "GRD Operator",
+   "label": "Government Relations Operator",
    "options": "User",
    "print_hide": 1,
    "read_only": 1
@@ -407,7 +407,7 @@
    "default": "0",
    "fieldname": "reminded_grd_operator",
    "fieldtype": "Check",
-   "label": "Reminded GRD Operator",
+   "label": "Reminded Government Relations Operator",
    "no_copy": 1,
    "print_hide": 1,
    "read_only": 1
@@ -416,7 +416,7 @@
    "default": "0",
    "fieldname": "reminded_grd_operator_again",
    "fieldtype": "Check",
-   "label": "Reminded GRD Operator Again",
+   "label": "Reminded Government Relations Operator Again",
    "no_copy": 1,
    "print_hide": 1,
    "read_only": 1
@@ -555,7 +555,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRD Operator",
+   "role": "Government Relations Operator",
    "share": 1,
    "submit": 1,
    "write": 1

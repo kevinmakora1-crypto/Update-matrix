@@ -6,6 +6,26 @@ frappe.provide("erpnext.accounts.dimensions");
 erpnext.buying.setup_buying_controller();
 
 frappe.ui.form.on('Request for Material', {
+	purchase_rfm: function(frm){
+		if(frm.is_dirty()){
+			frappe.msgprint(__('Please save before creating Purchase RFM.'));
+			return;
+		}
+		if(frm.doc.linked_request_for_material){
+			frappe.msgprint(__('This document is already a Purchase RFM.'));
+			return;
+		}
+		if(!frm.doc.linked_request_for_material){
+			let new_doc = frappe.model.copy_doc(frm.doc);
+			new_doc.linked_request_for_material = frm.doc.name;
+			new_doc.workflow_state = '';
+			new_doc.purpose = 'Purchase';
+			new_doc.docstatus = 0;
+			frappe.set_route('Form', new_doc.doctype, new_doc.name);
+
+		}
+		
+	},
 	before_workflow_action: function(frm){
 		if(frm.doc.workflow_state == 'Pending Approval' && frm.doc.request_for_material_approver != frappe.session.user){
 			frappe.throw(__("You are not authorized to approve!!"));
@@ -98,6 +118,10 @@ frappe.ui.form.on('Request for Material', {
 		set_warehouse_filters(frm);
 		toggle_child_table_fields(frm);
 
+		if(frm.doc.linked_request_for_material){
+			frm.set_df_property('purpose', 'read_only', 1);
+		}
+		add_purchase_rfm_button(frm);
 	},
 	items_on_form_rendered: (frm) => {
 	},
@@ -136,10 +160,10 @@ frappe.ui.form.on('Request for Material', {
 							
 							frm.events.make_request_for_purchase(frm)
 						}, __('Create'))
-							// frm.events.xvalidate_rfm_type(frm,"Request for")
+							
 							
 						
-						;
+						
 				}
 
 				if(item_exist_in_stock){
@@ -271,7 +295,7 @@ frappe.ui.form.on('Request for Material', {
 		}
 	},
 	make_request_for_purchase: async function(frm) {
-				await frm.events.validate_rfm_type(frm, "Request for Purchase");
+				await frm.events.validate_rfm_type(frm);
 				
 
                 if (frm.is_dirty()) {
@@ -986,4 +1010,23 @@ function toggle_child_table_fields(frm) {
 		frm.fields_dict['items'].grid.toggle_display('item_url', false);
 	}
 }
+
+function add_purchase_rfm_button(frm){
+	if(!(frm.doc.docstatus == 1 && frm.doc.status == 'Approved' && frappe.user_roles.includes('Warehouse Supervisor'))){
+		return;
+	}
+	if(frm.doc.linked_request_for_material){
+		return;
+	}
+	
+	if(!frm.doc.linked_request_for_material){
+		frm.add_custom_button(__('Purchase RFM'), () => frm.events.purchase_rfm(frm), __('Create'));
+		frm.page.set_inner_btn_group_as_primary(__('Create'));
+	}
+
+}
+
+frappe.ui.form.on('Request for Material', {
+	
+});
 

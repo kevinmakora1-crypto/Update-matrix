@@ -216,15 +216,15 @@ standard_queries = {
 
 doc_events = {
 	"Stock Entry": {
-		# "validate": [
-		# 	"one_fm.overrides.stock_entry.alert_item_multiple_entry",
-		# 	"one_fm.api.doc_methods.stock_entry.validate_stock_entry_items"
-		# ],
-		# "on_submit": [
-		# 	"one_fm.api.doc_methods.stock_entry.validate_budget",
-		# 	"one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_and_requested_qty"
-		# ],
-		# "on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_and_requested_qty"
+		"validate": [
+			"one_fm.overrides.stock_entry.alert_item_multiple_entry",
+			"one_fm.api.doc_methods.stock_entry.validate_stock_entry_items"
+		],
+		"on_submit": [
+			"one_fm.api.doc_methods.stock_entry.validate_budget",
+			"one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_and_requested_qty"
+		],
+		"on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_and_requested_qty"
 	},
 	"Purchase Order": {
 		"on_submit": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",

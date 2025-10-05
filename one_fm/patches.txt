@@ -162,6 +162,8 @@ one_fm.patches.v15_0.delete_issue_log_custom_field_error_log
 one_fm.patches.v15_0.create_hd_ticket_custom_field_error_log
 one_fm.patches.v15_0.create_rq_job_agent_process_task
 one_fm.patches.v15_0.create_scheduled_job_agent_process_task
+one_fm.patches.v15_0.create_residency_process_task
+one_fm.patches.v15_0.update_residency_assignment_rule
 
 [post_model_sync]
 one_fm.patches.v15_0.create_attendance_check_process_task #re run again

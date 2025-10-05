@@ -43,19 +43,19 @@
   {
    "fieldname": "default_grd_operator",
    "fieldtype": "Link",
-   "label": "Default GRD Operator (Renewal)",
+   "label": "Default Government Relations Operator (Renewal)",
    "options": "User"
   },
   {
    "fieldname": "default_grd_operator_pifss",
    "fieldtype": "Link",
-   "label": "Default GRD Operator (PIFSS)",
+   "label": "Default Government Relations Operator (PIFSS)",
    "options": "User"
   },
   {
    "fieldname": "default_grd_operator_transfer",
    "fieldtype": "Link",
-   "label": "Default GRD Operator (Transfer)",
+   "label": "Default Government Relations Operator (Transfer)",
    "options": "User"
   },
   {

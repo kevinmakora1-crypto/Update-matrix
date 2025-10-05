@@ -7,7 +7,7 @@ import frappe
 import json
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
-from frappe.utils import flt, get_url, get_fullname
+from frappe.utils import flt, get_url, get_fullname,cstr
 from frappe import _
 from frappe.utils.user import get_users_with_role
 from frappe.permissions import has_permission
@@ -34,13 +34,15 @@ class RequestforMaterial(BuyingController):
         create_notification_log(subject, message, [self.requested_by], self)
 
     def validate(self):
+        
         self.validate_details_against_type()
         self.set_request_for_material_accepter_and_approver()
         self.set_item_fields()
         self.set_title()
         self.validate_item_qty()
         # self.validate_item_reservation()
-  
+        self.validate_linked_request_quantities()
+
     def _initialize_custom_quantities(self):
             """
             Initializes the custom RFP and pending quantities for each item
@@ -312,6 +314,47 @@ class RequestforMaterial(BuyingController):
             return reservation
         except Exception as e:
             frappe.throw(str(e))
+
+    def validate_linked_request_quantities(self):
+        """If this RFM is linked to another (linked_request_for_material), ensure per-item total qty
+        does not exceed the total qty of the corresponding item_code in the linked source RFM.
+        Compares summed quantities by item_code (not per row). Throws a single combined error message.
+        """
+        linked_name = getattr(self, 'linked_request_for_material', None)
+        if not linked_name:
+            return
+        if linked_name == self.name:
+            frappe.throw(_("Linked Request for Material cannot reference itself."))
+
+        # Fetch linked RFM
+        if not frappe.db.exists('Request for Material', linked_name):
+            frappe.throw(_("Linked Request for Material {0} does not exist.").format(frappe.bold(linked_name)))
+        source_doc = frappe.get_doc('Request for Material', linked_name)
+        if source_doc.purpose !="Purchase":
+            source_doc.db_set('purpose',"Purchase")
+        # Aggregate totals by item_code for source and current
+        source_totals = {}
+        for it in source_doc.items:
+            if it.item_code:
+                source_totals[it.item_code] = source_totals.get(it.item_code, 0) + flt(it.qty)
+
+        current_totals = {}
+        for it in self.items:
+            if it.item_code:
+                current_totals[it.item_code] = current_totals.get(it.item_code, 0) + flt(it.qty)
+
+        # Compare
+        violations = []
+        for item_code, curr_qty in current_totals.items():
+            src_qty = source_totals.get(item_code)
+            if src_qty is None:
+                violations.append(_("Item {0}: not present in linked RFM {1}. Current total {2}").format(frappe.bold(item_code), frappe.bold(linked_name), frappe.bold(curr_qty)))
+            elif curr_qty > src_qty:
+                violations.append(_("Item {0}: current total {1} exceeds linked RFM total {2}").format(frappe.bold(item_code), frappe.bold(curr_qty), frappe.bold(src_qty)))
+
+        if violations:
+            msg = _("Quantity validation against Linked Request for Material failed:<br>{0}").format('<br>'.join(violations))
+            frappe.throw(msg)
 
 def update_completed_and_requested_qty(stock_entry, method):
         if stock_entry.doctype == "Stock Entry":

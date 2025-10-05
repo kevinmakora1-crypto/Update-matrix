@@ -1019,7 +1019,7 @@ function add_purchase_rfm_button(frm){
 		return;
 	}
 	
-	if(!frm.doc.linked_request_for_material){
+	if(!frm.doc.linked_request_for_material && frm.doc.purpose !="Purchase"){
 		frm.add_custom_button(__('Purchase RFM'), () => frm.events.purchase_rfm(frm), __('Create'));
 		frm.page.set_inner_btn_group_as_primary(__('Create'));
 	}

@@ -95,7 +95,7 @@
    "fieldname": "grd_operator",
    "fieldtype": "Link",
    "hidden": 1,
-   "label": "GRD Operator",
+   "label": "Government Relations Operator",
    "options": "User"
   }
  ],
@@ -128,7 +128,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRD Operator",
+   "role": "Government Relations Operator",
    "share": 1,
    "submit": 1,
    "write": 1

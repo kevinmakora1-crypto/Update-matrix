@@ -168,3 +168,4 @@ one_fm.patches.v15_0.update_existing_designation_to_main_head_hunt_doctype
 one_fm.patches.v15_0.attendance_check_create #09-09-2025
 one_fm.patches.v15_0.update_job_applicant_field
 one_fm.patches.v15_0.create_compliance_checker_process_task
+one_fm.patches.v15_0.update_preparation_records

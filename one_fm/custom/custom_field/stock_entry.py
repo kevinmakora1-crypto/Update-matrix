@@ -26,6 +26,6 @@ def get_stock_entry_custom_fields():
                 "fieldtype": "Attach",
                 "label": "Inspection Form Attachment",
                 "insert_after": "delivery_note_attachment"
-            },
+            }
         ]
     }

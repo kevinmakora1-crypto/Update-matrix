@@ -130,9 +130,16 @@ frappe.ui.form.on('Request for Material', {
 					}
 				});
 
-				if(purchase_item_exist){
+				if(purchase_item_exist && frappe.user_roles.includes("Warehouse Supervisor")){
 					frm.add_custom_button(__("Request for Purchase"),
-						() => frm.events.make_request_for_purchase(frm), __('Create'));
+						function(){
+							
+							frm.events.make_request_for_purchase(frm)
+						}, __('Create'))
+							// frm.events.xvalidate_rfm_type(frm,"Request for")
+							
+						
+						;
 				}
 
 				if(item_exist_in_stock){
@@ -155,8 +162,11 @@ frappe.ui.form.on('Request for Material', {
 								if(frm.doc.type == "Individual"){
 									stock_entry_button_name = __("Material Issue");
 								}
-								frm.add_custom_button(stock_entry_button_name, () => frm.events.make_stock_entry(frm), __('Create'));
-							}
+								if(frappe.user_roles.includes("Warehouse Supervisor")){
+									frm.add_custom_button(stock_entry_button_name, () => frm.events.make_stock_entry(frm), __('Create'));
+								}
+								}
+								
 						});
 						
 						if(any_items_ordered){
@@ -167,7 +177,7 @@ frappe.ui.form.on('Request for Material', {
 					}
 				}
 				else {	
-					if(purchase_item_exist){
+					if(purchase_item_exist && frappe.user_roles.includes("Warehouse Supervisor") ){
 							frm.add_custom_button(__("Request for Purchase"),
 								() => frm.events.make_request_for_purchase(frm), __('Create'));
 					}
@@ -253,7 +263,16 @@ frappe.ui.form.on('Request for Material', {
 			});
 		}
 	},
-	make_request_for_purchase: function(frm) {
+	validate_rfm_type : function(frm){
+		validate_item_code(frm)
+		// ensure that the purpose field is set throw an error if it is not
+		if((!frm.doc.purpose)&& (frappe.user_roles.includes("Warehouse Supervisor"))){
+			frappe.throw(__("Cannot Create Document. Purpose field needs to be selected"));
+		}
+	},
+	make_request_for_purchase: async function(frm) {
+				await frm.events.validate_rfm_type(frm, "Request for Purchase");
+				
 
                 if (frm.is_dirty()) {
                         frappe.msgprint(__("Please save your changes before creating a Request for Purchase."));

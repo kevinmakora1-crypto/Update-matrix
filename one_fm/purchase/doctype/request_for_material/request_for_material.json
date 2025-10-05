@@ -502,9 +502,14 @@
    "group": "Reference",
    "link_doctype": "Delivery Note",
    "link_fieldname": "request_for_material"
+  },
+  {
+   "group": "Reference",
+   "link_doctype": "Stock Entry",
+   "link_fieldname": "one_fm_request_for_material"
   }
  ],
- "modified": "2025-10-02 13:17:25.856606",
+ "modified": "2025-10-05 16:26:38.052904",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Material",

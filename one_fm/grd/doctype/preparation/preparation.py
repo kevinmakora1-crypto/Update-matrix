@@ -30,6 +30,7 @@ class Preparation(Document):
     def update_total_amount(self):
         doc_total = sum(i.total_amount for i in self.preparation_record)
         frappe.db.set_value(self.doctype,self.name,'total_payment',doc_total)
+        self.total_payment = doc_total
                      
     def on_update_after_submit(self):
         self.compare_preparation_record()
@@ -76,6 +77,7 @@ class Preparation(Document):
         self.set_grd_values()
         self.set_hr_values()
         validate_preparation_table(self)
+        self.update_total_amount()
         
     def set_grd_values(self):
         """

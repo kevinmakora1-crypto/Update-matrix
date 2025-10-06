@@ -48,6 +48,8 @@
   "more_info",
   "lead_time_date",
   "custom_rfp_quantity",
+  "transferred_quantity",
+  "issued_quantity",
   "custom_pending_quantity",
   "purchased_qty",
   "projected_qty",
@@ -285,7 +287,6 @@
    "in_list_view": 1,
    "label": "RFP Quantity",
    "no_copy": 1,
-   "permlevel": 0,
    "read_only": 1
   },
   {
@@ -295,7 +296,6 @@
    "in_list_view": 1,
    "label": "Pending Quantity",
    "no_copy": 1,
-   "permlevel": 0,
    "read_only": 1
   },
   {
@@ -476,17 +476,30 @@
    "fieldtype": "Data",
    "label": "Item URL",
    "options": "URL"
+  },
+  {
+   "fieldname": "transferred_quantity",
+   "fieldtype": "Float",
+   "label": "Transferred Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "issued_quantity",
+   "fieldtype": "Float",
+   "label": "Issued Quantity",
+   "read_only": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2025-03-09 17:55:38.621239",
+ "modified": "2025-10-05 14:47:25.069672",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Material Item",
  "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

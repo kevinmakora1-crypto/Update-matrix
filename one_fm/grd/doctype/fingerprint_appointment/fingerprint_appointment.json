@@ -252,7 +252,7 @@
    "fieldname": "reminded_grd_operator",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminded GRD Operator",
+   "label": "Reminded Government Relations Operator",
    "no_copy": 1,
    "read_only": 1
   },
@@ -261,7 +261,7 @@
    "fieldname": "reminded_grd_operator_again",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminded GRD Operator Again",
+   "label": "Reminded Government Relations Operator Again",
    "no_copy": 1,
    "read_only": 1
   },
@@ -314,7 +314,7 @@
    "fieldname": "reminded_grd_operator_documents",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminded GRD Operator Documents",
+   "label": "Reminded Government Relations Operator Documents",
    "no_copy": 1,
    "read_only": 1
   },
@@ -323,7 +323,7 @@
    "fieldname": "reminded_grd_operator_documents_again",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminded GRD Operator Documents Again",
+   "label": "Reminded Government Relations Operator Documents Again",
    "no_copy": 1,
    "read_only": 1
   },
@@ -393,14 +393,14 @@
    "fieldname": "grd_operator_renewal",
    "fieldtype": "Link",
    "hidden": 1,
-   "label": "GRD Operator Renewal",
+   "label": "Government Relations Operator Renewal",
    "options": "User"
   },
   {
    "fieldname": "grd_operator_transfer",
    "fieldtype": "Data",
    "hidden": 1,
-   "label": "GRD Operator Transfer"
+   "label": "Government Relations Operator Transfer"
   },
   {
    "allow_on_submit": 1,
@@ -479,7 +479,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRD Operator",
+   "role": "Government Relations Operator",
    "set_user_permissions": 1,
    "share": 1,
    "write": 1

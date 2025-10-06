@@ -7,8 +7,9 @@ import frappe
 import json
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
-from frappe.utils import flt, get_url, get_fullname
+from frappe.utils import flt, get_url, get_fullname,cstr
 from frappe import _
+from frappe.utils import nowdate, cstr
 from frappe.utils.user import get_users_with_role
 from frappe.permissions import has_permission
 from erpnext.controllers.buying_controller import BuyingController
@@ -34,13 +35,15 @@ class RequestforMaterial(BuyingController):
         create_notification_log(subject, message, [self.requested_by], self)
 
     def validate(self):
+        
         self.validate_details_against_type()
         self.set_request_for_material_accepter_and_approver()
         self.set_item_fields()
         self.set_title()
         self.validate_item_qty()
         # self.validate_item_reservation()
-  
+        self.validate_linked_request_quantities()
+
     def _initialize_custom_quantities(self):
             """
             Initializes the custom RFP and pending quantities for each item
@@ -312,6 +315,47 @@ class RequestforMaterial(BuyingController):
             return reservation
         except Exception as e:
             frappe.throw(str(e))
+
+    def validate_linked_request_quantities(self):
+        """If this RFM is linked to another (linked_request_for_material), ensure per-item total qty
+        does not exceed the total qty of the corresponding item_code in the linked source RFM.
+        Compares summed quantities by item_code (not per row). Throws a single combined error message.
+        """
+        linked_name = getattr(self, 'linked_request_for_material', None)
+        if not linked_name:
+            return
+        if linked_name == self.name:
+            frappe.throw(_("Linked Request for Material cannot reference itself."))
+
+        # Fetch linked RFM
+        if not frappe.db.exists('Request for Material', linked_name):
+            frappe.throw(_("Linked Request for Material {0} does not exist.").format(frappe.bold(linked_name)))
+        source_doc = frappe.get_doc('Request for Material', linked_name)
+        if source_doc.purpose !="Purchase":
+            source_doc.db_set('purpose',"Purchase")
+        # Aggregate totals by item_code for source and current
+        source_totals = {}
+        for it in source_doc.items:
+            if it.item_code:
+                source_totals[it.item_code] = source_totals.get(it.item_code, 0) + flt(it.qty)
+
+        current_totals = {}
+        for it in self.items:
+            if it.item_code:
+                current_totals[it.item_code] = current_totals.get(it.item_code, 0) + flt(it.qty)
+
+        # Compare
+        violations = []
+        for item_code, curr_qty in current_totals.items():
+            src_qty = source_totals.get(item_code)
+            if src_qty is None:
+                violations.append(_("Item {0}: not present in linked RFM {1}. Current total {2}").format(frappe.bold(item_code), frappe.bold(linked_name), frappe.bold(curr_qty)))
+            elif curr_qty > src_qty:
+                violations.append(_("Item {0}: current total {1} exceeds linked RFM total {2}").format(frappe.bold(item_code), frappe.bold(curr_qty), frappe.bold(src_qty)))
+
+        if violations:
+            msg = _("Quantity validation against Linked Request for Material failed:<br>{0}").format('<br>'.join(violations))
+            frappe.throw(msg)
 
 def update_completed_and_requested_qty(stock_entry, method):
         if stock_entry.doctype == "Stock Entry":
@@ -588,6 +632,8 @@ def create_partial_request_for_purchase(source_name, items):
 def make_request_for_purchase(source_name, target_doc=None):
     
     def set_missing_values(source, target):
+        if not target.get("items"):
+            frappe.throw(_("Cannot create RFP. At least one line item must have a specified Item Code."))
         target.run_method('_update_linked_rfm_quantities')
         
         
@@ -596,8 +642,6 @@ def make_request_for_purchase(source_name, target_doc=None):
             qty = obj.qty - obj.custom_rfp_quantity
             target.qty = qty
             target.custom_request_for_material_item = obj.name
-            if not obj.item_code:
-                frappe.throw(_("Please specify the Item Code in each line before you create RFP"))
 
     doclist = get_mapped_doc("Request for Material", source_name, 	{
         "Request for Material": {
@@ -616,13 +660,73 @@ def make_request_for_purchase(source_name, target_doc=None):
                 ["requested_description", "description"],
                 ["requested_item_name", "item_name"],
                 ["name", "request_for_material_item"],
+                ["name", "custom_request_for_material_item"],
                 ["parent", "request_for_material"]
             ],
             "postprocess": update_item,
-            "condition": lambda doc: (doc.custom_rfp_quantity < doc.qty and doc.reject_item==0)
+            "condition": lambda doc: (doc.item_code and doc.custom_rfp_quantity < doc.qty and doc.reject_item==0)
         }
-    }, target_doc)
+    }, target_doc, set_missing_values)
     doclist.save()
     frappe.db.commit()
     
     return doclist
+
+
+@frappe.whitelist()
+def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
+    rfm = frappe.get_doc("Request for Material", rfm_name)
+    
+    if stock_entry_type == "Material Issue" and rfm.purpose != "Issue":
+        frappe.throw(_("RFM Purpose must be Issue for Material Issue"))
+    
+    if stock_entry_type in ["Material Transfer", "Material Transfer-In Transit"] and rfm.purpose != "Transfer":
+        frappe.throw(_("RFM Purpose must be Transfer for Material Transfer"))
+    
+    if rfm.docstatus != 1:
+        frappe.throw(_("RFM must be approved (submitted)"))
+    
+    stock_entry = frappe.new_doc("Stock Entry")
+    stock_entry.company = rfm.company
+    stock_entry.posting_date = nowdate()
+    stock_entry.one_fm_request_for_material = rfm_name
+    
+    if rfm.purpose == "Transfer":
+        stock_entry.stock_entry_type = "Material Transfer"
+        if stock_entry_type == "Material Transfer-In Transit":
+            stock_entry.add_to_transit = 1
+            
+    elif rfm.purpose == "Issue":
+        stock_entry.stock_entry_type = "Material Issue"
+
+    for item in rfm.items:
+        if rfm.purpose == "Issue":
+            stock_entry.append("items", {
+                "item_code": item.item_code,
+                "item_name": item.item_name,
+                "description": item.description,
+                "qty": item.qty,
+                "s_warehouse": item.warehouse,
+                "uom": item.uom,
+                "stock_uom": item.stock_uom,
+                "conversion_factor": item.conversion_factor or 1
+            })
+        else:
+            stock_entry.append("items", {
+                "item_code": item.item_code,
+                "item_name": item.item_name,
+                "description": item.description,
+                "qty": item.qty,
+                "s_warehouse": item.warehouse,
+                "t_warehouse": item.t_warehouse,
+                "uom": item.uom,
+                "stock_uom": item.stock_uom,
+                "conversion_factor": item.conversion_factor or 1
+            })
+
+    
+    stock_entry.insert()
+    
+    frappe.msgprint(_("Stock Entry {0} created successfully").format(stock_entry.name))
+    
+    return stock_entry.name

@@ -295,7 +295,7 @@
   {
    "fieldname": "grd_operator",
    "fieldtype": "Link",
-   "label": "GRD Operator",
+   "label": "Government Relations Operator",
    "no_copy": 1,
    "options": "User",
    "read_only": 1
@@ -305,7 +305,7 @@
    "fieldname": "reminded_grd_operator",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminded GRD Operator",
+   "label": "Reminded Government Relations Operator",
    "no_copy": 1,
    "read_only": 1
   },
@@ -314,7 +314,7 @@
    "fieldname": "reminded_grd_operator_again",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminder GRD Operator Again",
+   "label": "Reminder Government Relations Operator Again",
    "no_copy": 1,
    "read_only": 1
   },
@@ -479,7 +479,7 @@
    "fieldname": "reminded_grd_operator_approve_previous_company",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminded GRD Operator Approve Previous Company",
+   "label": "Reminded Government Relations Operator Approve Previous Company",
    "no_copy": 1,
    "print_hide": 1,
    "read_only": 1
@@ -490,7 +490,7 @@
    "fieldname": "reminded_grd_operator_approve_previous_company_again",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminder GRD Operator Approve Previous Company Again",
+   "label": "Reminder Government Relations Operator Approve Previous Company Again",
    "no_copy": 1,
    "print_hide": 1,
    "read_only": 1
@@ -874,7 +874,7 @@
   {
    "fieldname": "grd_operator_transfer",
    "fieldtype": "Link",
-   "label": "GRD Operator Transfer",
+   "label": "Government Relations Operator Transfer",
    "options": "User"
   },
   {
@@ -997,7 +997,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRD Operator",
+   "role": "Government Relations Operator",
    "share": 1,
    "submit": 1,
    "write": 1
@@ -1023,7 +1023,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRD Operator",
+   "role": "Government Relations Operator",
    "share": 1
   },
   {

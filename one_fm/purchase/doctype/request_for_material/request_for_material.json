@@ -56,7 +56,8 @@
   "terms",
   "reference",
   "job_card",
-  "amended_from"
+  "amended_from",
+  "linked_request_for_material"
  ],
  "fields": [
   {
@@ -481,6 +482,13 @@
    "fieldtype": "Select",
    "label": "Purpose",
    "options": "\nIssue\nTransfer\nPurchase"
+  },
+  {
+   "fieldname": "linked_request_for_material",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Linked Request for Material",
+   "options": "Request for Material"
   }
  ],
  "grid_page_length": 50,

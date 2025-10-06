@@ -530,7 +530,8 @@ override_doctype_class = {
     "ToDo": "one_fm.overrides.todo.ToDo",
     "Task": "one_fm.overrides.task.TaskOverride",
     "Loan Application": "one_fm.overrides.loan_application.LoanApplicationOverride",
-    "Loan": "one_fm.overrides.loan.LoanOverride"
+    "Loan": "one_fm.overrides.loan.LoanOverride",
+    "Stock Entry": "one_fm.overrides.stock_entry.StockEntryOverride",
 }
 
 

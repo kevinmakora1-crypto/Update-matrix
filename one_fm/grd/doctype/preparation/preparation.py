@@ -125,8 +125,6 @@ class Preparation(Document):
             message += '</ul>'
             frappe.throw(message)
 
-        if self.hr_approval == "No":
-            frappe.throw("Must Be Approved By HR ")
 
     def recall_create_work_permit_renewal(self):
         work_permit.create_work_permit_renewal(self.name)
@@ -238,7 +236,7 @@ def notify_hr(doc):
     create_notification_log(subject, message, [doc.hr_user], doc)
 
 def notify_request_for_renewal_or_extend():# Notify finance
-    filters = {'docstatus': 1, 'hr_approval': ['=', "Yes"]}
+    filters = {'docstatus': 1}
     preparation_list = frappe.get_doc('Preparation', filters,['name', 'notify_finance_user'])
     page_link = get_url(preparation_list.get_url())
     message = "<p>Please Review the Renewal and Extend List of employee {0}<a href='{1}'></a></p>".format(page_link,preparation_list.name)

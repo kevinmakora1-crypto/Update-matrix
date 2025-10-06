@@ -373,3 +373,79 @@ def validate_preparation_table(doc):
         for each in doc.preparation_record:
             if each.employee not in all_active_staff_list:
                 frappe.throw(f"The Employee in row <b>{each.idx}</b> <b>{each.full_name}</b> is not Active at the moment")
+
+@frappe.whitelist()
+def get_employees_relieving_and_last_checkin(employees):
+    """Return relieving_date and last_checkin_date (MAX(date) in Employee Checkin) for each employee.
+    Performs a single aggregated LEFT JOIN query for efficiency.
+    """
+    if not employees:
+        return {}
+    if isinstance(employees, str):
+        try:
+            import json as _json
+            employees = _json.loads(employees)
+        except Exception:
+            employees = [employees]
+    if not isinstance(employees, (list, tuple, set)):
+        employees = [employees]
+    employees = list({e for e in employees if e})  # dedupe & drop falsy
+    if not employees:
+        return {}
+
+    params = {"employees": tuple(employees)}
+    # Single query: Employee + MAX(checkin.date)
+    rows = frappe.db.sql(
+        """
+        SELECT
+            e.name AS employee,
+            e.relieving_date AS relieving_date,
+            MAX(c.date) AS last_checkin_date
+        FROM `tabEmployee` e
+        LEFT JOIN `tabEmployee Checkin` c ON c.employee = e.name
+        WHERE e.name IN %(employees)s
+        GROUP BY e.name, e.relieving_date
+        """,
+        params,
+        as_dict=True,
+    )
+
+    result = {}
+    for r in rows:
+        result[r.employee] = {
+            "relieving_date": r.relieving_date,
+            "last_checkin_date": r.last_checkin_date,
+        }
+    return result
+
+@frappe.whitelist()
+def update_preparation_employee_dates(preparation: str):
+    """Update relieving_date and last_checkin_date in child rows without making the form dirty.
+    Uses frappe.db.set_value (update_modified=False) so the client doc stays clean until reload.
+    Returns map of updated rows and data used.
+    """
+    if not preparation:
+        return {}
+    doc = frappe.get_doc('Preparation', preparation)
+    if doc.is_new():  # cannot update unsaved document rows
+        return {'updated_rows': [], 'data': {}}
+    employees = [r.employee for r in doc.preparation_record if r.employee]
+    if not employees:
+        return {'updated_rows': [], 'data': {}}
+    data = get_employees_relieving_and_last_checkin(employees)
+    updated = []
+    for row in doc.preparation_record:
+        if not row.employee:
+            continue
+        info = data.get(row.employee)
+        if not info:
+            continue
+        rel = info.get('relieving_date')
+        chk = info.get('last_checkin_date')
+        if row.relieving_date != rel or row.last_checkin_date != chk:
+            frappe.db.set_value(row.doctype, row.name, {
+                'relieving_date': rel,
+                'last_checkin_date': chk
+            }, update_modified=False)
+            updated.append(row.name)
+    return {'updated_rows': updated, 'data': data}

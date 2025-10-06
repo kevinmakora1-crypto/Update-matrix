@@ -195,7 +195,7 @@ def to_do_to_grd_users(subject, description, user):
         "description": description,
         "owner": user,
         "date": today(),
-        "role":"GRD Operator",
+        "role":"Government Relations Operator",
         "reference_type":"Fingerprint Appointment"
     }).insert(ignore_permissions=True)
 

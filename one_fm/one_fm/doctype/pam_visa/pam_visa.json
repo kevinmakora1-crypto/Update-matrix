@@ -318,7 +318,7 @@
   {
    "fieldname": "pam_visa_section15",
    "fieldtype": "Section Break",
-   "label": "Pam Visa(GRD Operator)"
+   "label": "Pam Visa(Government Relations Operator)"
   },
   {
    "fieldname": "pam_visa_reminder1",
@@ -384,14 +384,14 @@
    "default": "Pending",
    "fieldname": "grd_operator_status",
    "fieldtype": "Select",
-   "label": "GRD Operator Status",
+   "label": "Government Relations Operator Status",
    "options": "Pending\nDone\nNo Response",
    "read_only": 1
   },
   {
    "fieldname": "section_tasriah_09",
    "fieldtype": "Section Break",
-   "label": "Upload Tasriah(GRD Operator)"
+   "label": "Upload Tasriah(Government Relations Operator)"
   },
   {
    "fieldname": "upload_tasriah_reminder1",
@@ -453,7 +453,7 @@
   {
    "fieldname": "pam_visa_approval_section",
    "fieldtype": "Section Break",
-   "label": "PAM Visa Approval(GRD Operator)"
+   "label": "PAM Visa Approval(Government Relations Operator)"
   },
   {
    "fieldname": "pam_visa_approval_reminder1",
@@ -502,7 +502,7 @@
   {
    "fieldname": "original_visa_section",
    "fieldtype": "Section Break",
-   "label": "Upload Original Visa(GRD Operator)"
+   "label": "Upload Original Visa(Government Relations Operator)"
   },
   {
    "fieldname": "upload_original_visa_reminder1",

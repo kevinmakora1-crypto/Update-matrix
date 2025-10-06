@@ -30,6 +30,7 @@ class Preparation(Document):
     def update_total_amount(self):
         doc_total = sum(i.total_amount for i in self.preparation_record)
         frappe.db.set_value(self.doctype,self.name,'total_payment',doc_total)
+        self.total_payment = doc_total
                      
     def on_update_after_submit(self):
         self.compare_preparation_record()
@@ -76,6 +77,7 @@ class Preparation(Document):
         self.set_grd_values()
         self.set_hr_values()
         validate_preparation_table(self)
+        self.update_total_amount()
         
     def set_grd_values(self):
         """
@@ -123,8 +125,6 @@ class Preparation(Document):
             message += '</ul>'
             frappe.throw(message)
 
-        if self.hr_approval == "No":
-            frappe.throw("Must Be Approved By HR ")
 
     def recall_create_work_permit_renewal(self):
         work_permit.create_work_permit_renewal(self.name)
@@ -236,7 +236,7 @@ def notify_hr(doc):
     create_notification_log(subject, message, [doc.hr_user], doc)
 
 def notify_request_for_renewal_or_extend():# Notify finance
-    filters = {'docstatus': 1, 'hr_approval': ['=', "Yes"]}
+    filters = {'docstatus': 1}
     preparation_list = frappe.get_doc('Preparation', filters,['name', 'notify_finance_user'])
     page_link = get_url(preparation_list.get_url())
     message = "<p>Please Review the Renewal and Extend List of employee {0}<a href='{1}'></a></p>".format(page_link,preparation_list.name)

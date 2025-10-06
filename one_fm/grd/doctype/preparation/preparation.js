@@ -96,15 +96,5 @@ frappe.ui.form.on("Preparation", {
 				frm.refresh_field('preparation_record');
 			}
 		})
-	},
-	hr_approval: function(frm){
-		// Set total payment for the whole list on HR approval
-		if(frm.doc.hr_approval == "Yes"){
-			let total = 0;
-			$.each(frm.doc.preparation_record || [], function(i, v) {
-				total+= v.total_amount;
-			});
-			frm.set_value('total_payment',total);
-		}
 	}
 });

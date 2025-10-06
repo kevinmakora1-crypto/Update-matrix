@@ -16,7 +16,7 @@ def test():
 	# print(docs)
 	# subject = _("Reminder: Draft Fingerprint Appointments")
 	# #for_users = frappe.db.sql_list("""select grd_operator from `tabFingerprint Appointment`""")
-	# for_users = frappe.db.sql("SELECT DISTINCT parent FROM `tabHas Role` WHERE role=%s", ("GRD Operator",))
+	# for_users = frappe.db.sql("SELECT DISTINCT parent FROM `tabHas Role` WHERE role=%s", ("Government Relations Operator",))
 	# print(for_users)
 	# message = "Below is the list of Draft(Click on the name to open the form).<br><br>"
 	# for doc in docs:

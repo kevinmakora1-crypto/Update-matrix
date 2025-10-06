@@ -466,7 +466,7 @@
    "fieldname": "grd_operator_transfer",
    "fieldtype": "Link",
    "hidden": 1,
-   "label": "GRD Operator",
+   "label": "Government Relations Operator",
    "options": "User",
    "print_hide": 1
   },

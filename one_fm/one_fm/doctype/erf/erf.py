@@ -162,7 +162,7 @@ class ERF(Document):
 	def on_submit(self):
 		self.validate_total_required_candidates()
 		self.erf_finalized = today()
-		self.notify_recruitment_manager()
+		# self.notify_recruitment_manager()
 		# self.notify_approver()
 		self.reload()
 

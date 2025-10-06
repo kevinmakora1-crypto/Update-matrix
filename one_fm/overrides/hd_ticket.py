@@ -420,11 +420,14 @@ def create_github_issue(name, description):
         description = cleanhtml(description) or doc.subject
 
         # Get GitHub credentials from site_config.json
-        github_token = frappe.conf.get("github_api_token")
+        github_token = get_github_api_token(doc.custom_bug_buster)
+        if not github_token:
+            frappe.msgprint("GitHub token not found for user, please set it in your HD Agent profile")
+            return {'error': 'GitHub Issue Error', 'message': "GitHub token not found for user, please set it in your HD Agent profile"}
         github_repo_owner = frappe.conf.get("github_repo_owner")
         github_repo_name = frappe.conf.get("github_repo_name")
 
-        if not all([github_token, github_repo_owner, github_repo_name]):
+        if not all([github_repo_owner, github_repo_name]):
             frappe.throw("GitHub credentials not found in site_config.json")
 
         headers = {
@@ -453,3 +456,16 @@ def create_github_issue(name, description):
     except Exception as e:
         frappe.log_error(message=frappe.get_traceback(), title="GitHub Issue Creation Error")
         return {'error': 'GitHub Issue Error', 'message': f"GitHub issue could not be created:\n {str(e)}"}
+
+def get_github_api_token(user=None):
+    if not user:
+        user = frappe.session.user
+    agent_for_user = frappe.db.exists("HD Agent", {"user": user, "is_active": 1})
+    if not agent_for_user:
+        frappe.msgprint("No active HD Agent found for user")
+        return None
+    token = frappe.db.get_value("HD Agent", {"user": user, "is_active": 1}, "github_api_token")
+    if not token:
+        frappe.msgprint("No GitHub API token found for user, please set it in your HD Agent profile. Follow <a href='https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token'>this link</a> for more details")
+        return None
+    return token

@@ -15,7 +15,7 @@ def get_job_applicant_custom_fields():
                 "label": "Accept Changes By Supervisor",
                 "insert_after": "send_changes_to_supervisor",
                 "permlevel": 2,
-                "read_only_depends_on": '"GRD Operator" == frappe.session.user'
+                "read_only_depends_on": '"Government Relations Operator" == frappe.session.user'
             },
             {
                 "fieldname": "applicant_doc_ml",
@@ -831,7 +831,7 @@ def get_job_applicant_custom_fields():
                 "fieldtype": "Link",
                 "hidden": 1,
                 "insert_after": "one_fm_signatory_name",
-                "label": "GRD Operator",
+                "label": "Government Relations Operator",
                 "options": "User"
             },
             {
@@ -1401,7 +1401,7 @@ def get_job_applicant_custom_fields():
                 "insert_after": "accept_changes",
                 "label": "Reject Changes By Supervisor",
                 "permlevel": 2,
-                "read_only_depends_on": "\"GRD Operator\" == frappe.session.user"
+                "read_only_depends_on": "\"Government Relations Operator\" == frappe.session.user"
             },
             {
                 "fieldname": "save_me",

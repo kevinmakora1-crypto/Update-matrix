@@ -15,7 +15,7 @@
       "update_value": "Awaiting for Appointment",
       "is_optional_state": 0,
       "avoid_status_override": 0,
-      "allow_edit": "GRD Operator",
+      "allow_edit": "Government Relations Operator",
       "doctype": "Workflow Document State"
     },
     {
@@ -25,7 +25,7 @@
       "update_value": "Booked",
       "is_optional_state": 0,
       "avoid_status_override": 0,
-      "allow_edit": "GRD Operator",
+      "allow_edit": "Government Relations Operator",
       "doctype": "Workflow Document State"
     },
     {
@@ -35,7 +35,7 @@
       "update_value": "Completed",
       "is_optional_state": 0,
       "avoid_status_override": 0,
-      "allow_edit": "GRD Operator",
+      "allow_edit": "Government Relations Operator",
       "doctype": "Workflow Document State"
     }
   ],
@@ -44,7 +44,7 @@
       "state": "Awaiting for Appointment",
       "action": "Apply",
       "next_state": "Booked",
-      "allowed": "GRD Operator",
+      "allowed": "Government Relations Operator",
       "allow_self_approval": 1,
       "skip_multiple_action": 0,
       "skip_creation_of_workflow_action": 0,
@@ -57,7 +57,7 @@
       "state": "Booked",
       "action": "Done",
       "next_state": "Completed",
-      "allowed": "GRD Operator",
+      "allowed": "Government Relations Operator",
       "allow_self_approval": 1,
       "skip_multiple_action": 0,
       "skip_creation_of_workflow_action": 0,

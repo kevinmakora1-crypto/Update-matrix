@@ -13,7 +13,7 @@
    "fieldname": "grd_operator",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "GRD Operator",
+   "label": "Government Relations Operator",
    "reqd": 1
   },
   {

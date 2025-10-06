@@ -294,7 +294,7 @@ class WorkPermit(Document):
             create_notification_log(subject, message, [transfer_operator], mi_record)
 
     def validate_mandatory_fields_for_grd_operator_again(self):
-        users = frappe.utils.user.get_users_with_role('GRD Operator')
+        users = frappe.utils.user.get_users_with_role('Government Relations Operator')
         filtered_users = []
         for user in users:
             if has_permission(doctype=self.doctype, user=user):
@@ -304,7 +304,7 @@ class WorkPermit(Document):
                     frappe.throw(_("Upload Required Documents To Submit"))
 
     def notify_grd(self,message,subject,user):
-        if user == "GRD Operator":
+        if user == "Government Relations Operator":
             send_email(self, [self.grd_operator], message, subject)
             create_notification_log(subject, message, [self.grd_operator], self)
         if user == "GRD Supervisor":

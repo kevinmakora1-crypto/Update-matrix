@@ -90,16 +90,6 @@
    "print_hide": 1
   },
   {
-   "default": "Purchase",
-   "fieldname": "material_request_type",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "in_standard_filter": 1,
-   "label": "Type",
-   "options": "Purchase",
-   "print_hide": 1
-  },
-  {
    "depends_on": "eval: doc.type== 'Project'",
    "fieldname": "customer",
    "fieldtype": "Link",
@@ -282,7 +272,7 @@
   },
   {
    "fieldname": "terms",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Text",
    "label": "Terms and Conditions",
    "oldfieldname": "terms",
    "oldfieldtype": "Text Editor"
@@ -489,6 +479,16 @@
    "hidden": 1,
    "label": "Linked Request for Material",
    "options": "Request for Material"
+  },
+  {
+   "default": "Purchase",
+   "fieldname": "material_request_type",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "in_standard_filter": 1,
+   "label": "Type",
+   "options": "Purchase",
+   "print_hide": 1
   }
  ],
  "grid_page_length": 50,
@@ -512,6 +512,12 @@
    "link_fieldname": "request_for_material"
   },
   {
+   "group": "Linked Purchase RFM",
+   "link_doctype": "Request for Material",
+   "link_fieldname": "linked_request_for_material"
+  }
+ ],
+ "modified": "2025-10-05 23:24:44.135705",
    "group": "Reference",
    "link_doctype": "Stock Entry",
    "link_fieldname": "one_fm_request_for_material"

@@ -204,8 +204,8 @@ def create_moi_record(employee,Renewal_or_Extend,preparation_name = None):
 #=================================================================> Reminder Notification
 def system_remind_renewal_operator_to_apply():# cron job at 4pm
     """This is a cron method runs every day at 4pm. It gets Draft renewal MOI list and reminds operator to apply on pam website"""
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    renewal_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    renewal_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator")
     moi_list = frappe.db.get_list('MOI Residency Jawazat',
     {'date_of_application':['<=',date.today()],'workflow_state':['=',('Apply Online by PRO')],'category':['in',('Renewal','Extend')]},
     ['one_fm_civil_id','name','reminded_grd_operator','reminded_grd_operator_again'])
@@ -216,8 +216,8 @@ def system_remind_renewal_operator_to_apply():# cron job at 4pm
 
 def system_remind_transfer_operator_to_apply():# cron job at 4pm
     """This is a cron method runs every day at 4pm. It gets Draft transfer MOI list and reminds operator to apply on pam website"""
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    transfer_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    transfer_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
     moi_list = frappe.db.get_list('MOI Residency Jawazat',
     {'date_of_application':['<=',date.today()],'workflow_state':['=',('Apply Online by PRO')],'category':['=',('Transfer')]},
     ['one_fm_civil_id','name','reminded_grd_operator','reminded_grd_operator_again'])

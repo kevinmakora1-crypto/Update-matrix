@@ -79,13 +79,13 @@ class WorkPermit(Document):
 		This method is fetching values of grd supervisor and operator for transfer, pifss operator from GRD settings
 		"""
         if not self.grd_supervisor:
-            self.grd_supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
+            self.grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
         if not self.grd_operator:
-            self.grd_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator")
+            self.grd_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator")
         if not self.grd_operator_transfer:
-            self.grd_operator_transfer = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+            self.grd_operator_transfer = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
         if not self.pam_operator:
-            self.pam_operator = pam_operator_email = frappe.db.get_single_value("GRD Settings", 'default_pam_operator')
+            self.pam_operator = pam_operator_email = frappe.db.get_single_value("HR Settings", 'default_pam_operator')
 
     def notify(self):
         if self.workflow_state == "Pending By Supervisor":
@@ -284,7 +284,7 @@ class WorkPermit(Document):
         medical_insurance.creat_medical_insurance_for_transfer(self.employee)
 
     def notify_grd_transfer_mi_record(self):
-        transfer_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+        transfer_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
         mi = frappe.db.get_value("Medical Insurance",{'employee':self.employee,'insurance_status':'Local Transfer'},['name'])
         if mi:
             mi_record = frappe.get_doc('Medical Insurance', mi)
@@ -523,8 +523,8 @@ def system_remind_renewal_operator_to_apply():
     """
     This is a cron method runs every day at 8am. It gets Draft `renewal` work permit list and reminds operator to apply on pam website
     """
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    renewal_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    renewal_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator")
     work_permit_list = frappe.db.get_list('Work Permit',
     {'date_of_application':['<=',today()],'workflow_state':['in',('Draft','Apply Online by PRO')],'work_permit_type':['in',('Renewal Non Kuwaiti','Renewal Kuwaiti')]},['civil_id','name','reminded_grd_operator','reminded_grd_operator_again'])
 
@@ -535,8 +535,8 @@ def system_remind_transfer_operator_to_apply():
     """
     This is a cron method runs every day at 8am. It gets Draft `transfer` work permit list and reminds operator to apply on pam website
     """
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    transfer_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    transfer_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
     work_permit_list = frappe.db.get_list('Work Permit',
     {'date_of_application':['<=',today()],'workflow_state':['in',('Draft','Apply Online by PRO')],'work_permit_type':['=',('Local Transfer')]},['civil_id','name','reminded_grd_operator','reminded_grd_operator_again'])
 

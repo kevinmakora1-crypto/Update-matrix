@@ -163,12 +163,7 @@ class Preparation(Document):
             attachments = [frappe.attach_print(self.doctype, self.name, file_name=self.name, print_format=print_format)]
             send_email(self, [inform_the_costing_to], message, subject, attachments)
 
-    def after_insert(self):
-        self.update_last_preparation_details_to_grd_settings()
-
-    def update_last_preparation_details_to_grd_settings(self):
-        frappe.db.set_value("HR Settings", None, "last_preparation_record_created_on", self.creation)
-        frappe.db.set_value("HR Settings", None, "last_preparation_record_created_by", self.owner)
+   
 
     @frappe.whitelist()
     def set_renewal_for_all_preparation_record(self, renew_all):

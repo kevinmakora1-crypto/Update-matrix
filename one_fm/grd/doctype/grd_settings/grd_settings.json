@@ -5,20 +5,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "renewal_extension_costing_section",
-  "renewal_extension_cost"
+
  ],
  "fields": [
-  {
-   "fieldname": "renewal_extension_costing_section",
-   "fieldtype": "Section Break",
-   "label": "Renewal Extension Costing "
-  },
-  {
-   "fieldname": "renewal_extension_cost",
-   "fieldtype": "Table",
-   "options": "GRD Renewal Extension Cost"
-  }
  ],
  "issingle": 1,
  "links": [],

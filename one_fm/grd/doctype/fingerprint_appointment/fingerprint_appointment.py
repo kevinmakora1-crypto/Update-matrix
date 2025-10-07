@@ -36,11 +36,11 @@ class FingerprintAppointment(Document):
 
     def set_grd_values(self):
         if not self.grd_supervisor:
-            self.grd_supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
+            self.grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
         if not self.grd_operator_renewal:
-            self.grd_operator_renewal = frappe.db.get_single_value("GRD Settings", "default_grd_operator")
+            self.grd_operator_renewal = frappe.db.get_single_value("HR Settings", "default_grd_operator")
         if not self.grd_operator_transfer:
-            self.grd_operator_transfer = frappe.db.get_single_value("GRD Settings","default_grd_operator_transfer")
+            self.grd_operator_transfer = frappe.db.get_single_value("HR Settings","default_grd_operator_transfer")
 
     # def validate_mendatory_fields(self):
     #      if not self.date_and_time_confirmation or self.preparing_documents == "No":

@@ -57,7 +57,7 @@
   "reference",
   "job_card",
   "amended_from",
-  "linked_request_for_material"
+  "linked_purchase_rfm"
  ],
  "fields": [
   {
@@ -474,13 +474,6 @@
    "options": "\nIssue\nTransfer\nPurchase"
   },
   {
-   "fieldname": "linked_request_for_material",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Linked Request for Material",
-   "options": "Request for Material"
-  },
-  {
    "default": "Purchase",
    "fieldname": "material_request_type",
    "fieldtype": "Select",
@@ -489,6 +482,13 @@
    "label": "Type",
    "options": "Purchase",
    "print_hide": 1
+  },
+  {
+   "fieldname": "linked_purchase_rfm",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Linked Purchase RFM",
+   "options": "Request for Material"
   }
  ],
  "grid_page_length": 50,
@@ -522,7 +522,7 @@
    "link_fieldname": "one_fm_request_for_material"
   }
  ],
- "modified": "2025-10-05 16:26:38.052904",
+ "modified": "2025-10-06 14:58:02.907675",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Material",

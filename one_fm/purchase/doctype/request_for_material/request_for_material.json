@@ -13,6 +13,7 @@
   "requested_by",
   "type",
   "schedule_date",
+  "issue_transfer_rfm",
   "purpose",
   "status",
   "reason_for_rejection",
@@ -489,6 +490,12 @@
    "hidden": 1,
    "label": "Linked Purchase RFM",
    "options": "Request for Material"
+  },
+  {
+   "fieldname": "issue_transfer_rfm",
+   "fieldtype": "Data",
+   "label": "Issue/Transfer RFM",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -512,17 +519,17 @@
    "link_fieldname": "request_for_material"
   },
   {
-   "group": "Linked Purchase RFM",
-   "link_doctype": "Request for Material",
-   "link_fieldname": "linked_request_for_material"
-  },
-  {
    "group": "Reference",
    "link_doctype": "Stock Entry",
    "link_fieldname": "one_fm_request_for_material"
+  },
+  {
+   "group": "Purchase RFM",
+   "link_doctype": "Request for Material",
+   "link_fieldname": "issue_transfer_rfm"
   }
  ],
- "modified": "2025-10-06 14:58:02.907675",
+ "modified": "2025-10-07 13:15:42.260843",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Material",

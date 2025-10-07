@@ -69,7 +69,7 @@ class EmployeeSchedule(Document):
 				"to_date": [">=", self.date],
 			})
 			if leave_application:
-				frappe.throw(_("Employee {0} has an approved Annual Leave on {1}").format(self.employee, self.date))
+				frappe.throw(_("You can't add employee schedule for this date because employee {0} has an approved leave application for {1}").format(self.employee, self.date))
 
 	def validate_offs(self):
 		"""

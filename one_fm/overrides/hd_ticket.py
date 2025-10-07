@@ -8,6 +8,7 @@ from helpdesk.helpdesk.doctype.hd_ticket.hd_ticket import HDTicket
 from one_fm.processor import sendemail
 from one_fm.api.doc_events import get_employee_user_id
 from one_fm.utils import response
+from frappe.utils.password import get_decrypted_password
 
 class HDTicketOverride(HDTicket):
     def before_insert(self):
@@ -464,7 +465,7 @@ def get_github_api_token(user=None):
     if not agent_for_user:
         frappe.msgprint("No active HD Agent found for user")
         return None
-    token = frappe.db.get_value("HD Agent", {"user": user, "is_active": 1}, "github_api_token")
+    token = get_decrypted_password("HD Agent", agent_for_user, 'github_api_token', raise_exception=True)
     if not token:
         frappe.msgprint("No GitHub API token found for user, please set it in your HD Agent profile. Follow <a href='https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token'>this link</a> for more details")
         return None

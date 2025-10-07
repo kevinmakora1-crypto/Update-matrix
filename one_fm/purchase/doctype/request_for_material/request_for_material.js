@@ -20,11 +20,10 @@ frappe.ui.form.on('Request for Material', {
 			new_doc.linked_request_for_material = frm.doc.name;
 			new_doc.workflow_state = '';
 			new_doc.linked_purchase_rfm = ""
+			new_doc.issue_transfer_rfm =  frm.doc.name
 			new_doc.purpose = 'Purchase';
 			new_doc.docstatus = 0;
-			for(let i=0; i<new_doc.items.length; i++){
-				new_doc.items[i].linked_request_for_material = frm.doc.name
-			}
+			
 			frappe.set_route('Form', new_doc.doctype, new_doc.name);
 
 		}

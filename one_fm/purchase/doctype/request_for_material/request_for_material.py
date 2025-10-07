@@ -323,7 +323,7 @@ class RequestforMaterial(BuyingController):
         does not exceed the total qty of the corresponding item_code in the linked source RFM.
         Compares summed quantities by item_code (not per row). Throws a single combined error message.
         """
-        linked_name = getattr(self, 'linked_request_for_material', None)
+        linked_name = getattr(self, 'issue_transfer_rfm', None)
         if not linked_name:
             #get from the first row of the child table
             linked_name = self.items[0].linked_request_for_material

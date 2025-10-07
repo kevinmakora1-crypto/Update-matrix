@@ -205,7 +205,7 @@ def create_preparation_record():
         The record contain list of all employees that their residency expiry date will be between the first and the last date of the next month
         This record will go to HR user to set value for each employee either renewal or extend and on the submit of this record it will ask for hr permission and approval.
     """
-    print("INSIDE PREPARATION")
+   
     doc = frappe.new_doc('Preparation')
     doc.posting_date = nowdate()
     first_day = get_first_day(add_months(getdate(today()), 1))

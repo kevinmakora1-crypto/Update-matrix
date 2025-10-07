@@ -66,7 +66,7 @@
    "in_list_view": 1,
    "label": "Action",
    "options": "\nRenewal (Kuwaiti)\nRenewal (Non-Kuwaiti)\nExtend 1 month\nExtend 2 months\nExtend 3 months\nLocal Transfer\nCancellation"
-   "options": "\nRenewal (Kuwaiti)\nRenewal (Non-Kuwaiti)\nExtend 1 month\nExtend 2 months\nExtend 3 months\nLocal Transfer\nCancellation"
+   
   },
   {
    "allow_on_submit": 1,

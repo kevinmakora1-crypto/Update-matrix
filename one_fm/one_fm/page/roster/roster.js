@@ -1528,6 +1528,7 @@ function get_post_data(page) {
 					end_date = moment(end_date);
 					let i = 0;
 					let day = start_date;
+
 					while (day <= end_date) {
 						let schedule = ``;
 						let classmap = {
@@ -1537,10 +1538,14 @@ function get_post_data(page) {
 							"Cancelled": "redboxcolor"
 						};
 
+						const isToday = day.isSame(moment(), 'day');
+
+						const todayClass = isToday ? "todayclass" : "";
+
 						let { project, site, shift, date, post_status, operations_role, post, name } = res["post_data"][post_name][i];
 						if (name) {
 							schedule = `
-						<td>
+						<td class="${todayClass}">
 							<div class="${moment().isBefore(moment(date)) ? "hoverselectclass" : "forbidden"} tablebox ${classmap[post_status]} d-flex justify-content-center align-items-center so"
 								data-selectid="${post + "_" + date}"
 								data-date="${date}"

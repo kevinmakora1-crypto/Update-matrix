@@ -319,45 +319,74 @@ class RequestforMaterial(BuyingController):
             frappe.throw(str(e))
 
     def validate_linked_request_quantities(self):
-        """If this RFM is linked to another (linked_request_for_material), ensure per-item total qty
-        does not exceed the total qty of the corresponding item_code in the linked source RFM.
-        Compares summed quantities by item_code (not per row). Throws a single combined error message.
+        """Validate that this RFM (a derived / purchase RFM) does not exceed the quantities
+        of a linked source RFM (issue_transfer_rfm or first row's linked_request_for_material).
+
+        Aggregation Rules:
+        - Primary key: item_code when present.
+        - Fallback key: requested_item_name (trimmed) when item_code is empty.
+        - requested_item_name assumed unique when used as fallback.
+        - Matching is strict (case sensitive) and whitespace trimmed on both sides for names.
+        - Multiple rows with the same key in either doc are summed.
+        - If a key exists here but not in source -> violation.
+        - If summed qty here > summed qty in source -> violation.
+        - Rows must have either item_code or requested_item_name (guaranteed by business rule).
         """
         linked_name = getattr(self, 'issue_transfer_rfm', None)
         if not linked_name:
-            #get from the first row of the child table
-            linked_name = self.items[0].linked_request_for_material
+            # fall back to first child row's linked_request_for_material if provided
+            if not self.items:
+                return
+            linked_name = getattr(self.items[0], 'linked_request_for_material', None)
             if not linked_name:
                 return
         if linked_name == self.name:
             frappe.throw(_("Linked Request for Material cannot reference itself."))
 
-        # Fetch linked RFM
         if not frappe.db.exists('Request for Material', linked_name):
             frappe.throw(_("Linked Request for Material {0} does not exist.").format(frappe.bold(linked_name)))
         source_doc = frappe.get_doc('Request for Material', linked_name)
-        
-        if source_doc.linked_purchase_rfm != self.name:
+
+        # Ensure back-link recorded
+        if getattr(source_doc, 'linked_purchase_rfm', None) != self.name:
             source_doc.db_set('linked_purchase_rfm', self.name)
-        # Aggregate totals by item_code for source and current
+
+        def build_key(it):
+            if getattr(it, 'item_code', None):
+                return ('code', it.item_code.strip())  # strip just in case
+            # fallback to requested_item_name
+            name_val = (getattr(it, 'requested_item_name', None) or '').strip()
+            return ('name', name_val)
+
+        def add_to(bucket, key_tuple, qty):
+            # key_tuple = (type, value) so different namespaces for code vs name
+            bucket[key_tuple] = bucket.get(key_tuple, 0) + flt(qty)
+
         source_totals = {}
         for it in source_doc.items:
-            if it.item_code:
-                source_totals[it.item_code] = source_totals.get(it.item_code, 0) + flt(it.qty)
+            key_type, key_val = build_key(it)
+            if not key_val:  # safety, should not happen per business rule
+                frappe.throw(_("Source RFM {0} contains a row without Item Code and Item Name.").format(frappe.bold(linked_name)))
+            add_to(source_totals, (key_type, key_val), it.qty)
 
         current_totals = {}
         for it in self.items:
-            if it.item_code:
-                current_totals[it.item_code] = current_totals.get(it.item_code, 0) + flt(it.qty)
+            key_type, key_val = build_key(it)
+            if not key_val:
+                frappe.throw(_("Row {0}: missing Item Code and Item Name").format(it.idx))
+            add_to(current_totals, (key_type, key_val), it.qty)
 
-        # Compare
         violations = []
-        for item_code, curr_qty in current_totals.items():
-            src_qty = source_totals.get(item_code)
+        for key, curr_qty in current_totals.items():
+            key_type, key_val = key
+            src_qty = source_totals.get(key)
+            label = key_val  # display value
             if src_qty is None:
-                violations.append(_("Item {0}: not present in linked RFM {1}. Current total {2}").format(frappe.bold(item_code), frappe.bold(linked_name), frappe.bold(curr_qty)))
+                violations.append(_("Item {0}: not present in linked RFM {1}. Current total {2}").format(
+                    frappe.bold(label), frappe.bold(linked_name), frappe.bold(curr_qty)))
             elif curr_qty > src_qty:
-                violations.append(_("Item {0}: current total {1} exceeds linked RFM total {2}").format(frappe.bold(item_code), frappe.bold(curr_qty), frappe.bold(src_qty)))
+                violations.append(_("Item {0}: current total {1} exceeds linked RFM total {2}").format(
+                    frappe.bold(label), frappe.bold(curr_qty), frappe.bold(src_qty)))
 
         if violations:
             msg = _("Quantity validation against Linked Request for Material failed:<br>{0}").format('<br>'.join(violations))

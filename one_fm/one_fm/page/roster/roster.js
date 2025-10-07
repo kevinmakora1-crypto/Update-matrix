@@ -1429,22 +1429,26 @@ function render_roster(res, page) {
 				}
 			}
 
+			const isToday = current_day_iter.isSame(moment(), 'day');
+
+			todayClass = isToday ? "todayclass" : "";
+
 			if (is_relieved_this_day) {
 				sch = `
-					<td>
+					<td class="${todayClass}">
 						<div class="${moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden"} tablebox darkblackox d-flex justify-content-center align-items-center text-white so customtooltip"
 							data-selectid="${data_selectid}">EX<span class="customtooltiptext">Exited</span></div>
 					</td>`;
 			} else if (!data_selectid && !data_ot) {
 				sch = `
-					<td>
+					<td class="${todayClass}">
 						<div class="${moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden"} tablebox borderbox d-flex justify-content-center align-items-center so"
 							data-selectid="${employee}|${date_key}"></div>
 					</td>`;
 			} else {
 				let tooltip_html = tooltiptext ? `<span class="customtooltiptext ${bgclass}">${tooltiptext}</span>` : "";
 				sch = `
-					<td>
+					<td class="${todayClass}">
 						<div class="${moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden"} tablebox ${bgclass} d-flex justify-content-center align-items-center text-white so customtooltip"
 							data-selectid="${data_selectid}" data-ot="${data_ot}">${abbrv}${tooltip_html}</div>
 					</td>`;
@@ -2357,6 +2361,7 @@ function unschedule_staff(page) {
 		let [employee, date] = i.split("|");
 		employees.push({ employee, date });
 	});
+	console.log(employees, classgrt);
 	let date = frappe.datetime.add_days(frappe.datetime.nowdate(), "1");
 	let d = new frappe.ui.Dialog({
 		"title": "Unschedule Staff",

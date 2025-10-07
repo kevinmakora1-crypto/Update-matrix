@@ -2834,7 +2834,9 @@ body[data-route="roster"] .forbidden {
   cursor: not-allowed;
 }
 
-
+body[data-route="roster"] .todayclass {
+  background: #E0E0E0 !important;
+}
 
 body[data-route="roster"] .selected-tag {
 	background: #e3f2fd;

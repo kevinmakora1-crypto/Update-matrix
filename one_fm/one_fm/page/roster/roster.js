@@ -2366,7 +2366,6 @@ function unschedule_staff(page) {
 		let [employee, date] = i.split("|");
 		employees.push({ employee, date });
 	});
-	console.log(employees, classgrt);
 	let date = frappe.datetime.add_days(frappe.datetime.nowdate(), "1");
 	let d = new frappe.ui.Dialog({
 		"title": "Unschedule Staff",

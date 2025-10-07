@@ -515,9 +515,8 @@
    "group": "Linked Purchase RFM",
    "link_doctype": "Request for Material",
    "link_fieldname": "linked_request_for_material"
-  }
- ],
- "modified": "2025-10-05 23:24:44.135705",
+  },
+  {
    "group": "Reference",
    "link_doctype": "Stock Entry",
    "link_fieldname": "one_fm_request_for_material"

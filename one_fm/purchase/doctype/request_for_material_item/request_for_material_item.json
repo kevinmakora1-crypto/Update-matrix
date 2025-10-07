@@ -48,6 +48,8 @@
   "more_info",
   "lead_time_date",
   "custom_rfp_quantity",
+  "transferred_quantity",
+  "issued_quantity",
   "custom_pending_quantity",
   "purchased_qty",
   "projected_qty",
@@ -475,6 +477,18 @@
    "fieldtype": "Data",
    "label": "Item URL",
    "options": "URL"
+  },
+  {
+   "fieldname": "transferred_quantity",
+   "fieldtype": "Float",
+   "label": "Transferred Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "issued_quantity",
+   "fieldtype": "Float",
+   "label": "Issued Quantity",
+   "read_only": 1
   },
   {
    "fieldname": "linked_request_for_material",

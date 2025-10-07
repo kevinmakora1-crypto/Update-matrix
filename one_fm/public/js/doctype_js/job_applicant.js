@@ -563,7 +563,7 @@ frappe.ui.form.on('Job Applicant', {
 		}
 	},
 	one_fm_has_issue: function(frm){
-		if(frm.doc.one_fm_has_issue && frappe.user.has_role("GRD Operator")){
+		if(frm.doc.one_fm_has_issue && frappe.user.has_role("Government Relations Operator")){
 		// check the Authorized signatory based on file number
 			if((frm.doc.pam_number_button == 1) && (frm.doc.one_fm_pam_file_number)){
 				// if PAM file Number has changes in job applicant, set the signatory names of the new file
@@ -895,8 +895,8 @@ var set_grd_field_properties = function(frm){
 		set_hidden_fields(frm, hide_fields, true);
 	 }
 
-	 // Hide irrelevant sections for GRD Operator and set read only option to the required fields
-	 if(frm.doc.one_fm_is_transferable == "Yes" && frappe.user.has_role("GRD Operator")){
+	 // Hide irrelevant sections for Government Relations Operator and set read only option to the required fields
+	 if(frm.doc.one_fm_is_transferable == "Yes" && frappe.user.has_role("Government Relations Operator")){
 		let hide_fields=['one_fm_basic_skill_section','one_fm_uniform_measurements',
 		'one_fm_work_details_section','section_break_6','section_break_88',
 		'one_fm_educational_qualification_section','one_fm_current_employment_section_',
@@ -916,10 +916,10 @@ var set_grd_field_properties = function(frm){
 	}
 
 	//field only for grd supervisor
-	if(frappe.user.has_role("GRD Operator")){
+	if(frappe.user.has_role("Government Relations Operator")){
 		let hide_fields=['save_me']
 		set_hidden_fields(frm, hide_fields, true);
-	}//field only for grd operator
+	}//field only for Government Relations Operator
 	if(frappe.user.has_role("GRD Supervisor")){
 		let hide_fields=['send_changes_to_supervisor']
 		set_hidden_fields(frm, hide_fields, true);
@@ -929,19 +929,19 @@ var set_grd_field_properties = function(frm){
 		set_hidden_fields(frm, hide_fields, true);
 	}
 	//show the field for operator only
-	if(!frappe.user.has_role("GRD Operator")){
+	if(!frappe.user.has_role("Government Relations Operator")){
 		let hide_fields=['no_internal_issues']
 		set_hidden_fields(frm, hide_fields, true);
 	}
 	//activate no internal issue checkbox
-	if(frappe.user.has_role("GRD Supervisor") || frappe.user.has_role("GRD Operator")){
+	if(frappe.user.has_role("GRD Supervisor") || frappe.user.has_role("Government Relations Operator")){
 		if(frm.doc.reject_changes && ((frm.doc.pam_designation_button == 1) || (doc.pam_number_button ==1))){
 			let hide_fields=['no_internal_issues']
 			set_hidden_fields(frm, hide_fields, true);
 		}
 	}
-	//Set GRD section as read only for all role except GRD Operator and GRD Supervisor
-	if(frm.doc.one_fm_has_issue && !frappe.user.has_role("GRD Operator") && !frappe.user.has_role("GRD Supervisor")){
+	//Set GRD section as read only for all role except Government Relations Operator and GRD Supervisor
+	if(frm.doc.one_fm_has_issue && !frappe.user.has_role("Government Relations Operator") && !frappe.user.has_role("GRD Supervisor")){
 		let read_fields=['authorized_signatory','previous_company_details','authorized_signatory_section',
 		'one_fm_has_issue','one_fm_type_of_issues','one_fm_pam_file_number','one_fm_pam_designation',
 		'one_fm_previous_company_trade_name_in_arabic','one_fm__previous_company_authorized_signatory_name_arabic',

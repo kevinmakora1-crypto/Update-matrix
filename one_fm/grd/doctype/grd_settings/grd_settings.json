@@ -5,98 +5,10 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "section_break_1",
-  "default_grd_supervisor",
-  "default_grd_operator",
-  "column_break_4",
-  "default_grd_operator_pifss",
-  "default_grd_operator_transfer",
-  "default_pam_operator",
-  "section_break_acel",
-  "days_before_expiry_to_notify_supervisor",
-  "column_break_fajb",
-  "preparation_record_settings_section",
-  "preparation_record_creation_day",
-  "create_preparation_record_manually",
-  "column_break_10",
-  "last_preparation_record_created_on",
-  "last_preparation_record_created_by",
   "renewal_extension_costing_section",
-  "renewal_extension_cost",
-  "inform_the_costing_to",
-  "costing_print_format"
+  "renewal_extension_cost"
  ],
  "fields": [
-  {
-   "fieldname": "section_break_1",
-   "fieldtype": "Section Break",
-   "label": "GRD Default Settings"
-  },
-  {
-   "fieldname": "default_grd_supervisor",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Default GRD Supervisor",
-   "options": "User",
-   "reqd": 1
-  },
-  {
-   "fieldname": "default_grd_operator",
-   "fieldtype": "Link",
-   "label": "Default GRD Operator (Renewal)",
-   "options": "User"
-  },
-  {
-   "fieldname": "default_grd_operator_pifss",
-   "fieldtype": "Link",
-   "label": "Default GRD Operator (PIFSS)",
-   "options": "User"
-  },
-  {
-   "fieldname": "default_grd_operator_transfer",
-   "fieldtype": "Link",
-   "label": "Default GRD Operator (Transfer)",
-   "options": "User"
-  },
-  {
-   "fieldname": "column_break_4",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "15",
-   "description": "Preparation Record Creation for Next Month on the Day of Current Month<br>You can enter a value from 1 to 28.",
-   "fieldname": "preparation_record_creation_day",
-   "fieldtype": "Int",
-   "label": "Preparation Record Creation Day"
-  },
-  {
-   "description": "Preparation record that contain list of all employees that their residency expiry date will be between the first and the last date of the next month.\nThis record will go to HR user to set value for each employee either renewal or extend and on the submit of this record it will ask for hr permission and approval.\nThen, it will create wp, mi, moi, and paci records for all employees in the list.",
-   "fieldname": "preparation_record_settings_section",
-   "fieldtype": "Section Break",
-   "label": "Preparation Record Settings"
-  },
-  {
-   "fieldname": "create_preparation_record_manually",
-   "fieldtype": "Button",
-   "label": "Create Preparation Record Manually"
-  },
-  {
-   "fieldname": "column_break_10",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "last_preparation_record_created_on",
-   "fieldtype": "Datetime",
-   "label": "Last Preparation Record Created on",
-   "read_only": 1
-  },
-  {
-   "fieldname": "last_preparation_record_created_by",
-   "fieldtype": "Link",
-   "label": "Last Preparation Record Created by",
-   "options": "User",
-   "read_only": 1
-  },
   {
    "fieldname": "renewal_extension_costing_section",
    "fieldtype": "Section Break",
@@ -106,40 +18,6 @@
    "fieldname": "renewal_extension_cost",
    "fieldtype": "Table",
    "options": "GRD Renewal Extension Cost"
-  },
-  {
-   "description": "Email ID to get informed the finance team about the costing from preparation.",
-   "fieldname": "inform_the_costing_to",
-   "fieldtype": "Data",
-   "label": "Inform The Costing to",
-   "options": "Email"
-  },
-  {
-   "description": "The print format to attach in the notification to the finance team about the preparation cost. If leave this field blank the will consider Standard print format for attachment.",
-   "fieldname": "costing_print_format",
-   "fieldtype": "Link",
-   "label": "Costing Print Format",
-   "options": "Print Format"
-  },
-  {
-   "fieldname": "default_pam_operator",
-   "fieldtype": "Link",
-   "label": "Default PAM Operator",
-   "options": "User"
-  },
-  {
-   "fieldname": "section_break_acel",
-   "fieldtype": "Section Break"
-  },
-  {
-   "description": "Specify the number of days in advance the supervisor should be notified before an employee's document expires. A notification will be triggered based on this value.",
-   "fieldname": "days_before_expiry_to_notify_supervisor",
-   "fieldtype": "Int",
-   "label": "Days Before Expiry to Notify Supervisor"
-  },
-  {
-   "fieldname": "column_break_fajb",
-   "fieldtype": "Column Break"
   }
  ],
  "issingle": 1,

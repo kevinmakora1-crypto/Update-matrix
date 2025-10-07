@@ -9,6 +9,7 @@ from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import flt, get_url, get_fullname,cstr
 from frappe import _
+from frappe.utils import nowdate, cstr
 from frappe.utils.user import get_users_with_role
 from frappe.permissions import has_permission
 from erpnext.controllers.buying_controller import BuyingController
@@ -676,3 +677,62 @@ def make_request_for_purchase(source_name, target_doc=None):
     frappe.db.commit()
     
     return doclist
+
+
+@frappe.whitelist()
+def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
+    rfm = frappe.get_doc("Request for Material", rfm_name)
+    
+    if stock_entry_type == "Material Issue" and rfm.purpose != "Issue":
+        frappe.throw(_("RFM Purpose must be Issue for Material Issue"))
+    
+    if stock_entry_type in ["Material Transfer", "Material Transfer-In Transit"] and rfm.purpose != "Transfer":
+        frappe.throw(_("RFM Purpose must be Transfer for Material Transfer"))
+    
+    if rfm.docstatus != 1:
+        frappe.throw(_("RFM must be approved (submitted)"))
+    
+    stock_entry = frappe.new_doc("Stock Entry")
+    stock_entry.company = rfm.company
+    stock_entry.posting_date = nowdate()
+    stock_entry.one_fm_request_for_material = rfm_name
+    
+    if rfm.purpose == "Transfer":
+        stock_entry.stock_entry_type = "Material Transfer"
+        if stock_entry_type == "Material Transfer-In Transit":
+            stock_entry.add_to_transit = 1
+            
+    elif rfm.purpose == "Issue":
+        stock_entry.stock_entry_type = "Material Issue"
+
+    for item in rfm.items:
+        if rfm.purpose == "Issue":
+            stock_entry.append("items", {
+                "item_code": item.item_code,
+                "item_name": item.item_name,
+                "description": item.description,
+                "qty": item.qty,
+                "s_warehouse": item.warehouse,
+                "uom": item.uom,
+                "stock_uom": item.stock_uom,
+                "conversion_factor": item.conversion_factor or 1
+            })
+        else:
+            stock_entry.append("items", {
+                "item_code": item.item_code,
+                "item_name": item.item_name,
+                "description": item.description,
+                "qty": item.qty,
+                "s_warehouse": item.warehouse,
+                "t_warehouse": item.t_warehouse,
+                "uom": item.uom,
+                "stock_uom": item.stock_uom,
+                "conversion_factor": item.conversion_factor or 1
+            })
+
+    
+    stock_entry.insert()
+    
+    frappe.msgprint(_("Stock Entry {0} created successfully").format(stock_entry.name))
+    
+    return stock_entry.name

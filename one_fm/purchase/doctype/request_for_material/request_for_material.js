@@ -89,6 +89,7 @@ frappe.ui.form.on('Request for Material', {
 			set_intro(frm);
 		}
 		frm.events.make_custom_buttons(frm);
+		add_stock_entry_buttons(frm);
 		set_item_field_property(frm);
 		let status = ['Draft', 'Accepted', 'Approved', 'Rejected', 'Transferred'];
 		if(status.includes(frm.doc.status) && frm.doc.docstatus == 1){
@@ -477,6 +478,42 @@ frappe.ui.form.on('Request for Material', {
 		set_warehouse_filters(frm);
 	}
 });
+
+
+function add_stock_entry_buttons(frm) {
+    if (frm.doc.docstatus === 1) {
+        if (frm.doc.purpose === "Transfer") {
+            frm.add_custom_button(__('Material Transfer'), function() {
+                create_stock_entry(frm, 'Material Transfer');
+            }, __('Create'));
+            
+            frm.add_custom_button(__('Material Transfer - In Transit'), function() {
+                create_stock_entry(frm, 'Material Transfer-In Transit');
+            }, __('Create'));
+        }
+        
+        if (frm.doc.purpose === "Issue") {
+            frm.add_custom_button(__('Material Issue'), function() {
+                create_stock_entry(frm, 'Material Issue');
+            }, __('Create'));
+        }
+    }
+}
+
+function create_stock_entry(frm, stock_entry_type) {
+    frappe.call({
+        method: 'one_fm.purchase.doctype.request_for_material.request_for_material.create_stock_entry_from_rfm',
+        args: {
+            rfm_name: frm.doc.name,
+            stock_entry_type: stock_entry_type
+        },
+        callback: function(r) {
+            if (r.message) {
+                frappe.set_route('Form', 'Stock Entry', r.message);
+            }
+        }
+    });
+}
 
 var set_t_warehouse_hidden = function(frm) {
 	if(frm.doc.project){

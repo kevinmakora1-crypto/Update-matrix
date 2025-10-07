@@ -12,7 +12,6 @@
   "preparation_record",
   "total_payment",
   "section_break_4",
-  "hr_approval",
   "hr_user",
   "grd_operator",
   "grd_supervisor",
@@ -30,14 +29,6 @@
   {
    "fieldname": "section_break_4",
    "fieldtype": "Section Break"
-  },
-  {
-   "default": "No",
-   "fieldname": "hr_approval",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "HR Approval",
-   "options": "\nYes\nNo"
   },
   {
    "fieldname": "amended_from",
@@ -84,7 +75,7 @@
    "fieldname": "grd_operator",
    "fieldtype": "Link",
    "hidden": 1,
-   "label": "GRD Operator",
+   "label": "Government Relations Operator",
    "options": "User"
   },
   {

@@ -510,6 +510,16 @@
    "group": "Reference",
    "link_doctype": "Delivery Note",
    "link_fieldname": "request_for_material"
+  },
+  {
+   "group": "Linked Purchase RFM",
+   "link_doctype": "Request for Material",
+   "link_fieldname": "linked_request_for_material"
+  },
+  {
+   "group": "Reference",
+   "link_doctype": "Stock Entry",
+   "link_fieldname": "one_fm_request_for_material"
   }
  ],
  "modified": "2025-10-06 14:58:02.907675",

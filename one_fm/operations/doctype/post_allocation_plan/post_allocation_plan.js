@@ -5,20 +5,20 @@ frappe.ui.form.on('Post Allocation Plan', {
 	refresh: function(frm){
 		frm.add_fetch("employee", "employee_name", "employee_name");
 		frm.add_fetch("employee", "employee_id", "employee_id");
-		render_day_off_table(frm);
-		render_prev_day_off_table(frm);
+		// render_day_off_table(frm);
+		// render_prev_day_off_table(frm);
 	},
 	operations_shift: function(frm) {
 		apply_post_allocation_filters(frm);
 		add_employees(frm);
-		render_day_off_table(frm);
-		render_prev_day_off_table(frm);
+		// render_day_off_table(frm);
+		// render_prev_day_off_table(frm);
 	},
 	date: function(frm) {
 		apply_post_allocation_filters(frm);
 		add_employees(frm);
-		render_day_off_table(frm);
-		render_prev_day_off_table(frm);
+		// render_day_off_table(frm);
+		// render_prev_day_off_table(frm);
 	}
 });
 
@@ -27,6 +27,14 @@ function apply_post_allocation_filters(frm){
 	let {operations_shift, date} = frm.doc;
 
 	if(operations_shift != undefined && date != undefined){
+		
+		frm.set_query("employee", "assignments", function() {
+			console.log("CLICK set query")
+			return {
+				query: "one_fm.operations.doctype.post_allocation_plan.post_allocation_plan.filter_employees",
+				filters: {operations_shift, date}
+			}
+		});
 		frm.set_query("post", "assignments", function() {
 			return {
 				query: "one_fm.operations.doctype.post_allocation_plan.post_allocation_plan.filter_posts",
@@ -41,6 +49,14 @@ function apply_post_allocation_filters(frm){
 				]
 			}
 		});
+		frm.set_query("employee", "assignments", function() {
+			return {
+				"filters": [
+					["Employee Schedule", "shift", "=", operations_shift],
+					
+				]
+			}
+		});
 	}
 }
 
@@ -50,20 +66,16 @@ function add_employees(frm){
 	if(operations_shift != undefined && date != undefined){
 		frappe.xcall('one_fm.operations.doctype.post_allocation_plan.post_allocation_plan.get_table_data',{operations_shift, date})
 		.then(res => {
-			let {employees, posts} = res;
-			
+			let {posts} = res;
+
+			// Always clear the assignments table
 			frm.set_value('assignments', '');
 
-			// Fill posts in decreasing priority level. e.g Level 10 first, Level 9 then......Level 1 at the end
-			for(let i=10; i>=1; i--){
-				employees = (posts[i] && assign_post(frm, posts[i], employees)) || employees;
-			}
-
-			if(employees.length > 0){
-				employees.forEach(function(i,v){
+			// posts is a list of strings, each string is a post name
+			if(Array.isArray(posts) && posts.length > 0){
+				posts.forEach(post => {
 					frm.add_child('assignments', {
-						employee: employees[v] ? employees[v].employee : undefined,
-						employee_name: employees[v].employee ? employees[v].employee_name : undefined,
+						post: post
 					});
 				});
 			}
@@ -214,30 +226,30 @@ function get_best_employee_match(post, employees){
 
 
 frappe.ui.form.on('Post Allocation Employee Assignment', {
-	employee: function(frm, cdt, cdn){
-		let doc = locals[cdt][cdn];
-		if(doc.employee == undefined){
-			frappe.model.set_value("Post Allocation Employee Assignment", doc.name, "employee_name", undefined);
-			frappe.model.set_value("Post Allocation Employee Assignment", doc.name, "skill_score", undefined);
-			frappe.model.set_value("Post Allocation Employee Assignment", doc.name, "match_percentage", undefined);
-		}
-		else{
-			let {employee, post} = doc;
-			let operations_shift = frm.doc.operations_shift;
-			let date = frm.doc.date;
-			console.log(frm.doc.operations_shift)
-			frappe.xcall('one_fm.operations.doctype.post_allocation_plan.post_allocation_plan.get_post_employee_data', {employee, post, operations_shift, date}).then(res => {
-				let {employee, post} = res;
-				let match = get_best_employee_match(post, [employee]);
-				if(match){
-					frappe.model.set_value("Post Allocation Employee Assignment", doc.name, "match_percentage", match.match_percentage);
-					frappe.model.set_value("Post Allocation Employee Assignment", doc.name, "skill_score", match.score_details);
-				} else {
-					frappe.throw(__("Employee doesn't match the Post criteria."))
-				}
-			})
-		}
-	}
+	// employee: function(frm, cdt, cdn){
+	// 	let doc = locals[cdt][cdn];
+	// 	if(doc.employee == undefined){
+	// 		frappe.model.set_value("Post Allocation Employee Assignment", doc.name, "employee_name", undefined);
+	// 		frappe.model.set_value("Post Allocation Employee Assignment", doc.name, "skill_score", undefined);
+	// 		frappe.model.set_value("Post Allocation Employee Assignment", doc.name, "match_percentage", undefined);
+	// 	}
+	// 	else{
+	// 		let {employee, post} = doc;
+	// 		let operations_shift = frm.doc.operations_shift;
+	// 		let date = frm.doc.date;
+	// 		console.log(frm.doc.operations_shift)
+	// 		frappe.xcall('one_fm.operations.doctype.post_allocation_plan.post_allocation_plan.get_post_employee_data', {employee, post, operations_shift, date}).then(res => {
+	// 			let {employee, post} = res;
+	// 			let match = get_best_employee_match(post, [employee]);
+	// 			if(match){
+	// 				frappe.model.set_value("Post Allocation Employee Assignment", doc.name, "match_percentage", match.match_percentage);
+	// 				frappe.model.set_value("Post Allocation Employee Assignment", doc.name, "skill_score", match.score_details);
+	// 			} else {
+	// 				frappe.throw(__("Employee doesn't match the Post criteria."))
+	// 			}
+	// 		})
+	// 	}
+	// }
 });
 
 

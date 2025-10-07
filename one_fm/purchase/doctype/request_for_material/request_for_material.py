@@ -35,7 +35,9 @@ class RequestforMaterial(BuyingController):
         create_notification_log(subject, message, [self.requested_by], self)
 
     def validate(self):
-        
+        if self.is_new():
+            self.linked_purchase_rfm = None
+            
         self.validate_details_against_type()
         self.set_request_for_material_accepter_and_approver()
         self.set_item_fields()
@@ -323,7 +325,10 @@ class RequestforMaterial(BuyingController):
         """
         linked_name = getattr(self, 'linked_request_for_material', None)
         if not linked_name:
-            return
+            #get from the first row of the child table
+            linked_name = self.items[0].linked_request_for_material
+            if not linked_name:
+                return
         if linked_name == self.name:
             frappe.throw(_("Linked Request for Material cannot reference itself."))
 
@@ -331,8 +336,9 @@ class RequestforMaterial(BuyingController):
         if not frappe.db.exists('Request for Material', linked_name):
             frappe.throw(_("Linked Request for Material {0} does not exist.").format(frappe.bold(linked_name)))
         source_doc = frappe.get_doc('Request for Material', linked_name)
-        if source_doc.purpose !="Purchase":
-            source_doc.db_set('purpose',"Purchase")
+        
+        if source_doc.linked_purchase_rfm != self.name:
+            source_doc.db_set('linked_purchase_rfm', self.name)
         # Aggregate totals by item_code for source and current
         source_totals = {}
         for it in source_doc.items:

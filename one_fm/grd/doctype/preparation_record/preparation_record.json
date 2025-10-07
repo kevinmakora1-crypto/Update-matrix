@@ -10,6 +10,8 @@
   "employee_id",
   "full_name",
   "civil_id",
+  "relieving_date",
+  "last_checkin_date",
   "nationality",
   "residency_expiry_date",
   "renewal_or_extend",
@@ -65,8 +67,8 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Action",
-   "options": "\nRenewal (Kuwaiti)\nRenewal (Non-Kuwaiti)\nExtend 1 month\nExtend 2 months\nExtend 3 months\nLocal Transfer\nCancellation"
-   
+   "options": "\nRenewal (Kuwaiti)\nRenewal (Non-Kuwaiti)\nExtend 1 month\nExtend 2 months\nExtend 3 months\nLocal Transfer\nCancellation"   
+
   },
   {
    "allow_on_submit": 1,
@@ -135,12 +137,25 @@
    "in_list_view": 1,
    "label": "Total Amount",
    "read_only": 1
+  },
+  {
+   "fieldname": "relieving_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Relieving Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_checkin_date",
+   "fieldtype": "Date",
+   "label": "Last Checkin Date",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "istable": 1,
  "links": [],
- "modified": "2025-10-05 10:22:16.969575",
+ "modified": "2025-10-06 17:23:40.083101",
  "modified_by": "Administrator",
  "module": "GRD",
  "name": "Preparation Record",

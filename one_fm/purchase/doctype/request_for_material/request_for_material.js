@@ -19,8 +19,12 @@ frappe.ui.form.on('Request for Material', {
 			let new_doc = frappe.model.copy_doc(frm.doc);
 			new_doc.linked_request_for_material = frm.doc.name;
 			new_doc.workflow_state = '';
+			new_doc.linked_purchase_rfm = ""
 			new_doc.purpose = 'Purchase';
 			new_doc.docstatus = 0;
+			for(let i=0; i<new_doc.items.length; i++){
+				new_doc.items[i].linked_request_for_material = frm.doc.name
+			}
 			frappe.set_route('Form', new_doc.doctype, new_doc.name);
 
 		}
@@ -81,7 +85,9 @@ frappe.ui.form.on('Request for Material', {
 		frm.get_field("items").grid.set_multiple_add("item_code", "qty");
 	},
 	refresh: function(frm) {
-		
+		if(frm.doc.workflow_state=="Approved"&& frm.doc.docstatus==1){
+			set_intro(frm);
+		}
 		frm.events.make_custom_buttons(frm);
 		add_stock_entry_buttons(frm);
 		set_item_field_property(frm);
@@ -155,7 +161,7 @@ frappe.ui.form.on('Request for Material', {
 					}
 				});
 
-				if(purchase_item_exist && frappe.user_roles.includes("Warehouse Supervisor")){
+				if(purchase_item_exist && frappe.user_roles.includes("Warehouse Supervisor") && frm.doc.purpose=="Purchase"){
 					frm.add_custom_button(__("Request for Purchase"),
 						function(){
 							
@@ -202,7 +208,7 @@ frappe.ui.form.on('Request for Material', {
 					}
 				}
 				else {	
-					if(purchase_item_exist && frappe.user_roles.includes("Warehouse Supervisor") ){
+					if(purchase_item_exist && frappe.user_roles.includes("Warehouse Supervisor" && frm.doc.purpose=="Purchase") ){
 							frm.add_custom_button(__("Request for Purchase"),
 								() => frm.events.make_request_for_purchase(frm), __('Create'));
 					}
@@ -1031,6 +1037,14 @@ function set_schedule_date(frm) {
 	}
 };
 
+function set_intro(frm){
+	if(!frm.doc.purpose){
+		frm.set_intro("Please select the Purpose of this Request for Material before converting.");
+	}
+	 let intro_string = "Only Warehouse Supervisor can convert this Request for Material to Request for Purchase/Purchase RFM or Material Transfer/Material Issue."
+	 frm.set_intro(intro_string);
+}
+
 function set_t_warehouse(frm){
 	if(frm.doc.t_warehouse){
 		erpnext.utils.copy_value_in_all_rows(frm.doc, frm.doc.doctype, frm.doc.name, "items", "t_warehouse");
@@ -1052,11 +1066,8 @@ function add_purchase_rfm_button(frm){
 	if(!(frm.doc.docstatus == 1 && frm.doc.status == 'Approved' && frappe.user_roles.includes('Warehouse Supervisor'))){
 		return;
 	}
-	if(frm.doc.linked_request_for_material){
-		return;
-	}
-	
-	if(!frm.doc.linked_request_for_material && frm.doc.purpose !="Purchase"){
+
+	if(!frm.doc.linked_request_for_material && (["Transfer", "Issue"].includes(frm.doc.purpose))){
 		frm.add_custom_button(__('Purchase RFM'), () => frm.events.purchase_rfm(frm), __('Create'));
 		frm.page.set_inner_btn_group_as_primary(__('Create'));
 	}

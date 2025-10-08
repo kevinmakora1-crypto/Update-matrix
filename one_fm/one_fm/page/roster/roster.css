@@ -170,6 +170,11 @@ body[data-route="roster"] .search-employee {
   border: none;
   width: 270px;
 }
+
+body[data-route="roster"] .todayclass {
+  background: #ccf1f8 !important;
+}
+
 body[data-route="roster"] .closed {
   cursor: pointer;
   position: absolute;

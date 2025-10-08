@@ -2834,8 +2834,6 @@ body[data-route="roster"] .forbidden {
   cursor: not-allowed;
 }
 
-
-
 body[data-route="roster"] .selected-tag {
 	background: #e3f2fd;
 	color: #1678c2;

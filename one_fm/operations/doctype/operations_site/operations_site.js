@@ -326,11 +326,6 @@ frappe.ui.form.on('POC', {
 			get_contact(doc);
 		}
 	},
-	before_poc_remove: function(frm, cdt, cdn){
-		if(!frappe.user_roles.includes("Shift Supervisor") && !frappe.user_roles.includes("Site Supervisor")){
-			frappe.throw(__("You are not allowed to make changes to POC list."))
-		}
-	},
 	poc: function(frm, cdt, cdn){
 		let doc = locals[cdt][cdn];
 		if(doc.poc !== undefined){

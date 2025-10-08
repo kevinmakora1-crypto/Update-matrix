@@ -91,50 +91,21 @@ def get_hr_settings_custom_fields():
                 "description": "Specify the number of days in advance the supervisor should be notified before an employee's document expires. A notification will be triggered based on this value."
             },
             {
-                "fieldname": "preparation_record_settings_section",
+                "fieldname": "renewal_extension_costing_section",
                 "fieldtype": "Section Break",
                 "insert_after": "days_before_expiry_to_notify_supervisor",
-                "label": "Preparation Record Settings",
-                "description": "Preparation record that contain list of all employees that their residency expiry date will be between the first and the last date of the next month.\nThis record will go to HR user to set value for each employee either renewal or extend and on the submit of this record it will ask for hr permission and approval.\nThen, it will create wp, mi, moi, and paci records for all employees in the list."
+                "label": "Renewal Extension Costing"
             },
             {
-                "fieldname": "preparation_record_creation_day",
-                "fieldtype": "Int",
-                "insert_after": "preparation_record_settings_section",
-                "label": "Preparation Record Creation Day",
-                "default": "15",
-                "description": "Preparation Record Creation for Next Month on the Day of Current Month. You can enter a value from 1 to 28."
-            },
-            {
-                "fieldname": "create_preparation_record_manually",
-                "fieldtype": "Button",
-                "insert_after": "preparation_record_creation_day",
-                "label": "Create Preparation Record Manually"
-            },
-            {
-                "fieldname": "column_break_prep",
-                "fieldtype": "Column Break",
-                "insert_after": "create_preparation_record_manually"
-            },
-            {
-                "fieldname": "last_preparation_record_created_on",
-                "fieldtype": "Datetime",
-                "insert_after": "column_break_prep",
-                "label": "Last Preparation Record Created on",
-                "read_only": 1
-            },
-            {
-                "fieldname": "last_preparation_record_created_by",
-                "fieldtype": "Link",
-                "insert_after": "last_preparation_record_created_on",
-                "label": "Last Preparation Record Created by",
-                "options": "User",
-                "read_only": 1
+                "fieldname": "renewal_extension_cost",
+                "fieldtype": "Table",
+                "insert_after": "renewal_extension_costing_section",
+                "options": "GRD Renewal Extension Cost"
             },
             {
                 "fieldname": "costing_section",
                 "fieldtype": "Section Break",
-                "insert_after": "last_preparation_record_created_by",
+                "insert_after": "renewal_extension_cost",
                 "label": "Costing Settings"
             },
             {
@@ -154,4 +125,4 @@ def get_hr_settings_custom_fields():
                 "description": "The print format to attach in the notification to the finance team about the preparation cost. If leave this field blank the will consider Standard print format for attachment."
             }
         ]
-}
+    }

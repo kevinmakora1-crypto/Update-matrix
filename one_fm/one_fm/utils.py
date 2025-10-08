@@ -66,7 +66,7 @@ def notify_grd_to_check_applicant_documents(doc):
     This method runs on update and it checkes notification log list.
     """
     if not doc.one_fm_grd_operator:
-        doc.one_fm_grd_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+        doc.one_fm_grd_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
 
     dt = frappe.get_doc('Job Applicant',doc.name)
     if dt:

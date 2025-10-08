@@ -87,7 +87,7 @@ def get_data():
 			]
 		},
 		{
-			"label": _("GRD Settings"),
+			"label": _("HR Settings"),
 			"items": [
 				{
 					"type": "doctype",

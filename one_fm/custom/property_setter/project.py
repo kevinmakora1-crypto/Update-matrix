@@ -1,5 +1,14 @@
 def get_project_properties():
     return [
+        { 
+            
+            "doctype_or_field":"DocType",
+            "doc_type":"Project",
+            "property":"quick_entry",
+            "property_type":"Check",
+            "value":"0",
+            
+        },
         {
             "property": "field_order",
             "property_type": "Data",

@@ -293,7 +293,7 @@ career_history = Class.extend({
 
               // Callback when an item is dropped
               onEnd: function (evt) {
-                  console.log('Item moved:', evt.oldIndex, 'to', evt.newIndex);
+                 
                   updateRanks(); // Call function to re-assign ranks after sorting
               }
           });
@@ -885,14 +885,12 @@ career_history = Class.extend({
     $(`.activity_type_select_${company_no}_${item_no}`).on('change', function() {
       const selectedActivityType = $(this).val();
       if (selectedActivityType) {
-        console.log(selectedActivityType)
         frappe.call({
           method: "one_fm.templates.pages.career_history.get_experience_types",
           args: {
             name: selectedActivityType
           },
           callback: function(r) {
-            console.log("Response ",r.message);
             const assessmentQuestions = r.message.experience_type_question || [];
             const questionsContainer = $(`.activity_type_select_${company_no}_${item_no}`).closest('.learning-journey-item').find('.assessment-questions');
             let questionsHTML = `
@@ -902,7 +900,6 @@ career_history = Class.extend({
               </div>
             `;
             r.message.forEach((question, index) => {
-              console.log(question);
               questionsHTML += `
                 <div class="mb-3">
                   <label class="form-label">${question.experience_type_question}</label>

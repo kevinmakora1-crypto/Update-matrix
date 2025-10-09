@@ -849,11 +849,8 @@ career_history = Class.extend({
 
     // Fetch activity types from the server
     frappe.call({
-      method: "frappe.client.get_list",
-      args: {
-        doctype: "Experience Type",
-        limit_page_length: 100,
-      },
+      method: "one_fm.templates.pages.career_history.get_experience_types",
+      args: {},
       callback: function (r) {
         activityTypes = r.message;
       },
@@ -888,14 +885,15 @@ career_history = Class.extend({
     $(`.activity_type_select_${company_no}_${item_no}`).on('change', function() {
       const selectedActivityType = $(this).val();
       if (selectedActivityType) {
+        console.log(selectedActivityType)
         frappe.call({
-          method: "frappe.client.get",
+          method: "one_fm.templates.pages.career_history.get_experience_types",
           args: {
-            doctype: "Experience Type",
             name: selectedActivityType
           },
           callback: function(r) {
-            const assessmentQuestions = r.message.assessment_questions || [];
+            console.log("Response ",r.message);
+            const assessmentQuestions = r.message.experience_type_question || [];
             const questionsContainer = $(`.activity_type_select_${company_no}_${item_no}`).closest('.learning-journey-item').find('.assessment-questions');
             let questionsHTML = `
               <div class="mb-3">
@@ -903,7 +901,8 @@ career_history = Class.extend({
                 <input type="text" class="form-control activity_title_${company_no}_${item_no}" placeholder="Enter title..." />
               </div>
             `;
-            assessmentQuestions.forEach((question, index) => {
+            r.message.forEach((question, index) => {
+              console.log(question);
               questionsHTML += `
                 <div class="mb-3">
                   <label class="form-label">${question.experience_type_question}</label>

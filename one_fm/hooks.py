@@ -298,7 +298,12 @@ doc_events = {
 	},
 	"Purchase Receipt": {
 		"before_submit": "one_fm.purchase.utils.before_submit_purchase_receipt",
-		"on_submit": "one_fm.one_fm.doctype.customer_asset.customer_asset.on_purchase_receipt_submit",
+		"on_submit": [
+      				"one_fm.one_fm.doctype.customer_asset.customer_asset.on_purchase_receipt_submit",
+					"one_fm.overrides.purchase_receipt.update_received_qty"
+          ],
+		"on_cancel":"one_fm.overrides.purchase_receipt.update_received_qty",
+  		"on_update_after_submit":"one_fm.overrides.purchase_receipt.update_received_qty",
 		"validate": [
 			"one_fm.purchase.utils.validate_store_keeper_project_supervisor",
 			"one_fm.overrides.purchase_receipt.validate_item_batch"
@@ -817,7 +822,8 @@ override_whitelisted_methods = {
 	"erpnext.controllers.accounts_controller.update_child_qty_rate":"one_fm.overrides.accounts_controller.update_child_qty_rate",
 	"hrms.hr.doctype.goal.goal.get_children":"one_fm.overrides.goal.get_childrens",
     "hrms.payroll.doctype.payroll_entry.payroll_entry.get_start_end_dates": "one_fm.overrides.payroll_entry.get_start_end_dates",
-    "hrms.hr.doctype.job_applicant.job_applicant.create_interview": "one_fm.overrides.job_applicant.create_interview"
+    "hrms.hr.doctype.job_applicant.job_applicant.create_interview": "one_fm.overrides.job_applicant.create_interview",
+    "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_receipt":"one_fm.overrides.purchase_order.make_purchase_receipt",
 
 }
 

@@ -128,7 +128,7 @@ class PIFSSMonthlyDeduction(Document):
 
 	def notify_grd_supervisor(self):
 		if self.workflow_state == "Pending By Supervisor":
-			email = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
+			email = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
 			subject = _("Attention: PIFSS Monthly Deduction Is Ready to Be Reviewed")
 			message = "<p>You are requested to review PIFSS Monthly Deduction</p><br>"
 			create_notification_log(subject, message, [email], self)
@@ -267,7 +267,7 @@ def notify_pro(pifss_mothly_dedution):
 	doc = frappe.get_doc("PIFSS Monthly Deduction",pifss_mothly_dedution.name)
 	if doc:
 		page_link = get_url(doc.get_url())
-		email = frappe.db.get_single_value("GRD Settings", "default_grd_operator_pifss")
+		email = frappe.db.get_single_value("HR Settings", "default_grd_operator_pifss")
 		subject = _("PIFSS Monthly Deduction record is created")
 		message = _("PIFSS Monthly Deduction record is created: {0}").format(page_link)
 		create_notification_log(subject,message,[email], doc)

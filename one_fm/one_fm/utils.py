@@ -66,7 +66,7 @@ def notify_grd_to_check_applicant_documents(doc):
     This method runs on update and it checkes notification log list.
     """
     if not doc.one_fm_grd_operator:
-        doc.one_fm_grd_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+        doc.one_fm_grd_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
 
     dt = frappe.get_doc('Job Applicant',doc.name)
     if dt:
@@ -133,7 +133,7 @@ def check_mendatory_fields_for_grd_and_recruiter(doc,method):
 
     """
     roles = frappe.get_roles(frappe.session.user)
-    if "GRD Operator" in roles:
+    if "Government Relations Operator" in roles:
         if doc.one_fm_has_issue == "No":
             validate_mendatory_fields_for_grd(doc)
 
@@ -261,7 +261,7 @@ def notify_supervisor_change_pam_designation(name):
 
 @frappe.whitelist()
 def notify_operator_with_supervisor_response(name):
-    """This method will notify GRD Operator with GRD supervisor response (Accept/Reject) on the PAM Number - PAM Desigantion changes for solving internal tp issues"""
+    """This method will notify Government Relations Operator with GRD supervisor response (Accept/Reject) on the PAM Number - PAM Desigantion changes for solving internal tp issues"""
     job_Applicant = frappe.get_doc('Job Applicant',name)
     grd_operator = frappe.db.get_single_value('GRD Settings','default_grd_operator_transfer')
     if job_Applicant.accept_changes == 1 and job_Applicant.reject_changes == 0:

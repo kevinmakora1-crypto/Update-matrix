@@ -950,6 +950,7 @@ function get_shoves_tugs_html(company_no) {
   return `<div class="shoves-tugs-block my-3 col-lg-12 col-md-12">
     <div class="mb-3">
       <label class="form-label">Shoves</label>
+      <small class="text-muted d-block" style="font-size: 0.75rem; line-height:1.1; margin-top:4px;">Factors that push you away from a job; Eg: toxic environment, no appreciation, no growth in a role</small>
       <textarea
         class="form-control shoves_input_${company_no}"
         rows="2"
@@ -958,6 +959,7 @@ function get_shoves_tugs_html(company_no) {
     </div>
     <div class="mb-3">
       <label class="form-label">Tugs</label>
+      <small class="text-muted d-block" style="font-size: 0.75rem; line-height:1.1; margin-top:4px;">Factors that pull you towards a job; Eg: work-life balance, flexible hours, a good career move.</small>
       <textarea
         class="form-control tugs_input_${company_no}"
         rows="2"

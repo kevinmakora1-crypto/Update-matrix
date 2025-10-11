@@ -277,7 +277,7 @@ def create_wp_for_transferable_employee(doc):
 					notify_grd_operator_for_transfer_wp_record(tp)
 
 def notify_grd_operator_for_transfer_wp_record(tp):
-	operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+	operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
 	wp = frappe.db.get_value("Work Permit",{'transfer_paper':tp.name,'work_permit_status':'Draft'})
 	if wp:
 		wp_record = frappe.get_doc('Work Permit', wp)

@@ -101,25 +101,45 @@ var set_warehouse_filter = function(frm, warehouse_field, warehouses) {
 }
 
 var set_stock_entry_type_for_issuer = function(frm) {
-  if(frappe.user.has_role('Stock Issuer')){
-    set_stock_entry_type_filter(frm, ["Material Issue", "Material Receipt"]);
-    frappe.db.get_value("Stock Entry Type", {"purpose": "Material Issue"}, "name").then(res=>{
-      if(res.message && res.message.name){
-        frm.set_value('stock_entry_type', res.message.name);
-      }
-    });
-  }
+    if(frappe.user.has_role('Stock Issuer')){
+        set_stock_entry_type_filter(frm, ["Material Issue", "Material Receipt", "Material Transfer"]);
+        
+        if(frm.doc.one_fm_request_for_material) {
+            frappe.db.get_value("Request for Material", frm.doc.one_fm_request_for_material, "purpose").then(res => {
+                if(res.message && res.message.purpose) {
+                    let purpose_map = {
+                        "Issue": "Material Issue",
+                        "Transfer": "Material Transfer"
+                    };
+                    let purpose = purpose_map[res.message.purpose];
+                    
+                    if(purpose) {
+                        frappe.db.get_value("Stock Entry Type", {"purpose": purpose}, "name").then(result => {
+                            if(result.message && result.message.name){
+                                frm.set_value('stock_entry_type', result.message.name);
+                            }
+                        });
+                    }
+                }
+            });
+        } else {
+            frappe.db.get_value("Stock Entry Type", {"purpose": "Material Issue"}, "name").then(res => {
+                if(res.message && res.message.name){
+                    frm.set_value('stock_entry_type', res.message.name);
+                }
+            });
+        }
+    }
 }
 
 var set_stock_entry_type_filter = function(frm, purpose) {
-  // purpose should be a list of value
-  frm.set_query("stock_entry_type", function() {
-      return {
-          filters:{
-              purpose: ['in', purpose]
-          }
-      };
-  });
+    frm.set_query("stock_entry_type", function() {
+        return {
+            filters: {
+                purpose: ['in', purpose]
+            }
+        };
+    });
 }
 
 frappe.ui.form.on('Stock Entry Detail', {

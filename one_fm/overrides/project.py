@@ -33,6 +33,8 @@ def add_assignment(user, project):
 
 def get_changed_users(project):
     project_before_save = project.get_doc_before_save()
+    if project_before_save is None:
+        return [], []
     changes = get_diff(project_before_save, project, for_child=True)
 
     user_change = next((c for c in changes.changed if c[0] == "users"), None)

@@ -62,7 +62,8 @@ class StockEntryOverride(StockEntry):
         
         if rfm.purpose not in ["Transfer", "Issue"]:
             return
-
+        total_transferred_issued = []
+        total_pending = 0
         for rfm_item in rfm.items:
             total_transferred = 0
             total_issued = 0
@@ -107,15 +108,42 @@ class StockEntryOverride(StockEntry):
                         break
 
             if rfm.purpose == "Transfer":
+                total_transferred_issued.append(total_transferred)
                 rfm_item.transferred_quantity = total_transferred
                 rfm_item.custom_pending_quantity = total_pending
                 rfm_item.quantity_to_transfer = rfm_item.qty - total_transferred - total_pending
 
             elif rfm.purpose == "Issue":
+                
+                total_transferred_issued.append(total_issued)
                 rfm_item.issued_quantity = total_issued
                 rfm_item.custom_pending_quantity = total_pending
                 rfm_item.quantity_to_transfer = rfm_item.qty - total_issued - total_pending
         
+        
         rfm.flags.ignore_permissions = True
         rfm.flags.ignore_validate_update_after_submit = True
         rfm.save()
+        set_rfm_status(rfm,total_transferred_issued)
+        
+def set_rfm_status(rfm_doc,stock_details):
+    total_items_issued_transferred = sum(stock_details)
+    total_items_in_rfm = sum([item.qty for item in rfm_doc.items])
+    if rfm_doc.purpose == "Transfer":
+        if not total_items_issued_transferred:
+            frappe.db.set_value(rfm_doc.doctype,rfm_doc.name, 'status', 'Pending')
+        elif total_items_issued_transferred ==  total_items_in_rfm:
+            frappe.db.set_value(rfm_doc.doctype,rfm_doc.name, 'status', 'Transferred')
+        if total_items_issued_transferred:
+            if  total_items_issued_transferred <  total_items_in_rfm:
+                frappe.db.set_value(rfm_doc.doctype,rfm_doc.name, 'status', "Partially Transferred")
+    elif rfm_doc.purpose == "Issue":
+        if not total_items_issued_transferred:
+            frappe.db.set_value(rfm_doc.doctype,rfm_doc.name, 'status', 'Pending')
+        elif total_items_issued_transferred ==  total_items_in_rfm:
+            frappe.db.set_value(rfm_doc.doctype,rfm_doc.name, 'status', 'Issued')
+        if total_items_issued_transferred:
+            if  total_items_issued_transferred <  total_items_in_rfm:
+                frappe.db.set_value(rfm_doc.doctype,rfm_doc.name, 'status', "Partially Issued")
+    
+       

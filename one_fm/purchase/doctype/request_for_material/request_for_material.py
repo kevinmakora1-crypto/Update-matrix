@@ -272,6 +272,9 @@ class RequestforMaterial(BuyingController):
                             cannot be greater than requested quantity {2} for Item {3}").format(d.ordered_qty, d.parent, d.qty, d.item_code))
 
                 frappe.db.set_value(d.doctype, d.name, "ordered_qty", d.ordered_qty)
+        
+        self.update_issue_status()
+
     #for quantities that had to be purchased
     def update_purchased_qty(self, mr_items=None, update_modified=True):
         if not mr_items:
@@ -297,6 +300,18 @@ class RequestforMaterial(BuyingController):
             "target_field": "ordered_qty",
             "name": self.name,
         }, update_modified)
+
+    def update_issue_status(self):
+        if self.purpose == 'Issue':
+            total_requested_quantity = sum(item.qty for item in self.items)
+            total_issued_quantity = sum(item.issued_quantity for item in self.items)
+
+            if total_issued_quantity == 0:
+                self.update_status('Pending')
+            elif total_issued_quantity < total_requested_quantity:
+                self.update_status('Partially Issued')
+            elif total_issued_quantity == total_requested_quantity:
+                self.update_status('Issued')
 
     @frappe.whitelist()
     def create_reservation(self, filters):

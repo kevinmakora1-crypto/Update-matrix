@@ -137,13 +137,6 @@ def set_rfm_status(rfm_doc,stock_details):
         if total_items_issued_transferred:
             if  total_items_issued_transferred <  total_items_in_rfm:
                 frappe.db.set_value(rfm_doc.doctype,rfm_doc.name, 'status', "Partially Transferred")
-    elif rfm_doc.purpose == "Issue":
-        if not total_items_issued_transferred:
-            frappe.db.set_value(rfm_doc.doctype,rfm_doc.name, 'status', 'Pending')
-        elif total_items_issued_transferred ==  total_items_in_rfm:
-            frappe.db.set_value(rfm_doc.doctype,rfm_doc.name, 'status', 'Issued')
-        if total_items_issued_transferred:
-            if  total_items_issued_transferred <  total_items_in_rfm:
-                frappe.db.set_value(rfm_doc.doctype,rfm_doc.name, 'status', "Partially Issued")
+    
     
        

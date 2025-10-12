@@ -24,9 +24,11 @@ class RequestforPurchase(Document):
 	def on_submit(self):
 		self.assign_purchase_officer()
 		self._update_linked_rfm_quantities()
+		update_rfp_status(self.name)
   
 	def on_update_after_submit(self):
 		self._update_linked_rfm_quantities()
+		update_rfp_status(self.name)
   
 	def after_insert(self):
 		self._update_linked_rfm_quantities()
@@ -420,6 +422,47 @@ class RequestforPurchase(Document):
 		
 		frappe.msgprint(_("Request for Purchase updated successfully."))
 
+
+
+def update_rfp_status(rfp_name):
+	"""
+	Updates the status of a Request for Purchase (RFP) based on the
+	quantities of items ordered in linked Purchase Orders (POs).
+
+	Args:
+		rfp_name (str): The name of the Request for Purchase document.
+	"""
+	rfp = frappe.get_doc("Request for Purchase", rfp_name)
+
+	# Only update the status if the RFP is in an approved state
+	if rfp.workflow_state != "Approved":
+		return
+
+	# Calculate the total quantity required by the RFP
+	total_required_qty = sum(item.qty for item in rfp.items)
+
+	# Calculate the total quantity ordered across all submitted POs
+	ordered_qty = frappe.db.sql("""
+		SELECT SUM(item.qty)
+		FROM `tabPurchase Order Item` item
+		JOIN `tabPurchase Order` po ON item.parent = po.name
+		WHERE po.one_fm_request_for_purchase = %s
+		AND po.docstatus = 1
+	""", rfp_name)[0][0] or 0
+
+	# Determine the new status based on the quantities
+	new_status = None
+	if ordered_qty == 0:
+		new_status = "To Order"
+	elif ordered_qty < total_required_qty:
+		new_status = "Partially Ordered"
+	else:
+		new_status = "Ordered"
+
+	# Update the RFP status if it has changed
+	if rfp.status != new_status:
+		rfp.db_set("status", new_status)
+		frappe.db.commit()
 
 
 @frappe.whitelist()

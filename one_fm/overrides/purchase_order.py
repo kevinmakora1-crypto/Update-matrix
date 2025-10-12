@@ -84,19 +84,28 @@ def filter_purchase_uoms(doctype, txt, searchfield, start, page_len, filters):
 
 
 
+from one_fm.purchase.doctype.request_for_purchase.request_for_purchase import update_rfp_status
+
+
 class PurchaseOrderOverride(PurchaseOrder):  
 
     def on_submit(self):
         self.update_purchased_quantities()
         self.update_ordered_and_pending_quantities()
+        if self.one_fm_request_for_purchase:
+            update_rfp_status(self.one_fm_request_for_purchase)
     
     def on_update_after_submit(self):
         self.update_purchased_quantities()
         self.update_ordered_and_pending_quantities()
+        if self.one_fm_request_for_purchase:
+            update_rfp_status(self.one_fm_request_for_purchase)
 
     def on_cancel(self):
         self.update_purchased_quantities()
         self.update_ordered_and_pending_quantities()
+        if self.one_fm_request_for_purchase:
+            update_rfp_status(self.one_fm_request_for_purchase)
 
     def update_purchased_quantities(self):
         if not self.one_fm_request_for_purchase:

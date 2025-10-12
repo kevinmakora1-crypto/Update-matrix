@@ -4,6 +4,7 @@
  "creation": "2025-03-29 13:54:37.216425",
  "custom_format": 1,
  "default_print_language": "en",
+ "default": 1,
  "disabled": 0,
  "doc_type": "Purchase Order",
  "docstatus": 0,

@@ -222,9 +222,7 @@ doc_events = {
 		],
 		"on_submit": [
 			"one_fm.api.doc_methods.stock_entry.validate_budget",
-			"one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_and_requested_qty"
 		],
-		"on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_and_requested_qty"
 	},
 	"Purchase Order": {
 		"on_submit": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",

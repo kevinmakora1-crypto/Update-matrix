@@ -103,6 +103,7 @@ class RequestforPurchase(Document):
 					request_for_purchase=self.name,
 					warehouse=wh,
 					items_list=items_list,
+					rfp_doc = self.as_dict(),
 					do_not_submit=True
 				)
 				
@@ -420,7 +421,43 @@ class RequestforPurchase(Document):
 		
 		frappe.msgprint(_("Request for Purchase updated successfully."))
 
+	def before_save(self):
+		# Ensure latest exchange rate before saving (only at before_save)
+		self.get_and_set_latest_exchange_rate()
 
+	def get_and_set_latest_exchange_rate(self):
+		"""Fetch latest (by date desc then creation desc) Currency Exchange and overwrite exchange_rate.
+		Rules:
+		- If company_currency == currency => exchange_rate = 1
+		- Else query Currency Exchange where date <= today
+		- If record found overwrite; if none found keep existing
+		- On error log and keep existing
+		"""
+		try:
+			from_currency = getattr(self, 'company_currency', None)
+			to_currency = getattr(self, 'currency', None)
+			if not from_currency or not to_currency:
+				return
+			if from_currency == to_currency:
+				self.exchange_rate = 1
+				return
+			latest = frappe.get_list(
+				'Currency Exchange',
+				filters={
+					'from_currency': from_currency,
+					'to_currency': to_currency,
+					'date': ['<=', frappe.utils.today()]
+				},
+				fields=['name', 'exchange_rate', 'date', 'creation'],
+				order_by='date desc, creation desc',
+				page_length=1
+			)
+			if latest:
+				rate = latest[0].get('exchange_rate')
+				if rate:  # guaranteed non-zero/non-negative by business rules
+					self.exchange_rate = rate
+		except Exception as e:
+			frappe.log_error(f"Exchange rate fetch failed for RFP {getattr(self, 'name', 'NEW')}: {e}", 'RFP Exchange Rate Fetch')
 
 @frappe.whitelist()
 def check_related_pos_before_cancel(doc):
@@ -600,6 +637,9 @@ def create_purchase_order(**args):
     
     po = frappe.new_doc("Purchase Order")
     po.transaction_date = nowdate()
+    po.buying_price_list = args.get('rfp_doc').price_list
+    po.currency = args.get('rfp_doc').currency
+    po.conversion_rate = args.get('rfp_doc').exchange_rate
     po.set_warehouse = args.warehouse
     po.quotation = args.quotation
     po.supplier = args.supplier

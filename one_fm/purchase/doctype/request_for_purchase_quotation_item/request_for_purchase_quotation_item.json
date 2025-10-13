@@ -60,7 +60,7 @@
   },
   {
    "fieldname": "description",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Text",
    "label": "Description",
    "oldfieldname": "description",
    "oldfieldtype": "Small Text",
@@ -155,6 +155,7 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Rate",
+   "options": "currency",
    "read_only_depends_on": "quotation"
   },
   {

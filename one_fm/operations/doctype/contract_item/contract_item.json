@@ -24,7 +24,8 @@
   "shift_hours",
   "gender",
   "rate_type",
-  "rate_type_off",
+  "off_type",
+  "service_type",
   "is_yearly_month",
   "days_off_category",
   "no_of_days_off",
@@ -203,13 +204,19 @@
   {
    "default": "Full Month",
    "depends_on": "eval:doc.rate_type=='Monthly'",
-   "fieldname": "rate_type_off",
+   "fieldname": "off_type",
    "fieldtype": "Select",
-   "label": "Rate Type (Off Type)",
+   "label": "Off Type",
    "options": "Full Month\nDays Off"
   },
   {
-   "depends_on": "eval:doc.rate_type_off=='Days Off' && doc.rate_type=='Monthly'",
+   "fieldname": "service_type",
+   "fieldtype": "Select",
+   "label": "Service Type",
+   "options": "\\nManpower\\nPost Schedule"
+  },
+  {
+   "depends_on": "eval:doc.off_type=='Days Off' && doc.rate_type=='Monthly'",
    "fieldname": "days_off_category",
    "fieldtype": "Select",
    "label": "Days off Category",
@@ -217,7 +224,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.days_off_category && doc.rate_type_off=='Days Off' && doc.rate_type=='Monthly'",
+   "depends_on": "eval:doc.days_off_category && doc.off_type=='Days Off' && doc.rate_type=='Monthly'",
    "fieldname": "no_of_days_off",
    "fieldtype": "Int",
    "label": "No of Days Off"
@@ -231,7 +238,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.rate_type_off == 'Full Month'",
+   "depends_on": "eval:doc.off_type == 'Full Month'",
    "description": "If Yearly Month is checked then the invoice will calculate based on the factor 30.4166.",
    "fieldname": "is_yearly_month",
    "fieldtype": "Check",

@@ -113,7 +113,7 @@ def create_roster_post_actions():
         """, as_dict=1)
 
         attendance_list = frappe.db.sql(""" 
-            SELECT employee, employee_name, attendance_date 
+            SELECT employee, attendance_date 
             FROM `tabAttendance`
             WHERE attendance_date BETWEEN %s AND %s 
             AND status = 'On Leave' 
@@ -141,21 +141,21 @@ def create_roster_post_actions():
         )
 
 
-        for key, post_count in post_counts.items():
+        for key, post_count in post_counts.items():# Default to 0 if no employee schedule exists
             emp_count = employee_counts.get(key, 0)
             date, role, shift = key
 
-            if post_count > emp_count:
+            if post_count > emp_count: # If post schedules are more than employee schedules
                 result_dict[(role, shift)]["not_filled"].append({
                     "date": date,
                     "quantity": post_count - emp_count
                 })
 
-        for key, emp_count in employee_counts.items():
+        for key, emp_count in employee_counts.items(): # Default to 0 if no post schedule exists
             post_count = post_counts.get(key, 0)
             date, role, shift = key
 
-            if emp_count > post_count:
+            if emp_count > post_count: # If employee schedules are more than post schedules
                 result_dict[(role, shift)]["over_filled"].append({
                     "date": date,
                     "quantity": emp_count - post_count

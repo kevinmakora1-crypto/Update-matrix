@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 
 from erpnext.buying.doctype.purchase_order.purchase_order import PurchaseOrder
+from one_fm.purchase.doctype.request_for_purchase.request_for_purchase import update_rfp_status
 from frappe.utils import nowdate
 
 
@@ -81,11 +82,6 @@ def filter_purchase_uoms(doctype, txt, searchfield, start, page_len, filters):
 			'txt': "%%%s%%" % txt
 		}
 	)
-
-
-
-from one_fm.purchase.doctype.request_for_purchase.request_for_purchase import update_rfp_status
-
 
 class PurchaseOrderOverride(PurchaseOrder):  
 

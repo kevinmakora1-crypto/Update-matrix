@@ -214,11 +214,6 @@ standard_queries = {
     "Designation": "one_fm.overrides.queries.designation_query",
 }
 
-def update_rfm_status_on_doc_event(doc, method):
-    if hasattr(doc, 'request_for_material') and doc.request_for_material:
-        rfm = _frappe.get_doc("Request for Material", doc.request_for_material)
-        rfm.update_rfm_status()
-
 doc_events = {
 	"Stock Entry": {
 		"validate": [
@@ -234,11 +229,11 @@ doc_events = {
 	"Purchase Order": {
 		"on_submit": [
 			"one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",
-			"one_fm.hooks.update_rfm_status_on_doc_event"
+			"one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_on_purchase_order_doc_event"
 		],
 		"on_cancel": [
 			"one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",
-			"one_fm.hooks.update_rfm_status_on_doc_event"
+			"one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_on_purchase_order_doc_event"
 		],
 		"after_insert": "one_fm.purchase.utils.set_quotation_attachment_in_po",
 		"validate":[
@@ -308,16 +303,16 @@ doc_events = {
 		"on_update": "one_fm.utils.create_additional_salary_for_overtime_request_for_head_office"
 	},
 	"Request for Purchase": {
-		"on_submit": "one_fm.hooks.update_rfm_status_on_doc_event",
-		"on_cancel": "one_fm.hooks.update_rfm_status_on_doc_event"
+		"on_submit": "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_on_rfp_doc_event",
+		"on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_on_rfp_doc_event"
 	},
 	"Purchase Receipt": {
 		"before_submit": "one_fm.purchase.utils.before_submit_purchase_receipt",
 		"on_submit": [
 			"one_fm.one_fm.doctype.customer_asset.customer_asset.on_purchase_receipt_submit",
-			"one_fm.hooks.update_rfm_status_on_doc_event"
+			"one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_on_purchase_receipt_doc_event"
 		],
-		"on_cancel": ["one_fm.hooks.update_rfm_status_on_doc_event"],
+		"on_cancel": ["one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_on_purchase_receipt_doc_event"],
 		"validate": [
 			"one_fm.purchase.utils.validate_store_keeper_project_supervisor",
 			"one_fm.overrides.purchase_receipt.validate_item_batch"

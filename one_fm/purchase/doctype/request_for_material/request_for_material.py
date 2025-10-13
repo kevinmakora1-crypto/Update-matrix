@@ -207,16 +207,14 @@ class RequestforMaterial(BuyingController):
 
     def _get_total_received_quantity(self):
         return frappe.db.sql("""
-            SELECT SUM(qty)
-            FROM `tabPurchase Receipt Item`
-            WHERE parent IN (
-                SELECT name
-                FROM `tabPurchase Receipt`
-                WHERE request_for_material = %s AND docstatus = 1
-            )
+            SELECT SUM(pr_item.qty)
+            FROM `tabPurchase Receipt Item` pr_item
+            JOIN `tabPurchase Order Item` po_item ON pr_item.purchase_order_item = po_item.name
+            JOIN `tabPurchase Order` po ON po_item.parent = po.name
+            WHERE po.request_for_material = %s AND pr_item.docstatus = 1
         """, self.name)[0][0] or 0
 
-    def update_rfm_status(self):
+    def update_purchase_rfm_status(self):
         if self.purpose != "Purchase":
             return
 
@@ -844,3 +842,18 @@ def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
     frappe.msgprint(_("Stock Entry {0} created successfully").format(stock_entry.name))
     
     return stock_entry.name
+
+def update_rfm_status_on_rfp_doc_event(doc, method):
+    if hasattr(doc, 'request_for_material') and doc.request_for_material:
+        rfm = frappe.get_doc("Request for Material", doc.request_for_material)
+        rfm.update_purchase_rfm_status()
+
+def update_rfm_status_on_purchase_order_doc_event(doc, method):
+    if hasattr(doc, 'request_for_material') and doc.request_for_material:
+        rfm = frappe.get_doc("Request for Material", doc.request_for_material)
+        rfm.update_purchase_rfm_status()
+
+def update_rfm_status_on_purchase_receipt_doc_event(doc, method):
+    if hasattr(doc, 'request_for_material') and doc.request_for_material:
+        rfm = frappe.get_doc("Request for Material", doc.request_for_material)
+        rfm.update_purchase_rfm_status()

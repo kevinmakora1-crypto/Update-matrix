@@ -1,0 +1,124 @@
+<style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+    }
+    table {
+      font-family: Arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+  
+    th, .notify_ticket_raiser td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+  
+    th {
+      background-color: #f2f2f2;
+      color: #333;
+      width: 30%;
+      font-weight: bold;
+    }
+
+    /* Style for the team table header */
+    .team-table th {
+        width: auto; /* Let the browser decide the width for this table's headers */
+    }
+  
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+  
+    h3 {
+      color: #0056b3;
+      border-bottom: 2px solid #0056b3;
+      padding-bottom: 5px;
+    }
+
+    h4 {
+        color: #333;
+        margin-top: 25px;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 5px;
+    }
+
+    p {
+        margin-bottom: 15px;
+    }
+
+    ul {
+        padding-left: 20px;
+    }
+
+    li {
+        margin-bottom: 8px;
+    }
+  
+</style>
+  
+
+
+<p>Good day,</p>
+
+<p>Congratulations! You have been selected as a team member in the  Project <strong>{{ project_name }}</strong> .</p>
+
+<p>Please find the initial project details outlined below.</p>
+
+<table class="notify_ticket_raiser">
+    <tbody>
+      <tr>
+        <th>Project Name</th>
+        <td>{{ project_name }}</td>
+      </tr>
+      <tr>
+        <th>Project Manager</th>
+        <td>{{project_manager_name}}</td>
+      </tr>
+      <tr>
+        <th>Projected Start Date</th>
+        <td>{{ start_date }}</td>
+      </tr>
+      <tr>
+        <th>Projected End Date</th>
+        <td>{{ end_date }}</td>
+      </tr>
+    </tbody>
+</table>
+
+<h4>1. Project Outcome</h4>
+<p>{{ project_outcome }}</p>
+
+<h4>2. Success and Completion Criteria</h4>
+<div>
+    {{ success_completion_criteria }}
+    </div>
+
+<h4>3. Success Metrics</h4>
+<div>
+    {{ success_metrics }}
+    </div>
+
+<h4>4. Project Team</h4>
+    
+<table class="notify_ticket_raiser team-table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Contact</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for member in project_team %}
+        <tr>
+            <td>{{ member.full_name }}</td>
+            <td>{{ member.contact }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+</table>
+

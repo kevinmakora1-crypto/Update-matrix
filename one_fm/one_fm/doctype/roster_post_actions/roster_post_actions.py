@@ -105,31 +105,57 @@ def create_roster_post_actions():
 
         # Fetch employee schedules in the date range that are working
         employee_schedules = frappe.db.sql(f"""
-            SELECT es.date, es.shift, es.operations_role
+            SELECT es.date, es.shift, es.operations_role, es.employee
             FROM `tabEmployee Schedule` es
             WHERE es.employee_availability = 'Working'
             AND es.date BETWEEN '{start_date}' AND '{end_date}'
             ORDER BY date ASC
         """, as_dict=1)
 
+        attendance_list = frappe.db.sql(""" 
+            SELECT employee, employee_name, attendance_date 
+            FROM `tabAttendance`
+            WHERE attendance_date BETWEEN %s AND %s 
+            AND status = 'On Leave' 
+        """, (start_date, end_date), as_dict=1)
+
+
+        attendance_dict = {}
+        for record in attendance_list:
+            employee = record['employee']
+            attendance_date = record['attendance_date']
+            
+            if employee not in attendance_dict:
+                attendance_dict[employee] = []
+            
+            attendance_dict[employee].append(attendance_date)
+
+
         post_counts = Counter((ps["date"], ps["operations_role"], ps["shift"]) for ps in post_schedules)
-        employee_counts = Counter((es["date"], es["operations_role"], es["shift"]) for es in employee_schedules)
+
+
+        employee_counts = Counter(
+            (es["date"], es["operations_role"], es["shift"]) 
+            for es in employee_schedules 
+            if es["date"] not in attendance_dict.get(es["employee"], [])
+        )
+
 
         for key, post_count in post_counts.items():
-            emp_count = employee_counts.get(key, 0)  # Default to 0 if no employee schedule exists
+            emp_count = employee_counts.get(key, 0)
             date, role, shift = key
 
-            if post_count > emp_count: # If post schedules are more than employee schedules
+            if post_count > emp_count:
                 result_dict[(role, shift)]["not_filled"].append({
                     "date": date,
                     "quantity": post_count - emp_count
                 })
 
         for key, emp_count in employee_counts.items():
-            post_count = post_counts.get(key, 0)  # Default to 0 if no post schedule exists
+            post_count = post_counts.get(key, 0)
             date, role, shift = key
 
-            if emp_count > post_count: # If employee schedules are more than post schedules
+            if emp_count > post_count:
                 result_dict[(role, shift)]["over_filled"].append({
                     "date": date,
                     "quantity": emp_count - post_count

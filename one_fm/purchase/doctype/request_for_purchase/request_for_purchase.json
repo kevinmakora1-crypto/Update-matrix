@@ -26,6 +26,13 @@
   "column_break_8",
   "department",
   "warehouse",
+  "currency_and_price_list_section",
+  "currency",
+  "exchange_rate",
+  "company_currency",
+  "column_break_ghdl",
+  "price_list",
+  "price_list_currency",
   "items_section",
   "items",
   "get_requested_items_to_order",
@@ -94,7 +101,7 @@
    "no_copy": 1,
    "oldfieldname": "status",
    "oldfieldtype": "Select",
-   "options": "\nDraft\nDraft Request\nAccepted\nApproved\nRejected\nSubmitted\nCancelled",
+   "options": "\nDraft\nDraft Request\nAccepted\nApproved\nTo Order\nPartially Ordered\nOrdered\nRejected\nSubmitted\nCancelled",
    "print_hide": 1,
    "read_only": 1,
    "reqd": 1,
@@ -220,7 +227,6 @@
    "options": "Request for Purchase Quotation Item"
   },
   {
-   "depends_on": "eval:doc.docstatus == 1",
    "fieldname": "get_requested_items_to_order",
    "fieldtype": "Button",
    "label": "Get Requested Items to Order"
@@ -255,13 +261,57 @@
    "fieldtype": "Check",
    "hidden": 1,
    "label": "Notified the RFM Requester"
+  },
+  {
+   "default": "KWD",
+   "fieldname": "company_currency",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Company Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "default": "1",
+   "fieldname": "exchange_rate",
+   "fieldtype": "Float",
+   "label": "Exchange Rate",
+   "read_only_depends_on": "eval: doc.currency && doc.currency == doc.company_currency"
+  },
+  {
+   "fieldname": "price_list",
+   "fieldtype": "Link",
+   "label": "Price List",
+   "options": "Price List"
+  },
+  {
+   "fieldname": "currency_and_price_list_section",
+   "fieldtype": "Section Break",
+   "label": "Currency and Price List"
+  },
+  {
+   "fieldname": "column_break_ghdl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "price_list.currency",
+   "fieldname": "price_list_currency",
+   "fieldtype": "Link",
+   "label": "Price List Currency",
+   "options": "Currency",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "icon": "fa fa-shopping-cart",
  "is_submittable": 1,
  "links": [],
- "modified": "2025-09-22 11:21:50.107237",
+ "modified": "2025-10-13 12:25:39.595818",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Purchase",

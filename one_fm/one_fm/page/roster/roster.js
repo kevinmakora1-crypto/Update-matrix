@@ -1429,22 +1429,26 @@ function render_roster(res, page) {
 				}
 			}
 
+			const isToday = current_day_iter.isSame(moment(), 'day');
+
+			todayClass = isToday ? "todayclass" : "";
+
 			if (is_relieved_this_day) {
 				sch = `
-					<td>
+					<td class="${todayClass}">
 						<div class="${moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden"} tablebox darkblackox d-flex justify-content-center align-items-center text-white so customtooltip"
 							data-selectid="${data_selectid}">EX<span class="customtooltiptext">Exited</span></div>
 					</td>`;
 			} else if (!data_selectid && !data_ot) {
 				sch = `
-					<td>
+					<td class="${todayClass}">
 						<div class="${moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden"} tablebox borderbox d-flex justify-content-center align-items-center so"
 							data-selectid="${employee}|${date_key}"></div>
 					</td>`;
 			} else {
 				let tooltip_html = tooltiptext ? `<span class="customtooltiptext ${bgclass}">${tooltiptext}</span>` : "";
 				sch = `
-					<td>
+					<td class="${todayClass}">
 						<div class="${moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden"} tablebox ${bgclass} d-flex justify-content-center align-items-center text-white so customtooltip"
 							data-selectid="${data_selectid}" data-ot="${data_ot}">${abbrv}${tooltip_html}</div>
 					</td>`;
@@ -1524,6 +1528,7 @@ function get_post_data(page) {
 					end_date = moment(end_date);
 					let i = 0;
 					let day = start_date;
+
 					while (day <= end_date) {
 						let schedule = ``;
 						let classmap = {
@@ -1533,10 +1538,14 @@ function get_post_data(page) {
 							"Cancelled": "redboxcolor"
 						};
 
+						const isToday = day.isSame(moment(), 'day');
+
+						const todayClass = isToday ? "todayclass" : "";
+
 						let { project, site, shift, date, post_status, operations_role, post, name } = res["post_data"][post_name][i];
 						if (name) {
 							schedule = `
-						<td>
+						<td class="${todayClass}">
 							<div class="${moment().isBefore(moment(date)) ? "hoverselectclass" : "forbidden"} tablebox ${classmap[post_status]} d-flex justify-content-center align-items-center so"
 								data-selectid="${post + "_" + date}"
 								data-date="${date}"

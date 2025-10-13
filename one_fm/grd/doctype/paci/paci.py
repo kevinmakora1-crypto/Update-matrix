@@ -135,8 +135,8 @@ def create_PACI(employee,Type,preparation_name = None):
 #==============================================================================> Reminder Notification
 def notify_operator_to_take_hawiyati_renewal():# cron job at 8am in working days
     renewal_list=[]
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    renewal_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    renewal_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator")
     paci_list_renewal = frappe.db.get_list('PACI',{'category':'Renewal','workflow_state':"Under Process",'upload_hawiyati':['=','']},['civil_id','name','upload_civil_id_payment_datetime'])
     for paci in paci_list_renewal:
         if date_diff(date.today(),getdate(paci.upload_civil_id_payment_datetime))>=2:
@@ -147,8 +147,8 @@ def notify_operator_to_take_hawiyati_renewal():# cron job at 8am in working days
 
 def notify_operator_to_take_hawiyati_transfer(): # cron job at 8am in working days
     transfer_list=[]
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    transfer_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    transfer_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
     paci_list_transfer = frappe.db.get_list('PACI',{'category':'Transfer','workflow_state':"Under Process",'upload_hawiyati':['=','']},['civil_id','name','upload_civil_id_payment_datetime'])
     for paci in paci_list_transfer:
         if date_diff(date.today(),getdate(paci.upload_civil_id_payment_datetime))>=2:
@@ -161,8 +161,8 @@ def system_remind_renewal_operator_to_apply():# cron job at 8am in working days
     """
     This is a cron method runs every day at 8am. It gets Draft renewal PACI list and reminds operator to apply on pam website
     """
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    renewal_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    renewal_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator")
     paci_list = frappe.db.get_list('PACI',
     {'date_of_application':['<=',date.today()],'workflow_state':['=',('Apply Online by PRO')],'category':['=',('Renewal')]},['civil_id','name','reminder_grd_operator','reminder_grd_operator_again'])
 
@@ -174,8 +174,8 @@ def system_remind_transfer_operator_to_apply():# cron job at 8am in working days
     """
     This is a cron method runs every day at 8am. It gets Draft transfer PACI list and reminds operator to apply on pam website
     """
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    transfer_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    transfer_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
     paci_list = frappe.db.get_list('PACI',
     {'date_of_application':['<=',today()],'workflow_state':['=',('Apply Online by PRO')],'category':['=',('Transfer')]},['civil_id','name','reminder_grd_operator','reminder_grd_operator_again'])
 

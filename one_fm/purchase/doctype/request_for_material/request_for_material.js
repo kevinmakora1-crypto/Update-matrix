@@ -6,6 +6,31 @@ frappe.provide("erpnext.accounts.dimensions");
 erpnext.buying.setup_buying_controller();
 
 frappe.ui.form.on('Request for Material', {
+	purchase_rfm: function(frm){
+		if(frm.is_dirty()){
+			frappe.msgprint(__('Please save before creating Purchase RFM.'));
+			return;
+		}
+		if(frm.doc.linked_request_for_material){
+			frappe.msgprint(__('This document is already a Purchase RFM.'));
+			return;
+		}
+		if(!frm.doc.linked_request_for_material){
+			let new_doc = frappe.model.copy_doc(frm.doc);
+			new_doc.linked_request_for_material = frm.doc.name;
+			new_doc.workflow_state = '';
+			new_doc.linked_purchase_rfm = ""
+			new_doc.issue_transfer_rfm =  frm.doc.name
+			new_doc.purpose = 'Purchase';
+			new_doc.docstatus = 0;
+			for(let i=0; i<new_doc.items.length; i++){
+				new_doc.items[i].linked_request_for_material = frm.doc.name
+			}
+			frappe.set_route('Form', new_doc.doctype, new_doc.name);
+
+		}
+		
+	},
 	before_workflow_action: function(frm){
 		if(frm.doc.workflow_state == 'Pending Approval' && frm.doc.request_for_material_approver != frappe.session.user){
 			frappe.throw(__("You are not authorized to approve!!"));
@@ -61,8 +86,11 @@ frappe.ui.form.on('Request for Material', {
 		frm.get_field("items").grid.set_multiple_add("item_code", "qty");
 	},
 	refresh: function(frm) {
-		
+		if(frm.doc.workflow_state=="Approved"&& frm.doc.docstatus==1){
+			set_intro(frm);
+		}
 		frm.events.make_custom_buttons(frm);
+		add_stock_entry_buttons(frm);
 		set_item_field_property(frm);
 		let status = ['Draft', 'Accepted', 'Approved', 'Rejected', 'Transferred'];
 		if(status.includes(frm.doc.status) && frm.doc.docstatus == 1){
@@ -98,6 +126,10 @@ frappe.ui.form.on('Request for Material', {
 		set_warehouse_filters(frm);
 		toggle_child_table_fields(frm);
 
+		if(frm.doc.linked_request_for_material){
+			frm.set_df_property('purpose', 'read_only', 1);
+		}
+		add_purchase_rfm_button(frm);
 	},
 	items_on_form_rendered: (frm) => {
 	},
@@ -130,9 +162,16 @@ frappe.ui.form.on('Request for Material', {
 					}
 				});
 
-				if(purchase_item_exist){
+				if(purchase_item_exist && frappe.user_roles.includes("Warehouse Supervisor") && frm.doc.purpose=="Purchase"){
 					frm.add_custom_button(__("Request for Purchase"),
-						() => frm.events.make_request_for_purchase(frm), __('Create'));
+						function(){
+							
+							frm.events.make_request_for_purchase(frm)
+						}, __('Create'))
+							
+							
+						
+						
 				}
 
 				if(item_exist_in_stock){
@@ -155,8 +194,11 @@ frappe.ui.form.on('Request for Material', {
 								if(frm.doc.type == "Individual"){
 									stock_entry_button_name = __("Material Issue");
 								}
-								frm.add_custom_button(stock_entry_button_name, () => frm.events.make_stock_entry(frm), __('Create'));
-							}
+								if(frappe.user_roles.includes("Warehouse Supervisor")){
+									frm.add_custom_button(stock_entry_button_name, () => frm.events.make_stock_entry(frm), __('Create'));
+								}
+								}
+								
 						});
 						
 						if(any_items_ordered){
@@ -167,7 +209,7 @@ frappe.ui.form.on('Request for Material', {
 					}
 				}
 				else {	
-					if(purchase_item_exist){
+					if(purchase_item_exist && frappe.user_roles.includes("Warehouse Supervisor" && frm.doc.purpose=="Purchase") ){
 							frm.add_custom_button(__("Request for Purchase"),
 								() => frm.events.make_request_for_purchase(frm), __('Create'));
 					}
@@ -253,8 +295,16 @@ frappe.ui.form.on('Request for Material', {
 			});
 		}
 	},
-	make_request_for_purchase: function(frm) {
-				validate_item_code(frm)
+	validate_rfm_type : function(frm){
+		validate_item_code(frm)
+		// ensure that the purpose field is set throw an error if it is not
+		if((!frm.doc.purpose)&& (frappe.user_roles.includes("Warehouse Supervisor"))){
+			frappe.throw(__("Cannot Create Document. Purpose field needs to be selected"));
+		}
+	},
+	make_request_for_purchase: async function(frm) {
+				await frm.events.validate_rfm_type(frm);
+				
 
                 if (frm.is_dirty()) {
                         frappe.msgprint(__("Please save your changes before creating a Request for Purchase."));
@@ -429,6 +479,42 @@ frappe.ui.form.on('Request for Material', {
 		set_warehouse_filters(frm);
 	}
 });
+
+
+function add_stock_entry_buttons(frm) {
+    if (frm.doc.docstatus === 1) {
+        if (frm.doc.purpose === "Transfer") {
+            frm.add_custom_button(__('Material Transfer'), function() {
+                create_stock_entry(frm, 'Material Transfer');
+            }, __('Create'));
+            
+            frm.add_custom_button(__('Material Transfer - In Transit'), function() {
+                create_stock_entry(frm, 'Material Transfer-In Transit');
+            }, __('Create'));
+        }
+        
+        if (frm.doc.purpose === "Issue") {
+            frm.add_custom_button(__('Material Issue'), function() {
+                create_stock_entry(frm, 'Material Issue');
+            }, __('Create'));
+        }
+    }
+}
+
+function create_stock_entry(frm, stock_entry_type) {
+    frappe.call({
+        method: 'one_fm.purchase.doctype.request_for_material.request_for_material.create_stock_entry_from_rfm',
+        args: {
+            rfm_name: frm.doc.name,
+            stock_entry_type: stock_entry_type
+        },
+        callback: function(r) {
+            if (r.message) {
+                frappe.set_route('Form', 'Stock Entry', r.message);
+            }
+        }
+    });
+}
 
 var set_t_warehouse_hidden = function(frm) {
 	if(frm.doc.project){
@@ -952,6 +1038,14 @@ function set_schedule_date(frm) {
 	}
 };
 
+function set_intro(frm){
+	if(!frm.doc.purpose){
+		frm.set_intro("Please select the Purpose of this Request for Material before converting.");
+	}
+	 let intro_string = "Only Warehouse Supervisor can convert this Request for Material to Request for Purchase/Purchase RFM or Material Transfer/Material Issue."
+	 frm.set_intro(intro_string);
+}
+
 function set_t_warehouse(frm){
 	if(frm.doc.t_warehouse){
 		erpnext.utils.copy_value_in_all_rows(frm.doc, frm.doc.doctype, frm.doc.name, "items", "t_warehouse");
@@ -968,4 +1062,20 @@ function toggle_child_table_fields(frm) {
 		frm.fields_dict['items'].grid.toggle_display('item_url', false);
 	}
 }
+
+function add_purchase_rfm_button(frm){
+	if(!(frm.doc.docstatus == 1 && frm.doc.status == 'Approved' && frappe.user_roles.includes('Warehouse Supervisor'))){
+		return;
+	}
+
+	if(!frm.doc.linked_request_for_material && (["Transfer", "Issue"].includes(frm.doc.purpose))){
+		frm.add_custom_button(__('Purchase RFM'), () => frm.events.purchase_rfm(frm), __('Create'));
+		frm.page.set_inner_btn_group_as_primary(__('Create'));
+	}
+
+}
+
+frappe.ui.form.on('Request for Material', {
+	
+});
 

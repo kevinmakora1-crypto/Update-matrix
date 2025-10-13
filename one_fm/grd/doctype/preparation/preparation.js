@@ -81,30 +81,50 @@ frappe.ui.form.on("Preparation", {
 				cur_frm.fields_dict.preparation_record.grid.update_docfield_property("medical_insurance_amount", "allow_on_submit", 0);
 				cur_frm.fields_dict.preparation_record.grid.update_docfield_property("residency_stamp_amount", "allow_on_submit", 0);
 				cur_frm.fields_dict.preparation_record.grid.update_docfield_property("civil_id_amount", "allow_on_submit", 0);
-				
 			}
-			
-			
 		}
+		// Fetch dates on refresh (covers load & reload)
+
 	},
-	set_renewal_for_all: function(frm) {
-		frappe.call({
-			doc: frm.doc,
-			method: 'set_renewal_for_all_preparation_record',
-			args: {'renew_all': frm.doc.set_renewal_for_all},
-			callback: function(r) {
-				frm.refresh_field('preparation_record');
-			}
-		})
-	},
-	hr_approval: function(frm){
-		// Set total payment for the whole list on HR approval
-		if(frm.doc.hr_approval == "Yes"){
-			let total = 0;
-			$.each(frm.doc.preparation_record || [], function(i, v) {
-				total+= v.total_amount;
-			});
-			frm.set_value('total_payment',total);
+	onload: function(frm){
+		fetch_employee_dates_batch(frm);
+	}
+});
+
+// Also react when an employee changes in child rows
+frappe.ui.form.on('Preparation Record', {
+	employee: function(frm, cdt, cdn){
+		// Debounced batch fetch to avoid multiple quick calls
+		if(!frm._employee_dates_timeout){
+			frm._employee_dates_timeout = setTimeout(() => {
+				fetch_employee_dates_batch(frm);
+				frm._employee_dates_timeout = null;
+			}, 300);
 		}
 	}
 });
+
+function fetch_employee_dates_batch(frm){
+	if(!frm.doc.preparation_record || frm.doc.preparation_record.length === 0){
+		return;
+	}
+	if(frm.is_new()){
+		return; // cannot DB set unsaved rows
+	}
+	frappe.call({
+		method: 'one_fm.grd.doctype.preparation.preparation.update_preparation_employee_dates',
+		args: { preparation: frm.doc.name },
+		freeze: false,
+		callback: function(r){
+			// We avoid local field mutation to keep form clean.
+			// Optionally, refresh grid rows that were updated so user sees values.
+			if(r.message && r.message.updated_rows && r.message.updated_rows.length){
+				// Reload only affected child rows values from DB
+				// r.message.updated_rows.forEach(rowname => {
+				// 	frappe.model.remove_from_locals('Preparation Record', rowname); // force re-fetch
+				// });
+				frm.refresh_field('preparation_record');
+			}
+		}
+	});
+}

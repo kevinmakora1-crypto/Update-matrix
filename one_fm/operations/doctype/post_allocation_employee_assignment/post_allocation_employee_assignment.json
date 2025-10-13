@@ -1,4 +1,5 @@
 {
+ "actions": [],
  "creation": "2021-01-26 11:04:53.489806",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -8,9 +9,7 @@
   "column_break_4",
   "employee",
   "employee_name",
-  "column_break_6",
-  "match_percentage",
-  "skill_score"
+  "column_break_6"
  ],
  "fields": [
   {
@@ -42,30 +41,21 @@
   {
    "fieldname": "column_break_6",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "skill_score",
-   "fieldtype": "Small Text",
-   "label": "Skill score",
-   "read_only": 1
-  },
-  {
-   "fieldname": "match_percentage",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Match Percentage",
-   "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "istable": 1,
- "modified": "2021-04-20 11:06:34.886644",
+ "links": [],
+ "modified": "2025-10-01 21:17:03.181596",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Post Allocation Employee Assignment",
  "owner": "Administrator",
  "permissions": [],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

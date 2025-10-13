@@ -51,7 +51,7 @@ class EmployeeOverride(EmployeeMaster):
                     "Employee", self.name, existing_user_id)
         employee_validate_attendance_by_timesheet(self, method=None)
         validate_leaves(self)
-
+        self.validate_relieving_date()
 
     def toggle_auto_attendance(self):
         try:
@@ -62,8 +62,6 @@ class EmployeeOverride(EmployeeMaster):
                         frappe.throw("You Are Not Permitted To Toggle Auto-Attendance")
         except Exception as e:
             frappe.log_error(title = f"{str(e)}", message = frappe.get_traceback())
-
-
 
     def set_employee_id_based_on_residency(self):
         if self.employee_id:
@@ -83,10 +81,34 @@ class EmployeeOverride(EmployeeMaster):
             if prev_enrollment != self.enrolled:
                 frappe.throw(f"Enrollment field is read-only and cannot be modified.")
 
+    def validate_relieving_date(self):
+        if "one_fm_password_management" not in frappe.get_installed_apps():
+            return
+        if self.relieving_date and self.user_id:
+            owner_credentials = frappe.get_all(
+                "Password Management",
+                {
+                    "credentials_owner": self.user_id,
+                    "docstatus": ("!=", 2) # Not cancelled
+                },
+                as_list=1
+            )
+            if owner_credentials:
+                links = [
+                    f"<a href='{get_url_to_form('Password Management', cred[0])}' target='_blank'>[{cred[0]}]</a>"
+                    for cred in owner_credentials
+                ]
+                message = (
+                    "Employee is still listed as Credentials Owner in the following Password Management Records:<br/>"
+                    + ", ".join(links) +
+                    "<br/><br/>Please reassign ownership before setting Relieving Date."
+                )
+                frappe.throw(message)
+
     def before_save(self):
         self.assign_role_profile_based_on_designation()
+        update_employee_phone_number(self)
         # get_assurance_level_of_employee(self)
-
 
     def after_insert(self):
         employee_after_insert(self, method=None)
@@ -132,8 +154,7 @@ class EmployeeOverride(EmployeeMaster):
         self.update_subcontract_onboard()
         self.inform_employee_id_update()
         self.notify_employee_id_update()
-
-
+        self.remove_user_on_employee_left()
 
     def inform_employee_id_update(self):
         """
@@ -249,6 +270,27 @@ class EmployeeOverride(EmployeeMaster):
         if subcontract_onboard and self.enrolled:
             frappe.db.set_value("Onboard Subcontract Employee", subcontract_onboard, "enrolled", self.enrolled)
 
+    def remove_user_on_employee_left(self):
+        if self.status != "Left":
+            return
+        if "one_fm_password_management" not in frappe.get_installed_apps():
+            return
+        # Check if status has been changed to 'Left'
+        if self.status == "Left" and self.get_doc_before_save().status != "Left":
+            if self.user_id:
+                try:
+                    frappe.db.sql("""
+                        DELETE
+                        FROM
+                            `tabPassword Management User`
+                        WHERE
+                            user = %s
+                    """, (self.user_id))
+                    frappe.msgprint(f"User {self.user_id} removed from all Password Management records.")
+                except Exception as e:
+                    message = f"Failed to remove user {self.user_id} from Password Management {user_access.parent}"
+                    frappe.log_error(message=message+f": {e}", title=message)
+
     def notify_attendance_manager_on_status_change(self):
         last_doc = self.get_doc_before_save()
         if last_doc and last_doc.get('status') == "Active":
@@ -343,6 +385,17 @@ def update_user_doc(doc):
                 frappe.msgprint(f"User {doc.user_id} enabled",alert=1)
                 frappe.db.commit()
 
+
+def update_employee_phone_number(doc):
+    if not doc.is_new():
+        old_cell_number = doc.get_doc_before_save().cell_number
+        if doc.cell_number and doc.cell_number != old_cell_number and doc.user_id:
+            user_doc = frappe.get_doc('User', doc.user_id)
+            user_doc.phone = doc.cell_number
+            user_doc.mobile_no = doc.cell_number
+            user_doc.save(ignore_permissions=True)
+            frappe.msgprint(f"User {doc.user_id} phone number updated to {doc.cell_number}", alert=True)
+            frappe.db.commit()
 
 
 class NotifyAttendanceManagerOnStatusChange:

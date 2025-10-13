@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 import frappe
 
-from hrms.payroll.doctype.payroll_entry.payroll_entry import PayrollEntry
+# from hrms.payroll.doctype.payroll_entry.payroll_entry import PayrollEntry
 from hrms.payroll.doctype.salary_slip.salary_slip import SalarySlip
 from erpnext.stock.doctype.item_price.item_price import ItemPrice
 from erpnext.setup.doctype.employee.employee import Employee
@@ -52,7 +52,7 @@ from one_fm.permissions import get_custom_user_permissions
 import frappe.workflow.doctype.workflow_action.workflow_action as wa
 from one_fm.overrides.workflow import confirm_action as custom_confirm_action
 
-__version__ = '15.4.3'
+__version__ = '15.4.4'
 
 wa.confirm_action = custom_confirm_action
 user_permission.get_user_permissions = get_custom_user_permissions

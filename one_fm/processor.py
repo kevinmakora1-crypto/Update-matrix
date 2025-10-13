@@ -31,9 +31,11 @@ def sendemail(recipients, subject, header=None, message=None,
 		if not is_scheduler_emails_enabled:
 			return
 
-
 	if "Administrator" in recipients:
-		recipients.remove("Administrator")
+		if isinstance(recipients, list):
+			recipients.remove("Administrator")
+		else:
+			recipients = recipients.replace("Administrator", "")
 
 	if args:
 		template = "default_email_with_workflow"

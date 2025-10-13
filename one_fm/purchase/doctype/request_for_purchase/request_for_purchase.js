@@ -6,18 +6,163 @@ frappe.ui.form.on('Request for Purchase', {
 		set_intro_related_to_status(frm);
 		frm.events.make_custom_buttons(frm);
 
-		if (frm.doc.status === "Approved") {
-        const fields = ["qty", "t_warehouse", "description", "schedule_date"];
-        fields.forEach(field => {
-            frm.fields_dict["items"].grid.set_column_disp(field, false); // disables editing in grid
-            frm.fields_dict["items"].grid.set_column_read_only(field, true); // sets as read-only
-        });
-    }
+		
 
-
+		if (frm.doc.workflow_state === "Approved" && frm.doc.docstatus === 1) {
+			if (frm.fields_dict["items"] && frm.fields_dict["items"].grid) {
+				frm.fields_dict["items"].grid.update_docfield_property("qty", "read_only", 1);
+			}
+			if (frm.fields_dict["items_to_order"] && frm.fields_dict["items_to_order"].grid) {
+				frm.fields_dict["items_to_order"].grid.update_docfield_property("qty", "read_only", 1);
+			}
+		}
 	},
 	make_custom_buttons: function(frm) {
 		if (frm.doc.docstatus == 1 && frappe.user.has_role('Purchase Officer')){
+			if(frm.doc.workflow_state === 'Approved') {
+				// Only show Update Items if at least one item has purchased_quantity < qty
+				const can_update = (frm.doc.items || []).some(item => {
+					return (typeof item.purchased_quantity === 'number' && typeof item.qty === 'number' && item.purchased_quantity < item.qty);
+				});
+				if (can_update) {
+					frm.add_custom_button(__("Update Items"), () => {
+						frappe.dom.freeze(__('Fetching latest pending quantities...'));
+						if (!frm.doc.request_for_material) {
+							frappe.dom.unfreeze();
+							frappe.msgprint(__('No Request for Material linked.'));
+							return;
+						}
+						frappe.db.get_doc('Request for Material', frm.doc.request_for_material)
+							.then(rfm_doc => {
+								let rfm_items = (rfm_doc.items || []);
+								let pending_qty_map = {};
+								(frm.doc.items || []).forEach(item => {
+									let rfm_item = rfm_items.find(i => i.name === item.custom_request_for_material_item);
+									
+									pending_qty_map[item.item_code] = rfm_item 
+										? rfm_item.custom_pending_quantity
+										: item.pending_qty;
+								});
+								frappe.dom.unfreeze();
+								
+								let dialog = new frappe.ui.Dialog({
+									title: __("Update Items"),
+									fields: [
+										{ fieldname: 'items_html', fieldtype: 'HTML' }
+									],
+									primary_action_label: __("Done"),
+									primary_action: () => {
+										let updated_items = [];
+										let invalid_rows = [];
+										dialog.get_field('items_html').$wrapper.find('tbody tr').each(function() {
+											let row = $(this);
+											let name = row.data('name');
+											
+											
+											let rfp_qty_cell = parseFloat(row.find('.rfp-qty-cell').text()) || 0;
+											let item_code = row.data('item-code');
+											let item_name = row.find('.item-name-cell').text();
+											let qty = parseFloat(row.find('.qty-input').val());
+											let orig = (frm.doc.items_to_order || []).find(i => i.name === name || i.item_code === item_code);
+											let ordered_qty = orig && typeof orig.ordered_qty === 'number' ? orig.ordered_qty : 0;
+											let pending_qty = pending_qty_map[item_code];
+											
+											
+											if (qty < ordered_qty) {
+												invalid_rows.push(`${item_code || item_name}: New quantity (${qty}) cannot be less than ordered quantity (${ordered_qty})`);
+											}
+											if (qty > (pending_qty+rfp_qty_cell)) {
+												invalid_rows.push(`${item_code || item_name}: New quantity (${qty}) cannot be greater than ordered quantity, pending quantity and quantity in this RFP (${pending_qty + rfp_qty_cell})`);
+											}
+											updated_items.push({
+												name,
+												item_code,
+												item_name,
+												qty
+											});
+										});
+										if (invalid_rows.length > 0) {
+											frappe.msgprint({
+												message: __('The following rows are invalid:<br><ul>' + invalid_rows.map(r => `<li>${r}</li>`).join('') + '</ul>'),
+												indicator: 'red',
+												title: __('Invalid Quantities')
+											});
+											return;
+										}
+										frappe.prompt(
+											[{
+												fieldtype: 'Data',
+												label: __('Reason for Update'),
+												fieldname: 'reason',
+												reqd: 1
+											}],
+											(data) => {
+												frappe.call({
+													doc: frm.doc,
+													method: "update_rfp_items",
+													args: {
+														updated_items: JSON.stringify(updated_items),
+														reason: data.reason
+													},
+													callback: function(r) {
+														if (!r.exc) {
+															frm.reload_doc();
+															frappe.msgprint(__("Items updated successfully."));
+														}
+													},
+													freeze: true,
+													freeze_message: __("Updating Items...")
+												});
+											}, __("Reason for Update")
+										);
+										dialog.hide();
+									},
+								});
+								let table_html = `
+								<table class="table table-bordered">
+									<thead>
+										<tr>
+											<th>${__('Item Code')}</th>
+											<th>${__('Item Name')}</th>
+											<th>${__('Quantity')}</th>
+											<th>${__('Ordered Quantity')}</th>
+											<th>${__('Pending Quantity (RFM)')}</th>
+											<th>${__('RFP Quantity')}</th>
+											<th></th>
+										</tr>
+									</thead>
+									<tbody>
+									</tbody>
+								</table>`;
+								dialog.get_field('items_html').$wrapper.html(table_html);
+								let tbody = dialog.get_field('items_html').$wrapper.find('tbody');
+								(frm.doc.items_to_order || []).forEach(item => {
+									let ordered_qty = typeof item.ordered_qty === 'number' ? item.ordered_qty : 0;
+									let pending_qty = pending_qty_map[item.item_code];
+									let rfp_qty = typeof item.qty === 'number' ? item.qty : '';
+									let remove_disabled = ordered_qty > 0 ? 'disabled' : '';
+									let row_html = `
+										<tr data-name="${item.name}" data-item-code="${item.item_code}">
+											<td>${item.item_code}</td>
+											<td class="item-name-cell">${item.item_name}</td>
+											<td><input type="number" class="form-control qty-input" value="${item.qty}"></td>
+											<td class="ordered-qty-cell">${ordered_qty}</td>
+											<td class="pending-qty-cell">${pending_qty}</td>
+											<td class="rfp-qty-cell">${rfp_qty}</td>
+											<td><button class="btn btn-danger btn-xs remove-item" ${remove_disabled}>${__("Remove")}</button></td>
+										</tr>
+									`;
+									tbody.append(row_html);
+								});
+								dialog.get_field('items_html').$wrapper.on('click', '.remove-item', function() {
+									$(this).closest('tr').remove();
+								});
+								dialog.show();
+							});
+					});
+				}
+			}
+
 			if(frm.doc.items.length > frm.doc.items_to_order.length && !frm.doc.notified_the_rfm_requester){
 				frm.add_custom_button(__("Notify the Requester"),
 					() => frm.events.notify_the_rfm_requester(frm));
@@ -178,7 +323,78 @@ frappe.ui.form.on('Request for Purchase', {
                 });
             });
         }
-    }
+    },
+	currency: function(frm) {
+		if (!frm.doc.currency) return;
+		if (!frm.fields_dict.exchange_rate) return;
+
+		// Use hidden field company_currency instead of API call
+		let from_currency = frm.doc.company_currency;
+		if (!from_currency) {
+			frappe.show_alert({message: __('Company currency (company_currency) not found; set exchange rate manually.'), indicator: 'orange'});
+			frm.set_df_property('exchange_rate', 'read_only', 0);
+			return;
+		}
+
+		let to_currency = frm.doc.currency;
+		// If same currency set 1 and make read only
+		if (from_currency === to_currency) {
+			frm.set_value('exchange_rate', 1.0);
+			frm.set_df_property('exchange_rate', 'read_only', 1);
+			frappe.show_alert({message: __('Exchange Rate set to 1.0 (same currency).'), indicator: 'green'});
+			return;
+		}
+
+		let cache_key = `currency_exchange_${from_currency}_${to_currency}`;
+		// Optionally keep last successful rate in cache (Q6) but still refetch (Q7)
+		let previous_cached_rate = window[cache_key];
+		// Preserve existing value before fetch in case not found (Q3)
+		let previous_value = frm.doc.exchange_rate;
+
+		frappe.call({
+			method: 'frappe.client.get_list',
+			args: {
+				doctype: 'Currency Exchange',
+				fields: ['name','exchange_rate','date'],
+				filters: {
+					from_currency: from_currency,
+					to_currency: to_currency,
+					date: ['<=', frappe.datetime.get_today()]
+				},
+				order_by: 'date desc',
+				limit_page_length: 1
+			},
+			callback: function(res) {
+				let records = res && res.message ? res.message : [];
+				if (records.length) {
+					let rate = flt(records[0].exchange_rate);
+					// Update value & make read only (Q3)
+					frm.set_value('exchange_rate', rate);
+					frm.set_df_property('exchange_rate', 'read_only', 1);
+					frm.refresh_field('exchange_rate');
+					window[cache_key] = rate;
+					frappe.show_alert({message: __('Exchange Rate fetched: {0}', [rate]), indicator: 'green'});
+				} else {
+					// No record: leave previous value, editable (Q3)
+					frm.set_value('exchange_rate', previous_value);
+					frm.set_df_property('exchange_rate', 'read_only', 1);
+					frappe.show_alert({message: __('No Currency Exchange found for {0} -> {1}. Set rate manually.', [from_currency, to_currency]), indicator: 'orange'});
+					if (previous_cached_rate) {
+						frappe.show_alert({message: __('Using previously cached rate: {0}', [previous_cached_rate]), indicator: 'yellow'});
+					}
+				}
+			},
+			error: function() {
+				// On error restore previous and allow editing
+				frm.set_value('exchange_rate', previous_value);
+				frm.set_df_property('exchange_rate', 'read_only', 0);
+				frappe.show_alert({message: __('Error fetching exchange rate. Set manually.'), indicator: 'red'});
+				if (previous_cached_rate) {
+					frappe.show_alert({message: __('Cached rate available: {0}', [previous_cached_rate]), indicator: 'yellow'});
+				}
+			}
+		});
+	}
 });
 
 

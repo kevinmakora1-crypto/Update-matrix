@@ -7,8 +7,9 @@ import frappe
 import json
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
-from frappe.utils import flt, get_url, get_fullname
+from frappe.utils import flt, get_url, get_fullname,cstr
 from frappe import _
+from frappe.utils import nowdate, cstr
 from frappe.utils.user import get_users_with_role
 from frappe.permissions import has_permission
 from erpnext.controllers.buying_controller import BuyingController
@@ -34,13 +35,17 @@ class RequestforMaterial(BuyingController):
         create_notification_log(subject, message, [self.requested_by], self)
 
     def validate(self):
+        if self.is_new():
+            self.linked_purchase_rfm = None
+            
         self.validate_details_against_type()
         self.set_request_for_material_accepter_and_approver()
         self.set_item_fields()
         self.set_title()
         self.validate_item_qty()
         # self.validate_item_reservation()
-  
+        self.validate_linked_request_quantities()
+
     def _initialize_custom_quantities(self):
             """
             Initializes the custom RFP and pending quantities for each item
@@ -312,6 +317,80 @@ class RequestforMaterial(BuyingController):
             return reservation
         except Exception as e:
             frappe.throw(str(e))
+
+    def validate_linked_request_quantities(self):
+        """Validate that this RFM (a derived / purchase RFM) does not exceed the quantities
+        of a linked source RFM (issue_transfer_rfm or first row's linked_request_for_material).
+
+        Aggregation Rules:
+        - Primary key: item_code when present.
+        - Fallback key: requested_item_name (trimmed) when item_code is empty.
+        - requested_item_name assumed unique when used as fallback.
+        - Matching is strict (case sensitive) and whitespace trimmed on both sides for names.
+        - Multiple rows with the same key in either doc are summed.
+        - If a key exists here but not in source -> violation.
+        - If summed qty here > summed qty in source -> violation.
+        - Rows must have either item_code or requested_item_name (guaranteed by business rule).
+        """
+        linked_name = getattr(self, 'issue_transfer_rfm', None)
+        if not linked_name:
+            # fall back to first child row's linked_request_for_material if provided
+            if not self.items:
+                return
+            linked_name = getattr(self.items[0], 'linked_request_for_material', None)
+            if not linked_name:
+                return
+        if linked_name == self.name:
+            frappe.throw(_("Linked Request for Material cannot reference itself."))
+
+        if not frappe.db.exists('Request for Material', linked_name):
+            frappe.throw(_("Linked Request for Material {0} does not exist.").format(frappe.bold(linked_name)))
+        source_doc = frappe.get_doc('Request for Material', linked_name)
+
+        # Ensure back-link recorded
+        if getattr(source_doc, 'linked_purchase_rfm', None) != self.name:
+            source_doc.db_set('linked_purchase_rfm', self.name)
+
+        def build_key(it):
+            if getattr(it, 'item_code', None):
+                return ('code', it.item_code.strip())  # strip just in case
+            # fallback to requested_item_name
+            name_val = (getattr(it, 'requested_item_name', None) or '').strip()
+            return ('name', name_val)
+
+        def add_to(bucket, key_tuple, qty):
+            # key_tuple = (type, value) so different namespaces for code vs name
+            bucket[key_tuple] = bucket.get(key_tuple, 0) + flt(qty)
+
+        source_totals = {}
+        for it in source_doc.items:
+            key_type, key_val = build_key(it)
+            if not key_val:  # safety, should not happen per business rule
+                frappe.throw(_("Source RFM {0} contains a row without Item Code and Item Name.").format(frappe.bold(linked_name)))
+            add_to(source_totals, (key_type, key_val), it.qty)
+
+        current_totals = {}
+        for it in self.items:
+            key_type, key_val = build_key(it)
+            if not key_val:
+                frappe.throw(_("Row {0}: missing Item Code and Item Name").format(it.idx))
+            add_to(current_totals, (key_type, key_val), it.qty)
+
+        violations = []
+        for key, curr_qty in current_totals.items():
+            key_type, key_val = key
+            src_qty = source_totals.get(key)
+            label = key_val  # display value
+            if src_qty is None:
+                violations.append(_("Item {0}: not present in linked RFM {1}. Current total {2}").format(
+                    frappe.bold(label), frappe.bold(linked_name), frappe.bold(curr_qty)))
+            elif curr_qty > src_qty:
+                violations.append(_("Item {0}: current total {1} exceeds linked RFM total {2}").format(
+                    frappe.bold(label), frappe.bold(curr_qty), frappe.bold(src_qty)))
+
+        if violations:
+            msg = _("Quantity validation against Linked Request for Material failed:<br>{0}").format('<br>'.join(violations))
+            frappe.throw(msg)
 
 def update_completed_and_requested_qty(stock_entry, method):
         if stock_entry.doctype == "Stock Entry":
@@ -588,6 +667,8 @@ def create_partial_request_for_purchase(source_name, items):
 def make_request_for_purchase(source_name, target_doc=None):
     
     def set_missing_values(source, target):
+        if not target.get("items"):
+            frappe.throw(_("Cannot create RFP. At least one line item must have a specified Item Code."))
         target.run_method('_update_linked_rfm_quantities')
         
         
@@ -596,8 +677,6 @@ def make_request_for_purchase(source_name, target_doc=None):
             qty = obj.qty - obj.custom_rfp_quantity
             target.qty = qty
             target.custom_request_for_material_item = obj.name
-            if not obj.item_code:
-                frappe.throw(_("Please specify the Item Code in each line before you create RFP"))
 
     doclist = get_mapped_doc("Request for Material", source_name, 	{
         "Request for Material": {
@@ -616,13 +695,73 @@ def make_request_for_purchase(source_name, target_doc=None):
                 ["requested_description", "description"],
                 ["requested_item_name", "item_name"],
                 ["name", "request_for_material_item"],
+                ["name", "custom_request_for_material_item"],
                 ["parent", "request_for_material"]
             ],
             "postprocess": update_item,
-            "condition": lambda doc: (doc.custom_rfp_quantity < doc.qty and doc.reject_item==0)
+            "condition": lambda doc: (doc.item_code and doc.custom_rfp_quantity < doc.qty and doc.reject_item==0)
         }
-    }, target_doc)
+    }, target_doc, set_missing_values)
     doclist.save()
     frappe.db.commit()
     
     return doclist
+
+
+@frappe.whitelist()
+def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
+    rfm = frappe.get_doc("Request for Material", rfm_name)
+    
+    if stock_entry_type == "Material Issue" and rfm.purpose != "Issue":
+        frappe.throw(_("RFM Purpose must be Issue for Material Issue"))
+    
+    if stock_entry_type in ["Material Transfer", "Material Transfer-In Transit"] and rfm.purpose != "Transfer":
+        frappe.throw(_("RFM Purpose must be Transfer for Material Transfer"))
+    
+    if rfm.docstatus != 1:
+        frappe.throw(_("RFM must be approved (submitted)"))
+    
+    stock_entry = frappe.new_doc("Stock Entry")
+    stock_entry.company = rfm.company
+    stock_entry.posting_date = nowdate()
+    stock_entry.one_fm_request_for_material = rfm_name
+    
+    if rfm.purpose == "Transfer":
+        stock_entry.stock_entry_type = "Material Transfer"
+        if stock_entry_type == "Material Transfer-In Transit":
+            stock_entry.add_to_transit = 1
+            
+    elif rfm.purpose == "Issue":
+        stock_entry.stock_entry_type = "Material Issue"
+
+    for item in rfm.items:
+        if rfm.purpose == "Issue":
+            stock_entry.append("items", {
+                "item_code": item.item_code,
+                "item_name": item.item_name,
+                "description": item.description,
+                "qty": item.qty,
+                "s_warehouse": item.warehouse,
+                "uom": item.uom,
+                "stock_uom": item.stock_uom,
+                "conversion_factor": item.conversion_factor or 1
+            })
+        else:
+            stock_entry.append("items", {
+                "item_code": item.item_code,
+                "item_name": item.item_name,
+                "description": item.description,
+                "qty": item.qty,
+                "s_warehouse": item.warehouse,
+                "t_warehouse": item.t_warehouse,
+                "uom": item.uom,
+                "stock_uom": item.stock_uom,
+                "conversion_factor": item.conversion_factor or 1
+            })
+
+    
+    stock_entry.insert()
+    
+    frappe.msgprint(_("Stock Entry {0} created successfully").format(stock_entry.name))
+    
+    return stock_entry.name

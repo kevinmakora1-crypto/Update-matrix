@@ -24,9 +24,11 @@ class RequestforPurchase(Document):
 	def on_submit(self):
 		self.assign_purchase_officer()
 		self._update_linked_rfm_quantities()
+		update_rfp_status(self.name)
   
 	def on_update_after_submit(self):
 		self._update_linked_rfm_quantities()
+		update_rfp_status(self.name)
   
 	def after_insert(self):
 		self._update_linked_rfm_quantities()
@@ -103,6 +105,7 @@ class RequestforPurchase(Document):
 					request_for_purchase=self.name,
 					warehouse=wh,
 					items_list=items_list,
+					rfp_doc = self.as_dict(),
 					do_not_submit=True
 				)
 				
@@ -286,10 +289,222 @@ class RequestforPurchase(Document):
 				frappe.log_error(f"Error deleting PO {po.name}: {str(e)}")
 				frappe.throw(_("Error deleting Purchase Order {0}: {1}").format(po.name, str(e)))
 
+ 
+ 
+	def update_purchase_order(self, item_qty_dict):
+		"""
+		Update all draft Purchase Orders linked to this RFP so that:
+		- Quantities are reduced as per item_qty_dict (never increased)
+		- If a PO has no items left, it is deleted
+		- Items in the dict not present in any PO are ignored (never added)
+		"""
+		if not item_qty_dict:
+			return
+		draft_pos = frappe.get_all(
+			"Purchase Order",
+			filters={
+				"one_fm_request_for_purchase": self.name,
+				"docstatus": 0
+			},
+			fields=["name"]
+		)
+		
+		item_po_map = {}
+		po_docs = {}
+		for po_row in draft_pos:
+			po = frappe.get_doc("Purchase Order", po_row.name)
+			po_docs[po.name] = po
+			for item in list(po.items):
+				# Remove items not in the dict
+				if item.item_code not in item_qty_dict:
+					po.items.remove(item)
+					continue
+				if item.item_code not in item_po_map:
+					item_po_map[item.item_code] = []
+				item_po_map[item.item_code].append((po, item))
+		# For each item_code in the dict, reduce qty across POs (never increase, never add new rows)
+		for item_code, new_total_qty in item_qty_dict.items():
+			ordered_quantity = self.get_ordered_qty_for_item(item_code)
+			new_total_qty = max(0, new_total_qty - ordered_quantity)
+			po_items = item_po_map.get(item_code, [])
+			po_items.sort(key=lambda x: x[0].name)
+			current_total = sum(i.qty for _, i in po_items)
+			# Only reduce if needed
+			if new_total_qty < current_total:
+				qty_left = new_total_qty
+				for po, item in po_items:
+					if qty_left <= 0:
+						po.items.remove(item)
+					elif item.qty > qty_left:
+						item.qty = qty_left
+						qty_left = 0
+					else:
+						qty_left -= item.qty
+			# If new_total_qty >= current_total, do nothing (never increase or add)
+		# Remove any POs with no items
+		for po in po_docs.values():
+			if not po.items:
+				po.delete()
+			else:
+				po.save(ignore_permissions=True)
+		
+		# Fetch all valid purchase orders linked to this Request for Purchase
+		
+		
+	def get_ordered_qty_for_item(self, item_code):
+		# Calculate the total ordered quantity for the given item_code across all submitted POs
+		ordered_qty = frappe.db.get_value(
+			"Purchase Order Item",
+			{
+				"item_code": item_code,
+				"parent": ["in", [po for po in frappe.db.get_list("Purchase Order", {"one_fm_request_for_purchase": self.name, "docstatus": 1}, pluck="name")]]
+			},
+			"sum(qty)"
+		) or 0
+		return ordered_qty
+		
+    
+	@frappe.whitelist()
+	def update_rfp_items(self, updated_items, reason):
+		updated_item_names = {}
+		removed_item_names = {}
+		
+
+		updated_items_data = json.loads(updated_items)
+		updated_items_map = {item['name']: item for item in updated_items_data}
+
+		# Validation and Update Phase
+		items_to_remove = []
+		for item in self.items_to_order:
+			if item.name in updated_items_map:
+				new_qty = frappe.utils.flt(updated_items_map[item.name]['qty'])
+
+				
+
+				ordered_qty = self.get_ordered_qty_for_item(item.item_code)
+				if new_qty < ordered_qty:
+					frappe.throw(_("New quantity for item {0} cannot be less than the already ordered quantity ({1}).").format(item.item_code, ordered_qty))
+
+				# item.db_set('qty',new_qty)
+				item.qty = new_qty
+				updated_item_names[item.item_code] = new_qty
+				#Update the same quantity in the main items table
+				for main_item in self.items:
+					if main_item.item_code == item.item_code:
+						# main_item.db_set('qty',new_qty)
+						main_item.qty = new_qty
+						break
+			else:
+				# Item is being removed
+				ordered_qty = self.get_ordered_qty_for_item(item.item_code)
+				if ordered_qty > 0:
+					frappe.throw(_("Cannot remove item {0} as it has already been ordered.").format(item.item_code))
+				items_to_remove.append(item)
+				removed_item_names[item.item_code] = item.qty
+
+		for item in items_to_remove:
+			self.remove(item)
+			# Also remove from main items table
+			for main_item in self.items:
+				if main_item.item_code == item.item_code:
+					self.remove(main_item)
+					break
+
+		# Propagate changes to draft POs
+		#return the names and quantity of the updated and removed items as a string
+		
+		reason = "Reason for Item Update: " + reason
+		self.add_comment("Comment", reason)
+		self.save()
+		version = frappe.new_doc("Version")
+		if version.update_version_info(self.get_doc_before_save(), self):
+			version.insert(ignore_permissions=True)
+		self.update_purchase_order(updated_item_names)
+		
+		frappe.msgprint(_("Request for Purchase updated successfully."))
+
+	def before_save(self):
+		# Ensure latest exchange rate before saving (only at before_save)
+		self.get_and_set_latest_exchange_rate()
+
+	def get_and_set_latest_exchange_rate(self):
+		"""Fetch latest (by date desc then creation desc) Currency Exchange and overwrite exchange_rate.
+		Rules:
+		- If company_currency == currency => exchange_rate = 1
+		- Else query Currency Exchange where date <= today
+		- If record found overwrite; if none found keep existing
+		- On error log and keep existing
+		"""
+		try:
+			from_currency = getattr(self, 'company_currency', None)
+			to_currency = getattr(self, 'currency', None)
+			if not from_currency or not to_currency:
+				return
+			if from_currency == to_currency:
+				self.exchange_rate = 1
+				return
+			latest = frappe.get_list(
+				'Currency Exchange',
+				filters={
+					'from_currency': from_currency,
+					'to_currency': to_currency,
+					'date': ['<=', frappe.utils.today()]
+				},
+				fields=['name', 'exchange_rate', 'date', 'creation'],
+				order_by='date desc, creation desc',
+				page_length=1
+			)
+			if latest:
+				rate = latest[0].get('exchange_rate')
+				if rate:  # guaranteed non-zero/non-negative by business rules
+					self.exchange_rate = rate
+		except Exception as e:
+			frappe.log_error(f"Exchange rate fetch failed for RFP {getattr(self, 'name', 'NEW')}: {e}", 'RFP Exchange Rate Fetch')
+
+def update_rfp_status(rfp_name):
+	"""
+	Updates the status of a Request for Purchase (RFP) based on the
+	quantities of items ordered in linked Purchase Orders (POs).
+
+	Args:
+		rfp_name (str): The name of the Request for Purchase document.
+	"""
+	rfp = frappe.get_doc("Request for Purchase", rfp_name)
+
+	# Only update the status if the RFP is in an approved state
+	if rfp.workflow_state != "Approved":
+		return
+
+	# Calculate the total quantity required by the RFP
+	total_required_qty = sum(item.qty for item in rfp.items)
+
+	# Calculate the total quantity ordered across all submitted POs
+	ordered_qty = frappe.db.sql("""
+		SELECT SUM(item.qty)
+		FROM `tabPurchase Order Item` item
+		JOIN `tabPurchase Order` po ON item.parent = po.name
+		WHERE po.one_fm_request_for_purchase = %s
+		AND po.docstatus = 1
+	""", rfp_name)[0][0] or 0
+
+	# Determine the new status based on the quantities
+	new_status = None
+	if ordered_qty == 0:
+		new_status = "To Order"
+	elif ordered_qty < total_required_qty:
+		new_status = "Partially Ordered"
+	else:
+		new_status = "Ordered"
+
+	# Update the RFP status if it has changed
+	if rfp.status != new_status:
+		rfp.db_set("status", new_status)
+		frappe.db.commit()
 
 
 @frappe.whitelist()
 def check_related_pos_before_cancel(doc):
+    
     doc_dict = json.loads(doc)
     
     approved_pos = frappe.db.get_list('Purchase Order', {
@@ -465,6 +680,9 @@ def create_purchase_order(**args):
     
     po = frappe.new_doc("Purchase Order")
     po.transaction_date = nowdate()
+    po.buying_price_list = args.get('rfp_doc').price_list
+    po.currency = args.get('rfp_doc').currency
+    po.conversion_rate = args.get('rfp_doc').exchange_rate
     po.set_warehouse = args.warehouse
     po.quotation = args.quotation
     po.supplier = args.supplier

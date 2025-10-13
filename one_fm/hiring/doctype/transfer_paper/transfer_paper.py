@@ -75,7 +75,7 @@ class TransferPaper(Document):
 
     def set_grd_values(self):
         if not self.grd_operator_transfer:
-            self.grd_operator_transfer = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+            self.grd_operator_transfer = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
 
     def set_electronic_signature(self):
         if not self.authorized_signature:

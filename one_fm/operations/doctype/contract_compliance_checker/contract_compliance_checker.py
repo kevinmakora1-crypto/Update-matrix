@@ -27,7 +27,7 @@ class GenerateContractComplianceChecker:
 			SELECT ci.parent, ci.count, ci.item_code, ci.days_off_category, ci.no_of_days_off, c.project
 			FROM `tabContract Item` ci
 			INNER JOIN `tabContracts` c ON ci.parent = c.name
-			WHERE ci.rate_type_off = %s AND ci.parentfield = %s AND ci.parenttype = %s
+			WHERE ci.off_type = %s AND ci.parentfield = %s AND ci.parenttype = %s
 			AND c.workflow_state = %s
 		""", ("Days Off", "items", "Contracts", "Active"), as_dict=1)
 	

@@ -4406,3 +4406,13 @@ def send_enrollment_status():
 			delayed=False,
 			is_scheduler_email=True
 		)
+
+
+@frappe.whitelist(allow_guest=True)
+def get_experience_types():
+    experience_types = frappe.get_all(
+        "Experience Type",
+        fields=["name"],
+        limit_page_length=100
+    )
+    return experience_types

@@ -3893,38 +3893,48 @@ def set_out_of_office_for_leaves():
 def update_assurance_level_task():
     today = datetime.now().date()
     condition_1 = frappe.get_all(
-    'Employee',
-    filters=[
-        ['status', '=', 'Active'],
-        ['one_fm_civil_id', 'not in', ['', 'NONE']],
-        ['custom_civil_id_assurance_level', '!=', 'High'],
-        ['civil_id_expiry_date', 'is', 'set'],
-        ['civil_id_expiry_date', '!=', '']
-    ],
-    fields=['employee', 'one_fm_civil_id', 'custom_civil_id_assurance_level', 'civil_id_expiry_date']
-)
+        'Employee',
+        filters=[
+            ['status', '=', 'Active'],
+            ['one_fm_civil_id', 'not in', ['', 'NONE']],
+            ['custom_civil_id_assurance_level', '!=', 'High'],
+            ['civil_id_expiry_date', 'is', 'set'],
+            ['civil_id_expiry_date', '!=', '']
+        ],
+        fields=['employee', 'one_fm_civil_id', 'custom_civil_id_assurance_level', 'civil_id_expiry_date']
+    )
     condition_2 = frappe.get_all(
-    'Employee',
-    filters=[
-        ['status', '=', 'Active'],
-        ['one_fm_civil_id', 'not in', ['', 'NONE']],
-        ['custom_civil_id_assurance_level', '=', 'High'],
-        ['civil_id_expiry_date', '<=', today]
-    ],
-    fields=['employee', 'one_fm_civil_id', 'custom_civil_id_assurance_level', 'civil_id_expiry_date']
-)
+        'Employee',
+        filters=[
+            ['status', '=', 'Active'],
+            ['one_fm_civil_id', 'not in', ['', 'NONE']],
+            ['custom_civil_id_assurance_level', '=', 'High'],
+            ['civil_id_expiry_date', '<=', today]
+        ],
+        fields=['employee', 'one_fm_civil_id', 'custom_civil_id_assurance_level', 'civil_id_expiry_date']
+    )
     employees = condition_1 + condition_2
 
     for employee in employees:
         expiry_date = employee.get("civil_id_expiry_date")
         if isinstance(expiry_date, date):
             employee["civil_id_expiry_date"] = expiry_date.isoformat()
+    
     verification_level = call_to_get_assurance_level(employees)
+
+    if not isinstance(verification_level, list):
+        frappe.log_error(
+            message=f"API call failed or returned invalid response: {verification_level}",
+            title="Update Assurance Level Task - API Error"
+        )
+        return False
+    
     verification_dict = {ver['employee']: ver['customCivilIdAssuranceLevel'] for ver in verification_level}
     for employee in employees:
-            verification_level = verification_dict.get(employee['employee'])
-            if verification_level:
-                frappe.db.set_value('Employee', employee['employee'], 'custom_civil_id_assurance_level', verification_level)
+        verification_level_value = verification_dict.get(employee['employee'])
+        if verification_level_value:
+            frappe.db.set_value('Employee', employee['employee'], 'custom_civil_id_assurance_level', verification_level_value)
+    
     return True
 
 def call_to_get_assurance_level(employees):

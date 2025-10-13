@@ -94,7 +94,7 @@
    "no_copy": 1,
    "oldfieldname": "status",
    "oldfieldtype": "Select",
-   "options": "\nDraft\nDraft Request\nAccepted\nApproved\nRejected\nSubmitted\nCancelled",
+   "options": "\nDraft\nDraft Request\nAccepted\nApproved\nTo Order\nPartially Ordered\nOrdered\nRejected\nSubmitted\nCancelled",
    "print_hide": 1,
    "read_only": 1,
    "reqd": 1,

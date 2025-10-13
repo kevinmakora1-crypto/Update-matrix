@@ -4,7 +4,9 @@ from frappe.desk.form.assign_to import add as assign, DuplicateToDoError, remove
 from frappe import _
 
 def update_project_user_assignment(doc, method):
-    if doc.is_new():
+    last_doc = doc.get_doc_before_save()
+    
+    if not last_doc: #new document
         assign_users_to_project(doc)
     else:
         added_users, removed_users = get_changed_users(doc)
@@ -18,6 +20,7 @@ def update_project_user_assignment(doc, method):
 def assign_users_to_project(doc):
     for user in doc.users:
         add_assignment(user.user, doc.name)
+    add_assignment(doc.project_manager, doc.name)
 
 def add_assignment(user, project):
     try:

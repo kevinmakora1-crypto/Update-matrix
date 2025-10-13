@@ -33,12 +33,7 @@ def get_project_custom_fields():
                 "insert_after": "custom_evidence_of_completion",
                 "fieldtype": "Column Break",
             },
-            {
-                "label": "Milestones",
-                "fieldname": "custom_milestones",
-                "insert_after": "custom_end_date",
-                "fieldtype": "Text"
-            },
+            
             {
                 "label": "End Date",
                 "fieldname": "custom_end_date",

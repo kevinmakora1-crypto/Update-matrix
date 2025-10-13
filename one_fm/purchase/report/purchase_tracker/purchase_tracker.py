@@ -101,17 +101,28 @@ def get_data(filters):
     return rows
 
 
-def get_columns():
-    return [
+def get_columns(filters=None):
+    filters = filters or {}
+    rfp_type = (filters.get('rfp_type') or '').strip()
+
+    base_columns = [
         {"label": "RFP No", "fieldname": "rfp_no", "fieldtype": "Link", "options": "Request for Purchase", "width": 120},
         {"label": "RFP Date", "fieldname": "rfp_date", "fieldtype": "Date", "width": 100},
         {"label": "Type", "fieldname": "type", "fieldtype": "Data", "width": 80},
         {"label": "Employee ID", "fieldname": "employee_id", "fieldtype": "Link", "options": "Employee", "width": 110},
         {"label": "Employee Name", "fieldname": "employee_name", "fieldtype": "Data", "width": 140},
         {"label": "Department", "fieldname": "department", "fieldtype": "Link", "options": "Department", "width": 120},
-        {"label": "Project", "fieldname": "project", "fieldtype": "Link", "options": "Project", "width": 120},
-        {"label": "Operation Site", "fieldname": "operation_site", "fieldtype": "Link", "options": "Operations Site", "width": 140},
-        {"label": "ERF No", "fieldname": "erf_no", "fieldtype": "Link", "options": "ERF", "width": 110},
+    ]
+
+    # Conditional columns
+    extra_columns = []
+    if rfp_type != 'Individual':  # Include Project & Operation Site unless Individual
+        extra_columns.append({"label": "Project", "fieldname": "project", "fieldtype": "Link", "options": "Project", "width": 120})
+        extra_columns.append({"label": "Operation Site", "fieldname": "operation_site", "fieldtype": "Link", "options": "Operations Site", "width": 140})
+    if rfp_type not in ['Individual', 'Stock']:  # Include ERF unless Individual or Stock
+        extra_columns.append({"label": "ERF No", "fieldname": "erf_no", "fieldtype": "Link", "options": "ERF", "width": 110})
+
+    tail_columns = [
         {"label": "Item", "fieldname": "item_code", "fieldtype": "Link", "options": "Item", "width": 130},
         {"label": "Quantity", "fieldname": "qty", "fieldtype": "Float", "width": 90},
         {"label": "UoM", "fieldname": "uom", "fieldtype": "Link", "options": "UOM", "width": 70},
@@ -120,8 +131,10 @@ def get_columns():
         {"label": "Purchase Order", "fieldname": "purchase_order", "fieldtype": "Data", "width": 160},
     ]
 
+    return base_columns + extra_columns + tail_columns
+
 
 def execute(filters=None):
-    columns = get_columns()
+    columns = get_columns(filters or {})
     data = get_data(filters or {})
     return columns, data

@@ -38,6 +38,9 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("contract_compliance_checker.json"))
 	create_assignment_rule(get_assignment_rule_json_file("erf.json"))
 	create_assignment_rule(get_assignment_rule_json_file("preparation.json"))
+	create_assignment_rule(get_assignment_rule_json_file("assign_rfp_to_purchase_officer.json"))
+	create_assignment_rule(get_assignment_rule_json_file("assign_to_purchase_manager_for_approval.json"))
+	create_assignment_rule(get_assignment_rule_json_file("assign_rfp_owner_on_rfp_return_to_draft.json"))
 
 def delete_assignment_rules():
 	delete_assignment_rule(get_assignment_rule_json_file("roster_post_action_site_supervisor.json"))

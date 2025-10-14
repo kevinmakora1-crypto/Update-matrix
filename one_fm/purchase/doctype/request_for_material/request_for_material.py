@@ -207,11 +207,13 @@ class RequestforMaterial(BuyingController):
 
     def _get_total_received_quantity(self):
         return frappe.db.sql("""
-            SELECT SUM(pr_item.qty)
-            FROM `tabPurchase Receipt Item` pr_item
-            JOIN `tabPurchase Order Item` po_item ON pr_item.purchase_order_item = po_item.name
-            JOIN `tabPurchase Order` po ON po_item.parent = po.name
-            WHERE po.request_for_material = %s AND pr_item.docstatus = 1
+            SELECT SUM(qty)
+            FROM `tabPurchase Receipt Item`
+            WHERE parent IN (
+                SELECT name
+                FROM `tabPurchase Receipt`
+                WHERE custom_request_for_material = %s AND docstatus = 1
+            )
         """, self.name)[0][0] or 0
 
     def update_purchase_rfm_status(self):

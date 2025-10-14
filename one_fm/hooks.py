@@ -238,7 +238,10 @@ doc_events = {
 			"one_fm.overrides.purchase_order.validate_purchase_uom"
 		],
 		'on_update':"one_fm.overrides.purchase_order.on_update",
-		"on_update_after_submit": "one_fm.purchase.utils.set_po_letter_head"
+		"on_update_after_submit": [
+            "one_fm.purchase.utils.set_po_letter_head",
+            "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_order"
+		]
 	},
 	"Leave Application": {
 		"on_submit": ["one_fm.utils.leave_appillication_on_submit"],
@@ -303,6 +306,7 @@ doc_events = {
 	"Request for Purchase": {
 		"on_submit": "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_rfp",
 		"on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_rfp",
+		"on_update_after_submit": "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_rfp",
 	},
 	"Purchase Receipt": {
 		"before_submit": "one_fm.purchase.utils.before_submit_purchase_receipt",

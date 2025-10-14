@@ -5,7 +5,7 @@
   "disabled": 0,
   "description": "{{ description }}",
   "is_assignment_rule_with_workflow": 0,
-  "assign_condition": "status == 'Open' and ticket_type == 'Bug'",
+  "assign_condition": "status == 'Open' and (ticket_type == 'Bug' or ticket_type == 'Data Change Request')",
   "unassign_condition": "ticket_type != 'Bug'",
   "close_condition": "status == 'Closed'",
   "rule": "Based on Field",

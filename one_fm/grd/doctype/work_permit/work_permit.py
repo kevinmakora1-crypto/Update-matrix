@@ -25,6 +25,9 @@ from one_fm.utils import send_workflow_action_email, is_scheduler_emails_enabled
 
 # from pdfminer.pdfparser import PDFParser, PDFDocument
 class WorkPermit(Document):
+    def onload(self):
+        if self.docstatus == 0:
+            self.employee_last_checkin = get_employee_last_checkin(self.employee)
 
     def before_insert(self):
         self.cancel_existing()
@@ -50,7 +53,7 @@ class WorkPermit(Document):
     def validate(self):
         self.set_grd_values()
         self.validate_workflow_state_fields()
-
+        self.employee_last_checkin = get_employee_last_checkin(self.employee)
 
     def validate_workflow_state_fields(self):
         states = ['Pending By PAM Operator', 'Pending By Operator']
@@ -611,3 +614,24 @@ def create_notification_log(subject, message, for_users, reference_doc):
         doc.document_type = reference_doc.doctype
         doc.document_name = reference_doc.name
         doc.from_user = reference_doc.modified_by
+
+@frappe.whitelist()
+def get_employee_last_checkin(employee):
+    """
+        Return last_checkin_date (MAX(date) in Employee Checkin) for each employee.
+    """
+    if not employee:
+        return {}
+    result = frappe.db.sql(
+        """
+        SELECT
+            MAX(date) AS last_checkin_date
+        FROM `tabEmployee Checkin` e
+        WHERE e.employee = %(employee)s
+        """,
+        {"employee": employee},
+        as_dict=True,
+    )
+    if len(result) > 0:
+        return result[0].last_checkin_date
+    return None

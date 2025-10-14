@@ -1228,9 +1228,6 @@ class AttendanceMarking():
 
 
 
-
-
-
     def get_checkins(self, shift_assignments):
 
         if not shift_assignments:

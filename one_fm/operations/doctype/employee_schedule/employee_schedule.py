@@ -36,6 +36,8 @@ class EmployeeSchedule(Document):
 				frappe.db.set_value("Employee Schedule", employee_schedule.name, "day_off_ot", 0)
 
 	def validate(self):
+		self.validate_leave_application()
+		self.validate_relieving_date()
 		if self.employee_availability=='Working' and self.shift_type and self.date:
 			start_time, end_time = frappe.db.get_value("Shift Type", self.shift_type, ['start_time', 'end_time'])
 			end_date = self.date
@@ -56,6 +58,25 @@ class EmployeeSchedule(Document):
 			self.project = ''
 
 		# validate_operations_post_overfill({self.date: 1}, self.shift)
+
+	def validate_leave_application(self):
+		if self.employee and self.date:
+			leave_application = frappe.db.exists("Leave Application", {
+				"employee": self.employee,
+				"status": "Approved",
+				"leave_type": "Annual Leave",
+				"docstatus": 1,
+				"from_date": ["<=", self.date],
+				"to_date": [">=", self.date],
+			})
+			if leave_application:
+				frappe.throw(_("You can't add employee schedule for this date because employee {0} has an approved leave application for {1}").format(self.employee, self.date))
+
+	def validate_relieving_date(self):
+		if self.employee and self.date:
+			relieving_date = frappe.db.get_value("Employee", self.employee, "relieving_date")
+			if relieving_date and getdate(self.date) > getdate(relieving_date):
+				frappe.throw(_("Employee {0} is expected to leave on {1}, so cannot be scheduled for {2}").format(self.employee, relieving_date, self.date))
 
 	def validate_offs(self):
 		"""

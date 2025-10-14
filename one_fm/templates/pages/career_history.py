@@ -19,8 +19,12 @@ def get_context(context):
     context.country_list = frappe.get_all('Country', fields=['name'])
     context.employment_type_list = frappe.db.get_all("Employment Type", pluck="name")
 
-
-
+@frappe.whitelist(allow_guest=True)
+def get_experience_types(name = None):
+    if not name:
+        return frappe.get_all('Experience Type',['name'])
+    else:
+        return frappe.get_all('Assessment Questions', filters={'parent': name}, fields=['experience_type_question'])
 
 
 @frappe.whitelist(allow_guest=True)

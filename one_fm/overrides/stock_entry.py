@@ -62,7 +62,8 @@ class StockEntryOverride(StockEntry):
         
         if rfm.purpose not in ["Transfer", "Issue"]:
             return
-
+        total_transferred_issued = []
+        total_pending = 0
         for rfm_item in rfm.items:
             total_transferred = 0
             total_issued = 0
@@ -107,15 +108,37 @@ class StockEntryOverride(StockEntry):
                         break
 
             if rfm.purpose == "Transfer":
+                total_transferred_issued.append(total_transferred)
                 rfm_item.transferred_quantity = total_transferred
                 rfm_item.custom_pending_quantity = total_pending
                 rfm_item.quantity_to_transfer = rfm_item.qty - total_transferred - total_pending
 
             elif rfm.purpose == "Issue":
+                
+                total_transferred_issued.append(total_issued)
                 rfm_item.issued_quantity = total_issued
                 rfm_item.custom_pending_quantity = total_pending
                 rfm_item.quantity_to_transfer = rfm_item.qty - total_issued - total_pending
         
+        
         rfm.flags.ignore_permissions = True
         rfm.flags.ignore_validate_update_after_submit = True
         rfm.save()
+        set_rfm_status(rfm,total_transferred_issued)
+        
+def set_rfm_status(rfm_doc, stock_details):
+    total_issued = sum(stock_details)
+    total_in_rfm = sum(item.qty for item in rfm_doc.items)
+
+    if not total_issued:
+        status = "Pending"
+    elif total_issued == total_in_rfm:
+        status = "Issued" if rfm_doc.purpose == "Issue" else "Transferred"
+    else:
+        status = "Partially Issued" if rfm_doc.purpose == "Issue" else "Partially Transferred"
+
+    frappe.db.set_value(rfm_doc.doctype, rfm_doc.name, "status", status)
+
+    
+    
+       

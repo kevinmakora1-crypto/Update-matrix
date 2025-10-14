@@ -222,9 +222,7 @@ doc_events = {
 		],
 		"on_submit": [
 			"one_fm.api.doc_methods.stock_entry.validate_budget",
-			"one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_and_requested_qty"
 		],
-		"on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_and_requested_qty"
 	},
 	"Purchase Order": {
 		"on_submit": [
@@ -310,9 +308,17 @@ doc_events = {
 		"before_submit": "one_fm.purchase.utils.before_submit_purchase_receipt",
 		"on_submit": [
 			"one_fm.one_fm.doctype.customer_asset.customer_asset.on_purchase_receipt_submit",
-			"one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_receipt"
+			"one_fm.overrides.purchase_receipt.update_received_qty",
+            "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_receipt"
 		],
-        "on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_receipt",
+		"on_cancel": [
+            "one_fm.overrides.purchase_receipt.update_received_qty",
+            "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_receipt"
+        ],
+		"on_update_after_submit": [
+            "one_fm.overrides.purchase_receipt.update_received_qty",
+            "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_receipt"
+        ],
 		"validate": [
 			"one_fm.purchase.utils.validate_store_keeper_project_supervisor",
 			"one_fm.overrides.purchase_receipt.validate_item_batch"
@@ -325,9 +331,9 @@ doc_events = {
 	"Project": {
 		"validate": [
 			"one_fm.one_fm.project_custom.validate_poc_list",
-			"one_fm.one_fm.project_custom.validate_project",
-			"one_fm.overrides.project.update_project_user_assignment"
+			"one_fm.one_fm.project_custom.validate_project"
 		],
+		"after_insert": "one_fm.overrides.project.update_project_user_assignment",
 		"onload": "one_fm.one_fm.project_custom.get_depreciation_expense_amount",
 		"on_update": [
 						"one_fm.api.doc_events.on_project_update_switch_shift_site_post_to_inactive",
@@ -831,7 +837,8 @@ override_whitelisted_methods = {
 	"erpnext.controllers.accounts_controller.update_child_qty_rate":"one_fm.overrides.accounts_controller.update_child_qty_rate",
 	"hrms.hr.doctype.goal.goal.get_children":"one_fm.overrides.goal.get_childrens",
     "hrms.payroll.doctype.payroll_entry.payroll_entry.get_start_end_dates": "one_fm.overrides.payroll_entry.get_start_end_dates",
-    "hrms.hr.doctype.job_applicant.job_applicant.create_interview": "one_fm.overrides.job_applicant.create_interview"
+    "hrms.hr.doctype.job_applicant.job_applicant.create_interview": "one_fm.overrides.job_applicant.create_interview",
+    "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_receipt":"one_fm.overrides.purchase_order.make_purchase_receipt",
 
 }
 

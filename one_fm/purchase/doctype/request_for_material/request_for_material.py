@@ -316,24 +316,6 @@ class RequestforMaterial(BuyingController):
                         format(_(self.doctype), self.name),
                     frappe.InvalidStatusError
                 )
-    #For quantities available in warehouse
-    def update_completed_qty(self, mr_items=None, update_modified=True):
-        if not mr_items:
-            mr_items = [d.name for d in self.get("items")]
-
-        for d in self.get("items"):
-            if d.name in mr_items:
-                if self.type in ("Individual", "Project", "Project Mobilization","Stock","Onboarding"):
-                    d.ordered_qty =  flt(frappe.db.sql("""select sum(qty)
-                        from `tabStock Entry Detail` where one_fm_request_for_material = %s
-                        and one_fm_request_for_material_item = %s and docstatus = 1""",
-                        (self.name, d.name))[0][0])
-
-                    if d.ordered_qty and d.ordered_qty > d.stock_qty:
-                        frappe.throw(_("The total Issue / Transfer quantity {0} in Material Request {1}  \
-                            cannot be greater than requested quantity {2} for Item {3}").format(d.ordered_qty, d.parent, d.qty, d.item_code))
-
-                frappe.db.set_value(d.doctype, d.name, "ordered_qty", d.ordered_qty)
 
     #for quantities that had to be purchased
     def update_purchased_qty(self, mr_items=None, update_modified=True):
@@ -454,24 +436,6 @@ class RequestforMaterial(BuyingController):
         if violations:
             msg = _("Quantity validation against Linked Request for Material failed:<br>{0}").format('<br>'.join(violations))
             frappe.throw(msg)
-
-def update_completed_and_requested_qty(stock_entry, method):
-        if stock_entry.doctype == "Stock Entry":
-            material_request_map = {}
-
-            for d in stock_entry.get("items"):
-                if d.one_fm_request_for_material:
-                    material_request_map.setdefault(d.one_fm_request_for_material, []).append(d.one_fm_request_for_material_item)
-
-            for mr, mr_item_rows in material_request_map.items():
-                if mr and mr_item_rows:
-                    mr_obj = frappe.get_doc("Request for Material", mr)
-
-                    if mr_obj.status in ["Stopped", "Cancelled"]:
-                        frappe.throw(_("{0} {1} is cancelled or stopped").format(_("Request for Material"), mr),
-                            frappe.InvalidStatusError)
-
-                    mr_obj.update_completed_qty(mr_item_rows)
 
 def update_completed_purchase_qty(purchase_order, method):
         if purchase_order.doctype == "Purchase Order":

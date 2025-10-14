@@ -2,11 +2,11 @@ def get_project_custom_fields():
     return {
         "Project": [
             {
-            "label": "Milestones and Meeting Dates",
-            "fieldname": "custom_milestones_and_meeting_dates",
-            "insert_after": "custom_end_date",
-            "fieldtype": "Table",
-            "options": "Milestones and Meeting Dates",
+                "label": "Milestones and Meeting Dates",
+                "fieldname": "custom_milestones_and_meeting_dates",
+                "insert_after": "custom_end_date",
+                "fieldtype": "Table",
+                "options": "Milestones and Meeting Dates",
             },
             {
                 

@@ -299,9 +299,9 @@ doc_events = {
 	"Purchase Receipt": {
 		"before_submit": "one_fm.purchase.utils.before_submit_purchase_receipt",
 		"on_submit": [
-      				"one_fm.one_fm.doctype.customer_asset.customer_asset.on_purchase_receipt_submit",
-					"one_fm.overrides.purchase_receipt.update_received_qty"
-          ],
+			"one_fm.one_fm.doctype.customer_asset.customer_asset.on_purchase_receipt_submit",
+			"one_fm.overrides.purchase_receipt.update_received_qty"
+		],
 		"on_cancel":"one_fm.overrides.purchase_receipt.update_received_qty",
   		"on_update_after_submit":"one_fm.overrides.purchase_receipt.update_received_qty",
 		"validate": [

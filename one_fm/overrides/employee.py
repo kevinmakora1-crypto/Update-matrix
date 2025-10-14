@@ -107,6 +107,7 @@ class EmployeeOverride(EmployeeMaster):
 
     def before_save(self):
         self.assign_role_profile_based_on_designation()
+        update_employee_phone_number(self)
         # get_assurance_level_of_employee(self)
 
     def after_insert(self):
@@ -384,6 +385,17 @@ def update_user_doc(doc):
                 frappe.msgprint(f"User {doc.user_id} enabled",alert=1)
                 frappe.db.commit()
 
+
+def update_employee_phone_number(doc):
+    if not doc.is_new():
+        old_cell_number = doc.get_doc_before_save().cell_number
+        if doc.cell_number and doc.cell_number != old_cell_number and doc.user_id:
+            user_doc = frappe.get_doc('User', doc.user_id)
+            user_doc.phone = doc.cell_number
+            user_doc.mobile_no = doc.cell_number
+            user_doc.save(ignore_permissions=True)
+            frappe.msgprint(f"User {doc.user_id} phone number updated to {doc.cell_number}", alert=True)
+            frappe.db.commit()
 
 
 class NotifyAttendanceManagerOnStatusChange:

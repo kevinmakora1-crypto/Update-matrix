@@ -1,0 +1,210 @@
+{
+ "actions": [],
+ "autoname": "format:PAT-LOG-{initiated_on}-{##}",
+ "creation": "2025-10-14 10:26:35.486082",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_wx0s",
+  "process_name",
+  "goal_description",
+  "hd_ticket",
+  "column_break_ojgt",
+  "initiated_on",
+  "type",
+  "status",
+  "stakeholders_section",
+  "process_owner_user",
+  "process_owner_name",
+  "column_break_itfw",
+  "business_analyst_user",
+  "business_analyst_name",
+  "section_break_qrox",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_wx0s",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "Only the processes that have gone through Pathfinder are listed. If your process is not listed in the options, select \"Others\".",
+   "fieldname": "process_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Process Name",
+   "options": "Process",
+   "remember_last_selected_value": 1,
+   "reqd": 1
+  },
+  {
+   "description": "A brief description of what this update is meant to achieve.",
+   "fieldname": "goal_description",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Goal Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "hd_ticket",
+   "fieldtype": "Link",
+   "label": "HD Ticket",
+   "options": "HD Ticket",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ojgt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "initiated_on",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Initiated On",
+   "read_only": 1
+  },
+  {
+   "description": "(1) Initial Process Implementation: The process is being taken through Pathfinder for the first time. (2) Major Update: May include the addition or deletion of tasks and/or activities. (3) Incremental Changes: Involves small changes, usually within a task.",
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "\nInitial Process Implementation\nMajor Update\nIncremental Changes",
+   "reqd": 1
+  },
+  {
+   "default": "Pending Definition",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending Definition\nPending BA Review\nIn Development\nIn Staging\nIn Production"
+  },
+  {
+   "fieldname": "stakeholders_section",
+   "fieldtype": "Section Break",
+   "label": "Stakeholders"
+  },
+  {
+   "fetch_from": "process_name.process_owner",
+   "fieldname": "process_owner_user",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "label": "Process Owner User",
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "process_owner_user.full_name",
+   "fieldname": "process_owner_name",
+   "fieldtype": "Data",
+   "label": "Process Owner Name"
+  },
+  {
+   "fieldname": "column_break_itfw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "business_analyst_user",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Business Analyst User",
+   "options": "User"
+  },
+  {
+   "fetch_from": "business_analyst_user.full_name",
+   "fieldname": "business_analyst_name",
+   "fieldtype": "Data",
+   "label": "Business Analyst Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_qrox",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Pathfinder Log",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-10-14 10:26:35.486082",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Pathfinder Log",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Head Office Employee",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Business Analyst",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "color": "Red",
+   "title": "Pending Definition"
+  },
+  {
+   "color": "Orange",
+   "title": "Pending BA Review"
+  },
+  {
+   "color": "Purple",
+   "title": "In Development"
+  },
+  {
+   "color": "Blue",
+   "title": "In Staging"
+  },
+  {
+   "color": "Green",
+   "title": "In Production"
+  }
+ ],
+ "track_changes": 1
+}

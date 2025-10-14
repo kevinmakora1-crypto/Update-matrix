@@ -296,6 +296,7 @@ frappe.ui.form.on('Request for Material', {
 		}
 	},
 	validate_rfm_type : function(frm){
+		
 		// ensure that the purpose field is set throw an error if it is not
 		if((!frm.doc.purpose)&& (frappe.user_roles.includes("Warehouse Supervisor"))){
 			frappe.throw(__("Cannot Create Document. Purpose field needs to be selected"));

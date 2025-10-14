@@ -222,9 +222,7 @@ doc_events = {
 		],
 		"on_submit": [
 			"one_fm.api.doc_methods.stock_entry.validate_budget",
-			"one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_and_requested_qty"
 		],
-		"on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_and_requested_qty"
 	},
 	"Purchase Order": {
 		"on_submit": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",
@@ -316,9 +314,9 @@ doc_events = {
 	"Project": {
 		"validate": [
 			"one_fm.one_fm.project_custom.validate_poc_list",
-			"one_fm.one_fm.project_custom.validate_project",
-			"one_fm.overrides.project.update_project_user_assignment"
+			"one_fm.one_fm.project_custom.validate_project"
 		],
+		"after_insert": "one_fm.overrides.project.update_project_user_assignment",
 		"onload": "one_fm.one_fm.project_custom.get_depreciation_expense_amount",
 		"on_update": [
 						"one_fm.api.doc_events.on_project_update_switch_shift_site_post_to_inactive",

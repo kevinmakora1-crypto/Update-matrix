@@ -183,6 +183,70 @@ class RequestforMaterial(BuyingController):
         if self.per_received == 100:
             close_all_assignments(self.doctype, self.name)
 
+    def _get_total_rfp_quantity(self):
+        return frappe.db.sql("""
+            SELECT SUM(qty)
+            FROM `tabRequest for Purchase Item`
+            WHERE parent IN (
+                SELECT name
+                FROM `tabRequest for Purchase`
+                WHERE request_for_material = %s AND docstatus = 1
+            )
+        """, self.name)[0][0] or 0
+
+    def _get_total_ordered_quantity(self):
+        return frappe.db.sql("""
+            SELECT SUM(qty)
+            FROM `tabPurchase Order Item`
+            WHERE parent IN (
+                SELECT name
+                FROM `tabPurchase Order`
+                WHERE request_for_material = %s AND docstatus = 1
+            )
+        """, self.name)[0][0] or 0
+
+    def _get_total_received_quantity(self):
+        return frappe.db.sql("""
+            SELECT SUM(qty)
+            FROM `tabPurchase Receipt Item`
+            WHERE parent IN (
+                SELECT name
+                FROM `tabPurchase Receipt`
+                WHERE custom_request_for_material = %s AND docstatus = 1
+            )
+        """, self.name)[0][0] or 0
+
+    def update_purchase_rfm_status(self):
+        if self.purpose != "Purchase":
+            return
+
+        total_rfm_qty = sum(item.qty for item in self.items)
+        total_rfp_qty = self._get_total_rfp_quantity()
+        total_ordered_qty = self._get_total_ordered_quantity()
+        total_received_qty = self._get_total_received_quantity()
+
+        new_status = ""
+
+        if total_rfp_qty == 0 and total_ordered_qty == 0 and total_received_qty == 0:
+            new_status = "Pending"
+        elif total_rfp_qty > 0 and total_rfp_qty < total_rfm_qty:
+            new_status = "Partial RFP"
+        elif total_rfp_qty == total_rfm_qty:
+            if total_ordered_qty == 0:
+                new_status = "RFP Processed"
+            elif total_ordered_qty > 0 and total_ordered_qty < total_rfp_qty:
+                new_status = "Partially Ordered"
+            elif total_ordered_qty == total_rfp_qty:
+                if total_received_qty == 0:
+                    new_status = "Ordered"
+                elif total_received_qty > 0 and total_received_qty < total_ordered_qty:
+                    new_status = "Partially Received"
+                elif total_received_qty == total_ordered_qty:
+                    new_status = "Completed"
+
+        if new_status and self.status != new_status:
+            self.db_set("status", new_status)
+
     def assign_to_warehouse_supervisor(self):
         try:
             filtered_users = get_users_with_role_permitted_to_doctype('Warehouse Supervisor', self.doctype)
@@ -730,3 +794,18 @@ def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
     frappe.msgprint(_("Stock Entry {0} created successfully").format(stock_entry.name))
     
     return stock_entry.name
+
+def update_rfm_status_against_rfp(doc, method):
+    if hasattr(doc, 'request_for_material') and doc.request_for_material:
+        rfm = frappe.get_doc("Request for Material", doc.request_for_material)
+        rfm.update_purchase_rfm_status()
+
+def update_rfm_status_against_purchase_order(doc, method):
+    if hasattr(doc, 'request_for_material') and doc.request_for_material:
+        rfm = frappe.get_doc("Request for Material", doc.request_for_material)
+        rfm.update_purchase_rfm_status()
+
+def update_rfm_status_against_purchase_receipt(doc, method):
+    if hasattr(doc, 'custom_request_for_material') and doc.custom_request_for_material:
+        rfm = frappe.get_doc("Request for Material", doc.custom_request_for_material)
+        rfm.update_purchase_rfm_status()

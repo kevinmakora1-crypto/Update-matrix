@@ -142,7 +142,7 @@ frappe.ui.form.on('Request for Material', {
 	items_move: (frm) => {
 	},
 	make_custom_buttons: function(frm) {
-		if (frm.doc.docstatus == 1 && frm.doc.status == 'Approved' && frappe.user.has_role("Stock User")) {
+		if (frm.doc.docstatus == 1 && frm.doc.workflow_state == 'Approved' && frappe.user.has_role("Stock User")) {
 			
 			if(frm.doc.items){
 				var any_items_ordered = false;
@@ -640,7 +640,7 @@ var set_item_field_property = function(frm) {
 	var fields_dict = [];
 	frappe.meta.get_docfield("Request for Material Item", "item_code", frm.doc.name).read_only = true;
 	frappe.meta.get_docfield("Request for Material Item", "item_code", frm.doc.name).depends_on = 'eval:doc.docstatus==1';
-	if((frm.doc.docstatus == 1 && (frappe.session.user == frm.doc.request_for_material_accepter || frm.doc.status == 'Approved')) || frm.doc.type == 'Stock'){
+	if((frm.doc.docstatus == 1 && (frappe.session.user == frm.doc.request_for_material_accepter || frm.doc.workflow_state == 'Approved')) || frm.doc.type == 'Stock'){
 		frappe.meta.get_docfield("Request for Material Item", "item_code", frm.doc.name).read_only = false;
 		frappe.meta.get_docfield("Request for Material Item", "item_code", frm.doc.name).depends_on = '';
 	}
@@ -653,7 +653,7 @@ var set_item_field_property = function(frm) {
 		frappe.meta.get_docfield("Request for Material Item", "requested_item_name", frm.doc.name).reqd = false;
 		frappe.meta.get_docfield("Request for Material Item", "requested_description", frm.doc.name).reqd = false;
 	}
-	else if((frm.doc.docstatus == 1 && frm.doc.status == 'Approved')){
+	else if((frm.doc.docstatus == 1 && frm.doc.workflow_state == 'Approved')){
 		var fields = ['requested_item_name', 'requested_description', 'qty', 'uom', 'stock_uom'];
 		fields.forEach((field, i) => {
 			fields_dict[i] = {'fieldname': field, 'read_only': true}
@@ -1064,7 +1064,7 @@ function toggle_child_table_fields(frm) {
 }
 
 function add_purchase_rfm_button(frm){
-	if(!(frm.doc.docstatus == 1 && frm.doc.status == 'Approved' && frappe.user_roles.includes('Warehouse Supervisor'))){
+	if(!(frm.doc.docstatus == 1 && frm.doc.workflow_state == 'Approved' && frappe.user_roles.includes('Warehouse Supervisor'))){
 		return;
 	}
 

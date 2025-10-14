@@ -225,14 +225,23 @@ doc_events = {
 		],
 	},
 	"Purchase Order": {
-		"on_submit": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",
-		"on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",
+		"on_submit": [
+			"one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",
+			"one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_order"
+		],
+		"on_cancel": [
+			"one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",
+			"one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_order"
+		],
 		"after_insert": "one_fm.purchase.utils.set_quotation_attachment_in_po",
 		"validate":[
 			"one_fm.overrides.purchase_order.validate_purchase_uom"
 		],
 		'on_update':"one_fm.overrides.purchase_order.on_update",
-		"on_update_after_submit": "one_fm.purchase.utils.set_po_letter_head"
+		"on_update_after_submit": [
+            "one_fm.purchase.utils.set_po_letter_head",
+            "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_order"
+		]
 	},
 	"Leave Application": {
 		"on_submit": ["one_fm.utils.leave_appillication_on_submit"],
@@ -294,14 +303,26 @@ doc_events = {
 	"Employee Checkin": {
 		"on_update": "one_fm.utils.create_additional_salary_for_overtime_request_for_head_office"
 	},
+	"Request for Purchase": {
+		"on_submit": "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_rfp",
+		"on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_rfp",
+		"on_update_after_submit": "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_rfp",
+	},
 	"Purchase Receipt": {
 		"before_submit": "one_fm.purchase.utils.before_submit_purchase_receipt",
 		"on_submit": [
 			"one_fm.one_fm.doctype.customer_asset.customer_asset.on_purchase_receipt_submit",
-			"one_fm.overrides.purchase_receipt.update_received_qty"
+			"one_fm.overrides.purchase_receipt.update_received_qty",
+            "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_receipt"
 		],
-		"on_cancel":"one_fm.overrides.purchase_receipt.update_received_qty",
-  		"on_update_after_submit":"one_fm.overrides.purchase_receipt.update_received_qty",
+		"on_cancel": [
+            "one_fm.overrides.purchase_receipt.update_received_qty",
+            "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_receipt"
+        ],
+		"on_update_after_submit": [
+            "one_fm.overrides.purchase_receipt.update_received_qty",
+            "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_receipt"
+        ],
 		"validate": [
 			"one_fm.purchase.utils.validate_store_keeper_project_supervisor",
 			"one_fm.overrides.purchase_receipt.validate_item_batch"

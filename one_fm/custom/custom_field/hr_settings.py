@@ -12,7 +12,7 @@ def get_hr_settings_custom_fields():
             {
                 "fieldname": "payroll_notifications_email",
                 "fieldtype": "Data",
-                "insert_after": "payroll_settings",
+                "insert_after": "unlink_payment_on_cancellation_of_employee_advance",
                 "label": "Payroll Notifications Email",
                 "description": "All payroll related notifications will be forwarded to this email id.",
                 "translatable": 1
@@ -24,6 +24,105 @@ def get_hr_settings_custom_fields():
                 "fieldtype": "Int",
                 "default": "60",
                 "description": "The minimum number of annual leave days an employee must accumulate before a leave acknowledgment form is automatically generated."
+            },
+            {
+                "fieldname": "government_relations_tab",
+                "fieldtype": "Tab Break",
+                "insert_after": "payroll_notifications_email",
+                "label": "Government Relations"
+            },
+            {
+                "fieldname": "grd_default_settings_section",
+                "fieldtype": "Section Break",
+                "insert_after": "government_relations_tab",
+                "label": "GRD Default Settings"
+            },
+            {
+                "fieldname": "default_grd_supervisor",
+                "fieldtype": "Link",
+                "insert_after": "grd_default_settings_section",
+                "label": "Default GRD Supervisor",
+                "options": "User",
+                "reqd": 1
+            },
+            {
+                "fieldname": "default_grd_operator",
+                "fieldtype": "Link",
+                "insert_after": "default_grd_supervisor",
+                "label": "Default GRD Operator (Renewal)",
+                "options": "User"
+            },
+            {
+                "fieldname": "column_break_grd_1",
+                "fieldtype": "Column Break",
+                "insert_after": "default_grd_operator"
+            },
+            {
+                "fieldname": "default_grd_operator_pifss",
+                "fieldtype": "Link",
+                "insert_after": "column_break_grd_1",
+                "label": "Default GRD Operator (PIFSS)",
+                "options": "User"
+            },
+            {
+                "fieldname": "default_grd_operator_transfer",
+                "fieldtype": "Link",
+                "insert_after": "default_grd_operator_pifss",
+                "label": "Default GRD Operator (Transfer)",
+                "options": "User"
+            },
+            {
+                "fieldname": "default_pam_operator",
+                "fieldtype": "Link",
+                "insert_after": "default_grd_operator_transfer",
+                "label": "Default PAM Operator",
+                "options": "User"
+            },
+            {
+                "fieldname": "section_break_grd_2",
+                "fieldtype": "Section Break",
+                "insert_after": "default_pam_operator"
+            },
+            {
+                "fieldname": "days_before_expiry_to_notify_supervisor",
+                "fieldtype": "Int",
+                "insert_after": "section_break_grd_2",
+                "label": "Days Before Expiry to Notify Supervisor",
+                "description": "Specify the number of days in advance the supervisor should be notified before an employee's document expires. A notification will be triggered based on this value."
+            },
+            {
+                "fieldname": "renewal_extension_costing_section",
+                "fieldtype": "Section Break",
+                "insert_after": "days_before_expiry_to_notify_supervisor",
+                "label": "Renewal Extension Costing"
+            },
+            {
+                "fieldname": "renewal_extension_cost",
+                "fieldtype": "Table",
+                "insert_after": "renewal_extension_costing_section",
+                "options": "GRD Renewal Extension Cost"
+            },
+            {
+                "fieldname": "costing_section",
+                "fieldtype": "Section Break",
+                "insert_after": "renewal_extension_cost",
+                "label": "Costing Settings"
+            },
+            {
+                "fieldname": "inform_the_costing_to",
+                "fieldtype": "Data",
+                "insert_after": "costing_section",
+                "label": "Inform The Costing to",
+                "options": "Email",
+                "description": "Email ID to get informed the finance team about the costing from preparation."
+            },
+            {
+                "fieldname": "costing_print_format",
+                "fieldtype": "Link",
+                "insert_after": "inform_the_costing_to",
+                "label": "Costing Print Format",
+                "options": "Print Format",
+                "description": "The print format to attach in the notification to the finance team about the preparation cost. If leave this field blank the will consider Standard print format for attachment."
             }
         ]
     }

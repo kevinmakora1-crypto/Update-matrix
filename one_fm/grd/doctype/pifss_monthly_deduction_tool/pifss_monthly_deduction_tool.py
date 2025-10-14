@@ -19,7 +19,7 @@ class PIFSSMonthlyDeductionTool(Document):
 		self.set_grd_user()
 
 	def set_grd_user(self):
-		self.grd_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_pifss")
+		self.grd_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_pifss")
 
 	def on_update(self):
 		pass

@@ -90,6 +90,7 @@
    "label": "Site Supervisor Name"
   },
   {
+   "description": "Below is the list of Operations Shifts outside the employee's default shift to which the employee has been rostered more than 4 times within the month.",
    "fieldname": "section_break_yzvl",
    "fieldtype": "Section Break"
   },
@@ -167,6 +168,7 @@
    "search_index": 1
   },
   {
+   "description": "Flags shifts where a Day-Off Reliever was scheduled for over 22 days in the same shift, or a Weekend Reliever was scheduled for over 26 days in the same shift.",
    "fieldname": "section_break_wkho",
    "fieldtype": "Section Break"
   },
@@ -203,7 +205,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-09-29 13:14:18.502404",
+ "modified": "2025-10-06 14:59:24.936993",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Default Shift Checker",
@@ -236,6 +238,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [

@@ -13,6 +13,8 @@
   "requested_by",
   "type",
   "schedule_date",
+  "issue_transfer_rfm",
+  "purpose",
   "status",
   "reason_for_rejection",
   "column_break_2",
@@ -55,7 +57,8 @@
   "terms",
   "reference",
   "job_card",
-  "amended_from"
+  "amended_from",
+  "linked_purchase_rfm"
  ],
  "fields": [
   {
@@ -85,16 +88,6 @@
    "hidden": 1,
    "label": "Title",
    "no_copy": 1,
-   "print_hide": 1
-  },
-  {
-   "default": "Purchase",
-   "fieldname": "material_request_type",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "in_standard_filter": 1,
-   "label": "Type",
-   "options": "Purchase",
    "print_hide": 1
   },
   {
@@ -280,7 +273,7 @@
   },
   {
    "fieldname": "terms",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Text",
    "label": "Terms and Conditions",
    "oldfieldname": "terms",
    "oldfieldtype": "Text Editor"
@@ -473,8 +466,39 @@
    "in_standard_filter": 1,
    "label": "ERF",
    "options": "ERF"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "purpose",
+   "fieldtype": "Select",
+   "label": "Purpose",
+   "options": "\nIssue\nTransfer\nPurchase"
+  },
+  {
+   "default": "Purchase",
+   "fieldname": "material_request_type",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "in_standard_filter": 1,
+   "label": "Type",
+   "options": "Purchase",
+   "print_hide": 1
+  },
+  {
+   "fieldname": "linked_purchase_rfm",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Linked Purchase RFM",
+   "options": "Request for Material"
+  },
+  {
+   "fieldname": "issue_transfer_rfm",
+   "fieldtype": "Data",
+   "label": "Issue/Transfer RFM",
+   "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "icon": "fa fa-ticket",
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
@@ -493,9 +517,19 @@
    "group": "Reference",
    "link_doctype": "Delivery Note",
    "link_fieldname": "request_for_material"
+  },
+  {
+   "group": "Reference",
+   "link_doctype": "Stock Entry",
+   "link_fieldname": "one_fm_request_for_material"
+  },
+  {
+   "group": "Purchase RFM",
+   "link_doctype": "Request for Material",
+   "link_fieldname": "issue_transfer_rfm"
   }
  ],
- "modified": "2024-02-12 16:23:03.971455",
+ "modified": "2025-10-07 13:15:42.260843",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Material",
@@ -575,6 +609,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "search_fields": "status,transaction_date",
  "show_name_in_global_search": 1,
  "sort_field": "modified",

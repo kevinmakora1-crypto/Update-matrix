@@ -806,15 +806,6 @@ def update_rfm_status_against_purchase_order(doc, method):
         rfm.update_purchase_rfm_status()
 
 def update_rfm_status_against_purchase_receipt(doc, method):
-    if doc.items:
-        rfm_names = set()
-
-        for item in doc.items:
-            if item.purchase_order:
-                rfm_name = frappe.db.get_value("Purchase Order", item.purchase_order, "request_for_material")
-                if rfm_name:
-                    rfm_names.add(rfm_name)
-
-        for rfm_name in rfm_names:
-            rfm = frappe.get_doc("Request for Material", rfm_name)
-            rfm.update_purchase_rfm_status()
+    if hasattr(doc, 'custom_request_for_material') and doc.custom_request_for_material:
+        rfm = frappe.get_doc("Request for Material", doc.custom_request_for_material)
+        rfm.update_purchase_rfm_status()

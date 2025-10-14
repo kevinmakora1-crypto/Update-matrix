@@ -2,7 +2,22 @@ import frappe
 from frappe import _
 
 
-
+def get_rfm_in_purchase_receipt(doc):
+    po = None
+    for each in doc.items:
+        if each.purchase_order:
+            po = each.purchase_order
+            break
+    if po:
+        po_doc = frappe.get_doc("Purchase Order", po)
+        if po_doc.request_for_material:
+            return po_doc.request_for_material
+        elif po_doc.one_fm_request_for_purchase:
+            rfp_doc = frappe.get_doc("Request for Purchase", po_doc.one_fm_request_for_purchase)
+            return rfp_doc.request_for_material
+            
+    
+    
 def update_received_qty(doc, method):
     """Update received_qty on each item row of the linked Request for Material.
 
@@ -17,8 +32,10 @@ def update_received_qty(doc, method):
     """
     rfm_name = getattr(doc, 'custom_request_for_material', None)
     if not rfm_name:
-        return  # silent skip
+        rfm_name = get_rfm_in_purchase_receipt(doc)
+        
     if not frappe.db.exists('Request for Material', rfm_name):
+        
         return  # silent skip
 
     try:
@@ -38,7 +55,7 @@ def update_received_qty(doc, method):
             as_dict=True,
         )
         totals = {row.item_code: row.total_received for row in pr_items if row.item_code}
-
+       
         # Fetch RFM item rows
         rfm_items = frappe.db.sql(
             """
@@ -53,6 +70,7 @@ def update_received_qty(doc, method):
         # Update each RFM item row (full aggregate on each matching row). Default 0 if not found.
         for r in rfm_items:
             item_code = r.item_code
+            
             if not item_code:
                 continue  # row without item_code (business rule might prevent this)
             received = totals.get(item_code, 0) or 0

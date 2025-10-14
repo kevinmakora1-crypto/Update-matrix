@@ -1,10 +1,89 @@
 import frappe
+import json
 from frappe import _
-
+from frappe.utils import cint, cstr, flt, get_link_to_form
+from frappe.model.mapper import get_mapped_doc
 from erpnext.buying.doctype.purchase_order.purchase_order import PurchaseOrder
 from one_fm.purchase.doctype.request_for_purchase.request_for_purchase import update_rfp_status
 from frappe.utils import nowdate
 
+
+@frappe.whitelist()
+def make_purchase_receipt(source_name, target_doc=None, args=None):
+	if args is None:
+		args = {}
+	if isinstance(args, str):
+		args = json.loads(args)
+
+	has_unit_price_items = frappe.db.get_value("Purchase Order", source_name, "has_unit_price_items")
+
+	def is_unit_price_row(source):
+		return has_unit_price_items and source.qty == 0
+
+	def update_item(obj, target, source_parent):
+		target.qty = flt(obj.qty) if is_unit_price_row(obj) else flt(obj.qty) - flt(obj.received_qty)
+		target.stock_qty = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.conversion_factor)
+		target.amount = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate)
+		target.base_amount = (
+			(flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate) * flt(source_parent.conversion_rate)
+		)
+
+	def select_item(d):
+		filtered_items = args.get("filtered_children", [])
+		child_filter = d.name in filtered_items if filtered_items else True
+		return child_filter
+
+	doc = get_mapped_doc(
+		"Purchase Order",
+		source_name,
+		{
+			"Purchase Order": {
+				"doctype": "Purchase Receipt",
+				"field_map": {"supplier_warehouse": "supplier_warehouse"},
+				"validation": {
+					"docstatus": ["=", 1],
+				},
+			},
+			"Purchase Order Item": {
+				"doctype": "Purchase Receipt Item",
+				"field_map": {
+					"name": "purchase_order_item",
+					"parent": "purchase_order",
+					"bom": "bom",
+					"material_request": "material_request",
+					"material_request_item": "material_request_item",
+					"sales_order": "sales_order",
+					"sales_order_item": "sales_order_item",
+					"wip_composite_asset": "wip_composite_asset",
+				},
+				"postprocess": update_item,
+				"condition": lambda doc: (
+					True if is_unit_price_row(doc) else abs(doc.received_qty) < abs(doc.qty)
+				)
+				and doc.delivered_by_supplier != 1
+				and select_item(doc),
+			},
+			"Purchase Taxes and Charges": {"doctype": "Purchase Taxes and Charges", "reset_value": True},
+		},
+		target_doc,
+		set_missing_values,
+	)
+    
+    
+	return doc
+
+
+def set_missing_values(source, target):
+	
+    if source.get("one_fm_request_for_purchase"):
+        target.custom_request_for_purchase = source.get("one_fm_request_for_purchase")
+    if source.get('request_for_material'):
+        target.custom_request_for_material = source.get('request_for_material')
+    target.run_method("set_missing_values")
+    target.run_method("calculate_taxes_and_totals")
+    target.run_method("set_use_serial_batch_fields")
+    target.save()
+    
 
 
 def set_workflow_states(doc,old_doc):
@@ -137,7 +216,7 @@ class PurchaseOrderOverride(PurchaseOrder):
 
             # If Request for Material exists, update the corresponding quantity
             if request_for_material:
-                update_purchased_qty(new_qty, request_for_material, obj.item_code, "Request for Material Item", "purchased_qty")
+                update_purchased_qty(new_qty, request_for_material, obj.item_code, "Request for Material Item", "ordered_qty")
 
 
     def update_ordered_and_pending_quantities(self):

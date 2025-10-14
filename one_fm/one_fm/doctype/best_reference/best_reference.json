@@ -136,10 +136,12 @@
    "read_only": 1
   },
   {
+   "fetch_from": "job_applicant.designation",
    "fieldname": "designation",
    "fieldtype": "Link",
    "label": "Designation",
-   "options": "Designation"
+   "options": "Designation",
+   "read_only": 1
   },
   {
    "fieldname": "interview_feedback",
@@ -150,10 +152,11 @@
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2025-09-03 01:49:11.005650",
+ "modified": "2025-10-13 20:05:41.554571",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Best Reference",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {

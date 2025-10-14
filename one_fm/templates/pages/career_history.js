@@ -847,10 +847,8 @@ career_history = Class.extend({
     const me = this;
     let activityTypes = [];
 
-    // Fetch activity types from the server
     frappe.call({
-      method: "one_fm.templates.pages.career_history.get_experience_types",
-      args: {},
+      method: "one_fm.utils.get_experience_types",
       callback: function (r) {
         activityTypes = r.message;
       },
@@ -861,7 +859,6 @@ career_history = Class.extend({
 
       const learningJourneyItemsContainer = $(`.learning-journey-items`);
       const currentItemCount = learningJourneyItemsContainer.children().length;
-
 
       const learningJourneyItem = `
         <div class="learning-journey-item mb-3" data-item-index="${currentItemCount + 1}">

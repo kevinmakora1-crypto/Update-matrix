@@ -171,7 +171,7 @@ one_fm.patches.v15_0.update_stock_entry_index
 one_fm.patches.v15_0.add_hd_agent_custom_field_github_api_token
 one_fm.patches.v15_0.add_update_custom_field #2025-10-07
 one_fm.patches.v15_0.update_rfm_from_pr
-one_fm.patches.v15_0.update_rfm_workflow
+one_fm.patches.v15_0.update_rfm_workflow #2025-10-15
 one_fm.patches.v15_0.add_update_workflow #2025-10-14
 one_fm.patches.v15_0.update_hd_ticket_bug_buster_assignment
 one_fm.patches.v15_0.add_update_custom_field #2025-10-14

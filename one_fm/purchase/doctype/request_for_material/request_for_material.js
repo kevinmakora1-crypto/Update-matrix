@@ -130,6 +130,30 @@ frappe.ui.form.on('Request for Material', {
 			frm.set_df_property('purpose', 'read_only', 1);
 		}
 		add_purchase_rfm_button(frm);
+        const status_colors = {
+            "Draft": "grey",
+            "Pending": "orange",
+            "Approved": "blue",
+            "Partially Ordered": "yellow",
+            "Ordered": "green",
+            "Partially Received": "yellow",
+            "Received": "green",
+            "Completed": "green",
+            "Cancelled": "red",
+            "Rejected": "red",
+            "Accepted": "blue",
+            "Issued": "green",
+            "Transferred": "green",
+            "Partially Issued": "yellow",
+            "Partially Transferred": "yellow",
+            "Stopped": "red",
+            "Partial RFP": "yellow",
+            "RFP Processed": "green"
+        };
+        frm.set_indicator_formatter('status',
+            function(doc) {
+                return status_colors[doc.status] || "darkgrey";
+            });
 	},
 	items_on_form_rendered: (frm) => {
 	},

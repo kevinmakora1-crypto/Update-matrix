@@ -19,6 +19,7 @@
   "work_permit_status",
   "reason_of_rejection",
   "details_of_rejection",
+  "employee_last_checkin",
   "work_permit_details_section",
   "attach_work_permit",
   "work_permit_expiry_date",
@@ -980,11 +981,17 @@
   {
    "fieldname": "column_break_zsnm",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "employee_last_checkin",
+   "fieldtype": "Date",
+   "label": "Employee Last Checkin",
+   "read_only": 1
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-08-26 10:15:55.860237",
+ "modified": "2025-10-14 11:59:26.763332",
  "modified_by": "Administrator",
  "module": "GRD",
  "name": "Work Permit",

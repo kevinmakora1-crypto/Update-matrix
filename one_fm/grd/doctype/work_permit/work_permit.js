@@ -2,9 +2,6 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Work Permit', {
-    // onload: function(frm){
-    //     set_employee_details(frm); 
-    // },
     validate: function(frm){
     },
     work_permit_status: function(frm){
@@ -91,11 +88,7 @@ frappe.ui.form.on('Work Permit', {
     },
     // reason_of_rejection: function(frm){
     //     inform_previous_company_for_rejection(frm);
-    // }
-
-   
-
-    
+    // }    
 });
 var set_button_for_medical_insurance_transfer = function(frm){
     if(frm.doc.docstatus === 1 && frm.doc.work_permit_type == "Local Transfer" && frm.doc.workflow_state == "Completed"){

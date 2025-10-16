@@ -171,6 +171,7 @@ one_fm.patches.v15_0.update_stock_entry_index
 one_fm.patches.v15_0.add_hd_agent_custom_field_github_api_token
 one_fm.patches.v15_0.add_update_custom_field #2025-10-07
 one_fm.patches.v15_0.update_timesheet_records
+one_fm.patches.v15_0.add_update_custom_field #2025-10-16
 
 [post_model_sync]
 one_fm.patches.v15_0.create_attendance_check_process_task #re run again

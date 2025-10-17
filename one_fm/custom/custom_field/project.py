@@ -2,6 +2,13 @@ def get_project_custom_fields():
     return {
         "Project": [
             {
+            "label": "Success Metrics",
+            "fieldname": "custom_success_metrics",
+            "insert_after": "custom_success_and_completion_criteria",
+            "fieldtype": "Text",
+            "description": "Define the metric of success",
+            },
+            {
                 "label": "Milestones and Meeting Dates",
                 "fieldname": "custom_milestones_and_meeting_dates",
                 "insert_after": "custom_end_date",

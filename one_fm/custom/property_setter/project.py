@@ -3,6 +3,53 @@ def get_project_properties():
         {
             "doctype_or_field":"DocField",
             "doc_type":"Project",
+            "Field_name":"manager_name",
+            "Property":"label",
+            "property_type":"Data",
+            "value":"Project Manager Name"
+        },
+        {
+            "doctype_or_field":"DocField",
+            "doc_type":"Project",
+            "Field_name":"project_details",
+            "Property":"depends_on",
+            "property_type":"Data",
+            "value":"eval:doc.project_type!='Internal'",
+        },
+        {
+            "doctype_or_field":"DocField",
+            "doc_type":"Project",
+            "field_name":"has_overtime_rate",
+            "Property":"depends_on",
+            "property_type":"Data",
+            "value":"eval:doc.project_type == \"External\"",
+        },
+        {
+            "doctype_or_field":"DocField",
+            "doc_type":"Project",
+            "Field_name":"users_section",
+            "Property":"label",
+            "property_type":"Data",
+            "value":"Project Manager and Users"
+        },
+        {
+            "doctype_or_field":"DocField",
+            "doc_type":"Project",
+            "Field_name":"users_section",
+            "Property":"depends_on",
+            "property_type":"Data",
+            "value":"eval:['External','Internal'].includes(doc.project_type)"
+        },
+        {   
+            "doctype_or_field":"DocField",
+            "doc_type":"Project",
+            "field_name":"project_name_in_arabic",
+            "property":"depends_on","property_type":"Data",
+            "value":"eval:doc.project_type!=\"Internal\"",
+        },
+        {
+            "doctype_or_field":"DocField",
+            "doc_type":"Project",
             "field_name":"monitor_progress",
             "property":"depends_on",
             "property_type":"Data",

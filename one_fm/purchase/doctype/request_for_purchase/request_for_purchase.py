@@ -24,9 +24,11 @@ class RequestforPurchase(Document):
 	def on_submit(self):
 		self.assign_purchase_officer()
 		self._update_linked_rfm_quantities()
+		update_rfp_status(self.name)
   
 	def on_update_after_submit(self):
 		self._update_linked_rfm_quantities()
+		update_rfp_status(self.name)
   
 	def after_insert(self):
 		self._update_linked_rfm_quantities()
@@ -103,6 +105,7 @@ class RequestforPurchase(Document):
 					request_for_purchase=self.name,
 					warehouse=wh,
 					items_list=items_list,
+					rfp_doc = self.as_dict(),
 					do_not_submit=True
 				)
 				
@@ -420,6 +423,83 @@ class RequestforPurchase(Document):
 		
 		frappe.msgprint(_("Request for Purchase updated successfully."))
 
+	def before_save(self):
+		# Ensure latest exchange rate before saving (only at before_save)
+		self.get_and_set_latest_exchange_rate()
+
+	def get_and_set_latest_exchange_rate(self):
+		"""Fetch latest (by date desc then creation desc) Currency Exchange and overwrite exchange_rate.
+		Rules:
+		- If company_currency == currency => exchange_rate = 1
+		- Else query Currency Exchange where date <= today
+		- If record found overwrite; if none found keep existing
+		- On error log and keep existing
+		"""
+		try:
+			from_currency = getattr(self, 'company_currency', None)
+			to_currency = getattr(self, 'currency', None)
+			if not from_currency or not to_currency:
+				return
+			if from_currency == to_currency:
+				self.exchange_rate = 1
+				return
+			latest = frappe.get_list(
+				'Currency Exchange',
+				filters={
+					'from_currency': from_currency,
+					'to_currency': to_currency,
+					'date': ['<=', frappe.utils.today()]
+				},
+				fields=['name', 'exchange_rate', 'date', 'creation'],
+				order_by='date desc, creation desc',
+				page_length=1
+			)
+			if latest:
+				rate = latest[0].get('exchange_rate')
+				if rate:  # guaranteed non-zero/non-negative by business rules
+					self.exchange_rate = rate
+		except Exception as e:
+			frappe.log_error(f"Exchange rate fetch failed for RFP {getattr(self, 'name', 'NEW')}: {e}", 'RFP Exchange Rate Fetch')
+
+def update_rfp_status(rfp_name):
+	"""
+	Updates the status of a Request for Purchase (RFP) based on the
+	quantities of items ordered in linked Purchase Orders (POs).
+
+	Args:
+		rfp_name (str): The name of the Request for Purchase document.
+	"""
+	rfp = frappe.get_doc("Request for Purchase", rfp_name)
+
+	# Only update the status if the RFP is in an approved state
+	if rfp.workflow_state != "Approved":
+		return
+
+	# Calculate the total quantity required by the RFP
+	total_required_qty = sum(item.qty for item in rfp.items)
+
+	# Calculate the total quantity ordered across all submitted POs
+	ordered_qty = frappe.db.sql("""
+		SELECT SUM(item.qty)
+		FROM `tabPurchase Order Item` item
+		JOIN `tabPurchase Order` po ON item.parent = po.name
+		WHERE po.one_fm_request_for_purchase = %s
+		AND po.docstatus = 1
+	""", rfp_name)[0][0] or 0
+
+	# Determine the new status based on the quantities
+	new_status = None
+	if ordered_qty == 0:
+		new_status = "To Order"
+	elif ordered_qty < total_required_qty:
+		new_status = "Partially Ordered"
+	else:
+		new_status = "Ordered"
+
+	# Update the RFP status if it has changed
+	if rfp.status != new_status:
+		rfp.db_set("status", new_status)
+		frappe.db.commit()
 
 
 @frappe.whitelist()
@@ -600,6 +680,9 @@ def create_purchase_order(**args):
     
     po = frappe.new_doc("Purchase Order")
     po.transaction_date = nowdate()
+    po.buying_price_list = args.get('rfp_doc').price_list
+    po.currency = args.get('rfp_doc').currency
+    po.conversion_rate = args.get('rfp_doc').exchange_rate
     po.set_warehouse = args.warehouse
     po.quotation = args.quotation
     po.supplier = args.supplier

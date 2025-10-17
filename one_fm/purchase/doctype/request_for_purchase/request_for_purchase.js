@@ -323,7 +323,78 @@ frappe.ui.form.on('Request for Purchase', {
                 });
             });
         }
-    }
+    },
+	currency: function(frm) {
+		if (!frm.doc.currency) return;
+		if (!frm.fields_dict.exchange_rate) return;
+
+		// Use hidden field company_currency instead of API call
+		let from_currency = frm.doc.company_currency;
+		if (!from_currency) {
+			frappe.show_alert({message: __('Company currency (company_currency) not found; set exchange rate manually.'), indicator: 'orange'});
+			frm.set_df_property('exchange_rate', 'read_only', 0);
+			return;
+		}
+
+		let to_currency = frm.doc.currency;
+		// If same currency set 1 and make read only
+		if (from_currency === to_currency) {
+			frm.set_value('exchange_rate', 1.0);
+			frm.set_df_property('exchange_rate', 'read_only', 1);
+			frappe.show_alert({message: __('Exchange Rate set to 1.0 (same currency).'), indicator: 'green'});
+			return;
+		}
+
+		let cache_key = `currency_exchange_${from_currency}_${to_currency}`;
+		// Optionally keep last successful rate in cache (Q6) but still refetch (Q7)
+		let previous_cached_rate = window[cache_key];
+		// Preserve existing value before fetch in case not found (Q3)
+		let previous_value = frm.doc.exchange_rate;
+
+		frappe.call({
+			method: 'frappe.client.get_list',
+			args: {
+				doctype: 'Currency Exchange',
+				fields: ['name','exchange_rate','date'],
+				filters: {
+					from_currency: from_currency,
+					to_currency: to_currency,
+					date: ['<=', frappe.datetime.get_today()]
+				},
+				order_by: 'date desc',
+				limit_page_length: 1
+			},
+			callback: function(res) {
+				let records = res && res.message ? res.message : [];
+				if (records.length) {
+					let rate = flt(records[0].exchange_rate);
+					// Update value & make read only (Q3)
+					frm.set_value('exchange_rate', rate);
+					frm.set_df_property('exchange_rate', 'read_only', 1);
+					frm.refresh_field('exchange_rate');
+					window[cache_key] = rate;
+					frappe.show_alert({message: __('Exchange Rate fetched: {0}', [rate]), indicator: 'green'});
+				} else {
+					// No record: leave previous value, editable (Q3)
+					frm.set_value('exchange_rate', previous_value);
+					frm.set_df_property('exchange_rate', 'read_only', 1);
+					frappe.show_alert({message: __('No Currency Exchange found for {0} -> {1}. Set rate manually.', [from_currency, to_currency]), indicator: 'orange'});
+					if (previous_cached_rate) {
+						frappe.show_alert({message: __('Using previously cached rate: {0}', [previous_cached_rate]), indicator: 'yellow'});
+					}
+				}
+			},
+			error: function() {
+				// On error restore previous and allow editing
+				frm.set_value('exchange_rate', previous_value);
+				frm.set_df_property('exchange_rate', 'read_only', 0);
+				frappe.show_alert({message: __('Error fetching exchange rate. Set manually.'), indicator: 'red'});
+				if (previous_cached_rate) {
+					frappe.show_alert({message: __('Cached rate available: {0}', [previous_cached_rate]), indicator: 'yellow'});
+				}
+			}
+		});
+	}
 });
 
 

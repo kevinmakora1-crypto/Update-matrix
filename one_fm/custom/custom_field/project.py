@@ -26,7 +26,7 @@ def get_project_custom_fields():
                 "label": "Meeting Frequency",
                 "fieldname": "custom_meeting_frequency",
                 "insert_after": "custom_project_duration_weeks",
-                "fieldtype": "Text",
+                "fieldtype": "Small Text",
             },
             {
                 "label": "",

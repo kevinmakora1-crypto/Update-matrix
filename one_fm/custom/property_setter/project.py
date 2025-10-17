@@ -3,7 +3,7 @@ def get_project_properties():
         {
             "doctype_or_field":"DocField",
             "doc_type":"Project",
-            "Field_name":"manager_name",
+            "field_name":"manager_name",
             "property":"label",
             "property_type":"Data",
             "value":"Project Manager Name"
@@ -11,7 +11,7 @@ def get_project_properties():
         {
             "doctype_or_field":"DocField",
             "doc_type":"Project",
-            "Field_name":"project_details",
+            "field_name":"project_details",
             "property":"depends_on",
             "property_type":"Data",
             "value":"eval:doc.project_type!='Internal'",
@@ -27,7 +27,7 @@ def get_project_properties():
         {
             "doctype_or_field":"DocField",
             "doc_type":"Project",
-            "Field_name":"users_section",
+            "field_name":"users_section",
             "property":"label",
             "property_type":"Data",
             "value":"Project Manager and Users"
@@ -35,7 +35,7 @@ def get_project_properties():
         {
             "doctype_or_field":"DocField",
             "doc_type":"Project",
-            "Field_name":"users_section",
+            "field_name":"users_section",
             "property":"depends_on",
             "property_type":"Data",
             "value":"eval:['External','Internal'].includes(doc.project_type)"

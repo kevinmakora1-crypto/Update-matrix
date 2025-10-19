@@ -324,7 +324,7 @@
   {
    "fieldname": "ordered_qty",
    "fieldtype": "Float",
-   "label": "Completed Qty",
+   "label": "Ordered Qty",
    "no_copy": 1,
    "oldfieldname": "ordered_qty",
    "oldfieldtype": "Currency",

@@ -379,9 +379,9 @@ def validate_preparation_table(doc):
                 frappe.throw(f"The Employee in row <b>{each.idx}</b> <b>{each.full_name}</b> is not Active at the moment")
 
 @frappe.whitelist()
-def get_employees_relieving_and_last_checkin(employees):
-    """Return relieving_date and last_checkin_date (MAX(date) in Employee Checkin) for each employee.
-    Performs a single aggregated LEFT JOIN query for efficiency.
+def get_employees_relieving_date(employees):
+    """
+        Return relieving_date in Employee for each employee.
     """
     if not employees:
         return {}
@@ -403,12 +403,9 @@ def get_employees_relieving_and_last_checkin(employees):
         """
         SELECT
             e.name AS employee,
-            e.relieving_date AS relieving_date,
-            MAX(c.date) AS last_checkin_date
+            e.relieving_date AS relieving_date
         FROM `tabEmployee` e
-        LEFT JOIN `tabEmployee Checkin` c ON c.employee = e.name
         WHERE e.name IN %(employees)s
-        GROUP BY e.name, e.relieving_date
         """,
         params,
         as_dict=True,
@@ -417,16 +414,16 @@ def get_employees_relieving_and_last_checkin(employees):
     result = {}
     for r in rows:
         result[r.employee] = {
-            "relieving_date": r.relieving_date,
-            "last_checkin_date": r.last_checkin_date,
+            "relieving_date": r.relieving_date
         }
     return result
 
 @frappe.whitelist()
 def update_preparation_employee_dates(preparation: str):
-    """Update relieving_date and last_checkin_date in child rows without making the form dirty.
-    Uses frappe.db.set_value (update_modified=False) so the client doc stays clean until reload.
-    Returns map of updated rows and data used.
+    """
+        Update relieving_date in child rows without making the form dirty.
+        Uses frappe.db.set_value (update_modified=False) so the client doc stays clean until reload.
+        Returns map of updated rows and data used.
     """
     if not preparation:
         return {}
@@ -436,7 +433,7 @@ def update_preparation_employee_dates(preparation: str):
     employees = [r.employee for r in doc.preparation_record if r.employee]
     if not employees:
         return {'updated_rows': [], 'data': {}}
-    data = get_employees_relieving_and_last_checkin(employees)
+    data = get_employees_relieving_date(employees)
     updated = []
     for row in doc.preparation_record:
         if not row.employee:
@@ -445,11 +442,9 @@ def update_preparation_employee_dates(preparation: str):
         if not info:
             continue
         rel = info.get('relieving_date')
-        chk = info.get('last_checkin_date')
-        if row.relieving_date != rel or row.last_checkin_date != chk:
+        if row.relieving_date != rel:
             frappe.db.set_value(row.doctype, row.name, {
-                'relieving_date': rel,
-                'last_checkin_date': chk
+                'relieving_date': rel
             }, update_modified=False)
             updated.append(row.name)
     return {'updated_rows': updated, 'data': data}

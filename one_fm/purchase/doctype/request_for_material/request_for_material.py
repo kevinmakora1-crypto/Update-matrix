@@ -8,7 +8,6 @@ import json
 from collections import defaultdict
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
-from frappe.model.workflow import apply_workflow
 from frappe.utils import flt, get_url, get_fullname,cstr
 from frappe import _
 from frappe.utils import nowdate, cstr
@@ -891,7 +890,7 @@ def create_employee_uniform(rfm_name: str):
                     uniform_item = employee_uniform.append("uniforms", {})
                     uniform_item.item = rfm_item.item_code
                     uniform_item.item_name = rfm_item.requested_item_name or rfm_item.item_name
-                    uniform_item.quantity = int(rfm_item.qty)
+                    uniform_item.quantity = float(rfm_item.qty)
                     uniform_item.uom = rfm_item.uom
                     uniform_item.issued_on = frappe.utils.today()
                     uniform_item.linked_rfm = rfm_name

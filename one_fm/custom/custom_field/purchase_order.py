@@ -42,7 +42,7 @@ def get_purchase_order_custom_fields():
                 "fieldtype": "Small Text",
                 "insert_after": "shipping_address",
                 "translatable": 1,
-                "allow_on_submit": 1,
+                "allow_on_submit": 1
                 "hidden": 0
             },
             {

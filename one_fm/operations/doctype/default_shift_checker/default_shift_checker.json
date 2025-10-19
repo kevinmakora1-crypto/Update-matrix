@@ -75,7 +75,7 @@
    "fieldtype": "Select",
    "in_standard_filter": 1,
    "label": "Action Type",
-   "options": "No Changes Made\nShift Allocation Update\nMark Employee as Day Off Reliever\nMark Employee as Weekend Reliever\nUnMark Employee as Day Off Reliever\nUnMark Employee as Weekend Reliever"
+   "options": "No Changes Made\nUpdate Employee's Roster\nShift Allocation Update\nMark Employee as Day Off Reliever\nMark Employee as Weekend Reliever\nUnMark Employee as Day Off Reliever\nUnMark Employee as Weekend Reliever"
   },
   {
    "fieldname": "site_supervisor",
@@ -212,7 +212,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-10-19 09:42:39.535773",
+ "modified": "2025-10-19 12:17:29.310751",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Default Shift Checker",

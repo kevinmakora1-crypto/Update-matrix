@@ -186,7 +186,7 @@
   {
    "fieldname": "linked_rfm",
    "fieldtype": "Link",
-   "label": "LInked RFM",
+   "label": "Linked RFM",
    "options": "Request for Material",
    "read_only": 1
   }

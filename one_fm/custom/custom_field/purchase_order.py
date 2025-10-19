@@ -195,7 +195,20 @@ def get_purchase_order_custom_fields():
                 "depends_on": "eval:doc.one_fm_type_of_purchase=='Import'",
                 "translatable": 1
             },
-            
+                        {
+                "fieldname": "one_fm_contact_person_email",
+                "label": "Contact Person Email",
+                "fieldtype": "Data",
+                "insert_after": "one_fm_contact_person_phone",
+                "read_only": 1
+            },
+            {
+                "fieldname": "one_fm_contact_person_phone",
+                "label": "Contact Person Phone",
+                "fieldtype": "Data",
+                "insert_after": "one_fm_warehouse_contact_person",
+                "read_only": 1
+            },
             {
                 "fieldname": "one_fm_request_for_purchase",
                 "label": "Request for Purchase",

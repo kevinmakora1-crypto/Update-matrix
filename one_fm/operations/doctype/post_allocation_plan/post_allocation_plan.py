@@ -43,27 +43,36 @@ def filter_employees(doctype, txt, searchfield, start, page_len, filters):
         column = allowed_columns[searchfield]
         prioritized_clause = f"({column} LIKE %(like)s) OR "
 
-    return frappe.db.sql(
-        f"""
+    # Build WHERE clause based on whether txt is empty
+    base_where = """
+        es.date = %(date)s
+        AND es.shift = %(shift)s
+        AND es.employee_availability = 'Working'
+    """
+    like_clause = ""
+    params = {
+        "date": date,
+        "shift": shift,
+        "page_len": page_len or 20,
+        "start": start or 0,
+    }
+    if txt:
+        like_clause = f"AND ( {prioritized_clause} e.employee_id LIKE %(like)s OR e.employee_name LIKE %(like)s OR es.employee LIKE %(like)s )"
+        params["like"] = like
+
+    query = f"""
         SELECT es.employee, e.employee_name, e.employee_id
         FROM `tabEmployee Schedule` es
         INNER JOIN `tabEmployee` e ON e.name = es.employee
         WHERE
-            es.date = %(date)s
-            AND es.shift = %(shift)s
-            AND es.employee_availability = 'Working'
-            AND ( %(txt_empty)s = '' OR {prioritized_clause} e.employee_id LIKE %(like)s OR e.employee_name LIKE %(like)s OR es.employee LIKE %(like)s )
+            {base_where}
+            {like_clause}
         GROUP BY es.employee, e.employee_name, e.employee_id
         LIMIT %(page_len)s OFFSET %(start)s
-        """,
-        {
-            "date": date,
-            "shift": shift,
-            "like": like,
-            "txt_empty": txt,  # use to short-circuit when txt is empty
-            "page_len": page_len or 20,
-            "start": start or 0,
-        },
+    """
+    return frappe.db.sql(
+        query,
+        params,
     )
     
 

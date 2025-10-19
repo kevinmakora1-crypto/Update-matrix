@@ -520,7 +520,6 @@ function check_and_show_employee_uniform_button(frm) {
         },
         callback: function(r) {
             if (r.message === true) {
-				console.log(r)
                 frm.add_custom_button(__('Employee Uniform'), function() {
                     create_employee_uniform_from_rfm(frm);
                 }, __('Create'));

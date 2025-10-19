@@ -545,12 +545,13 @@
    "fetch_from": "employee.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
-   "label": "Employee Name"
+   "label": "Employee Name",
+   "read_only": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2025-10-19 13:06:59.889460",
+ "modified": "2025-10-19 13:29:40.316834",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Material Item",

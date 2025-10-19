@@ -21,6 +21,7 @@
   "site_supervisor_name",
   "site_supervisor_user",
   "column_break_mejq",
+  "comment",
   "action_type",
   "new_shift_allocation",
   "new_operations_role_allocation",
@@ -199,13 +200,19 @@
    "fieldtype": "Check",
    "label": "Is Weekend Reliever",
    "read_only": 1
+  },
+  {
+   "fieldname": "comment",
+   "fieldtype": "Small Text",
+   "label": "Comment",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-10-06 14:59:24.936993",
+ "modified": "2025-10-19 09:42:39.535773",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Default Shift Checker",

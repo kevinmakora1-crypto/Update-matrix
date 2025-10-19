@@ -12,11 +12,18 @@ class DefaultShiftChecker(Document):
 	def on_submit(self):
 		self.update_employee_shift_details()
 
+	def before_submit(self):
+		if self.status != "Completed":
+			frappe.throw(_("Please ensure that the status is set to Completed"))
+
 	def update_employee_shift_details(self):
 		"""
 			Updates the employee's shift or reliever status based on the action type.
 		"""
 		employee = frappe.get_doc("Employee", self.employee)
+
+		if self.action_type == "Update Employee's Roster":
+			return # No action needed for roster update
 
 		field_updates = {
 			"Shift Allocation Update": {
@@ -42,8 +49,6 @@ class DefaultShiftChecker(Document):
 		if self.action_type in field_updates:
 			employee.update(field_updates[self.action_type])
 			employee.save()
-
-		self.db_set("status", "Completed")
 
 
 def create_default_shift_checker():

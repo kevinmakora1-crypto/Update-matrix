@@ -183,6 +183,70 @@ class RequestforMaterial(BuyingController):
         if self.per_received == 100:
             close_all_assignments(self.doctype, self.name)
 
+    def _get_total_rfp_quantity(self):
+        return frappe.db.sql("""
+            SELECT SUM(qty)
+            FROM `tabRequest for Purchase Item`
+            WHERE parent IN (
+                SELECT name
+                FROM `tabRequest for Purchase`
+                WHERE request_for_material = %s AND docstatus = 1
+            )
+        """, self.name)[0][0] or 0
+
+    def _get_total_ordered_quantity(self):
+        return frappe.db.sql("""
+            SELECT SUM(qty)
+            FROM `tabPurchase Order Item`
+            WHERE parent IN (
+                SELECT name
+                FROM `tabPurchase Order`
+                WHERE request_for_material = %s AND docstatus = 1
+            )
+        """, self.name)[0][0] or 0
+
+    def _get_total_received_quantity(self):
+        return frappe.db.sql("""
+            SELECT SUM(qty)
+            FROM `tabPurchase Receipt Item`
+            WHERE parent IN (
+                SELECT name
+                FROM `tabPurchase Receipt`
+                WHERE custom_request_for_material = %s AND docstatus = 1
+            )
+        """, self.name)[0][0] or 0
+
+    def update_purchase_rfm_status(self):
+        if self.purpose != "Purchase":
+            return
+
+        total_rfm_qty = sum(item.qty for item in self.items)
+        total_rfp_qty = self._get_total_rfp_quantity()
+        total_ordered_qty = self._get_total_ordered_quantity()
+        total_received_qty = self._get_total_received_quantity()
+
+        new_status = ""
+
+        if total_rfp_qty == 0 and total_ordered_qty == 0 and total_received_qty == 0:
+            new_status = "Pending"
+        elif total_rfp_qty > 0 and total_rfp_qty < total_rfm_qty:
+            new_status = "Partial RFP"
+        elif total_rfp_qty == total_rfm_qty:
+            if total_ordered_qty == 0:
+                new_status = "RFP Processed"
+            elif total_ordered_qty > 0 and total_ordered_qty < total_rfp_qty:
+                new_status = "Partially Ordered"
+            elif total_ordered_qty == total_rfp_qty:
+                if total_received_qty == 0:
+                    new_status = "Ordered"
+                elif total_received_qty > 0 and total_received_qty < total_ordered_qty:
+                    new_status = "Partially Received"
+                elif total_received_qty == total_ordered_qty:
+                    new_status = "Completed"
+
+        if new_status and self.status != new_status:
+            self.db_set("status", new_status)
+
     def assign_to_warehouse_supervisor(self):
         try:
             filtered_users = get_users_with_role_permitted_to_doctype('Warehouse Supervisor', self.doctype)
@@ -254,24 +318,7 @@ class RequestforMaterial(BuyingController):
                         format(_(self.doctype), self.name),
                     frappe.InvalidStatusError
                 )
-    #For quantities available in warehouse
-    def update_completed_qty(self, mr_items=None, update_modified=True):
-        if not mr_items:
-            mr_items = [d.name for d in self.get("items")]
 
-        for d in self.get("items"):
-            if d.name in mr_items:
-                if self.type in ("Individual", "Project", "Project Mobilization","Stock","Onboarding"):
-                    d.ordered_qty =  flt(frappe.db.sql("""select sum(qty)
-                        from `tabStock Entry Detail` where one_fm_request_for_material = %s
-                        and one_fm_request_for_material_item = %s and docstatus = 1""",
-                        (self.name, d.name))[0][0])
-
-                    if d.ordered_qty and d.ordered_qty > d.stock_qty:
-                        frappe.throw(_("The total Issue / Transfer quantity {0} in Material Request {1}  \
-                            cannot be greater than requested quantity {2} for Item {3}").format(d.ordered_qty, d.parent, d.qty, d.item_code))
-
-                frappe.db.set_value(d.doctype, d.name, "ordered_qty", d.ordered_qty)
     #for quantities that had to be purchased
     def update_purchased_qty(self, mr_items=None, update_modified=True):
         if not mr_items:
@@ -391,24 +438,6 @@ class RequestforMaterial(BuyingController):
         if violations:
             msg = _("Quantity validation against Linked Request for Material failed:<br>{0}").format('<br>'.join(violations))
             frappe.throw(msg)
-
-def update_completed_and_requested_qty(stock_entry, method):
-        if stock_entry.doctype == "Stock Entry":
-            material_request_map = {}
-
-            for d in stock_entry.get("items"):
-                if d.one_fm_request_for_material:
-                    material_request_map.setdefault(d.one_fm_request_for_material, []).append(d.one_fm_request_for_material_item)
-
-            for mr, mr_item_rows in material_request_map.items():
-                if mr and mr_item_rows:
-                    mr_obj = frappe.get_doc("Request for Material", mr)
-
-                    if mr_obj.status in ["Stopped", "Cancelled"]:
-                        frappe.throw(_("{0} {1} is cancelled or stopped").format(_("Request for Material"), mr),
-                            frappe.InvalidStatusError)
-
-                    mr_obj.update_completed_qty(mr_item_rows)
 
 def update_completed_purchase_qty(purchase_order, method):
         if purchase_order.doctype == "Purchase Order":
@@ -765,3 +794,18 @@ def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
     frappe.msgprint(_("Stock Entry {0} created successfully").format(stock_entry.name))
     
     return stock_entry.name
+
+def update_rfm_status_against_rfp(doc, method):
+    if hasattr(doc, 'request_for_material') and doc.request_for_material:
+        rfm = frappe.get_doc("Request for Material", doc.request_for_material)
+        rfm.update_purchase_rfm_status()
+
+def update_rfm_status_against_purchase_order(doc, method):
+    if hasattr(doc, 'request_for_material') and doc.request_for_material:
+        rfm = frappe.get_doc("Request for Material", doc.request_for_material)
+        rfm.update_purchase_rfm_status()
+
+def update_rfm_status_against_purchase_receipt(doc, method):
+    if hasattr(doc, 'custom_request_for_material') and doc.custom_request_for_material:
+        rfm = frappe.get_doc("Request for Material", doc.custom_request_for_material)
+        rfm.update_purchase_rfm_status()

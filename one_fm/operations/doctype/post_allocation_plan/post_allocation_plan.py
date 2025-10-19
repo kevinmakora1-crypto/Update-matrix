@@ -67,7 +67,6 @@ def filter_employees(doctype, txt, searchfield, start, page_len, filters):
         WHERE
             {base_where}
             {like_clause}
-        GROUP BY es.employee, e.employee_name, e.employee_id
         LIMIT %(page_len)s OFFSET %(start)s
     """
     return frappe.db.sql(

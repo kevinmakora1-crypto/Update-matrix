@@ -342,7 +342,7 @@ function get_item_code(frm){
 
 function set_change_request_btn(frm) {
 	if(frm.doc.workflow_state == 'Approved' && !frm.doc.change_request){
-		if(frappe.user.has_role('Accounts Manager')){
+		if(frappe.user.has_role('Accounts Manager') || frappe.user.has_role('Warehouse Supervisor')){
 			frm.add_custom_button(__('Edit Item Name and Description'), function() {
 				change_request(frm);
 			}, "Actions");

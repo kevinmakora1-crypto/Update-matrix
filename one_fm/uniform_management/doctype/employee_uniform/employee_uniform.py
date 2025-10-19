@@ -27,6 +27,7 @@ class EmployeeUniform(Document):
 		if self.type == "Issue":
 			self.db_set('status', 'Issued')
 			self.db_set('issued_on', today())
+
 		elif self.type == "Return":
 			self.db_set('status', 'Returned')
 			self.db_set('returned_on', today())
@@ -36,6 +37,7 @@ class EmployeeUniform(Document):
 					frappe.db.set_value('Employee Uniform Item', item.issued_item_link, 'returned', returned+item.quantity)
 		self.onboard_employee_update()
 		make_stock_entry(self)
+        
 
 	def on_cancel(self):
 		# self.onboard_employee_update(True)
@@ -70,7 +72,7 @@ class EmployeeUniform(Document):
 				oe.save(ignore_permissions=True)
 
 	def validate_handover_form(self):
-		if not self.handover_form:
+		if not self.handover_form and not self.linked_rfm :
 			frappe.throw(_("Attach Signed copy of Uniform Handover Form to Submit.!"))
 
 	def validate(self):
@@ -183,6 +185,45 @@ class EmployeeUniform(Document):
 					uniform_issue_ret.rate = uniform.rate
 					uniform_issue_ret.issued_item_link = uniform.issued_item_link
 					uniform_issue_ret.issued_on = uniform.issued_on
+
+	def create_stock_entry(self):
+		stock_entry = frappe.new_doc("Stock Entry")
+		stock_entry.stock_entry_type = "Material Issue"
+		stock_entry.purpose = "Material Issue"
+		stock_entry.company = self.company or frappe.defaults.get_user_default("Company")
+		stock_entry.posting_date = frappe.utils.today()
+		stock_entry.posting_time = frappe.utils.nowtime()
+		
+		for item in self.uniforms:
+			if not item.item:
+				continue
+				
+			stock_entry.append("items", {
+				"item_code": item.item,
+				"item_name": item.item_name,
+				"qty": item.quantity,
+				"uom": item.uom,
+				"s_warehouse": self.warehouse,
+				"allow_zero_valuation_rate": item.allow_zero_valuation_rate or 0,
+				"custom_employee": self.employee,
+				"custom_employee_uniform": self.name,
+				"custom_rfm_reference": item.linked_rfm_reference
+			})
+		
+		stock_entry.insert(ignore_permissions=True)
+		stock_entry.submit()
+		
+		self.db_set("stock_entry", stock_entry.name, update_modified=False)
+		
+		frappe.msgprint(
+			_("Stock Entry {0} created successfully").format(
+				frappe.bold(frappe.get_desk_link("Stock Entry", stock_entry.name))
+			),
+			alert=True,
+			indicator="green"
+		)
+		
+		return stock_entry.name
 
 def make_stock_entry(employee_uniform):
 	source_name = employee_uniform.name

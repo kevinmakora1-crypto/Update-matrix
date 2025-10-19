@@ -32,8 +32,16 @@ def filter_employees(doctype, txt, searchfield, start, page_len, filters):
     # Allow dynamic searchfield prioritization (optional)
     prioritized_clause = ""
     allowed_sf = {"name", "employee_name", "employee_id"}
+    # Map allowed search fields to their corresponding column names
+    allowed_columns = {
+        "name": "e.name",
+        "employee_name": "e.employee_name",
+        "employee_id": "e.employee_id"
+    }
     if searchfield in allowed_sf and txt:
-        prioritized_clause = f"(e.{searchfield} LIKE %(like)s) OR "
+        # Use the mapped column name, not user input directly
+        column = allowed_columns[searchfield]
+        prioritized_clause = f"({column} LIKE %(like)s) OR "
 
     return frappe.db.sql(
         f"""

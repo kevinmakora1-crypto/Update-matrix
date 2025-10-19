@@ -2,6 +2,13 @@ def get_project_custom_fields():
     return {
         "Project": [
             {
+                "label": "Success Metrics",
+                "fieldname": "custom_success_metrics",
+                "insert_after": "custom_success_and_completion_criteria",
+                "fieldtype": "Text",
+                "description": "Define the metric of success",
+            },
+            {
                 "label": "Milestones and Meeting Dates",
                 "fieldname": "custom_milestones_and_meeting_dates",
                 "insert_after": "custom_end_date",
@@ -12,6 +19,7 @@ def get_project_custom_fields():
                 
                 "label": "Project Communication",
                 "fieldname": "custom_project_communication",
+                "insert_after": "custom_meeting_frequency",
                 "fieldtype": "Check",
                 "description": "Make Sure to create a Google Chat or Google Space",
             },
@@ -19,11 +27,12 @@ def get_project_custom_fields():
                 "label": "Meeting Frequency",
                 "fieldname": "custom_meeting_frequency",
                 "insert_after": "custom_project_duration_weeks",
-                "fieldtype": "Text",
+                "fieldtype": "Small Text",
             },
             {
                 "label": "",
                 "fieldname": "custom_column_break_hzhov",
+                "insert_after":"users_section",
                 "fieldtype": "Column Break",
             },
             {
@@ -70,6 +79,7 @@ def get_project_custom_fields():
                 "fieldname": "custom_work_project_structure",
                 "depends_on": "eval:doc.project_type == \"Internal\"",
                 "fieldtype": "Section Break",
+                "insert_after":"custom_success_metrics",
                 "collapsible": 1,
             },
             {

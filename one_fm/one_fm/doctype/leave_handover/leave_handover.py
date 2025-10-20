@@ -71,10 +71,7 @@ class LeaveHandover(Document):
 			if doctype_to_check not in ["Project","Operations Site","Process Task","Employee"]:
 				continue
 
-			roles_to_assign = [
-				f"{doctype_to_check} Access",
-				f"{doctype_to_check} Update"
-			]
+			roles_to_assign = get_user_roles_for_doctype(reliever_user_id, doctype_to_check)
 
 			# Get the user document and their current roles
 			reliever_user = frappe.get_doc("User", reliever_user_id)
@@ -83,6 +80,8 @@ class LeaveHandover(Document):
 			newly_assigned_roles = []
 
 			# Check and assign each role
+			frappe.db.set_value("Handover Item", item.name, "reliever_role_profile", reliever_user.role_profile_name)
+			reliever_user.db_set("role_profile_name", None)  # Clear role profile to avoid conflicts
 			for role in roles_to_assign:
 				if frappe.db.exists("Role", role) and role not in user_roles:
 					reliever_user.add_roles(role)
@@ -115,6 +114,28 @@ class LeaveHandover(Document):
 				frappe.db.set_value("Handover Item", item.name, "status", "Reverted")
 
 		self.db_set("status", "Reverted")
+
+
+@frappe.whitelist()
+def get_user_roles_for_doctype(user, doctype):
+    """
+    Returns a list of roles that a user has for a given DocType.
+    """
+    if not user or not doctype:
+        return []
+
+    user_roles = frappe.get_roles(user)
+
+    if "System Manager" in user_roles:
+        return ["System Manager"]
+
+    doctype_perms = frappe.get_all("DocPerm",
+        fields=["role"],
+        filters={"parent": doctype, "role": ("in", user_roles)},
+        distinct=True
+    )
+
+    return [d.role for d in doctype_perms]
 
 @frappe.whitelist()
 def get_handover_data(leave_application):

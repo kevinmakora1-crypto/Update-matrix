@@ -12,6 +12,7 @@
   "column_break_vjik",
   "reliever",
   "reliever_name",
+  "reliever_role_profile",
   "status",
   "section_break_qiwl",
   "handover_note",
@@ -87,13 +88,20 @@
    "fieldtype": "Small Text",
    "hidden": 1,
    "label": "Roles Assigned"
+  },
+  {
+   "fieldname": "reliever_role_profile",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Reliever Role Profile",
+   "options": "Role Profile"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-20 20:15:58.408100",
+ "modified": "2025-10-20 21:00:49.235975",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Handover Item",

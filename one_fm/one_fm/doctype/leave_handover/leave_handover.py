@@ -49,6 +49,22 @@ class LeaveHandover(Document):
 			if field_to_update:
 				frappe.db.set_value(item.reference_doctype, item.reference_docname, field_to_update, item.reliever)
 
+	@frappe.whitelist()
+	def revert_handover(self):
+		for item in self.handover_items:
+			field_to_update = {
+				"Project": "account_manager",
+				"Operations Site": "account_supervisor",
+				"Process Task": "employee",
+				"Employee": "reports_to",
+			}.get(item.reference_doctype)
+
+			if field_to_update:
+				frappe.db.set_value(item.reference_doctype, item.reference_docname, field_to_update, self.employee)
+				frappe.db.set_value("Handover Item", item.name, "status", "Reverted")
+
+		self.db_set("status", "Reverted")
+
 @frappe.whitelist()
 def get_handover_data(leave_application):
 	handover_items = []

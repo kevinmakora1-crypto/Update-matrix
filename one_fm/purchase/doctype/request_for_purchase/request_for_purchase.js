@@ -35,7 +35,7 @@ frappe.ui.form.on('Request for Purchase', {
 				frm.page.clear_indicator();
 				
 				frm.page.set_indicator(frm.doc.status, color);
-        	}
+			}
 		}
 
 	},

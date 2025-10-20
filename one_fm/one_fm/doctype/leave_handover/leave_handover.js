@@ -2,6 +2,28 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Leave Handover", {
+	refresh(frm) {
+		if (frm.doc.docstatus === 1 && frm.doc.status === "Transferred") {
+			frm.add_custom_button(__("Revert"), () => {
+				frappe.confirm(
+					__("You are about to replace the reliever with the Leave Applicant in each of the documents referenced in the table. Do you want to proceed?"),
+					() => {
+						frappe.call({
+							method: "one_fm.one_fm.doctype.leave_handover.leave_handover.revert_handover",
+							args: {
+								docname: frm.doc.name
+							},
+							callback: function(r) {
+								if (!r.exc) {
+									frm.reload_doc();
+								}
+							}
+						});
+					}
+				);
+			}).addClass("btn-primary");
+		}
+	},
 	after_save(frm) {
 		frm.dashboard.clear_headline();
 		if (frm.doc.handover_items && frm.doc.handover_items.length > 0) {

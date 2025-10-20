@@ -22,6 +22,8 @@ frappe.ui.form.on('Request for Material', {
 			new_doc.linked_purchase_rfm = ""
 			new_doc.issue_transfer_rfm =  frm.doc.name
 			new_doc.purpose = 'Purchase';
+			new_doc.requested_by = frappe.session.user;
+			new_doc.request_for_material_approver = frappe.session.user;
 			new_doc.docstatus = 0;
 			for(let i=0; i<new_doc.items.length; i++){
 				new_doc.items[i].linked_request_for_material = frm.doc.name
@@ -1074,8 +1076,3 @@ function add_purchase_rfm_button(frm){
 	}
 
 }
-
-frappe.ui.form.on('Request for Material', {
-	
-});
-

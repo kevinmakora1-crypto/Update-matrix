@@ -8,11 +8,8 @@ frappe.ui.form.on("Leave Handover", {
 				frappe.confirm(
 					__("You are about to replace the reliever with the Leave Applicant in each of the documents referenced in the table. Do you want to proceed?"),
 					() => {
-						frappe.call({
-							method: "one_fm.one_fm.doctype.leave_handover.leave_handover.revert_handover",
-							args: {
-								docname: frm.doc.name
-							},
+						frm.call({
+							method: "revert_handover",
 							callback: function(r) {
 								if (!r.exc) {
 									frm.reload_doc();

@@ -1,5 +1,5 @@
 frappe.listview_settings['Request for Purchase'] = {
-    // add_fields: ["status"],
+    
     
     get_indicator: function(doc) {
         const status_colors = {

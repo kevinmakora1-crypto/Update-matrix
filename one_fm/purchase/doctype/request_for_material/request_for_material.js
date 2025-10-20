@@ -483,8 +483,9 @@ frappe.ui.form.on('Request for Material', {
 });
 
 
+
 function add_stock_entry_buttons(frm) {
-    if (frm.doc.docstatus === 1) {
+    if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved') {
         if (frm.doc.purpose === "Transfer") {
             frm.add_custom_button(__('Material Transfer'), function() {
                 create_stock_entry(frm, 'Material Transfer');
@@ -499,8 +500,104 @@ function add_stock_entry_buttons(frm) {
             frm.add_custom_button(__('Material Issue'), function() {
                 create_stock_entry(frm, 'Material Issue');
             }, __('Create'));
+
+            check_and_show_employee_uniform_button(frm);
         }
     }
+}
+
+function check_and_show_employee_uniform_button(frm) {
+    let has_uniform_items = frm.doc.items && frm.doc.items.some(
+        item => item.is_uniform_request && item.employee
+    );
+    
+    if (!has_uniform_items) {
+        return;
+    }
+    
+    frappe.call({
+        method: 'one_fm.purchase.doctype.request_for_material.request_for_material.has_pending_uniform_items',
+        args: {
+            rfm_name: frm.doc.name
+        },
+        callback: function(r) {
+            if (r.message === true) {
+                frm.add_custom_button(__('Employee Uniform'), function() {
+                    create_employee_uniform_from_rfm(frm);
+                }, __('Create'));
+            }
+        }
+    });
+}
+
+function create_employee_uniform_from_rfm(frm) {
+    let uniform_items = frm.doc.items.filter(
+        item => item.is_uniform_request && item.employee && !item.linked_employee_uniform
+    );
+    
+    if (uniform_items.length === 0) {
+        frappe.msgprint({
+            title: __('No Uniform Items'),
+            message: __('All uniform items have already been processed or there are no uniform request items with assigned employees.'),
+            indicator: 'orange'
+        });
+        return;
+    }
+    
+    frappe.call({
+        method: 'one_fm.purchase.doctype.request_for_material.request_for_material.create_employee_uniform',
+        args: {
+            rfm_name: frm.doc.name
+        },
+        freeze: true,
+        freeze_message: __('Creating Employee Uniform documents...'),
+        callback: function(r) {
+            if (r.message && r.message.success) {
+                frappe.show_alert({
+                    message: __(r.message.message),
+                    indicator: 'green'
+                }, 5);
+                
+                frm.reload_doc();
+                
+                if (r.message.created_uniforms && r.message.created_uniforms.length > 0) {
+                    let uniform_html = '<table class="table table-bordered">';
+                    uniform_html += '<thead><tr><th>Employee Uniform</th><th>Employee</th><th>Items</th><th>Total Qty</th></tr></thead>';
+                    uniform_html += '<tbody>';
+                    
+                    r.message.created_uniforms.forEach(uniform => {
+                        uniform_html += `<tr>
+                            <td><a href="/app/employee-uniform/${uniform.name}" target="_blank">${uniform.name}</a></td>
+                            <td>${uniform.employee_name} (${uniform.employee})</td>
+                            <td>${uniform.total_items}</td>
+                            <td>${uniform.total_quantity}</td>
+                        </tr>`;
+                    });
+                    
+                    uniform_html += '</tbody></table>';
+                    
+                    frappe.msgprint({
+                        title: __('Employee Uniforms Created Successfully'),
+                        message: uniform_html,
+                        indicator: 'green',
+                        primary_action: {
+                            label: __('View First Uniform'),
+                            action: function() {
+                                frappe.set_route('Form', 'Employee Uniform', r.message.created_uniforms[0].name);
+                            }
+                        }
+                    });
+                }
+            }
+        },
+        error: function(r) {
+            frappe.msgprint({
+                title: __('Error'),
+                message: __('Failed to create Employee Uniform documents. Please check the error log.'),
+                indicator: 'red'
+            });
+        }
+    });
 }
 
 function create_stock_entry(frm, stock_entry_type) {

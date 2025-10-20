@@ -37,6 +37,7 @@ class LeaveHandover(Document):
 				title=_("Not Accepted")
 			)
 
+		self.assign_role_on_handover()
 		self.transfer_handover()
 
 	def transfer_handover(self):
@@ -55,6 +56,46 @@ class LeaveHandover(Document):
 				frappe.db.set_value(item.reference_doctype, item.reference_docname, field_to_update, item.reliever)
 	
 		self.db_set("status", "Transferred")
+
+	def assign_role_on_handover(self):
+		for item in self.handover_items:
+			if not item.reliever:
+				continue
+
+			reliever_user_id = frappe.db.get_value("Employee", item.reliever, "user_id")
+			if not reliever_user_id:
+				continue
+
+			# Define the roles based on the reference doctype
+			doctype_to_check = item.reference_doctype
+			if doctype_to_check not in ["Project","Operations Site","Process Task","Employee"]:
+				continue
+
+			roles_to_assign = [
+				f"{doctype_to_check} Access",
+				f"{doctype_to_check} Update"
+			]
+
+			# Get the user document and their current roles
+			reliever_user = frappe.get_doc("User", reliever_user_id)
+			user_roles = reliever_user.get_roles()
+
+			newly_assigned_roles = []
+
+			# Check and assign each role
+			for role in roles_to_assign:
+				if frappe.db.exists("Role", role) and role not in user_roles:
+					reliever_user.add_roles(role)
+					newly_assigned_roles.append(role)
+
+			# If any new roles were assigned, update the handover item
+			if newly_assigned_roles:
+				frappe.db.set_value(
+					"Handover Item",
+					item.name,
+					"roles_assigned",
+					", ".join(newly_assigned_roles)
+				)
 
 	@frappe.whitelist()
 	def revert_handover(self):

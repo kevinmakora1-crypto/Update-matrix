@@ -8,6 +8,7 @@
  "field_order": [
   "reference_doctype",
   "reference_docname",
+  "roles_assigned",
   "column_break_vjik",
   "reliever",
   "reliever_name",
@@ -80,13 +81,19 @@
    "fieldname": "takeover_note",
    "fieldtype": "Text Editor",
    "label": "Takeover Note"
+  },
+  {
+   "fieldname": "roles_assigned",
+   "fieldtype": "Small Text",
+   "hidden": 1,
+   "label": "Roles Assigned"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-20 18:38:10.835117",
+ "modified": "2025-10-20 20:15:58.408100",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Handover Item",

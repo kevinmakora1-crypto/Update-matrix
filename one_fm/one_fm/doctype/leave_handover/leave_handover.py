@@ -140,7 +140,8 @@ class LeaveHandover(Document):
 @frappe.whitelist()
 def get_user_roles_for_doctype(user, doctype):
     """
-    Returns a list of roles that a user has for a given DocType.
+    Returns a list of roles that a user has for a given DocType,
+    only if the role grants at least one permission (read, write, create, etc.).
     """
     if not user or not doctype:
         return []
@@ -150,9 +151,19 @@ def get_user_roles_for_doctype(user, doctype):
     if "System Manager" in user_roles:
         return ["System Manager"]
 
-    doctype_perms = frappe.get_all("DocPerm",
+    # List of permission fields in DocPerm
+    perm_fields = [
+        "read", "write", "create", "delete", "submit", "cancel", "amend",
+        "report", "import", "export", "print", "email", "share", "set_user_permissions"
+    ]
+    # Create a list of OR filters to check if any permission is granted
+    or_filters = [[field, "=", 1] for field in perm_fields]
+
+    doctype_perms = frappe.get_all(
+        "DocPerm",
         fields=["role"],
         filters={"parent": doctype, "role": ("in", user_roles)},
+        or_filters=or_filters,
         distinct=True
     )
 

@@ -3,7 +3,7 @@
 
 frappe.ui.form.on("Leave Handover", {
 	refresh(frm) {
-		if (frm.doc.docstatus === 1 && frm.doc.status === "Transferred") {
+		if (frm.doc.docstatus === 1 && frm.doc.status === "Transferred" && frm.doc.employee_user_id === frappe.session.user) {
 			frm.add_custom_button(__("Revert"), () => {
 				frappe.confirm(
 					__("You are about to replace the reliever with the Leave Applicant in each of the documents referenced in the table. Do you want to proceed?"),
@@ -40,6 +40,9 @@ frappe.ui.form.on("Leave Handover", {
 	before_submit(frm) {
 		if (frm.doc.__islocal) {
 			return;
+		}
+		if (frm.doc.employee_user_id !== frappe.session.user) {
+			frappe.throw(__("You are not authorized to submit this Leave Handover."));
 		}
 		frappe.confirm(
 			__("You are about to replace the Employee with the Reliever in each of the documents referenced in the table. Do you want to proceed?"),

@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "employee",
+  "employee_user_id",
   "employee_name",
   "leave_application",
   "column_break_duyc",
@@ -83,13 +84,21 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fetch_from": "employee.user_id",
+   "fieldname": "employee_user_id",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Employee User ID",
+   "options": "User"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-10-20 18:40:27.718792",
+ "modified": "2025-10-20 20:04:58.934733",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Leave Handover",

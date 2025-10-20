@@ -40,6 +40,9 @@ class LeaveHandover(Document):
 		self.transfer_handover()
 
 	def transfer_handover(self):
+		if self.employee_user_id != frappe.session.user:
+			frappe.throw(_("You are not authorized to submit this Leave Handover."))
+
 		for item in self.handover_items:
 			field_to_update = {
 				"Project": "account_manager",
@@ -55,6 +58,9 @@ class LeaveHandover(Document):
 
 	@frappe.whitelist()
 	def revert_handover(self):
+		if self.employee_user_id != frappe.session.user:
+			frappe.throw(_("You are not authorized to revert this Leave Handover."))
+
 		for item in self.handover_items:
 			field_to_update = {
 				"Project": "account_manager",

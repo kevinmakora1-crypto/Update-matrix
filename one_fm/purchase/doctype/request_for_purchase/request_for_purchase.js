@@ -16,7 +16,7 @@ frappe.ui.form.on('Request for Purchase', {
 				frm.fields_dict["items_to_order"].grid.update_docfield_property("qty", "read_only", 1);
 			}
 
-			if (frm.doc.status ) {
+			if (frm.doc.status) {
 				const status_colors = {
 					"Draft": "grey",
 					"Draft Request": "grey",

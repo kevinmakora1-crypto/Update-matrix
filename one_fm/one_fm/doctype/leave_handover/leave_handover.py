@@ -113,7 +113,28 @@ class LeaveHandover(Document):
 				frappe.db.set_value(item.reference_doctype, item.reference_docname, field_to_update, self.employee)
 				frappe.db.set_value("Handover Item", item.name, "status", "Reverted")
 
+		self.revert_roles()
 		self.db_set("status", "Reverted")
+
+	def revert_roles(self):
+		for item in self.handover_items:
+			if not item.reliever:
+				continue
+
+			reliever_user_id = frappe.db.get_value("Employee", item.reliever, "user_id")
+			if not reliever_user_id:
+				continue
+
+			reliever_user = frappe.get_doc("User", reliever_user_id)
+
+			if item.roles_assigned:
+				roles_to_revert = [role.strip() for role in item.roles_assigned.split(",")]
+				for role in roles_to_revert:
+					if frappe.db.exists("Has Role", {"parent": reliever_user.name, "role": role}):
+						reliever_user.remove_roles(role)
+
+			if item.reliever_role_profile:
+				reliever_user.db_set("role_profile_name", item.reliever_role_profile)
 
 
 @frappe.whitelist()

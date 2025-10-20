@@ -8,8 +8,8 @@ from collections import Counter
 
 class LeaveHandover(Document):
 	def validate(self):
-	if not self.handover_items:
-		frappe.throw(_("No responsibilities found for {0}").format(self.employee_name))
+		if not self.handover_items:
+			frappe.throw(_("No responsibilities found for {0}").format(self.employee_name))
 
 	def before_save(self):
 		self.status = "Pending"
@@ -37,7 +37,9 @@ class LeaveHandover(Document):
 				title=_("Not Accepted")
 			)
 
-		self.status = "Transferred"
+		self.transfer_handover()
+
+	def transfer_handover(self):
 		for item in self.handover_items:
 			field_to_update = {
 				"Project": "account_manager",
@@ -48,6 +50,8 @@ class LeaveHandover(Document):
 
 			if field_to_update:
 				frappe.db.set_value(item.reference_doctype, item.reference_docname, field_to_update, item.reliever)
+	
+		self.db_set("status", "Transferred")
 
 	@frappe.whitelist()
 	def revert_handover(self):

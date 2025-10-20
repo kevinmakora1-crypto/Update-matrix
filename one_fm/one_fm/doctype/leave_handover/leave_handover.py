@@ -37,11 +37,17 @@ class LeaveHandover(Document):
 				title=_("Not Accepted")
 			)
 
-		# On submit logic to replace employee with reliever
-		# This part requires clarification on which field to update in the referenced doctypes.
-		# for item in self.handover_items:
-		# 	frappe.db.set_value(item.reference_doctype, item.reference_docname, 'employee_field_name', item.reliever)
-		pass
+		self.status = "Transferred"
+		for item in self.handover_items:
+			field_to_update = {
+				"Project": "account_manager",
+				"Operations Site": "account_supervisor",
+				"Process Task": "employee",
+				"Employee": "reports_to",
+			}.get(item.reference_doctype)
+
+			if field_to_update:
+				frappe.db.set_value(item.reference_doctype, item.reference_docname, field_to_update, item.reliever)
 
 @frappe.whitelist()
 def get_handover_data(leave_application):

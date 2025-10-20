@@ -37,10 +37,10 @@ class LeaveHandover(Document):
 				title=_("Not Accepted")
 			)
 
+		self.handover()
 		self.assign_role_on_handover()
-		self.transfer_handover()
 
-	def transfer_handover(self):
+	def handover(self):
 		if self.employee_user_id != frappe.session.user:
 			frappe.throw(_("You are not authorized to submit this Leave Handover."))
 

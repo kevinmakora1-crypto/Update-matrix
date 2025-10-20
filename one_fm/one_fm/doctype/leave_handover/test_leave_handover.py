@@ -67,7 +67,7 @@ class TestLeaveHandover(FrappeTestCase):
 			frappe.get_doc({"doctype": "Company", "company_name": "_Test Company", "default_currency": "USD"}).insert()
 
 		if not frappe.db.exists("Leave Type", "Privilege Leave"):
-			frappe.get_doc({"doctype": "Leave Type", "leave_type_name": "Privilege Leave", "max_days_allowed":30}).insert()
+			frappe.get_doc({"doctype": "Leave Type", "leave_type_name": "Privilege Leave", "max_days_allowed": 30}).insert()
 
 		return frappe.get_doc(
 			{

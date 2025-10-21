@@ -18,7 +18,6 @@ frappe.ui.form.on('Request for Purchase', {
 
 		}
 
-
 		if (frm.doc.status && frm.doc.docstatus === 1) {
 				const status_colors = {
 					"Draft": "grey",

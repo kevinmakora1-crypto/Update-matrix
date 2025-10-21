@@ -309,22 +309,22 @@ class GenerateContractComplianceChecker:
 		return ""
 	
 	@staticmethod
-	def get_duration_periods(is_monthly=True):
+	def get_duration_periods(is_weekly):
 		current_date = getdate(frappe.utils.today())
 		periods = []
 
-		if is_monthly:
+		if is_weekly:
+			curr_week = get_week_start_end(str(current_date))
+			next_week = get_week_start_end(str(add_days(current_date, 7)))
+			periods.append((curr_week.start, curr_week.end))
+			periods.append((next_week.start, next_week.end))
+		else:
 			curr_month_start = get_first_day(current_date)
 			curr_month_end = get_last_day(current_date)
 			next_month_start = get_first_day(add_months(current_date, 1))
 			next_month_end = get_last_day(add_months(current_date, 1))
 			periods.append((curr_month_start, curr_month_end))
 			periods.append((next_month_start, next_month_end))
-		else:
-			curr_week = get_week_start_end(str(current_date))
-			next_week = get_week_start_end(str(add_days(current_date, 7)))
-			periods.append((curr_week.start, curr_week.end))
-			periods.append((next_week.start, next_week.end))
 
 		return periods
 	
@@ -373,9 +373,10 @@ class GenerateContractComplianceChecker:
 		for contract_item in contract_items_list:
 			try:
 				is_off_type_full_month = contract_item.off_type == "Full Month"
-				has_monthly_days_off = contract_item.days_off_category == "Monthly"
+				has_days_off = contract_item.off_type == "Days Off"
+				has_weekly_days_off = contract_item.days_off_category == "Weekly"
 
-				duration_periods = self.get_duration_periods(has_monthly_days_off)
+				duration_periods = self.get_duration_periods(is_weekly=has_days_off and has_weekly_days_off)
 
 				for period_start, period_end in duration_periods:
 					if contract_item.service_type == "Manpower":

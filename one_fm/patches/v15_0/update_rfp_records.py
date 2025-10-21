@@ -27,7 +27,7 @@ def execute():
 		except Exception as e:
 			frappe.log_error(f"Failed updating RFP {name}: {e}", "Patch update_rfp_records")
 
-	rejected_rfp = rfps = frappe.db.get_list(
+	rejected_rfp = frappe.db.get_list(
 		"Request for Purchase",
 		filters={"workflow_state": "Rejected"},
 		pluck="name"

@@ -24,7 +24,7 @@ const add_pathfinder_log_button = (frm) => {
               frappe.msgprint({
                 message: __(
                   "Pathfinder Log <a href='/app/pathfinder-log/{0}'>{0}</a> created"
-                ).format([r.message]),
+                , [r.message]),
                 title: __("Pathfinder Log Created"),
                 indicator: "green",
               });

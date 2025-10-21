@@ -12,7 +12,7 @@ const add_pathfinder_log_button = (frm) => {
     frappe.user.has_role("Business Analyst")
   ) {
     frm.add_custom_button(
-      "Create Pathfinder Log",
+      "Pathfinder Log",
       () => {
         frappe.call({
           method: "one_fm.overrides.hd_ticket.create_pathfinder_log",

@@ -110,7 +110,7 @@ frappe.ui.form.on("Leave Application", {
         manage_leave_extension(frm)
 
 		if (frm.doc.status == 'Approved') {
-			frm.add_custom_button(__('Create Leave Handover'), function() {
+			frm.add_custom_button(__('Leave Handover'), function() {
 				frappe.call({
 					method: 'one_fm.one_fm.doctype.leave_handover.leave_handover.get_handover_data',
 					args: {

@@ -75,7 +75,7 @@ class LeaveHandover(Document):
 
 			# Get the user document and their current roles
 			reliever_user = frappe.get_doc("User", reliever_user_id)
-			user_roles = reliever_user.get_roles()
+			user_roles = frappe.get_roles(reliever_user_id)
 
 			newly_assigned_roles = []
 
@@ -154,7 +154,7 @@ def get_user_roles_for_doctype(user, doctype):
     # List of permission fields in DocPerm
     perm_fields = [
         "read", "write", "create", "delete", "submit", "cancel", "amend",
-        "report", "import", "export", "print", "email", "share", "set_user_permissions"
+        "report", "import", "export", "print", "email", "share"
     ]
     # Create a list of OR filters to check if any permission is granted
     or_filters = [[field, "=", 1] for field in perm_fields]

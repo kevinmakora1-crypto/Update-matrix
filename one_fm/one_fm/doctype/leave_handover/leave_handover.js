@@ -8,8 +8,9 @@ frappe.ui.form.on("Leave Handover", {
 				frappe.confirm(
 					__("You are about to replace the reliever with the Leave Applicant in each of the documents referenced in the table. Do you want to proceed?"),
 					() => {
-						frm.call({
+						frappe.call({
 							method: "revert_handover",
+							doc: frm.doc,
 							callback: function(r) {
 								if (!r.exc) {
 									frm.reload_doc();
@@ -34,39 +35,12 @@ frappe.ui.form.on("Leave Handover", {
 			});
 
 			const message = __("Found {0}. Proceed to set the relievers", [message_parts.join(", ")]);
-			frm.dashboard.set_headline(message);
+			frappe.show_alert({ message: message, indicator: "green" });
 		}
 	},
 	before_submit(frm) {
-		if (frm.doc.__islocal) {
-			return;
-		}
 		if (frm.doc.employee_user_id !== frappe.session.user) {
 			frappe.throw(__("You are not authorized to submit this Leave Handover."));
 		}
-		frappe.confirm(
-			__("You are about to replace the Employee with the Reliever in each of the documents referenced in the table. Do you want to proceed?"),
-			() => {
-				frm.page.btn_primary.prop('disabled', true);
-				frappe.call({
-					method: 'frappe.desk.form.save.submit',
-					args: {
-						doc: frm.doc
-					},
-					callback: function(r) {
-						if(!r.exc) {
-							frm.reload_doc();
-						}
-					},
-					error: function(r) {
-						frm.page.btn_primary.prop('disabled', false);
-					}
-				});
-			},
-			() => {
-				frappe.msgprint(__("Submission cancelled."));
-			}
-		);
-		return false; // Prevent default submission
 	}
 });

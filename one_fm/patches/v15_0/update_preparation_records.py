@@ -6,7 +6,7 @@ def execute():
     update_preparation_records(renewal_costs)
 
 def update_grd_settings():
-    doc = frappe.get_doc("GRD Settings", "GRD Settings")
+    doc = frappe.get_doc("HR Settings", "HR Settings")
     
     rows_to_remove = []
     for idx, row in enumerate(doc.renewal_extension_cost):
@@ -40,11 +40,11 @@ def update_grd_settings():
     doc.save(ignore_permissions=True)
     frappe.db.commit()
     
-    print(f"GRD Settings: Removed {len(rows_to_remove)} 'Renewal' row(s)")
-    print("GRD Settings: Added 'Renewal (Kuwaiti)' and 'Renewal (Non-Kuwaiti)'")
+    print(f"HR Settings: Removed {len(rows_to_remove)} 'Renewal' row(s)")
+    print("HR Settings: Added 'Renewal (Kuwaiti)' and 'Renewal (Non-Kuwaiti)'")
 
 def get_renewal_costs():
-    doc = frappe.get_doc("GRD Settings", "GRD Settings")
+    doc = frappe.get_doc("HR Settings", "HR Settings")
     
     costs = {}
     for row in doc.renewal_extension_cost:

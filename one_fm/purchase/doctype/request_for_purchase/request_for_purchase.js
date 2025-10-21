@@ -16,7 +16,9 @@ frappe.ui.form.on('Request for Purchase', {
 				frm.fields_dict["items_to_order"].grid.update_docfield_property("qty", "read_only", 1);
 			}
 
-			if (frm.doc.status) {
+		}
+
+		if (frm.doc.status && frm.doc.docstatus === 1) {
 				const status_colors = {
 					"Draft": "grey",
 					"Draft Request": "grey",
@@ -36,7 +38,6 @@ frappe.ui.form.on('Request for Purchase', {
 				
 				frm.page.set_indicator(frm.doc.status, color);
 			}
-		}
 
 	},
 	make_custom_buttons: function(frm) {

@@ -550,5 +550,6 @@ def create_pathfinder_log(hd_ticket_name):
     pathfinder_log.process_name = hd_ticket.custom_process
     pathfinder_log.goal_description = hd_ticket.description
     pathfinder_log.hd_ticket = hd_ticket.name
+    pathfinder_log.flags.ignore_mandatory = True
     pathfinder_log.save(ignore_permissions=True)
     return pathfinder_log.name

@@ -389,7 +389,7 @@ class LeaveApplicationOverride(LeaveApplication):
     def assign_to_leave_approver(self):
         #This function is meant to create a TODO for the leave approver
                 try:
-                    if self.name and self.leave_type =="Sick Leave":
+                    if self.name and self.leave_type == "Sick Leave" and self.workflow_state == "Pending Approval":
                         existing_assignment = frappe.get_all("ToDo",{'allocated_to':self.leave_approver,'reference_name':self.name})
                         if not existing_assignment:
                             frappe.get_doc(

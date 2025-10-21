@@ -15,7 +15,7 @@ frappe.listview_settings['Request for Purchase'] = {
             "Cancelled": "red"
         };
         
-        if (doc.status) {
+        if (doc.status && doc.docstatus === 1) {
             return [__(doc.status), status_colors[doc.status] || "grey", "status,=," + doc.status];
         }
 

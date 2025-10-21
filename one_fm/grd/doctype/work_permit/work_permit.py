@@ -426,7 +426,7 @@ def create_work_permit_renewal(preparation_name):
     employee_in_preparation = frappe.get_doc('Preparation',preparation_name)
     if employee_in_preparation.preparation_record:
         for employee in employee_in_preparation.preparation_record:
-            if employee.renewal_or_extend == 'Renewal':
+            if employee.renewal_or_extend in  ['Renewal (Non-Kuwaiti)','Renewal (Kuwaiti)']:
                 create_wp_renewal(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
 
 

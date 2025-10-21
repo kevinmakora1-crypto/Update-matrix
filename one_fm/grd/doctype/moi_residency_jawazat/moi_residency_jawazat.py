@@ -166,9 +166,9 @@ def set_employee_list_for_moi(preparation_name):
     employee_in_preparation = frappe.get_doc('Preparation',preparation_name)
     if employee_in_preparation.preparation_record:
         for employee in employee_in_preparation.preparation_record:
-            if employee.renewal_or_extend == 'Renewal' and employee.nationality != 'Kuwaiti':# For renewals
+            if employee.renewal_or_extend == 'Renewal (Non-Kuwaiti)' and employee.nationality != 'Kuwaiti':# For renewals
                 create_moi_record(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
-            if employee.renewal_or_extend != 'Renewal' and employee.nationality != 'Kuwaiti':# For extend
+            if employee.renewal_or_extend != 'Renewal (Non-Kuwaiti)' and employee.nationality != 'Kuwaiti':# For extend
                 create_moi_record(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
 
 # Creat moi for transfer

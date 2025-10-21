@@ -19,9 +19,6 @@ frappe.ui.form.on('Request for Material', {
 			frappe.call({
 				doc: frm.doc,
 				method: 'get_session_user_approver',
-				args: {
-					employee: frappe.session.user
-				},
 				callback: function(r) {
 					let new_doc = frappe.model.copy_doc(frm.doc);
 					new_doc.linked_request_for_material = frm.doc.name;

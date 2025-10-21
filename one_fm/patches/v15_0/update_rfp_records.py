@@ -46,5 +46,3 @@ def execute():
 		except Exception as e:
 			frappe.log_error(f"Failed updating RFP {name}: {e}", "Patch update_rfp_records")
 	frappe.db.commit()
-
-	

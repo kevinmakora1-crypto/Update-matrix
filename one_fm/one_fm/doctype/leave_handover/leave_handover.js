@@ -21,6 +21,7 @@ frappe.ui.form.on("Leave Handover", {
 				);
 			}).addClass("btn-primary");
 		}
+		set_submit_button(frm);
 	},
 	after_save(frm) {
 		frm.dashboard.clear_headline();
@@ -44,3 +45,20 @@ frappe.ui.form.on("Leave Handover", {
 		}
 	}
 });
+
+function set_submit_button(frm) {
+	if (frm.doc.docstatus === 0 && !frm.is_new()) {
+		frm.page.clear_primary_action();
+		frm.page.set_primary_action(__('Submit'), function() {
+			frappe.confirm(
+				__("You are about to replace the Employee with the Reliever in each of the documents referenced in the table. Do you want to proceed?"),
+				function() {
+					frm.save('Submit'); // proceed
+				},
+				function() {
+					frappe.msgprint(__('Submission cancelled'));
+				}
+			);
+		});
+	}
+}

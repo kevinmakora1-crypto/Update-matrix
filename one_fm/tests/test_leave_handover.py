@@ -1,6 +1,5 @@
 import frappe
 import unittest
-from frappe.utils import random_string
 from frappe.test_runner import make_test_records
 
 class TestLeaveHandover(unittest.TestCase):

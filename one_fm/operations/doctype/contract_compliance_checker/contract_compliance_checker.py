@@ -4,7 +4,7 @@ import calendar
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import (getdate, get_first_day, get_last_day, add_days, add_months, date_diff)
+from frappe.utils import (getdate, get_first_day, get_last_day, add_days, add_months, date_diff, nowdate)
 from one_fm.utils import get_week_start_end
 
 
@@ -328,6 +328,14 @@ class GenerateContractComplianceChecker:
 		contract_details = frappe.db.get_value("Contracts", contract, 
 			["client", "project", "project.account_manager"], as_dict=1)
 		
+		yesterday_repeat_count = frappe.db.get_value("Contract Compliance Checker", {
+				"project": contract_details.project,
+				"check_date": add_days(getdate(), -1),
+				"creation": ["between", [add_days(nowdate(), -1), nowdate()]],
+			},
+			["repeat_count"]
+		)
+		
 		existing_doc = frappe.db.exists("Contract Compliance Checker", { "project": contract_details.project, "check_date": self.today })
 
 		if existing_doc:
@@ -338,6 +346,7 @@ class GenerateContractComplianceChecker:
 			"project": contract_details.project,
 			"contract": contract,
 			"project_manager": contract_details.account_manager,
+			"repeat_count": (yesterday_repeat_count or 0) + 1,
 			"check_date": self.today,
 			"client": contract_details.client,
 		})

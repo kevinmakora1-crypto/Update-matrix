@@ -4,7 +4,7 @@ import calendar
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import (getdate, get_first_day, get_last_day, add_days, add_months, date_diff, nowdate)
+from frappe.utils import (getdate, get_first_day, get_last_day, add_days, add_months, date_diff, get_datetime)
 from one_fm.utils import get_week_start_end
 
 
@@ -103,32 +103,33 @@ class GenerateContractComplianceChecker:
 			comment += f"More operations post created, expected: {contract_data.count}, created: {total_operations_post} for roles {operations_roles}\n\n"
 
 		for post in operation_posts:
+			# Scope start_date and end_date per post
+			post_start_date = start_date
+			post_end_date = end_date
+
 			# Check if post's start and end dates are within the period
-			if post.start_date and post.start_date > end_date:
+			if post.start_date and getdate(post.start_date) > post_end_date:
 				continue
-			if post.end_date and post.end_date < start_date:
+			if post.end_date and getdate(post.end_date) < post_start_date:
 				continue
-
-			if post.start_date and post.start_date > start_date:
-				start_date = getdate(post.start_date)
-			if post.end_date and post.end_date < end_date:
-				end_date = getdate(post.end_date)
-
-			expected_post_schedules = date_diff(end_date, start_date) + 1
-
+			if post.start_date and getdate(post.start_date) > post_start_date:
+				post_start_date = getdate(post.start_date)
+			if post.end_date and getdate(post.end_date) < post_end_date:
+				post_end_date = getdate(post.end_date)
+			expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
 					post=post,
-					start_date=start_date,
-					end_date=end_date
+					start_date=post_start_date,
+					end_date=post_end_date
 				)
 				
 			if not post_schedules_count:
-				comment += f"""No post schedules created for Post ({post.name}) from {start_date} to {end_date}\n\n"""
+				comment += f"""No post schedules created for Post ({post.name}) from {post_start_date} to {post_end_date}\n\n"""
 			elif post_schedules_count > expected_post_schedules:
-				comment += f"""More post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
+				comment += f"""More post schedules created from {post_start_date} to {post_end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
 			elif post_schedules_count < expected_post_schedules:
-				comment += f"""Less post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
+				comment += f"""Less post schedules created from {post_start_date} to {post_end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
 
 		if comment:
 			return True, {
@@ -165,32 +166,33 @@ class GenerateContractComplianceChecker:
 			comment += f"More operations post created, expected: {contract_data.count}, created: {total_operations_post} for roles {operations_roles}\n\n"
 
 		for post in operation_posts:
+			# Scope start_date and end_date per post
+			post_start_date = start_date
+			post_end_date = end_date
+
 			# Check if post's start and end dates are within the period
-			if post.start_date and post.start_date > end_date:
+			if post.start_date and post.start_date > post_end_date:
 				continue
-			if post.end_date and post.end_date < start_date:
+			if post.end_date and post.end_date < post_start_date:
 				continue
-
-			if post.start_date and post.start_date > start_date:
-				start_date = getdate(post.start_date)
-			if post.end_date and post.end_date < end_date:
-				end_date = getdate(post.end_date)
-
-			expected_post_schedules = date_diff(end_date, start_date) + 1
-
+			if post.start_date and post.start_date > post_start_date:
+				post_start_date = getdate(post.start_date)
+			if post.end_date and post.end_date < post_end_date:
+				post_end_date = getdate(post.end_date)
+			expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
 					post=post,
-					start_date=start_date,
-					end_date=end_date
+					start_date=post_start_date,
+					end_date=post_end_date
 				)
 				
 			if not post_schedules_count:
-				comment += f"""No post schedules created for Post ({post.name}) from {start_date} to {end_date}\n\n"""
+				comment += f"""No post schedules created for Post ({post.name}) from {post_start_date} to {post_end_date}\n\n"""
 			elif post_schedules_count > expected_post_schedules:
-				comment += f"""More post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
+				comment += f"""More post schedules created from {post_start_date} to {post_end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
 			elif post_schedules_count < expected_post_schedules:
-				comment += f"""Less post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
+				comment += f"""Less post schedules created from {post_start_date} to {post_end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
 
 		if comment:
 			return True, {
@@ -259,30 +261,32 @@ class GenerateContractComplianceChecker:
 		expected_post_schedules = working_days_in_period - contract_data.no_of_days_off
 		
 		for post in operation_posts:
+			# Scope start_date and end_date per post
+			post_start_date = start_date
+			post_end_date = end_date
+
 			# Check if post's start and end dates are within the period
-			if post.start_date and post.start_date > end_date:
+			if post.start_date and getdate(post.start_date) > post_end_date:
 				continue
-			if post.end_date and post.end_date < start_date:
+			if post.end_date and getdate(post.end_date) < post_start_date:
 				continue
-
-			if post.start_date and post.start_date > start_date:
-				start_date = getdate(post.start_date)
-			if post.end_date and post.end_date < end_date:
-				end_date = getdate(post.end_date)
-
+			if post.start_date and getdate(post.start_date) > post_start_date:
+				post_start_date = getdate(post.start_date)
+			if post.end_date and getdate(post.end_date) < post_end_date:
+				post_end_date = getdate(post.end_date)
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
 					post=post,
-					start_date=start_date,
-					end_date=end_date
+					start_date=post_start_date,
+					end_date=post_end_date
 				)
 				
 			if not post_schedules_count:
-				comment += f"""No post schedules created for Post ({post.name}) from {start_date} to {end_date}\n\n"""
+				comment += f"""No post schedules created for Post ({post.name}) from {post_start_date} to {post_end_date}\n\n"""
 			elif post_schedules_count > expected_post_schedules:
-				comment += f"""More post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
+				comment += f"""More post schedules created from {post_start_date} to {post_end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
 			elif post_schedules_count < expected_post_schedules:
-				comment += f"""Less post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
+				comment += f"""Less post schedules created from {post_start_date} to {post_end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
 		
 		if comment:
 			return True, {
@@ -331,7 +335,7 @@ class GenerateContractComplianceChecker:
 		yesterday_repeat_count = frappe.db.get_value("Contract Compliance Checker", {
 				"project": contract_details.project,
 				"check_date": add_days(getdate(), -1),
-				"creation": ["between", [add_days(nowdate(), -1), nowdate()]],
+				"creation": ["between", [get_datetime(str(add_days(getdate(), -1)) + " 00:00:00"), get_datetime(str(add_days(getdate(), -1)) + " 23:59:59")]],
 			},
 			["repeat_count"]
 		)

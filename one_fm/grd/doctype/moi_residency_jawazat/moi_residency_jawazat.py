@@ -166,9 +166,9 @@ def set_employee_list_for_moi(preparation_name):
     employee_in_preparation = frappe.get_doc('Preparation',preparation_name)
     if employee_in_preparation.preparation_record:
         for employee in employee_in_preparation.preparation_record:
-            if employee.renewal_or_extend == 'Renewal' and employee.nationality != 'Kuwaiti':# For renewals
+            if employee.renewal_or_extend == 'Renewal (Non-Kuwaiti)' and employee.nationality != 'Kuwaiti':# For renewals
                 create_moi_record(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
-            if employee.renewal_or_extend != 'Renewal' and employee.nationality != 'Kuwaiti':# For extend
+            if employee.renewal_or_extend != 'Renewal (Non-Kuwaiti)' and employee.nationality != 'Kuwaiti':# For extend
                 create_moi_record(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
 
 # Creat moi for transfer
@@ -181,13 +181,13 @@ def creat_moi_for_transfer(work_permit_name):
 
 def create_moi_record(employee,Renewal_or_Extend,preparation_name = None):
 
-    if Renewal_or_Extend == "Renewal":
+    if Renewal_or_Extend == "Renewal (Non-Kuwaiti)":
         category = "Renewal"
         start_date = add_days(employee.residency_expiry_date, -14)
     if Renewal_or_Extend == "Transfer":
         category = "Transfer"
         start_date = today()
-    if Renewal_or_Extend != "Renewal" and Renewal_or_Extend != "Transfer":
+    if Renewal_or_Extend != "Renewal (Non-Kuwaiti)" and Renewal_or_Extend != "Transfer":
         category = "Extend"
         start_date = add_days(employee.residency_expiry_date, -7)
 

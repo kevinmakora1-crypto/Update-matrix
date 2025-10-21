@@ -181,13 +181,13 @@ def creat_moi_for_transfer(work_permit_name):
 
 def create_moi_record(employee,Renewal_or_Extend,preparation_name = None):
 
-    if Renewal_or_Extend == "Renewal":
+    if Renewal_or_Extend == "Renewal (Non-Kuwaiti)":
         category = "Renewal"
         start_date = add_days(employee.residency_expiry_date, -14)
     if Renewal_or_Extend == "Transfer":
         category = "Transfer"
         start_date = today()
-    if Renewal_or_Extend != "Renewal" and Renewal_or_Extend != "Transfer":
+    if Renewal_or_Extend != "Renewal (Non-Kuwaiti)" and Renewal_or_Extend != "Transfer":
         category = "Extend"
         start_date = add_days(employee.residency_expiry_date, -7)
 

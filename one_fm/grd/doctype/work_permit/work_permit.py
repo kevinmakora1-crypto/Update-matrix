@@ -432,7 +432,7 @@ def create_work_permit_renewal(preparation_name):
 
 #FOR RENEWAL
 def create_wp_renewal(employee,status,name):
-    if status and status == "Renewal":
+    if status and status in ['Renewal (Non-Kuwaiti)',"Renewal (Kuwaiti)"]:
         start_day = add_days(employee.residency_expiry_date, -14)
         Doctype = "Preparation"
         preparation_name = name

@@ -6,12 +6,6 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import (getdate, get_first_day, get_last_day, add_days, add_months, date_diff)
 from one_fm.utils import get_week_start_end
-import logging
-
-# Suppress logs specifically from google_adk and related modules
-logging.getLogger("google_adk").setLevel(logging.ERROR)
-logging.getLogger("google").setLevel(logging.ERROR)  # optional, if needed
-logging.getLogger().setLevel(logging.ERROR)  
 
 
 class ContractComplianceChecker(Document):
@@ -22,8 +16,6 @@ class ContractComplianceChecker(Document):
 class GenerateContractComplianceChecker:
 	
 	def __init__(self):
-		self.monthly_info = self.get_month_info()
-		self.week_info = self.get_week_info()
 		self.yesterday = getdate(frappe.utils.add_days(frappe.utils.today(), -1))
 		self.day_before_yesterday = getdate(frappe.utils.add_days(frappe.utils.today(), -2))
 		self.today = getdate(frappe.utils.today())
@@ -50,7 +42,7 @@ class GenerateContractComplianceChecker:
 				fields=["name", "start_date", "end_date"]
 			)
 	
-	def get_post_schedules(project, post, start_date, end_date):
+	def get_post_schedules(self, project, post, start_date, end_date):
 		return frappe.db.count(
 			"Post Schedule",
 			filters={
@@ -61,62 +53,40 @@ class GenerateContractComplianceChecker:
 			}
 		)
 	
-	def get_total_employee_schedule_count(self, operations_role, is_monthly=True):
+	def get_total_employee_schedule_count(self, operations_role, start_date, end_date, is_monthly=True):
 		if not operations_role:
 			return 0
 		
-		if is_monthly:
-			if self.day_before_yesterday >= self.monthly_info['first_day']:
-				attendance_count = frappe.db.count('Attendance', {
-					'roster_type': "Basic",
-					"status": "Present",
-					"attendance_date": ["between", [self.monthly_info['first_day'], self.day_before_yesterday]],
-					"operations_role": ["in", operations_role]
-				})
-			else:
-				attendance_count = 0
-			
-			if self.yesterday <= self.monthly_info['last_day']:
-				schedule_count = frappe.db.count('Employee Schedule', {
-					'roster_type': "Basic",
-					"employee_availability": "Working",
-					"date": ["between", [self.yesterday, self.monthly_info['last_day']]],
-					"operations_role": ["in", operations_role]
-				})
-			else:
-				schedule_count = 0
-				
+		if self.day_before_yesterday >= start_date:
+			attendance_count = frappe.db.count('Attendance', {
+				'roster_type': "Basic",
+				"status": "Present",
+				"attendance_date": ["between", [start_date, self.day_before_yesterday]],
+				"operations_role": ["in", operations_role]
+			})
 		else:
-			if self.day_before_yesterday >= self.week_info['first_day']:
-				attendance_count = frappe.db.count('Attendance', {
-					'roster_type': "Basic",
-					"status": "Present",
-					"attendance_date": ["between", [self.week_info['first_day'], self.day_before_yesterday]],
-					"operations_role": ["in", operations_role]
-				})
-			else:
-				attendance_count = 0
+			attendance_count = 0
 			
-			if self.yesterday <= self.week_info['last_day']:
-				schedule_count = frappe.db.count('Employee Schedule', {
-					'roster_type': "Basic",
-					"employee_availability": "Working",
-					"date": ["between", [self.yesterday, self.week_info['last_day']]],
-					"operations_role": ["in", operations_role]
-				})
-			else:
-				schedule_count = 0
+		if self.yesterday <= end_date:
+			schedule_count = frappe.db.count('Employee Schedule', {
+				'roster_type': "Basic",
+				"employee_availability": "Working",
+				"date": ["between", [self.yesterday, end_date]],
+				"operations_role": ["in", operations_role]
+			})
+		else:
+			schedule_count = 0
 
 		return attendance_count + schedule_count
 	
 	def calculate_manpower_full_month_compliance(self, contract_data, start_date, end_date):
-		operations_roles = self.get_operation_roles(contract_data.item_code, contract_data.project)
-
 		start_date = getdate(start_date)
 		end_date = getdate(end_date)
 
 		comment = ""
 		
+		operations_roles = self.get_operation_roles(contract_data.item_code, contract_data.project)
+
 		# No operations role created
 		if not operations_roles:
 			comment += f"No operations roles created with sale item {contract_data.item_code} in project {contract_data.project}, for contract {contract_data.parent} in items row {contract_data.idx}\n\n"
@@ -154,11 +124,11 @@ class GenerateContractComplianceChecker:
 				)
 				
 			if not post_schedules_count:
-				post_message += f"""No post schedules created for Post ({post.name}) from {start_date} to {end_date}\n\n"""
+				comment += f"""No post schedules created for Post ({post.name}) from {start_date} to {end_date}\n\n"""
 			elif post_schedules_count > expected_post_schedules:
-				post_message += f"""More post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
+				comment += f"""More post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
 			elif post_schedules_count < expected_post_schedules:
-				post_message += f"""Less post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
+				comment += f"""Less post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
 
 		if comment:
 			return True, {
@@ -171,13 +141,158 @@ class GenerateContractComplianceChecker:
 		
 		return False, {}
 	
-	def calculate_post_schedule_full_month_compliance(self, contract_data, is_monthly=True):
+	def calculate_post_schedule_full_month_compliance(self, contract_data, start_date, end_date):
+		start_date = getdate(start_date)
+		end_date = getdate(end_date)
+
+		comment = ""
+		
+		operations_roles = self.get_operation_roles(contract_data.item_code, contract_data.project)
+
+		# No operations role created
+		if not operations_roles:
+			comment += f"No operations roles created with sale item {contract_data.item_code} in project {contract_data.project}, for contract {contract_data.parent} in items row {contract_data.idx}\n\n"
+
+		operation_posts = self.get_operation_posts(operations_roles, contract_data.project)
+
+		total_operations_post = len(operation_posts)
+
+		if total_operations_post == 0:
+			comment += f"No operations posts created with sale item {contract_data.item_code} in project {contract_data.project}, for contract {contract_data.parent} in items row {contract_data.idx}\n\n"		
+		elif total_operations_post < contract_data.count:
+			comment += f"Less operations post created, expected: {contract_data.count}, created: {total_operations_post} for roles {operations_roles}\n\n"
+		elif total_operations_post > contract_data.count:
+			comment += f"More operations post created, expected: {contract_data.count}, created: {total_operations_post} for roles {operations_roles}\n\n"
+
+		for post in operation_posts:
+			# Check if post's start and end dates are within the period
+			if post.start_date and post.start_date > end_date:
+				continue
+			if post.end_date and post.end_date < start_date:
+				continue
+
+			if post.start_date and post.start_date > start_date:
+				start_date = getdate(post.start_date)
+			if post.end_date and post.end_date < end_date:
+				end_date = getdate(post.end_date)
+
+			expected_post_schedules = date_diff(end_date, start_date) + 1
+
+			post_schedules_count = self.get_post_schedules(
+					project=contract_data.project,
+					post=post,
+					start_date=start_date,
+					end_date=end_date
+				)
+				
+			if not post_schedules_count:
+				comment += f"""No post schedules created for Post ({post.name}) from {start_date} to {end_date}\n\n"""
+			elif post_schedules_count > expected_post_schedules:
+				comment += f"""More post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
+			elif post_schedules_count < expected_post_schedules:
+				comment += f"""Less post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
+
+		if comment:
+			return True, {
+				"contract": contract_data.parent,
+				"sale_item": contract_data.item_code,
+				"from_date": start_date,
+				"to_date": end_date,
+				"comment": comment
+			}
+		
 		return False, {}
 	
-	def calculate_manpower_day_off_compliance(self, contract_data, is_monthly=True):
+	def calculate_manpower_day_off_compliance(self, contract_data, start_date, end_date):
+		start_date = getdate(start_date)
+		end_date = getdate(end_date)
+
+		comment = ""
+
+		operations_roles = self.get_operation_roles(contract_data.item_code, contract_data.project)
+
+		# No operations role created
+		if not operations_roles:
+			comment += f"No operations roles created with sale item {contract_data.item_code} in project {contract_data.project}, for contract {contract_data.parent} in items row {contract_data.idx}\n\n"
+
+		working_days_in_period = (date_diff(end_date, start_date) + 1) - contract_data.no_of_days_off
+		expected_schedule_count = working_days_in_period * contract_data.count
+
+		actual_schedule_count = self.get_total_employee_schedule_count(operations_roles, start_date, end_date)
+
+		comment += self.get_diff_comment(expected_schedule_count, actual_schedule_count)
+
+		if actual_schedule_count != expected_schedule_count:
+			return True, {
+				'from_date': start_date,
+				'to_date': end_date,
+				'comment': comment,
+				'contract': contract_data.parent,
+				'sale_item': contract_data.item_code,
+			}
 		return False, {}
 	
-	def calculate_post_schedule_day_off_compliance(self, contract_data, is_monthly=True):
+	def calculate_post_schedule_day_off_compliance(self, contract_data, start_date, end_date):
+		start_date = getdate(start_date)
+		end_date = getdate(end_date)
+
+		comment = ""
+
+		operations_roles = self.get_operation_roles(contract_data.item_code, contract_data.project)
+
+		# No operations role created
+		if not operations_roles:
+			comment += f"No operations roles created with sale item {contract_data.item_code} in project {contract_data.project}, for contract {contract_data.parent} in items row {contract_data.idx}\n\n"
+
+		operation_posts = self.get_operation_posts(operations_roles, contract_data.project)
+
+		total_operations_post = len(operation_posts)
+
+		if total_operations_post == 0:
+			comment += f"No operations posts created with sale item {contract_data.item_code} in project {contract_data.project}, for contract {contract_data.parent} in items row {contract_data.idx}\n\n"		
+		elif total_operations_post < contract_data.count:
+			comment += f"Less operations post created, expected: {contract_data.count}, created: {total_operations_post} for roles {operations_roles}\n\n"
+		elif total_operations_post > contract_data.count:
+			comment += f"More operations post created, expected: {contract_data.count}, created: {total_operations_post} for roles {operations_roles}\n\n"
+		
+		working_days_in_period = (date_diff(end_date, start_date) + 1)
+		expected_post_schedules = working_days_in_period - contract_data.no_of_days_off
+		
+		for post in operation_posts:
+			# Check if post's start and end dates are within the period
+			if post.start_date and post.start_date > end_date:
+				continue
+			if post.end_date and post.end_date < start_date:
+				continue
+
+			if post.start_date and post.start_date > start_date:
+				start_date = getdate(post.start_date)
+			if post.end_date and post.end_date < end_date:
+				end_date = getdate(post.end_date)
+
+			post_schedules_count = self.get_post_schedules(
+					project=contract_data.project,
+					post=post,
+					start_date=start_date,
+					end_date=end_date
+				)
+				
+			if not post_schedules_count:
+				comment += f"""No post schedules created for Post ({post.name}) from {start_date} to {end_date}\n\n"""
+			elif post_schedules_count > expected_post_schedules:
+				comment += f"""More post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
+			elif post_schedules_count < expected_post_schedules:
+				comment += f"""Less post schedules created from {start_date} to {end_date}, expected: {expected_post_schedules}, created: {post_schedules_count} for post {post.name}\n\n"""
+		
+		if comment:
+			return True, {
+				"contract": contract_data.parent,
+				"sale_item": contract_data.item_code,
+				"from_date": start_date,
+				"to_date": end_date,
+				"comment": comment
+			}
+		
 		return False, {}
 	
 	@staticmethod
@@ -188,27 +303,6 @@ class GenerateContractComplianceChecker:
 		elif diff <= -1:
 			return f"Less Schedules Created, expected {expected_total}, created {actual_total}"
 		return ""
-	
-	@staticmethod
-	def get_month_info():
-		date = getdate(frappe.utils.today())
-		return {
-			'first_day': get_first_day(date),
-			'last_day': get_last_day(date),
-			'days_in_month': calendar.monthrange(date.year, date.month)[1]
-		}
-	
-	@staticmethod
-	def get_week_info():
-		date = getdate(frappe.utils.today())
-		weekday = date.weekday()
-		days_to_sunday = (weekday + 1) % 7
-		first_day = add_days(date, -days_to_sunday)
-		
-		return {
-			'first_day': first_day,
-			'last_day': add_days(first_day, 6)
-		}
 	
 	@staticmethod
 	def get_duration_periods(is_monthly=True):
@@ -233,6 +327,11 @@ class GenerateContractComplianceChecker:
 	def create_compliance_checker(self, contract, compliance_details):
 		contract_details = frappe.db.get_value("Contracts", contract, 
 			["client", "project", "project.account_manager"], as_dict=1)
+		
+		existing_doc = frappe.db.exists("Contract Compliance Checker", { "project": contract_details.project, "check_date": self.today })
+
+		if existing_doc:
+			frappe.delete_doc("Contract Compliance Checker", existing_doc, force=True)
 		
 		doc = frappe.get_doc({
 			"doctype": "Contract Compliance Checker",
@@ -267,9 +366,9 @@ class GenerateContractComplianceChecker:
 
 				for period_start, period_end in duration_periods:
 					if contract_item.service_type == "Manpower":
-						status, data = self.calculate_manpower_full_month_compliance(contract_item, period_start, period_end) if is_off_type_full_month else self.calculate_manpower_day_off_compliance(contract_item, is_monthly=has_monthly_days_off)
+						status, data = self.calculate_manpower_full_month_compliance(contract_item, period_start, period_end) if is_off_type_full_month else self.calculate_manpower_day_off_compliance(contract_item, period_start, period_end)
 					elif contract_item.service_type == "Post Schedule":
-						status, data = self.calculate_post_schedule_full_month_compliance(contract_item, is_monthly=has_monthly_days_off) if is_off_type_full_month else self.calculate_post_schedule_day_off_compliance(contract_item, is_monthly=has_monthly_days_off)
+						status, data = self.calculate_post_schedule_full_month_compliance(contract_item, period_start, period_end) if is_off_type_full_month else self.calculate_post_schedule_day_off_compliance(contract_item, period_start, period_end)
 					else:
 						continue
 
@@ -287,7 +386,6 @@ class GenerateContractComplianceChecker:
 				contract_groups[contract] = []
 			contract_groups[contract].append(item)
 		
-		print(contract_groups)
 		for contract, compliance_details in contract_groups.items():
 			self.create_compliance_checker(contract, compliance_details)
 

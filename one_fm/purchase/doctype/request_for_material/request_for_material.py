@@ -14,7 +14,7 @@ from frappe.utils.user import get_users_with_role
 from frappe.permissions import has_permission
 from erpnext.controllers.buying_controller import BuyingController
 from one_fm.purchase.doctype.item_reservation.item_reservation import get_item_balance
-from one_fm.utils import fetch_employee_signature
+from one_fm.utils import get_approver_user
 from one_fm.processor import sendemail
 from one_fm.api.doc_events import get_employee_user_id
 from one_fm.utils import get_users_with_role_permitted_to_doctype
@@ -438,6 +438,10 @@ class RequestforMaterial(BuyingController):
         if violations:
             msg = _("Quantity validation against Linked Request for Material failed:<br>{0}").format('<br>'.join(violations))
             frappe.throw(msg)
+
+    @frappe.whitelist()
+    def get_session_user_approver(self):
+        return get_approver_user(frappe.db.get_value('Employee', {'user_id': frappe.session.user}))
 
 def update_completed_purchase_qty(purchase_order, method):
         if purchase_order.doctype == "Purchase Order":

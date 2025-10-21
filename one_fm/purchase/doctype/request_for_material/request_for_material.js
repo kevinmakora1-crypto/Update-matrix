@@ -15,23 +15,31 @@ frappe.ui.form.on('Request for Material', {
 			frappe.msgprint(__('This document is already a Purchase RFM.'));
 			return;
 		}
-		if(!frm.doc.linked_request_for_material){
-			let new_doc = frappe.model.copy_doc(frm.doc);
-			new_doc.linked_request_for_material = frm.doc.name;
-			new_doc.workflow_state = '';
-			new_doc.linked_purchase_rfm = ""
-			new_doc.issue_transfer_rfm =  frm.doc.name
-			new_doc.purpose = 'Purchase';
-			new_doc.requested_by = frappe.session.user;
-			new_doc.request_for_material_approver = frappe.session.user;
-			new_doc.docstatus = 0;
-			for(let i=0; i<new_doc.items.length; i++){
-				new_doc.items[i].linked_request_for_material = frm.doc.name
-			}
-			frappe.set_route('Form', new_doc.doctype, new_doc.name);
+		if(!frm.doc.linked_request_for_material) {
+			frappe.call({
+				doc: frm.doc,
+				method: 'get_session_user_approver',
+				args: {
+					employee: frappe.session.user
+				},
+				callback: function(r) {
+					let new_doc = frappe.model.copy_doc(frm.doc);
+					new_doc.linked_request_for_material = frm.doc.name;
+					new_doc.workflow_state = '';
+					new_doc.linked_purchase_rfm = ""
+					new_doc.issue_transfer_rfm =  frm.doc.name
+					new_doc.purpose = 'Purchase';
+					new_doc.requested_by = frappe.session.user;
+					new_doc.request_for_material_approver = r.message;
+					new_doc.docstatus = 0;
+					for(let i=0; i<new_doc.items.length; i++){
+						new_doc.items[i].linked_request_for_material = frm.doc.name
+					}
+					frappe.set_route('Form', new_doc.doctype, new_doc.name);
 
-		}
-		
+				}
+			});
+		}	
 	},
 	before_workflow_action: function(frm){
 		if(frm.doc.workflow_state == 'Pending Approval' && frm.doc.request_for_material_approver != frappe.session.user){

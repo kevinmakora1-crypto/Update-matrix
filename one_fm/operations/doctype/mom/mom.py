@@ -79,8 +79,8 @@ class MOM(Document):
 	def on_submit(self):
 		if self.project_type=="External":
 			self.create_poc_check()
-		project_type = frappe.db.get_value("Project", self.project, "project_type")
-		if project_type != "External":
+		
+		if self.project_type != "External":
 			self.create_task_and_assign()
 		else:
 			if self.issues == "Yes":

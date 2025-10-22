@@ -33,6 +33,7 @@ class MOM(Document):
 		"""
 			Create a POC Check if all the rows in the attendees table in a MOM record are not checked as attended
 		"""	
+		
 		table_checks  = [int(i.attended_meeting) for i in self.attendees]
 		if not any(table_checks):
 		#Create POC Check if no row in the POC table is marked
@@ -75,12 +76,11 @@ class MOM(Document):
 
 				
 			
-	def on_submit(self):
-		self.create_poc_check()
-		project_type = frappe.db.get_value("Project", self.project, "project_type")
-		if project_type != "External":
+	def on_submit(self):	
+		if self.project_type != "External":
 			self.create_task_and_assign()
 		else:
+			self.create_poc_check()
 			if self.issues == "Yes":
 				self.create_task_and_assign()
 	

@@ -76,13 +76,11 @@ class MOM(Document):
 
 				
 			
-	def on_submit(self):
-		if self.project_type=="External":
-			self.create_poc_check()
-		
+	def on_submit(self):	
 		if self.project_type != "External":
 			self.create_task_and_assign()
 		else:
+			self.create_poc_check()
 			if self.issues == "Yes":
 				self.create_task_and_assign()
 	

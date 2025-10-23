@@ -103,6 +103,7 @@
    "fieldtype": "Link",
    "in_standard_filter": 1,
    "label": "Requested By",
+   "no_copy": 1,
    "options": "User",
    "read_only": 1
   },
@@ -529,7 +530,7 @@
    "link_fieldname": "issue_transfer_rfm"
   }
  ],
- "modified": "2025-10-12 22:01:20.979114",
+ "modified": "2025-10-23 11:23:20.698867",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Material",

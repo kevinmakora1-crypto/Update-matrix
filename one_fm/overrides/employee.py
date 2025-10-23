@@ -27,7 +27,7 @@ class EmployeeOverride(EmployeeMaster):
         validate_status(self.status, ["Active", "Court Case", "Absconding", "Left","Vacation"])
 
         if self.pam_type == "Kuwaiti":
-		self.residency_expiry_date = None
+            self.residency_expiry_date = None
 
         self.employee = self.name
         self.set_employee_name()

@@ -33,7 +33,6 @@ frappe.ui.form.on('Employee', {
                 }
             };
         });
-		frm.trigger("pam_type");
 	},
 	pam_type: function(frm) {
 		if (frm.doc.pam_type === 'Kuwaiti') {

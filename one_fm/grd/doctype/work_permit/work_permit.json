@@ -98,6 +98,7 @@
   "new_passport_details_section",
   "new_passport_type",
   "column_break_yjma",
+  "new_passport_issuance_date",
   "new_passport_number",
   "column_break_jgpb",
   "new_passport_expiry_date",
@@ -918,6 +919,11 @@
   {
    "fieldname": "column_break_yjma",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "new_passport_issuance_date",
+   "fieldtype": "Date",
+   "label": "Passport Issuance Date"
   },
   {
    "fieldname": "new_passport_number",

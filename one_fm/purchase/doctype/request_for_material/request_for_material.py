@@ -744,8 +744,6 @@ def make_request_for_purchase(source_name, target_doc=None):
 @frappe.whitelist()
 def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
     rfm = frappe.get_doc("Request for Material", rfm_name)
-    if rfm.purpose not in {"Issue", "Transfer"}:
-        frappe.throw(_("RFM Purpose must be Issue or Transfer"))
 
     if stock_entry_type == "Material Issue" and rfm.purpose != "Issue":
         frappe.throw(_("RFM Purpose must be Issue for Material Issue"))

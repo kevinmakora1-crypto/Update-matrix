@@ -55,6 +55,13 @@ class WorkPermit(Document):
         self.validate_workflow_state_fields()
         self.employee_last_checkin = get_employee_last_checkin(self.employee)
 
+        if self.employee:
+            employee = frappe.get_doc("Employee", self.employee)
+            if employee.status != "Active":
+                frappe.throw(_("{0}'s status is currently not active. Work Permit processing is only allowed for active employees").format(employee.employee_name))
+            if employee.relieving_date:
+                frappe.throw(_("{0}'s Relieving Date has been set to {1}. Work Permit processing is not allowed.").format(employee.employee_name, employee.relieving_date))
+
     def validate_workflow_state_fields(self):
         states = ['Pending By PAM Operator', 'Pending By Operator']
         db_state = frappe.db.get_value("Work Permit", self.name, 'workflow_state')

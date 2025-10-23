@@ -75,7 +75,7 @@ frappe.query_reports["Purchase Tracker"] = {
 	}
 ],
 "formatter": function(value, row, column, data, default_formatter) {
-if (column.fieldname == "purchase_order" && value) {
+if (column.fieldname === "purchase_order" && value) {
 let po_list = value.split(",").map(function(item) {
 return item.trim();
 });

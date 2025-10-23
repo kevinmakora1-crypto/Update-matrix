@@ -44,8 +44,23 @@ class RequestforMaterial(BuyingController):
         self.set_item_fields()
         self.set_title()
         self.validate_item_qty()
+        self.validate_uom_conversion()
         # self.validate_item_reservation()
         self.validate_linked_request_quantities()
+
+    def validate_uom_conversion(self):
+        for item in self.items:
+            if item.uom and item.stock_uom and item.uom != item.stock_uom:
+                if not item.conversion_factor or item.conversion_factor <= 0:
+                    frappe.throw(_("Row #{}: Conversion Factor is required when UOM is different from Stock UOM.").format(item.idx))
+
+                item.stock_qty = flt(item.qty) * flt(item.conversion_factor)
+
+                must_be_whole_number = frappe.db.get_value("Item", item.item_code, "must_be_whole_number")
+                if must_be_whole_number and item.stock_qty % 1 != 0:
+                    frappe.throw(_("Row #{}: Stock Qty for item {0} cannot be a fraction as it must be a whole number.").format(item.idx, item.item_code))
+            else:
+                item.stock_qty = item.qty
 
     def _initialize_custom_quantities(self):
             """
@@ -54,7 +69,10 @@ class RequestforMaterial(BuyingController):
             """
             for item in self.items:
                     item.custom_rfp_quantity = 0
-                    item.custom_pending_quantity = item.qty
+                    if item.uom != item.stock_uom:
+                        item.custom_pending_quantity = item.stock_qty
+                    else:
+                        item.custom_pending_quantity = item.qty
 
     def validate_item_reservation(self):
         # validate item reservation

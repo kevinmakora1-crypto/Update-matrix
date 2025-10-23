@@ -5,6 +5,46 @@
 frappe.provide("erpnext.accounts.dimensions");
 erpnext.buying.setup_buying_controller();
 
+var handle_uom_conversion = function(frm, cdt, cdn) {
+    let row = locals[cdt][cdn];
+    if (row.item_code && row.uom && row.stock_uom && row.uom !== row.stock_uom) {
+        frappe.call({
+            method: "erpnext.stock.utils.get_conversion_factor",
+            args: {
+                item_code: row.item_code,
+                uom: row.uom
+            },
+            callback: function(r) {
+                if (r.message && r.message.conversion_factor) {
+                    frappe.model.set_value(cdt, cdn, "conversion_factor", r.message.conversion_factor);
+                } else {
+                    frappe.model.set_value(cdt, cdn, "conversion_factor", "");
+                }
+            }
+        });
+    } else {
+        frappe.model.set_value(cdt, cdn, "conversion_factor", 1);
+        if(row.qty){
+            frappe.model.set_value(cdt, cdn, "stock_qty", row.qty);
+        } else {
+            frappe.model.set_value(cdt, cdn, "stock_qty", 0);
+        }
+    }
+};
+
+var calculate_stock_qty = function(cdt, cdn) {
+    let row = locals[cdt][cdn];
+    if (row.qty && row.uom && row.stock_uom && row.uom !== row.stock_uom) {
+        if(row.conversion_factor) {
+            frappe.model.set_value(cdt, cdn, "stock_qty", flt(row.qty) * flt(row.conversion_factor));
+        }
+    } else if (row.qty) {
+        frappe.model.set_value(cdt, cdn, "stock_qty", row.qty);
+    } else {
+		frappe.model.set_value(cdt, cdn, "stock_qty", 0);
+	}
+};
+
 frappe.ui.form.on('Request for Material', {
 	purchase_rfm: function(frm){
 		if(frm.is_dirty()){
@@ -850,7 +890,14 @@ var set_employee_or_project = function(frm) {
 frappe.ui.form.on("Request for Material Item", {
 	setup: (frm)=>{
 	},
+    uom: function(frm, cdt, cdn) {
+        handle_uom_conversion(frm, cdt, cdn);
+    },
+    conversion_factor: function(frm, cdt, cdn) {
+        calculate_stock_qty(cdt, cdn);
+    },
 	qty: function (frm, doctype, name) {
+        calculate_stock_qty(doctype, name);
 	},
 	pur_qty: function (frm, doctype, name){
 		var d = locals[doctype][name];

@@ -200,12 +200,11 @@
    "width": "70px"
   },
   {
-   "default": "1",
    "fieldname": "conversion_factor",
    "fieldtype": "Float",
-   "hidden": 1,
    "label": "UOM Conversion Factor",
-   "print_hide": 1
+   "print_hide": 1,
+   "mandatory_depends_on": "eval:doc.uom && doc.stock_uom && doc.uom != doc.stock_uom"
   },
   {
    "allow_on_submit": 1,

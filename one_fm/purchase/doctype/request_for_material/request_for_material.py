@@ -853,7 +853,7 @@ def create_employee_uniform(rfm_name: str):
     ]
     
     if not uniform_items:
-        frappe.throw(_("No line items with Item Code are available for processing. Add valid Item Codes to proceed."))
+        frappe.throw(_("No uniform request items found with assigned employees and valid Item Codes in this RFM. Please ensure that items have 'Uniform Request' checked, an assigned employee, and a valid Item Code."))
     
     already_linked = [
         item for item in uniform_items 

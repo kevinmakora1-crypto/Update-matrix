@@ -97,10 +97,9 @@
   "iqrar",
   "new_passport_details_section",
   "new_passport_type",
+  "new_passport_number",
   "column_break_yjma",
   "new_passport_issuance_date",
-  "new_passport_number",
-  "column_break_jgpb",
   "new_passport_expiry_date",
   "documents_required_section",
   "documents_required",
@@ -931,10 +930,6 @@
    "label": "Passport Number"
   },
   {
-   "fieldname": "column_break_jgpb",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "new_passport_expiry_date",
    "fieldtype": "Date",
    "label": "Passport Expiry Date"
@@ -997,7 +992,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2025-10-14 11:59:26.763332",
+ "modified": "2025-10-23 20:00:15.373911",
  "modified_by": "Administrator",
  "module": "GRD",
  "name": "Work Permit",
@@ -1063,6 +1058,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "search_fields": "date_of_application,employee_id,civil_id",
  "sort_field": "date_of_application",
  "sort_order": "DESC",

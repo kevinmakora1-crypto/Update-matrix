@@ -248,7 +248,6 @@ class WorkPermit(Document):
     def on_submit(self):
         if self.work_permit_type not in ['Cancellation', 'New Kuwaiti', 'Local Transfer'] and self.workflow_state != "Rejected":
             if self.workflow_state == "Completed" and self.attach_invoice and self.new_work_permit_expiry_date:
-                print("\n\n\n\n####\n\n\n\n")
                 self.db_set('work_permit_status', 'Completed')
                 # self.clean_old_wp_record_in_employee_doctype()
                 self.set_work_permit_attachment_in_employee_doctype(self.new_work_permit_expiry_date, self.upload_work_permit)

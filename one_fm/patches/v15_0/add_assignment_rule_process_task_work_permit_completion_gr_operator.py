@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import today
 from one_fm.setup.assignment_rule import create_assignment_rule, get_assignment_rule_json_file
+from one_fm.custom.workflow.workflow import get_workflow_json_file, create_workflow
 
 def execute():
     process_task_name = create_process_task()
@@ -8,6 +9,7 @@ def execute():
     if process_task_name:
         assignment_rule_data["custom_routine_task"] = process_task_name
     create_assignment_rule(assignment_rule_data)
+    create_workflow(get_workflow_json_file("work_permit.json"))
 
 
 def create_process_task():

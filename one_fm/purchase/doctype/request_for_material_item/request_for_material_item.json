@@ -32,9 +32,8 @@
   "warehouse",
   "qty",
   "uom",
-  "stock_uom",
   "conversion_factor",
-  "stock_qty",
+  "stock_uom",
   "quantity_to_transfer",
   "employee",
   "employee_name",
@@ -47,6 +46,7 @@
   "amount",
   "actual_qty",
   "pur_qty",
+  "stock_qty",
   "remarks_and_manufacturers_details_section",
   "remarks",
   "manufacture_details",
@@ -200,8 +200,6 @@
    "width": "70px"
   },
   {
-   "allow_on_submit": 1,
-   "default": "1",
    "fieldname": "conversion_factor",
    "fieldtype": "Float",
    "label": "UOM Conversion Factor",
@@ -210,7 +208,6 @@
   },
   {
    "allow_on_submit": 1,
-   "depends_on": "doc.item_code",
    "fieldname": "stock_uom",
    "fieldtype": "Link",
    "label": "Stock UOM",
@@ -447,7 +444,6 @@
    "read_only": 1
   },
   {
-   "allow_on_submit": 1,
    "default": "0",
    "fetch_from": "item_code.is_fixed_asset",
    "fieldname": "is_fixed_asset",
@@ -456,7 +452,6 @@
    "read_only": 1
   },
   {
-   "allow_on_submit": 1,
    "default": "0",
    "fetch_from": "item_code.is_stock_item",
    "fieldname": "maintain_stock",

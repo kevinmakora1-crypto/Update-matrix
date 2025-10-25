@@ -9,7 +9,7 @@ var handle_uom_conversion = function(frm, cdt, cdn) {
     let row = locals[cdt][cdn];
     if (row.item_code && row.uom && row.stock_uom && row.uom !== row.stock_uom) {
         frappe.call({
-            method: "erpnext.stock.utils.get_conversion_factor",
+            method: "erpnext.stock.get_item_details.get_conversion_factor",
             args: {
                 item_code: row.item_code,
                 uom: row.uom
@@ -798,7 +798,7 @@ var set_item_field_property = function(frm) {
 		frappe.meta.get_docfield("Request for Material Item", "requested_description", frm.doc.name).reqd = false;
 	}
 	else if((frm.doc.docstatus == 1 && frm.doc.workflow_state == 'Approved')){
-		var fields = ['requested_item_name', 'requested_description', 'qty', 'uom', 'stock_uom'];
+		var fields = ['requested_item_name', 'requested_description', 'qty', 'stock_uom'];
 		fields.forEach((field, i) => {
 			fields_dict[i] = {'fieldname': field, 'read_only': true}
 		});

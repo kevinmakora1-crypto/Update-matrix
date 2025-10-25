@@ -46,7 +46,6 @@ class WorkPermit(Document):
         self.update_work_permit_details_in_tp()
         self.update_passport_details_in_employee()
         self.check_required_document_for_workflow()
-        self.notify()
         self.send_work_permit_receipt_to_perm_operator()
         self.set_new_pam_details_in_employee()
 
@@ -96,12 +95,6 @@ class WorkPermit(Document):
             self.grd_operator_transfer = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
         if not self.pam_operator:
             self.pam_operator = pam_operator_email = frappe.db.get_single_value("HR Settings", 'default_pam_operator')
-
-    def notify(self):
-        if self.workflow_state == "Pending By Supervisor":
-            subject = ("Work Permit Needs Action")
-            message = "<p>Please Take Action on the Work Permit Record:  <a href='{0}'>{1}</a>.</p>".format(get_url_to_form(self.doctype, self.name),self.name )
-            send_email(self, [self.grd_supervisor], message, subject)
 
     def check_required_document_for_workflow(self):
         """

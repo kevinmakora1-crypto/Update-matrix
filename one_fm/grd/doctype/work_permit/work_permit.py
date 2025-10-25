@@ -65,10 +65,8 @@ class WorkPermit(Document):
         states = ['Pending By PAM Operator', 'Pending By Operator']
         db_state = frappe.db.get_value("Work Permit", self.name, 'workflow_state')
         # check for required fields based on workflow
-        if db_state in states and not (
-            self.upload_work_permit and self.new_work_permit_expiry_date and self.upload_work_permit_on
-            ):
-            frappe.throw("Missing Data\nUpload Work Permit, fill Updated Work Permit Expiry Date and Upload On field.")
+        if db_state in states and not self.new_work_permit_expiry_date:
+            frappe.throw("Missing Data fill Updated Work Permit Expiry Date field.")
 
         # check if receipt uploaded and status is supervisor
         if self.attach_invoice and self.workflow_state=="Pending By PAM Operator":
@@ -243,7 +241,7 @@ class WorkPermit(Document):
             if self.workflow_state == "Completed" and self.attach_invoice and self.new_work_permit_expiry_date:
                 self.db_set('work_permit_status', 'Completed')
                 # self.clean_old_wp_record_in_employee_doctype()
-                self.set_work_permit_attachment_in_employee_doctype(self.new_work_permit_expiry_date, self.upload_work_permit)
+                self.set_work_permit_attachment_in_employee_doctype(self.new_work_permit_expiry_date)
             else:
                 msg = False
                 if  not self.attach_invoice:
@@ -304,7 +302,7 @@ class WorkPermit(Document):
             if has_permission(doctype=self.doctype, user=user):
                 filtered_users.append(user)
             if filtered_users and len(filtered_users) > 0:
-                if "Pending By PAM Operator" in self.workflow_state and not self.upload_work_permit and not self.attach_invoice:
+                if "Pending By PAM Operator" in self.workflow_state and not self.attach_invoice:
                     frappe.throw(_("Upload Required Documents To Submit"))
 
     def notify_grd(self,message,subject,user):

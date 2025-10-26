@@ -598,15 +598,16 @@ function create_employee_uniform_from_rfm(frm) {
             }
         },
         error: function(r) {
-            frappe.msgprint({
-                title: __('Error'),
-                message: __('Failed to create Employee Uniform documents. Please check the error log.'),
-                indicator: 'red'
-            });
+            if (!r || !r._server_messages) {
+                frappe.msgprint({
+                    title: __('Error'),
+                    message: __('Failed to create Employee Uniform documents. Please check the error log.'),
+                    indicator: 'red'
+                });
+            }
         }
     });
 }
-
 function create_stock_entry(frm, stock_entry_type) {
     frappe.call({
         method: 'one_fm.purchase.doctype.request_for_material.request_for_material.create_stock_entry_from_rfm',

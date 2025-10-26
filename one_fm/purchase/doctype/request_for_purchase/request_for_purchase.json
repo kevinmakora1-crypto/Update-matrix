@@ -39,6 +39,8 @@
   "supplier",
   "items_to_order",
   "technical_remarks",
+  "total",
+  "base_total",
   "notes_section",
   "notes",
   "amended_from"
@@ -307,13 +309,26 @@
    "label": "Price List Currency",
    "options": "Currency",
    "read_only": 1
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Currency",
+   "label": "Total",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "base_total",
+   "fieldtype": "Currency",
+   "label": "Total (Company Currency)",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "icon": "fa fa-shopping-cart",
  "is_submittable": 1,
  "links": [],
- "modified": "2025-10-20 12:48:03.034763",
+ "modified": "2025-10-26 10:30:46.631751",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Purchase",

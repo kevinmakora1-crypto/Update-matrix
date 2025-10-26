@@ -952,3 +952,5 @@ def create_employee_uniform(rfm_name: str):
         "message": _("{0} Employee Uniform document(s) created successfully").format(len(created_uniforms)),
         "created_uniforms": created_uniforms
     }
+
+

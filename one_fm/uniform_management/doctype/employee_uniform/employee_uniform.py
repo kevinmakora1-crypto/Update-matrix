@@ -241,47 +241,64 @@ def make_stock_entry(employee_uniform):
 	frappe.db.set_value("Employee Uniform", employee_uniform.name, "stock_entry", doclist.name)
 
 	if hasattr(employee_uniform, 'linked_rfm') and employee_uniform.linked_rfm and employee_uniform.type == "Issue":
-		update_rfm_issued_quantities(employee_uniform.linked_rfm, doclist)
+		update_rfm_issued_quantities(employee_uniform.linked_rfm)
 
 	return doclist.name
 
 
-def update_rfm_issued_quantities(rfm_name, stock_entry):
-    rfm_doc = frappe.get_doc("Request for Material", rfm_name)
-    
-    if rfm_doc.purpose != "Issue":
-        return
-    
-    for stock_item in stock_entry.items:
-        if stock_item.linked_rfm_reference:
-            for rfm_item in rfm_doc.items:
-                if rfm_item.name == stock_item.linked_rfm_reference:
-                    current_issued = rfm_item.issued_quantity or 0
-                    rfm_item.issued_quantity = current_issued + (stock_item.qty or 0)
-                    break
-    
-    rfm_doc.status = calculate_rfm_status(rfm_doc)
-    rfm_doc.save(ignore_permissions=True)
-    frappe.db.commit()
+def update_rfm_issued_quantities(rfm_name):
+	rfm_doc = frappe.get_doc("Request for Material", rfm_name)
+	
+	if rfm_doc.purpose != "Issue":
+		return
+	
+	for rfm_item in rfm_doc.items:
+		rfm_item.issued_quantity = 0
+	
+	linked_uniforms = frappe.get_all(
+		"Employee Uniform",
+		filters={
+			"linked_rfm": rfm_name,
+			"docstatus": 1,
+			"type": "Issue"
+		},
+		pluck="name"
+	)
+	
+	for uniform_name in linked_uniforms:
+		uniform_doc = frappe.get_doc("Employee Uniform", uniform_name)
+		
+		if uniform_doc.stock_entry:
+			stock_entry_doc = frappe.get_doc("Stock Entry", uniform_doc.stock_entry)
+			for stock_item in stock_entry_doc.items:
+				if stock_item.linked_rfm_reference:
+					for rfm_item in rfm_doc.items:
+						if rfm_item.name == stock_item.linked_rfm_reference:
+							rfm_item.issued_quantity = (rfm_item.issued_quantity or 0) + (stock_item.qty or 0)
+							break
+	
+	rfm_doc.status = calculate_rfm_status(rfm_doc)
+	rfm_doc.save(ignore_permissions=True)
+	frappe.db.commit()
 
 
 def calculate_rfm_status(rfm_doc):
-    total_requested = 0
-    total_issued = 0
-    
-    for item in rfm_doc.items:
-        requested_qty = item.qty or 0
-        issued_qty = item.issued_quantity or 0
-        
-        total_requested += requested_qty
-        total_issued += issued_qty
-    
-    if total_issued == 0:
-        return "Pending"
-    elif total_issued < total_requested:
-        return "Partially Issued"
-    else:
-        return "Issued"
+	total_requested = 0
+	total_issued = 0
+	
+	for item in rfm_doc.items:
+		requested_qty = item.qty or 0
+		issued_qty = item.issued_quantity or 0
+		
+		total_requested += requested_qty
+		total_issued += issued_qty
+	
+	if total_issued == 0:
+		return "Pending"
+	elif total_issued < total_requested:
+		return "Partially Issued"
+	else:
+		return "Issued"
 
 def get_issued_item_quantity(item, employee):
 	issued_qty = 0

@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 import frappe
 import json
+from erpnext.stock.doctype.item.item import  get_uom_conv_factor
 from collections import defaultdict
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
@@ -22,6 +23,40 @@ from one_fm.utils import get_users_with_role_permitted_to_doctype
 from frappe.desk.form.assign_to import add as add_assignment, DuplicateToDoError, remove as remove_assignment, close_all_assignments
 
 class RequestforMaterial(BuyingController):
+    
+    @frappe.whitelist()
+    def get_conversion_factor(self,item_code, uom):
+        edit_row = 0
+        item = frappe.get_cached_value("Item", item_code, ["variant_of", "stock_uom"], as_dict=True)
+        if not item_code or not item or uom == item.stock_uom:
+            return {"conversion_factor": 1.0}
+
+        item_codes = [item_code]
+        if item.variant_of:
+            item_codes.append(item.variant_of)
+
+        parent = frappe.qb.DocType("Item")
+        child = frappe.qb.DocType("UOM Conversion Detail")
+        query = (
+            frappe.qb.from_(parent)
+            .join(child)
+            .on(parent.name == child.parent)
+            .select(child.conversion_factor)
+            .where((parent.name.isin(item_codes)) & (child.uom == uom))
+            .orderby(parent.has_variants)
+            .limit(1)
+        )
+        conversion_factor = query.run(pluck="conversion_factor")
+
+        if not conversion_factor:
+            conversion_factor = get_uom_conv_factor(uom, item.stock_uom)
+        else:
+            conversion_factor = conversion_factor[0]
+
+        if not conversion_factor:
+            edit_row = 1 
+        return {"edit_row": edit_row}
+    
     @frappe.whitelist()
     def get_default_warehouse(self):
         return frappe.db.get_single_value('Stock Settings', 'default_warehouse')
@@ -47,16 +82,23 @@ class RequestforMaterial(BuyingController):
         self.validate_uom_conversion()
         # self.validate_item_reservation()
         self.validate_linked_request_quantities()
-
+        
+        
+    def on_update_after_submit(self):
+        self.validate_uom_conversion()
+        
+        
     def validate_uom_conversion(self):
         for item in self.items:
+            if item.conversion_factor <=0:
+                frappe.throw(f"Please set conversion factor for row {item.idx} !")
             if item.uom and item.stock_uom and item.uom != item.stock_uom:
                 if not item.conversion_factor or item.conversion_factor <= 0:
                     frappe.throw(_("Row #{}: Conversion Factor is required when UOM is different from Stock UOM.").format(item.idx))
 
                 item.stock_qty = flt(item.qty) * flt(item.conversion_factor)
 
-                must_be_whole_number = frappe.db.get_value("Item", item.item_code, "must_be_whole_number")
+                must_be_whole_number = frappe.db.get_value("UOM", item.stock_uom, "must_be_whole_number")
                 if must_be_whole_number and item.stock_qty % 1 != 0:
                     frappe.throw(_("Row #{}: Stock Qty for item {0} cannot be a fraction as it must be a whole number.").format(item.idx, item.item_code))
             else:

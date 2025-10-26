@@ -9,21 +9,26 @@ var handle_uom_conversion = function(frm, cdt, cdn) {
     let row = locals[cdt][cdn];
     if (row.item_code && row.uom && row.stock_uom && row.uom !== row.stock_uom) {
         frappe.call({
-            method: "erpnext.stock.utils.get_conversion_factor",
+            method: "get_conversion_factor",
+			doc: frm.doc,
             args: {
                 item_code: row.item_code,
                 uom: row.uom
             },
             callback: function(r) {
-                if (r.message && r.message.conversion_factor) {
-                    frappe.model.set_value(cdt, cdn, "conversion_factor", r.message.conversion_factor);
-                } else {
-                    frappe.model.set_value(cdt, cdn, "conversion_factor", 0);
-                }
+				
+				if(r.message.edit_row){
+				setTimeout(async function(){
+					frappe.model.set_value(cdt, cdn, "conversion_factor",0);
+					frm.fields_dict[row.parentfield].grid.grid_rows_by_docname[cdn].toggle_editable('conversion_factor', true);
+				},1000)
+				}
+				
             }
         });
     } else {
-        frappe.model.set_value(cdt, cdn, "conversion_factor", 1);
+		
+        // frappe.model.set_value(cdt, cdn, "conversion_factor", 1);
         if(row.qty){
             frappe.model.set_value(cdt, cdn, "stock_qty", row.qty);
         } else {
@@ -298,6 +303,7 @@ frappe.ui.form.on('Request for Material', {
 				}
 			},
 			callback: function(r) {
+				
 				const d = item;
 				if(!r.exc) {
 					$.each(r.message, function(k, v) {
@@ -798,7 +804,7 @@ var set_item_field_property = function(frm) {
 		frappe.meta.get_docfield("Request for Material Item", "requested_description", frm.doc.name).reqd = false;
 	}
 	else if((frm.doc.docstatus == 1 && frm.doc.workflow_state == 'Approved')){
-		var fields = ['requested_item_name', 'requested_description', 'qty', 'uom', 'stock_uom'];
+		var fields = ['requested_item_name', 'requested_description', 'qty', 'stock_uom'];
 		fields.forEach((field, i) => {
 			fields_dict[i] = {'fieldname': field, 'read_only': true}
 		});

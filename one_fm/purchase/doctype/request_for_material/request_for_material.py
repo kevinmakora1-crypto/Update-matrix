@@ -744,7 +744,7 @@ def make_request_for_purchase(source_name, target_doc=None):
 @frappe.whitelist()
 def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
     rfm = frappe.get_doc("Request for Material", rfm_name)
-    
+
     if stock_entry_type == "Material Issue" and rfm.purpose != "Issue":
         frappe.throw(_("RFM Purpose must be Issue for Material Issue"))
     
@@ -754,10 +754,10 @@ def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
     if rfm.docstatus != 1:
         frappe.throw(_("RFM must be approved (submitted)"))
     
-    non_uniform_items = [item for item in rfm.items if not item.is_uniform_request]
+    valid_items = [item for item in rfm.items if not item.is_uniform_request and item.item_code]
     
-    if not non_uniform_items:
-        frappe.throw(_("No items found to create Stock Entry. All items in this RFM are uniform requests."))
+    if not valid_items:
+        frappe.throw(_("No line items with Item Code are available for processing. Add valid Item Codes to proceed."))
     
     stock_entry = frappe.new_doc("Stock Entry")
     stock_entry.company = rfm.company
@@ -772,10 +772,7 @@ def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
     elif rfm.purpose == "Issue":
         stock_entry.stock_entry_type = "Material Issue"
 
-    for item in rfm.items:
-        if item.is_uniform_request:
-            continue
-        
+    for item in valid_items:
         if rfm.purpose == "Issue":
             stock_entry.append("items", {
                 "item_code": item.item_code,
@@ -799,7 +796,6 @@ def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
                 "stock_uom": item.stock_uom,
                 "conversion_factor": item.conversion_factor or 1
             })
-
     
     stock_entry.insert()
     
@@ -853,11 +849,11 @@ def create_employee_uniform(rfm_name: str):
     
     uniform_items = [
         item for item in rfm.items 
-        if item.is_uniform_request and item.employee
+        if item.is_uniform_request and item.employee and item.item_code
     ]
     
     if not uniform_items:
-        frappe.throw(_("No uniform request items found with assigned employees in this RFM."))
+        frappe.throw(_("No uniform request items found with assigned employees and valid Item Codes in this RFM. Please ensure that items have 'Uniform Request' checked, an assigned employee, and a valid Item Code."))
     
     already_linked = [
         item for item in uniform_items 

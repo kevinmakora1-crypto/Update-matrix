@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 import frappe
 import json
+from erpnext.stock.doctype.item.item import  get_uom_conv_factor
 from collections import defaultdict
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
@@ -22,6 +23,40 @@ from one_fm.utils import get_users_with_role_permitted_to_doctype
 from frappe.desk.form.assign_to import add as add_assignment, DuplicateToDoError, remove as remove_assignment, close_all_assignments
 
 class RequestforMaterial(BuyingController):
+    
+    @frappe.whitelist()
+    def get_conversion_factor(self, item_code, uom):
+        edit_row = 0
+        item = frappe.get_cached_value("Item", item_code, ["variant_of", "stock_uom"], as_dict=True)
+        if not item_code or not item or uom == item.stock_uom:
+            return {"conversion_factor": 1.0}
+
+        item_codes = [item_code]
+        if item.variant_of:
+            item_codes.append(item.variant_of)
+
+        parent = frappe.qb.DocType("Item")
+        child = frappe.qb.DocType("UOM Conversion Detail")
+        query = (
+            frappe.qb.from_(parent)
+            .join(child)
+            .on(parent.name == child.parent)
+            .select(child.conversion_factor)
+            .where((parent.name.isin(item_codes)) & (child.uom == uom))
+            .orderby(parent.has_variants)
+            .limit(1)
+        )
+        conversion_factor = query.run(pluck="conversion_factor")
+
+        if not conversion_factor:
+            conversion_factor = get_uom_conv_factor(uom, item.stock_uom)
+        else:
+            conversion_factor = conversion_factor[0]
+
+        if not conversion_factor:
+            edit_row = 1 
+        return {"edit_row": edit_row}
+    
     @frappe.whitelist()
     def get_default_warehouse(self):
         return frappe.db.get_single_value('Stock Settings', 'default_warehouse')
@@ -44,8 +79,30 @@ class RequestforMaterial(BuyingController):
         self.set_item_fields()
         self.set_title()
         self.validate_item_qty()
+        self.validate_uom_conversion()
         # self.validate_item_reservation()
         self.validate_linked_request_quantities()
+        
+        
+    def on_update_after_submit(self):
+        self.validate_uom_conversion()
+        
+        
+    def validate_uom_conversion(self):
+        for item in self.items:
+            if item.conversion_factor <= 0:
+                frappe.throw(f"Please set conversion factor for row {item.idx} !")
+            if item.uom and item.stock_uom and item.uom != item.stock_uom:
+                if not item.conversion_factor or item.conversion_factor <= 0:
+                    frappe.throw(_("Row #{}: Conversion Factor is required when UOM is different from Stock UOM.").format(item.idx))
+
+                item.stock_qty = flt(item.qty) * flt(item.conversion_factor)
+
+                must_be_whole_number = frappe.db.get_value("UOM", item.stock_uom, "must_be_whole_number")
+                if must_be_whole_number and item.stock_qty % 1 != 0:
+                    frappe.throw(_("Row #{}: Stock Qty for item {0} cannot be a fraction as it must be a whole number.").format(item.idx, item.item_code))
+            else:
+                item.stock_qty = item.qty
 
     def _initialize_custom_quantities(self):
             """
@@ -54,7 +111,10 @@ class RequestforMaterial(BuyingController):
             """
             for item in self.items:
                     item.custom_rfp_quantity = 0
-                    item.custom_pending_quantity = item.qty
+                    if item.uom != item.stock_uom:
+                        item.custom_pending_quantity = item.stock_qty
+                    else:
+                        item.custom_pending_quantity = item.qty
 
     def validate_item_reservation(self):
         # validate item reservation
@@ -845,6 +905,7 @@ def update_rfm_status_against_purchase_receipt(doc, method):
 
 @frappe.whitelist()
 def has_pending_uniform_items(rfm_name: str):
+
     rfm = frappe.get_doc("Request for Material", rfm_name)
     
     uniform_items = [
@@ -856,12 +917,10 @@ def has_pending_uniform_items(rfm_name: str):
         return False
     
     for item in uniform_items:
-        if not item.linked_employee_uniform:
-            return True
+        requested_qty = item.qty or 0
+        issued_qty = item.issued_quantity or 0
         
-        employee_uniform = frappe.get_doc("Employee Uniform", item.linked_employee_uniform)
-        
-        if not employee_uniform.stock_entry:
+        if issued_qty < requested_qty:
             return True
     
     return False
@@ -870,23 +929,23 @@ def has_pending_uniform_items(rfm_name: str):
 @frappe.whitelist()
 def create_employee_uniform(rfm_name: str):
     rfm = frappe.get_doc("Request for Material", rfm_name)
-    
+
     uniform_items = [
         item for item in rfm.items 
         if item.is_uniform_request and item.employee and item.item_code
     ]
-    
+
     if not uniform_items:
         frappe.throw(_("No uniform request items found with assigned employees and valid Item Codes in this RFM. Please ensure that items have 'Uniform Request' checked, an assigned employee, and a valid Item Code."))
     
     already_linked = [
         item for item in uniform_items 
-        if item.linked_employee_uniform
+        if (item.issued_quantity or 0) < (item.qty or 0)
     ]
-    
-    if already_linked:
+
+    if not pending_items:
         frappe.throw(
-            _("Some items are already linked to Employee Uniform documents. Employee Uniform can only be created once per RFM item.")
+            _("All uniform items in this RFM have been fully issued. No pending quantities remaining.")
         )
     
     employee_warehouse_groups = defaultdict(lambda: defaultdict(list))
@@ -914,7 +973,7 @@ def create_employee_uniform(rfm_name: str):
                     uniform_item = employee_uniform.append("uniforms", {})
                     uniform_item.item = rfm_item.item_code
                     uniform_item.item_name = rfm_item.requested_item_name or rfm_item.item_name
-                    uniform_item.quantity = float(rfm_item.qty)
+                    uniform_item.quantity = float(rfm_item.qty) - float(rfm_item.issued_quantity or 0)
                     uniform_item.uom = rfm_item.uom
                     uniform_item.issued_on = frappe.utils.today()
                     uniform_item.linked_rfm = rfm_name

@@ -294,22 +294,78 @@ frappe.ui.form.on('Request for Purchase', {
 			frm.events.make_purchase_order_for_quotation(frm, false);
 		}
 	},
-	get_requested_items_to_order: function(frm) {
-		frm.clear_table('items_to_order');
-		frm.doc.items.forEach((item, i) => {
-			var items_to_order = frm.add_child('items_to_order');
-			items_to_order.item_code = item.item_code
-			items_to_order.item_name = item.item_name
-			items_to_order.description = item.description
-			items_to_order.uom = item.uom
-			items_to_order.t_warehouse = item.t_warehouse
-			items_to_order.qty_requested = item.qty
-			items_to_order.qty = item.qty
-			items_to_order.delivery_date = item.schedule_date
-			items_to_order.request_for_material = item.request_for_material
-		});
-		frm.refresh_fields();
-	},
+    get_requested_items_to_order: async function(frm) {
+        frm.clear_table('items_to_order');
+        
+        if (!frm.doc.items || frm.doc.items.length === 0) {
+            return;
+        }
+        
+        let rfm_item_names = frm.doc.items
+            .map(item => item.custom_request_for_material_item)
+            .filter(name => name);
+        
+        if (rfm_item_names.length === 0) {
+            frm.doc.items.forEach((item) => {
+                var items_to_order = frm.add_child('items_to_order');
+                items_to_order.item_code = item.item_code;
+                items_to_order.item_name = item.item_name;
+                items_to_order.description = item.description;
+                items_to_order.uom = item.uom;
+                items_to_order.t_warehouse = item.t_warehouse;
+                items_to_order.qty_requested = item.qty;
+                items_to_order.qty = item.qty;
+                items_to_order.delivery_date = item.schedule_date;
+                items_to_order.request_for_material = item.request_for_material;
+                items_to_order.request_for_material_item = item.custom_request_for_material_item;
+            });
+            frm.refresh_fields();
+            return;
+        }
+        
+        let rfm_items_data = await frappe.call({
+            method: 'one_fm.purchase.doctype.request_for_purchase.request_for_purchase.get_rfm_item_uom_data',
+            args: {
+                rfm_item_names: rfm_item_names
+            }
+        });
+        
+        let rfm_items_map = {};
+        if (rfm_items_data.message) {
+            rfm_items_data.message.forEach(rfm_item => {
+                rfm_items_map[rfm_item.name] = rfm_item;
+            });
+        }
+        
+        frm.doc.items.forEach((item) => {
+            var items_to_order = frm.add_child('items_to_order');
+            items_to_order.item_code = item.item_code;
+            items_to_order.item_name = item.item_name;
+            items_to_order.description = item.description;
+            items_to_order.t_warehouse = item.t_warehouse;
+            items_to_order.qty_requested = item.qty;
+            items_to_order.qty = item.qty;
+            items_to_order.delivery_date = item.schedule_date;
+            items_to_order.request_for_material = item.request_for_material;
+            items_to_order.request_for_material_item = item.custom_request_for_material_item;
+            
+            let rfm_item = rfm_items_map[item.custom_request_for_material_item];
+            if (rfm_item) {
+                items_to_order.uom = rfm_item.uom;
+                items_to_order.stock_uom = rfm_item.stock_uom;
+                items_to_order.conversion_factor = rfm_item.conversion_factor || 1;
+                
+                let conversion_factor = rfm_item.conversion_factor || 1;
+                items_to_order.stock_qty = flt(item.qty || 0) * flt(conversion_factor);
+            } else {
+                items_to_order.uom = item.uom;
+                items_to_order.conversion_factor = 1;
+                items_to_order.stock_qty = item.qty;
+            }
+        });
+        
+        frm.refresh_fields();
+    },
 	supplier: function(frm) {
 		set_supplier_to_items_to_order(frm);
 	},
@@ -870,7 +926,7 @@ function fetch_from_uom_conversion(frm, cdt, cdn, from_uom, to_uom) {
                             frappe.model.set_value(cdt, cdn, 'conversion_factor', 1);
                             update_stock_qty(frm, cdt, cdn);
                             calculate_stock_rate(frm, cdt, cdn);
-                            frappe.msgprint({
+                            frappe.throw({
                                 title: __('Conversion Factor Not Found'),
                                 message: __('No conversion factor found between {0} and {1}.<br><br><b>Please enter manually:</b><br>• Example 1: If 1 {0} = 5 {1}, enter 5<br>• Example 2: If 1 {0} = 0.2 {1}, enter 0.2<br><br>Formula: Stock Qty = Qty × Conversion Factor', [to_uom, from_uom]),
                                 indicator: 'orange'

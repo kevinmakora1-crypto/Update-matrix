@@ -25,7 +25,7 @@ from frappe.desk.form.assign_to import add as add_assignment, DuplicateToDoError
 class RequestforMaterial(BuyingController):
     
     @frappe.whitelist()
-    def get_conversion_factor(self,item_code, uom):
+    def get_conversion_factor(self, item_code, uom):
         edit_row = 0
         item = frappe.get_cached_value("Item", item_code, ["variant_of", "stock_uom"], as_dict=True)
         if not item_code or not item or uom == item.stock_uom:

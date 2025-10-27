@@ -5,6 +5,51 @@
 frappe.provide("erpnext.accounts.dimensions");
 erpnext.buying.setup_buying_controller();
 
+var handle_uom_conversion = function(frm, cdt, cdn) {
+    let row = locals[cdt][cdn];
+    if (row.item_code && row.uom && row.stock_uom && row.uom !== row.stock_uom) {
+        frappe.call({
+            method: "get_conversion_factor",
+			doc: frm.doc,
+            args: {
+                item_code: row.item_code,
+                uom: row.uom
+            },
+            callback: function(r) {
+				
+				if(r.message.edit_row){
+				setTimeout(async function(){
+					frappe.model.set_value(cdt, cdn, "conversion_factor", 0);
+					frm.fields_dict[row.parentfield].grid.grid_rows_by_docname[cdn].toggle_editable('conversion_factor', true);
+				},700)
+				}
+				
+            }
+        });
+    } else {
+		
+        // frappe.model.set_value(cdt, cdn, "conversion_factor", 1);
+        if(row.qty){
+            frappe.model.set_value(cdt, cdn, "stock_qty", row.qty);
+        } else {
+            frappe.model.set_value(cdt, cdn, "stock_qty", 0);
+        }
+    }
+};
+
+var calculate_stock_qty = function(cdt, cdn) {
+    let row = locals[cdt][cdn];
+    if (row.qty && row.uom && row.stock_uom && row.uom !== row.stock_uom) {
+        if(row.conversion_factor) {
+            frappe.model.set_value(cdt, cdn, "stock_qty", flt(row.qty) * flt(row.conversion_factor));
+        }
+    } else if (row.qty) {
+        frappe.model.set_value(cdt, cdn, "stock_qty", row.qty);
+    } else {
+		frappe.model.set_value(cdt, cdn, "stock_qty", 0);
+	}
+};
+
 frappe.ui.form.on('Request for Material', {
 	purchase_rfm: function(frm){
 		if(frm.is_dirty()){
@@ -258,6 +303,7 @@ frappe.ui.form.on('Request for Material', {
 				}
 			},
 			callback: function(r) {
+				
 				const d = item;
 				if(!r.exc) {
 					$.each(r.message, function(k, v) {
@@ -759,7 +805,7 @@ var set_item_field_property = function(frm) {
 		frappe.meta.get_docfield("Request for Material Item", "requested_description", frm.doc.name).reqd = false;
 	}
 	else if((frm.doc.docstatus == 1 && frm.doc.workflow_state == 'Approved')){
-		var fields = ['requested_item_name', 'requested_description', 'qty', 'uom', 'stock_uom'];
+		var fields = ['requested_item_name', 'requested_description', 'qty', 'stock_uom'];
 		fields.forEach((field, i) => {
 			fields_dict[i] = {'fieldname': field, 'read_only': true}
 		});
@@ -851,7 +897,14 @@ var set_employee_or_project = function(frm) {
 frappe.ui.form.on("Request for Material Item", {
 	setup: (frm)=>{
 	},
+    uom: function(frm, cdt, cdn) {
+        handle_uom_conversion(frm, cdt, cdn);
+    },
+    conversion_factor: function(frm, cdt, cdn) {
+        calculate_stock_qty(cdt, cdn);
+    },
 	qty: function (frm, doctype, name) {
+        calculate_stock_qty(doctype, name);
 	},
 	pur_qty: function (frm, doctype, name){
 		var d = locals[doctype][name];

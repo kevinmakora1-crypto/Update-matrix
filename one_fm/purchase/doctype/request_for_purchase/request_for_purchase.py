@@ -25,7 +25,6 @@ class RequestforPurchase(Document):
 		self._update_linked_rfm_quantities()
 		update_rfp_status(self.name)
 
-  
 	def on_update_after_submit(self):
 		self._update_linked_rfm_quantities()
 		update_rfp_status(self.name)

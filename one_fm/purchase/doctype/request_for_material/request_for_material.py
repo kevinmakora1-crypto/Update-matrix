@@ -86,23 +86,25 @@ class RequestforMaterial(BuyingController):
         
     def on_update_after_submit(self):
         self.validate_uom_conversion()
+        self.set_purchase_rfm_quantity()
         
+    def set_pending_quantity_per_item():
+        """Set the pending quantity per item based on Stock UOM"""
         
     def validate_uom_conversion(self):
         for item in self.items:
-            if item.conversion_factor <= 0:
-                frappe.throw(f"Please set conversion factor for row {item.idx} !")
             if item.uom and item.stock_uom and item.uom != item.stock_uom:
                 if not item.conversion_factor or item.conversion_factor <= 0:
-                    frappe.throw(_("Row #{}: Conversion Factor is required when UOM is different from Stock UOM.").format(item.idx))
+                    frappe.throw(_("Row #{}: Conversion factor must be set for Item: {} ").format(item.idx,item.item_code))
 
                 item.stock_qty = flt(item.qty) * flt(item.conversion_factor)
-
+                
                 must_be_whole_number = frappe.db.get_value("UOM", item.stock_uom, "must_be_whole_number")
                 if must_be_whole_number and item.stock_qty % 1 != 0:
-                    frappe.throw(_("Row #{}: Stock Qty for item {0} cannot be a fraction as it must be a whole number.").format(item.idx, item.item_code))
+                    frappe.throw(_("Row #{0}: Stock Qty for item {1} cannot be a fraction as it must be a whole number.").format(item.idx, item.item_code))
             else:
                 item.stock_qty = item.qty
+            item.custom_pending_quantity = item.stock_qty
 
     def _initialize_custom_quantities(self):
             """
@@ -233,6 +235,7 @@ class RequestforMaterial(BuyingController):
     def before_cancel(self):
         if self.workflow_state == 'Rejected' and frappe.session.user == self.request_for_material_approver:
             self.notify_material_requester()
+        self.set_purchase_rfm_quantity()
 
     def on_submit(self):
         self._initialize_custom_quantities()
@@ -243,6 +246,7 @@ class RequestforMaterial(BuyingController):
             self.assign_to_warehouse_supervisor()
         if self.per_received == 100:
             close_all_assignments(self.doctype, self.name)
+        self.set_purchase_rfm_quantity()
 
     def _get_total_rfp_quantity(self):
         return frappe.db.sql("""
@@ -341,7 +345,40 @@ class RequestforMaterial(BuyingController):
                 pass
         elif self.technical_verification_needed == "No" and self.technical_verification_from:
             remove_assignment(self.doctype, self.name, self.technical_verification_from)
+            
+    def set_purchase_rfm_quantity(self):
+        """For Issue or Transfer RFMs, set the purchased quantity per item based on linked Purchase RFMs"""
+        if self.purpose in ['Transfer','Issue'] or not self.issue_transfer_rfm :
+            return
+        purchase_dict = {}
+        for item in self.items:
+            """Fetch the sum of all the RFMs that are linked to 
+            this RFM of Type Purchase and set the total value in 
+            the purchase_rfm_quantity  field """
+            
 
+            purchased_qty = frappe.db.sql("""
+                    SELECT 
+                        SUM(rfmi.stock_qty)
+                    FROM 
+                        `tabRequest for Material Item` AS rfmi
+                    JOIN 
+                        `tabRequest for Material` AS rfm ON rfmi.parent = rfm.name
+                    WHERE 
+                        rfm.issue_transfer_rfm = %s 
+                        AND rfm.purpose = 'Purchase' 
+                        AND rfm.docstatus = 1
+                        AND rfm.workflow_state != 'Rejected'
+                        AND rfmi.item_code = %s
+                """, (self.issue_transfer_rfm, item.item_code))[0][0] or 0
+            purchase_dict[item.item_code] = purchased_qty
+        rfm_doc = frappe.get_doc('Request for Material', self.issue_transfer_rfm)
+        for one in rfm_doc.items:
+            if  purchase_dict.get(one.item_code):
+                one.db_set('purchase_rfm_quantity', purchase_dict[one.item_code])
+        frappe.db.commit()
+    
+    
     def check_modified_date(self):
         mod_db = frappe.db.sql("""select modified from `tabRequest for Material` where name = %s""",
             self.name)
@@ -475,14 +512,14 @@ class RequestforMaterial(BuyingController):
             key_type, key_val = build_key(it)
             if not key_val:  # safety, should not happen per business rule
                 frappe.throw(_("Source RFM {0} contains a row without Item Code and Item Name.").format(frappe.bold(linked_name)))
-            add_to(source_totals, (key_type, key_val), it.qty)
+            add_to(source_totals, (key_type, key_val), it.stock_qty)
 
         current_totals = {}
         for it in self.items:
             key_type, key_val = build_key(it)
             if not key_val:
                 frappe.throw(_("Row {0}: missing Item Code and Item Name").format(it.idx))
-            add_to(current_totals, (key_type, key_val), it.qty)
+            add_to(current_totals, (key_type, key_val), it.stock_qty)
 
         violations = []
         for key, curr_qty in current_totals.items():

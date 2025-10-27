@@ -19,7 +19,7 @@ var handle_uom_conversion = function(frm, cdt, cdn) {
 				
 				if(r.message.edit_row){
 				setTimeout(async function(){
-					frappe.model.set_value(cdt, cdn, "conversion_factor",0);
+					frappe.model.set_value(cdt, cdn, "conversion_factor", 0);
 					frm.fields_dict[row.parentfield].grid.grid_rows_by_docname[cdn].toggle_editable('conversion_factor', true);
 				},700)
 				}

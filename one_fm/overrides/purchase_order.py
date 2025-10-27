@@ -260,7 +260,7 @@ class PurchaseOrderOverride(PurchaseOrder):
             po_items = frappe.db.get_all(
                 "Purchase Order Item", 
                 filters={
-                    "parent": ["IN", purchase_orders], 
+                    "parent": ["in", purchase_orders], 
                     "item_code": rfp_item.item_code, 
                     "parentfield": "items"
                 },

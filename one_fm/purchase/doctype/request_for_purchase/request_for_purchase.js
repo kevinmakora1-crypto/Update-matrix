@@ -821,7 +821,7 @@ function validate_and_update_conversion_factor(frm, cdt, cdn) {
     
     if (!row.conversion_factor || row.conversion_factor <= 0) {
         frappe.model.set_value(cdt, cdn, 'conversion_factor', 1);
-        frappe.throw({
+        frappe.msgprint({
             title: __('Invalid Conversion Factor'),
             message: __('Conversion factor must be greater than 0. Setting to 1.'),
             indicator: 'red'
@@ -926,7 +926,7 @@ function fetch_from_uom_conversion(frm, cdt, cdn, from_uom, to_uom) {
                             frappe.model.set_value(cdt, cdn, 'conversion_factor', 1);
                             update_stock_qty(frm, cdt, cdn);
                             calculate_stock_rate(frm, cdt, cdn);
-                            frappe.throw({
+                            frappe.msgprint({
                                 title: __('Conversion Factor Not Found'),
                                 message: __('No conversion factor found between {0} and {1}.<br><br><b>Please enter manually:</b><br>• Example 1: If 1 {0} = 5 {1}, enter 5<br>• Example 2: If 1 {0} = 0.2 {1}, enter 0.2<br><br>Formula: Stock Qty = Qty × Conversion Factor', [to_uom, from_uom]),
                                 indicator: 'orange'

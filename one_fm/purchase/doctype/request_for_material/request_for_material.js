@@ -19,7 +19,7 @@ var handle_uom_conversion = function(frm, cdt, cdn) {
 				
 				if(r.message.edit_row){
 				setTimeout(async function(){
-					frappe.model.set_value(cdt, cdn, "conversion_factor",0);
+					frappe.model.set_value(cdt, cdn, "conversion_factor", 0);
 					frm.fields_dict[row.parentfield].grid.grid_rows_by_docname[cdn].toggle_editable('conversion_factor', true);
 				},700)
 				}
@@ -583,17 +583,19 @@ function check_and_show_employee_uniform_button(frm) {
 
 function create_employee_uniform_from_rfm(frm) {
     let uniform_items = frm.doc.items.filter(
-        item => item.is_uniform_request && item.employee && !item.linked_employee_uniform
-    );
-    
-    if (uniform_items.length === 0) {
-        frappe.msgprint({
-            title: __('No Uniform Items'),
-            message: __('All uniform items have already been processed or there are no uniform request items with assigned employees.'),
-            indicator: 'orange'
-        });
-        return;
-    }
+    item => item.is_uniform_request && 
+            item.employee && 
+            (item.issued_quantity || 0) < (item.qty || 0)
+	);
+
+	if (uniform_items.length === 0) {
+		frappe.msgprint({
+			title: __('No Pending Uniform Items'),
+			message: __('All uniform items have been fully issued or there are no uniform request items with assigned employees.'),
+			indicator: 'orange'
+		});
+		return;
+	}
     
     frappe.call({
         method: 'one_fm.purchase.doctype.request_for_material.request_for_material.create_employee_uniform',
@@ -642,15 +644,16 @@ function create_employee_uniform_from_rfm(frm) {
             }
         },
         error: function(r) {
-            frappe.msgprint({
-                title: __('Error'),
-                message: __('Failed to create Employee Uniform documents. Please check the error log.'),
-                indicator: 'red'
-            });
+            if (!r || !r._server_messages) {
+                frappe.msgprint({
+                    title: __('Error'),
+                    message: __('Failed to create Employee Uniform documents. Please check the error log.'),
+                    indicator: 'red'
+                });
+            }
         }
     });
 }
-
 function create_stock_entry(frm, stock_entry_type) {
     frappe.call({
         method: 'one_fm.purchase.doctype.request_for_material.request_for_material.create_stock_entry_from_rfm',

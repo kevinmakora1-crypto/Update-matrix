@@ -90,7 +90,7 @@ class RequestforMaterial(BuyingController):
         
     def validate_uom_conversion(self):
         for item in self.items:
-            if item.conversion_factor <=0:
+            if item.conversion_factor <= 0:
                 frappe.throw(f"Please set conversion factor for row {item.idx} !")
             if item.uom and item.stock_uom and item.uom != item.stock_uom:
                 if not item.conversion_factor or item.conversion_factor <= 0:

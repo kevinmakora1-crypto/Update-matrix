@@ -583,17 +583,19 @@ function check_and_show_employee_uniform_button(frm) {
 
 function create_employee_uniform_from_rfm(frm) {
     let uniform_items = frm.doc.items.filter(
-        item => item.is_uniform_request && item.employee && !item.linked_employee_uniform
-    );
-    
-    if (uniform_items.length === 0) {
-        frappe.msgprint({
-            title: __('No Uniform Items'),
-            message: __('All uniform items have already been processed or there are no uniform request items with assigned employees.'),
-            indicator: 'orange'
-        });
-        return;
-    }
+    item => item.is_uniform_request && 
+            item.employee && 
+            (item.issued_quantity || 0) < (item.qty || 0)
+	);
+
+	if (uniform_items.length === 0) {
+		frappe.msgprint({
+			title: __('No Pending Uniform Items'),
+			message: __('All uniform items have been fully issued or there are no uniform request items with assigned employees.'),
+			indicator: 'orange'
+		});
+		return;
+	}
     
     frappe.call({
         method: 'one_fm.purchase.doctype.request_for_material.request_for_material.create_employee_uniform',

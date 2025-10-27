@@ -881,6 +881,7 @@ def update_rfm_status_against_purchase_receipt(doc, method):
 
 @frappe.whitelist()
 def has_pending_uniform_items(rfm_name: str):
+
     rfm = frappe.get_doc("Request for Material", rfm_name)
     
     uniform_items = [
@@ -892,12 +893,10 @@ def has_pending_uniform_items(rfm_name: str):
         return False
     
     for item in uniform_items:
-        if not item.linked_employee_uniform:
-            return True
+        requested_qty = item.qty or 0
+        issued_qty = item.issued_quantity or 0
         
-        employee_uniform = frappe.get_doc("Employee Uniform", item.linked_employee_uniform)
-        
-        if not employee_uniform.stock_entry:
+        if issued_qty < requested_qty:
             return True
     
     return False
@@ -906,23 +905,23 @@ def has_pending_uniform_items(rfm_name: str):
 @frappe.whitelist()
 def create_employee_uniform(rfm_name: str):
     rfm = frappe.get_doc("Request for Material", rfm_name)
-    
+
     uniform_items = [
         item for item in rfm.items 
         if item.is_uniform_request and item.employee and item.item_code
     ]
-    
+
     if not uniform_items:
         frappe.throw(_("No uniform request items found with assigned employees and valid Item Codes in this RFM. Please ensure that items have 'Uniform Request' checked, an assigned employee, and a valid Item Code."))
     
     already_linked = [
         item for item in uniform_items 
-        if item.linked_employee_uniform
+        if (item.issued_quantity or 0) < (item.qty or 0)
     ]
-    
-    if already_linked:
+
+    if not pending_items:
         frappe.throw(
-            _("Some items are already linked to Employee Uniform documents. Employee Uniform can only be created once per RFM item.")
+            _("All uniform items in this RFM have been fully issued. No pending quantities remaining.")
         )
     
     employee_warehouse_groups = defaultdict(lambda: defaultdict(list))
@@ -950,7 +949,7 @@ def create_employee_uniform(rfm_name: str):
                     uniform_item = employee_uniform.append("uniforms", {})
                     uniform_item.item = rfm_item.item_code
                     uniform_item.item_name = rfm_item.requested_item_name or rfm_item.item_name
-                    uniform_item.quantity = float(rfm_item.qty)
+                    uniform_item.quantity = float(rfm_item.qty) - float(rfm_item.issued_quantity or 0)
                     uniform_item.uom = rfm_item.uom
                     uniform_item.issued_on = frappe.utils.today()
                     uniform_item.linked_rfm = rfm_name

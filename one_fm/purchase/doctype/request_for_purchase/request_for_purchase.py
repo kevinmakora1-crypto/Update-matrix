@@ -141,7 +141,6 @@ class RequestforPurchase(Document):
 		self.db_set('notified_the_rfm_requester', True)
 		frappe.msgprint(_("Notification sent to RFM Requester"))
 
-  
 	def validate_rfm_quantity(self):
 		for one in self.items_to_order:
 			rfm_qty = None

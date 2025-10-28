@@ -423,7 +423,7 @@ class RequestforPurchase(Document):
 			if item.rate and item.qty:
 				item.amount = flt(item.rate) * flt(item.qty)
 
-				item.base_rate = flt(item.rate) * (1 / exchange_rate)
+				item.base_rate = flt(item.rate) * (exchange_rate)
 				item.base_amount = item.qty * item.base_rate
 
 

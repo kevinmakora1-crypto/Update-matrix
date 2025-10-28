@@ -3,7 +3,7 @@ from frappe import _
 
 from one_fm.one_fm.page.face_recognition.face_recognition import update_onboarding_employee
 from datetime import timedelta
-from one_fm.one_fm.utils import get_current_shift, is_holiday,get_holiday_today
+from one_fm.utils import get_current_shift, is_holiday,get_holiday_today
 from one_fm.api.v1.utils import (
     response, verify_via_face_recogniton_service
 )

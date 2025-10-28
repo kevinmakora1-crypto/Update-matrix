@@ -88,7 +88,7 @@ class RequestforMaterial(BuyingController):
         self.validate_uom_conversion()
         self.set_purchase_rfm_quantity()
         
-    def set_pending_quantity_per_item():
+    def set_pending_quantity_per_item(self):
         """Set the pending quantity per item based on Stock UOM"""
         
     def validate_uom_conversion(self):

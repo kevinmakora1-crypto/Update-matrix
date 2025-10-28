@@ -148,6 +148,7 @@ def get_columns(filters=None):
         {"label": "RFP Amount", "fieldname": "rfp_amount", "fieldtype": "Currency", "options": "currency", "width": 110},
         {"label": "RFP Amount (Company Currency)", "fieldname": "rfp_amount_company_currency", "fieldtype": "Currency", "width": 110},
         {"label": "Purchase Order", "fieldname": "purchase_order", "fieldtype": "Data", "width": 160},
+        # NOTE: This hidden 'currency' column is required because the 'options' attribute of the 'RFP Amount' column depends on the presence of the 'currency' field.
         {"label": "Currency", "fieldname": "currency", "fieldtype": "Data", "hidden": 1},
     ]
 

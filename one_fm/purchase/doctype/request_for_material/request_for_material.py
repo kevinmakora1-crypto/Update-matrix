@@ -759,40 +759,6 @@ def make_delivery_note(source_name, target_doc=None):
 
     return doclist
 
-@frappe.whitelist()
-def create_partial_request_for_purchase(source_name, items):
-    """
-    Creates a Request for Purchase for a subset of items from a Request for Material.
-    :param source_name: The name of the source Request for Material.
-    :param items: A list of dicts of items to include in the RFP.
-    """
-    if isinstance(items, str):
-        items = json.loads(items)
-
-    source_doc = frappe.get_doc("Request for Material", source_name)
-
-    rfp = frappe.new_doc("Request for Purchase")
-    rfp.company = source_doc.company
-    rfp.request_for_material = source_name
-    rfp.warehouse = source_doc.t_warehouse
-
-    for item_data in items:
-        source_item_doc = frappe.get_doc("Request for Material Item", item_data.get('request_for_material_item'))
-        rfp.append("items", {
-            "item_code": item_data.get('item_code'),
-            "qty": item_data.get('qty'),
-            "item_name": source_item_doc.item_name,
-            "description": source_item_doc.requested_description,
-            "uom": source_item_doc.uom,
-            "schedule_date": source_item_doc.schedule_date,
-            "request_for_material": source_name,
-            "request_for_material_item": item_data.get('request_for_material_item'),
-            "custom_request_for_material_item": item_data.get('request_for_material_item')
-        })
-
-    rfp.insert(ignore_permissions=True)
-    
-    return rfp
 
 @frappe.whitelist()
 def make_request_for_purchase(source_name, target_doc=None):
@@ -837,6 +803,44 @@ def make_request_for_purchase(source_name, target_doc=None):
     frappe.db.commit()
     
     return doclist
+
+
+@frappe.whitelist()
+def create_partial_request_for_purchase(source_name, items):
+    """
+    Creates a Request for Purchase for a subset of items from a Request for Material.
+    :param source_name: The name of the source Request for Material.
+    :param items: A list of dicts of items to include in the RFP.
+    """
+    if isinstance(items, str):
+        items = json.loads(items)
+
+    source_doc = frappe.get_doc("Request for Material", source_name)
+
+    rfp = frappe.new_doc("Request for Purchase")
+    rfp.company = source_doc.company
+    rfp.request_for_material = source_name
+    rfp.warehouse = source_doc.t_warehouse
+
+    for item_data in items:
+        source_item_doc = frappe.get_doc("Request for Material Item", item_data.get('request_for_material_item'))
+        rfp.append("items", {
+            "item_code": item_data.get('item_code'),
+            "qty": item_data.get('qty'),
+            "item_name": source_item_doc.item_name,
+            "description": source_item_doc.requested_description,
+            "uom": source_item_doc.uom,
+            "schedule_date": source_item_doc.schedule_date,
+            "request_for_material": source_name,
+            "request_for_material_item": item_data.get('request_for_material_item'),
+            "custom_request_for_material_item": item_data.get('request_for_material_item')
+        })
+
+    rfp.insert(ignore_permissions=True)
+    
+    return rfp
+
+
 
 @frappe.whitelist()
 def create_stock_entry_from_rfm(rfm_name, stock_entry_type):

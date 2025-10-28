@@ -297,7 +297,7 @@
   },
   {
    "default": "0",
-   "description": "The quantity of this item that are in valid Request for Purchase",
+   "description": "The quantity of this item that is in valid Request for Purchase",
    "fieldname": "custom_rfp_quantity",
    "fieldtype": "Float",
    "in_list_view": 1,

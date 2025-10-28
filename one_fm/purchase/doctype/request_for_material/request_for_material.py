@@ -348,7 +348,7 @@ class RequestforMaterial(BuyingController):
             
     def set_purchase_rfm_quantity(self):
         """For Issue or Transfer RFMs, set the purchased quantity per item based on linked Purchase RFMs"""
-        if self.purpose  in ['Transfer','Issue'] or not  self.issue_transfer_rfm:
+        if self.purpose in ['Transfer','Issue'] or not self.issue_transfer_rfm:
             return
         purchase_dict = {}
         for item in self.items:

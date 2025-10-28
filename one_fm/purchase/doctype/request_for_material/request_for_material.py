@@ -945,112 +945,121 @@ def has_pending_uniform_items(rfm_name: str):
 
 @frappe.whitelist()
 def create_employee_uniform(rfm_name: str):
-    rfm = frappe.get_doc("Request for Material", rfm_name)
+	rfm = frappe.get_doc("Request for Material", rfm_name)
 
-    uniform_items = [
-        item for item in rfm.items 
-        if item.is_uniform_request and item.employee and item.item_code
-    ]
+	uniform_items = [
+		item for item in rfm.items 
+		if item.is_uniform_request and item.employee and item.item_code
+	]
 
-    if not uniform_items:
-        frappe.throw(_("No uniform request items found with assigned employees and valid Item Codes in this RFM. Please ensure that items have 'Uniform Request' checked, an assigned employee, and a valid Item Code."))
-    
-    already_linked = [
-        item for item in uniform_items 
-        if (item.issued_quantity or 0) < (item.qty or 0)
-    ]
+	if not uniform_items:
+		frappe.throw(_("No uniform request items found with assigned employees and valid Item Codes in this RFM. Please ensure that items have 'Uniform Request' checked, an assigned employee, and a valid Item Code."))
+	
+	pending_items = [
+		item for item in uniform_items 
+		if (item.issued_quantity or 0) < (item.qty or 0)
+	]
 
-    if not pending_items:
-        frappe.throw(
-            _("All uniform items in this RFM have been fully issued. No pending quantities remaining.")
-        )
-    
-    employee_warehouse_groups = defaultdict(lambda: defaultdict(list))
-    for item in uniform_items:
-        if not item.warehouse:
-            frappe.throw(_("Row {0}: No warehouse specified for item {1}").format(item.idx, item.item_code or item.requested_item_name))
-        employee_warehouse_groups[item.employee][item.warehouse].append(item)
-    
-    created_uniforms = []
-    
-    for employee, warehouse_groups in employee_warehouse_groups.items():
-        for warehouse, items in warehouse_groups.items():
-            try:
-                employee_uniform = frappe.new_doc("Employee Uniform")
+	if not pending_items:
+		frappe.throw(
+			_("All uniform items in this RFM have been fully issued. No pending quantities remaining.")
+		)
+	
+	employee_warehouse_groups = defaultdict(lambda: defaultdict(list))
+	for item in pending_items:
+		if not item.warehouse:
+			frappe.throw(_("Row {0}: No warehouse specified for item {1}").format(item.idx, item.item_code or item.requested_item_name))
+		employee_warehouse_groups[item.employee][item.warehouse].append(item)
+	
+	created_uniforms = []
+	
+	for employee, warehouse_groups in employee_warehouse_groups.items():
+		for warehouse, items in warehouse_groups.items():
+			try:
+				employee_uniform = frappe.new_doc("Employee Uniform")
 
-                employee_uniform.naming_series = "EUI-.YYYY.-" 
-                employee_uniform.type = "Issue"
-                employee_uniform.employee = employee
-                employee_uniform.warehouse = warehouse
-                employee_uniform.issued_on = frappe.utils.today()
-                employee_uniform.linked_rfm = rfm_name
-                
-                total_qty = 0
-                for rfm_item in items:
-                    uniform_item = employee_uniform.append("uniforms", {})
-                    uniform_item.item = rfm_item.item_code
-                    uniform_item.item_name = rfm_item.requested_item_name or rfm_item.item_name
-                    uniform_item.quantity = float(rfm_item.qty) - float(rfm_item.issued_quantity or 0)
-                    uniform_item.uom = rfm_item.uom
-                    uniform_item.issued_on = frappe.utils.today()
-                    uniform_item.linked_rfm = rfm_name
-                    uniform_item.linked_rfm_reference = rfm_item.name
-                    
-                    total_qty += uniform_item.quantity
-                
-                employee_uniform.total_quantity = total_qty
-                
-                employee_uniform.insert(ignore_permissions=True)
-                
-                frappe.db.set_value(
-                    "Employee Uniform",
-                    employee_uniform.name,
-                    "workflow_state",
-                    "To be Issued",
-                    update_modified=False
-                )
-                
-                for rfm_item in items:
-                    frappe.db.set_value(
-                        "Request for Material Item",
-                        rfm_item.name,
-                        "linked_employee_uniform",
-                        employee_uniform.name,
-                        update_modified=False
-                    )
-                
-                created_uniforms.append({
-                    "name": employee_uniform.name,
-                    "employee": employee,
-                    "employee_name": employee_uniform.employee_name,
-                    "warehouse": warehouse,
-                    "total_items": len(items),
-                    "total_quantity": total_qty
-                })
-                
-                frappe.msgprint(
-                    _("Employee Uniform {0} created for {1} from warehouse {2}").format(
-                        frappe.bold(employee_uniform.name),
-                        frappe.bold(employee_uniform.employee_name),
-                        frappe.bold(warehouse)
-                    )
-                )
-                
-            except Exception as e:
-                frappe.log_error(
-                    message=frappe.get_traceback(),
-                    title=f"Error creating Employee Uniform for {employee} - {warehouse}"
-                )
-                frappe.throw(
-                    _("Error creating Employee Uniform for employee {0} from warehouse {1}: {2}").format(employee, warehouse, str(e))
-                )
-    
-    frappe.db.commit()
-    
-    return {
-        "success": True,
-        "message": _("{0} Employee Uniform document(s) created successfully").format(len(created_uniforms)),
-        "created_uniforms": created_uniforms
-    }
-
-
+				employee_uniform.naming_series = "EUI-.YYYY.-" 
+				employee_uniform.type = "Issue"
+				employee_uniform.employee = employee
+				employee_uniform.warehouse = warehouse
+				employee_uniform.issued_on = frappe.utils.today()
+				employee_uniform.linked_rfm = rfm_name
+				
+				total_qty = 0
+				for rfm_item in items:
+					pending_qty = float(rfm_item.qty) - float(rfm_item.issued_quantity or 0)
+					
+					if pending_qty <= 0:
+						continue
+					
+					uniform_item = employee_uniform.append("uniforms", {})
+					uniform_item.item = rfm_item.item_code
+					uniform_item.item_name = rfm_item.requested_item_name or rfm_item.item_name
+					uniform_item.quantity = pending_qty
+					uniform_item.uom = rfm_item.uom
+					uniform_item.issued_on = frappe.utils.today()
+					uniform_item.linked_rfm = rfm_name
+					uniform_item.linked_rfm_reference = rfm_item.name
+					
+					total_qty += uniform_item.quantity
+				
+				if not employee_uniform.uniforms:
+					continue
+				
+				employee_uniform.total_quantity = total_qty
+				
+				employee_uniform.insert(ignore_permissions=True)
+				
+				frappe.db.set_value(
+					"Employee Uniform",
+					employee_uniform.name,
+					"workflow_state",
+					"To be Issued",
+					update_modified=False
+				)
+				
+				for rfm_item in items:
+					frappe.db.set_value(
+						"Request for Material Item",
+						rfm_item.name,
+						"linked_employee_uniform",
+						employee_uniform.name,
+						update_modified=False
+					)
+				
+				created_uniforms.append({
+					"name": employee_uniform.name,
+					"employee": employee,
+					"employee_name": employee_uniform.employee_name,
+					"warehouse": warehouse,
+					"total_items": len(employee_uniform.uniforms),
+					"total_quantity": total_qty
+				})
+				
+				frappe.msgprint(
+					_("Employee Uniform {0} created for {1} from warehouse {2}").format(
+						frappe.bold(employee_uniform.name),
+						frappe.bold(employee_uniform.employee_name),
+						frappe.bold(warehouse)
+					)
+				)
+				
+			except Exception as e:
+				frappe.log_error(
+					message=frappe.get_traceback(),
+					title=f"Error creating Employee Uniform for {employee} - {warehouse}"
+				)
+				frappe.throw(
+					_("Error creating Employee Uniform for employee {0} from warehouse {1}: {2}").format(employee, warehouse, str(e))
+				)
+	
+	if not created_uniforms:
+		frappe.throw(_("No Employee Uniform documents were created. All items may already be fully issued."))
+	
+	frappe.db.commit()
+	
+	return {
+		"success": True,
+		"message": _("{0} Employee Uniform document(s) created successfully").format(len(created_uniforms)),
+		"created_uniforms": created_uniforms
+	}

@@ -59,11 +59,13 @@
   "projected_qty",
   "reject_item",
   "linked_request_for_material",
+  "column_break_cbse",
   "issued_quantity",
   "purchased_qty",
   "received_qty",
   "custom_rfp_quantity",
   "lead_time_date",
+  "purchase_rfm_quantity",
   "linked_employee_uniform"
  ],
  "fields": [

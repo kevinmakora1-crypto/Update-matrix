@@ -350,7 +350,7 @@
   },
   {
    "depends_on": "eval:doc.docstatus==1",
-   "description": "The quantity of this item that has been received via Purchase  Receipts",
+   "description": "The quantity of this item that has been received via Purchase Receipts",
    "fieldname": "received_qty",
    "fieldtype": "Float",
    "label": "Received Quantity",

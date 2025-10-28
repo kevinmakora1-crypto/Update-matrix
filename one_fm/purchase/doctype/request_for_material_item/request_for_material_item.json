@@ -55,18 +55,18 @@
   "more_info",
   "transferred_quantity",
   "custom_pending_quantity",
-  "ordered_qty",
   "projected_qty",
   "reject_item",
   "linked_request_for_material",
-  "column_break_cbse",
-  "issued_quantity",
-  "purchased_qty",
-  "received_qty",
   "custom_rfp_quantity",
   "lead_time_date",
-  "purchase_rfm_quantity",
-  "linked_employee_uniform"
+  "column_break_wgrt",
+  "issued_quantity",
+  "ordered_qty",
+  "linked_employee_uniform",
+  "received_qty",
+  "purchased_qty",
+  "purchase_rfm_quantity"
  ],
  "fields": [
   {
@@ -307,8 +307,9 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "default": "0",
-   "description": "The quantity of this item that has been  transferred, issued, or purchased",
+   "description": "The quantity of this item that has not been  transferred, issued, or purchased",
    "fieldname": "custom_pending_quantity",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -419,6 +420,7 @@
    "fieldname": "quantity_to_transfer",
    "fieldtype": "Float",
    "label": "Quantity to Transfer",
+   "no_copy": 1,
    "print_hide": 1,
    "report_hide": 1
   },
@@ -520,6 +522,7 @@
    "fieldname": "transferred_quantity",
    "fieldtype": "Float",
    "label": "Transferred Quantity",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -528,6 +531,7 @@
    "fieldname": "issued_quantity",
    "fieldtype": "Float",
    "label": "Issued Quantity",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -587,6 +591,17 @@
    "fieldtype": "Data",
    "label": "Employee Name",
    "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "purchase_rfm_quantity",
+   "fieldtype": "Float",
+   "label": "Purchase RFM Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_wgrt",
+   "fieldtype": "Column Break"
   }
  ],
  "istable": 1,

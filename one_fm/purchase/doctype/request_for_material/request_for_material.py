@@ -156,6 +156,8 @@ class RequestforMaterial(BuyingController):
 
     #in process
     def validate_item_qty(self):
+        if self.purpose == "Purchase":
+            return
         if self.items:
             for d in self.items:
                 if not d.qty:
@@ -374,7 +376,10 @@ class RequestforMaterial(BuyingController):
             purchase_dict[item.item_code] = purchased_qty
         rfm_doc = frappe.get_doc('Request for Material', self.issue_transfer_rfm)
         for one in rfm_doc.items:
-            if  purchase_dict.get(one.item_code):
+            if  purchase_dict.get(one.item_code,0):
+                
+                new_pending_amount = one.stock_qty - purchase_dict[one.item_code]
+                one.db_set('custom_pending_quantity', new_pending_amount)
                 one.db_set('purchase_rfm_quantity', purchase_dict[one.item_code])
         frappe.db.commit()
     

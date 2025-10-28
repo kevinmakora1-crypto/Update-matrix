@@ -53,18 +53,19 @@
   "manufacturer",
   "manufacturer_part_no",
   "more_info",
-  "lead_time_date",
-  "custom_rfp_quantity",
   "transferred_quantity",
-  "issued_quantity",
   "custom_pending_quantity",
-  "purchased_qty",
-  "projected_qty",
   "ordered_qty",
-  "received_qty",
+  "projected_qty",
   "reject_item",
   "linked_request_for_material",
-  "linked_employee_uniform"
+  "column_break_cbse",
+  "issued_quantity",
+  "purchased_qty",
+  "received_qty",
+  "custom_rfp_quantity",
+  "lead_time_date",
+  "purchase_rfm_quantity"
  ],
  "fields": [
   {
@@ -296,6 +297,7 @@
   },
   {
    "default": "0",
+   "description": "The quantity of this item that is in valid Request for Purchase",
    "fieldname": "custom_rfp_quantity",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -305,6 +307,7 @@
   },
   {
    "default": "0",
+   "description": "The quantity of this item that has been  transferred, issued, or purchased",
    "fieldname": "custom_pending_quantity",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -335,6 +338,7 @@
    "read_only": 1
   },
   {
+   "description": "The quantity of this item that has been purchased via Purchase Order",
    "fieldname": "ordered_qty",
    "fieldtype": "Float",
    "label": "Ordered Qty",
@@ -346,6 +350,7 @@
   },
   {
    "depends_on": "eval:doc.docstatus==1",
+   "description": "The quantity of this item that has been received via Purchase Receipts",
    "fieldname": "received_qty",
    "fieldtype": "Float",
    "label": "Received Quantity",
@@ -510,12 +515,14 @@
    "options": "URL"
   },
   {
+   "description": "The quantity of this item that has been transferred via Stock Entry",
    "fieldname": "transferred_quantity",
    "fieldtype": "Float",
    "label": "Transferred Quantity",
    "read_only": 1
   },
   {
+   "description": "The quantity of this item that has been Issued via Stock Entry",
    "allow_on_submit": 1,
    "fieldname": "issued_quantity",
    "fieldtype": "Float",

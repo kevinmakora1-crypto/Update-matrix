@@ -338,7 +338,7 @@
    "read_only": 1
   },
   {
-   "description": "The quantity of this item that have been purchased via Purchase  Order",
+   "description": "The quantity of this item that has been purchased via Purchase Order",
    "fieldname": "ordered_qty",
    "fieldtype": "Float",
    "label": "Ordered Qty",

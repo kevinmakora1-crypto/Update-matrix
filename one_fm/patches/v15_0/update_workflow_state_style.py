@@ -1,6 +1,6 @@
 import frappe
 
-def execute():	
+def execute():
 	if not frappe.db.exists("Property Setter", "Workflow State-style-reqd"):
 		frappe.get_doc({
 			"doctype": "Property Setter",

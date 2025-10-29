@@ -1,7 +1,8 @@
 {
  "actions": [],
  "autoname": "naming_series:",
- "creation": "2021-04-26 09:10:38.654039",
+ "creation": "2025-10-23 01:25:21",
+ "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -12,8 +13,7 @@
   "date_of_application",
   "preparation",
   "column_break_4",
-  "fingerprint_appointment_type",
-  "status",
+  "appointment_type",
   "pro_user",
   "section_break_9",
   "date_and_time_confirmation",
@@ -59,10 +59,23 @@
   "notify_operations",
   "notify_transport",
   "completed_on",
-  "amended_from",
-  "website"
+  "website",
+  "amended_from"
  ],
  "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "MAP-.YYYY.-"
+  },
+  {
+   "default": "One Facilities Management",
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "label": "Company Name "
+  },
   {
    "fieldname": "employee",
    "fieldtype": "Link",
@@ -72,29 +85,84 @@
    "reqd": 1
   },
   {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Fingerprint Appointment",
-   "print_hide": 1,
-   "read_only": 1
+   "fieldname": "date_of_application",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Date of Application"
   },
   {
-   "fieldname": "naming_series",
-   "fieldtype": "Select",
+   "fieldname": "preparation",
+   "fieldtype": "Link",
    "hidden": 1,
-   "label": "Series",
-   "options": "FP-.YYYY.-"
+   "label": "Preparation",
+   "options": "Preparation"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "appointment_type",
+   "fieldtype": "Select",
+   "label": "Appointment Type",
+   "options": "\nRenewal\nLocal Transfer"
+  },
+  {
+   "fieldname": "pro_user",
+   "fieldtype": "Link",
+   "label": "PRO User",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break",
+   "label": "Registration Details"
+  },
+  {
+   "description": "Date and Time for the booked Appointment ",
+   "fieldname": "date_and_time_confirmation",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Date and Time Confirmation"
   },
   {
    "allow_on_submit": 1,
-   "fetch_from": "employee.one_fm_civil_id",
-   "fieldname": "civil_id",
-   "fieldtype": "Data",
-   "in_standard_filter": 1,
-   "label": "Civil ID",
+   "fieldname": "upload_appointment_form",
+   "fieldtype": "Attach",
+   "label": "Upload Appointment Form"
+  },
+  {
+   "fieldname": "required_transportation",
+   "fieldtype": "Select",
+   "label": "Required Transportation",
+   "options": "\nYes\nNo"
+  },
+  {
+   "fieldname": "section_break_13",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "No",
+   "fieldname": "preparing_documents",
+   "fieldtype": "Select",
+   "label": "Preparing Documents",
+   "options": "\nYes\nNo"
+  },
+  {
+   "fieldname": "column_break_14",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "preparing_documents_on",
+   "fieldtype": "Datetime",
+   "label": "Preparing Documents On",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break"
   },
   {
    "default": "Organization",
@@ -118,8 +186,20 @@
    "label": "Application"
   },
   {
+   "default": "Hawally",
+   "fieldname": "governorate",
+   "fieldtype": "Data",
+   "label": "Governorate"
+  },
+  {
    "fieldname": "column_break_7",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "Personnel Identification Dept - Um Alhayman",
+   "fieldname": "service_location",
+   "fieldtype": "Data",
+   "label": "Service Location"
   },
   {
    "default": "Fingerprint for Companies",
@@ -129,37 +209,26 @@
    "label": "Service Type"
   },
   {
-   "default": "Hawally",
-   "fieldname": "governorate",
-   "fieldtype": "Data",
-   "label": "Governorate"
-  },
-  {
-   "default": "Personnel Identification Dept - Um Alhayman",
-   "fieldname": "service_location",
-   "fieldtype": "Data",
-   "label": "Service Location"
-  },
-  {
-   "fieldname": "section_break_4",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "section_break_12",
    "fieldtype": "Section Break",
    "label": "Employee Details"
   },
   {
-   "fieldname": "moi_reference_number",
+   "allow_on_submit": 1,
+   "fetch_from": "employee.one_fm_civil_id",
+   "fieldname": "civil_id",
    "fieldtype": "Data",
-   "label": "MOI Reference Number",
+   "in_standard_filter": 1,
+   "label": "Civil ID",
    "read_only": 1
   },
   {
-   "default": "One Facilities Management",
-   "fieldname": "company_name",
+   "allow_on_submit": 1,
+   "fetch_from": "employee.employee_name",
+   "fieldname": "full_name",
    "fieldtype": "Data",
-   "label": "Company Name "
+   "label": "Full Name",
+   "read_only": 1
   },
   {
    "allow_on_submit": 1,
@@ -194,8 +263,31 @@
    "read_only": 1
   },
   {
+   "fieldname": "moi_reference_number",
+   "fieldtype": "Data",
+   "label": "MOI Reference Number",
+   "read_only": 1
+  },
+  {
    "fieldname": "column_break_18",
    "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fetch_from": "employee.employee_id",
+   "fieldname": "employee_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee ID",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fetch_from": "employee.one_fm_nationality",
+   "fieldname": "nationality",
+   "fieldtype": "Data",
+   "label": "Nationality",
+   "read_only": 1
   },
   {
    "fetch_from": "employee.first_name",
@@ -233,13 +325,17 @@
    "fieldtype": "Section Break"
   },
   {
-   "allow_on_submit": 1,
-   "fetch_from": "employee.employee_id",
-   "fieldname": "employee_id",
+   "fieldname": "grd_operator_renewal",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "GRD Operator Renewal",
+   "options": "User"
+  },
+  {
+   "fieldname": "grd_operator_transfer",
    "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Employee ID",
-   "read_only": 1
+   "hidden": 1,
+   "label": "GRD Operator Transfer"
   },
   {
    "fieldname": "grd_supervisor",
@@ -249,22 +345,11 @@
    "options": "User"
   },
   {
-   "default": "0",
-   "fieldname": "reminded_grd_operator",
-   "fieldtype": "Check",
+   "fieldname": "transport_user",
+   "fieldtype": "Link",
    "hidden": 1,
-   "label": "Reminded Government Relations Operator",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "reminded_grd_operator_again",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Reminded Government Relations Operator Again",
-   "no_copy": 1,
-   "read_only": 1
+   "label": "Transport user",
+   "options": "User"
   },
   {
    "fieldname": "operations_manager",
@@ -276,29 +361,39 @@
    "read_only": 1
   },
   {
-   "description": "Date and Time for the booked Appointment ",
-   "fieldname": "date_and_time_confirmation",
-   "fieldtype": "Datetime",
-   "in_list_view": 1,
-   "label": "Date and Time Confirmation"
-  },
-  {
-   "default": "No",
-   "fieldname": "preparing_documents",
-   "fieldtype": "Select",
-   "label": "Preparing Documents",
-   "options": "\nYes\nNo"
-  },
-  {
-   "fieldname": "completed_on",
-   "fieldtype": "Data",
-   "label": "Completed On",
+   "default": "0",
+   "fieldname": "reminded_grd_operator",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Reminded GRD Operator",
+   "no_copy": 1,
    "read_only": 1
   },
   {
-   "fieldname": "preparing_documents_on",
-   "fieldtype": "Datetime",
-   "label": "Preparing Documents On",
+   "default": "0",
+   "fieldname": "reminded_grd_operator_again",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Reminded GRD Operator Again",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "reminded_grd_operator_documents",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Reminded GRD Operator Documents",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "reminded_grd_operator_documents_again",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Reminded GRD Operator Documents Again",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -312,96 +407,16 @@
   },
   {
    "default": "0",
-   "fieldname": "reminded_grd_operator_documents",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Reminded Government Relations Operator Documents",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "reminded_grd_operator_documents_again",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Reminded Government Relations Operator Documents Again",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
-   "allow_on_submit": 1,
-   "fetch_from": "employee.one_fm_nationality",
-   "fieldname": "nationality",
-   "fieldtype": "Data",
-   "label": "Nationality",
-   "read_only": 1
-  },
-  {
-   "fieldname": "required_transportation",
-   "fieldtype": "Select",
-   "label": "Required Transportation",
-   "options": "\nYes\nNo"
-  },
-  {
-   "bold": 1,
-   "default": "Awaiting for Appointment",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Status",
-   "options": "\nAwaiting for Appointment\nBooked\nCompleted"
-  },
-  {
-   "fieldname": "column_break_4",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "fingerprint_appointment_type",
-   "fieldtype": "Select",
-   "label": "Fingerprint Appointment Type",
-   "options": "\nRenewal\nLocal Transfer"
-  },
-  {
-   "fieldname": "date_of_application",
-   "fieldtype": "Date",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Date of Application"
-  },
-  {
-   "default": "0",
    "fieldname": "notify_transport",
    "fieldtype": "Check",
    "hidden": 1,
    "label": "Notify Transport"
   },
   {
-   "fieldname": "transport_user",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Transport user",
-   "options": "User"
-  },
-  {
-   "fieldname": "preparation",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Preparation",
-   "options": "Preparation"
-  },
-  {
-   "fieldname": "grd_operator_renewal",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Government Relations Operator Renewal",
-   "options": "User"
-  },
-  {
-   "fieldname": "grd_operator_transfer",
+   "fieldname": "completed_on",
    "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Government Relations Operator Transfer"
+   "label": "Completed On",
+   "read_only": 1
   },
   {
    "allow_on_submit": 1,
@@ -412,46 +427,24 @@
    "label": "website"
   },
   {
-   "fieldname": "section_break_9",
-   "fieldtype": "Section Break",
-   "label": "Registration Details"
-  },
-  {
-   "fieldname": "column_break_14",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_13",
-   "fieldtype": "Section Break"
-  },
-  {
-   "allow_on_submit": 1,
-   "fetch_from": "employee.employee_name",
-   "fieldname": "full_name",
-   "fieldtype": "Data",
-   "label": "Full Name",
-   "read_only": 1
-  },
-  {
-   "allow_on_submit": 1,
-   "fieldname": "upload_appointment_form",
-   "fieldtype": "Attach",
-   "label": "Upload Appointment Form"
-  },
-  {
-   "fieldname": "pro_user",
+   "fieldname": "amended_from",
    "fieldtype": "Link",
-   "label": "PRO User",
-   "options": "User",
-   "reqd": 1
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Medical Appointment",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
+ "grid_page_length": 50,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-10-25 20:00:44.466751",
+ "modified": "2025-10-23 21:47:27.751741",
  "modified_by": "Administrator",
  "module": "GRD",
- "name": "Fingerprint Appointment",
+ "name": "Medical Appointment",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {

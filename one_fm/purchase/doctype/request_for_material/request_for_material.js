@@ -5,6 +5,15 @@
 frappe.provide("erpnext.accounts.dimensions");
 erpnext.buying.setup_buying_controller();
 
+function sync_child_table(frm, fieldname) {
+    if (frm.doc.items) {
+        frm.doc.items.forEach(function(row) {
+            row[fieldname] = frm.doc[fieldname];
+        });
+    }
+    frm.refresh_field('items');
+}
+
 frappe.ui.form.on('Request for Material', {
 	purchase_rfm: function(frm){
 		if(frm.is_dirty()){
@@ -484,6 +493,21 @@ frappe.ui.form.on('Request for Material', {
 	},
 	site: function(frm) {
 		set_warehouse_filters(frm);
+	},
+	is_refundable: function(frm) {
+		sync_child_table(frm, 'is_refundable');
+	},
+	margin_known: function(frm) {
+		sync_child_table(frm, 'margin_known');
+	},
+	margin_type: function(frm) {
+		sync_child_table(frm, 'margin_type');
+	},
+	margin_rate: function(frm) {
+		sync_child_table(frm, 'margin_rate');
+	},
+	margin_amount: function(frm) {
+		sync_child_table(frm, 'margin_amount');
 	}
 });
 
@@ -629,12 +653,18 @@ var set_t_warehouse_hidden = function(frm) {
 	}
 }
 
-frappe.ui.form.on('Request for Material Item', { // The child table is defined in a DoctType called "Dynamic Link"
+frappe.ui.form.on('Request for Material Item', {
 	items_on_form_rendered: (frm) => {
 	},
 	before_items_remove: (frm) => {
 	},
-	items_add: (frm) => {
+	items_add: function(frm, cdt, cdn) {
+		var row = locals[cdt][cdn];
+		row.is_refundable = frm.doc.is_refundable;
+		row.margin_known = frm.doc.margin_known;
+		row.margin_type = frm.doc.margin_type;
+		row.margin_rate = frm.doc.margin_rate;
+		row.margin_amount = frm.doc.margin_amount;
 	},
 	items_remove: (frm) => {
 	},

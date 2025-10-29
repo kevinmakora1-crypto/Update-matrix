@@ -17,7 +17,6 @@ frappe.ui.form.on('MOM', {
                     project: frm.doc.project
                 },
                 callback(r) {
-					console.log(r)
                     if (r.message) {
                         frm.clear_table("general_attendance");
                         r.message.forEach(user => {

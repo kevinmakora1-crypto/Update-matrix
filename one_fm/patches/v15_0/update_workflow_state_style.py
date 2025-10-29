@@ -11,5 +11,4 @@ def execute():
 			"property_type": "Check",
 			"value": "1"
 		}).insert(ignore_permissions=True)
-		
 		frappe.db.commit()

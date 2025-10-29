@@ -6,7 +6,7 @@ def get_warehouse_custom_fields():
                 "fieldtype": "Data",
                 "label": "Warehouse Code",
                 "insert_after": "warehouse_name",
-                "read_only": 1
+                "read_only": 0
             },
             {
                 "fieldname": "one_fm_store_keeper",
@@ -94,6 +94,14 @@ def get_warehouse_custom_fields():
                 "label": "Department",
                 "insert_after": "is_uniform_warehouse",
                 "options": "Department"
-            }
+            },
+            {
+                "fieldname": "custom_location_tracking_required",
+                "in_list_view": 1,
+                "fieldtype": "Check",
+                "label": "Location Tracking Required",
+                "insert_after": "status",
+                "description": "Enable this if you want to track items by specific locations (Aisle, Bay, Shelf) within the warehouse. \n If unchecked, the warehouse will be treated as a single storage area without location-level tracking."
+            },
         ]
     }

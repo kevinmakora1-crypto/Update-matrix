@@ -101,7 +101,9 @@ def get_warehouse_custom_fields():
                 "fieldtype": "Check",
                 "label": "Location Tracking Required",
                 "insert_after": "status",
-                "description": "Enable this if you want to track items by specific locations (Aisle, Bay, Shelf) within the warehouse. \n If unchecked, the warehouse will be treated as a single storage area without location-level tracking."
+               "description": """Enable this if you want to track items by specific locations (Aisle, Bay, Shelf) within the warehouse.
+               
+If unchecked, the warehouse will be treated as a single storage area without location-level tracking."""
             },
         ]
     }

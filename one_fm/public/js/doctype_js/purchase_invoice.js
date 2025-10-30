@@ -5,8 +5,16 @@ frappe.ui.form.on('Purchase Invoice', {
                 set_expense_head(frm);
             }
         }     
+    },
+    refresh: function(frm) {
+        if (frm.doc.docstatus === 1 && frm.doc.is_refundable) {
+            frm.add_custom_button(__('Sales Invoice'), function() {
+                create_sales_invoice_from_purchase_invoice(frm);
+            }, __('Create'));
+        }
     }
 });
+
 var set_expense_head = function(frm){
     frappe.call({
         method: 'frappe.client.get_value',
@@ -29,3 +37,10 @@ var set_expense_head = function(frm){
         }
     });
 };
+
+function create_sales_invoice_from_purchase_invoice(frm) {
+    frappe.model.open_mapped_doc({
+        method: "your_app.your_module.doctype.purchase_invoice.purchase_invoice.make_sales_invoice",
+        frm: frm
+    });
+}

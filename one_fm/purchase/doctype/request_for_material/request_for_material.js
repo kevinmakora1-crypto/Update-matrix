@@ -503,12 +503,10 @@ frappe.ui.form.on('Request for Material', {
 	margin_type: function(frm) {
 		sync_child_table(frm, 'margin_type');
 	},
-	margin_rate: function(frm) {
-		sync_child_table(frm, 'margin_rate');
+	margin_rate_or_amount: function(frm) {
+		sync_child_table(frm, 'margin_rate_or_amount');
 	},
-	margin_amount: function(frm) {
-		sync_child_table(frm, 'margin_amount');
-	}
+	
 });
 
 
@@ -663,8 +661,8 @@ frappe.ui.form.on('Request for Material Item', {
 		row.is_refundable = frm.doc.is_refundable;
 		row.margin_known = frm.doc.margin_known;
 		row.margin_type = frm.doc.margin_type;
-		row.margin_rate = frm.doc.margin_rate;
-		row.margin_amount = frm.doc.margin_amount;
+		row.margin_rate_or_amount = frm.doc.margin_rate_or_amount;
+		
 	},
 	items_remove: (frm) => {
 	},

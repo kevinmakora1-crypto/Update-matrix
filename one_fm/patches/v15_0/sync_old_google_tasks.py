@@ -1,6 +1,6 @@
 import frappe
-from one_fm.one_fm.processor import is_user_id_company_prefred_email_in_employee
-from one_fm.one_fm.overrides.todo import sync_google_tasks_for_users
+from one_fm.processor import is_user_id_company_prefred_email_in_employee
+from one_fm.overrides.todo import sync_google_tasks_for_users
 
 def execute():
     """

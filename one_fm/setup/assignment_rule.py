@@ -43,6 +43,8 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("assign_to_purchase_manager_for_approval.json"))
 	create_assignment_rule(get_assignment_rule_json_file("assign_rfp_owner_on_rfp_return_to_draft.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_pro.json"))
+	create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_supervisor.json"))
+	create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_transportation_supervisor.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_medical_appointment_pro.json"))
 
 def delete_assignment_rules():

@@ -43,6 +43,8 @@
   "supplier",
   "items_to_order",
   "technical_remarks",
+  "total",
+  "base_total",
   "notes_section",
   "notes",
   "amended_from"
@@ -323,12 +325,14 @@
    "fieldname": "margin_known",
    "fieldtype": "Select",
    "label": "Margin Known?",
+   "options": "\nYes\nNo",
    "read_only": 1
   },
   {
    "fieldname": "margin_type",
    "fieldtype": "Select",
    "label": "Margin Type",
+   "options": "\nPercentage\nAmount",
    "read_only": 1
   },
   {
@@ -357,7 +361,7 @@
  "icon": "fa fa-shopping-cart",
  "is_submittable": 1,
  "links": [],
- "modified": "2025-10-28 15:01:37.194621",
+ "modified": "2025-11-01 01:27:27.633490",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Purchase",

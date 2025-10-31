@@ -1,4 +1,3 @@
-import frappe
 from one_fm.custom.workflow.workflow import delete_workflow, get_workflow_json_file, create_workflow
 from one_fm.setup.assignment_rule import create_assignment_rule, get_assignment_rule_json_file
 

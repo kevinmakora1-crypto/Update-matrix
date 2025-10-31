@@ -8,4 +8,3 @@ def execute():
     create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_pro.json"))
     create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_supervisor.json"))
     create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_transportation_supervisor.json"))
-    

@@ -50,7 +50,7 @@ def create_workflow(workflow:dict):
         return
 
     try:
-        state_values = [{"workflow_state_name": state["state"]} for state in workflow["states"]]
+        state_values = [{"workflow_state_name": state["state"], "style": state.get("style", "Primary")} for state in workflow["states"]]
         create_workflow_state(state_values)
 
         actions = list(set([transition["action"] for transition in workflow["transitions"]]))

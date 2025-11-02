@@ -11,6 +11,14 @@ def get_purchase_order_item_custom_fields():
                 "translatable": 1
             },
             {
+                "default": "0",
+                "fieldname": "is_refundable",
+                "fieldtype": "Check",
+                "in_standard_filter": 1,
+                "read_only": 1,
+                "label": "Refundable"
+            },
+            {
                 "fieldname": "request_for_material",
                 "label": "Request for Material",
                 "fieldtype": "Link",

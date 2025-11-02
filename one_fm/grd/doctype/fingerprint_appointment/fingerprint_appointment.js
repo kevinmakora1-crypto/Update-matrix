@@ -119,14 +119,15 @@ function show_acceptance_dialog(frm, resolve, reject) {
     try {
         clear_all_overlays();
         
-        let dialog = new frappe.ui.Dialog({
-            title: __('Acceptance Details'),
-            fields: [
+        let fields = [];
+        
+        if (frm.doc.required_transportation === "Yes") {
+            fields = [
                 {
                     fieldname: 'pickup_location',
                     label: __('Pickup Location'),
                     fieldtype: 'Select',
-                    options: ['Accommodation', ],
+                    options: ['Accommodation',],
                     reqd: 1,
                     onchange: function() {
                         let pickup_value = dialog.get_value('pickup_location');
@@ -150,16 +151,34 @@ function show_acceptance_dialog(frm, resolve, reject) {
                     options: ['Yes', 'No'],
                     reqd: 1
                 }
-            ],
+            ];
+        } else {
+            fields = [
+                {
+                    fieldname: 'roster_action',
+                    label: __('Roster Action'),
+                    fieldtype: 'Select',
+                    options: ['Yes', 'No'],
+                    reqd: 1
+                }
+            ];
+        }
+        
+        let dialog = new frappe.ui.Dialog({
+            title: __('Acceptance Details'),
+            fields: fields,
             primary_action_label: __('Confirm'),
             primary_action: function(values) {
-                if (values.pickup_location === 'Accommodation' && !values.accommodation) {
-                    frappe.throw(__('Accommodation is required when Pickup Location is Accommodation'));
-                    return;
+                if (frm.doc.required_transportation === "Yes") {
+                    if (values.pickup_location === 'Accommodation' && !values.accommodation) {
+                        frappe.throw(__('Accommodation is required when Pickup Location is Accommodation'));
+                        return;
+                    }
+                    
+                    frm.set_value('pickup_location', values.pickup_location);
+                    frm.set_value('accommodation', values.accommodation || '');
                 }
                 
-                frm.set_value('pickup_location', values.pickup_location);
-                frm.set_value('accommodation', values.accommodation || '');
                 frm.set_value('roster_action', values.roster_action);
                 
                 dialog.hide();
@@ -179,7 +198,6 @@ function show_acceptance_dialog(frm, resolve, reject) {
         reject(e);
     }
 }
-
 function show_rejection_dialog(frm, resolve, reject) {
     try {
         clear_all_overlays();

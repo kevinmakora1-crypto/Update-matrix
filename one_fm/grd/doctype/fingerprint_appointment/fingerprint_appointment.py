@@ -149,8 +149,8 @@ class FingerprintAppointment(Document):
             
             <p><a href="{page_link}">View Document</a></p>
         """
-        
         create_notification_log(subject, message, [grd_operator_email], self)
+
 
     
 
@@ -187,9 +187,8 @@ class FingerprintAppointment(Document):
         
     
     def validate_update_attendance_pro(self):
-        if not self.is_new():
+        if not self.is_new() and self.roster_action == "Yes":
             previous_doc = self.get_doc_before_save()
-            print(previous_doc.workflow_state, self.workflow_state, "\n" *8)
             
             if (previous_doc.workflow_state == "Pending PRO" and 
                 self.workflow_state in {"Completed", "Reschedule Requested"}):
@@ -208,7 +207,6 @@ class FingerprintAppointment(Document):
                     )
                 
                 new_status = "Fingerprint Appointment" if self.workflow_state == "Completed" else "Absent"
-                print(new_status)
                 
                 updated_count = frappe.db.sql("""
                     UPDATE `tabAttendance`
@@ -218,7 +216,6 @@ class FingerprintAppointment(Document):
                     AND employee = %s
                 """, (new_status, frappe.session.user, "On Hold", appointment_date, self.employee))
                 
-                print(updated_count)
                 if updated_count:
                     frappe.msgprint(
                         _("Updated {0} attendance record(s) to {1}").format(updated_count, new_status),
@@ -315,6 +312,8 @@ def create_notification_log(subject, message, for_users, reference_doc):
         doc.document_type = reference_doc.doctype
         doc.document_name = reference_doc.name
         doc.from_user = reference_doc.modified_by
+        doc.insert(ignore_permissions=True)
+
 
 
 @frappe.whitelist()

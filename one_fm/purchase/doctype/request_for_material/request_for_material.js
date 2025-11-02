@@ -536,7 +536,20 @@ frappe.ui.form.on('Request for Material', {
 	},
 	site: function(frm) {
 		set_warehouse_filters(frm);
-	}
+	},
+	is_refundable: function(frm) {
+		sync_child_table(frm, 'is_refundable');
+	},
+	margin_known: function(frm) {
+		sync_child_table(frm, 'margin_known');
+	},
+	margin_type: function(frm) {
+		sync_child_table(frm, 'margin_type');
+	},
+	margin_rate_or_amount: function(frm) {
+		sync_child_table(frm, 'margin_rate_or_amount');
+	},
+	
 });
 
 
@@ -684,12 +697,18 @@ var set_t_warehouse_hidden = function(frm) {
 	}
 }
 
-frappe.ui.form.on('Request for Material Item', { // The child table is defined in a DoctType called "Dynamic Link"
+frappe.ui.form.on('Request for Material Item', {
 	items_on_form_rendered: (frm) => {
 	},
 	before_items_remove: (frm) => {
 	},
-	items_add: (frm) => {
+	items_add: function(frm, cdt, cdn) {
+		var row = locals[cdt][cdn];
+		row.is_refundable = frm.doc.is_refundable;
+		row.margin_known = frm.doc.margin_known;
+		row.margin_type = frm.doc.margin_type;
+		row.margin_rate_or_amount = frm.doc.margin_rate_or_amount;
+		
 	},
 	items_remove: (frm) => {
 	},

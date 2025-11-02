@@ -207,7 +207,7 @@ class FingerprintAppointment(Document):
                         title=_("Future Appointment Date")
                     )
                 
-                new_status = "Fingerprint Appointment" if self.workflow_state == "Done" else "Absent"
+                new_status = "Fingerprint Appointment" if self.workflow_state == "Completed" else "Absent"
                 print(new_status)
                 
                 updated_count = frappe.db.sql("""

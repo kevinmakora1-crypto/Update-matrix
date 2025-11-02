@@ -253,22 +253,3 @@ function show_rejection_dialog(frm, resolve, reject) {
         reject(e);
     }
 }
-
-function clear_all_overlays() {
-    $('.modal-backdrop').remove();
-    $('.modal').removeClass('show').hide();
-    $('body').removeClass('modal-open');
-    $('.modal-open').removeClass('modal-open');
-    $('.freeze').remove();
-    $('.overlay').remove();
-    
-    $('body').css({
-        'padding-right': '',
-        'overflow': '',
-        'position': '',
-        'margin-right': ''
-    });
-    
-    $('.workflow-overlay').remove();
-    $('.frappe-overlay').remove();
-}

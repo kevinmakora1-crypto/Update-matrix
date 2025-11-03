@@ -199,17 +199,16 @@ def make_sales_invoice_from_purchase_invoice(source_names, target_doc=None):
                 si_item.discount_percentage = flt(pi_item.get("discount_percentage") or 0)
                 si_item.discount_amount = flt(pi_item.get("discount_amount") or 0)
                 
-               # CRITICAL: Set item_tax_rate as JSON string
-                if pi_item.get("item_tax_rate"):
-                    si_item.item_tax_rate = pi_item.item_tax_rate
-                else:
-                    # Must be a JSON string, not None or empty string
-                    si_item.item_tax_rate = json.dumps({})
-                
+                si_item.item_tax_rate = pi_item.get("item_tax_rate") or json.dumps({}) 
+                si_item.price_list_rate = flt(si_item.price_list_rate or si_item.rate or 0)  
+                si_item.discount_percentage = flt(si_item.discount_percentage or 0)
+                si_item.discount_amount = flt(si_item.discount_amount or 0)
+ 
                 si_item.custom_purchase_invoice = pi_name
                 si_item.custom_purchase_invoice_item = pi_item.name
                 si_item.custom_pi_currency = pi_doc.currency
                 si_item.custom_pi_exchange_rate = exchange_rate if currency_changed else 1.0
+
     
     target_doc.run_method("set_missing_values")
     target_doc.run_method("calculate_taxes_and_totals")
@@ -297,178 +296,5 @@ def check_purchase_invoice_has_pending_qty(purchase_invoice):
             return True
     
     return False
-
-
-
-@frappe.whitelist()
-def get_items_from_purchase_invoices(source_names, target_doc=None):
-    """
-    Fetch items from Purchase Invoices and add to existing Sales Invoice
-    Uses proper field mapping for correct initialization
-    """
-    import json
-    from frappe.utils import flt
-    from frappe import _
-    
-    if isinstance(source_names, str):
-        source_names = json.loads(source_names)
-    
-    if not isinstance(source_names, list):
-        source_names = [source_names]
-    
-    # Validate all purchase invoices first
-    validate_purchase_invoices(source_names)
-    
-    # Parse target_doc if it's a string
-    if isinstance(target_doc, str):
-        target_doc = frappe.get_doc(json.loads(target_doc))
-    elif not target_doc:
-        frappe.throw(_("Target Sales Invoice is required"))
-    
-    # Process each Purchase Invoice
-    for pi_name in source_names:
-        pi_doc = frappe.get_doc("Purchase Invoice", pi_name)
-        
-        # Validate currency if Sales Invoice already has currency set
-        if target_doc.get("currency") and pi_doc.currency != target_doc.currency:
-            frappe.throw(
-                _("Purchase Invoice {0} has currency {1} which does not match Sales Invoice currency {2}").format(
-                    pi_name, pi_doc.currency, target_doc.currency
-                )
-            )
-        
-        # Set Sales Invoice header fields from first PI if not already set
-        if not target_doc.get("customer") and pi_doc.get("custom_customer"):
-            target_doc.customer = pi_doc.custom_customer
-        
-        if not target_doc.get("project") and pi_doc.get("project"):
-            target_doc.project = pi_doc.project
-        
-        if not target_doc.get("custom_site") and pi_doc.get("custom_site"):
-            target_doc.custom_site = pi_doc.custom_site
-        
-        if not target_doc.get("currency"):
-            target_doc.currency = pi_doc.currency
-        
-        if not target_doc.get("posting_date"):
-            target_doc.posting_date = pi_doc.posting_date
-        
-        if not target_doc.get("company"):
-            target_doc.company = pi_doc.company
-        
-        # Set margin fields from Purchase Invoice
-        if not target_doc.get("custom_margin_type") and pi_doc.get("custom_margin_type"):
-            target_doc.custom_margin_type = pi_doc.custom_margin_type
-        
-        if not target_doc.get("custom_margin_rate_or_amount") and pi_doc.get("custom_margin_rate_or_amount"):
-            target_doc.custom_margin_rate_or_amount = pi_doc.custom_margin_rate_or_amount
-        
-        # Set custom_purchase_invoice if only one PI is being processed
-        if len(source_names) == 1 and not target_doc.get("custom_purchase_invoice"):
-            target_doc.custom_purchase_invoice = pi_name
-        
-        # Get company currency for conversions
-        company_currency = frappe.get_cached_value("Company", target_doc.company, "default_currency")
-        
-        # Set conversion rate if needed
-        if target_doc.currency != company_currency and not target_doc.get("conversion_rate"):
-            from erpnext.setup.utils import get_exchange_rate
-            target_doc.conversion_rate = get_exchange_rate(
-                target_doc.currency,
-                company_currency,
-                target_doc.posting_date,
-                "for_selling"
-            )
-        
-        # Add items from Purchase Invoice
-        for pi_item in pi_doc.items:
-            remaining_qty = get_remaining_qty_to_bill(pi_item)
-            
-            if remaining_qty > 0:
-                # Create new Sales Invoice item
-                si_item = target_doc.append("items", {})
-                
-                # Copy all important fields from Purchase Invoice Item
-                si_item.item_code = pi_item.item_code
-                si_item.item_name = pi_item.item_name
-                si_item.description = pi_item.description
-                
-                # Quantity fields
-                si_item.qty = remaining_qty
-                si_item.uom = pi_item.uom
-                si_item.conversion_factor = pi_item.conversion_factor or 1.0
-                si_item.stock_uom = pi_item.stock_uom
-                si_item.stock_qty = remaining_qty * flt(pi_item.conversion_factor or 1.0)
-                
-                # Price fields
-                si_item.rate = pi_item.rate
-                si_item.price_list_rate = pi_item.get("price_list_rate") or pi_item.rate or 0
-                
-                # Amount calculations
-                si_item.amount = flt(si_item.qty) * flt(si_item.rate)
-                si_item.base_rate = flt(si_item.rate) * flt(target_doc.conversion_rate or 1)
-                si_item.base_amount = flt(si_item.amount) * flt(target_doc.conversion_rate or 1)
-                si_item.base_price_list_rate = flt(si_item.price_list_rate) * flt(target_doc.conversion_rate or 1)
-                
-                # Stock rate
-                if si_item.stock_qty:
-                    si_item.stock_uom_rate = flt(si_item.amount) / flt(si_item.stock_qty)
-                else:
-                    si_item.stock_uom_rate = si_item.rate
-                
-                # Net amounts
-                si_item.net_rate = si_item.rate
-                si_item.net_amount = si_item.amount
-                si_item.base_net_rate = si_item.base_rate
-                si_item.base_net_amount = si_item.base_amount
-                
-                # Other fields
-                si_item.warehouse = pi_item.get("warehouse")
-                si_item.cost_center = pi_item.cost_center
-                si_item.project = pi_item.get("project")
-                
-                # Margin fields
-                si_item.margin_type = pi_item.get("margin_type") or ""
-                si_item.margin_rate_or_amount = flt(pi_item.get("margin_rate_or_amount") or 0)
-                si_item.rate_with_margin = flt(pi_item.get("rate_with_margin") or 0)
-                si_item.base_rate_with_margin = flt(si_item.rate_with_margin) * flt(target_doc.conversion_rate or 1)
-                
-                # Discount fields
-                si_item.discount_percentage = flt(pi_item.get("discount_percentage") or 0)
-                si_item.discount_amount = flt(pi_item.get("discount_amount") or 0)
-                
-                # Tax fields - CRITICAL for fixing the error
-                si_item.item_tax_template = pi_item.get("item_tax_template") or ""
-                
-                # item_tax_rate must be a JSON string
-                if pi_item.get("item_tax_rate"):
-                    si_item.item_tax_rate = pi_item.item_tax_rate
-                else:
-                    si_item.item_tax_rate = json.dumps({})
-                
-                # Custom tracking fields
-                si_item.custom_purchase_invoice = pi_name
-                si_item.custom_purchase_invoice_item = pi_item.name
-                si_item.custom_pi_currency = pi_doc.currency
-                si_item.custom_pi_exchange_rate = 1.0
-        
-        # Copy tax template from Purchase Invoice if Sales Invoice has no taxes
-        if not target_doc.taxes and pi_doc.taxes:
-            for pi_tax in pi_doc.taxes:
-                si_tax = target_doc.append("taxes", {})
-                
-                si_tax.charge_type = pi_tax.charge_type
-                si_tax.account_head = pi_tax.account_head
-                si_tax.description = pi_tax.description
-                si_tax.rate = pi_tax.rate
-                si_tax.cost_center = pi_tax.get("cost_center")
-    
-    # Run ERPNext methods to properly initialize and calculate everything
-    target_doc.run_method("set_missing_values")
-    target_doc.run_method("calculate_taxes_and_totals")
-
-    return target_doc
-
-
 
 

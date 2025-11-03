@@ -438,7 +438,20 @@ function show_purchase_invoice_selector(frm) {
         method: 'one_fm.overrides.purchase_invoice.get_all_refundable_purchase_invoices',
         callback: function(r) {
             if (r.message && r.message.length > 0) {
+                let customers = [...new Set(r.message.map(inv => inv.customer).filter(c => c))];
+                customers.sort();
+                
                 let fields = [
+                    {
+                        fieldname: 'customer_filter',
+                        fieldtype: 'Select',
+                        label: __('Filter by Customer'),
+                        options: ['All', ...customers],
+                        default: 'All',
+                        onchange: function() {
+                            filter_purchase_invoices(this.value, r.message, dialog);
+                        }
+                    },
                     {
                         fieldname: 'html_invoices',
                         fieldtype: 'HTML'
@@ -452,7 +465,7 @@ function show_purchase_invoice_selector(frm) {
                     primary_action_label: __('Get Items'),
                     primary_action: function() {
                         let selected = [];
-                        dialog.$wrapper.find('input[type="checkbox"]:checked').each(function() {
+                        dialog.$wrapper.find('input.pi-checkbox:checked').each(function() {
                             selected.push($(this).val());
                         });
                         
@@ -469,6 +482,8 @@ function show_purchase_invoice_selector(frm) {
                 let html = build_purchase_invoice_table(r.message);
                 dialog.fields_dict.html_invoices.$wrapper.html(html);
                 
+                setup_select_all_checkbox(dialog);
+                
                 dialog.show();
             } else {
                 frappe.msgprint(__('No refundable Purchase Invoices found with pending quantities'));
@@ -479,25 +494,28 @@ function show_purchase_invoice_selector(frm) {
 
 function build_purchase_invoice_table(invoices) {
     let html = `
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th width="5%"><input type="checkbox" id="select-all-pi"></th>
-                    <th width="15%">Name</th>
-                    <th width="12%">Posting Date</th>
-                    <th width="20%">Supplier</th>
-                    <th width="18%">Customer</th>
-                    <th width="15%">Project</th>
-                    <th width="10%">Site</th>
-                    <th width="5%">Currency</th>
-                </tr>
-            </thead>
-            <tbody>
+        <div style="max-height: 500px; overflow-y: auto;">
+            <table class="table table-bordered table-hover">
+                <thead style="sticky; top: 0; background-color: white; z-index: 10;">
+                    <tr>
+                        <th width="5%">
+                            <input type="checkbox" id="select-all-pi" class="select-all-checkbox">
+                        </th>
+                        <th width="15%">Name</th>
+                        <th width="12%">Posting Date</th>
+                        <th width="20%">Supplier</th>
+                        <th width="18%">Customer</th>
+                        <th width="15%">Project</th>
+                        <th width="10%">Site</th>
+                        <th width="5%">Currency</th>
+                    </tr>
+                </thead>
+                <tbody id="pi-table-body">
     `;
     
     invoices.forEach(function(inv) {
         html += `
-            <tr>
+            <tr class="pi-row" data-customer="${inv.customer || ''}">
                 <td><input type="checkbox" class="pi-checkbox" value="${inv.name}"></td>
                 <td><a href="/app/purchase-invoice/${inv.name}" target="_blank">${inv.name}</a></td>
                 <td>${frappe.datetime.str_to_user(inv.posting_date)}</td>
@@ -511,16 +529,44 @@ function build_purchase_invoice_table(invoices) {
     });
     
     html += `
-            </tbody>
-        </table>
-        <script>
-            $('#select-all-pi').on('change', function() {
-                $('.pi-checkbox').prop('checked', $(this).prop('checked'));
-            });
-        </script>
+                </tbody>
+            </table>
+        </div>
     `;
     
     return html;
+}
+
+function setup_select_all_checkbox(dialog) {
+    dialog.$wrapper.on('change', '#select-all-pi', function() {
+        let is_checked = $(this).prop('checked');
+        dialog.$wrapper.find('.pi-checkbox:visible').prop('checked', is_checked);
+    });
+
+    dialog.$wrapper.on('change', '.pi-checkbox', function() {
+        let total_visible = dialog.$wrapper.find('.pi-checkbox:visible').length;
+        let total_checked = dialog.$wrapper.find('.pi-checkbox:visible:checked').length;
+        
+        dialog.$wrapper.find('#select-all-pi').prop('checked', total_visible === total_checked && total_visible > 0);
+    });
+}
+
+function filter_purchase_invoices(customer, all_invoices, dialog) {
+    if (customer === 'All') {
+        dialog.$wrapper.find('.pi-row').show();
+    } else {
+
+        dialog.$wrapper.find('.pi-row').each(function() {
+            let row_customer = $(this).data('customer');
+            if (row_customer === customer) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    }
+
+    dialog.$wrapper.find('#select-all-pi').prop('checked', false);
 }
 
 
@@ -535,86 +581,80 @@ function fetch_items_from_purchase_invoices(frm, purchase_invoice_names) {
         freeze_message: __('Fetching items from Purchase Invoices...'),
         callback: function(r) {
             if (r.message) {
-                // Set header fields first
-                if (!frm.doc.customer && r.message.customer) {
-                    frm.set_value('customer', r.message.customer);
+                let doc = r.message;
+                
+                if (!frm.doc.customer && doc.customer) {
+                    frm.doc.customer = doc.customer;
                 }
                 
-                if (!frm.doc.project && r.message.project) {
-                    frm.set_value('project', r.message.project);
+                if (!frm.doc.currency && doc.currency) {
+                    frm.doc.currency = doc.currency;
                 }
                 
-                if (!frm.doc.custom_site && r.message.custom_site) {
-                    frm.set_value('custom_site', r.message.custom_site);
+                if (doc.conversion_rate) {
+                    frm.doc.conversion_rate = doc.conversion_rate;
                 }
                 
-                if (!frm.doc.currency && r.message.currency) {
-                    frm.set_value('currency', r.message.currency);
+                if (!frm.doc.project && doc.project) {
+                    frm.doc.project = doc.project;
                 }
                 
-                if (r.message.conversion_rate) {
-                    frm.set_value('conversion_rate', r.message.conversion_rate);
+                if (!frm.doc.custom_site && doc.custom_site) {
+                    frm.doc.custom_site = doc.custom_site;
                 }
                 
-                // Clear items table
+                frm.refresh_field('customer');
+                frm.refresh_field('currency');
+                frm.refresh_field('conversion_rate');
+                frm.refresh_field('project');
+                frm.refresh_field('custom_site');
+
                 frm.clear_table('items');
-                frm.refresh_field('items');
-                
-                let items_data = r.message.items || [];
-                let promises = [];
-                
-                // Add items and trigger item_code to initialize properly
-                items_data.forEach(function(item_data) {
+
+                $.each(doc.items || [], function(i, item) {
+                    if (!item.item_code || !item.qty || item.qty <= 0) {
+                        return;
+                    }
+                    
                     let row = frm.add_child('items');
                     
-                    // Set item_code first and wait for it to initialize
-                    let promise = frappe.model.set_value(row.doctype, row.name, 'item_code', item_data.item_code)
-                        .then(() => {
-                            // After item_code trigger completes, set all other fields
-                            return new Promise((resolve) => {
-                                setTimeout(() => {
-                                    Object.keys(item_data).forEach(key => {
-                                        if (key !== 'name' && key !== 'doctype' && key !== 'parent' && 
-                                            key !== 'parentfield' && key !== 'parenttype' && key !== 'idx' &&
-                                            key !== '__islocal' && key !== '__unsaved' && key !== 'item_code') {
-                                            
-                                            // Use frappe.model.set_value for proper field updates
-                                            frappe.model.set_value(row.doctype, row.name, key, item_data[key]);
-                                        }
-                                    });
-                                    resolve();
-                                }, 100);
-                            });
-                        });
-                    
-                    promises.push(promise);
+                    Object.keys(item).forEach(key => {
+                        if (key !== 'name' && key !== 'doctype' && key !== 'parent' && 
+                            key !== 'parentfield' && key !== 'parenttype' && key !== 'idx' &&
+                            key !== '__islocal' && key !== '__unsaved') {
+                            row[key] = item[key];
+                        }
+                    });
                 });
                 
-                // Wait for all items to be added and initialized
-                Promise.all(promises).then(() => {
-                    frm.refresh_field('items');
-                    
-                    // Small delay before calculating totals
-                    setTimeout(function() {
-                        frm.script_manager.trigger("calculate_taxes_and_totals");
-                        
-                        frappe.show_alert({
-                            message: __('Items from {0} Purchase Invoice(s) added successfully', [purchase_invoice_names.length]),
-                            indicator: 'green'
-                        }, 5);
-                        
-                        check_currency_differences(frm);
-                    }, 300);
-                });
+                frm.refresh_field('items');
+                
+                frm.doc.total = doc.total;
+                frm.doc.net_total = doc.net_total;
+                frm.doc.total_taxes_and_charges = doc.total_taxes_and_charges || 0;
+                frm.doc.grand_total = doc.grand_total;
+                frm.doc.rounded_total = doc.rounded_total;
+                frm.doc.outstanding_amount = doc.outstanding_amount;
+                
+                frm.refresh_field('total');
+                frm.refresh_field('net_total');
+                frm.refresh_field('grand_total');
+                
+                frm.dirty();
+                
+                frappe.show_alert({
+                    message: __('Items from {0} Purchase Invoice(s) added successfully', [purchase_invoice_names.length]),
+                    indicator: 'green'
+                }, 5);
+                
+                check_currency_differences(frm);
             }
         },
         error: function(r) {
-            let error_message = r.message || __('Failed to fetch items from Purchase Invoices');
-            
             frappe.msgprint({
                 title: __('Validation Error'),
                 indicator: 'red',
-                message: error_message
+                message: r.message || __('Failed to fetch items from Purchase Invoices')
             });
         }
     });

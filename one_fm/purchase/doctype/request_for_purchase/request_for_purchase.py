@@ -877,7 +877,12 @@ def create_purchase_order(**args):
 			"stock_uom_rate": stock_rate,
 			"amount": po_qty * item_args.rate,
 			"schedule_date": getdate(item_args.delivery_date) if (item_args.delivery_date and getdate(nowdate()) < getdate(item_args.delivery_date)) else getdate(nowdate()),
-			"expected_delivery_date": item_args.delivery_date
+			"expected_delivery_date": item_args.delivery_date,
+			"is_refundable": item_args.get("is_refundable"),
+			# "quotation": item_args.get("margin_known"),
+			"margin_type": None if item_args.get("is_refundable") else item_args.get("margin_type"),
+			"margin_rate_or_amount": 0 if item_args.get("is_refundable") else item_args.get("margin_rate_or_amount")
+			
 		})
 	
 	if not valid_items:
@@ -900,6 +905,8 @@ def create_purchase_order(**args):
 		"request_for_material"
 	)
 	po.is_subcontracted = False
+	po.project = args.get("rfp_doc").project
+	po.is_refundable = args.get("rfp_doc").is_refundable
 
 	for item in valid_items:
 		po.append("items", item)

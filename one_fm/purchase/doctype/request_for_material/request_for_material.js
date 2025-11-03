@@ -552,7 +552,15 @@ frappe.ui.form.on('Request for Material', {
 	
 });
 
-
+function sync_child_table(frm, fieldname) {
+	if (!frm.doc.items || frm.doc.items.length === 0) return;
+	
+	frm.doc.items.forEach(function(item) {
+		frappe.model.set_value(item.doctype, item.name, fieldname, frm.doc[fieldname]);
+	});
+	
+	frm.refresh_field('items');
+}
 
 function add_stock_entry_buttons(frm) {
     if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved') {
@@ -697,24 +705,7 @@ var set_t_warehouse_hidden = function(frm) {
 	}
 }
 
-frappe.ui.form.on('Request for Material Item', {
-	items_on_form_rendered: (frm) => {
-	},
-	before_items_remove: (frm) => {
-	},
-	items_add: function(frm, cdt, cdn) {
-		var row = locals[cdt][cdn];
-		row.is_refundable = frm.doc.is_refundable;
-		row.margin_known = frm.doc.margin_known;
-		row.margin_type = frm.doc.margin_type;
-		row.margin_rate_or_amount = frm.doc.margin_rate_or_amount;
-		
-	},
-	items_remove: (frm) => {
-	},
-	items_move: (frm) => {
-	},
-});
+
 
 var set_filters = function(frm) {
 	frm.set_query("erf", function() {
@@ -919,6 +910,12 @@ var set_employee_or_project = function(frm) {
 		frm.set_value('project', '');
 	}
 };
+
+
+
+frappe.ui.form.on('Request for Material Item', {
+	
+});
 
 
 frappe.ui.form.on("Request for Material Item", {
@@ -1165,6 +1162,33 @@ frappe.ui.form.on("Request for Material Item", {
 			});
 			dialog.show();
 		}
+	},
+	items_on_form_rendered: (frm) => {
+	},
+	before_items_remove: (frm) => {
+	},
+	items_add: function(frm, cdt, cdn) {
+		var row = locals[cdt][cdn];
+
+		frappe.model.set_value(cdt, cdn, 'is_refundable', frm.doc.is_refundable || 0);
+		frappe.model.set_value(cdt, cdn, 'margin_known', frm.doc.margin_known || '');
+		frappe.model.set_value(cdt, cdn, 'margin_type', frm.doc.margin_type || '');
+		frappe.model.set_value(cdt, cdn, 'margin_rate_or_amount', frm.doc.margin_rate_or_amount || 0);
+	},
+	items_remove: (frm) => {
+	},
+	items_move: (frm) => {
+	},
+	is_refundable: function(frm, cdt, cdn) {
+		frm.refresh_field('items');
+	},
+	margin_known: function(frm, cdt, cdn) {
+		frm.refresh_field('items');
+	},
+	margin_type: function(frm, cdt, cdn) {
+		frm.refresh_field('items');
+	},
+	margin_rate_or_amount: function(frm, cdt, cdn) {
 	}
 });
 

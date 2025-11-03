@@ -27,6 +27,10 @@ def make_purchase_receipt(source_name, target_doc=None, args=None):
 		target.base_amount = (
 			(flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate) * flt(source_parent.conversion_rate)
 		)
+		
+		if obj.get("is_refundable"):
+			target.margin_type = None
+			target.margin_rate_or_amount = 0
 
 	def select_item(d):
 		filtered_items = args.get("filtered_children", [])
@@ -39,7 +43,15 @@ def make_purchase_receipt(source_name, target_doc=None, args=None):
 		{
 			"Purchase Order": {
 				"doctype": "Purchase Receipt",
-				"field_map": {"supplier_warehouse": "supplier_warehouse"},
+				"field_map": {
+					"supplier_warehouse": "supplier_warehouse",
+					"custom_customer": "custom_customer",
+					"project": "project",
+					"custom_site": "custom_site",
+					"is_refundable": "custom_refundable",
+					"one_fm_request_for_purchase": "custom_request_for_purchase",
+					"request_for_material": "custom_request_for_material",
+				},
 				"validation": {
 					"docstatus": ["=", 1],
 				},
@@ -55,6 +67,7 @@ def make_purchase_receipt(source_name, target_doc=None, args=None):
 					"sales_order": "sales_order",
 					"sales_order_item": "sales_order_item",
 					"wip_composite_asset": "wip_composite_asset",
+					"is_refundable": "custom_refundable",
 				},
 				"postprocess": update_item,
 				"condition": lambda doc: (

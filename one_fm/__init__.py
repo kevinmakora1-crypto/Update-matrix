@@ -93,3 +93,4 @@ ShiftAssignment = ShiftAssignmentOverride
 AssignmentRule.do_assignment = do_assignment
 AssignmentRule.get_user_based_on_process_task = get_user_based_on_process_task
 AssignmentRule.get_user = get_user
+

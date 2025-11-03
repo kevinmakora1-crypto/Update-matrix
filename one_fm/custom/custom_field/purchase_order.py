@@ -240,6 +240,29 @@ def get_purchase_order_custom_fields():
                 "insert_after": "custom_contact_person",
                 "allow_on_submit": 1,
             },
+            {
+                "fieldname": "custom_customer",
+                "label": "Customer",
+                "fieldtype": "Link",
+                "options": "Customer",
+                "insert_after": "department_manager",
+                "read_only": 1
+            },
+            {
+                "fieldname": "custom_site",
+                "label": "Site",
+                "fieldtype": "Link",
+                "options": "Operations Site",
+                "insert_after": "project",
+                "read_only": 1
+            },
+            {
+                "fieldname": "is_refundable",
+                "label": "Refundable",
+                "fieldtype": "Check",
+                "insert_after": "custom_customer",
+                "read_only": 1
+            },
             
         ]
     }

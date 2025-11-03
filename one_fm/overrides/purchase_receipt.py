@@ -1,5 +1,10 @@
 import frappe
 from frappe import _
+import json
+from frappe.model.mapper import get_mapped_doc
+from frappe.utils import flt, getdate
+
+from erpnext.buying.doctype.purchase_order.purchase_order import set_missing_values
 
 
 def get_rfm_in_purchase_receipt(doc):
@@ -122,3 +127,85 @@ def validate_item_batch(doc, method):
                     error_msg = "Manufacturing/Expiry date"
             if error_msg:
                 frappe.throw(_(error_msg + " - mandatory for Item {0}").format(batch_item))
+
+
+@frappe.whitelist()
+def make_purchase_receipt(source_name, target_doc=None, args=None):
+	if args is None:
+		args = {}
+	if isinstance(args, str):
+		args = json.loads(args)
+
+	has_unit_price_items = frappe.db.get_value("Purchase Order", source_name, "has_unit_price_items")
+
+	def is_unit_price_row(source):
+		return has_unit_price_items and source.qty == 0
+
+	def update_item(obj, target, source_parent):
+		target.qty = flt(obj.qty) if is_unit_price_row(obj) else flt(obj.qty) - flt(obj.received_qty)
+		target.stock_qty = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.conversion_factor)
+		target.amount = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate)
+		target.base_amount = (
+			(flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate) * flt(source_parent.conversion_rate)
+		)
+		
+		# Handle refundable items - clear margin fields if refundable
+		if obj.get("is_refundable"):
+			target.margin_type = None
+			target.margin_rate_or_amount = 0
+			target.custom_refundable = 1
+		else:
+			target.custom_refundable = 0
+
+	def select_item(d):
+		filtered_items = args.get("filtered_children", [])
+		child_filter = d.name in filtered_items if filtered_items else True
+		return child_filter
+
+	doc = get_mapped_doc(
+		"Purchase Order",
+		source_name,
+		{
+			"Purchase Order": {
+				"doctype": "Purchase Receipt",
+				"field_map": {
+					"supplier_warehouse": "supplier_warehouse",
+					"custom_customer": "custom_customer",
+					"custom_site": "custom_site",
+					"is_refundable": "custom_refundable",
+					"one_fm_request_for_purchase": "custom_request_for_purchase",
+					"request_for_material": "custom_request_for_material",
+				},
+				"validation": {
+					"docstatus": ["=", 1],
+				},
+			},
+			"Purchase Order Item": {
+				"doctype": "Purchase Receipt Item",
+				"field_map": {
+					"name": "purchase_order_item",
+					"parent": "purchase_order",
+					"bom": "bom",
+					"material_request": "material_request",
+					"material_request_item": "material_request_item",
+					"sales_order": "sales_order",
+					"sales_order_item": "sales_order_item",
+					"wip_composite_asset": "wip_composite_asset",
+					"is_refundable": "custom_refundable",
+					"margin_type": "margin_type",
+					"margin_rate_or_amount": "margin_rate_or_amount",
+				},
+				"postprocess": update_item,
+				"condition": lambda doc: (
+					True if is_unit_price_row(doc) else abs(doc.received_qty) < abs(doc.qty)
+				)
+				and doc.delivered_by_supplier != 1
+				and select_item(doc),
+			},
+			"Purchase Taxes and Charges": {"doctype": "Purchase Taxes and Charges", "reset_value": True},
+		},
+		target_doc,
+		set_missing_values,
+	)
+
+	return doc

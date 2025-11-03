@@ -51,13 +51,10 @@ frappe.ui.form.on('Sales Invoice', {
                 };
             });
             frm.refresh_field("project");
-            fetch_advances(frm)
-
-            
-            
+            fetch_advances(frm)            
             
         }
-        
+
     },
      customer: function(frm){
         if(frm.doc.project){
@@ -157,7 +154,6 @@ frappe.ui.form.on('Sales Invoice', {
             });
         }
     },
-
     contracts: function(frm){
         if(frm.doc.contracts){
             
@@ -186,6 +182,15 @@ frappe.ui.form.on('Sales Invoice', {
                 }
             });
         }
+    },
+    custom_refundable: function(frm) {
+        update_all_items_field(frm, 'custom_refundable', frm.doc.custom_refundable);
+    },
+    custom_margin_type: function(frm) {
+        update_all_items_field(frm, 'margin_type', frm.doc.custom_margin_type);
+    },
+    custom_margin_rate_or_amount: function(frm) {
+        update_all_items_field(frm, 'margin_rate_or_amount', frm.doc.custom_margin_rate_or_amount);
     }
 
 
@@ -193,33 +198,42 @@ frappe.ui.form.on('Sales Invoice', {
     //     add_timesheet_rate(frm);
     // }
 });
-// frappe.ui.form.on('Sales Invoice Item', {
-//     item_code:function(frm,cdt,cdn){
-//         var d = locals[cdt][cdn];
-//         frappe.call({
-//             method: 'frappe.client.get_value',
-//             args:{
-//                 'doctype':'Item',
-//                 'filters':{
-//                     'item_code': d.item_code,
-//                 },
-//                 'fieldname':[
-//                     'is_stock_item'
-//                 ]
-//             },
-//             callback:function(s){
-//                 if (!s.exc) {
-//                     if(s.message != undefined){
-//                         if(s.message.is_stock_item == 0){
-//                             get_timesheet_details(frm,d.item_code);
-//                         }
-//                     }
-//                 }
-//             }
-//         });  
-//         //frappe.model.set_value(d.doctype, d.name,"test_item",d.item_code);
-//     }
-// });
+
+
+frappe.ui.form.on('Sales Invoice Item', {
+    items_add: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        
+        if (frm.doc.custom_refundable) {
+            frappe.model.set_value(cdt, cdn, 'custom_refundable', frm.doc.custom_refundable);
+        }
+        
+        if (frm.doc.custom_margin_type) {
+            frappe.model.set_value(cdt, cdn, 'margin_type', frm.doc.custom_margin_type);
+        }
+        
+        if (frm.doc.custom_margin_rate_or_amount) {
+            frappe.model.set_value(cdt, cdn, 'margin_rate_or_amount', frm.doc.custom_margin_rate_or_amount);
+        }
+    },
+    
+    custom_refundable: function(frm, cdt, cdn) {
+        calculate_margin_for_item(frm, cdt, cdn);
+    },
+    
+    margin_type: function(frm, cdt, cdn) {
+        calculate_margin_for_item(frm, cdt, cdn);
+    },
+    
+    margin_rate_or_amount: function(frm, cdt, cdn) {
+        calculate_margin_for_item(frm, cdt, cdn);
+    },
+    
+    rate: function(frm, cdt, cdn) {
+        calculate_margin_for_item(frm, cdt, cdn);
+    }
+});
+
 var set_income_account_and_cost_center = function(frm){
     
     frappe.call({
@@ -245,6 +259,7 @@ var set_income_account_and_cost_center = function(frm){
         }
     });
 };
+
 let settle_invoice = function(d,frm){ 
     let values = d.get_values()
     if (values.settlement_amount >= values.total_advance_amount){
@@ -269,6 +284,7 @@ let settle_invoice = function(d,frm){
 
     d.hide();
 }
+
 let settle_advances = function(frm){
     
     if((frm.doc.docstatus == 1) && (frm.doc.outstanding_amount>0) && (frm.doc.balance_in_advance_account>0)){
@@ -397,6 +413,7 @@ var get_contracts_asset_items = function(frm){
     })
 };
 
+
 var get_contracts_items = function(frm){
     
     frappe.call({
@@ -422,7 +439,6 @@ var get_contracts_items = function(frm){
         }
     })
 };
-
 
 
 function add_get_items_from_purchase_invoice(frm) {
@@ -694,5 +710,33 @@ function show_currency_exchange_info(frm) {
         if (has_currency_conversion) {
             frm.dashboard.add_comment(__('This invoice contains items converted from different currencies'), 'blue', true);
         }
+    }
+}
+
+
+function update_all_items_field(frm, field_name, value) {
+    if (frm.doc.items && frm.doc.items.length > 0) {
+        $.each(frm.doc.items, function(i, item) {
+            frappe.model.set_value(item.doctype, item.name, field_name, value);
+        });
+        frm.refresh_field('items');
+    }
+}
+
+function calculate_margin_for_item(frm, cdt, cdn) {
+    let item = locals[cdt][cdn];
+    
+    if (item.custom_refundable && item.margin_type && item.margin_rate_or_amount && item.rate) {
+        let rate_with_margin = item.rate;
+        
+        if (item.margin_type === 'Percentage') {
+            rate_with_margin = flt(item.rate) * (1 + flt(item.margin_rate_or_amount) / 100);
+        } else if (item.margin_type === 'Amount') {
+            rate_with_margin = flt(item.rate) + flt(item.margin_rate_or_amount);
+        }
+        
+        frappe.model.set_value(cdt, cdn, 'rate_with_margin', rate_with_margin);
+    } else if (!item.custom_refundable) {
+        frappe.model.set_value(cdt, cdn, 'rate_with_margin', 0);
     }
 }

@@ -112,6 +112,7 @@ def make_sales_invoice_from_purchase_invoice(source_names, target_doc=None):
     
     target_doc.custom_margin_type = first_pi.custom_margin_type
     target_doc.custom_margin_rate_or_amount = first_pi.custom_margin_rate_or_amount
+    target_doc.custom_refundable = first_pi.custom_refundable
     
     company_currency = frappe.get_cached_value("Company", target_doc.company, "default_currency")
     
@@ -194,6 +195,7 @@ def make_sales_invoice_from_purchase_invoice(source_names, target_doc=None):
                 si_item.margin_type = pi_item.get("margin_type") or ""
                 si_item.margin_rate_or_amount = flt(pi_item.get("margin_rate_or_amount") or 0)
                 si_item.rate_with_margin = flt(pi_item.get("rate_with_margin") or 0)
+                si_item.custom_refundable = pi_item.get("custom_refundable")
                 si_item.base_rate_with_margin = flt(si_item.rate_with_margin) * flt(target_doc.conversion_rate or 1)
                 
                 si_item.discount_percentage = flt(pi_item.get("discount_percentage") or 0)

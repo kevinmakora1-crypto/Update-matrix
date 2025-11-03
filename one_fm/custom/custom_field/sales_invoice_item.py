@@ -122,7 +122,14 @@ def get_sales_invoice_item_custom_fields():
                 "label": "Purchase Invoice Item",
                 "options": "Purchase Invoice Item",
                 "read_only": 1
+            },
+            {
+                "fieldname": "custom_refundable",
+                "fieldtype": "Check",
+                "insert_after": "custom_purchase_invoicerate_with_margin",
+                "label": "Refundable",
             }
+
 
         ]
     }

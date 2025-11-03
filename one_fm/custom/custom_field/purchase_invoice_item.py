@@ -2,7 +2,6 @@ def get_purchase_invoice_item_custom_fields():
     return {
         "Purchase Invoice Item": [
             {
-                
                 "fieldname": "custom_refundable",
                 "label": "Refundable",
                 "fieldtype": "Check",

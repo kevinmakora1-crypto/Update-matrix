@@ -40,6 +40,8 @@ frappe.ui.form.on('Sales Invoice', {
         
     },
 	refresh(frm) {
+        add_get_items_from_purchase_invoice(frm);
+        show_currency_exchange_info(frm);
         if(frm.doc.customer){
             frm.set_query("project", function() {
                 return {
@@ -50,6 +52,7 @@ frappe.ui.form.on('Sales Invoice', {
             });
             frm.refresh_field("project");
             fetch_advances(frm)
+
             
             
             
@@ -166,6 +169,26 @@ frappe.ui.form.on('Sales Invoice', {
             get_contracts_asset_items(frm);
         }
     },
+    currency: function(frm) {
+        if (frm.doc.currency && frm.doc.company) {
+            frappe.call({
+                method: "erpnext.setup.utils.get_exchange_rate",
+                args: {
+                    from_currency: frm.doc.currency,
+                    to_currency: frappe.get_doc(":Company", frm.doc.company).default_currency,
+                    transaction_date: frm.doc.posting_date,
+                    args: "for_selling"
+                },
+                callback: function(r) {
+                    if (r.message) {
+                        frm.set_value('conversion_rate', r.message);
+                    }
+                }
+            });
+        }
+    }
+
+
     // add_timesheet_amount: function(frm){
     //     add_timesheet_rate(frm);
     // }
@@ -311,6 +334,7 @@ var add_timesheet_rate = function(frm){
     })
     frm.refresh_field("items");
 };
+
 var get_timesheet_details =  function(frm,item) {
     frappe.call({
         method: 'one_fm.one_fm.sales_invoice_custom.get_projectwise_timesheet_data',
@@ -329,6 +353,7 @@ var get_timesheet_details =  function(frm,item) {
         }
     });
 };
+
 var add_timesheet_data = function(frm,timesheet_data,item_code){
     for (var i=0; i<timesheet_data.length; i++){
         var d = frm.add_child("timesheets");
@@ -341,6 +366,7 @@ var add_timesheet_data = function(frm,timesheet_data,item_code){
         frm.refresh_field("timesheets");
     }
 };
+
 var get_contracts_asset_items = function(frm){
     
     frappe.call({
@@ -370,6 +396,7 @@ var get_contracts_asset_items = function(frm){
         }
     })
 };
+
 var get_contracts_items = function(frm){
     
     frappe.call({
@@ -395,3 +422,237 @@ var get_contracts_items = function(frm){
         }
     })
 };
+
+
+
+function add_get_items_from_purchase_invoice(frm) {
+    if (frm.doc.docstatus === 0) {
+        frm.add_custom_button(__('Purchase Invoice'), function() {
+            show_purchase_invoice_selector(frm);
+        }, __('Get Items From'));
+    }
+}
+
+function show_purchase_invoice_selector(frm) {
+    frappe.call({
+        method: 'one_fm.overrides.purchase_invoice.get_all_refundable_purchase_invoices',
+        callback: function(r) {
+            if (r.message && r.message.length > 0) {
+                let fields = [
+                    {
+                        fieldname: 'html_invoices',
+                        fieldtype: 'HTML'
+                    }
+                ];
+
+                let dialog = new frappe.ui.Dialog({
+                    title: __('Select Purchase Invoice'),
+                    fields: fields,
+                    size: 'extra-large',
+                    primary_action_label: __('Get Items'),
+                    primary_action: function() {
+                        let selected = [];
+                        dialog.$wrapper.find('input[type="checkbox"]:checked').each(function() {
+                            selected.push($(this).val());
+                        });
+                        
+                        if (selected.length === 0) {
+                            frappe.msgprint(__('Please select at least one Purchase Invoice'));
+                            return;
+                        }
+                        
+                        fetch_items_from_purchase_invoices(frm, selected);
+                        dialog.hide();
+                    }
+                });
+
+                let html = build_purchase_invoice_table(r.message);
+                dialog.fields_dict.html_invoices.$wrapper.html(html);
+                
+                dialog.show();
+            } else {
+                frappe.msgprint(__('No refundable Purchase Invoices found with pending quantities'));
+            }
+        }
+    });
+}
+
+function build_purchase_invoice_table(invoices) {
+    let html = `
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th width="5%"><input type="checkbox" id="select-all-pi"></th>
+                    <th width="15%">Name</th>
+                    <th width="12%">Posting Date</th>
+                    <th width="20%">Supplier</th>
+                    <th width="18%">Customer</th>
+                    <th width="15%">Project</th>
+                    <th width="10%">Site</th>
+                    <th width="5%">Currency</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    invoices.forEach(function(inv) {
+        html += `
+            <tr>
+                <td><input type="checkbox" class="pi-checkbox" value="${inv.name}"></td>
+                <td><a href="/app/purchase-invoice/${inv.name}" target="_blank">${inv.name}</a></td>
+                <td>${frappe.datetime.str_to_user(inv.posting_date)}</td>
+                <td>${inv.supplier || ''}</td>
+                <td>${inv.customer || ''}</td>
+                <td>${inv.project || ''}</td>
+                <td>${inv.site || ''}</td>
+                <td>${inv.currency || ''}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+            </tbody>
+        </table>
+        <script>
+            $('#select-all-pi').on('change', function() {
+                $('.pi-checkbox').prop('checked', $(this).prop('checked'));
+            });
+        </script>
+    `;
+    
+    return html;
+}
+
+
+function fetch_items_from_purchase_invoices(frm, purchase_invoice_names) {
+    frappe.call({
+        method: 'one_fm.overrides.purchase_invoice.make_sales_invoice_from_purchase_invoice',
+        args: {
+            source_names: purchase_invoice_names,
+            target_doc: frm.doc
+        },
+        freeze: true,
+        freeze_message: __('Fetching items from Purchase Invoices...'),
+        callback: function(r) {
+            if (r.message) {
+                // Set header fields first
+                if (!frm.doc.customer && r.message.customer) {
+                    frm.set_value('customer', r.message.customer);
+                }
+                
+                if (!frm.doc.project && r.message.project) {
+                    frm.set_value('project', r.message.project);
+                }
+                
+                if (!frm.doc.custom_site && r.message.custom_site) {
+                    frm.set_value('custom_site', r.message.custom_site);
+                }
+                
+                if (!frm.doc.currency && r.message.currency) {
+                    frm.set_value('currency', r.message.currency);
+                }
+                
+                if (r.message.conversion_rate) {
+                    frm.set_value('conversion_rate', r.message.conversion_rate);
+                }
+                
+                // Clear items table
+                frm.clear_table('items');
+                frm.refresh_field('items');
+                
+                let items_data = r.message.items || [];
+                let promises = [];
+                
+                // Add items and trigger item_code to initialize properly
+                items_data.forEach(function(item_data) {
+                    let row = frm.add_child('items');
+                    
+                    // Set item_code first and wait for it to initialize
+                    let promise = frappe.model.set_value(row.doctype, row.name, 'item_code', item_data.item_code)
+                        .then(() => {
+                            // After item_code trigger completes, set all other fields
+                            return new Promise((resolve) => {
+                                setTimeout(() => {
+                                    Object.keys(item_data).forEach(key => {
+                                        if (key !== 'name' && key !== 'doctype' && key !== 'parent' && 
+                                            key !== 'parentfield' && key !== 'parenttype' && key !== 'idx' &&
+                                            key !== '__islocal' && key !== '__unsaved' && key !== 'item_code') {
+                                            
+                                            // Use frappe.model.set_value for proper field updates
+                                            frappe.model.set_value(row.doctype, row.name, key, item_data[key]);
+                                        }
+                                    });
+                                    resolve();
+                                }, 100);
+                            });
+                        });
+                    
+                    promises.push(promise);
+                });
+                
+                // Wait for all items to be added and initialized
+                Promise.all(promises).then(() => {
+                    frm.refresh_field('items');
+                    
+                    // Small delay before calculating totals
+                    setTimeout(function() {
+                        frm.script_manager.trigger("calculate_taxes_and_totals");
+                        
+                        frappe.show_alert({
+                            message: __('Items from {0} Purchase Invoice(s) added successfully', [purchase_invoice_names.length]),
+                            indicator: 'green'
+                        }, 5);
+                        
+                        check_currency_differences(frm);
+                    }, 300);
+                });
+            }
+        },
+        error: function(r) {
+            let error_message = r.message || __('Failed to fetch items from Purchase Invoices');
+            
+            frappe.msgprint({
+                title: __('Validation Error'),
+                indicator: 'red',
+                message: error_message
+            });
+        }
+    });
+}
+
+
+function check_currency_differences(frm) {
+    let currencies = new Set();
+    
+    $.each(frm.doc.items || [], function(i, item) {
+        if (item.custom_pi_currency) {
+            currencies.add(item.custom_pi_currency);
+        }
+    });
+    
+    if (currencies.size > 1 || (currencies.size === 1 && !currencies.has(frm.doc.currency))) {
+        frappe.msgprint({
+            title: __('Currency Conversion Applied'),
+            indicator: 'blue',
+            message: __('Items from Purchase Invoices with different currencies have been converted using current exchange rates. Please verify the rates and amounts.')
+        });
+    }
+}
+
+
+function show_currency_exchange_info(frm) {
+    if (frm.doc.docstatus === 0 && frm.doc.items && frm.doc.items.length > 0) {
+        let has_currency_conversion = false;
+        
+        $.each(frm.doc.items || [], function(i, item) {
+            if (item.custom_pi_exchange_rate && item.custom_pi_exchange_rate != 1.0) {
+                has_currency_conversion = true;
+                return false;
+            }
+        });
+        
+        if (has_currency_conversion) {
+            frm.dashboard.add_comment(__('This invoice contains items converted from different currencies'), 'blue', true);
+        }
+    }
+}

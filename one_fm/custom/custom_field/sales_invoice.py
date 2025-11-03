@@ -105,13 +105,22 @@ def get_sales_invoice_custom_fields():
                 "insert_after": "custom_refundable",
                 "label": "Margin Type",
                 "translatable": 1,
-                "options": "Percentage\nAmount\n "
+                "options": "\nPercentage\nAmount"
             },
             {
                 "fieldname": "custom_margin_rate_or_amount",
                 "fieldtype": "Float",
                 "insert_after": "custom_margin_type",
                 "label": "Margin Rate or Amount",
+            },
+            {
+                "fieldname": "custom_purchase_invoice",
+                "fieldtype": "Link",
+                "insert_after": "supplier_group",
+                "label": "Purchase Invoice",
+                "options": "Purchase Invoice",
+                "read_only": 1,
+                "hidden": 1
             },
 
         ]

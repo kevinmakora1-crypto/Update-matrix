@@ -21,7 +21,6 @@
   "site_supervisor_name",
   "site_supervisor_user",
   "column_break_mejq",
-  "comment",
   "action_type",
   "go_to_employees_roster",
   "new_shift_allocation",
@@ -30,7 +29,9 @@
   "assigned_shifts_outside_default_shift",
   "amended_from",
   "section_break_wkho",
-  "reliever_assigned_to_the_same_shift"
+  "reliever_assigned_to_the_same_shift",
+  "section_break_msfq",
+  "comment"
  ],
  "fields": [
   {
@@ -92,7 +93,6 @@
    "label": "Site Supervisor Name"
   },
   {
-   "description": "Below is the list of Operations Shifts outside the employee's default shift to which the employee has been rostered more than 4 times within the month.",
    "fieldname": "section_break_yzvl",
    "fieldtype": "Section Break"
   },
@@ -170,7 +170,6 @@
    "search_index": 1
   },
   {
-   "description": "Flags shifts where a Day-Off Reliever was scheduled for over 22 days in the same shift, or a Weekend Reliever was scheduled for over 26 days in the same shift.",
    "fieldname": "section_break_wkho",
    "fieldtype": "Section Break"
   },
@@ -213,13 +212,17 @@
    "fieldname": "go_to_employees_roster",
    "fieldtype": "Button",
    "label": "Go To Employee's Roster"
+  },
+  {
+   "fieldname": "section_break_msfq",
+   "fieldtype": "Section Break"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-10-19 13:20:35.933848",
+ "modified": "2025-10-30 17:07:11.161170",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Default Shift Checker",

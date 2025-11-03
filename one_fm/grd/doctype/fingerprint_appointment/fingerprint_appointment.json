@@ -18,10 +18,12 @@
   "column_break_tbus",
   "upload_appointment_form",
   "transportation_section",
-  "required_transportation",
   "pickup_location",
   "accommodation",
+  "accommodation_name",
+  "operations_site",
   "column_break_lhdc",
+  "required_transportation",
   "transportation_supervisor_user",
   "section_break_4",
   "governorate",
@@ -249,7 +251,8 @@
    "fieldname": "fingerprint_appointment_type",
    "fieldtype": "Select",
    "label": "Fingerprint Appointment Type",
-   "options": "\nRenewal\nLocal Transfer"
+   "options": "\nNew Fingerprint\nResident's Fingerprint\nLocal Transfer",
+   "reqd": 1
   },
   {
    "fieldname": "date_of_application",
@@ -312,7 +315,7 @@
    "fieldname": "pickup_location",
    "fieldtype": "Select",
    "label": "Pickup Location",
-   "options": "\nAccommodation",
+   "options": "\nAccommodation\nOperations Site",
    "read_only": 1
   },
   {
@@ -328,6 +331,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval: doc.required_transportation == \"Yes\"",
    "fieldname": "transportation_supervisor_user",
    "fieldtype": "Link",
    "label": "Transportation Supervisor User",
@@ -372,11 +376,26 @@
    "hidden": 1,
    "label": "Roster Action",
    "options": "Yes\nNo"
+  },
+  {
+   "depends_on": "eval: doc.pickup_location == \"Accommodation\"",
+   "fetch_from": "accommodation.accommodation",
+   "fieldname": "accommodation_name",
+   "fieldtype": "Data",
+   "label": "Accommodation Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "operations_site",
+   "fieldtype": "Link",
+   "label": "Operations Site",
+   "options": "Operations Site",
+   "read_only": 1
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-02 12:38:31.438662",
+ "modified": "2025-11-03 21:47:26.408436",
  "modified_by": "Administrator",
  "module": "GRD",
  "name": "Fingerprint Appointment",

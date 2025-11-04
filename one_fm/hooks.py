@@ -845,6 +845,7 @@ override_whitelisted_methods = {
     "hrms.payroll.doctype.payroll_entry.payroll_entry.get_start_end_dates": "one_fm.overrides.payroll_entry.get_start_end_dates",
     "hrms.hr.doctype.job_applicant.job_applicant.create_interview": "one_fm.overrides.job_applicant.create_interview",
     "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_receipt":"one_fm.overrides.purchase_order.make_purchase_receipt",
+    "erpnext.accounts.doctype.purchase_invoice.purchase_invoice.make_purchase_receipt":"one_fm.overrides.purchase_receipt.make_purchase_receipt_invoice"
 
 }
 

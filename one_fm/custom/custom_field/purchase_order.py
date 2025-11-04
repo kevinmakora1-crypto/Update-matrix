@@ -240,6 +240,44 @@ def get_purchase_order_custom_fields():
                 "insert_after": "custom_contact_person",
                 "allow_on_submit": 1,
             },
+            {
+                "fieldname": "custom_customer",
+                "label": "Customer",
+                "fieldtype": "Link",
+                "options": "Customer",
+                "insert_after": "department_manager",
+                "read_only": 1
+            },
+            {
+                "fieldname": "custom_site",
+                "label": "Site",
+                "fieldtype": "Link",
+                "options": "Operations Site",
+                "insert_after": "project",
+                "read_only": 1
+            },
+            {
+                "fieldname": "is_refundable",
+                "label": "Refundable",
+                "fieldtype": "Check",
+                "insert_after": "custom_customer",
+                "read_only": 1
+            },
+            {
+                "label": "Margin Type",
+                "fieldname": "custom_margin_type",
+                "insert_after": "is_refundable",
+                "fieldtype": "Select",
+                "options": "\nPercentage\nAmount",
+                "read_only": 1,
+            },
+            {
+                "label": "Margin Rate or Amount",
+                "fieldname": "custom_margin_rate_or_amount",
+                "insert_after": "custom_margin_type",
+                "fieldtype": "Float",
+                "read_only": 1,
+            },
             
         ]
     }

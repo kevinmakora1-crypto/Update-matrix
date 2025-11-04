@@ -980,6 +980,7 @@ def get_single_invoice_for_separate_sites(contract, date, current_month=False):
                         site_items[site.site] = item_data
     return site_items
 
+
 def calculate_item_values(doc):
     if not doc.discount_amount_applied:
         for item in doc.doc.get("items"):
@@ -1022,6 +1023,8 @@ def calculate_item_values(doc):
             doc._set_in_company_currency(item, ["price_list_rate", "rate", "net_rate", "amount", "net_amount"])
 
             item.item_tax_amount = 0.0
+
+  
 
 
 # GET DELIVERY NOTE FOR CONTRACTS

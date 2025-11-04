@@ -11,6 +11,10 @@
   "item_code",
   "is_stock_item",
   "t_warehouse",
+  "is_refundable",
+  "margin_known",
+  "margin_type",
+  "margin_rate_or_amount",
   "section_break_5",
   "description",
   "quantity",
@@ -253,12 +257,41 @@
    "fieldtype": "Currency",
    "label": "Stock Rate",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_refundable",
+   "fieldtype": "Check",
+   "label": "Refundable",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.is_refundable == 1",
+   "fieldname": "margin_known",
+   "fieldtype": "Select",
+   "label": "Margin Known?",
+   "options": "\nYes\nNo",
+   "read_only": 1
+  },
+  {
+   "fieldname": "margin_type",
+   "fieldtype": "Select",
+   "label": "Margin Type",
+   "options": "\nPercentage\nAmount",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.is_refundable == 1 && doc.margin_known == \"Yes\"",
+   "fieldname": "margin_rate_or_amount",
+   "fieldtype": "Float",
+   "label": "Margin Rate or Amount",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "istable": 1,
  "links": [],
- "modified": "2025-10-26 21:18:51.269424",
+ "modified": "2025-11-04 00:45:14.988127",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Purchase Quotation Item",

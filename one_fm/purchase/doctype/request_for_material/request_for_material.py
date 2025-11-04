@@ -780,12 +780,18 @@ def make_request_for_purchase(source_name, target_doc=None):
             target.qty = qty
             target.custom_request_for_material_item = obj.name
 
-    doclist = get_mapped_doc("Request for Material", source_name, 	{
+    doclist = get_mapped_doc("Request for Material", source_name, {
         "Request for Material": {
             "doctype": "Request for Purchase",
             "field_map": [
                 ["name", "request_for_material"],
-                ["t_warehouse","warehouse"]
+                ["t_warehouse", "warehouse"],
+                ["customer", "customer"],
+                ["project", "project"],
+                ["site", "site"],
+                ["is_refundable", "is_refundable"],
+                ["margin_type", "margin_type"],
+                ["margin_rate_or_amount", "margin_rate_or_amount"]
             ],
             "validation": {
                 "docstatus": ["=", 1]
@@ -798,7 +804,11 @@ def make_request_for_purchase(source_name, target_doc=None):
                 ["requested_item_name", "item_name"],
                 ["name", "request_for_material_item"],
                 ["name", "custom_request_for_material_item"],
-                ["parent", "request_for_material"]
+                ["parent", "request_for_material"],
+                ["is_refundable", "is_refundable"],
+                ["margin_known", "margin_known"],
+                ["margin_type", "margin_type"],
+                ["margin_rate_or_amount", "margin_rate_or_amount"]
             ],
             "postprocess": update_item,
             "condition": lambda doc: (doc.item_code and doc.custom_rfp_quantity < doc.qty and doc.reject_item==0)
@@ -826,9 +836,21 @@ def create_partial_request_for_purchase(source_name, items):
     rfp.company = source_doc.company
     rfp.request_for_material = source_name
     rfp.warehouse = source_doc.t_warehouse
+    rfp.customer = source_doc.customer
+    rfp.project = source_doc.project
+    rfp.site = source_doc.site
+    rfp.is_refundable = source_doc.is_refundable
+    rfp.margin_type = source_doc.margin_type
+    rfp.margin_rate_or_amount = source_doc.margin_rate_or_amount
 
     for item_data in items:
         source_item_doc = frappe.get_doc("Request for Material Item", item_data.get('request_for_material_item'))
+        
+        item_is_refundable = source_item_doc.is_refundable if source_item_doc.get('is_refundable') is not None else source_doc.is_refundable
+        item_margin_known = source_item_doc.margin_known if source_item_doc.get('margin_known') else source_doc.margin_known
+        item_margin_type = source_item_doc.margin_type if source_item_doc.get('margin_type') else source_doc.margin_type
+        item_margin_rate_or_amount = source_item_doc.margin_rate_or_amount if source_item_doc.get('margin_rate_or_amount') else source_doc.margin_rate_or_amount
+        
         rfp.append("items", {
             "item_code": item_data.get('item_code'),
             "qty": item_data.get('qty'),
@@ -838,7 +860,11 @@ def create_partial_request_for_purchase(source_name, items):
             "schedule_date": source_item_doc.schedule_date,
             "request_for_material": source_name,
             "request_for_material_item": item_data.get('request_for_material_item'),
-            "custom_request_for_material_item": item_data.get('request_for_material_item')
+            "custom_request_for_material_item": item_data.get('request_for_material_item'),
+            "is_refundable": item_is_refundable,
+            "margin_known": item_margin_known,
+            "margin_type": item_margin_type,
+            "margin_rate_or_amount": item_margin_rate_or_amount
         })
 
     rfp.insert(ignore_permissions=True)

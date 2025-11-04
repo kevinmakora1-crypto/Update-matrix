@@ -1,76 +1,93 @@
 import frappe
 import json
 from frappe import _
+from frappe.query_builder.functions import Sum
 from frappe.utils import cint, cstr, flt, get_link_to_form
 from frappe.model.mapper import get_mapped_doc
 from erpnext.buying.doctype.purchase_order.purchase_order import PurchaseOrder
+from erpnext.accounts.doctype.pricing_rule.utils import get_applied_pricing_rules
 from one_fm.purchase.doctype.request_for_purchase.request_for_purchase import update_rfp_status
 from frappe.utils import nowdate
 
 
 @frappe.whitelist()
 def make_purchase_receipt(source_name, target_doc=None, args=None):
-	if args is None:
-		args = {}
-	if isinstance(args, str):
-		args = json.loads(args)
+    if args is None:
+        args = {}
+    if isinstance(args, str):
+        args = json.loads(args)
 
-	has_unit_price_items = frappe.db.get_value("Purchase Order", source_name, "has_unit_price_items")
+    has_unit_price_items = frappe.db.get_value("Purchase Order", source_name, "has_unit_price_items")
 
-	def is_unit_price_row(source):
-		return has_unit_price_items and source.qty == 0
+    def is_unit_price_row(source):
+        return has_unit_price_items and source.qty == 0
 
-	def update_item(obj, target, source_parent):
-		target.qty = flt(obj.qty) if is_unit_price_row(obj) else flt(obj.qty) - flt(obj.received_qty)
-		target.stock_qty = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.conversion_factor)
-		target.amount = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate)
-		target.base_amount = (
-			(flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate) * flt(source_parent.conversion_rate)
-		)
+    def update_item(obj, target, source_parent):
+        target.qty = flt(obj.qty) if is_unit_price_row(obj) else flt(obj.qty) - flt(obj.received_qty)
+        target.stock_qty = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.conversion_factor)
+        target.amount = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate)
+        target.base_amount = (
+            (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate) * flt(source_parent.conversion_rate)
+        )
+        
+        if obj.get("is_refundable"):
+            target.margin_type = None
+            target.margin_rate_or_amount = 0
 
-	def select_item(d):
-		filtered_items = args.get("filtered_children", [])
-		child_filter = d.name in filtered_items if filtered_items else True
-		return child_filter
+    def select_item(d):
+        filtered_items = args.get("filtered_children", [])
+        child_filter = d.name in filtered_items if filtered_items else True
+        return child_filter
 
-	doc = get_mapped_doc(
-		"Purchase Order",
-		source_name,
-		{
-			"Purchase Order": {
-				"doctype": "Purchase Receipt",
-				"field_map": {"supplier_warehouse": "supplier_warehouse"},
-				"validation": {
-					"docstatus": ["=", 1],
-				},
-			},
-			"Purchase Order Item": {
-				"doctype": "Purchase Receipt Item",
-				"field_map": {
-					"name": "purchase_order_item",
-					"parent": "purchase_order",
-					"bom": "bom",
-					"material_request": "material_request",
-					"material_request_item": "material_request_item",
-					"sales_order": "sales_order",
-					"sales_order_item": "sales_order_item",
-					"wip_composite_asset": "wip_composite_asset",
-				},
-				"postprocess": update_item,
-				"condition": lambda doc: (
-					True if is_unit_price_row(doc) else abs(doc.received_qty) < abs(doc.qty)
-				)
-				and doc.delivered_by_supplier != 1
-				and select_item(doc),
-			},
-			"Purchase Taxes and Charges": {"doctype": "Purchase Taxes and Charges", "reset_value": True},
-		},
-		target_doc,
-		set_missing_values,
-	)
-    
-    
-	return doc
+    doc = get_mapped_doc(
+        "Purchase Order",
+        source_name,
+        {
+            "Purchase Order": {
+                "doctype": "Purchase Receipt",
+                "field_map": {
+                    "supplier_warehouse": "supplier_warehouse",
+                    "custom_customer": "custom_customer",
+                    "project": "project",
+                    "custom_site": "custom_site",
+                    "is_refundable": "custom_refundable",
+                    "one_fm_request_for_purchase": "custom_request_for_purchase",
+                    "request_for_material": "custom_request_for_material",
+                    "custom_margin_type": "custom_margin_type",
+                    "custom_margin_rate_or_amount": "custom_margin_rate_or_amount",
+                },
+                "validation": {
+                    "docstatus": ["=", 1],
+                },
+            },
+            "Purchase Order Item": {
+                "doctype": "Purchase Receipt Item",
+                "field_map": {
+                    "name": "purchase_order_item",
+                    "parent": "purchase_order",
+                    "bom": "bom",
+                    "material_request": "material_request",
+                    "material_request_item": "material_request_item",
+                    "sales_order": "sales_order",
+                    "sales_order_item": "sales_order_item",
+                    "wip_composite_asset": "wip_composite_asset",
+                    "is_refundable": "custom_refundable",
+                },
+                "postprocess": update_item,
+                "condition": lambda doc: (
+                    True if is_unit_price_row(doc) else abs(doc.received_qty) < abs(doc.qty)
+                )
+                and doc.delivered_by_supplier != 1
+                and select_item(doc),
+            },
+            "Purchase Taxes and Charges": {"doctype": "Purchase Taxes and Charges", "reset_value": True},
+        },
+        target_doc,
+        set_missing_values,
+    )
+
+
+    return doc
 
 
 def set_missing_values(source, target):
@@ -305,4 +322,54 @@ def update_purchased_qty(new_qty, parent, item_code, doctype, qty_field):
         (new_qty, doctype.replace(" Item", ""), parent, item_code),
     )
 
-                
+
+
+def calculate_margin(doc, item):
+	rate_with_margin = 0.0
+	base_rate_with_margin = 0.0
+	
+	if item.get("is_refundable"):
+		rate_with_margin = item.rate or item.price_list_rate or 0
+		base_rate_with_margin = flt(rate_with_margin * doc.doc.conversion_rate)
+		return rate_with_margin, base_rate_with_margin
+	
+	if item.price_list_rate:
+		if item.pricing_rules and not doc.doc.ignore_pricing_rule:
+			has_pricing_rule_margin = False
+			for d in get_applied_pricing_rules(item.pricing_rules):
+				pricing_rule = frappe.get_cached_doc("Pricing Rule", d)
+
+				if pricing_rule.margin_rate_or_amount and (
+					(
+						pricing_rule.currency == doc.doc.currency
+						and pricing_rule.margin_type in ["Amount", "Percentage"]
+					)
+					or pricing_rule.margin_type == "Percentage"
+				):
+					margin_value = (
+						pricing_rule.margin_rate_or_amount
+						if pricing_rule.margin_type == "Amount"
+						else flt(item.price_list_rate) * flt(pricing_rule.margin_rate_or_amount) / 100
+					)
+					rate_with_margin = flt(item.price_list_rate) + flt(margin_value)
+					base_rate_with_margin = flt(rate_with_margin) * flt(doc.doc.conversion_rate)
+					has_pricing_rule_margin = True
+					break
+
+			if has_pricing_rule_margin:
+				return rate_with_margin, base_rate_with_margin
+
+		if not item.pricing_rules and flt(item.rate) > flt(item.price_list_rate):
+			item.rate_with_margin = item.rate
+
+		if item.margin_type and item.margin_rate_or_amount:
+			margin_value = (
+				item.margin_rate_or_amount
+				if item.margin_type == "Amount"
+				else flt(item.price_list_rate) * flt(item.margin_rate_or_amount) / 100
+			)
+			rate_with_margin = flt(item.price_list_rate) + flt(margin_value)
+			base_rate_with_margin = flt(rate_with_margin) * flt(doc.doc.conversion_rate)
+
+	return rate_with_margin, base_rate_with_margin
+

@@ -191,25 +191,20 @@ class WorkPermit(Document):
             if tp:
                 if tp.work_permit_records != []:# If table for tracking wp in the transfer paper records is not empty, update the rows of the work permit records in the transfer paper upon wp referance name
                     for wp_index, wp in enumerate(tp.work_permit_records):
-                        if wp.work_permit_reference == self.name and self.work_permit_status != "Completed":
-                            wp.update({
-                                "status": self.work_permit_status,
-                                "reason_of_rejection": self.reason_of_rejection
-                                })
+                        if wp.work_permit_reference == self.name and self.workflow_state != "Completed":
+                            wp.update({"reason_of_rejection": self.reason_of_rejection})
                             wp.save()
                         if wp.work_permit_reference != self.name and wp_index == len(tp.work_permit_records)-1:
                             tp.append("work_permit_records", {
-                            "work_permit_reference": self.name,
-                            "status": self.work_permit_status,
-                            "reason_of_rejection": self.reason_of_rejection
+                                "work_permit_reference": self.name,
+                                "reason_of_rejection": self.reason_of_rejection
                             })
                         if wp.work_permit_reference  != self.name and wp_index != len(tp.work_permit_records)-1:
                             continue
                 elif tp.work_permit_records == []:# If table for tracking wp in the transfer paper records is empty, append into the table
                     tp.append("work_permit_records", {
-                    "work_permit_reference": self.name,
-                    "status": self.work_permit_status,
-                    "reason_of_rejection": self.reason_of_rejection
+                        "work_permit_reference": self.name,
+                        "reason_of_rejection": self.reason_of_rejection
                     })
             tp.save()
             tp.reload()
@@ -239,7 +234,6 @@ class WorkPermit(Document):
     def on_submit(self):
         if self.work_permit_type not in ['Cancellation', 'New Kuwaiti', 'Local Transfer'] and self.workflow_state != "Rejected":
             if self.workflow_state == "Completed" and self.attach_invoice and self.new_work_permit_expiry_date:
-                self.db_set('work_permit_status', 'Completed')
                 # self.clean_old_wp_record_in_employee_doctype()
                 self.set_work_permit_attachment_in_employee_doctype(self.new_work_permit_expiry_date)
             else:
@@ -252,12 +246,11 @@ class WorkPermit(Document):
                     msg += " to submit"
                     frappe.throw(_(msg))
 
-        if self.work_permit_type == "Cancellation":
-            self.db_set('work_permit_status', 'Completed')
+        # ToDo
+        # If work permit type is Cancellation, set workflow_state to Completed
 
         if self.workflow_state == "Completed":
             if self.work_permit_type == "Local Transfer":
-                self.db_set('work_permit_status', 'Completed')
                 self.update_wp_child_table_in_transfer_paper()
                 self.recall_create_medical_insurance_transfer() # Auto create mi record for transfer wp
                 self.set_work_permit_attachment_in_employee_doctype(self.work_permit_expiry_date, self.attach_work_permit)
@@ -272,11 +265,8 @@ class WorkPermit(Document):
         tp = frappe.get_doc('Transfer Paper',self.transfer_paper)
         if tp:
             for wp in tp.work_permit_records:
-                if wp.work_permit_reference  == self.name and self.work_permit_status == "Completed":
-                    wp.update({
-                        "status": self.work_permit_status,
-                        "reason_of_rejection": self.reason_of_rejection
-                        })
+                if wp.work_permit_reference  == self.name and self.workflow_state == "Completed":
+                    wp.update({"reason_of_rejection": self.reason_of_rejection})
                     wp.save()
             tp.workflow_state = "Completed"
             tp.save()

@@ -23,11 +23,11 @@ frappe.ui.form.on('Transfer Paper', {
                     filters: {
                     name: frm.doc.work_permit_ref
                     },
-                    fieldname:["work_permit_status"]
+                    fieldname:["workflow_state"]
                 }, 
                 callback: function(r) { 
-                    frm.set_value('work_permit_status', r.message.work_permit_status);
-                    if(r.message.work_permit_status == "Completed"){
+                    frm.set_value('work_permit_status', r.message.workflow_state);
+                    if(r.message.workflow_state == "Completed"){
                         frm.set_value('tp_status', "Completed");
                     }
                 }

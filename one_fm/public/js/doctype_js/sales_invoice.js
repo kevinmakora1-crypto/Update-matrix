@@ -202,7 +202,7 @@ frappe.ui.form.on('Sales Invoice', {
 
 frappe.ui.form.on('Sales Invoice Item', {
     items_add: function(frm, cdt, cdn) {
-        let row = locals[cdt][cdn];
+        
         
         if (frm.doc.custom_refundable) {
             frappe.model.set_value(cdt, cdn, 'custom_refundable', frm.doc.custom_refundable);

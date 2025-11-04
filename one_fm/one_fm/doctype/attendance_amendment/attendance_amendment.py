@@ -4,7 +4,7 @@
 import frappe
 from frappe.model.document import Document
 from frappe.query_builder.functions import Extract
-from frappe.utils import cint, cstr, getdate, nowdate
+from frappe.utils import cint, cstr
 from calendar import monthrange
 from frappe import _
 
@@ -16,12 +16,10 @@ status_map = {
 	"Day Off": "DO"
 }
 
-day_abbr = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-
 class AttendanceAmendment(Document):
 	@frappe.whitelist()
 	def fetch_attendance_record(self):
-		filters = self.get_attendance_ammendment_filters()
+		filters = self.get_attendance_amendment_filters()
 		employee_details = get_employee_details()
 		attendance_map = get_attendance_map(filters)
 		data = get_rows(employee_details, filters, attendance_map)
@@ -30,7 +28,7 @@ class AttendanceAmendment(Document):
 		else:
 			frappe.msgprint(_("No attendance records found."), alert=True, indicator="orange")
 
-	def get_attendance_ammendment_filters(self):
+	def get_attendance_amendment_filters(self):
 		month_map = { 
 			"January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
 			"July": 7, "August": 8, "September": 9, "October": 10, "November": 11,
@@ -254,7 +252,7 @@ def get_attendance_status(filters, employee_non_day_off_attendance, employee_day
 			elif status in ["Day Off", "Client Day Off"]:
 				off_days += 1
 
-			abbr = attendance_status_map.get(status, "")
+			# abbr = attendance_status_map.get(status, "")
 			# row[cstr(day)] = abbr
 			row[cstr(day)] = status
 

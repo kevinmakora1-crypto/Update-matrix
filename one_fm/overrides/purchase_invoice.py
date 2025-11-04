@@ -2,7 +2,7 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import flt, get_datetime
+from frappe.utils import flt
 from erpnext.setup.utils import get_exchange_rate
 from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
 

@@ -106,6 +106,30 @@ def get_sales_invoice_item_custom_fields():
                 "label": "Journal Entry Item",
                 "print_hide": 1,
                 "read_only": 1
+            },
+            {
+                "fieldname": "custom_purchase_invoice",
+                "fieldtype": "Link",
+                "insert_after": "delivered_qty",
+                "label": "Purchase Invoice",
+                "options": "Purchase Invoice",
+                "read_only": 1
+            },
+            {
+                "fieldname": "custom_purchase_invoice_item",
+                "fieldtype": "Link",
+                "insert_after": "custom_purchase_invoice",
+                "label": "Purchase Invoice Item",
+                "options": "Purchase Invoice Item",
+                "read_only": 1
+            },
+            {
+                "fieldname": "custom_refundable",
+                "fieldtype": "Check",
+                "insert_after": "rate_with_margin",
+                "label": "Refundable",
             }
+
+
         ]
     }

@@ -40,6 +40,8 @@ frappe.ui.form.on('Sales Invoice', {
         
     },
 	refresh(frm) {
+        add_get_items_from_purchase_invoice(frm);
+        show_currency_exchange_info(frm);
         if(frm.doc.customer){
             frm.set_query("project", function() {
                 return {
@@ -49,12 +51,10 @@ frappe.ui.form.on('Sales Invoice', {
                 };
             });
             frm.refresh_field("project");
-            fetch_advances(frm)
-            
-            
+            fetch_advances(frm)            
             
         }
-        
+
     },
      customer: function(frm){
         if(frm.doc.project){
@@ -154,7 +154,6 @@ frappe.ui.form.on('Sales Invoice', {
             });
         }
     },
-
     contracts: function(frm){
         if(frm.doc.contracts){
             
@@ -166,37 +165,75 @@ frappe.ui.form.on('Sales Invoice', {
             get_contracts_asset_items(frm);
         }
     },
+    currency: function(frm) {
+        if (frm.doc.currency && frm.doc.company) {
+            frappe.call({
+                method: "erpnext.setup.utils.get_exchange_rate",
+                args: {
+                    from_currency: frm.doc.currency,
+                    to_currency: frappe.get_doc("Company", frm.doc.company).default_currency,
+                    transaction_date: frm.doc.posting_date,
+                    args: "for_selling"
+                },
+                callback: function(r) {
+                    if (r.message) {
+                        frm.set_value('conversion_rate', r.message);
+                    }
+                }
+            });
+        }
+    },
+    custom_refundable: function(frm) {
+        update_all_items_field(frm, 'custom_refundable', frm.doc.custom_refundable);
+    },
+    custom_margin_type: function(frm) {
+        update_all_items_field(frm, 'margin_type', frm.doc.custom_margin_type);
+    },
+    custom_margin_rate_or_amount: function(frm) {
+        update_all_items_field(frm, 'margin_rate_or_amount', frm.doc.custom_margin_rate_or_amount);
+    }
+
+
     // add_timesheet_amount: function(frm){
     //     add_timesheet_rate(frm);
     // }
 });
-// frappe.ui.form.on('Sales Invoice Item', {
-//     item_code:function(frm,cdt,cdn){
-//         var d = locals[cdt][cdn];
-//         frappe.call({
-//             method: 'frappe.client.get_value',
-//             args:{
-//                 'doctype':'Item',
-//                 'filters':{
-//                     'item_code': d.item_code,
-//                 },
-//                 'fieldname':[
-//                     'is_stock_item'
-//                 ]
-//             },
-//             callback:function(s){
-//                 if (!s.exc) {
-//                     if(s.message != undefined){
-//                         if(s.message.is_stock_item == 0){
-//                             get_timesheet_details(frm,d.item_code);
-//                         }
-//                     }
-//                 }
-//             }
-//         });  
-//         //frappe.model.set_value(d.doctype, d.name,"test_item",d.item_code);
-//     }
-// });
+
+
+frappe.ui.form.on('Sales Invoice Item', {
+    items_add: function(frm, cdt, cdn) {
+        
+        
+        if (frm.doc.custom_refundable) {
+            frappe.model.set_value(cdt, cdn, 'custom_refundable', frm.doc.custom_refundable);
+        }
+        
+        if (frm.doc.custom_margin_type) {
+            frappe.model.set_value(cdt, cdn, 'margin_type', frm.doc.custom_margin_type);
+        }
+        
+        if (frm.doc.custom_margin_rate_or_amount) {
+            frappe.model.set_value(cdt, cdn, 'margin_rate_or_amount', frm.doc.custom_margin_rate_or_amount);
+        }
+    },
+    
+    custom_refundable: function(frm, cdt, cdn) {
+        calculate_margin_for_item(frm, cdt, cdn);
+    },
+    
+    margin_type: function(frm, cdt, cdn) {
+        calculate_margin_for_item(frm, cdt, cdn);
+    },
+    
+    margin_rate_or_amount: function(frm, cdt, cdn) {
+        calculate_margin_for_item(frm, cdt, cdn);
+    },
+    
+    rate: function(frm, cdt, cdn) {
+        calculate_margin_for_item(frm, cdt, cdn);
+    }
+});
+
 var set_income_account_and_cost_center = function(frm){
     
     frappe.call({
@@ -222,6 +259,7 @@ var set_income_account_and_cost_center = function(frm){
         }
     });
 };
+
 let settle_invoice = function(d,frm){ 
     let values = d.get_values()
     if (values.settlement_amount >= values.total_advance_amount){
@@ -246,6 +284,7 @@ let settle_invoice = function(d,frm){
 
     d.hide();
 }
+
 let settle_advances = function(frm){
     
     if((frm.doc.docstatus == 1) && (frm.doc.outstanding_amount>0) && (frm.doc.balance_in_advance_account>0)){
@@ -311,6 +350,7 @@ var add_timesheet_rate = function(frm){
     })
     frm.refresh_field("items");
 };
+
 var get_timesheet_details =  function(frm,item) {
     frappe.call({
         method: 'one_fm.one_fm.sales_invoice_custom.get_projectwise_timesheet_data',
@@ -329,6 +369,7 @@ var get_timesheet_details =  function(frm,item) {
         }
     });
 };
+
 var add_timesheet_data = function(frm,timesheet_data,item_code){
     for (var i=0; i<timesheet_data.length; i++){
         var d = frm.add_child("timesheets");
@@ -341,6 +382,7 @@ var add_timesheet_data = function(frm,timesheet_data,item_code){
         frm.refresh_field("timesheets");
     }
 };
+
 var get_contracts_asset_items = function(frm){
     
     frappe.call({
@@ -370,6 +412,8 @@ var get_contracts_asset_items = function(frm){
         }
     })
 };
+
+
 var get_contracts_items = function(frm){
     
     frappe.call({
@@ -395,3 +439,304 @@ var get_contracts_items = function(frm){
         }
     })
 };
+
+
+function add_get_items_from_purchase_invoice(frm) {
+    if (frm.doc.docstatus === 0) {
+        frm.add_custom_button(__('Purchase Invoice'), function() {
+            show_purchase_invoice_selector(frm);
+        }, __('Get Items From'));
+    }
+}
+
+function show_purchase_invoice_selector(frm) {
+    frappe.call({
+        method: 'one_fm.overrides.purchase_invoice.get_all_refundable_purchase_invoices',
+        callback: function(r) {
+            if (r.message && r.message.length > 0) {
+                let customers = [...new Set(r.message.map(inv => inv.customer).filter(c => c))];
+                customers.sort();
+                
+                let fields = [
+                    {
+                        fieldname: 'customer_filter',
+                        fieldtype: 'Select',
+                        label: __('Filter by Customer'),
+                        options: ['All', ...customers],
+                        default: 'All',
+                        onchange: function() {
+                            filter_purchase_invoices(this.value, r.message, dialog);
+                        }
+                    },
+                    {
+                        fieldname: 'html_invoices',
+                        fieldtype: 'HTML'
+                    }
+                ];
+
+                let dialog = new frappe.ui.Dialog({
+                    title: __('Select Purchase Invoice'),
+                    fields: fields,
+                    size: 'extra-large',
+                    primary_action_label: __('Get Items'),
+                    primary_action: function() {
+                        let selected = [];
+                        dialog.$wrapper.find('input.pi-checkbox:checked').each(function() {
+                            selected.push($(this).val());
+                        });
+                        
+                        if (selected.length === 0) {
+                            frappe.msgprint(__('Please select at least one Purchase Invoice'));
+                            return;
+                        }
+                        
+                        fetch_items_from_purchase_invoices(frm, selected);
+                        dialog.hide();
+                    }
+                });
+
+                let html = build_purchase_invoice_table(r.message);
+                dialog.fields_dict.html_invoices.$wrapper.html(html);
+                
+                setup_select_all_checkbox(dialog);
+                
+                dialog.show();
+            } else {
+                frappe.msgprint(__('No refundable Purchase Invoices found with pending quantities'));
+            }
+        }
+    });
+}
+
+function build_purchase_invoice_table(invoices) {
+    let html = `
+        <div style="max-height: 500px; overflow-y: auto;">
+            <table class="table table-bordered table-hover">
+                <thead style="sticky; top: 0; background-color: white; z-index: 10;">
+                    <tr>
+                        <th width="5%">
+                            <input type="checkbox" id="select-all-pi" class="select-all-checkbox">
+                        </th>
+                        <th width="15%">Name</th>
+                        <th width="12%">Posting Date</th>
+                        <th width="20%">Supplier</th>
+                        <th width="18%">Customer</th>
+                        <th width="15%">Project</th>
+                        <th width="10%">Site</th>
+                        <th width="5%">Currency</th>
+                    </tr>
+                </thead>
+                <tbody id="pi-table-body">
+    `;
+    
+    invoices.forEach(function(inv) {
+        html += `
+            <tr class="pi-row" data-customer="${inv.customer || ''}">
+                <td><input type="checkbox" class="pi-checkbox" value="${inv.name}"></td>
+                <td><a href="/app/purchase-invoice/${inv.name}" target="_blank">${inv.name}</a></td>
+                <td>${frappe.datetime.str_to_user(inv.posting_date)}</td>
+                <td>${inv.supplier || ''}</td>
+                <td>${inv.customer || ''}</td>
+                <td>${inv.project || ''}</td>
+                <td>${inv.site || ''}</td>
+                <td>${inv.currency || ''}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    return html;
+}
+
+function setup_select_all_checkbox(dialog) {
+    dialog.$wrapper.on('change', '#select-all-pi', function() {
+        let is_checked = $(this).prop('checked');
+        dialog.$wrapper.find('.pi-checkbox:visible').prop('checked', is_checked);
+    });
+
+    dialog.$wrapper.on('change', '.pi-checkbox', function() {
+        let total_visible = dialog.$wrapper.find('.pi-checkbox:visible').length;
+        let total_checked = dialog.$wrapper.find('.pi-checkbox:visible:checked').length;
+        
+        dialog.$wrapper.find('#select-all-pi').prop('checked', total_visible === total_checked && total_visible > 0);
+    });
+}
+
+function filter_purchase_invoices(customer, all_invoices, dialog) {
+    if (customer === 'All') {
+        dialog.$wrapper.find('.pi-row').show();
+    } else {
+
+        dialog.$wrapper.find('.pi-row').each(function() {
+            let row_customer = $(this).data('customer');
+            if (row_customer === customer) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    }
+
+    dialog.$wrapper.find('#select-all-pi').prop('checked', false);
+}
+
+
+function fetch_items_from_purchase_invoices(frm, purchase_invoice_names) {
+    frappe.call({
+        method: 'one_fm.overrides.purchase_invoice.make_sales_invoice_from_purchase_invoice',
+        args: {
+            source_names: purchase_invoice_names,
+            target_doc: frm.doc
+        },
+        freeze: true,
+        freeze_message: __('Fetching items from Purchase Invoices...'),
+        callback: function(r) {
+            if (r.message) {
+                let doc = r.message;
+                
+                if (!frm.doc.customer && doc.customer) {
+                    frm.doc.customer = doc.customer;
+                }
+                
+                if (!frm.doc.currency && doc.currency) {
+                    frm.doc.currency = doc.currency;
+                }
+                
+                if (doc.conversion_rate) {
+                    frm.doc.conversion_rate = doc.conversion_rate;
+                }
+                
+                if (!frm.doc.project && doc.project) {
+                    frm.doc.project = doc.project;
+                }
+                
+                if (!frm.doc.custom_site && doc.custom_site) {
+                    frm.doc.custom_site = doc.custom_site;
+                }
+                
+                frm.refresh_field('customer');
+                frm.refresh_field('currency');
+                frm.refresh_field('conversion_rate');
+                frm.refresh_field('project');
+                frm.refresh_field('custom_site');
+
+                frm.clear_table('items');
+
+                $.each(doc.items || [], function(i, item) {
+                    if (!item.item_code || !item.qty || item.qty <= 0) {
+                        return;
+                    }
+                    
+                    let row = frm.add_child('items');
+                    
+                    Object.keys(item).forEach(key => {
+                        if (key !== 'name' && key !== 'doctype' && key !== 'parent' && 
+                            key !== 'parentfield' && key !== 'parenttype' && key !== 'idx' &&
+                            key !== '__islocal' && key !== '__unsaved') {
+                            row[key] = item[key];
+                        }
+                    });
+                });
+                
+                frm.refresh_field('items');
+                
+                frm.doc.total = doc.total;
+                frm.doc.net_total = doc.net_total;
+                frm.doc.total_taxes_and_charges = doc.total_taxes_and_charges || 0;
+                frm.doc.grand_total = doc.grand_total;
+                frm.doc.rounded_total = doc.rounded_total;
+                frm.doc.outstanding_amount = doc.outstanding_amount;
+                
+                frm.refresh_field('total');
+                frm.refresh_field('net_total');
+                frm.refresh_field('grand_total');
+                
+                frm.dirty();
+                
+                frappe.show_alert({
+                    message: __('Items from {0} Purchase Invoice(s) added successfully', [purchase_invoice_names.length]),
+                    indicator: 'green'
+                }, 5);
+                
+                check_currency_differences(frm);
+            }
+        },
+        error: function(r) {
+            frappe.msgprint({
+                title: __('Validation Error'),
+                indicator: 'red',
+                message: r.message || __('Failed to fetch items from Purchase Invoices')
+            });
+        }
+    });
+}
+
+
+function check_currency_differences(frm) {
+    let currencies = new Set();
+    
+    $.each(frm.doc.items || [], function(i, item) {
+        if (item.custom_pi_currency) {
+            currencies.add(item.custom_pi_currency);
+        }
+    });
+    
+    if (currencies.size > 1 || (currencies.size === 1 && !currencies.has(frm.doc.currency))) {
+        frappe.msgprint({
+            title: __('Currency Conversion Applied'),
+            indicator: 'blue',
+            message: __('Items from Purchase Invoices with different currencies have been converted using current exchange rates. Please verify the rates and amounts.')
+        });
+    }
+}
+
+
+function show_currency_exchange_info(frm) {
+    if (frm.doc.docstatus === 0 && frm.doc.items && frm.doc.items.length > 0) {
+        let has_currency_conversion = false;
+        
+        $.each(frm.doc.items || [], function(i, item) {
+            if (item.custom_pi_exchange_rate && item.custom_pi_exchange_rate != 1.0) {
+                has_currency_conversion = true;
+                return false;
+            }
+        });
+        
+        if (has_currency_conversion) {
+            frm.dashboard.add_comment(__('This invoice contains items converted from different currencies'), 'blue', true);
+        }
+    }
+}
+
+
+function update_all_items_field(frm, field_name, value) {
+    if (frm.doc.items && frm.doc.items.length > 0) {
+        $.each(frm.doc.items, function(i, item) {
+            frappe.model.set_value(item.doctype, item.name, field_name, value);
+        });
+        frm.refresh_field('items');
+    }
+}
+
+function calculate_margin_for_item(frm, cdt, cdn) {
+    let item = locals[cdt][cdn];
+    
+    if (item.custom_refundable && item.margin_type && item.margin_rate_or_amount && item.rate) {
+        let rate_with_margin = item.rate;
+        
+        if (item.margin_type === 'Percentage') {
+            rate_with_margin = flt(item.rate) * (1 + flt(item.margin_rate_or_amount) / 100);
+        } else if (item.margin_type === 'Amount') {
+            rate_with_margin = flt(item.rate) + flt(item.margin_rate_or_amount);
+        }
+        
+        frappe.model.set_value(cdt, cdn, 'rate_with_margin', rate_with_margin);
+    } else if (!item.custom_refundable) {
+        frappe.model.set_value(cdt, cdn, 'rate_with_margin', 0);
+    }
+}

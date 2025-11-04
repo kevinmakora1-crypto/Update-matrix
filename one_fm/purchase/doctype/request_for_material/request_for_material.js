@@ -1168,7 +1168,6 @@ frappe.ui.form.on("Request for Material Item", {
 	before_items_remove: (frm) => {
 	},
 	items_add: function(frm, cdt, cdn) {
-		var row = locals[cdt][cdn];
 
 		frappe.model.set_value(cdt, cdn, 'is_refundable', frm.doc.is_refundable || 0);
 		frappe.model.set_value(cdt, cdn, 'margin_known', frm.doc.margin_known || '');

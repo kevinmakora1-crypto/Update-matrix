@@ -51,6 +51,8 @@ from frappe.core.doctype.user_permission import user_permission
 from one_fm.permissions import get_custom_user_permissions
 import frappe.workflow.doctype.workflow_action.workflow_action as wa
 from one_fm.overrides.workflow import confirm_action as custom_confirm_action
+from one_fm.overrides.purchase_order import calculate_margin
+
 
 __version__ = '15.4.7'
 
@@ -82,6 +84,7 @@ ItemPrice.validate = validate
 ItemPrice.check_duplicates = check_duplicates
 LeaveApplication.notify_leave_approver = notify_leave_approver
 calculate_taxes_and_totals.calculate_item_values = calculate_item_values
+calculate_taxes_and_totals.calculate_margin = calculate_margin
 LeaveAllocation.get_existing_leave_count = get_existing_leave_count
 
 NotificationLog.after_insert = after_insert

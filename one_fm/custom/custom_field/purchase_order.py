@@ -263,6 +263,21 @@ def get_purchase_order_custom_fields():
                 "insert_after": "custom_customer",
                 "read_only": 1
             },
+            {
+                "label": "Margin Type",
+                "fieldname": "custom_margin_type",
+                "insert_after": "is_refundable",
+                "fieldtype": "Select",
+                "options": "\nPercentage\nAmount",
+                "read_only": 1,
+            },
+            {
+                "label": "Margin Rate or Amount",
+                "fieldname": "custom_margin_rate_or_amount",
+                "insert_after": "custom_margin_type",
+                "fieldtype": "Float",
+                "read_only": 1,
+            },
             
         ]
     }

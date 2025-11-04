@@ -90,7 +90,11 @@ class RequestforPurchase(Document):
 					"description": item.description,
 					"warehouse": item.t_warehouse if item.t_warehouse else wh,
 					"quotation": item.quotation,
-					"item_name": getattr(item, 'item_name', None)
+					"item_name": getattr(item, 'item_name', None),
+					"is_refundable": getattr(item, 'is_refundable', 0),
+					"margin_known": getattr(item, 'margin_known', ''),
+					"margin_type": getattr(item, 'margin_type', ''),
+					"margin_rate_or_amount": getattr(item, 'margin_rate_or_amount', 0)
 				})
 			
 			for supplier, items_list in supplier_groups.items():
@@ -821,6 +825,8 @@ def make_quotation_comparison_sheet(source_name, target_doc=None):
 	doclist.request_for_quotation = rfq if rfq else ''
 	return doclist
 
+
+
 def create_purchase_order(**args):
 	args = frappe._dict(args)
 	
@@ -836,7 +842,11 @@ def create_purchase_order(**args):
 				"parent": args.request_for_purchase,
 				"item_code": item_args.item_code
 			},
-			["qty", "ordered_qty", "pending_qty", "stock_qty", "stock_uom", "conversion_factor", "stock_rate"],
+			[
+				"qty", "ordered_qty", "pending_qty", "stock_qty", 
+				"stock_uom", "conversion_factor", "stock_rate",
+				"is_refundable", "margin_known", "margin_type", "margin_rate_or_amount"
+			],
 			as_dict=True
 		)
 		
@@ -864,6 +874,14 @@ def create_purchase_order(**args):
 		stock_qty = po_qty * conversion_factor
 		stock_rate = item_args.get("stock_rate") or rfp_item.stock_rate or (item_args.rate / conversion_factor if conversion_factor > 0 else item_args.rate)
 		
+		# Get margin fields - prioritize item_args, fallback to rfp_item
+		is_refundable = item_args.get("is_refundable") if item_args.get("is_refundable") is not None else rfp_item.get("is_refundable", 0)
+		margin_known = item_args.get("margin_known") or rfp_item.get("margin_known", '')
+		margin_type = item_args.get("margin_type") or rfp_item.get("margin_type", '')
+		margin_rate_or_amount = item_args.get("margin_rate_or_amount") if item_args.get("margin_rate_or_amount") is not None else rfp_item.get("margin_rate_or_amount", 0)
+
+		
+		price_list_rate = item_args.rate
 		valid_items.append({
 			"item_code": item_args.item_code,
 			"item_name": item_args.get("item_name") or frappe.db.get_value("Item", item_args.item_code, "item_name"),
@@ -878,11 +896,10 @@ def create_purchase_order(**args):
 			"amount": po_qty * item_args.rate,
 			"schedule_date": getdate(item_args.delivery_date) if (item_args.delivery_date and getdate(nowdate()) < getdate(item_args.delivery_date)) else getdate(nowdate()),
 			"expected_delivery_date": item_args.delivery_date,
-			"is_refundable": item_args.get("is_refundable"),
-			# "quotation": item_args.get("margin_known"),
-			"margin_type": None if item_args.get("is_refundable") else item_args.get("margin_type"),
-			"margin_rate_or_amount": 0 if item_args.get("is_refundable") else item_args.get("margin_rate_or_amount")
-			
+			"is_refundable": is_refundable,
+			"margin_known": margin_known,
+			"margin_type": None if is_refundable else margin_type,
+			"margin_rate_or_amount": 0 if is_refundable else margin_rate_or_amount
 		})
 	
 	if not valid_items:
@@ -907,6 +924,10 @@ def create_purchase_order(**args):
 	po.is_subcontracted = False
 	po.project = args.get("rfp_doc").project
 	po.is_refundable = args.get("rfp_doc").is_refundable
+	po.custom_customer = args.get("rfp_doc").customer
+	po.custom_site = args.get("rfp_doc").site
+	po.custom_margin_rate_or_amount = args.get("rfp_doc").margin_rate_or_amount
+	po.custom_margin_type = args.get("rfp_doc").margin_type
 
 	for item in valid_items:
 		po.append("items", item)
@@ -917,6 +938,8 @@ def create_purchase_order(**args):
 			po.submit()
 	
 	return po
+
+
 
 @frappe.whitelist()
 def get_rfm_item_uom_data(rfm_item_names):
@@ -931,7 +954,17 @@ def get_rfm_item_uom_data(rfm_item_names):
 		filters={
 			"name": ["in", rfm_item_names]
 		},
-		fields=["name", "uom", "stock_uom", "conversion_factor", "stock_qty"],
+		fields=[
+			"name", 
+			"uom", 
+			"stock_uom", 
+			"conversion_factor", 
+			"stock_qty",
+			"is_refundable",
+			"margin_known",
+			"margin_type",
+			"margin_rate_or_amount"
+		],
 		ignore_permissions=True
 	)
 	

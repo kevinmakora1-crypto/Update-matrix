@@ -1,5 +1,4 @@
 from frappe import _
-import frappe
 
 from erpnext.accounts.doctype.sales_invoice.sales_invoice_dashboard import get_data as get_standard_data
 

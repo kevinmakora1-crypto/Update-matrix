@@ -881,7 +881,6 @@ def create_purchase_order(**args):
 		margin_rate_or_amount = item_args.get("margin_rate_or_amount") if item_args.get("margin_rate_or_amount") is not None else rfp_item.get("margin_rate_or_amount", 0)
 
 		
-		price_list_rate = item_args.rate
 		valid_items.append({
 			"item_code": item_args.item_code,
 			"item_name": item_args.get("item_name") or frappe.db.get_value("Item", item_args.item_code, "item_name"),

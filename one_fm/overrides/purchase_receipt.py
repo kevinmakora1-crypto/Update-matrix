@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 import json
 from frappe.model.mapper import get_mapped_doc
-from frappe.utils import flt, getdate
+from frappe.utils import flt
 
 
 

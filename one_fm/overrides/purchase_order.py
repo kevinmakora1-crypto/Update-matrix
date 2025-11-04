@@ -6,7 +6,6 @@ from frappe.utils import cint, cstr, flt, get_link_to_form
 from frappe.model.mapper import get_mapped_doc
 from erpnext.buying.doctype.purchase_order.purchase_order import PurchaseOrder
 from erpnext.accounts.party import get_party_account
-from erpnext.setup.doctype.item_group.item_group import get_item_group_defaults
 from erpnext.stock.doctype.item.item import get_item_defaults
 from erpnext.accounts.doctype.pricing_rule.utils import get_applied_pricing_rules
 from one_fm.purchase.doctype.request_for_purchase.request_for_purchase import update_rfp_status

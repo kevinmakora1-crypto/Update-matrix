@@ -874,7 +874,7 @@ def create_purchase_order(**args):
 		stock_qty = po_qty * conversion_factor
 		stock_rate = item_args.get("stock_rate") or rfp_item.stock_rate or (item_args.rate / conversion_factor if conversion_factor > 0 else item_args.rate)
 		
-		# Get margin fields - prioritize item_args, fallback to rfp_item
+		
 		is_refundable = item_args.get("is_refundable") if item_args.get("is_refundable") is not None else rfp_item.get("is_refundable", 0)
 		margin_known = item_args.get("margin_known") or rfp_item.get("margin_known", '')
 		margin_type = item_args.get("margin_type") or rfp_item.get("margin_type", '')
@@ -897,8 +897,8 @@ def create_purchase_order(**args):
 			"expected_delivery_date": item_args.delivery_date,
 			"is_refundable": is_refundable,
 			"margin_known": margin_known,
-			"margin_type": None if is_refundable else margin_type,
-			"margin_rate_or_amount": 0 if is_refundable else margin_rate_or_amount
+			"margin_type": margin_type,
+			"margin_rate_or_amount": margin_rate_or_amount
 		})
 	
 	if not valid_items:

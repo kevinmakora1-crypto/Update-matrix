@@ -171,7 +171,7 @@ frappe.ui.form.on('Sales Invoice', {
                 method: "erpnext.setup.utils.get_exchange_rate",
                 args: {
                     from_currency: frm.doc.currency,
-                    to_currency: frappe.get_doc(":Company", frm.doc.company).default_currency,
+                    to_currency: frappe.get_doc("Company", frm.doc.company).default_currency,
                     transaction_date: frm.doc.posting_date,
                     args: "for_selling"
                 },
@@ -202,7 +202,7 @@ frappe.ui.form.on('Sales Invoice', {
 
 frappe.ui.form.on('Sales Invoice Item', {
     items_add: function(frm, cdt, cdn) {
-        let row = locals[cdt][cdn];
+        
         
         if (frm.doc.custom_refundable) {
             frappe.model.set_value(cdt, cdn, 'custom_refundable', frm.doc.custom_refundable);

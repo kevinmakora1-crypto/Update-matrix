@@ -21,7 +21,9 @@
   "requested_by",
   "employee",
   "employee_name",
+  "customer",
   "project",
+  "site",
   "project_details",
   "column_break_8",
   "department",
@@ -347,13 +349,27 @@
    "fieldtype": "Float",
    "label": "Margin Rate or Amount",
    "read_only": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Operations Site",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "icon": "fa fa-shopping-cart",
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-04 00:45:49.796787",
+ "modified": "2025-11-04 12:45:05.946426",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Purchase",

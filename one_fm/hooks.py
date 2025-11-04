@@ -556,6 +556,9 @@ override_doctype_class = {
     "Loan Application": "one_fm.overrides.loan_application.LoanApplicationOverride",
     "Loan": "one_fm.overrides.loan.LoanOverride",
     "Stock Entry": "one_fm.overrides.stock_entry.StockEntryOverride",
+    "Sales Invoice": "one_fm.overrides.sales_invoice.SalesInvoiceOverride",
+    "Purchase Invoice": "one_fm.overrides.purchase_invoice.PurchaseInvoiceOverride",
+    
 }
 
 
@@ -851,6 +854,8 @@ override_doctype_dashboards = {
     'Project': 'one_fm.overrides.project_dashboard.get_data',
     'HD Ticket': 'one_fm.overrides.hd_ticket_dashboard.get_data',
     'Item': 'one_fm.overrides.item_dashboard.get_data',
+    'Sales Invoice': 'one_fm.overrides.sales_invoice_dashboard.get_data',
+    "Purchase Invoice": "one_fm.overrides.purchase_invoice_dashboard.get_data"
 }
 
 

@@ -45,6 +45,7 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_pro.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_supervisor.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_transportation_supervisor.json"))
+	create_assignment_rule(get_assignment_rule_json_file("confirm_site_pickup_for_fingerprint_assignment.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_medical_appointment_pro.json"))
 
 def delete_assignment_rules():

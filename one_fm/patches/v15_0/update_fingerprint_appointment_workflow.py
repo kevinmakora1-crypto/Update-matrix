@@ -44,7 +44,8 @@ def create_fingerprint_appointment_assignment_rules():
     assignment_rules = [
         "action_fingerprint_appointment_pro.json",
         "action_fingerprint_appointment_supervisor.json",
-        "action_fingerprint_appointment_transportation_supervisor.json"
+        "action_fingerprint_appointment_transportation_supervisor.json",
+        "confirm_site_pickup_for_fingerprint_assignment.json"
     ]
     
     for rule_file in assignment_rules:

@@ -184,11 +184,15 @@ one_fm.patches.v15_0.create_threat_collection_agent_process_task
 one_fm.patches.v15_0.add_assignment_rule_action_medical_appointment_pro
 one_fm.patches.v15_0.rename_moi_residency_jawazath
 one_fm.patches.v15_0.sync_old_google_tasks
+one_fm.patches.v15_0.add_update_custom_field #2025-10-29 rerun
 one_fm.patches.v15_0.update_workflow_state_style
 one_fm.patches.v15_0.update_fingerprint_appointment_workflow
 one_fm.patches.v15_0.add_update_custom_field #2025-10-29
+one_fm.patches.v15_0.initialize_pending_si_quantities
 one_fm.patches.v15_0.update_attendance_status_options
 one_fm.patches.v15_0.set_po_item_margin_fields_readonly
+one_fm.patches.v15_0.update_fingerprint_appointment_workflow #rerun
+one_fm.patches.v15_0.add_update_custom_field #2025-01-04
 
 [post_model_sync]
 one_fm.patches.v15_0.add_assignment_rule_assign_rfp_to_purchase_officer #re-run

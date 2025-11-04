@@ -10,14 +10,14 @@ frappe.ui.form.on('Fingerprint Appointment', {
     preparing_documents: function(frm){
         set_preparing_documents_time(frm);
     },
-        before_workflow_action: function(frm) {
+    before_workflow_action: function(frm) {
         try {
             if (frm.doc.workflow_state === "Pending Supervisor") {
                 let action = frm.selected_workflow_action;
                 
-                if (action === "Accept") {
+                if (action === "Request Pickup from Operations Site" || action === "Request Pickup from Accommodation") {
                     return new Promise((resolve, reject) => {
-                        show_acceptance_dialog(frm, resolve, reject);
+                        show_acceptance_dialog(frm, action, resolve, reject);
                     });
                 }
                 
@@ -115,11 +115,22 @@ var set_preparing_documents_time= function(frm){
     }
 }
 
-function show_acceptance_dialog(frm, resolve, reject) {
+function show_acceptance_dialog(frm, action, resolve, reject) {
     try {
         clear_all_overlays();
         
         let fields = [];
+        
+        let default_pickup_location = null;
+        let is_pickup_readonly = false;
+        
+        if (action === "Request Pickup from Operations Site") {
+            default_pickup_location = "Operations Site";
+            is_pickup_readonly = true;
+        } else if (action === "Request Pickup from Accommodation") {
+            default_pickup_location = "Accommodation";
+            is_pickup_readonly = true;
+        }
         
         if (frm.doc.required_transportation === "Yes") {
             fields = [
@@ -127,12 +138,19 @@ function show_acceptance_dialog(frm, resolve, reject) {
                     fieldname: 'pickup_location',
                     label: __('Pickup Location'),
                     fieldtype: 'Select',
-                    options: ['Accommodation',],
+                    options: ['Accommodation', 'Operations Site'],
+                    default: default_pickup_location,
+                    read_only: is_pickup_readonly,
                     reqd: 1,
                     onchange: function() {
                         let pickup_value = dialog.get_value('pickup_location');
+                        
                         dialog.fields_dict.accommodation.df.hidden = pickup_value !== 'Accommodation';
                         dialog.fields_dict.accommodation.df.reqd = pickup_value === 'Accommodation';
+                        
+                        dialog.fields_dict.operations_site.df.hidden = pickup_value !== 'Operations Site';
+                        dialog.fields_dict.operations_site.df.reqd = pickup_value === 'Operations Site';
+                        
                         dialog.refresh();
                     }
                 },
@@ -141,8 +159,16 @@ function show_acceptance_dialog(frm, resolve, reject) {
                     label: __('Accommodation'),
                     fieldtype: 'Link',
                     options: 'Accommodation',
-                    hidden: 1,
-                    reqd: 0
+                    hidden: default_pickup_location !== 'Accommodation',
+                    reqd: default_pickup_location === 'Accommodation'
+                },
+                {
+                    fieldname: 'operations_site',
+                    label: __('Operations Site'),
+                    fieldtype: 'Link',
+                    options: 'Operations Site',
+                    hidden: default_pickup_location !== 'Operations Site',
+                    reqd: default_pickup_location === 'Operations Site'
                 },
                 {
                     fieldname: 'roster_action',
@@ -175,8 +201,20 @@ function show_acceptance_dialog(frm, resolve, reject) {
                         return;
                     }
                     
+                    if (values.pickup_location === 'Operations Site' && !values.operations_site) {
+                        frappe.throw(__('Operations Site is required when Pickup Location is Operations Site'));
+                        return;
+                    }
+                    
                     frm.set_value('pickup_location', values.pickup_location);
-                    frm.set_value('accommodation', values.accommodation || '');
+                    
+                    if (values.pickup_location === 'Accommodation') {
+                        frm.set_value('accommodation', values.accommodation);
+                        frm.set_value('operations_site', ''); 
+                    } else if (values.pickup_location === 'Operations Site') {
+                        frm.set_value('operations_site', values.operations_site);
+                        frm.set_value('accommodation', '');
+                    }
                 }
                 
                 frm.set_value('roster_action', values.roster_action);
@@ -198,6 +236,7 @@ function show_acceptance_dialog(frm, resolve, reject) {
         reject(e);
     }
 }
+
 function show_rejection_dialog(frm, resolve, reject) {
     try {
         clear_all_overlays();

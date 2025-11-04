@@ -123,13 +123,8 @@ class FingerprintAppointment(Document):
         if self.workflow_state != "Rejected":
             return
         
-        grd_operator_email = None
-        
-        if self.fingerprint_appointment_type == "Renewal":
-            grd_operator_email = frappe.db.get_single_value("HR Settings", "default_grd_operator")
-        elif self.fingerprint_appointment_type == "Local Transfer":
-            grd_operator_email = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
-        
+        grd_operator_email =  frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+                
         if not grd_operator_email:
             frappe.log_error(
                 f"No GRD operator found for {self.fingerprint_appointment_type}",

@@ -126,7 +126,7 @@ def get_sales_invoice_item_custom_fields():
             {
                 "fieldname": "custom_refundable",
                 "fieldtype": "Check",
-                "insert_after": "custom_purchase_invoicerate_with_margin",
+                "insert_after": "rate_with_margin",
                 "label": "Refundable",
             }
 

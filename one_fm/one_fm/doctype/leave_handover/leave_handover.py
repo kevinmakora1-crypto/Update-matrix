@@ -40,6 +40,7 @@ class LeaveHandover(Document):
 		if self.leave_start_date == today():
 			self.action_handover(revert=False)
 
+	@frappe.whitelist()
 	def action_handover(self, revert=False):
 		if revert and self.employee_user_id != frappe.session.user:
 			frappe.throw(_("You are not authorized to revert this Leave Handover."))

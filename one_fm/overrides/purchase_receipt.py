@@ -4,7 +4,6 @@ import json
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import flt, getdate
 
-from erpnext.buying.doctype.purchase_order.purchase_order import set_missing_values
 
 
 def get_rfm_in_purchase_receipt(doc):

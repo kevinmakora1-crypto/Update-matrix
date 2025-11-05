@@ -80,8 +80,8 @@ def make_purchase_receipt(source_name, target_doc=None, args=None):
                     "sales_order_item": "sales_order_item",
                     "wip_composite_asset": "wip_composite_asset",
                     "is_refundable": "custom_refundable",
-                    "margin_type":"margin_type",
-                    "margin_rate_or_amount":"margin_rate_or_amount",
+                    "margin_type": "margin_type",
+                    "margin_rate_or_amount": "margin_rate_or_amount",
                     "rate_with_margin": "rate_with_margin",
                     
                 },

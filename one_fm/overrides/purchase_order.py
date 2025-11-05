@@ -446,7 +446,7 @@ def get_mapped_purchase_invoice(source_name, target_doc=None, ignore_permissions
 			"field_map": {
 				"party_account_currency": "party_account_currency",
 				"supplier_warehouse": "supplier_warehouse",
-                "is_refundable":"custom_refundable",
+                "is_refundable": "custom_refundable",
 			},
 			"field_no_map": ["payment_terms_template"],
 			"validation": {

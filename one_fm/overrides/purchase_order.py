@@ -83,7 +83,6 @@ def make_purchase_receipt(source_name, target_doc=None, args=None):
                     "margin_type": "margin_type",
                     "margin_rate_or_amount": "margin_rate_or_amount",
                     "rate_with_margin": "rate_with_margin",
-                    
                 },
                 "postprocess": update_item,
                 "condition": lambda doc: (

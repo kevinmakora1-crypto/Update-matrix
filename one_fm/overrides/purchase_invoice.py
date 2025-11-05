@@ -297,5 +297,3 @@ def check_purchase_invoice_has_pending_qty(purchase_invoice):
             return True
     
     return False
-
-

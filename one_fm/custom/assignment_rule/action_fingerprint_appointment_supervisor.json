@@ -11,7 +11,6 @@
   "close_condition": "workflow_state in (\"Pending Transportation Supervisor\", \"Pending PRO\", \"Rejected\")",
   "rule": "Based on Field",
   "field": "employee_supervisor",
-  "last_user": "007jinesh@gmail.com",
   "doctype": "Assignment Rule",
   "assignment_days": [
     {

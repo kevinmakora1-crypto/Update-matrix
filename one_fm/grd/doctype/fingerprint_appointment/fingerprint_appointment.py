@@ -26,8 +26,6 @@ class FingerprintAppointment(Document):
             return
         
 
-        if previous_doc.workflow_state != "Pending Supervisor" and self.required_transportation != "Yes" and self.is_new():
-            return
         
         if previous_doc.workflow_state == "Pending Supervisor" and self.workflow_state != "Pending Supervisor":
             if not self.pickup_location:

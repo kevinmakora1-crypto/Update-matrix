@@ -243,7 +243,7 @@ function set_field_visibility_and_requirements(frm) {
         frm.set_df_property('roster_action', 'reqd', 1);
         frm.set_df_property('roster_action', 'hidden', 0);
         
-        console.log("got here")
+        
         if (frm.doc.pickup_location === "Accommodation") {
             frm.set_df_property('accommodation', 'hidden', 0);
             frm.set_df_property('accommodation', 'reqd', 1);

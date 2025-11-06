@@ -434,9 +434,10 @@ def notify_supervisor_of_pending_fingerprint_appointment():
     """, as_dict=1)
     
     for obj in appointments:
-        create_notification_log(
-            subject=f'Reminder: Action Required on Fingerprint Appointment for {obj.employee_name}',
-            message=f'Reminder: You need to take action on {get_link_to_form("Fingerprint Appointment", obj.name, label="Fingerprint Appointment")} for {obj.employee_name}.',
-            for_users=[obj.employee_supervisor],
-            reference_doc=obj
-        )
+        if obj.employee_supervisor:
+            create_notification_log(
+                subject=f'Reminder: Action Required on Fingerprint Appointment for {obj.employee_name}',
+                message=f'Reminder: You need to take action on {get_link_to_form("Fingerprint Appointment", obj.name, label="Fingerprint Appointment")} for {obj.employee_name}.',
+                for_users=[obj.employee_supervisor],
+                reference_doc=obj
+            )

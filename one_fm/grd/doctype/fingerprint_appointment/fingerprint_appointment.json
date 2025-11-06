@@ -314,17 +314,16 @@
   {
    "fieldname": "pickup_location",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "Pickup Location",
-   "options": "\nAccommodation\nOperations Site",
-   "read_only": 1
+   "options": "\nAccommodation\nOperations Site"
   },
   {
-   "depends_on": "eval: doc.pickup_location == \"Accommodation\"",
    "fieldname": "accommodation",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Accommodation",
-   "options": "Accommodation",
-   "read_only": 1
+   "options": "Accommodation"
   },
   {
    "fieldname": "column_break_lhdc",
@@ -351,7 +350,7 @@
    "label": "Employee Supervisor",
    "no_copy": 1,
    "options": "User",
-   "read_only": 1,
+   "read_only_depends_on": "eval: doc.employee_supervisor != frappe.session.user",
    "reqd": 1
   },
   {
@@ -374,28 +373,28 @@
    "fieldname": "roster_action",
    "fieldtype": "Select",
    "hidden": 1,
-   "label": "Roster Action",
-   "options": "Yes\nNo"
-  },
-  {
-   "depends_on": "eval: doc.pickup_location == \"Accommodation\"",
-   "fetch_from": "accommodation.accommodation",
-   "fieldname": "accommodation_name",
-   "fieldtype": "Data",
-   "label": "Accommodation Name",
-   "read_only": 1
+   "label": "Block Roster ?",
+   "options": "\nYes\nNo"
   },
   {
    "fieldname": "operations_site",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Operations Site",
-   "options": "Operations Site",
+   "options": "Operations Site"
+  },
+  {
+   "fetch_from": "accommodation.accommodation",
+   "fetch_if_empty": 1,
+   "fieldname": "accommodation_name",
+   "fieldtype": "Data",
+   "label": "Accommodation Name",
    "read_only": 1
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-03 21:47:26.408436",
+ "modified": "2025-11-07 01:33:15.506565",
  "modified_by": "Administrator",
  "module": "GRD",
  "name": "Fingerprint Appointment",

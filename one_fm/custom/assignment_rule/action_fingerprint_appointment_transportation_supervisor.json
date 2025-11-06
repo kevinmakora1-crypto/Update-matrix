@@ -10,10 +10,8 @@
   "unassign_condition": "",
   "close_condition": "workflow_state in (\"Pending PRO\")",
   "rule": "Based on Field",
-  "field": "employee_supervisor",
-  "last_user": "",
+  "field": "transportation_supervisor_user",
   "doctype": "Assignment Rule",
-  "users": [],
   "assignment_days": [
     {
       "name": "5s9of7mmqg",
@@ -50,5 +48,6 @@
       "day": "Sunday",
       "doctype": "Assignment Rule Day"
     }
-  ]
+  ],
+  "users": []
 }

@@ -2,9 +2,16 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Fingerprint Appointment', {
+    refresh: function(frm) {
+        set_field_visibility_and_requirements(frm);
+    },
     employee: function(frm){
         set_employee_details(frm);
         set_employee_supervisor(frm);
+        
+    },
+    pickup_location: function(frm) {
+        set_field_visibility_and_requirements(frm);
     },
 	
     preparing_documents: function(frm){
@@ -12,30 +19,67 @@ frappe.ui.form.on('Fingerprint Appointment', {
     },
     before_workflow_action: function(frm) {
         try {
-            if (frm.doc.workflow_state === "Pending Supervisor") {
-                let action = frm.selected_workflow_action;
-                
-                if (action === "Request Pickup from Operations Site" || action === "Request Pickup from Accommodation") {
-                    return new Promise((resolve, reject) => {
-                        show_acceptance_dialog(frm, action, resolve, reject);
-                    });
-                }
-                
-                if (action === "Reject") {
-                    return new Promise((resolve, reject) => {
-                        show_rejection_dialog(frm, resolve, reject);
-                    });
-                }
+            let action = frm.selected_workflow_action;
+            
+            if (action === "Request Pickup from Accommodation") {
+                frm.set_value('pickup_location', 'Accommodation');
+            }
+            
+            if (action === "Request Pickup from Operations Site") {
+                frm.set_value('pickup_location', 'Operations Site');
+            }
+            
+            if (action === "Reject") {
+                return new Promise((resolve, reject) => {
+                    show_rejection_dialog(frm, resolve, reject);
+                });
             }
         } catch (e) {
             console.error('Error in before_workflow_action:', e);
-            frappe.msgprint({
-                title: __('Error'),
-                message: __('An error occurred. Please check console for details.'),
-                indicator: 'red'
-            });
         }
-    }
+    },
+    validate: function(frm) {
+        if (frm.doc.workflow_state === "Pending Supervisor" && 
+            frm.doc.required_transportation === "Yes" && 
+            !frm.is_new()) {
+            
+            let action = frm.selected_workflow_action;
+            
+            if (action === "Request Pickup from Accommodation") {
+                if (!frm.doc.accommodation) {
+                    frappe.msgprint({
+                        title: __('Validation Error'),
+                        message: __('Please select an Accommodation before proceeding'),
+                        indicator: 'red'
+                    });
+                    frappe.validated = false;
+                    return false;
+                }
+                
+                if (!frm.doc.roster_action) {
+                    frappe.msgprint({
+                        title: __('Validation Error'),
+                        message: __('Please select Roster Action before proceeding'),
+                        indicator: 'red'
+                    });
+                    frappe.validated = false;
+                    return false;
+                }
+            }
+            
+            if (action === "Request Pickup from Operations Site") {
+                if (!frm.doc.operations_site) {
+                    frappe.msgprint({
+                        title: __('Validation Error'),
+                        message: __('Please select an Operations Site before proceeding'),
+                        indicator: 'red'
+                    });
+                    frappe.validated = false;
+                    return false;
+                }
+            }
+        }
+}
 });
 
 function clear_all_overlays() {
@@ -115,128 +159,6 @@ var set_preparing_documents_time= function(frm){
     }
 }
 
-function show_acceptance_dialog(frm, action, resolve, reject) {
-    try {
-        clear_all_overlays();
-        
-        let fields = [];
-        
-        let default_pickup_location = null;
-        let is_pickup_readonly = false;
-        
-        if (action === "Request Pickup from Operations Site") {
-            default_pickup_location = "Operations Site";
-            is_pickup_readonly = true;
-        } else if (action === "Request Pickup from Accommodation") {
-            default_pickup_location = "Accommodation";
-            is_pickup_readonly = true;
-        }
-        
-        if (frm.doc.required_transportation === "Yes") {
-            fields = [
-                {
-                    fieldname: 'pickup_location',
-                    label: __('Pickup Location'),
-                    fieldtype: 'Select',
-                    options: ['Accommodation', 'Operations Site'],
-                    default: default_pickup_location,
-                    read_only: is_pickup_readonly,
-                    reqd: 1,
-                    onchange: function() {
-                        let pickup_value = dialog.get_value('pickup_location');
-                        
-                        dialog.fields_dict.accommodation.df.hidden = pickup_value !== 'Accommodation';
-                        dialog.fields_dict.accommodation.df.reqd = pickup_value === 'Accommodation';
-                        
-                        dialog.fields_dict.operations_site.df.hidden = pickup_value !== 'Operations Site';
-                        dialog.fields_dict.operations_site.df.reqd = pickup_value === 'Operations Site';
-                        
-                        dialog.refresh();
-                    }
-                },
-                {
-                    fieldname: 'accommodation',
-                    label: __('Accommodation'),
-                    fieldtype: 'Link',
-                    options: 'Accommodation',
-                    hidden: default_pickup_location !== 'Accommodation',
-                    reqd: default_pickup_location === 'Accommodation'
-                },
-                {
-                    fieldname: 'operations_site',
-                    label: __('Operations Site'),
-                    fieldtype: 'Link',
-                    options: 'Operations Site',
-                    hidden: default_pickup_location !== 'Operations Site',
-                    reqd: default_pickup_location === 'Operations Site'
-                },
-                {
-                    fieldname: 'roster_action',
-                    label: __('Roster Action'),
-                    fieldtype: 'Select',
-                    options: ['Yes', 'No'],
-                    reqd: 1
-                }
-            ];
-        } else {
-            fields = [
-                {
-                    fieldname: 'roster_action',
-                    label: __('Roster Action'),
-                    fieldtype: 'Select',
-                    options: ['Yes', 'No'],
-                    reqd: 1
-                }
-            ];
-        }
-        
-        let dialog = new frappe.ui.Dialog({
-            title: __('Acceptance Details'),
-            fields: fields,
-            primary_action_label: __('Confirm'),
-            primary_action: function(values) {
-                if (frm.doc.required_transportation === "Yes") {
-                    if (values.pickup_location === 'Accommodation' && !values.accommodation) {
-                        frappe.throw(__('Accommodation is required when Pickup Location is Accommodation'));
-                        return;
-                    }
-                    
-                    if (values.pickup_location === 'Operations Site' && !values.operations_site) {
-                        frappe.throw(__('Operations Site is required when Pickup Location is Operations Site'));
-                        return;
-                    }
-                    
-                    frm.set_value('pickup_location', values.pickup_location);
-                    
-                    if (values.pickup_location === 'Accommodation') {
-                        frm.set_value('accommodation', values.accommodation);
-                        frm.set_value('operations_site', ''); 
-                    } else if (values.pickup_location === 'Operations Site') {
-                        frm.set_value('operations_site', values.operations_site);
-                        frm.set_value('accommodation', '');
-                    }
-                }
-                
-                frm.set_value('roster_action', values.roster_action);
-                
-                dialog.hide();
-                resolve();
-            },
-            secondary_action_label: __('Cancel'),
-            secondary_action: function() {
-                dialog.hide();
-                reject();
-            }
-        });
-        
-        dialog.show();
-    } catch (e) {
-        console.error('Error in show_acceptance_dialog:', e);
-        clear_all_overlays();
-        reject(e);
-    }
-}
-
 function show_rejection_dialog(frm, resolve, reject) {
     try {
         clear_all_overlays();
@@ -308,5 +230,35 @@ function show_rejection_dialog(frm, resolve, reject) {
         console.error('Error in show_rejection_dialog:', e);
         clear_all_overlays();
         reject(e);
+    }
+}
+
+function set_field_visibility_and_requirements(frm) {
+    if (frm.doc.workflow_state === "Pending Supervisor" && 
+        frm.doc.required_transportation === "Yes" && 
+        !frm.is_new()) {
+        
+        frm.set_df_property('pickup_location', 'hidden', 0);
+        frm.set_df_property('pickup_location', 'reqd', 1);
+        frm.set_df_property('roster_action', 'reqd', 1);
+        frm.set_df_property('roster_action', 'hidden', 0);
+        
+        console.log("got here")
+        if (frm.doc.pickup_location === "Accommodation") {
+            frm.set_df_property('accommodation', 'hidden', 0);
+            frm.set_df_property('accommodation', 'reqd', 1);
+            frm.set_df_property('operations_site', 'hidden', 1);
+            frm.set_df_property('operations_site', 'reqd', 0);
+        } else if (frm.doc.pickup_location === "Operations Site") {
+            frm.set_df_property('operations_site', 'hidden', 0);
+            frm.set_df_property('operations_site', 'reqd', 1);
+            frm.set_df_property('accommodation', 'hidden', 1);
+            frm.set_df_property('accommodation', 'reqd', 0);
+        } else {
+            frm.set_df_property('accommodation', 'hidden', 1);
+            frm.set_df_property('accommodation', 'reqd', 0);
+            frm.set_df_property('operations_site', 'hidden', 1);
+            frm.set_df_property('operations_site', 'reqd', 0);
+        }
     }
 }

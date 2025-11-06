@@ -8,11 +8,10 @@
   "is_assignment_rule_with_workflow": 0,
   "assign_condition": "workflow_state == \"Pending GR Operator\"",
   "unassign_condition": "",
-  "close_condition": "workflow_state in (\"Pending Transportation Supervisor\", \"Pending PRO\", \"Pending Supervisor\")",
+  "close_condition": "workflow_state in (\"Pending Transportation Supervisor\", \"Pending PRO\", \"Set Pick-up as Accommodation (Supervisor)\")",
   "rule": "Based on Field",
-  "field": "employee_supervisor",
+  "field": "government_relations_operator",
   "doctype": "Assignment Rule",
-  "users": [],
   "assignment_days": [
     {
       "name": "g8jc3l6r5e",
@@ -49,5 +48,6 @@
       "day": "Sunday",
       "doctype": "Assignment Rule Day"
     }
-  ]
+  ],
+  "users": []
 }

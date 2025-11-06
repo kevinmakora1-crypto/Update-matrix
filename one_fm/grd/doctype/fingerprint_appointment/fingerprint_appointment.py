@@ -25,9 +25,8 @@ class FingerprintAppointment(Document):
         if not previous_doc:
             return
         
-
         
-        if previous_doc.workflow_state == "Pending Supervisor" and self.workflow_state != "Pending Supervisor":
+        if previous_doc.workflow_state == "Pending Supervisor" and self.workflow_state != "Pending Supervisor" and self.require_transportation == "Yes":
             if not self.pickup_location:
                 frappe.throw("Pickup Location is required before proceeding")
             

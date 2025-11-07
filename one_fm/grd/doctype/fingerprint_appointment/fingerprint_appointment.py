@@ -7,6 +7,7 @@ import frappe
 from frappe import _
 from datetime import date
 from one_fm.api.notification import create_notification_log
+from one_fm.utils import send_push_notification
 from frappe.model.document import Document
 from frappe.utils import today, get_url, date_diff, getdate, format_datetime
 from one_fm.grd.doctype.medical_insurance import medical_insurance
@@ -17,8 +18,16 @@ from one_fm.operations.doctype.operations_shift.operations_shift import get_shif
 
 class FingerprintAppointment(Document):
 
+    def before_save(self):
+        self.set_gr_operator()
+
+    def set_gr_operator(self):
+        if self.is_new() and not self.government_relations_operator:
+            self.db_set('government_relations_operator', frappe.session.user)
+
     def validate(self):
         self.validate_pickup_requirements()
+
 
     def validate_pickup_requirements(self):
         previous_doc = self.get_doc_before_save()
@@ -26,7 +35,7 @@ class FingerprintAppointment(Document):
             return
         
         
-        if previous_doc.workflow_state == "Pending Supervisor" and self.workflow_state != "Pending Supervisor" and self.require_transportation == "Yes":
+        if previous_doc.workflow_state == "Pending Supervisor" and self.workflow_state not in {"Pending Supervisor", "Rejected"} and self.required_transportation == "Yes":
             if not self.pickup_location:
                 frappe.throw("Pickup Location is required before proceeding")
             
@@ -93,7 +102,7 @@ class FingerprintAppointment(Document):
             )
             return
         
-        employee_user = frappe.db.get_value('Employee', self.employee, 'user_id')
+        employee_user = frappe.db.get_value('Employee', self.employee, ['user_id', "employee_id"], as_dict=True)
         
         if not employee_user:
             frappe.log_error(
@@ -119,7 +128,8 @@ class FingerprintAppointment(Document):
             <p>Please ensure to take your original passport with you.</p>
         """
         
-        create_notification_log(subject, message, [employee_user], self)
+        create_notification_log(subject, message, [employee_user.user_id], self)
+        send_push_notification(employee_user.employee_id, subject, message)
 
     def update_employee_schedule(self):
         if not self.employee or not self.date_and_time_confirmation or self.roster_action == "No":
@@ -145,7 +155,7 @@ class FingerprintAppointment(Document):
                 'shift_type': '',
                 'project': '',
                 "reference_doctype": self.doctype,
-                "reference_name": self.name
+                "reference_docname": self.name
             })
             frappe.msgprint(
                 _('Employee Schedule {0} updated for Fingerprint Appointment').format(existing_schedule.name),
@@ -165,7 +175,7 @@ class FingerprintAppointment(Document):
                 'shift_type': '',
                 'project': '',
                 'reference_doctype': self.doctype,
-                'reference_name': self.name
+                'reference_docname': self.name
             })
             new_schedule.insert(ignore_permissions=True)
             frappe.msgprint(

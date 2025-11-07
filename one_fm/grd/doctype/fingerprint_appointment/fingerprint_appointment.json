@@ -316,14 +316,16 @@
    "fieldtype": "Select",
    "hidden": 1,
    "label": "Pickup Location",
-   "options": "\nAccommodation\nOperations Site"
+   "options": "\nAccommodation\nOperations Site",
+   "read_only_depends_on": "eval: doc.workflow_state != \"Pending Supervisor\""
   },
   {
+   "depends_on": "eval: doc.pickup_location == \"Accommodation\"",
    "fieldname": "accommodation",
    "fieldtype": "Link",
-   "hidden": 1,
    "label": "Accommodation",
-   "options": "Accommodation"
+   "options": "Accommodation",
+   "read_only_depends_on": "eval: doc.workflow_state != \"Pending Supervisor\""
   },
   {
    "fieldname": "column_break_lhdc",
@@ -350,7 +352,6 @@
    "label": "Employee Supervisor",
    "no_copy": 1,
    "options": "User",
-   "read_only_depends_on": "eval: doc.employee_supervisor != frappe.session.user",
    "reqd": 1
   },
   {
@@ -373,19 +374,20 @@
    "fieldname": "roster_action",
    "fieldtype": "Select",
    "hidden": 1,
-   "label": "Block Roster ?",
-   "options": "\nYes\nNo"
+   "label": "Roster Action",
+   "options": "Yes\nNo"
   },
   {
    "fieldname": "operations_site",
    "fieldtype": "Link",
    "hidden": 1,
    "label": "Operations Site",
-   "options": "Operations Site"
+   "options": "Operations Site",
+   "read_only_depends_on": "eval: doc.workflow_state != \"Pending Supervisor\""
   },
   {
+   "depends_on": "eval: doc.pickup_location == \"Accommodation\"",
    "fetch_from": "accommodation.accommodation",
-   "fetch_if_empty": 1,
    "fieldname": "accommodation_name",
    "fieldtype": "Data",
    "label": "Accommodation Name",
@@ -394,8 +396,8 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-07 01:33:15.506565",
- "modified_by": "Administrator",
+ "modified": "2025-11-07 13:26:00.418029",
+ "modified_by": "a.adekunle@one-fm.com",
  "module": "GRD",
  "name": "Fingerprint Appointment",
  "naming_rule": "By \"Naming Series\" field",

@@ -29,7 +29,7 @@ frappe.ui.form.on('Fingerprint Appointment', {
                 frm.set_value('pickup_location', 'Operations Site');
             }
             
-            if (action === "Reject") {
+            if (action === "Reject" && frm.doc.workflow_state === "Pending Supervisor") {
                 return new Promise((resolve, reject) => {
                     show_rejection_dialog(frm, resolve, reject);
                 });
@@ -236,7 +236,9 @@ function show_rejection_dialog(frm, resolve, reject) {
 function set_field_visibility_and_requirements(frm) {
     if (frm.doc.workflow_state === "Pending Supervisor" && 
         frm.doc.required_transportation === "Yes" && 
-        !frm.is_new()) {
+        !frm.is_new() && frappe.session.user == frm.doc.employee_supervisor) {
+
+        console.log("Setting field visibility and requirements");
         
         frm.set_df_property('pickup_location', 'hidden', 0);
         frm.set_df_property('pickup_location', 'reqd', 1);

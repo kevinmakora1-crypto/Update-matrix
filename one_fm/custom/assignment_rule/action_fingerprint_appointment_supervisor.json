@@ -8,43 +8,36 @@
   "is_assignment_rule_with_workflow": 0,
   "assign_condition": "workflow_state in (\"Pending Supervisor\", \"Set Pick-up as Accommodation (Supervisor)\")",
   "unassign_condition": "",
-  "close_condition": "workflow_state in (\"Pending Transportation Supervisor\", \"Pending PRO\", \"Rejected\")",
+  "close_condition": "workflow_state in (\"Pending Transportation Supervisor\", \"Pending PRO\", \"Rejected\", \"Pending GR Operator\")",
   "rule": "Based on Field",
   "field": "employee_supervisor",
   "doctype": "Assignment Rule",
   "assignment_days": [
     {
-      "name": "3vidroo3qt",
       "day": "Monday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "3vi7ah06du",
       "day": "Tuesday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "3viufcd6c7",
       "day": "Wednesday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "3vig6db6kt",
       "day": "Thursday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "3vihmpjmev",
       "day": "Friday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "3vig2jggbi",
       "day": "Saturday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "3viv4d5m2g",
       "day": "Sunday",
       "doctype": "Assignment Rule Day"
     }

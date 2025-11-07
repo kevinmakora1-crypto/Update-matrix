@@ -47,6 +47,8 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_transportation_supervisor.json"))
 	create_assignment_rule(get_assignment_rule_json_file("confirm_site_pickup_for_fingerprint_assignment.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_medical_appointment_pro.json"))
+	create_assignment_rule(get_assignment_rule_json_file("pathfinder_log_business_analyst.json"))
+	create_assignment_rule(get_assignment_rule_json_file("pathfinder_log_process_owner.json"))
 
 def delete_assignment_rules():
 	delete_assignment_rule(get_assignment_rule_json_file("roster_post_action_site_supervisor.json"))

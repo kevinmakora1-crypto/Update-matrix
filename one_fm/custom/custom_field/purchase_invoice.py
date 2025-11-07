@@ -55,14 +55,5 @@ def get_purchase_invoice_custom_fields():
                 "read_only": 1,
                 "hidden": 1
             },
-{
-                "fieldname": "custom_purchase_receipt",
-                "fieldtype": "Link",
-                "insert_after": "custom_sales_invoice",
-                "label": "Purchase Receipt",
-                "options": "Purchase Receipt",
-                "read_only": 1,
-                "hidden": 1
-            },
         ]
     }

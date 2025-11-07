@@ -43,7 +43,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Item Code",
-   "mandatory_depends_on": "eval: doc.item_type == \"Manpower\"",
+   "mandatory_depends_on": "eval:doc.item_type == \"Manpower\"",
    "options": "Item"
   },
   {

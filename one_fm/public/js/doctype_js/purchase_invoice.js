@@ -9,7 +9,11 @@ frappe.ui.form.on('Purchase Invoice', {
     },
     refresh: function(frm){
         add_create_sales_invoice_button(frm);
+        hide_add_row_buttons_if_items_from_po_or_pr(frm);
     },
+    items_add: function(frm) {
+        hide_add_row_buttons_if_items_from_po_or_pr(frm);
+    }
     
 });
 
@@ -82,15 +86,6 @@ var set_expense_head = function(frm){
     });
 };
 
-frappe.ui.form.on('Purchase Invoice', {
-    refresh: function(frm) {
-        hide_add_row_buttons_if_items_from_po_or_pr(frm);
-    },
-    
-    items_add: function(frm) {
-        hide_add_row_buttons_if_items_from_po_or_pr(frm);
-    }
-});
 
 function hide_add_row_buttons_if_items_from_po_or_pr(frm) {
     if (!frm.doc.items || frm.doc.items.length === 0) {

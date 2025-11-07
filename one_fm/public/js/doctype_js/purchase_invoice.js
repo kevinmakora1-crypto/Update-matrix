@@ -1,5 +1,6 @@
 frappe.ui.form.on('Purchase Invoice', {
     validate: function(frm){
+        validate_purchase_receipt_required(frm);
         if(frm.doc.__islocal || frm.doc.docstatus==0){
             if(frm.doc.supplier){
                 set_expense_head(frm);
@@ -8,7 +9,8 @@ frappe.ui.form.on('Purchase Invoice', {
     },
     refresh: function(frm){
         add_create_sales_invoice_button(frm);
-    }
+    },
+    
 });
 
 function add_create_sales_invoice_button(frm) {
@@ -80,3 +82,58 @@ var set_expense_head = function(frm){
     });
 };
 
+frappe.ui.form.on('Purchase Invoice', {
+    refresh: function(frm) {
+        hide_add_row_buttons_if_items_from_po_or_pr(frm);
+    },
+    
+    items_add: function(frm) {
+        hide_add_row_buttons_if_items_from_po_or_pr(frm);
+    }
+});
+
+function hide_add_row_buttons_if_items_from_po_or_pr(frm) {
+    if (!frm.doc.items || frm.doc.items.length === 0) {
+        return;
+    }
+    
+    let has_po_or_pr_reference = frm.doc.items.some(item => 
+        item.purchase_order || item.purchase_receipt
+    );
+    
+    if (has_po_or_pr_reference) {
+        frm.fields_dict.items.grid.cannot_add_rows = true;
+        
+        frm.fields_dict.items.grid.wrapper.find('.grid-add-row').hide();
+        frm.fields_dict.items.grid.wrapper.find('.grid-add-multiple-rows').hide();
+        
+        frm.fields_dict.items.grid.grid_buttons.find('.grid-add-row').hide();
+        frm.fields_dict.items.grid.grid_buttons.find('.grid-add-multiple-rows').hide();
+    } else {
+        frm.fields_dict.items.grid.cannot_add_rows = false;
+        
+        frm.fields_dict.items.grid.wrapper.find('.grid-add-row').show();
+        frm.fields_dict.items.grid.wrapper.find('.grid-add-multiple-rows').show();
+        
+        frm.fields_dict.items.grid.grid_buttons.find('.grid-add-row').show();
+        frm.fields_dict.items.grid.grid_buttons.find('.grid-add-multiple-rows').show();
+    }
+}
+
+function validate_purchase_receipt_required(frm) {
+    if (!frm.doc.items || frm.doc.items.length === 0) {
+        return;
+    }
+    
+    let has_purchase_receipt = frm.doc.items.some(item => item.purchase_receipt);
+    
+    if (!has_purchase_receipt) {
+        frappe.msgprint({
+            title: __('Validation Error'),
+            message: __('Purchase Invoice must be created from a submitted Purchase Receipt.'),
+            indicator: 'red'
+        });
+        frappe.validated = false;
+        throw __('Purchase Receipt required');
+    }
+}

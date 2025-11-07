@@ -11,7 +11,7 @@ from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseI
 class PurchaseInvoiceOverride(PurchaseInvoice):
 
     def validate(self):
-        super(PurchaseInvoice, self).validate()
+        super().validate()
         self.validate_purchase_receipt_required()
 
     def validate_purchase_receipt_required(self):

@@ -4,6 +4,9 @@ import json
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import flt
 
+from erpnext.stock.doctype.purchase_receipt.purchase_receipt import PurchaseReceipt
+from one_fm.custom.property_setter import asset
+
 
 
 def get_rfm_in_purchase_receipt(doc):
@@ -188,3 +191,59 @@ def make_purchase_receipt_invoice(source_name, target_doc=None, args=None):
 	)
 
 	return doc
+
+
+class PurchaseReceiptOverride(PurchaseReceipt):
+    def on_submit(self):
+        super(PurchaseReceiptOverride, self).on_submit()
+        self.create_refundable_assets()
+
+    def create_refundable_assets(self):
+        for item in self.items:
+            print(item.is_fixed_asset, item.get('auto_create_assets'), item.get('custom_refundable'), "\n" * 5)
+            if not item.is_fixed_asset:
+                continue
+            
+            if not item.get('auto_create_assets'):
+                continue
+            
+            if not item.get('custom_refundable'):
+                continue
+            
+            if not self.supplier:
+                continue
+            
+            customer = frappe.db.get_value('Supplier', self.supplier, 'represents_company')
+            if not customer:
+                frappe.msgprint(f"Supplier {self.supplier} does not represent a customer. Asset owner will not be set.")
+            
+            qty = item.qty
+            for i in range(int(qty)):
+                asset_name = self.create_single_refundable_asset(item, customer, i + 1)
+                if asset_name:
+                    frappe.msgprint(f"Created refundable asset: {asset_name}")
+
+                    
+
+    def create_single_refundable_asset(self, item, customer, asset_number):
+        asset = frappe.get_doc({
+            'doctype': 'Asset',
+            'item_code': item.item_code,
+            'asset_name': f"{item.item_name} - {asset_number}",
+            'company': self.company,
+            'purchase_date': self.posting_date,
+            'purchase_receipt': self.name,
+            'purchase_receipt_item': item.name,
+            'gross_purchase_amount': item.amount / item.qty,
+            'purchase_receipt_amount': item.amount / item.qty,
+            'custom_is_refundable': 1,
+            'calculate_depreciation': 0,
+            'asset_owner': 'Customer' if customer else 'Company',
+            'customer': customer if customer else None,
+            'available_for_use_date': self.posting_date
+        })
+        
+        asset.flags.ignore_validate = True
+        asset.insert(ignore_permissions=True)
+    
+        return asset.name

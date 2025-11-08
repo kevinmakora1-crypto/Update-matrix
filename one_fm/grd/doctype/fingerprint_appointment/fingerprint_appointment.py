@@ -27,7 +27,15 @@ class FingerprintAppointment(Document):
 
     def validate(self):
         self.validate_pickup_requirements()
+        self.validate_pick_up_location()
 
+    
+    def validate_pick_up_location(self):
+        if not self.is_new():
+            previous_doc = self.get_doc_before_save()
+            if previous_doc.workflow_state == "Set Pick-up as Accommodation (Supervisor)" and self.workflow_state == "Pending Transportation Supervisor":
+                if self.pickup_location != "Accommodation" or not self.accommodation:
+                    frappe.throw("Pickup Location must be 'Accommodation' and Accommodation details must be provided to proceed")
 
     def validate_pickup_requirements(self):
         previous_doc = self.get_doc_before_save()
@@ -63,8 +71,9 @@ class FingerprintAppointment(Document):
             if self.workflow_state == "Pending PRO" and self.pickup_location:
                 self.notify_employee_of_appointment()
             
-            if previous_state == "Pending GR Operator" and self.workflow_state == "Pending Supervisor":
+            if previous_state == "Pending GR Operator" and self.workflow_state == "Set Pick-up as Accommodation (Supervisor)":
                 self.notify_supervisor_of_gr_rejection()
+
 
 
     def notify_supervisor_of_gr_rejection(self):

@@ -7,7 +7,8 @@ def execute():
         "Pending PRO": "Warning",
         "Pending Transportation Supervisor": "Warning",
         "Pending Supervisor": "Warning",
-        "Reschedule Requested": "Danger"
+        "Reschedule Requested": "Danger",
+        "Rejected": "Inverse"
     }
     
     for state_name, style in workflow_states.items():

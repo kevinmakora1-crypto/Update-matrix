@@ -234,11 +234,10 @@ function show_rejection_dialog(frm, resolve, reject) {
 }
 
 function set_field_visibility_and_requirements(frm) {
-    if (frm.doc.workflow_state === "Pending Supervisor" && 
+    if (["Pending Supervisor", "Set Pick-up as Accommodation (Supervisor)"].includes(frm.doc.workflow_state) && 
         frm.doc.required_transportation === "Yes" && 
         !frm.is_new() && frappe.session.user == frm.doc.employee_supervisor) {
 
-        console.log("Setting field visibility and requirements");
         
         frm.set_df_property('pickup_location', 'hidden', 0);
         frm.set_df_property('pickup_location', 'reqd', 1);
@@ -247,6 +246,7 @@ function set_field_visibility_and_requirements(frm) {
         
         
         if (frm.doc.pickup_location === "Accommodation") {
+            console.log("Accommodation selected");
             frm.set_df_property('accommodation', 'hidden', 0);
             frm.set_df_property('accommodation', 'reqd', 1);
             frm.set_df_property('operations_site', 'hidden', 1);

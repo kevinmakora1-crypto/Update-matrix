@@ -37,4 +37,4 @@ class AssetOverride(Asset):
         if self.get('custom_is_refundable'):
             return 0
         
-        return super(Asset, self).get_depreciation_amount()
+        return super(AssetOverride, self).get_depreciation_amount()

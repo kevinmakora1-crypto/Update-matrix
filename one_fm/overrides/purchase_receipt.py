@@ -1,8 +1,8 @@
 import frappe
 from frappe import _
-import json
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import flt
+import json
 
 from erpnext.stock.doctype.purchase_receipt.purchase_receipt import PurchaseReceipt
 from one_fm.custom.property_setter import asset
@@ -195,36 +195,30 @@ def make_purchase_receipt_invoice(source_name, target_doc=None, args=None):
 
 class PurchaseReceiptOverride(PurchaseReceipt):
     def on_submit(self):
-        super(PurchaseReceiptOverride, self).on_submit()
+        super(PurchaseReceipt, self).on_submit()
         self.create_refundable_assets()
 
     def create_refundable_assets(self):
         for item in self.items:
-            print(item.is_fixed_asset, item.get('auto_create_assets'), item.get('custom_refundable'), "\n" * 5)
-            if not item.is_fixed_asset:
-                continue
-            
-            if not item.get('auto_create_assets'):
-                continue
-            
             if not item.get('custom_refundable'):
                 continue
+
+            item_master = frappe.db.get_value('Item', item.item_code, ['is_fixed_asset', 'auto_create_assets'], as_dict=True)
             
-            if not self.supplier:
+            if not item_master.is_fixed_asset:
                 continue
             
-            customer = frappe.db.get_value('Supplier', self.supplier, 'represents_company')
-            if not customer:
-                frappe.msgprint(f"Supplier {self.supplier} does not represent a customer. Asset owner will not be set.")
+            if not item_master.auto_create_assets:
+                continue
+            
+            customer = self.custom_customer
             
             qty = item.qty
             for i in range(int(qty)):
                 asset_name = self.create_single_refundable_asset(item, customer, i + 1)
                 if asset_name:
                     frappe.msgprint(f"Created refundable asset: {asset_name}")
-
-                    
-
+    
     def create_single_refundable_asset(self, item, customer, asset_number):
         asset = frappe.get_doc({
             'doctype': 'Asset',
@@ -238,12 +232,13 @@ class PurchaseReceiptOverride(PurchaseReceipt):
             'purchase_receipt_amount': item.amount / item.qty,
             'custom_is_refundable': 1,
             'calculate_depreciation': 0,
-            'asset_owner': 'Customer' if customer else 'Company',
+            'asset_owner': 'Company',
             'customer': customer if customer else None,
-            'available_for_use_date': self.posting_date
+            'available_for_use_date': self.posting_date,
+            'location': item.asset_location
         })
         
         asset.flags.ignore_validate = True
         asset.insert(ignore_permissions=True)
-    
+        
         return asset.name

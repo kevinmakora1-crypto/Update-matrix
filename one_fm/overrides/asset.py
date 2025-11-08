@@ -1,11 +1,11 @@
 import frappe
 
-from erpnext.erpnext.assets.doctype.asset.asset import Asset
+from erpnext.assets.doctype.asset.asset import Asset
 
 
 class AssetOverride(Asset):
     def validate(self):
-        super(Asset, self).validate()
+        super(AssetOverride, self).validate()
         self.validate_refundable_asset()
 
     def validate_refundable_asset(self):

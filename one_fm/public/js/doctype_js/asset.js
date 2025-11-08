@@ -44,17 +44,17 @@ frappe.ui.form.on('Depreciation Schedule', {
 });
 
 function handle_refundable_asset_fields(frm) {
-    if (frm.doc.custom_is_refundable) {
-        frm.set_value('calculate_depreciation', 0);
-        frm.set_df_property('calculate_depreciation', 'read_only', 1);
-        
-        if (frm.doc.asset_owner !== 'Customer') {
-            frm.set_value('asset_owner', 'Customer');
-        }
-        
-        frm.set_df_property('asset_owner', 'read_only', 1);
-    } else {
-        frm.set_df_property('calculate_depreciation', 'read_only', 0);
-        frm.set_df_property('asset_owner', 'read_only', 0);
-    }
+	if (frm.doc.custom_is_refundable) {
+		frm.set_value('calculate_depreciation', 0);
+		frm.set_df_property('calculate_depreciation', 'read_only', 1);
+		
+		if (frm.doc.asset_owner !== 'Customer') {
+			frm.set_value('asset_owner', 'Customer');
+		}
+		
+		frm.set_df_property('asset_owner', 'read_only', 1);
+	} else {
+		frm.set_df_property('calculate_depreciation', 'read_only', 0);
+		frm.set_df_property('asset_owner', 'read_only', 0);
+	}
 }

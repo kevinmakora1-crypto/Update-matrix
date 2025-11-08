@@ -5,7 +5,6 @@ from frappe.utils import flt
 import json
 
 from erpnext.stock.doctype.purchase_receipt.purchase_receipt import PurchaseReceipt
-from one_fm.custom.property_setter import asset
 
 
 

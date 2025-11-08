@@ -213,6 +213,10 @@ class PurchaseReceiptOverride(PurchaseReceipt):
             customer = self.custom_customer
             
             qty = item.qty
+            if not float(qty).is_integer():
+                raise frappe.ValidationError(
+                    _("Cannot create assets: Quantity for item {0} is not an integer (got {1}).").format(item.item_code, qty)
+                )
             for i in range(int(qty)):
                 asset_name = self.create_single_refundable_asset(item, customer, i + 1)
                 if asset_name:

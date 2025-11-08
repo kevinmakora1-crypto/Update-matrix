@@ -232,7 +232,7 @@ class PurchaseReceiptOverride(PurchaseReceipt):
             'purchase_receipt_amount': item.amount / item.qty,
             'custom_is_refundable': 1,
             'calculate_depreciation': 0,
-            'asset_owner': 'Company',
+            'asset_owner': 'Customer',
             'customer': customer if customer else None,
             'available_for_use_date': self.posting_date,
             'location': item.asset_location

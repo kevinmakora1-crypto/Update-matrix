@@ -195,7 +195,7 @@ def make_purchase_receipt_invoice(source_name, target_doc=None, args=None):
 
 class PurchaseReceiptOverride(PurchaseReceipt):
     def on_submit(self):
-        super(PurchaseReceipt, self).on_submit()
+        super(PurchaseReceiptOverride, self).on_submit()
         self.create_refundable_assets()
 
     def create_refundable_assets(self):

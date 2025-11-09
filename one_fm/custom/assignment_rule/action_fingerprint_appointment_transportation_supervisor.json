@@ -2,7 +2,7 @@
   "name": "Action Fingerprint Appointment - Transportation Supervisor",
   "document_type": "Fingerprint Appointment",
   "due_date_based_on": "date_of_application",
-  "priority": 0,
+  "priority": 1,
   "disabled": 0,
   "description": "<p>Here is to inform you that the following {{ doctype }}({{ name }}) requires your attention/action.\n        <br>\n        The details of the request are as follows:\n        <br>\n        </p><table cellpadding=\"0\" cellspacing=\"0\" border=\"1\" style=\"border-collapse: collapse;\">\n            <thead>\n                <tr>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Label</th>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Value</th>\n                </tr>\n            </thead>\n        <tbody>\n        \n            <tr>\n                <td style=\"padding: 10px;\">Employee</td>\n                <td style=\"padding: 10px;\">{{employee}}</td>\n            </tr>\n            </tbody></table><p></p>",
   "is_assignment_rule_with_workflow": 0,
@@ -10,45 +10,37 @@
   "unassign_condition": "",
   "close_condition": "workflow_state in (\"Pending PRO\")",
   "rule": "Based on Field",
-  "field": "employee_supervisor",
-  "last_user": "",
+  "field": "transportation_supervisor_user",
   "doctype": "Assignment Rule",
-  "users": [],
   "assignment_days": [
     {
-      "name": "5s9of7mmqg",
       "day": "Monday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "5s9mvd42vm",
       "day": "Tuesday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "5s9c3fh66h",
       "day": "Wednesday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "5s94ksuo3p",
       "day": "Thursday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "5s91plq6lr",
       "day": "Friday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "5s9j7vfo6h",
       "day": "Saturday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "5s9sn6fhm7",
       "day": "Sunday",
       "doctype": "Assignment Rule Day"
     }
-  ]
+  ],
+  "users": []
 }

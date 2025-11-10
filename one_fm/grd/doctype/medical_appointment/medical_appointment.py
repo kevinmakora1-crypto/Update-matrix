@@ -33,6 +33,7 @@ class MedicalAppointment(Document):
 
 	def on_update(self):
 		self.notify_users_on_workflow_state_change()
+		self.update_employee_schedule()
 
 	def notify_users_on_workflow_state_change(self):
 		if not self.workflow_state:
@@ -77,6 +78,45 @@ class MedicalAppointment(Document):
 			message,
 			self.government_relations_operator
 		)
+
+	def update_employee_schedule(self):
+		if not self.has_value_changed("workflow_state"):
+			return
+		if self.block_roster != "Yes":
+			return
+		if self.workflow_state != "Pending PRO":
+			return
+		if not self.date_and_time_confirmation:
+			return
+
+		existing_schedule = frappe.db.exists("Employee Schedule",
+			{
+				"employee": self.employee,
+				"date": getdate(self.date_and_time_confirmation),
+				"roster_type": "Basic"
+			}
+		)
+		args = {
+			"employee_availability": "Medical Appointment",
+			"operations_role": "",
+			"shift": "",
+			"site": "",
+			"shift_type": "",
+			"project": "",
+			"reference_doctype": self.doctype,
+			"reference_docname": self.name
+		}
+		if existing_schedule:
+			frappe.db.set_value("Employee Schedule", existing_schedule, args)
+		else:
+			args.update({
+				"employee": self.employee,
+				"date": getdate(self.date_and_time_confirmation)
+			})
+			frappe.get_doc({
+				"doctype": "Employee Schedule",
+				**args
+			}).insert(ignore_permissions=True)
 
 	def on_submit(self):
 		self.validate_appointment_date()

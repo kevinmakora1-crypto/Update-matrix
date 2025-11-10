@@ -25,25 +25,51 @@ class MedicalAppointment(Document):
 			self.employee_supervisor = get_approver_user(self.employee)
 
 	def on_update(self):
+		self.notify_users_on_workflow_state_change()
+
+	def notify_users_on_workflow_state_change(self):
+		if not self.workflow_state:
+			return
+		if not self.has_value_changed("workflow_state"):
+			return
+
 		self.notify_employee_supervisor_on_operations_site_rejection()
+		self.notify_gr_operator_on_rejection()
 
 	def notify_employee_supervisor_on_operations_site_rejection(self):
-		if self.workflow_state and self.has_value_changed("workflow_state"):
-			if self.employee_supervisor and self.workflow_state == "Set Pick-up as Accommodation (Supervisor)":
-				message = _(
-					"This is to inform you that your request for site pickup for a medical appointment has been rejected. You can change the pickup location to Accommodation.<br/><br/>{0} {1}"
-				).format(self.full_name, self.date_and_time_confirmation)
+		if not self.employee_supervisor:
+			return
+		if self.workflow_state != "Set Pick-up as Accommodation (Supervisor)":
+			return
 
-				notification_doc = {
-					"doctype": "Notification Log",
-					"subject": _("Medical Appointment Pickup Rejected"),
-					"for_user": self.employee_supervisor,
-					"document_type": self.doctype,
-					"document_name": self.name,
-					"email_content": message,
-					"type": "Alert"
-				}
-				frappe.get_doc(notification_doc).insert(ignore_permissions=True)
+		message = _(
+			"This is to inform you that your request for site pickup for a medical appointment has been rejected. You can change the pickup location to Accommodation.<br/><br/>{0} {1}"
+		).format(self.full_name, self.date_and_time_confirmation)
+
+		create_medical_appointment_notification_log(
+			self.name,
+			message,
+			message,
+			self.employee_supervisor
+		)
+
+	def notify_gr_operator_on_rejection(self):
+		if not self.government_relations_operator:
+			return
+		if self.workflow_state != "Rejected":
+			return
+		if not self.reason_for_rejection:
+			return
+		message = _("This is to inform you that a medical appointment has been rejected<br/>")
+		message += _("Employee Name: {0}<br/>").format(self.full_name)
+		message += _("Date and Time Confirmation: {0}<br/>").format(self.date_and_time_confirmation)
+		message += _("Reason for Rejection: {0}").format(self.reason_for_rejection)
+		create_medical_appointment_notification_log(
+			self.name,
+			message,
+			message,
+			self.government_relations_operator
+		)
 
 @frappe.whitelist()
 def send_supervisor_notification_on_pending_medical_appointments():
@@ -71,3 +97,15 @@ def send_supervisor_notification_on_pending_medical_appointments():
 			"type": "Alert"
 		}
 		frappe.get_doc(notification_doc).insert(ignore_permissions=True)
+
+def create_medical_appointment_notification_log(medical_appointment, subject, message, for_user):
+	notification_doc = {
+		"doctype": "Notification Log",
+		"subject": subject,
+		"for_user": for_user,
+		"document_type": "Medical Appointment",
+		"document_name": medical_appointment,
+		"email_content": message,
+		"type": "Alert"
+	}
+	frappe.get_doc(notification_doc).insert(ignore_permissions=True)

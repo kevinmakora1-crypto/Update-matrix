@@ -196,6 +196,8 @@ one_fm.patches.v15_0.add_update_custom_field #2025-01-04
 one_fm.patches.v15_0.add_leave_handover_process_task
 one_fm.patches.v15_0.create_source_expansion_agent_process_task
 one_fm.patches.v15_0.update_rfp_workflow
+one_fm.patches.v15_0.add_update_custom_field #2025-11-07
+one_fm.patches.v15_0.update_item_asset_naming_series
 one_fm.patches.v15_0.add_process_task_to_notify_supervisors_fingerprint_appointment
 one_fm.patches.v15_0.update_fingerprint_appointment_workflow #2025-11-06
 

@@ -109,8 +109,8 @@ class MedicalAppointment(Document):
 			return
 
 		attendance_doc = frappe.get_doc("Attendance", existing_attendance)
-		attendance_doc.status = "Present" if self.workflow_state == "Completed" else "Absent"
-		if attendance_doc.status == "Present":
+		attendance_doc.status = "Medical Appointment" if self.workflow_state == "Completed" else "Absent"
+		if attendance_doc.status == "Medical Appointment":
 			attendance_doc.working_hours = 8
 		attendance_doc.comment = _("Updated via Medical Appointment: {0}").format(self.name)
 		attendance_doc.save(ignore_permissions=True)

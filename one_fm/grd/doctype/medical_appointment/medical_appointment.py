@@ -68,6 +68,16 @@ class MedicalAppointment(Document):
 			self.government_relations_operator
 		)
 
+	def on_submit(self):
+		self.validate_payment_invoice_attachment()
+
+	def validate_payment_invoice_attachment(self):
+		if self.workflow_state == "Completed" and not self.payment_invoice:
+			frappe.throw(
+				_("Payment invoice attachment is required to proceed."),
+				title=_("Payment Invoice Required"),
+			)
+
 @frappe.whitelist()
 def send_supervisor_notification_on_pending_medical_appointments():
 	pending_appointments = frappe.get_all(

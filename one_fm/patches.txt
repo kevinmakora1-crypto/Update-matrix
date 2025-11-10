@@ -182,6 +182,12 @@ one_fm.patches.v15_0.update_purchase_order_property_setter
 one_fm.patches.v15_0.sync_old_google_tasks
 one_fm.patches.v15_0.update_rfp_workflow #2025-11-09
 one_fm.patches.v15_0.update_erf_2025_00057_designation
+one_fm.patches.v15_0.add_assignment_rule_process_task_work_permit_completion_gr_operator
+one_fm.patches.v15_0.add_assignment_rule_action_medical_appointment_transportation_supervisor #1
+one_fm.patches.v15_0.add_assignment_rule_action_medical_appointment_supervisor #1
+one_fm.patches.v15_0.add_assignment_rule_confirm_site_pickup_for_medical_appointment_gr_operator #1
+one_fm.patches.v15_0.add_assignment_rule_action_medical_appointment_pro # rerun
+one_fm.patches.v15_0.add_workflow_medical_appointment # rerun
 
 [post_model_sync]
 one_fm.patches.v15_0.add_workflow_pathfinder_log #1

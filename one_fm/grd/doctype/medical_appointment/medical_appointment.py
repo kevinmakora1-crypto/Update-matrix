@@ -32,15 +32,15 @@ class MedicalAppointment(Document):
 			self.employee_supervisor = get_approver_user(self.employee)
 
 	def on_update(self):
-		self.notify_users_on_workflow_state_change()
-		self.update_employee_schedule()
-
-	def notify_users_on_workflow_state_change(self):
 		if not self.workflow_state:
 			return
 		if not self.has_value_changed("workflow_state"):
 			return
 
+		self.notify_users_on_workflow_state_change()
+		self.set_employee_schedule_and_attendance()
+
+	def notify_users_on_workflow_state_change(self):
 		self.notify_employee_supervisor_on_operations_site_rejection()
 		self.notify_gr_operator_on_rejection()
 
@@ -79,16 +79,16 @@ class MedicalAppointment(Document):
 			self.government_relations_operator
 		)
 
-	def update_employee_schedule(self):
-		if not self.has_value_changed("workflow_state"):
-			return
+	def set_employee_schedule_and_attendance(self):
 		if self.block_roster != "Yes":
 			return
 		if self.workflow_state != "Pending PRO":
 			return
-		if not self.date_and_time_confirmation:
-			return
 
+		self.update_employee_schedule()
+		self.create_attendance()
+
+	def update_employee_schedule(self):
 		existing_schedule = frappe.db.exists("Employee Schedule",
 			{
 				"employee": self.employee,
@@ -117,6 +117,16 @@ class MedicalAppointment(Document):
 				"doctype": "Employee Schedule",
 				**args
 			}).insert(ignore_permissions=True)
+
+	def create_attendance(self):
+		attendance_doc = frappe.get_doc({
+			"doctype": "Attendance",
+			"attendance_date": getdate(self.date_and_time_confirmation),
+			"employee": self.employee,
+			"status": "On Hold",
+			"comment": _("Created via Medical Appointment: {0}").format(self.name)
+		})
+		attendance_doc.insert(ignore_permissions=True)
 
 	def on_submit(self):
 		self.validate_appointment_date()

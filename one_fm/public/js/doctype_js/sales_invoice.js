@@ -58,7 +58,7 @@ frappe.ui.form.on('Sales Invoice', {
 
     },
     onload: function(frm){
-        toggle_items_add_row(frm)
+        toggle_items_add_row(frm);
     },
     custom_contract_item_categorywise_summary_on_form_rendered: function(frm) {
         toggle_items_add_row(frm);

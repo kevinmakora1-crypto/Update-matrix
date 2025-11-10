@@ -59,15 +59,31 @@ class SalesInvoiceOverride(SalesInvoice):
             if category:
                 category_amounts[category] += item.get("amount", 0)
         
-        self.custom_contract_item_categorywise_summary = []
-        
-        for category, amount in sorted(category_amounts.items()):
-            self.append("custom_contract_item_categorywise_summary", {
+        # Build the new summary as a list of dicts, sorted by category for consistency
+        new_summary = [
+            {
                 "contract_item_category": category,
                 "base_net_amount": amount
-            })
+            }
+            for category, amount in sorted(category_amounts.items())
+        ]
 
+        # Normalize current summary for comparison (ignore order)
+        current_summary = [
+            {
+                "contract_item_category": row.contract_item_category,
+                "base_net_amount": row.base_net_amount
+            }
+            for row in self.get("custom_contract_item_categorywise_summary", [])
+        ]
+        # Sort both lists for reliable comparison
+        new_summary_sorted = sorted(new_summary, key=lambda x: x["contract_item_category"])
+        current_summary_sorted = sorted(current_summary, key=lambda x: x["contract_item_category"])
 
+        if new_summary_sorted != current_summary_sorted:
+            self.custom_contract_item_categorywise_summary = []
+            for entry in new_summary_sorted:
+                self.append("custom_contract_item_categorywise_summary", entry)
     def update_purchase_invoice_link(self):
         purchase_invoices = set()
         

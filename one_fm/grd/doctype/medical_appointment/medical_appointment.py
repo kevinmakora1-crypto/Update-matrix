@@ -13,13 +13,14 @@ class MedicalAppointment(Document):
 		self.set_approver()
 
 	def validate_appointment_date(self):
+		if self.workflow_state not in ["Completed", "Reschedule Requested"]:
+			return
+
 		if not self.date_and_time_confirmation:
 			frappe.throw(
 				_("Date and Time Confirmation is required."),
 				title=_("Date and Time Confirmation Required"),
 			)
-		if self.workflow_state not in ["Completed", "Reschedule Requested"]:
-			return
 
 		if getdate(self.date_and_time_confirmation) > getdate(today()):
 			frappe.throw(

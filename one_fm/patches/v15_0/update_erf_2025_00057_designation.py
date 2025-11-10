@@ -25,3 +25,4 @@ def execute():
 			for offer in job_offers:
 				frappe.db.set_value("Job Offer", offer, "designation", new_designation)
 
+	frappe.db.commit()

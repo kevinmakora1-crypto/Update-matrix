@@ -194,10 +194,12 @@ one_fm.patches.v15_0.set_po_item_margin_fields_readonly
 one_fm.patches.v15_0.update_fingerprint_appointment_workflow #rerun
 one_fm.patches.v15_0.add_update_custom_field #2025-01-04
 one_fm.patches.v15_0.add_leave_handover_process_task
+one_fm.patches.v15_0.create_source_expansion_agent_process_task
 one_fm.patches.v15_0.update_rfp_workflow
 one_fm.patches.v15_0.add_update_custom_field #2025-11-07
 one_fm.patches.v15_0.update_item_asset_naming_series
-
+one_fm.patches.v15_0.add_process_task_to_notify_supervisors_fingerprint_appointment
+one_fm.patches.v15_0.update_fingerprint_appointment_workflow #2025-11-06
 
 [post_model_sync]
 one_fm.patches.v15_0.add_workflow_pathfinder_log #1
@@ -221,3 +223,4 @@ one_fm.patches.v15_0.update_residency_expiry_date_depends_on
 one_fm.patches.v15_0.add_assignment_rule_and_wf_fingerprint_appointment
 one_fm.patches.v15_0.add_assignment_rule_action_medical_appointment_pro
 one_fm.patches.v15_0.add_workflow_medical_appointment
+one_fm.patches.v15_0.update_finger_print_appointment_workflow_state

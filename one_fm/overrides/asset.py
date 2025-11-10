@@ -25,6 +25,7 @@ class AssetOverride(Asset):
     def before_save(self):
         if self.get('custom_is_refundable'):
             self.calculate_depreciation = 0
+        super(AssetOverride, self).before_save()
 
     def make_depreciation_schedule(self):
         if self.get('custom_is_refundable'):
@@ -36,4 +37,4 @@ class AssetOverride(Asset):
         if self.get('custom_is_refundable'):
             return 0
         
-        return super(Asset, self).get_depreciation_amount()
+        return super(AssetOverride, self).get_depreciation_amount()

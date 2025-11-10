@@ -17,13 +17,18 @@
   "date_and_time_confirmation",
   "column_break_tbus",
   "upload_appointment_form",
-  "transportation_section",
+  "section_break_24",
+  "employee_supervisor",
   "pickup_location",
+  "roster_action",
+  "reason_for_rejection",
+  "column_break_azkz",
+  "operations_site",
   "accommodation",
   "accommodation_name",
-  "operations_site",
-  "column_break_lhdc",
+  "transportation_section",
   "required_transportation",
+  "column_break_lhdc",
   "transportation_supervisor_user",
   "section_break_4",
   "governorate",
@@ -45,15 +50,12 @@
   "second_name_english",
   "third_name_english",
   "last_name_english",
-  "section_break_24",
+  "section_break_kact",
   "government_relations_operator",
-  "employee_supervisor",
   "pro_user",
-  "column_break_azkz",
+  "column_break_voju",
   "completed_on",
   "website",
-  "reason_for_rejection",
-  "roster_action",
   "section_break_aqew",
   "amended_from"
  ],
@@ -204,7 +206,8 @@
   },
   {
    "fieldname": "section_break_24",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Supervisor"
   },
   {
    "allow_on_submit": 1,
@@ -314,17 +317,19 @@
   {
    "fieldname": "pickup_location",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "Pickup Location",
    "options": "\nAccommodation\nOperations Site",
-   "read_only": 1
+   "read_only_depends_on": "eval: ![\"Pending Supervisor\", \"Set Pick-up as Accommodation (Supervisor)\"].includes(doc.workflow_state)"
   },
   {
    "depends_on": "eval: doc.pickup_location == \"Accommodation\"",
    "fieldname": "accommodation",
    "fieldtype": "Link",
    "label": "Accommodation",
+   "mandatory_depends_on": "eval: doc.pickup_location == \"Accommodation\"",
    "options": "Accommodation",
-   "read_only": 1
+   "read_only_depends_on": "eval: ![\"Pending Supervisor\", \"Set Pick-up as Accommodation (Supervisor)\"].includes(doc.workflow_state)"
   },
   {
    "fieldname": "column_break_lhdc",
@@ -351,7 +356,6 @@
    "label": "Employee Supervisor",
    "no_copy": 1,
    "options": "User",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -374,8 +378,16 @@
    "fieldname": "roster_action",
    "fieldtype": "Select",
    "hidden": 1,
-   "label": "Roster Action",
+   "label": "Block Roster",
    "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "operations_site",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Operations Site",
+   "options": "Operations Site",
+   "read_only_depends_on": "eval: doc.workflow_state != \"Pending Supervisor\""
   },
   {
    "depends_on": "eval: doc.pickup_location == \"Accommodation\"",
@@ -386,17 +398,18 @@
    "read_only": 1
   },
   {
-   "fieldname": "operations_site",
-   "fieldtype": "Link",
-   "label": "Operations Site",
-   "options": "Operations Site",
-   "read_only": 1
+   "fieldname": "section_break_kact",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_voju",
+   "fieldtype": "Column Break"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-03 21:47:26.408436",
- "modified_by": "Administrator",
+ "modified": "2025-11-08 22:09:11.502093",
+ "modified_by": "a.adekunle@one-fm.com",
  "module": "GRD",
  "name": "Fingerprint Appointment",
  "naming_rule": "By \"Naming Series\" field",

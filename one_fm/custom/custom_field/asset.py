@@ -27,7 +27,7 @@ def get_asset_custom_fields():
                 "fieldname": "custom_is_refundable",
                 "fieldtype": "Check",
                 "label": "Is Refundable",
-                "insert_after": "is_composite_asset",
+                "insert_after": "is_composite_asset"
             }
         ]
     }

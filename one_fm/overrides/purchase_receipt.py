@@ -5,7 +5,6 @@ from frappe.utils import flt
 import json
 
 from erpnext.stock.doctype.purchase_receipt.purchase_receipt import PurchaseReceipt
-from one_fm.custom.property_setter import asset
 
 
 
@@ -195,7 +194,7 @@ def make_purchase_receipt_invoice(source_name, target_doc=None, args=None):
 
 class PurchaseReceiptOverride(PurchaseReceipt):
     def on_submit(self):
-        super(PurchaseReceipt, self).on_submit()
+        super(PurchaseReceiptOverride, self).on_submit()
         self.create_refundable_assets()
 
     def create_refundable_assets(self):
@@ -214,6 +213,10 @@ class PurchaseReceiptOverride(PurchaseReceipt):
             customer = self.custom_customer
             
             qty = item.qty
+            if not float(qty).is_integer():
+                raise frappe.ValidationError(
+                    _("Cannot create assets: Quantity for item {0} is not an integer (got {1}).").format(item.item_code, qty)
+                )
             for i in range(int(qty)):
                 asset_name = self.create_single_refundable_asset(item, customer, i + 1)
                 if asset_name:
@@ -232,7 +235,7 @@ class PurchaseReceiptOverride(PurchaseReceipt):
             'purchase_receipt_amount': item.amount / item.qty,
             'custom_is_refundable': 1,
             'calculate_depreciation': 0,
-            'asset_owner': 'Company',
+            'asset_owner': 'Customer',
             'customer': customer if customer else None,
             'available_for_use_date': self.posting_date,
             'location': item.asset_location

@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import frappe
 from frappe import _
 from frappe.utils import flt
@@ -44,6 +46,26 @@ class SalesInvoiceOverride(SalesInvoice):
                     update_modified=False
                 )
 
+    def before_save(self):
+        super(SalesInvoiceOverride, self).before_save()
+        self.populate_contract_item_categorywise_summary()
+
+
+    def populate_contract_item_categorywise_summary(self):
+        category_amounts = defaultdict(float)
+        
+        for item in self.items:
+            category = item.get("custom_contract_item_category")
+            if category:
+                category_amounts[category] += item.get("amount", 0)
+        
+        self.custom_contract_item_categorywise_summary = []
+        
+        for category, amount in sorted(category_amounts.items()):
+            self.append("custom_contract_item_categorywise_summary", {
+                "contract_item_category": category,
+                "base_net_amount": amount
+            })
 
 
     def update_purchase_invoice_link(self):

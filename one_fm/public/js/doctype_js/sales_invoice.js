@@ -246,10 +246,12 @@ function toggle_items_add_row(frm) {
         frm.doc.custom_contract_item_categorywise_summary.length > 0) {
         frm.set_df_property('items', 'cannot_add_rows', 1);
         frm.fields_dict['items'].grid.cannot_add_rows = true;
+        frm.fields_dict['items'].grid.read_only = true;
         frm.refresh_field('items');
     } else {
         frm.set_df_property('items', 'cannot_add_rows', 0);
         frm.fields_dict['items'].grid.cannot_add_rows = false;
+        frm.fields_dict['items'].grid.read_only = false;
         frm.refresh_field('items');
     }
 }

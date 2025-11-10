@@ -4,18 +4,28 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import today
+from frappe.utils import today, getdate
 from one_fm.utils import get_approver_user
 
 class MedicalAppointment(Document):
 	def validate(self):
-		if self.workflow_state == "Pending Confirmation" and self.date_and_time_confirmation:
-			if self.date_and_time_confirmation > today():
-				frappe.throw(
-					_("You are not allowed to action medical appointment before the appointment date."),
-					title=_("Appointment Date is in the future"),
-				)
+		self.validate_appointment_date()
 		self.set_approver()
+
+	def validate_appointment_date(self):
+		if not self.date_and_time_confirmation:
+			frappe.throw(
+				_("Date and Time Confirmation is required."),
+				title=_("Date and Time Confirmation Required"),
+			)
+		if self.workflow_state not in ["Completed", "Reschedule Requested"]:
+			return
+
+		if getdate(self.date_and_time_confirmation) > getdate(today()):
+			frappe.throw(
+				_("You are not allowed to action medical appointment before the appointment date."),
+				title=_("Appointment Date is in the future"),
+			)
 
 	def set_approver(self):
 		if not self.employee_supervisor and self.employee:
@@ -69,6 +79,7 @@ class MedicalAppointment(Document):
 		)
 
 	def on_submit(self):
+		self.validate_appointment_date()
 		self.validate_payment_invoice_attachment()
 
 	def validate_payment_invoice_attachment(self):

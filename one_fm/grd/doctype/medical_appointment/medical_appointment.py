@@ -44,3 +44,30 @@ class MedicalAppointment(Document):
 					"type": "Alert"
 				}
 				frappe.get_doc(notification_doc).insert(ignore_permissions=True)
+
+@frappe.whitelist()
+def send_supervisor_notification_on_pending_medical_appointments():
+	pending_appointments = frappe.get_all(
+		"Medical Appointment",
+		filters={"workflow_state": "Pending Supervisor"},
+		fields=["name", "full_name", "employee_supervisor", "employee"],
+	)
+
+	for appointment in pending_appointments:
+		employee_name = appointment.get("full_name") or appointment.get("employee")
+		supervisor = appointment.get("employee_supervisor")
+
+		if not supervisor:
+			continue
+
+		message = _("You need to take action on Medical Appointment for {0}").format(employee_name)
+
+		notification_doc = {
+			"doctype": "Notification Log",
+			"document_type": "Medical Appointment",
+			"document_name": appointment.name,
+			"for_user": supervisor,
+			"subject": message,
+			"type": "Alert"
+		}
+		frappe.get_doc(notification_doc).insert(ignore_permissions=True)

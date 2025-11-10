@@ -81,6 +81,7 @@ class MedicalAppointment(Document):
 	def on_submit(self):
 		self.validate_appointment_date()
 		self.validate_payment_invoice_attachment()
+		self.update_attendance_status()
 
 	def validate_payment_invoice_attachment(self):
 		if self.workflow_state == "Completed" and not self.payment_invoice:
@@ -88,6 +89,33 @@ class MedicalAppointment(Document):
 				_("Payment invoice attachment is required to proceed."),
 				title=_("Payment Invoice Required"),
 			)
+
+	def update_attendance_status(self):
+		if self.workflow_state not in ["Completed", "Reschedule Requested"]:
+			return
+		if self.block_roster != "Yes":
+			return
+
+		existing_attendance = frappe.db.exists(
+			"Attendance",
+			{
+				"attendance_date": getdate(self.date_and_time_confirmation),
+				"employee": self.employee,
+				"status": "On Hold"
+			}
+		)
+
+		if not existing_attendance:
+			return
+
+		attendance_doc = frappe.get_doc("Attendance", existing_attendance)
+		attendance_doc.status = "Present" if self.workflow_state == "Completed" else "Absent"
+		if attendance_doc.status == "Present":
+			attendance_doc.working_hours = 8
+		attendance_doc.comment = _("Updated via Medical Appointment: {0}").format(self.name)
+		attendance_doc.save(ignore_permissions=True)
+		attendance_doc.submit()
+
 
 @frappe.whitelist()
 def send_supervisor_notification_on_pending_medical_appointments():

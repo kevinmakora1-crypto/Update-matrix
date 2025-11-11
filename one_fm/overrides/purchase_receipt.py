@@ -191,18 +191,28 @@ def make_purchase_receipt_invoice(source_name, target_doc=None, args=None):
 
 	return doc
 
+import frappe
+from frappe import _
+from erpnext.stock.doctype.purchase_receipt.purchase_receipt import PurchaseReceipt
+
 
 class PurchaseReceiptOverride(PurchaseReceipt):
     def on_submit(self):
         super(PurchaseReceiptOverride, self).on_submit()
-        self.create_refundable_assets()
+        self.update_refundable_assets()
 
-    def create_refundable_assets(self):
+
+    def update_refundable_assets(self):
         for item in self.items:
             if not item.get('custom_refundable'):
                 continue
 
-            item_master = frappe.db.get_value('Item', item.item_code, ['is_fixed_asset', 'auto_create_assets'], as_dict=True)
+            item_master = frappe.db.get_value(
+                'Item', 
+                item.item_code, 
+                ['is_fixed_asset', 'auto_create_assets'], 
+                as_dict=True
+            )
             
             if not item_master.is_fixed_asset:
                 continue
@@ -210,38 +220,34 @@ class PurchaseReceiptOverride(PurchaseReceipt):
             if not item_master.auto_create_assets:
                 continue
             
-            customer = self.custom_customer
+            asset_name = frappe.db.get_value(
+                'Asset',
+                {
+                    'purchase_receipt': self.name,
+                    'purchase_receipt_item': item.name,
+                    'item_code': item.item_code
+                }
+            )
             
-            qty = item.qty
-            if not float(qty).is_integer():
-                raise frappe.ValidationError(
-                    _("Cannot create assets: Quantity for item {0} is not an integer (got {1}).").format(item.item_code, qty)
+            if asset_name:
+                self.update_asset_for_refundable(asset_name, item)
+                frappe.msgprint(
+                    _("Updated asset {0} for refundable item {1}").format(asset_name, item.item_code),
+                    alert=True
                 )
-            for i in range(int(qty)):
-                asset_name = self.create_single_refundable_asset(item, customer, i + 1)
-                if asset_name:
-                    frappe.msgprint(f"Created refundable asset: {asset_name}")
     
-    def create_single_refundable_asset(self, item, customer, asset_number):
-        asset = frappe.get_doc({
-            'doctype': 'Asset',
-            'item_code': item.item_code,
-            'asset_name': f"{item.item_name} - {asset_number}",
-            'company': self.company,
-            'purchase_date': self.posting_date,
-            'purchase_receipt': self.name,
-            'purchase_receipt_item': item.name,
-            'gross_purchase_amount': item.amount / item.qty,
-            'purchase_receipt_amount': item.amount / item.qty,
-            'custom_is_refundable': 1,
-            'calculate_depreciation': 0,
-            'asset_owner': 'Customer',
-            'customer': customer if customer else None,
-            'available_for_use_date': self.posting_date,
-            'location': item.asset_location
-        })
+    
+    def update_asset_for_refundable(self, asset_name, item):
+        asset = frappe.get_doc('Asset', asset_name)
         
-        asset.flags.ignore_validate = True
-        asset.insert(ignore_permissions=True)
+        asset.custom_is_refundable = 1
+        asset.asset_owner = 'Customer'
+        asset.customer = self.custom_customer if self.custom_customer else None
+        
+        if not asset.available_for_use_date:
+            asset.available_for_use_date = self.posting_date
+        
+        asset.flags.ignore_validate_update_after_submit = True
+        asset.save(ignore_permissions=True)
         
         return asset.name

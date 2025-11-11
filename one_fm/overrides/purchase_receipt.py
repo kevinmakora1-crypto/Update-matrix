@@ -191,10 +191,6 @@ def make_purchase_receipt_invoice(source_name, target_doc=None, args=None):
 
 	return doc
 
-import frappe
-from frappe import _
-from erpnext.stock.doctype.purchase_receipt.purchase_receipt import PurchaseReceipt
-
 
 class PurchaseReceiptOverride(PurchaseReceipt):
     def on_submit(self):

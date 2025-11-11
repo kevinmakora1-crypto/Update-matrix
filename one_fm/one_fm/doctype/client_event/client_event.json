@@ -109,9 +109,17 @@
   {
    "link_doctype": "Event Staff",
    "link_fieldname": "client_event"
+  },
+  {
+   "link_doctype": "Employee Schedule",
+   "link_fieldname": "client_event"
+  },
+  {
+   "link_doctype": "Shift Assignment",
+   "link_fieldname": "client_event"
   }
  ],
- "modified": "2025-11-11 07:47:49.795693",
+ "modified": "2025-11-11 11:30:37.701862",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Client Event",

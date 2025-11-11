@@ -1,8 +1,78 @@
 // Copyright (c) 2025, ONE FM and contributors
 // For license information, please see license.txt
 
-// frappe.ui.form.on("Client Event", {
-// 	refresh(frm) {
-
-// 	},
-// });
+frappe.ui.form.on("Client Event", {
+    refresh(frm) {
+        frm.events.add_event_staff(frm);
+    },
+    add_event_staff(frm) {
+        if (frm.doc.workflow_state == "Approved") {
+            frm.add_custom_button(__("Add Staff to Event"), function() {
+                let d = new frappe.ui.Dialog({
+                    title: __("Add Staff to Event"),
+                    fields: [
+                        {
+                            label: __("Staff"),
+                            fieldname: "staff",
+                            fieldtype: "Table",
+                            fields: [
+                                {
+                                    label: __("Employee"),
+                                    fieldname: "employee",
+                                    fieldtype: "Link",
+                                    options: "Employee",
+                                    in_list_view: 1,
+                                    reqd: 1,
+                                },
+                                {
+                                    label: __("Operations Role"),
+                                    fieldname: "operations_role",
+                                    fieldtype: "Link",
+                                    options: "Operations Role",
+                                    in_list_view: 1,
+                                    reqd: 1,
+                                },
+                                {
+                                    label: __("Roster Type"),
+                                    fieldname: "roster_type",
+                                    fieldtype: "Select",
+                                    options: "Basic\nOver-Time",
+                                    in_list_view: 1,
+                                    reqd: 1,
+                                },
+                                {
+                                    label: __("Day Off OT"),
+                                    fieldname: "day_off_ot",
+                                    fieldtype: "Check",
+                                    depends_on: "eval:doc.roster_type=='Basic'",
+                                },
+                                {
+                                    label: __("Operations Shift"),
+                                    fieldname: "operations_shift",
+                                    fieldtype: "Link",
+                                    options: "Operations Shift",
+                                },
+                            ],
+                        },
+                    ],
+                    primary_action_label: __("Submit"),
+                    primary_action: (values) => {
+                        frm.call({
+                            method: "add_event_staff",
+                            doc: frm.doc,
+                            args: {
+                                staff: JSON.stringify(values.staff)
+                            },
+                            callback: function(r) {
+                                frappe.msgprint(__("Event Staff created successfully."));
+                                frm.reload_doc();
+                            }
+                        });
+                        d.hide();
+                    },
+                });
+                d.show();
+            });
+        }
+    }
+});

@@ -52,5 +52,21 @@ def get_shift_assignment_properties():
             "property": "in_standard_filter",
             "property_type": "Check",
             "value": "1"
+        },
+        {
+            "doc_type": "Shift Assignment",
+            "doctype_or_field": "DocField",
+            "field_name": "shift_type",
+            "property": "reqd",
+            "property_type": "Check",
+            "value": "0"
+        },
+        {
+            "doctype": "Property Setter",
+            "doc_type": "Shift Assignment",
+            "doctype_or_field": "DocField",
+            "field_name": "shift_type",
+            "property": "mandatory_depends_on",
+            "value": "eval:!doc.is_event_based_shift"
         }
     ]

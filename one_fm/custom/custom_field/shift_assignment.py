@@ -160,6 +160,7 @@ def get_shift_assignment_custom_fields():
                 "label": "Is Event-based Shift",
                 "fieldtype": "Check",
                 "insert_after": "custom_day_off_ot",
+                "fetch_from": "employee_schedule.is_event_schedule",
                 "read_only": 1
             },
             {

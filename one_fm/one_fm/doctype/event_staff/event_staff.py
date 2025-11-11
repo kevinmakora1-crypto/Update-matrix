@@ -10,6 +10,33 @@ class EventStaff(Document):
 	def validate(self):
 		self.validate_date()
 		self.validate_staffing_requirement()
+		self.validate_overlapping_event_staff()
+
+	def validate_overlapping_event_staff(self):
+		# Only check for new documents (not submitted yet)
+		if not self.employee or not self.client_event or not self.start_date or not self.end_date or not self.operations_role:
+			return
+		overlapping = frappe.db.sql(
+			"""
+			SELECT
+				name, start_date, end_date FROM `tabEvent Staff`
+			WHERE
+				employee = %(employee)s AND docstatus < 2 AND name != %(name)s
+				AND (
+					(start_date <= %(end_date)s AND end_date >= %(start_date)s)
+				)
+			""",
+			{
+				"employee": self.employee,
+				"start_date": self.start_date,
+				"end_date": self.end_date,
+				"name": self.name or ""
+			},
+			as_dict=True
+		)
+		if overlapping:
+			msg = f"{self.employee} already assigned to {self.operations_role} from {overlapping[0]['start_date']} to {overlapping[0]['end_date']}."
+			frappe.throw(msg)
 
 	def validate_staffing_requirement(self):
 		if not self.client_event or not self.operations_role:
@@ -23,7 +50,7 @@ class EventStaff(Document):
 			"docstatus": ["<", 2]
 		}
 		assigned_count = frappe.db.count("Event Staff", filters)
-		if assigned_count >= requirements:
+		if assigned_count > requirements:
 			frappe.throw(f"The number of assigned staff for Operations Role {self.operations_role} exceeds the required count {requirements}.")
 
 	def get_event_staffing_requirement(self):

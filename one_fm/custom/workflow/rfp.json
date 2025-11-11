@@ -85,7 +85,7 @@
       "update_value": "Approved",
       "is_optional_state": 0,
       "avoid_status_override": 1,
-      "allow_edit": "Purchase User",
+      "allow_edit": "Purchase Officer",
       "send_email": 1,
       "workflow_builder_id": "5",
       "doctype": "Workflow Document State"

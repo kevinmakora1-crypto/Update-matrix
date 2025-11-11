@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-11-10 21:26:01.326271",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "staff_requirement_section",
+  "operation_role",
+  "column_break_jsks",
+  "count"
+ ],
+ "fields": [
+  {
+   "fieldname": "staff_requirement_section",
+   "fieldtype": "Section Break",
+   "label": "Staff Requirement"
+  },
+  {
+   "fieldname": "operation_role",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Operation Role",
+   "options": "Operations Role",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_jsks",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Count"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-11-10 21:26:01.326271",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Client Event Staff Requirement",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

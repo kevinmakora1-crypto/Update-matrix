@@ -25,6 +25,10 @@
   "column_break_6",
   "site",
   "project",
+  "is_event_schedule",
+  "client_event",
+  "event_staff",
+  "event_location",
   "attendance_status_section",
   "attended_status",
   "roster_type",
@@ -216,11 +220,42 @@
    "label": "Employment Type",
    "options": "Employment Type",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "It indicates that this Employee Schedule was automatically created from the Client Event process",
+   "fieldname": "is_event_schedule",
+   "fieldtype": "Check",
+   "label": "Is Event Schedule",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "event_staff.client_event",
+   "fieldname": "client_event",
+   "fieldtype": "Link",
+   "label": "Client Event",
+   "options": "Client Event",
+   "read_only": 1
+  },
+  {
+   "fieldname": "event_staff",
+   "fieldtype": "Link",
+   "label": "Event Staff",
+   "options": "Event Staff",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "event_staff.event_location",
+   "fieldname": "event_location",
+   "fieldtype": "Link",
+   "label": "Event Location",
+   "options": "Location",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2025-11-02 10:41:01.184440",
+ "modified": "2025-11-11 09:01:31.028103",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Employee Schedule",

@@ -230,3 +230,4 @@ one_fm.patches.v15_0.update_residency_expiry_date_depends_on
 one_fm.patches.v15_0.add_assignment_rule_and_wf_fingerprint_appointment
 one_fm.patches.v15_0.update_finger_print_appointment_workflow_state
 one_fm.patches.v15_0.add_workflow_client_event
+one_fm.patches.v15_0.add_shift_assignment_event_based_fields

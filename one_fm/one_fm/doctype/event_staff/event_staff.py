@@ -9,6 +9,36 @@ import datetime
 class EventStaff(Document):
 	def validate(self):
 		self.validate_date()
+		self.validate_staffing_requirement()
+
+	def validate_staffing_requirement(self):
+		if not self.client_event or not self.operations_role:
+			return
+		requirements = self.get_event_staffing_requirement()
+		if not requirements:
+		    return
+		filters = {
+			"client_event": self.client_event,
+			"operations_role": self.operations_role,
+			"docstatus": ["<", 2]
+		}
+		assigned_count = frappe.db.count("Event Staff", filters)
+		if assigned_count >= requirements:
+			frappe.throw(f"The number of assigned staff for Operations Role {self.operations_role} exceeds the required count {requirements}.")
+
+	def get_event_staffing_requirement(self):
+		if not self.client_event or not self.operations_role:
+			return 0
+		requirement = frappe.db.get_value(
+			"Client Event Staff Requirement",
+			{
+				"parent": self.client_event,
+				"parenttype": "Client Event",
+				"operation_role": self.operations_role
+			},
+			"count"
+		)
+		return requirement or 0
 
 	def validate_date(self):
 		if getdate(self.end_date) < getdate(self.start_date):
@@ -88,3 +118,4 @@ class EventStaff(Document):
 			}
 		)
 		shift_assignment.insert(ignore_permissions=True)
+		shift_assignment.submit()

@@ -249,7 +249,8 @@
    "fieldname": "event_location",
    "fieldtype": "Link",
    "label": "Event Location",
-   "options": "Location"
+   "options": "Location",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,

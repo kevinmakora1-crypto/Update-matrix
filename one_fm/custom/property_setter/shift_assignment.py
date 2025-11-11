@@ -54,6 +54,7 @@ def get_shift_assignment_properties():
             "value": "1"
         },
         {
+            "doctype": "Property Setter",
             "doc_type": "Shift Assignment",
             "doctype_or_field": "DocField",
             "field_name": "shift_type",
@@ -67,6 +68,7 @@ def get_shift_assignment_properties():
             "doctype_or_field": "DocField",
             "field_name": "shift_type",
             "property": "mandatory_depends_on",
+            "property_type": "Data",
             "value": "eval:!doc.is_event_based_shift"
         }
     ]

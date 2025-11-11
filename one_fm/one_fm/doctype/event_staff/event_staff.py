@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import getdate, add_days, date_diff, add_days
+from frappe.utils import getdate, add_days, date_diff
 import datetime
 
 class EventStaff(Document):
@@ -13,7 +13,6 @@ class EventStaff(Document):
 		self.validate_overlapping_event_staff()
 
 	def validate_overlapping_event_staff(self):
-		# Only check for new documents (not submitted yet)
 		if not self.employee or not self.client_event or not self.start_date or not self.end_date or not self.operations_role:
 			return
 		overlapping = frappe.db.sql(
@@ -43,7 +42,7 @@ class EventStaff(Document):
 			return
 		requirements = self.get_event_staffing_requirement()
 		if not requirements:
-		    return
+			return
 		filters = {
 			"client_event": self.client_event,
 			"operations_role": self.operations_role,

@@ -1201,3 +1201,33 @@ def make_supplier_quotation(source_name, target_doc=None):
     )
     
     return doclist
+@frappe.whitelist()
+def make_asset_movement(source_name, target_doc=None):
+    source_doc = frappe.get_doc("Request for Material", source_name)
+
+    if not (source_doc.docstatus == 1 and source_doc.workflow_state == "Approved"):
+        frappe.throw(_("Asset Movement can only be created from an Approved Request for Material."))
+
+    if source_doc.purpose not in ["Issue", "Transfer"]:
+        frappe.throw(_("Asset Movement can only be created for RFMs with purpose 'Issue' or 'Transfer'."))
+
+    asset_movement = frappe.new_doc("Asset Movement")
+    asset_movement.company = source_doc.company
+    asset_movement.purpose = source_doc.purpose
+    asset_movement.request_for_material = source_name
+
+    for item in source_doc.items:
+        if item.is_fixed_asset and item.custom_pending_quantity > 0:
+            for _ in range(int(item.custom_pending_quantity)):
+                asset_movement.append("items", {
+                    "item_code": item.item_code,
+                    "source_warehouse": item.warehouse,
+                    "target_warehouse": item.t_warehouse if source_doc.purpose == "Transfer" else None,
+                    "request_for_material_item": item.name,
+                })
+
+    if not asset_movement.items:
+        frappe.throw(_("No pending fixed asset items found to create an Asset Movement."))
+
+    asset_movement.insert(ignore_permissions=True)
+    return asset_movement

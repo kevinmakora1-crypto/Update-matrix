@@ -184,6 +184,27 @@ frappe.ui.form.on('Request for Material', {
 			frm.set_df_property('purpose', 'read_only', 1);
 		}
 		add_purchase_rfm_button(frm);
+		frm.events.add_asset_movement_button(frm);
+	},
+	add_asset_movement_button: function(frm) {
+		if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved' && ["Issue", "Transfer"].includes(frm.doc.purpose)) {
+			const has_fixed_asset_items = frm.doc.items.some(item => item.is_fixed_asset && item.custom_pending_quantity > 0);
+			if (has_fixed_asset_items) {
+				frm.add_custom_button(__('Asset Movement'), function() {
+					frappe.call({
+						method: 'one_fm.purchase.doctype.request_for_material.request_for_material.make_asset_movement',
+						args: {
+							source_name: frm.doc.name
+						},
+						callback: function(r) {
+							if (r.message) {
+								frappe.set_route('Form', r.message.doctype, r.message.name);
+							}
+						}
+					});
+				}, __('Create'));
+			}
+		}
 	},
 	items_on_form_rendered: (frm) => {
 	},

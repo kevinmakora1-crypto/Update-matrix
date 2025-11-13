@@ -1193,7 +1193,7 @@ def make_supplier_quotation(source_name, target_doc=None):
                     "description": "description",
                 },
                 "postprocess": update_item,
-                "condition": lambda doc: doc.item_code and (doc.ordered_qty or 0) < (doc.qty or 0)
+                "condition": lambda doc: doc.item_code and not doc.reject_item and (doc.ordered_qty or 0) < (doc.qty or 0)
             }
         },
         target_doc,

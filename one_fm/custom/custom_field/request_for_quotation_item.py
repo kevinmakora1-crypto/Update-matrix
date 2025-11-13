@@ -16,7 +16,6 @@ def get_request_for_quotation_item_custom_fields():
                 "options": "Request for Material Item",
                 "insert_after": "custom_request_for_material",
                 "read_only": 1
-            },
-            
+            }
         ]
     }

@@ -1146,7 +1146,7 @@ def make_request_for_request_for_quotation(source_name, target_doc=None):
         set_missing_values
     )
     
-    return 
+    return doclist
 
 
 

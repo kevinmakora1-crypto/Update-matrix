@@ -1282,7 +1282,7 @@ function add_purchase_rfm_button(frm){
 
 
 function add_request_for_quotation_button(frm){
-    if (frm.doc.docstatus === 1 && frm.doc.status === 'Approved') {
+    if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved' && frm.doc.purpose === 'Purchase') {
         let has_pending_items = frm.doc.items.some(item => {
             let ordered = item.ordered_qty || 0;
             let purchase_qty = item.qty || 0;
@@ -1302,7 +1302,7 @@ function add_request_for_quotation_button(frm){
 }
 
 function add_supplier_quotation_button(frm){
-    if (frm.doc.docstatus === 1 && frm.doc.status === 'Approved') {
+    if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved' && frm.doc.purpose === 'Purchase') {
         let has_pending_items = frm.doc.items.some(item => {
             let ordered = item.ordered_qty || 0;
             let purchase_qty = item.qty || 0;

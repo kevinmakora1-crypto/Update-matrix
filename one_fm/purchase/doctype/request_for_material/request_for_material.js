@@ -144,6 +144,8 @@ frappe.ui.form.on('Request for Material', {
 		frm.events.make_custom_buttons(frm);
 		add_stock_entry_buttons(frm);
 		set_item_field_property(frm);
+		add_request_for_quotation_button(frm);
+		add_supplier_quotation_button(frm);
 		let status = ['Draft', 'Accepted', 'Approved', 'Rejected', 'Transferred'];
 		if(status.includes(frm.doc.status) && frm.doc.docstatus == 1){
 			frm.set_df_property('status', 'options', status);
@@ -913,11 +915,6 @@ var set_employee_or_project = function(frm) {
 
 
 
-frappe.ui.form.on('Request for Material Item', {
-	
-});
-
-
 frappe.ui.form.on("Request for Material Item", {
 	setup: (frm)=>{
 	},
@@ -1281,4 +1278,44 @@ function add_purchase_rfm_button(frm){
 		frm.page.set_inner_btn_group_as_primary(__('Create'));
 	}
 
+}
+
+
+function add_request_for_quotation_button(frm){
+    if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved' && frm.doc.purpose === 'Purchase') {
+        let has_pending_items = frm.doc.items.some(item => {
+            let ordered = item.ordered_qty || 0;
+            let purchase_qty = item.qty || 0;
+            return ordered < purchase_qty;
+        });
+
+        
+        if (has_pending_items) {
+            frm.page.add_inner_button(__('Request for Quotation'), function() {
+                frappe.model.open_mapped_doc({
+                    method: 'one_fm.purchase.doctype.request_for_material.request_for_material.make_request_for_request_for_quotation',
+                    frm: frm
+                });
+            }, __('Create'));
+        }
+    }
+}
+
+function add_supplier_quotation_button(frm){
+    if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved' && frm.doc.purpose === 'Purchase') {
+        let has_pending_items = frm.doc.items.some(item => {
+            let ordered = item.ordered_qty || 0;
+            let purchase_qty = item.qty || 0;
+            return ordered < purchase_qty;
+        });
+        
+        if (has_pending_items) {
+            frm.page.add_inner_button(__('Supplier Quotation'), function() {
+                frappe.model.open_mapped_doc({
+                    method: 'one_fm.purchase.doctype.request_for_material.request_for_material.make_supplier_quotation',
+                    frm: frm
+                });
+            }, __('Create'));
+        }
+    }
 }

@@ -9,6 +9,7 @@ def execute():
     create_paci_process_task()
 
 def create_paci_process_task():
+
     
     task = frappe.get_doc({
         "doctype": "Process Task",
@@ -24,6 +25,7 @@ def create_paci_process_task():
         "coordination_needed": "No",
         "hours_per_frequency": 0,
         "repeat_on_day": 0,
-        "repeat_on_last_day": 0
+        "repeat_on_last_day": 0,
+        "start_date":  frappe.utils.nowdate(),
     })
     task.insert(ignore_permissions=True)

@@ -9,21 +9,23 @@ def execute():
     create_paci_process_task()
 
 def create_paci_process_task():
-    
-    task = frappe.get_doc({
-        "doctype": "Process Task",
-        "naming_series": "P-TASK-.YYYY.-",
-        "task": "Action PACI - get Civil ID done and delivered",
-        "process_name": "Residency",
-        "erp_document": "PACI",
-        "task_type": "Repetitive",
-        "is_erp_task": 1,
-        "is_active": 1,
-        "is_automated": 0,
-        "is_routine_task": 0,
-        "coordination_needed": "No",
-        "hours_per_frequency": 0,
-        "repeat_on_day": 0,
-        "repeat_on_last_day": 0
-    })
-    task.insert(ignore_permissions=True)
+    task_name = "Action PACI - get Civil ID done and delivered"
+    process_name = "Residency"
+    if not frappe.db.exists("Process Task", {"task": task_name, "process_name": process_name}):
+        task = frappe.get_doc({
+            "doctype": "Process Task",
+            "naming_series": "P-TASK-.YYYY.-",
+            "task": task_name,
+            "process_name": process_name,
+            "erp_document": "PACI",
+            "task_type": "Repetitive",
+            "is_erp_task": 1,
+            "is_active": 1,
+            "is_automated": 0,
+            "is_routine_task": 0,
+            "coordination_needed": "No",
+            "hours_per_frequency": 0,
+            "repeat_on_day": 0,
+            "repeat_on_last_day": 0
+        })
+        task.insert(ignore_permissions=True)

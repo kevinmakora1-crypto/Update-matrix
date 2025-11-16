@@ -190,7 +190,7 @@ def get_filtered_contract_item_categories(doctype, txt, searchfield, start, page
     )
     
     if not contract:
-        frappe.msgprint(_(f"No contract found for Customer: {customer} and Project: {project}"))
+        frappe.msgprint(_("No contract found for Customer: {0} and Project: {1}").format(customer, project))
         return []
     
     categories = frappe.db.sql("""

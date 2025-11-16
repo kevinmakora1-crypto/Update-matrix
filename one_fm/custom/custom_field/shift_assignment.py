@@ -198,7 +198,7 @@ def get_shift_assignment_custom_fields():
                 "insert_after": "status",
                 "options": "Designation",
                 "fetch_from": "employee.designation",
-                "depends_on": "eval:doc.custom_is_eventbased_shift == 1",
+                "depends_on": "eval:doc.is_event_based_shift == 1",
             },
             {
                 "fieldname": "employee_is_replaced",

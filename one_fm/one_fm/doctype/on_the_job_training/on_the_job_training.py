@@ -72,7 +72,6 @@ class OntheJobTraining(Document):
         
         if existing_schedule:
             schedule_doc = frappe.get_doc("Employee Schedule", existing_schedule)
-         
             
             self.update_employee_schedule_fields(schedule_doc, schedule_date)
             schedule_doc.save(ignore_permissions=True)

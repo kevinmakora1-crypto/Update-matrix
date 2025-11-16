@@ -1,4 +1,3 @@
-import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 from one_fm.custom.custom_field.shift_assignment import get_shift_assignment_custom_fields

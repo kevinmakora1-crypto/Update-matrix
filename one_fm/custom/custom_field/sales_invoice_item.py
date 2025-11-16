@@ -138,7 +138,6 @@ def get_sales_invoice_item_custom_fields():
                 "allow_on_submit": 1,
                 "fetch_if_empty": 1,
                 "mandatory_depends_on": "eval:parent.custom_refundable == 1",
-                "only_select": 1
             }
 
 

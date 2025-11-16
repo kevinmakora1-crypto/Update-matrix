@@ -93,6 +93,7 @@ from one_fm.custom.custom_field.issue import get_issue_custom_fields
 from one_fm.custom.custom_field.loan_product import get_loan_product_custom_fields
 from one_fm.custom.custom_field.repayment_schedule import get_repayment_schedule_custom_fields
 from one_fm.custom.custom_field.hd_agent import get_hd_agent_custom_fields
+from one_fm.custom.custom_field.request_for_quotation_item import get_request_for_quotation_item_custom_fields
 
 def get_custom_fields():
 	"""ONEFM specific custom fields that need to be added to the masters in ERPNext"""
@@ -190,5 +191,6 @@ def get_custom_fields():
 	custom_fields.update(get_loan_product_custom_fields())
 	custom_fields.update(get_repayment_schedule_custom_fields())
 	custom_fields.update(get_hd_agent_custom_fields())
+	custom_fields.update(get_request_for_quotation_item_custom_fields())
 
 	return custom_fields

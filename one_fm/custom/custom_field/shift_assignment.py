@@ -204,16 +204,17 @@ def get_shift_assignment_custom_fields():
                 "fieldname": "employee_is_replaced",
                 "label": " Employee Is Replaced",
                 "fieldtype": "Check",
-                "insert_after": "status",
+                "insert_after": "employee_schedule",
             },
             {
                 "fieldname": "custom_on_the_job_training",
                 "label": "On the Job Training",
                 "fieldtype": "Link",
-                "insert_after": "status",
+                "insert_after": "event_location",
                 "options": "On the Job Training",
                 "fetch_from": "employee_schedule.on_the_job_training",
-                "read_only": 1
+                "read_only": 1,
+                "search_index": 1
             },
 
 

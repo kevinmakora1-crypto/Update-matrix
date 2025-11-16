@@ -1094,3 +1094,110 @@ def create_employee_uniform(rfm_name: str):
 		"message": _("{0} Employee Uniform document(s) created successfully").format(len(created_uniforms)),
 		"created_uniforms": created_uniforms
 	}
+
+
+@frappe.whitelist()
+def make_request_for_request_for_quotation(source_name, target_doc=None):
+    def set_missing_values(source, target):
+        target.transaction_date = nowdate()
+        target.status = "Draft"
+        target.company = source.company
+        
+    def update_item(source_doc, target_doc, source_parent):
+        target_doc.schedule_date = source_doc.schedule_date
+        
+        ordered = source_doc.ordered_qty or 0
+        purchase_qty = source_doc.qty or 0
+        remaining_qty = purchase_qty - ordered
+        
+        target_doc.qty = remaining_qty
+        target_doc.stock_qty = remaining_qty * (source_doc.conversion_factor or 1)
+        target_doc.uom = source_doc.uom
+        target_doc.stock_uom = source_doc.stock_uom
+        target_doc.conversion_factor = source_doc.conversion_factor
+        target_doc.warehouse = source_doc.warehouse or source_doc.t_warehouse
+        target_doc.project_name = source_parent.project
+        
+        target_doc.custom_request_for_material = source_parent.name
+        target_doc.custom_request_for_material_item = source_doc.name
+        
+    doclist = get_mapped_doc(
+        "Request for Material",
+        source_name,
+        {
+            "Request for Material": {
+                "doctype": "Request for Quotation",
+                "validation": {
+                    "docstatus": ["=", 1]
+                }
+            },
+            "Request for Material Item": {
+                "doctype": "Request for Quotation Item",
+                "field_map": {
+                    "item_code": "item_code",
+                    "item_name": "item_name",
+                    "description": "description",
+                },
+                "postprocess": update_item,
+                "condition": lambda doc: doc.item_code and not doc.reject_item
+            }
+        },
+        target_doc,
+        set_missing_values
+    )
+    
+    return doclist
+
+
+
+@frappe.whitelist()
+def make_supplier_quotation(source_name, target_doc=None):
+    def set_missing_values(source, target):
+        target.transaction_date = nowdate()
+        target.status = "Draft"
+        target.company = source.company
+        
+    def update_item(source_doc, target_doc, source_parent):
+        ordered = source_doc.ordered_qty or 0
+        purchase_qty = source_doc.qty or 0
+        remaining_qty = purchase_qty - ordered
+        
+        target_doc.qty = remaining_qty
+        target_doc.stock_qty = remaining_qty * (source_doc.conversion_factor or 1)
+        target_doc.uom = source_doc.uom
+        target_doc.stock_uom = source_doc.stock_uom
+        target_doc.conversion_factor = source_doc.conversion_factor
+        target_doc.warehouse = source_doc.warehouse or source_doc.t_warehouse
+        target_doc.project = source_parent.project
+
+        if source_doc.rate:
+            target_doc.rate = source_doc.rate
+            target_doc.amount = remaining_qty * source_doc.rate
+        
+        
+    doclist = get_mapped_doc(
+        "Request for Material",
+        source_name,
+        {
+            "Request for Material": {
+                "doctype": "Supplier Quotation",
+                "validation": {
+                    "docstatus": ["=", 1]
+                }
+            },
+            "Request for Material Item": {
+                "doctype": "Supplier Quotation Item",
+                "field_map": {
+                    "item_code": "item_code",
+                    "item_name": "item_name",
+                    "description": "description",
+                },
+                "postprocess": update_item,
+                "condition": lambda doc: doc.item_code and not doc.reject_item and (doc.ordered_qty or 0) < (doc.qty or 0)
+            }
+        },
+        target_doc,
+        set_missing_values
+    )
+    
+    return doclist

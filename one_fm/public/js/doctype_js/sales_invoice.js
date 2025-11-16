@@ -473,7 +473,7 @@ var get_contracts_items = function(frm){
 };
 
 function setup_contract_item_category_requirements(frm) {
-    if (frm.doc.custom_refundable == 1) {
+    if (frm.doc.custom_refundable) {
         frm.fields_dict.items.grid.update_docfield_property(
             'custom_contract_item_category',
             'only_select',
@@ -786,8 +786,7 @@ function calculate_margin_for_item(frm, cdt, cdn) {
 }
 
 function setup_contract_item_category_filter(frm) {
-    if (frm.doc.custom_refundable == 1) {
-        console.log("Setting up contract item category filter");
+    if (frm.doc.custom_refundable) {
         frm.set_query('custom_contract_item_category', 'items', function(doc, cdt, cdn) {
         if (!doc.customer || !doc.project) {
             frappe.msgprint(__('Please select Customer and Project first'));
@@ -807,7 +806,7 @@ function setup_contract_item_category_filter(frm) {
 }
 
 function clear_contract_categories(frm) {
-    if (frm.doc.items && frm.doc.custom_refundable == 1) {
+    if (frm.doc.items && frm.doc.custom_refundable) {
         frm.doc.items.forEach(function(item) {
             frappe.model.set_value(item.doctype, item.name, 'custom_contract_item_category', '');
         });

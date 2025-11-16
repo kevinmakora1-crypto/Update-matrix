@@ -30,6 +30,7 @@ $.extend(frappe.meta, {
     //     return print_format_list;
     // },
 });
+
 frappe.ui.form.on('Sales Invoice', {
     validate: function(frm){
         if(frm.doc.__islocal || frm.doc.docstatus==0){
@@ -40,6 +41,8 @@ frappe.ui.form.on('Sales Invoice', {
         
     },
 	refresh(frm) {
+        setup_contract_item_category_requirements(frm) 
+        setup_contract_item_category_filter(frm);
         toggle_items_add_row(frm);
         add_get_items_from_purchase_invoice(frm);
         show_currency_exchange_info(frm);
@@ -63,7 +66,9 @@ frappe.ui.form.on('Sales Invoice', {
     custom_contract_item_categorywise_summary_on_form_rendered: function(frm) {
         toggle_items_add_row(frm);
     },
-     customer: function(frm){
+    customer: function(frm){
+        setup_contract_item_category_filter(frm);
+        clear_contract_categories(frm);
         if(frm.doc.project){
             frappe.call({
                 method: 'frappe.client.get_value',
@@ -103,6 +108,8 @@ frappe.ui.form.on('Sales Invoice', {
         })
     },
     project: function(frm){
+        setup_contract_item_category_filter(frm);
+        clear_contract_categories(frm);
         //clear timesheet detalis and total billing amount
         frm.clear_table("timesheets");
         frm.set_value("total_billing_amount",null);
@@ -192,6 +199,8 @@ frappe.ui.form.on('Sales Invoice', {
     },
     custom_refundable: function(frm) {
         update_all_items_field(frm, 'custom_refundable', frm.doc.custom_refundable);
+        setup_contract_item_category_requirements(frm);
+        setup_contract_item_category_filter(frm);
     },
     custom_margin_type: function(frm) {
         update_all_items_field(frm, 'margin_type', frm.doc.custom_margin_type);
@@ -209,7 +218,7 @@ frappe.ui.form.on('Sales Invoice', {
 
 frappe.ui.form.on('Sales Invoice Item', {
     items_add: function(frm, cdt, cdn) {
-        
+        setup_contract_item_category_requirements(frm);
         
         if (frm.doc.custom_refundable) {
             frappe.model.set_value(cdt, cdn, 'custom_refundable', frm.doc.custom_refundable);
@@ -238,8 +247,9 @@ frappe.ui.form.on('Sales Invoice Item', {
     
     rate: function(frm, cdt, cdn) {
         calculate_margin_for_item(frm, cdt, cdn);
-    }
+    },
 });
+
 
 function toggle_items_add_row(frm) {
     if (frm.doc.custom_contract_item_categorywise_summary && 
@@ -461,6 +471,18 @@ var get_contracts_items = function(frm){
         }
     })
 };
+
+function setup_contract_item_category_requirements(frm) {
+    if (frm.doc.custom_refundable) {
+        frm.fields_dict.items.grid.update_docfield_property(
+            'custom_contract_item_category',
+            'only_select',
+            1
+        );
+    }
+    
+    frm.refresh_field('items');
+}
 
 
 function add_get_items_from_purchase_invoice(frm) {
@@ -762,3 +784,32 @@ function calculate_margin_for_item(frm, cdt, cdn) {
         frappe.model.set_value(cdt, cdn, 'rate_with_margin', 0);
     }
 }
+
+function setup_contract_item_category_filter(frm) {
+    if (frm.doc.custom_refundable) {
+        frm.set_query('custom_contract_item_category', 'items', function(doc, cdt, cdn) {
+        if (!doc.customer || !doc.project) {
+            frappe.msgprint(__('Please select Customer and Project first'));
+            return { filters: { 'name': ['=', ''] } }; 
+        }
+        
+        return {
+            query: 'one_fm.overrides.sales_invoice.get_filtered_contract_item_categories',
+            filters: {
+                'customer': doc.customer,
+                'project': doc.project
+            }
+        };
+    });
+
+    }
+}
+
+function clear_contract_categories(frm) {
+    if (frm.doc.items && frm.doc.custom_refundable) {
+        frm.doc.items.forEach(function(item) {
+            frappe.model.set_value(item.doctype, item.name, 'custom_contract_item_category', '');
+        });
+    }
+}
+

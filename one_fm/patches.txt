@@ -205,7 +205,7 @@ one_fm.patches.v15_0.update_asset_owner_options
 one_fm.patches.v15_0.update_fingerprint_appointment_workflow #2025-11-11
 one_fm.patches.v15_0.update_rfp_workflow #2025-11-12
 one_fm.patches.v15_0.update_erf_2025_00057_designation
-one_fm.patches.v15_0.update_sales_invoice_item
+one_fm.patches.v15_0.update_sales_invoice_item #rerun
 one_fm.patches.v15_0.add_user_title_field_property_setter
 one_fm.patches.v15_0.add_on_the_job_training_workflow
 one_fm.patches.v15_0.update_shift_assignment

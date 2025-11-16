@@ -10,6 +10,8 @@ class SalesInvoiceOverride(SalesInvoice):
     def validate(self):
         super(SalesInvoiceOverride, self).validate()
         self.update_purchase_invoice_link()
+        if self.custom_refundable:
+            self.validate_contract_item_categories()
 
     def on_submit(self):
         super(SalesInvoiceOverride, self).on_submit()
@@ -135,3 +137,77 @@ class SalesInvoiceOverride(SalesInvoice):
                 )
                 
                 frappe.db.commit()
+    
+    def validate_contract_item_categories(self):
+        for item in self.items:
+            if not item.custom_contract_item_category:
+                frappe.throw(
+                    _("Row #{0}: Contract Item Category is mandatory for Refundable Sales Invoices")
+                    .format(item.idx)
+                )
+            
+            if self.customer and self.project:
+                contract = frappe.db.get_value(
+                    'Contracts',
+                    {'client': self.customer, 'project': self.project},
+                    'name'
+                )
+                
+                if contract:
+                    valid_category = frappe.db.exists(
+                        'Contract Item',
+                        {
+                            'parent': contract,
+                            'item_type': 'Items',
+                            'contract_item_category': item.custom_contract_item_category
+                        }
+                    )
+                    
+                    if not valid_category:
+                        frappe.throw(
+                            _("Row #{0}: '{1}' is not a valid category for this Contract")
+                            .format(item.idx, item.custom_contract_item_category)
+                        )
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_filtered_contract_item_categories(doctype, txt, searchfield, start, page_len, filters):
+
+    customer = filters.get('customer')
+    project = filters.get('project')
+    
+    if not customer or not project:
+        return []
+    
+
+    contract = frappe.db.get_value(
+        'Contracts',
+        {
+            'client': customer,
+            'project': project
+        },
+        'name'
+    )
+    
+    if not contract:
+        frappe.msgprint(_("No contract found for Customer: {0} and Project: {1}").format(customer, project))
+        return []
+    
+    categories = frappe.db.sql("""
+        SELECT DISTINCT ci.contract_item_category
+        FROM `tabContract Item` ci
+        WHERE ci.parent = %(contract)s
+        AND ci.item_type = 'Items'
+        AND ci.contract_item_category IS NOT NULL
+        AND ci.contract_item_category != ''
+        AND ci.contract_item_category LIKE %(txt)s
+        ORDER BY ci.contract_item_category
+        LIMIT %(page_len)s OFFSET %(start)s
+    """, {
+        'contract': contract,
+        'txt': '%{}%'.format(txt),
+        'start': start,
+        'page_len': page_len
+    }, as_dict=False)
+    
+    return categories

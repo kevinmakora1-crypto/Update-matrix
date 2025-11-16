@@ -190,6 +190,33 @@ def get_shift_assignment_custom_fields():
                 "options": "Location",
                 "fetch_from": "event_staff.event_location",
                 "read_only": 1
-            }
+            },
+            {
+                "fieldname": "custom_designation",
+                "label": "Designation",
+                "fieldtype": "Link",
+                "insert_after": "status",
+                "options": "Designation",
+                "fetch_from": "employee.designation",
+                "depends_on": "eval:doc.is_event_based_shift == 1",
+            },
+            {
+                "fieldname": "employee_is_replaced",
+                "label": " Employee Is Replaced",
+                "fieldtype": "Check",
+                "insert_after": "employee_schedule",
+            },
+            {
+                "fieldname": "custom_on_the_job_training",
+                "label": "On the Job Training",
+                "fieldtype": "Link",
+                "insert_after": "event_location",
+                "options": "On the Job Training",
+                "fetch_from": "employee_schedule.on_the_job_training",
+                "read_only": 1,
+                "search_index": 1
+            },
+
+
         ]
     }

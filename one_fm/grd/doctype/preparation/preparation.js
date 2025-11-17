@@ -24,6 +24,15 @@ frappe.ui.form.on('Preparation Record',{
 	civil_id_amount: function(frm, cdt, cdn) {
 		var child = locals[cdt][cdn];
 		caclulate_renewal_extension_cost_total(frm, child);
+	},
+	employee: function(frm, cdt, cdn){
+		// Debounced batch fetch to avoid multiple quick calls
+		if(!frm._employee_dates_timeout){
+			frm._employee_dates_timeout = setTimeout(() => {
+				fetch_employee_dates_batch(frm);
+				frm._employee_dates_timeout = null;
+			}, 300);
+		}
 	}
 });
 
@@ -81,28 +90,25 @@ frappe.ui.form.on("Preparation", {
 				cur_frm.fields_dict.preparation_record.grid.update_docfield_property("medical_insurance_amount", "allow_on_submit", 0);
 				cur_frm.fields_dict.preparation_record.grid.update_docfield_property("residency_stamp_amount", "allow_on_submit", 0);
 				cur_frm.fields_dict.preparation_record.grid.update_docfield_property("civil_id_amount", "allow_on_submit", 0);
+				
+				// Fetch dates on refresh (covers load & reload)
+				fetch_employee_dates_batch(frm);
 			}
 		}
-		// Fetch dates on refresh (covers load & reload)
 
 	},
-	onload: function(frm){
-		fetch_employee_dates_batch(frm);
-	}
+	set_renewal_for_all: function(frm) {
+		frappe.call({
+			doc: frm.doc,
+			method: 'set_renewal_for_all_preparation_record',
+			args: {'renew_all': frm.doc.set_renewal_for_all},
+			callback: function(r) {
+				frm.refresh_field('preparation_record');
+			}
+		})
+	},
 });
 
-// Also react when an employee changes in child rows
-frappe.ui.form.on('Preparation Record', {
-	employee: function(frm, cdt, cdn){
-		// Debounced batch fetch to avoid multiple quick calls
-		if(!frm._employee_dates_timeout){
-			frm._employee_dates_timeout = setTimeout(() => {
-				fetch_employee_dates_batch(frm);
-				frm._employee_dates_timeout = null;
-			}, 300);
-		}
-	}
-});
 
 function fetch_employee_dates_batch(frm){
 	if(!frm.doc.preparation_record || frm.doc.preparation_record.length === 0){

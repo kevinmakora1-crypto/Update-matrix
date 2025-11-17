@@ -18,7 +18,7 @@ class AssetMovement(Document):
             return
 
         item_quantities = {}
-        for item in self.items:
+        for item in self.assets:
             if item.rfm_item_reference:
                 item_quantities.setdefault(item.rfm_item_reference, 0)
                 item_quantities[item.rfm_item_reference] += 1

@@ -11,6 +11,21 @@ class EventStaff(Document):
 		self.validate_date()
 		self.validate_staffing_requirement()
 		self.validate_overlapping_event_staff()
+		self.validate_overlapping_schedules()
+
+	def validate_overlapping_schedules(self):
+		if not self.employee or not self.start_date or not self.end_date:
+			return
+		overlapping_schedules = frappe.get_all(
+			"Employee Schedule",
+			filters={
+				"employee": self.employee,
+				"docstatus": 1,
+				"date": ["between", [self.start_date, self.end_date]]
+			}
+		)
+		if overlapping_schedules:
+			frappe.throw(f"{self.employee} already scheduled during the selected date range")
 
 	def validate_overlapping_event_staff(self):
 		if not self.employee or not self.client_event or not self.start_date or not self.end_date or not self.designation:
@@ -119,3 +134,36 @@ class EventStaff(Document):
 			"start_datetime": start_datetime,
 			"end_datetime": end_datetime
 		}
+
+	def on_update(self):
+		self.delete_future_employee_schedules()
+
+	def on_cancel(self):
+		self.cancel_employee_schedules()
+
+	def delete_future_employee_schedules(self):
+		if not self.get("amended_from"):
+			return
+		old_doc = self.get_doc_before_save()
+		if getdate(self.end_date) < getdate(old_doc.end_date):
+			frappe.db.delete(
+				"Employee Schedule",
+				{
+					"event_staff": self.name,
+					"date": [">", self.end_date]
+				}
+			)
+
+	def cancel_employee_schedules(self):
+		schedules = frappe.get_all(
+			"Employee Schedule",
+			filters={
+				"event_staff": self.name,
+				"docstatus": 1
+			},
+			pluck="name"
+		)
+		for schedule in schedules:
+			doc = frappe.get_doc("Employee Schedule", schedule)
+			if getdate(doc.date) > getdate(frappe.utils.nowdate()):
+				doc.cancel()

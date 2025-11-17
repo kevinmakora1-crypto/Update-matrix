@@ -173,15 +173,20 @@ one_fm.patches.v15_0.add_update_workflow #2025-10-14
 one_fm.patches.v15_0.update_hd_ticket_bug_buster_assignment
 one_fm.patches.v15_0.update_timesheet_records
 one_fm.patches.v15_0.update_purchase_order_workflow
-one_fm.patches.v15_0.update_item_workflow_state
+one_fm.patches.v15_0.update_item_workflow_state #2025-11-10
 one_fm.patches.v15_0.update_project_details
 one_fm.patches.v15_0.add_employee_uniform_workflow
 one_fm.patches.v15_0.add_update_custom_field #2025-10-17
 one_fm.patches.v15_0.update_rfp_records
 one_fm.patches.v15_0.update_purchase_order_property_setter
 one_fm.patches.v15_0.sync_old_google_tasks
+one_fm.patches.v15_0.update_rfp_workflow #2025-11-09
+one_fm.patches.v15_0.update_erf_2025_00057_designation
 
 [post_model_sync]
+one_fm.patches.v15_0.add_workflow_pathfinder_log #1
+one_fm.patches.v15_0.add_assignment_rule_pathfinder_log_business_analyst #1
+one_fm.patches.v15_0.add_assignment_rule_pathfinder_log_process_owner #1
 one_fm.patches.v15_0.add_assignment_rule_assign_rfp_to_purchase_officer #re-run
 one_fm.patches.v15_0.add_assignment_rule_assign_to_purchase_manager_for_approval #re-run
 one_fm.patches.v15_0.add_assignment_rule_assign_rfp_owner_on_rfp_return_to_draft #re-run

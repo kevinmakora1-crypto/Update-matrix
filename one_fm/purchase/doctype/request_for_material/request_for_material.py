@@ -1231,3 +1231,4 @@ def make_asset_movement(source_name, target_doc=None):
 
     asset_movement.insert(ignore_permissions=True)
     return asset_movement
+	}

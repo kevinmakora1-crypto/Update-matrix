@@ -6,7 +6,7 @@ def execute():
     create_custom_fields({
         "Asset Movement": [
             {
-                "fieldname": "request_for_material",
+                "fieldname": "rfm_reference",
                 "fieldtype": "Link",
                 "label": "Request for Material",
                 "options": "Request for Material",
@@ -17,7 +17,7 @@ def execute():
         ],
         "Asset Movement Item": [
             {
-                "fieldname": "request_for_material_item",
+                "fieldname": "rfm_item_reference",
                 "fieldtype": "Link",
                 "label": "Request for Material Item",
                 "options": "Request for Material Item",

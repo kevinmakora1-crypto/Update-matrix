@@ -7,34 +7,12 @@ erpnext.TransactionController = erpnext.taxes_and_totals.extend({
 		frappe.flags.hide_serial_batch_dialog = false;
 		frappe.ui.form.on(this.frm.doctype + " Item", "rate", function(frm, cdt, cdn) {
 			var item = frappe.get_doc(cdt, cdn);
-			var has_margin_field = frappe.meta.has_field(cdt, 'margin_type');
+			
 
 			frappe.model.round_floats_in(item, ["rate", "price_list_rate"]);
 
-			if(item.price_list_rate) {
-				if(item.rate > item.price_list_rate && has_margin_field) {
-					// if rate is greater than price_list_rate, set margin
-					// or set discount
-					item.discount_percentage = 0;
-					item.margin_type = 'Amount';
-					item.margin_rate_or_amount = flt(item.rate - item.price_list_rate,
-						precision("margin_rate_or_amount", item));
-					item.rate_with_margin = item.rate;
-				} else {
-					item.discount_percentage = flt((1 - item.rate / item.price_list_rate) * 100.0,
-						precision("discount_percentage", item));
-					item.discount_amount = flt(item.price_list_rate) - flt(item.rate);
-					item.margin_type = '';
-					item.margin_rate_or_amount = 0;
-					item.rate_with_margin = 0;
-				}
-			} else {
-				item.discount_percentage = 0.0;
-				item.margin_type = '';
-				item.margin_rate_or_amount = 0;
-				item.rate_with_margin = 0;
-			}
-			item.base_rate_with_margin = item.rate_with_margin * flt(frm.doc.conversion_rate);
+			
+			
 
 			cur_frm.cscript.set_gross_profit(item);
 			cur_frm.cscript.calculate_taxes_and_totals();
@@ -794,7 +772,7 @@ erpnext.TransactionController = erpnext.taxes_and_totals.extend({
 			this.get_exchange_rate(transaction_date, this.frm.doc.currency, company_currency,
 				function(exchange_rate) {
 					if(exchange_rate != me.frm.doc.conversion_rate) {
-						me.set_margin_amount_based_on_currency(exchange_rate);
+						
 						me.set_actual_charges_based_on_currency(exchange_rate);
 						me.frm.set_value("conversion_rate", exchange_rate);
 					}
@@ -844,17 +822,7 @@ erpnext.TransactionController = erpnext.taxes_and_totals.extend({
 		}
 	},
 
-	set_margin_amount_based_on_currency: function(exchange_rate) {
-		if (in_list(["Quotation", "Sales Order", "Delivery Note", "Sales Invoice"]), this.frm.doc.doctype) {
-			var me = this;
-			$.each(this.frm.doc.items || [], function(i, d) {
-				if(d.margin_type == "Amount") {
-					frappe.model.set_value(d.doctype, d.name, "margin_rate_or_amount",
-						flt(d.margin_rate_or_amount) / flt(exchange_rate));
-				}
-			});
-		}
-	},
+	
 
 	set_actual_charges_based_on_currency: function(exchange_rate) {
 		var me = this;
@@ -1270,10 +1238,7 @@ erpnext.TransactionController = erpnext.taxes_and_totals.extend({
 				});
 
 				// if doctype is Quotation Item / Sales Order Iten then add Margin Type and rate in item_list
-				if (in_list(["Quotation Item", "Sales Order Item", "Delivery Note Item", "Sales Invoice Item"]), d.doctype){
-					item_list[0]["margin_type"] = d.margin_type;
-					item_list[0]["margin_rate_or_amount"] = d.margin_rate_or_amount;
-				}
+				
 			}
 		};
 
@@ -1424,11 +1389,7 @@ erpnext.TransactionController = erpnext.taxes_and_totals.extend({
 						row[f] = 0;
 					});
 
-					["pricing_rules", "margin_type"].forEach(field => {
-						if (row[field]) {
-							row[field] = '';
-						}
-					})
+					
 				}
 			});
 

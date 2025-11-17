@@ -16,7 +16,6 @@
   "transfer_paper",
   "column_break_8",
   "work_permit_type",
-  "work_permit_status",
   "reason_of_rejection",
   "details_of_rejection",
   "employee_last_checkin",
@@ -86,12 +85,6 @@
   "work_permit_salary",
   "duration_of_work_permit",
   "visa_reference_number",
-  "section_break_46",
-  "work_contract",
-  "column_break_62",
-  "salary_certificate",
-  "column_break_64",
-  "iqrar",
   "new_passport_details_section",
   "new_passport_type",
   "new_passport_number",
@@ -318,20 +311,8 @@
   },
   {
    "allow_on_submit": 1,
-   "default": "Draft",
-   "fieldname": "work_permit_status",
-   "fieldtype": "Select",
-   "in_standard_filter": 1,
-   "label": "Work Permit Status",
-   "no_copy": 1,
-   "options": "\nDraft\nPending by Supervisor\nPending by Operator\nPending by Previous Company\nPending by Supervisor for Payment\nCompleted\nClosed\nRejected",
-   "read_only": 1,
-   "translatable": 1
-  },
-  {
-   "allow_on_submit": 1,
    "default": "0",
-   "depends_on": "eval: doc.work_permit_status=='Approved'",
+   "depends_on": "eval: doc.workflow_state=='Approved'",
    "fieldname": "payment_transferred_from_finance_dept",
    "fieldtype": "Check",
    "label": "Payment Transferred From Finance Dept",
@@ -340,7 +321,7 @@
   },
   {
    "allow_on_submit": 1,
-   "depends_on": "eval: doc.work_permit_status=='Approved'",
+   "depends_on": "eval: doc.workflow_state=='Approved'",
    "fieldname": "notify_finance_user",
    "fieldtype": "Link",
    "label": "Notify Finance User",
@@ -365,7 +346,7 @@
   },
   {
    "allow_on_submit": 1,
-   "depends_on": "eval: doc.work_permit_status=='Approved'",
+   "depends_on": "eval: doc.workflow_state=='Approved'",
    "fieldname": "amount_to_pay",
    "fieldtype": "Currency",
    "label": "Amount To Pay",
@@ -373,7 +354,7 @@
   },
   {
    "allow_on_submit": 1,
-   "depends_on": "eval: doc.work_permit_status=='Rejected'",
+   "depends_on": "eval: doc.workflow_state=='Rejected'",
    "fieldname": "reason_for_rejection",
    "fieldtype": "Data",
    "hidden": 1,
@@ -599,7 +580,7 @@
   {
    "allow_on_submit": 1,
    "collapsible": 1,
-   "collapsible_depends_on": "eval: doc.work_permit_status=='Approved'",
+   "collapsible_depends_on": "eval: doc.workflow_state=='Approved'",
    "fieldname": "section_break_60",
    "fieldtype": "Section Break",
    "hidden": 1,
@@ -629,14 +610,14 @@
    "options": "ref_doctype"
   },
   {
-   "depends_on": "eval:doc.work_permit_status == \"Rejected\"",
+   "depends_on": "eval:doc.workflow_state == \"Rejected\"",
    "fieldname": "reason_of_rejection",
    "fieldtype": "Select",
    "label": "Reason Of Rejection",
    "options": "\nRejected by PAM\nRejected by previous company"
   },
   {
-   "depends_on": "eval:doc.work_permit_status == \"Rejected\" ",
+   "depends_on": "eval:doc.workflow_state == \"Rejected\" ",
    "fieldname": "details_of_rejection",
    "fieldtype": "Small Text",
    "label": "Details of Rejection"
@@ -655,42 +636,11 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.work_permit_type != \"Cancellation\" && doc.work_permit_type != \"New Kuwaiti\"",
-   "fieldname": "section_break_46",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_62",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_64",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "0",
    "fieldname": "notify_to_upload",
    "fieldtype": "Check",
    "hidden": 1,
    "label": "Notify to Upload"
-  },
-  {
-   "allow_on_submit": 1,
-   "fieldname": "work_contract",
-   "fieldtype": "Attach",
-   "label": "Work Contract"
-  },
-  {
-   "allow_on_submit": 1,
-   "fieldname": "salary_certificate",
-   "fieldtype": "Attach",
-   "label": "Salary Certificate"
-  },
-  {
-   "allow_on_submit": 1,
-   "fieldname": "iqrar",
-   "fieldtype": "Attach",
-   "label": "Iqrar"
   },
   {
    "depends_on": "eval:doc.work_permit_type == \"Cancellation\" && doc.workflow_state != \"Draft\"",
@@ -858,7 +808,7 @@
    "options": "User"
   },
   {
-   "depends_on": "eval:doc.work_permit_status == \"Pending by Supervisor\" || doc.work_permit_status == \"Pending by Operator\" || doc.work_permit_status == \"Completed\"",
+   "depends_on": "eval:doc.workflow_state == \"Pending by Supervisor\" || doc.workflow_state == \"Pending by Operator\" || doc.workflow_state == \"Completed\"",
    "fieldname": "payment_details_section_section",
    "fieldtype": "Section Break",
    "label": "Payment Details Section"
@@ -971,7 +921,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2025-10-25 21:14:09.876478",
+ "modified": "2025-11-03 15:36:45.697257",
  "modified_by": "Administrator",
  "module": "GRD",
  "name": "Work Permit",

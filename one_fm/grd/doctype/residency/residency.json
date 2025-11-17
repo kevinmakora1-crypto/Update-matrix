@@ -8,9 +8,8 @@
  "field_order": [
   "naming_series",
   "amended_from",
-  "apply_for",
   "column_break_6",
-  "reason_of_applying",
+  "apply_for",
   "section_break_8",
   "employee",
   "date_of_application",
@@ -497,12 +496,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "reason_of_applying",
-   "fieldtype": "Select",
-   "label": "Reason Of Applying",
-   "options": "\n\u0639\u0645\u0644 \u0623\u0647\u0644\u064a\n\u0644\u0644\u0633\u064a\u0627\u062d\u0629"
-  },
-  {
    "fieldname": "section_break_16",
    "fieldtype": "Section Break"
   },
@@ -527,7 +520,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2023-03-07 10:15:12.819781",
+ "modified": "2025-11-07 16:34:24.973261",
  "modified_by": "Administrator",
  "module": "GRD",
  "name": "Residency",
@@ -575,6 +568,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "date_of_application",
  "sort_order": "DESC",
  "states": [],

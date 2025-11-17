@@ -737,7 +737,7 @@ def assign_am_shift():
 			SELECT * from `tabEmployee Schedule` ES
 			WHERE
 			ES.date = '{date}'
-			AND ES.employee_availability = "Working"
+			AND ES.employee_availability IN ("Working", "On-the-job Training")
 			AND ES.is_replaced = 0
 			AND ES.roster_type = "Basic"
 			AND ES.shift_type IN(
@@ -765,7 +765,7 @@ def assign_pm_shift():
 			SELECT * from `tabEmployee Schedule` ES
 			WHERE
 			ES.date = '{date}'
-			AND ES.employee_availability = "Working"
+			AND ES.employee_availability IN ("Working", "On-the-job Training")
 			AND ES.is_replaced = 0
 			AND ES.roster_type = "Basic"
 			AND ES.shift_type IN(
@@ -805,8 +805,6 @@ def get_shift_type(time):
 
 def create_shift_assignment(roster, date, time):
 	try:
-		
-		
 		owner = frappe.session.user
 		creation = now()
 		shift_type = get_shift_type(time)
@@ -868,7 +866,7 @@ def create_shift_assignment(roster, date, time):
 				INSERT INTO `tabShift Assignment` (`name`, `company`, `docstatus`, `employee`, `employee_name`, `shift_type`, `site`, `project`, `status`,
 				`shift_classification`, `site_location`, `start_date`, `start_datetime`, `end_datetime`, `department`,
 				`shift`, `operations_role`, `post_abbrv`, `roster_type`, `owner`, `modified_by`, `creation`, `modified`,
-				`shift_request`, `check_in_site`, `check_out_site`,`custom_day_off_ot`)
+				`shift_request`, `check_in_site`, `check_out_site`,`custom_day_off_ot`, `employee_schedule`, `custom_on_the_job_training`)
 				VALUES
 			"""
 			query_body = """"""
@@ -895,7 +893,7 @@ def create_shift_assignment(roster, date, time):
 							"{_shift_request.site or ''}", "{_project_r or ''}", 'Active', '{_shift_request.shift_type}', "{sites_list_dict.get(_shift_request.site) or ''}", "{date}",
 							"{shift_r_start_time or str(date)+' 08:00:00'}", "{shift_r_end_time or str(date)+' 17:00:00'}", "{r.department}",
 							"{_shift_request.operations_shift or ''}", "{_shift_request.operations_role or ''}", "{r.post_abbrv or ''}", "{_shift_request.roster_type}",
-							"{owner}", "{owner}", "{creation}", "{creation}", "{_shift_request.name}", "{_shift_request.check_in_site}", "{_shift_request.check_out_site}","{_day_off_ot}"),"""
+							"{owner}", "{owner}", "{creation}", "{creation}", "{_shift_request.name}", "{_shift_request.check_in_site}", "{_shift_request.check_out_site}","{_day_off_ot}", "{r.name}", "{r.on_the_job_training if r.employee_availability == 'On-the-job Training' else ''}"),"""
 					else:
 						_shift_type = shift_types_dict.get(r.shift_type) or default_shift
 						query_body += f"""
@@ -904,7 +902,7 @@ def create_shift_assignment(roster, date, time):
 							"{r.site or ''}", "{r.project or ''}", 'Active', '{_shift_type.shift_type}', "{sites_list_dict.get(r.site) or ''}", "{date}",
 							"{_shift_type.start_datetime or str(date)+' 08:00:00'}",
 							"{_shift_type.end_datetime or str(date)+' 17:00:00'}", "{r.department}", "{r.shift or ''}", "{r.operations_role or ''}", "{r.post_abbrv or ''}", "{r.roster_type}",
-							"{owner}", "{owner}", "{creation}", "{creation}", '', '', '',"{_day_off_ot}"),"""
+							"{owner}", "{owner}", "{creation}", "{creation}", '', '', '',"{_day_off_ot}", '{r.name}', "{r.on_the_job_training if r.employee_availability == 'On-the-job Training' else ''}"),"""
 				else:
 					has_rostered.append(r.employee_name)
 
@@ -933,7 +931,9 @@ def create_shift_assignment(roster, date, time):
 					check_out_site = VALUES(check_out_site),
 					shift_classification = VALUES(shift_classification),
 					status = VALUES(status),
-					custom_day_off_ot = '{_day_off_ot}'
+					custom_day_off_ot = '{_day_off_ot}',
+					employee_schedule = VALUES(employee_schedule),
+					custom_on_the_job_training = VALUES(custom_on_the_job_training)
 				"""
 				frappe.db.sql(query, values=[], as_dict=1)
 				frappe.db.commit()

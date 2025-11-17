@@ -1,5 +1,11 @@
 import frappe
 from frappe import _
+from frappe.model.mapper import get_mapped_doc
+from frappe.utils import flt
+import json
+
+from erpnext.stock.doctype.purchase_receipt.purchase_receipt import PurchaseReceipt
+
 
 
 def get_rfm_in_purchase_receipt(doc):
@@ -122,3 +128,122 @@ def validate_item_batch(doc, method):
                     error_msg = "Manufacturing/Expiry date"
             if error_msg:
                 frappe.throw(_(error_msg + " - mandatory for Item {0}").format(batch_item))
+
+
+@frappe.whitelist()
+def make_purchase_receipt_invoice(source_name, target_doc=None, args=None):
+	if args is None:
+		args = {}
+	if isinstance(args, str):
+		args = json.loads(args)
+
+	def update_item(obj, target, source_parent):
+		target.qty = flt(obj.qty) - flt(obj.received_qty)
+		target.received_qty = flt(obj.qty) - flt(obj.received_qty)
+		target.stock_qty = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.conversion_factor)
+		target.amount = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate)
+		target.base_amount = (
+			(flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate) * flt(source_parent.conversion_rate)
+		)
+		
+		if target.get("custom_refundable"):
+			target.margin_type = None
+			target.margin_rate_or_amount = 0
+			target.rate_with_margin = 0
+
+	def select_item(d):
+		filtered_items = args.get("filtered_children", [])
+		child_filter = d.name in filtered_items if filtered_items else True
+		return child_filter
+
+	doc = get_mapped_doc(
+		"Purchase Invoice",
+		source_name,
+		{
+			"Purchase Invoice": {
+				"doctype": "Purchase Receipt",
+				"validation": {
+					"docstatus": ["=", 1],
+				},
+			},
+			"Purchase Invoice Item": {
+				"doctype": "Purchase Receipt Item",
+				"field_map": {
+					"name": "purchase_invoice_item",
+					"parent": "purchase_invoice",
+					"bom": "bom",
+					"purchase_order": "purchase_order",
+					"po_detail": "purchase_order_item",
+					"material_request": "material_request",
+					"material_request_item": "material_request_item",
+					"wip_composite_asset": "wip_composite_asset",
+                    "custom_refundable": "custom_refundable",
+					"margin_type": "margin_type",
+					"margin_rate_or_amount": "margin_rate_or_amount",
+				},
+				"postprocess": update_item,
+				"condition": lambda doc: abs(doc.received_qty) < abs(doc.qty) and select_item(doc),
+			},
+			"Purchase Taxes and Charges": {"doctype": "Purchase Taxes and Charges"},
+		},
+		target_doc,
+	)
+
+	return doc
+
+
+class PurchaseReceiptOverride(PurchaseReceipt):
+    def on_submit(self):
+        super(PurchaseReceiptOverride, self).on_submit()
+        self.update_refundable_assets()
+
+
+    def update_refundable_assets(self):
+        for item in self.items:
+            if not item.get('custom_refundable'):
+                continue
+
+            item_master = frappe.db.get_value(
+                'Item', 
+                item.item_code, 
+                ['is_fixed_asset', 'auto_create_assets'], 
+                as_dict=True
+            )
+            
+            if not item_master.is_fixed_asset:
+                continue
+            
+            if not item_master.auto_create_assets:
+                continue
+            
+            asset_name = frappe.db.get_value(
+                'Asset',
+                {
+                    'purchase_receipt': self.name,
+                    'purchase_receipt_item': item.name,
+                    'item_code': item.item_code
+                }
+            )
+            
+            if asset_name:
+                self.update_asset_for_refundable(asset_name, item)
+                frappe.msgprint(
+                    _("Updated asset {0} for refundable item {1}").format(asset_name, item.item_code),
+                    alert=True
+                )
+    
+    
+    def update_asset_for_refundable(self, asset_name, item):
+        asset = frappe.get_doc('Asset', asset_name)
+        
+        asset.custom_is_refundable = 1
+        asset.asset_owner = 'Customer'
+        asset.customer = self.custom_customer if self.custom_customer else None
+        
+        if not asset.available_for_use_date:
+            asset.available_for_use_date = self.posting_date
+        
+        asset.flags.ignore_validate_update_after_submit = True
+        asset.save(ignore_permissions=True)
+        
+        return asset.name

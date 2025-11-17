@@ -69,6 +69,7 @@ from one_fm.custom.property_setter.supplier import get_supplier_properties
 from one_fm.custom.property_setter.timesheet_detail import get_timesheet_detail_properties
 from one_fm.custom.property_setter.timesheet import get_timesheet_properties
 from one_fm.custom.property_setter.todo import get_todo_properties
+from one_fm.custom.property_setter.user import get_user_properties
 from one_fm.custom.property_setter.vehicle import get_vehicle_properties
 from one_fm.custom.property_setter.warehouse import get_warehouse_properties
 from one_fm.custom.property_setter.job_offer import get_job_offer_properties
@@ -152,5 +153,6 @@ def get_field_properties():
 	field_properties.extend(get_warehouse_properties())
 	field_properties.extend(get_hd_service_level_agreement_fulfilled_on_status_properties())
 	field_properties.extend(get_hd_pause_service_level_agreement_on_status_properties())
+	field_properties.extend(get_user_properties())
 
 	return field_properties

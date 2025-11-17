@@ -17,7 +17,7 @@
   "project",
   "site",
   "column_break_kirw",
-  "operations_role",
+  "designation",
   "start_date",
   "end_date",
   "start_datetime",
@@ -101,12 +101,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "operations_role",
-   "fieldtype": "Link",
-   "label": "Operations Role",
-   "options": "Operations Role"
-  },
-  {
    "fetch_from": "client_event.start_date",
    "fieldname": "start_date",
    "fieldtype": "Date",
@@ -159,6 +153,14 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fetch_if_empty": 1,
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation"
   }
  ],
  "grid_page_length": 50,
@@ -174,7 +176,7 @@
    "link_fieldname": "event_staff"
   }
  ],
- "modified": "2025-11-11 11:31:50.122447",
+ "modified": "2025-11-17 15:33:40.102418",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Event Staff",

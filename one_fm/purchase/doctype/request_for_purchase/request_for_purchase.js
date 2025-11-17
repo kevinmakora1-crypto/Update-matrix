@@ -318,6 +318,10 @@ frappe.ui.form.on('Request for Purchase', {
                 items_to_order.delivery_date = item.schedule_date;
                 items_to_order.request_for_material = item.request_for_material;
                 items_to_order.request_for_material_item = item.custom_request_for_material_item;
+                items_to_order.is_refundable = item.is_refundable || 0;
+                items_to_order.margin_known = item.margin_known || '';
+                items_to_order.margin_type = item.margin_type || '';
+                items_to_order.margin_rate_or_amount = item.margin_rate_or_amount || 0;
             });
             frm.refresh_fields();
             return;
@@ -357,10 +361,22 @@ frappe.ui.form.on('Request for Purchase', {
                 
                 let conversion_factor = rfm_item.conversion_factor || 1;
                 items_to_order.stock_qty = flt(item.qty || 0) * flt(conversion_factor);
+                
+                // Map margin fields from RFM item
+                items_to_order.is_refundable = rfm_item.is_refundable || 0;
+                items_to_order.margin_known = rfm_item.margin_known || '';
+                items_to_order.margin_type = rfm_item.margin_type || '';
+                items_to_order.margin_rate_or_amount = rfm_item.margin_rate_or_amount || 0;
             } else {
                 items_to_order.uom = item.uom;
                 items_to_order.conversion_factor = 1;
                 items_to_order.stock_qty = item.qty;
+                
+                // Fallback to item's own margin fields if RFM item not found
+                items_to_order.is_refundable = item.is_refundable || 0;
+                items_to_order.margin_known = item.margin_known || '';
+                items_to_order.margin_type = item.margin_type || '';
+                items_to_order.margin_rate_or_amount = item.margin_rate_or_amount || 0;
             }
         });
         

@@ -28,6 +28,22 @@ def get_purchase_receipt_item_custom_fields():
                 "fieldtype": "Date",
                 "insert_after": "manufacturing_date",
                 "depends_on": "eval:!doc.is_fixed_asset"
-            }
+            },
+            {
+                "label": "Refundable",
+                "fieldname": "custom_refundable",
+                "insert_after": "rate_with_margin",
+                "fieldtype": "Check",
+                "read_only": 1,
+            },
+            {
+                "fieldname": "margin_known",
+                "fieldtype": "Select",
+                "label": "Margin Known",
+                "options": "\nYes\nNo",
+                "read_only": 1,
+                "insert_after": "discount_and_margin_section"
+
+            },
         ]
     }

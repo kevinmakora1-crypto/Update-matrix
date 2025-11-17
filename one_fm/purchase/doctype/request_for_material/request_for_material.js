@@ -144,6 +144,8 @@ frappe.ui.form.on('Request for Material', {
 		frm.events.make_custom_buttons(frm);
 		add_stock_entry_buttons(frm);
 		set_item_field_property(frm);
+		add_request_for_quotation_button(frm);
+		add_supplier_quotation_button(frm);
 		let status = ['Draft', 'Accepted', 'Approved', 'Rejected', 'Transferred'];
 		if(status.includes(frm.doc.status) && frm.doc.docstatus == 1){
 			frm.set_df_property('status', 'options', status);
@@ -536,10 +538,31 @@ frappe.ui.form.on('Request for Material', {
 	},
 	site: function(frm) {
 		set_warehouse_filters(frm);
-	}
+	},
+	is_refundable: function(frm) {
+		sync_child_table(frm, 'is_refundable');
+	},
+	margin_known: function(frm) {
+		sync_child_table(frm, 'margin_known');
+	},
+	margin_type: function(frm) {
+		sync_child_table(frm, 'margin_type');
+	},
+	margin_rate_or_amount: function(frm) {
+		sync_child_table(frm, 'margin_rate_or_amount');
+	},
+	
 });
 
-
+function sync_child_table(frm, fieldname) {
+	if (!frm.doc.items || frm.doc.items.length === 0) return;
+	
+	frm.doc.items.forEach(function(item) {
+		frappe.model.set_value(item.doctype, item.name, fieldname, frm.doc[fieldname]);
+	});
+	
+	frm.refresh_field('items');
+}
 
 function add_stock_entry_buttons(frm) {
     if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved') {
@@ -684,18 +707,7 @@ var set_t_warehouse_hidden = function(frm) {
 	}
 }
 
-frappe.ui.form.on('Request for Material Item', { // The child table is defined in a DoctType called "Dynamic Link"
-	items_on_form_rendered: (frm) => {
-	},
-	before_items_remove: (frm) => {
-	},
-	items_add: (frm) => {
-	},
-	items_remove: (frm) => {
-	},
-	items_move: (frm) => {
-	},
-});
+
 
 var set_filters = function(frm) {
 	frm.set_query("erf", function() {
@@ -900,6 +912,7 @@ var set_employee_or_project = function(frm) {
 		frm.set_value('project', '');
 	}
 };
+
 
 
 frappe.ui.form.on("Request for Material Item", {
@@ -1146,6 +1159,32 @@ frappe.ui.form.on("Request for Material Item", {
 			});
 			dialog.show();
 		}
+	},
+	items_on_form_rendered: (frm) => {
+	},
+	before_items_remove: (frm) => {
+	},
+	items_add: function(frm, cdt, cdn) {
+
+		frappe.model.set_value(cdt, cdn, 'is_refundable', frm.doc.is_refundable || 0);
+		frappe.model.set_value(cdt, cdn, 'margin_known', frm.doc.margin_known || '');
+		frappe.model.set_value(cdt, cdn, 'margin_type', frm.doc.margin_type || '');
+		frappe.model.set_value(cdt, cdn, 'margin_rate_or_amount', frm.doc.margin_rate_or_amount || 0);
+	},
+	items_remove: (frm) => {
+	},
+	items_move: (frm) => {
+	},
+	is_refundable: function(frm, cdt, cdn) {
+		frm.refresh_field('items');
+	},
+	margin_known: function(frm, cdt, cdn) {
+		frm.refresh_field('items');
+	},
+	margin_type: function(frm, cdt, cdn) {
+		frm.refresh_field('items');
+	},
+	margin_rate_or_amount: function(frm, cdt, cdn) {
 	}
 });
 
@@ -1239,4 +1278,44 @@ function add_purchase_rfm_button(frm){
 		frm.page.set_inner_btn_group_as_primary(__('Create'));
 	}
 
+}
+
+
+function add_request_for_quotation_button(frm){
+    if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved' && frm.doc.purpose === 'Purchase') {
+        let has_pending_items = frm.doc.items.some(item => {
+            let ordered = item.ordered_qty || 0;
+            let purchase_qty = item.qty || 0;
+            return ordered < purchase_qty;
+        });
+
+        
+        if (has_pending_items) {
+            frm.page.add_inner_button(__('Request for Quotation'), function() {
+                frappe.model.open_mapped_doc({
+                    method: 'one_fm.purchase.doctype.request_for_material.request_for_material.make_request_for_request_for_quotation',
+                    frm: frm
+                });
+            }, __('Create'));
+        }
+    }
+}
+
+function add_supplier_quotation_button(frm){
+    if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved' && frm.doc.purpose === 'Purchase') {
+        let has_pending_items = frm.doc.items.some(item => {
+            let ordered = item.ordered_qty || 0;
+            let purchase_qty = item.qty || 0;
+            return ordered < purchase_qty;
+        });
+        
+        if (has_pending_items) {
+            frm.page.add_inner_button(__('Supplier Quotation'), function() {
+                frappe.model.open_mapped_doc({
+                    method: 'one_fm.purchase.doctype.request_for_material.request_for_material.make_supplier_quotation',
+                    frm: frm
+                });
+            }, __('Create'));
+        }
+    }
 }

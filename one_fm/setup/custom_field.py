@@ -57,6 +57,7 @@ from one_fm.custom.custom_field.price_list import get_price_list_custom_fields
 from one_fm.custom.custom_field.project import get_project_custom_fields
 from one_fm.custom.custom_field.project_type import get_project_type_custom_fields
 from one_fm.custom.custom_field.purchase_invoice import get_purchase_invoice_custom_fields
+from one_fm.custom.custom_field.purchase_invoice_item import get_purchase_invoice_item_custom_fields
 from one_fm.custom.custom_field.purchase_order import get_purchase_order_custom_fields
 from one_fm.custom.custom_field.purchase_order_item import get_purchase_order_item_custom_fields
 from one_fm.custom.custom_field.purchase_receipt import get_purchase_receipt_custom_fields
@@ -92,6 +93,7 @@ from one_fm.custom.custom_field.issue import get_issue_custom_fields
 from one_fm.custom.custom_field.loan_product import get_loan_product_custom_fields
 from one_fm.custom.custom_field.repayment_schedule import get_repayment_schedule_custom_fields
 from one_fm.custom.custom_field.hd_agent import get_hd_agent_custom_fields
+from one_fm.custom.custom_field.request_for_quotation_item import get_request_for_quotation_item_custom_fields
 
 def get_custom_fields():
 	"""ONEFM specific custom fields that need to be added to the masters in ERPNext"""
@@ -131,6 +133,7 @@ def get_custom_fields():
 	custom_fields.update(get_stock_entry_custom_fields())
 	custom_fields.update(get_payroll_employee_detail_custom_fields())
 	custom_fields.update(get_purchase_invoice_custom_fields())
+	custom_fields.update(get_purchase_invoice_item_custom_fields())
 	custom_fields.update(get_stock_entry_detail_custom_fields())
 	custom_fields.update(get_hr_settings_custom_fields())
 	custom_fields.update(get_employment_type_custom_fields())
@@ -188,5 +191,6 @@ def get_custom_fields():
 	custom_fields.update(get_loan_product_custom_fields())
 	custom_fields.update(get_repayment_schedule_custom_fields())
 	custom_fields.update(get_hd_agent_custom_fields())
+	custom_fields.update(get_request_for_quotation_item_custom_fields())
 
 	return custom_fields

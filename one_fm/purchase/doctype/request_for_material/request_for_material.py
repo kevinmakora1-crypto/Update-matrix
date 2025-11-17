@@ -23,7 +23,6 @@ from one_fm.utils import get_users_with_role_permitted_to_doctype
 from frappe.desk.form.assign_to import add as add_assignment, DuplicateToDoError, remove as remove_assignment, close_all_assignments
 
 class RequestforMaterial(BuyingController):
-    
     @frappe.whitelist()
     def get_conversion_factor(self, item_code, uom):
         edit_row = 0
@@ -1201,34 +1200,65 @@ def make_supplier_quotation(source_name, target_doc=None):
     )
     
     return doclist
+
 @frappe.whitelist()
 def make_asset_movement(source_name, target_doc=None):
-    source_doc = frappe.get_doc("Request for Material", source_name)
+    """
+    Create Asset Movement from Request for Material
+    """
+    def post_process(source, target):
+        """Create multiple rows for each asset based on pending quantity"""
+        target.assets = []  # Clear any existing items
 
-    if not (source_doc.docstatus == 1 and source_doc.workflow_state == "Approved"):
-        frappe.throw(_("Asset Movement can only be created from an Approved Request for Material."))
+        for item in source.items:
+            # Only process fixed asset items with pending quantity
+            if item.is_fixed_asset and item.custom_pending_quantity > 0:
+                # Create rows based on pending quantity
+                for i in range(int(item.custom_pending_quantity)):
+                    asset_item = target.append('assets', {})
+                    asset_item.rfm_item_code = item.item_code
+                    asset_item.rfm_item_reference = item.name
+                    asset_item.rfm_item = item.name
+                    if source.purpose == "Issue":
+                        asset_item.to_employee = getattr(source, 'employee', None)
 
-    if source_doc.purpose not in ["Issue", "Transfer"]:
-        frappe.throw(_("Asset Movement can only be created for RFMs with purpose 'Issue' or 'Transfer'."))
+        # Set the document as new (not saved)
+        target.docstatus = 0
+        target.__islocal = 1
 
-    asset_movement = frappe.new_doc("Asset Movement")
-    asset_movement.company = source_doc.company
-    asset_movement.purpose = source_doc.purpose
-    asset_movement.request_for_material = source_name
+    # Map the document
+    doclist = get_asset_movement_doclist(source_name, target_doc)
 
-    for item in source_doc.items:
-        if item.is_fixed_asset and item.custom_pending_quantity > 0:
-            for _ in range(int(item.custom_pending_quantity)):
-                asset_movement.append("items", {
-                    "item_code": item.item_code,
-                    "source_warehouse": item.warehouse,
-                    "target_warehouse": item.t_warehouse if source_doc.purpose == "Transfer" else None,
-                    "request_for_material_item": item.name,
-                })
+    # Run post-processing to create child rows
+    post_process(frappe.get_doc("Request for Material", source_name), doclist)
 
-    if not asset_movement.items:
-        frappe.throw(_("No pending fixed asset items found to create an Asset Movement."))
+    return doclist
 
-    asset_movement.insert(ignore_permissions=True)
-    return asset_movement
-	}
+def get_asset_movement_doclist(source_name, target_doc=None):
+    def set_missing_values(source, target):
+        """Set values in the target document"""
+        target.transaction_date = frappe.utils.today()
+        if hasattr(source, 'company'):
+            target.company = source.company
+
+    return get_mapped_doc(
+        "Request for Material",
+        source_name,
+        {
+            "Request for Material": {
+                "doctype": "Asset Movement",
+                "field_map": {
+                    "name": "rfm_reference",
+                    "purpose": "purpose",
+                    "doctype": "reference_doctype",
+                    "name": "reference_name"
+                },
+                "validation": {
+                    "docstatus": ["=", 1]
+                }
+            }
+        },
+        target_doc,
+        set_missing_values,
+        ignore_permissions=False
+    )

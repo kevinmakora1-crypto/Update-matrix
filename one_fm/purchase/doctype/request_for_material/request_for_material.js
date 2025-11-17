@@ -191,16 +191,26 @@ frappe.ui.form.on('Request for Material', {
 			const has_fixed_asset_items = frm.doc.items.some(item => item.is_fixed_asset && item.custom_pending_quantity > 0);
 			if (has_fixed_asset_items) {
 				frm.add_custom_button(__('Asset Movement'), function() {
-					let asset_items = frm.doc.items.filter(item => item.is_fixed_asset && item.custom_pending_quantity > 0);
-					frappe.route_options = {
-						rfm_reference: frm.doc.name,
-						purpose: frm.doc.purpose,
-						asset_items: asset_items
-					};
-					frappe.new_doc('Asset Movement');
+					frm.events.create_asset_movement(frm);
 				}, __('Create'));
 			}
 		}
+	},
+	create_asset_movement: (frm) => {
+		frappe.call({
+			method: 'one_fm.purchase.doctype.request_for_material.request_for_material.make_asset_movement',
+			args: {
+				source_name: frm.doc.name
+			},
+			callback: function(r) {
+				if (r.message) {
+					// Open the new Asset Movement form without saving
+					let doc = r.message;
+					frappe.model.sync(doc);
+					frappe.set_route('Form', doc.doctype, doc.name);
+				}
+			}
+		});
 	},
 	items_on_form_rendered: (frm) => {
 	},

@@ -1357,6 +1357,8 @@ function render_roster(res, page) {
 							bgclass = "tealboxcolor";
 							data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
 						}
+
+						
 					}
 					else if (!attendance && roster_type == "Basic" && page.filters[applied_filter] != record[applied_filter] && day_off_ot == 0 ){
 						if(employee_availability == "Working") {

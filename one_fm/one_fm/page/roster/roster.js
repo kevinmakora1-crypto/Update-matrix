@@ -1357,8 +1357,6 @@ function render_roster(res, page) {
 							bgclass = "tealboxcolor";
 							data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
 						}
-
-						
 					}
 					else if (!attendance && roster_type == "Basic" && page.filters[applied_filter] != record[applied_filter] && day_off_ot == 0 ){
 						if(employee_availability == "Working") {
@@ -1368,6 +1366,10 @@ function render_roster(res, page) {
 						} else if (employee_availability && !post_abbrv){
 							bgclass = classmap[employee_availability];
 							data_selectid = `${employee}|${date}|${employee_availability}`;
+						} else if(employee_availability == "On-the-job Training") {
+							basic_count++;
+							bgclass = "tealboxcolor";
+							data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
 						}
 					}
 					else if (!attendance && roster_type == "Over-Time" && page.filters[applied_filter] == record[applied_filter]) {

@@ -1239,6 +1239,7 @@ def get_asset_movement_doclist(source_name, target_doc=None):
         """Set values in the target document"""
         target.transaction_date = frappe.utils.today()
         target.reference_doctype = "Request for Material"
+        target.reference_name = source.name
         if hasattr(source, 'company'):
             target.company = source.company
 
@@ -1250,8 +1251,7 @@ def get_asset_movement_doclist(source_name, target_doc=None):
                 "doctype": "Asset Movement",
                 "field_map": {
                     "name": "rfm_reference",
-                    "purpose": "purpose",
-                    "name": "reference_name"
+                    "purpose": "purpose"
                 },
                 "validation": {
                     "docstatus": ["=", 1]

@@ -19,7 +19,8 @@
   "business_analyst_user",
   "business_analyst_name",
   "section_break_qrox",
-  "amended_from"
+  "amended_from",
+  "time_log"
  ],
  "fields": [
   {
@@ -120,18 +121,26 @@
   {
    "fieldname": "amended_from",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Amended From",
    "no_copy": 1,
    "options": "Pathfinder Log",
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "time_log",
+   "fieldtype": "Table",
+   "label": "Time Log",
+   "options": "Pathfinder Log Time",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-06 21:05:01.017942",
+ "modified": "2025-11-17 19:58:41.197164",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Pathfinder Log",

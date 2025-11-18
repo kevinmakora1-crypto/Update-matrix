@@ -184,6 +184,7 @@ class AttendanceCheck(Document):
     def on_submit(self):
         if not self.attendance_status:
             frappe.throw(_('To Approve the record set Attendance Status'))
+        self.update_employee_checkin_records()
         shift_working = frappe.db.get_value("Employee", self.employee, "shift_working")
         if self.attendance_status == "On Leave":
             self.check_on_leave_record()
@@ -191,6 +192,21 @@ class AttendanceCheck(Document):
             self.validate_day_off()
         if self.attendance_status != "On Leave":
             self.mark_attendance()
+
+    def update_employee_checkin_records(self):
+        if self.attendance_status == "Present":
+            employment_type = frappe.db.get_value("Employee", self.employee, "employment_type")
+            if employment_type == "Full-time":
+                if self.checkin_record:
+                    frappe.db.set_value("Employee Checkin", self.checkin_record, {
+                        "time": self.start_time,
+                        "source": "Attendance Check"
+                    })
+                if self.checkout_record:
+                    frappe.db.set_value("Employee Checkin", self.checkout_record, {
+                        "time": self.end_time,
+                        "source": "Attendance Check"
+                    })
 
     def check_on_leave_record(self):
         if self.attendance_status == "On Leave":

@@ -213,6 +213,7 @@ one_fm.patches.v15_0.update_paci
 one_fm.patches.v15_0.add_on_the_job_training_workflow #rerun
 one_fm.patches.v15_0.add_rfm_links_to_asset_movement #re run again
 one_fm.patches.v15_0.update_employee_checkin_custom_field_source
+one_fm.patches.v15_0.update_sales_invoice
 
 [post_model_sync]
 one_fm.patches.v15_0.add_workflow_pathfinder_log #1

@@ -81,9 +81,9 @@ def update_todo_doctype(user_map):
             frappe.log_error(message=f"Failed to update ToDo {todo.name}: {e}", title="Patch Update Error")
 
 def update_task_doctype(user_map):
-    task_assignments = frappe.get_all("Task Assignment", filters={"user": ("in", list(user_map.keys()))}, pluck="parent")
+    task_assignments = frappe.get_all("Task Assignment", filters={"user": ("IN", list(user_map.keys()))}, pluck="parent")
 
-    tasks = frappe.get_all("Task", filters={"name": ("in", task_assignments), "status": ("in", ["Open", "Working", "Overdue"])}, fields=["name"])
+    tasks = frappe.get_all("Task", filters={"name": ("IN", task_assignments), "status": ("IN", ["Open", "Working", "Overdue"])}, fields=["name"])
 
     for task in tasks:
         try:

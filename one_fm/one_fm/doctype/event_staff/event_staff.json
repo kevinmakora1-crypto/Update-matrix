@@ -103,6 +103,7 @@
   {
    "fetch_from": "client_event.start_date",
    "fieldname": "start_date",
+   "fetch_if_empty": 1,
    "fieldtype": "Date",
    "label": "Start Date",
    "reqd": 1
@@ -177,7 +178,7 @@
    "link_fieldname": "event_staff"
   }
  ],
- "modified": "2025-11-17 16:04:05.838036",
+ "modified": "2025-11-18 16:04:05.838036",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Event Staff",

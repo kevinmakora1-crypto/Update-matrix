@@ -138,16 +138,16 @@ class EventStaff(Document):
 	def on_update_after_submit(self):
 		old_doc = self.get_doc_before_save()
 		if getdate(self.end_date) < getdate(old_doc.end_date):
-			self.delete_employee_schedules()
+			self.delete_employee_schedules(self.end_date)
 
-	def delete_employee_schedules(self):
+	def delete_employee_schedules(self, date):
 		frappe.db.delete(
 			"Employee Schedule",
 			{
 				"event_staff": self.name,
-				"date": [">", getdate(today())]
+				"date": [">", getdate(date)]
 			}
 		)
 
 	def on_cancel(self):
-		self.delete_employee_schedules()
+		self.delete_employee_schedules(today())

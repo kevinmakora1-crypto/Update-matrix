@@ -52,7 +52,7 @@ def update_operations_site_doctype(employee_map):
             doc.account_supervisor = employee_map.get(doc.account_supervisor)
             doc.save(ignore_permissions=True)
         except Exception as e:
-            frappe.log_error(message=f"Failed to update Operations Site {site.name}: {e}", error="Patch Update Error")
+            frappe.log_error(message=f"Failed to update Operations Site {site.name}: {e}", title="Patch Update Error")
 
 def update_operations_shift_doctype(employee_map):
     shift_names = frappe.get_all("Operations Shift Supervisor", filters={"supervisor": ("IN", list(employee_map.keys()))}, pluck="parent")

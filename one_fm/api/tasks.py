@@ -791,8 +791,20 @@ def create_client_event_shift_assignment(date):
 	roster = get_client_event_schedule(date, employment_type)
 	if not roster:
 		return
-	try:
-		for employee_scedule in roster:
+	for employee_schedule in roster:
+		existing_assignments = frappe.db.get_list(
+			"Shift Assignment",
+			filters={
+				'employee': employee_schedule.employee,
+				'start_date': employee_schedule.start_datetime.date(),
+				'docstatus': 1,
+				'is_event_based_shift': 1
+			},
+			fields=['name']
+		)
+		if existing_assignments:
+			continue
+		try:
 			shift_assignment = frappe.get_doc(
 				{
 					"doctype": "Shift Assignment",
@@ -813,8 +825,8 @@ def create_client_event_shift_assignment(date):
 			)
 			shift_assignment.insert(ignore_permissions=True)
 			shift_assignment.submit()
-	except Exception as e:
-		frappe.log_error(message=frappe.get_traceback(), title='Error Creating Client Event Shift Assignment')
+		except Exception as e:
+			frappe.log_error(message=frappe.get_traceback(), title='Error Creating Client Event Shift Assignment')
 
 def get_client_event_schedule(date, employment_type):
 	from frappe.query_builder import DocType

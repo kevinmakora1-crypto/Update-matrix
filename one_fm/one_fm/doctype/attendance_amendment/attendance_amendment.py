@@ -237,7 +237,7 @@ def get_attendance_status(filters, employee_non_day_off_attendance, employee_day
 			if attendance_based_on == "Attendance Status":
 				if not status:
 					status = employee_day_off_attendance.get(day, "")
-				if status in ["Present", "Working", "Work From Home", "Absent"]:
+				if status in ["Present", "Working", "Work From Home"]:
 					working_days += 1
 
 			if attendance_based_on == "Shift Hours":

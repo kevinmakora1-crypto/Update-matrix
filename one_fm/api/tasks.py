@@ -755,7 +755,7 @@ def assign_am_shift():
 		roster.extend(non_shift)
 
 	create_shift_assignment(roster, date, 'AM')
-
+	create_client_event_shift_assignment(date)
 
 def assign_pm_shift():
 	date = cstr(getdate())
@@ -783,7 +783,74 @@ def assign_pm_shift():
 		roster.extend(non_shift)
 
 	create_shift_assignment(roster, date, 'PM')
+	create_client_event_shift_assignment(date)
 
+def create_client_event_shift_assignment(date):
+	date = cstr(getdate())
+	employment_type = ["Full-time", "Part-time", "Intern", "Subcontractor"]
+	roster = get_client_event_schedule(date, employment_type)
+	if not roster:
+		return
+	for employee_schedule in roster:
+		existing_assignments = frappe.db.get_list(
+			"Shift Assignment",
+			filters={
+				'employee': employee_schedule.employee,
+				'start_date': employee_schedule.start_datetime.date(),
+				'docstatus': 1,
+				'is_event_based_shift': 1
+			},
+			fields=['name']
+		)
+		if existing_assignments:
+			continue
+		try:
+			shift_assignment = frappe.get_doc(
+				{
+					"doctype": "Shift Assignment",
+					"employee": employee_schedule.employee,
+					"employee_name": employee_schedule.employee_name,
+					"start_date": employee_schedule.start_datetime.date(),
+					"end_date": employee_schedule.end_datetime.date(),
+					"shift": employee_schedule.shift,
+					"employee_schedule": employee_schedule.name,
+					"site": employee_schedule.site,
+					"project": employee_schedule.project,
+					"is_event_based_shift": 1,
+					"event_staff": employee_schedule.event_staff,
+					"start_datetime": employee_schedule.start_datetime,
+					"end_datetime": employee_schedule.end_datetime,
+					"site_location": employee_schedule.site_location,
+				}
+			)
+			shift_assignment.insert(ignore_permissions=True)
+			shift_assignment.submit()
+		except Exception as e:
+			frappe.log_error(message=frappe.get_traceback(), title='Error Creating Client Event Shift Assignment')
+
+def get_client_event_schedule(date, employment_type):
+	from frappe.query_builder import DocType
+
+	EmployeeSchedule = DocType('tabEmployee Schedule')
+	Employee = DocType('tabEmployee')
+
+	return (
+		frappe.qb.from_(EmployeeSchedule)
+		.select(EmployeeSchedule.star)
+		.where(
+			(EmployeeSchedule.date == date) &
+			(EmployeeSchedule.roster_type == "Basic") &
+			(EmployeeSchedule.is_event_schedule == 1) &
+			(EmployeeSchedule.employee.isin(
+				frappe.qb.from_(Employee)
+				.select(Employee.name)
+				.where(
+					(Employee.status == "Active") &
+					(Employee.employment_type.isin(employment_type))
+				)
+			))
+		)
+	).run(as_dict=True)
 
 def end_previous_shifts(time):
 	shift_type = get_shift_type(time)

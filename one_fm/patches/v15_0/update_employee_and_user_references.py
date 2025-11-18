@@ -1,5 +1,4 @@
 import frappe
-from frappe.utils import cint
 
 def execute():
     frappe.reload_doctype("Project")
@@ -32,45 +31,42 @@ def execute():
     update_request_for_material_doctype(user_map)
 
 def update_project_doctype(employee_map):
-    project_filters = {"project_manager": ("IN", list(employee_map.keys()))}
+    project_filters = {"account_manager": ("IN", list(employee_map.keys()))}
     projects = frappe.get_all("Project", filters=project_filters, fields=["name"])
 
     for project in projects:
         try:
             doc = frappe.get_doc("Project", project.name)
-            doc.project_manager = employee_map.get(doc.project_manager)
+            doc.account_manager = employee_map.get(doc.account_manager)
             doc.save(ignore_permissions=True)
-            print(f"Project {project.name} updated successfully")
         except Exception as e:
-            frappe.log_error(f"Failed to update Project {project.name}: {e}", "Patch Update Error")
+            frappe.log_error(message=f"Failed to update Project {project.name}: {e}", title="Patch Update Error")
 
 def update_operations_site_doctype(employee_map):
-    site_filters = {"site_supervisor": ("IN", list(employee_map.keys()))}
+    site_filters = {"account_supervisor": ("IN", list(employee_map.keys()))}
     sites = frappe.get_all("Operations Site", filters=site_filters, fields=["name"])
 
     for site in sites:
         try:
             doc = frappe.get_doc("Operations Site", site.name)
-            doc.site_supervisor = employee_map.get(doc.site_supervisor)
+            doc.account_supervisor = employee_map.get(doc.account_supervisor)
             doc.save(ignore_permissions=True)
-            print(f"Operations Site {site.name} updated successfully")
         except Exception as e:
-            frappe.log_error(f"Failed to update Operations Site {site.name}: {e}", "Patch Update Error")
+            frappe.log_error(message=f"Failed to update Operations Site {site.name}: {e}", error="Patch Update Error")
 
 def update_operations_shift_doctype(employee_map):
-    shift_filters = {"shift_supervisor.supervisor": ("IN", list(employee_map.keys()))}
-    shifts = frappe.get_all("Operations Shift", filters=shift_filters, fields=["name"])
+    shift_names = frappe.get_all("Operations Shift Supervisor", filters={"supervisor": ("IN", list(employee_map.keys()))}, pluck="parent")
 
-    for shift in shifts:
+    for shift_name in shift_names:
         try:
-            doc = frappe.get_doc("Operations Shift", shift.name)
-            for supervisor in doc.shift_supervisor:
-                if supervisor.supervisor in employee_map:
-                    supervisor.supervisor = employee_map.get(supervisor.supervisor)
+            doc = frappe.get_doc("Operations Shift", shift_name)
+            for row in doc.shift_supervisor:
+                if row.supervisor in employee_map:
+                    row.supervisor = employee_map[row.supervisor]
             doc.save(ignore_permissions=True)
-            print(f"Operations Shift {shift.name} updated successfully")
         except Exception as e:
-            frappe.log_error(f"Failed to update Operations Shift {shift.name}: {e}", "Patch Update Error")
+            frappe.log_error(message=f"Failed to update Operations Shift {shift_name}: {e}", error="Patch Update Error")
+
 
 def update_todo_doctype(user_map):
     todo_filters = {"status": "Open", "allocated_to": ("IN", list(user_map.keys()))}
@@ -81,16 +77,13 @@ def update_todo_doctype(user_map):
             doc = frappe.get_doc("ToDo", todo.name)
             doc.allocated_to = user_map.get(doc.allocated_to)
             doc.save(ignore_permissions=True)
-            print(f"ToDo {todo.name} updated successfully")
         except Exception as e:
-            frappe.log_error(f"Failed to update ToDo {todo.name}: {e}", "Patch Update Error")
+            frappe.log_error(message=f"Failed to update ToDo {todo.name}: {e}", title="Patch Update Error")
 
 def update_task_doctype(user_map):
-    task_filters = {
-        "status": ("IN", ["Open", "Working", "Overdue"]),
-        "custom_assigned_to.user": ("IN", list(user_map.keys())),
-    }
-    tasks = frappe.get_all("Task", filters=task_filters, fields=["name"])
+    task_assignments = frappe.get_all("Task Assignment", filters={"user": ("in", list(user_map.keys()))}, pluck="parent")
+
+    tasks = frappe.get_all("Task", filters={"name": ("in", task_assignments), "status": ("in", ["Open", "Working", "Overdue"])}, fields=["name"])
 
     for task in tasks:
         try:
@@ -99,13 +92,13 @@ def update_task_doctype(user_map):
                 if user.user in user_map:
                     user.user = user_map.get(user.user)
             doc.save(ignore_permissions=True)
-            print(f"Task {task.name} updated successfully")
         except Exception as e:
-            frappe.log_error(f"Failed to update Task {task.name}: {e}", "Patch Update Error")
+            frappe.log_error(message=f"Failed to update Task {task.name}: {e}", title="Patch Update Error")
+
 
 def update_request_for_material_doctype(user_map):
     rfm_filters = {
-        "status": "Pending",
+        "docstatus": 0,
         "request_for_material_approver": ("IN", list(user_map.keys())),
     }
     rfms = frappe.get_all("Request for Material", filters=rfm_filters, fields=["name"])
@@ -115,6 +108,5 @@ def update_request_for_material_doctype(user_map):
             doc = frappe.get_doc("Request for Material", rfm.name)
             doc.request_for_material_approver = user_map.get(doc.request_for_material_approver)
             doc.save(ignore_permissions=True)
-            print(f"Request for Material {rfm.name} updated successfully")
         except Exception as e:
-            frappe.log_error(f"Failed to update Request for Material {rfm.name}: {e}", "Patch Update Error")
+            frappe.log_error(message=f"Failed to update Request for Material {rfm.name}: {e}", title="Patch Update Error")

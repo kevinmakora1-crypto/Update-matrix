@@ -123,7 +123,6 @@ class AttendanceRequestOverride(AttendanceRequest):
 				attendance.attendance_date = attendance_date
 				attendance.working_hours = working_hours
 				attendance.attendance_request = self.name
-				attendance.shift_assignment = shift_assignment or ''
 				attendance.operations_shift = shift_assignment.shift if shift_assignment else ''
 				attendance.roster_type = shift_assignment.roster_type if shift_assignment else ''
 				attendance.shift = shift_assignment.shift_type if shift_assignment else ''

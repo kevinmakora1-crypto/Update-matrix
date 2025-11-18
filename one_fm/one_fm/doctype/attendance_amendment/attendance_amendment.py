@@ -8,21 +8,13 @@ from frappe.utils import cint, cstr
 from calendar import monthrange
 from frappe import _
 
-status_map = {
-	"Present": "P",
-	"Absent": "A",
-	"On Leave": "OL",
-	"Holiday": "H",
-	"Day Off": "DO"
-}
-
 class AttendanceAmendment(Document):
 	@frappe.whitelist()
 	def fetch_attendance_record(self):
 		filters = self.get_attendance_amendment_filters()
 		employee_details = get_employee_details()
-		attendance_map = get_attendance_map(filters)
-		data = get_rows(employee_details, filters, attendance_map)
+		attendance_map = get_attendance_map(filters, self.attendance_based_on)
+		data = get_rows(employee_details, filters, attendance_map, self.attendance_based_on)
 		if data:
 			self.update_attendance_records(data)
 		else:
@@ -45,9 +37,15 @@ class AttendanceAmendment(Document):
 		return frappe._dict(filters)
 	
 	def update_attendance_records(self, data):
-		# data is now a list of dicts, each dict contains attendance info for one employee
+		if not self.attendance_based_on:
+			return
+		self.attendance_details = []
 		for record in data:
-			day_fields = {f"day_{i}": record.get(str(i), '') for i in range(1, 32)}
+			if self.attendance_based_on == "Shift Hours":
+				day_fields = {f"day_{i}_hour": record.get(str(i), '') for i in range(1, 32)}
+			else:
+				day_fields = {f"day_{i}": record.get(str(i), '') for i in range(1, 32)}
+
 			self.append("attendance_details", {
 				"employee": record.get("employee"),
 				"employee_id": record.get("employee_id"),
@@ -79,7 +77,7 @@ def get_employee_details():
 
 	return emp_map
 
-def get_attendance_map(filters):
+def get_attendance_map(filters, attendance_based_on=None):
 	"""Returns a dictionary of employee wise attendance map as per shifts for all the days of the month like
 	{
 		'employee1': {
@@ -109,7 +107,7 @@ def get_attendance_map(filters):
 			d.shift = ""
 
 		attendance_map.setdefault(d.employee, {}).setdefault(d.shift, {})
-		attendance_map[d.employee][d.shift][d.day_of_month] = d.status
+		attendance_map[d.employee][d.shift][d.day_of_month] = d.status if attendance_based_on == "Attendance Status" else d.working_hours
 
 	# leave is applicable for the entire day so all shifts should show the leave entry
 	for employee, leave_days in leave_map.items():
@@ -137,6 +135,7 @@ def get_non_day_off_attendance_records(filters):
 			Extract("day", Attendance.attendance_date).as_("day_of_month"),
 			Attendance.status,
 			OperationsShift.shift_classification.as_("shift"),
+			Attendance.working_hours
 		)
 		.where(
 			(Attendance.docstatus == 1)
@@ -155,7 +154,7 @@ def get_non_day_off_attendance_records(filters):
 
 	return query.run(as_dict=True)
 
-def get_rows(employee_details, filters, attendance_map):
+def get_rows(employee_details, filters, attendance_map, attendance_based_on):
 	records = []
 
 	day_off_attendance_map = get_day_off_attendance_map(filters)
@@ -169,7 +168,7 @@ def get_rows(employee_details, filters, attendance_map):
 			# no attendance records found for employee
 			continue
 
-		attendance_for_employee = get_attendance_status(filters, employee_attendance, employee_day_off_attendance)
+		attendance_for_employee = get_attendance_status(filters, employee_attendance, employee_day_off_attendance, attendance_based_on)
 
 		# set employee details in the first row
 		for record in attendance_for_employee:
@@ -188,6 +187,7 @@ def get_day_off_attendance_map(filters):
 			Attendance.employee,
 			Extract("day", Attendance.attendance_date).as_("day_of_month"),
 			Attendance.status,
+			Attendance.working_hours
 		)
 		.where(
 			(Attendance.docstatus == 1)
@@ -207,7 +207,7 @@ def get_day_off_attendance_map(filters):
 		
 	return day_off_map
 
-def get_attendance_status(filters, employee_non_day_off_attendance, employee_day_off_attendance):
+def get_attendance_status(filters, employee_non_day_off_attendance, employee_day_off_attendance, attendance_based_on):
 	"""Returns list of shift-wise attendance status for employee
 	[
 			{'shift': 'Morning', 1: 'A', 2: 'P', 3: 'A'....},
@@ -216,16 +216,6 @@ def get_attendance_status(filters, employee_non_day_off_attendance, employee_day
 	"""
 	total_days = monthrange(cint(filters.year), cint(filters.month))[1]
 	attendance_values = []
-
-	attendance_status_map = { 
-		**status_map, 
-		"Work From Home": "P", 
-		"Working": "P", 
-		"Client Day Off": "CDO",
-		"Sick Leave": "OL",
-		"Annual Leave": "OL",
-		"Emergency Leave": "OL"
-	}
 
 	employee_non_day_off_attendance = employee_non_day_off_attendance or {}
 
@@ -244,16 +234,21 @@ def get_attendance_status(filters, employee_non_day_off_attendance, employee_day
 			status = attendance_dict.get(day)
 
 			# if status is not found in non day attendance records, check day off attendance
-			if not status:
-				status = employee_day_off_attendance.get(day, "")
+			if attendance_based_on == "Attendance Status":
+				if not status:
+					status = employee_day_off_attendance.get(day, "")
+				if status in ["Present", "Working", "Work From Home", "Absent"]:
+					working_days += 1
 
-			if status in ["Present", "Working", "Work From Home"]:
-				working_days += 1
-			elif status in ["Day Off", "Client Day Off"]:
+			if attendance_based_on == "Shift Hours":
+				if not status:
+					status = employee_day_off_attendance.get(day, 0)
+				if status and status not in ["Day Off", "Client Day Off", "Absent", "On Leave"]:
+					working_days += 1
+
+			if status in ["Day Off", "Client Day Off"]:
 				off_days += 1
 
-			# abbr = attendance_status_map.get(status, "")
-			# row[cstr(day)] = abbr
 			row[cstr(day)] = status
 
 		row["working_days"] = working_days

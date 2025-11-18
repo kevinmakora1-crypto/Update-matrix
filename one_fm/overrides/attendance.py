@@ -57,7 +57,7 @@ class AttendanceOverride(Attendance):
     def validate(self):
         from erpnext.controllers.status_updater import validate_status
 
-        validate_status(self.status, ["Present", "Absent", "On Leave", "Half Day", "Work From Home", "Day Off", "Holiday", "On Hold", "Client Day Off"])
+        validate_status(self.status, ["Present", "Absent", "On Leave", "Half Day", "Work From Home", "Day Off", "Holiday", "On Hold", "Client Day Off", "Medical Appointment", "Fingerprint Appointment"])
         validate_active_employee(self.employee)
         self.validate_attendance_date()
         self.validate_duplicate_record()

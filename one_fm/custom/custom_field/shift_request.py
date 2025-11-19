@@ -53,7 +53,7 @@ def get_shift_request_custom_fields():
                 "label": "Roster Type",
                 "insert_after": "operations_role",
                 "options": "Basic\nOver-Time",
-                "depends_on": "eval:doc.purpose != 'Assign Day Off';",
+                "depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
                 "translatable": 1
             },
             {
@@ -63,8 +63,8 @@ def get_shift_request_custom_fields():
                 "insert_after": "to_date",
                 "options": "Operations Role",
                 "fetch_if_empty": 1,
-                "depends_on": "eval:doc.purpose != 'Assign Day Off';",
-                "mandatory_depends_on": "eval:doc.purpose != 'Assign Day Off';"
+                "depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
+                "mandatory_depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)'
             },
             {
                 "fieldname": "company_name",
@@ -82,7 +82,7 @@ def get_shift_request_custom_fields():
                 "insert_after": "operations_shift",
                 "options": "Shift Type",
                 "fetch_from": "operations_shift.shift_type",
-                "depends_on": "eval:doc.purpose != 'Assign Day Off';",
+                "depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
                 "read_only": 1
             },
             {
@@ -229,8 +229,8 @@ def get_shift_request_custom_fields():
                 "options": "Operations Shift",
                 "fetch_from": "employee.shift",
                 "fetch_if_empty": 1,
-                "depends_on": "eval:doc.purpose != 'Assign Day Off';",
-                "mandatory_depends_on": "eval:doc.purpose != 'Assign Day Off';",
+                "depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
+                "mandatory_depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
                 "reqd": 1
             },
            {

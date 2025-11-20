@@ -7,7 +7,7 @@
   "is_assignment_rule_with_workflow": 0,
   "assign_condition": "workflow_state in (\"Pending Process Map Review\", \"Pending Templates Review\", \"Pending Story Definition\" )",
   "unassign_condition": "workflow_state in (\"Pending Templates Definition\")",
-  "close_condition": "workflow_state == \"In Production\"",
+  "close_condition": "workflow_state == \"Completed\"",
   "rule": "Based on Field",
   "field": "business_analyst_user",
   "doctype": "Assignment Rule",

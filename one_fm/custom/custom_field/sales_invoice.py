@@ -98,6 +98,7 @@ def get_sales_invoice_custom_fields():
                 "fieldtype": "Check",
                 "insert_after": "custom_site",
                 "label": "Refundable",
+                "hidden": 1
             },
             {
                 "fieldname": "custom_margin_type",
@@ -105,7 +106,7 @@ def get_sales_invoice_custom_fields():
                 "insert_after": "custom_refundable",
                 "label": "Margin Type",
                 "translatable": 1,
-                "options": "\nPercentage\nAmount"
+                "options": "\nPercentage\nAmount",
             },
             {
                 "fieldname": "custom_margin_rate_or_amount",

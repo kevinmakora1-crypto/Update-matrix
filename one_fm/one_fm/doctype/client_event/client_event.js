@@ -25,10 +25,10 @@ frappe.ui.form.on("Client Event", {
                                     reqd: 1,
                                 },
                                 {
-                                    label: __("Operations Role"),
-                                    fieldname: "operations_role",
+                                    label: __("Designation"),
+                                    fieldname: "designation",
                                     fieldtype: "Link",
-                                    options: "Operations Role",
+                                    options: "Designation",
                                     in_list_view: 1,
                                     reqd: 1,
                                 },

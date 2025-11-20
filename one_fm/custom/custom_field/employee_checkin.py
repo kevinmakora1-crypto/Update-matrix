@@ -21,7 +21,7 @@ def get_employee_checkin_custom_fields():
                 "fieldtype": "Select",
                 "insert_after": "employee_checkin_issue",
                 "label": "Source",
-                "options": "\nMobile App\nMobile Web\nCheck-in Form\nFrappe Page",
+                "options": "\nMobile App\nMobile Web\nCheck-in Form\nFrappe Page\nAttendance Check",
                 "default": "Check-in Form",
                 "translatable": 1
             },

@@ -5,6 +5,7 @@ frappe.ui.form.on("Attendance Amendment", {
 	refresh(frm) {
         frm.events.set_year_and_month(frm);
         frm.events.filter_site_by_project(frm);
+        toggle_day_value_fields_in_attendance_details(frm);
     },
     fetch_attendance_record(frm){
         frappe.call({
@@ -25,6 +26,24 @@ frappe.ui.form.on("Attendance Amendment", {
             frm.set_value("month", month_map[frappe.datetime.str_to_obj(frappe.datetime.get_today()).getMonth() + 1]);
         }
     },
+    project(frm) {
+        frm.events.filter_site_by_project(frm);
+        frm.set_value("attendance_details", []);
+        frm.set_value("site", "");
+    },
+    year(frm){
+        frm.set_value("attendance_details", []);
+    },
+    month(frm){
+        frm.set_value("attendance_details", []);
+    },
+    site(frm){
+        frm.set_value("attendance_details", []);
+    },
+    attendance_based_on(frm){
+        frm.set_value("attendance_details", []);
+        toggle_day_value_fields_in_attendance_details(frm);
+    },
     filter_site_by_project(frm){
         // Filter Site field by selected Project
         if(frm.doc.project){
@@ -38,3 +57,13 @@ frappe.ui.form.on("Attendance Amendment", {
         }
     }
 });
+
+function toggle_day_value_fields_in_attendance_details(frm){
+    if (frm.doc.attendance_based_on === "Shift Hours") {
+        frappe.meta.get_docfield("Attendance Amendment Item", "attendance_hours_section", frm.doc.name).hidden = false
+        frappe.meta.get_docfield("Attendance Amendment Item", "attendance_status_section", frm.doc.name).hidden = true
+    } else {
+        frappe.meta.get_docfield("Attendance Amendment Item", "attendance_hours_section", frm.doc.name).hidden = true
+        frappe.meta.get_docfield("Attendance Amendment Item", "attendance_status_section", frm.doc.name).hidden = false
+    }
+}

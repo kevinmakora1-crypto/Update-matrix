@@ -1,4 +1,5 @@
 def get_quality_feedback_template_custom_fields():
+	"""Return a dictionary of custom fields for the Quality Feedback Template document."""
 	return {
 		"Quality Feedback Template": [
 			{

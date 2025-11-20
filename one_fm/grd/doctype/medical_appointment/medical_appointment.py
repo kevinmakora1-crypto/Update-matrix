@@ -5,7 +5,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import today, getdate
-from one_fm.utils import get_approver_user
+from one_fm.utils import get_employee_site_supervisor_user, get_approver_user
 
 class MedicalAppointment(Document):
 	def validate(self):
@@ -30,7 +30,10 @@ class MedicalAppointment(Document):
 
 	def set_approver(self):
 		if not self.employee_supervisor and self.employee:
-			self.employee_supervisor = get_approver_user(self.employee)
+			employee_supervisor = get_employee_site_supervisor_user(self.employee)
+			if not employee_supervisor:
+				employee_supervisor = get_approver_user(self.employee)
+			self.employee_supervisor = employee_supervisor
 
 	def on_update(self):
 		if not self.workflow_state:

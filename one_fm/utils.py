@@ -3095,6 +3095,20 @@ def get_today_leaves(cur_date):
         AND '{cur_date}' BETWEEN from_date AND to_date;
     """, as_dict=1)]
 
+def get_employee_site_supervisor_user(employee):
+    site_supervisor = get_employee_site_supervisor(employee)
+    if site_supervisor:
+        return frappe.db.get_value("Employee", site_supervisor, "user_id")
+    return None
+
+def get_employee_site_supervisor(employee):
+    employee_field_list = ["user_id", "reports_to", "shift", "site", "shift_working", "employee_name"]
+    employee_data = frappe.db.get_value('Employee', employee, employee_field_list, as_dict=1)
+    if employee_data.site:
+        site_supervisor = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
+        return site_supervisor
+    return None
+
 @frappe.whitelist()
 def get_approver_user(employee):
     approver = get_approver(employee)

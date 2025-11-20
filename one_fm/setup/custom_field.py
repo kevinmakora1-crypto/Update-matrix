@@ -94,7 +94,6 @@ from one_fm.custom.custom_field.loan_product import get_loan_product_custom_fiel
 from one_fm.custom.custom_field.repayment_schedule import get_repayment_schedule_custom_fields
 from one_fm.custom.custom_field.hd_agent import get_hd_agent_custom_fields
 from one_fm.custom.custom_field.request_for_quotation_item import get_request_for_quotation_item_custom_fields
-from one_fm.custom.custom_field.asset_movement_item import get_asset_movement_item_custom_fields
 from one_fm.custom.custom_field.quality_feedback_template import get_quality_feedback_template_custom_fields
 
 def get_custom_fields():
@@ -194,7 +193,6 @@ def get_custom_fields():
 	custom_fields.update(get_repayment_schedule_custom_fields())
 	custom_fields.update(get_hd_agent_custom_fields())
 	custom_fields.update(get_request_for_quotation_item_custom_fields())
-	custom_fields.update(get_asset_movement_item_custom_fields())
 	custom_fields.update(get_quality_feedback_template_custom_fields())
 
 	return custom_fields

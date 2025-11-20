@@ -9,7 +9,7 @@ frappe.ui.form.on("Medical Appointment", {
 		frm.set_value("employee_supervisor", null);
 		if(frm.doc.employee){
 			frappe.call({
-				method: "one_fm.utils.get_approver_user",
+				method: "one_fm.utils.get_employee_site_supervisor_user",
 				args : {"employee": frm.doc.employee},
 				callback: function (r) {
 					if(r && r.message){

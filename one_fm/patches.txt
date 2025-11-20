@@ -236,3 +236,4 @@ one_fm.patches.v15_0.add_shift_assignment_event_based_fields
 one_fm.patches.v15_0.add_shift_assignment_shift_type_mandatory_depends_on # re-run
 one_fm.patches.v15_0.add_update_custom_field #2025-11-10
 one_fm.patches.v15_0.add_quality_feedback_template_custom_field
+one_fm.patches.v15_0.add_quality_feedback_template_property_setter

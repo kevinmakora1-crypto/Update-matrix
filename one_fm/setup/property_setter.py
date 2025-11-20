@@ -1,4 +1,3 @@
-
 # Property setter imports
 from one_fm.custom.property_setter.asset import get_asset_properties
 from one_fm.custom.property_setter.asset_category_account import get_asset_category_account_properties
@@ -75,6 +74,7 @@ from one_fm.custom.property_setter.warehouse import get_warehouse_properties
 from one_fm.custom.property_setter.job_offer import get_job_offer_properties
 from one_fm.custom.property_setter.hd_service_level_agreement_fulfilled_on_status import get_hd_service_level_agreement_fulfilled_on_status_properties
 from one_fm.custom.property_setter.hd_pause_service_level_agreement_on_status import get_hd_pause_service_level_agreement_on_status_properties
+from one_fm.custom.property_setter.quality_feedback_template import get_quality_feedback_template_properties
 
 
 def get_field_properties():
@@ -154,5 +154,6 @@ def get_field_properties():
 	field_properties.extend(get_hd_service_level_agreement_fulfilled_on_status_properties())
 	field_properties.extend(get_hd_pause_service_level_agreement_on_status_properties())
 	field_properties.extend(get_user_properties())
+	field_properties.extend(get_quality_feedback_template_properties())
 
 	return field_properties

@@ -1,7 +1,13 @@
 import frappe
+from frappe.utils import today
+from one_fm.setup.assignment_rule import create_assignment_rule, get_assignment_rule_json_file
+from one_fm.custom.workflow.workflow import get_workflow_json_file, create_workflow
 
 def execute():
-    process_name = "Others"
+    create_process_task()
+
+def create_process_task():
+    process_name = "Attendance Process"
     if not frappe.db.exists("Process", process_name):
         frappe.get_doc({
             "process_name": process_name,
@@ -19,44 +25,31 @@ def execute():
             "doctype": "Task Type"
         }).insert(ignore_permissions=True)
 
-    method = "onefm_mcp.agents.agent_2_data_collection.run_agent_2"
-    document_type = "Scheduled Job Log"
+    method = "one_fm.one_fm.doctype.leave_handover.leave_handover.reliever_assignment_on_leave_start"
+    document_type = "Leave Handover"
     if not frappe.db.exists("Method", method):
         frappe.get_doc({
             "method": method,
             "document_type": document_type,
-            "description": "To scrape approved sources, match keywords and save threat feeds.",
+            "description": "To assign reliever on leave start date from leave handover.",
             "doctype": "Method"
         }).insert(ignore_permissions=True)
 
-    process_task_exists = frappe.db.exists(
-        "Process Task",
-        {
-            "process_name": "Others",
-            "method": method,
-            "employee": "HR-EMP-02930"
-        }
-    )
-
-    if not process_task_exists:
-        frappe.get_doc({
+    process_task = frappe.get_doc({
         "naming_series": "P-TASK-.YYYY.-",
-        "process_name": "Others",
+        "process_name": process_name,
         "is_erp_task": 1,
         "is_automated": 1,
         "is_active": 1,
         "erp_document": document_type,
-        "task": "Scrape and Save Threat Feeds - Agent 2",
+        "task": "Assign reliever on leave start date from leave handover.",
         "task_type": task_type,
         "method": method,
         "frequency": "Cron",
-        "cron_format": "0 8,20 * * *",
+        "cron_format": "45 23 * * *",
         "hours_per_frequency": 0.5,
         "coordination_needed": "No",
-        "start_date": "2025-10-25",
-        "employee": "HR-EMP-02930",
-        "employee_name": "Kartik Sharma",
-        "employee_user": "k.sharma@one-fm.com",
-        "department": "IT - ONEFM",
+        "start_date": today(),
         "doctype": "Process Task",
     }).insert(ignore_permissions=True)
+    return process_task.name

@@ -223,7 +223,6 @@
     {
       "state": "Rejected",
       "doc_status": "1",
-      "update_field": "work_permit_status",
       "update_value": "Rejected",
       "is_optional_state": 0,
       "avoid_status_override": 0,
@@ -254,7 +253,6 @@
     {
       "state": "Apply Online by PRO",
       "doc_status": "0",
-      "update_field": "work_permit_status",
       "update_value": "Draft",
       "is_optional_state": 0,
       "avoid_status_override": 0,
@@ -265,7 +263,6 @@
     {
       "state": "Pending By Supervisor",
       "doc_status": "0",
-      "update_field": "work_permit_status",
       "update_value": "Pending by Supervisor",
       "is_optional_state": 0,
       "avoid_status_override": 0,
@@ -276,7 +273,6 @@
     {
       "state": "Pending By Previous Company",
       "doc_status": "0",
-      "update_field": "work_permit_status",
       "update_value": "Pending by Previous Company",
       "is_optional_state": 0,
       "avoid_status_override": 0,
@@ -287,7 +283,6 @@
     {
       "state": "Pending  For Payment",
       "doc_status": "0",
-      "update_field": "work_permit_status",
       "update_value": "Pending by Supervisor for Payment",
       "is_optional_state": 0,
       "avoid_status_override": 0,
@@ -298,7 +293,6 @@
     {
       "state": "Pending By Operator",
       "doc_status": "0",
-      "update_field": "work_permit_status",
       "update_value": "Pending by Operator",
       "is_optional_state": 0,
       "avoid_status_override": 0,
@@ -309,7 +303,6 @@
     {
       "state": "Pending By PAM",
       "doc_status": "0",
-      "update_field": "work_permit_status",
       "update_value": "Pending by Operator",
       "is_optional_state": 0,
       "avoid_status_override": 0,
@@ -320,7 +313,6 @@
     {
       "state": "Reason of Rejection",
       "doc_status": "0",
-      "update_field": "work_permit_status",
       "update_value": "Rejected",
       "is_optional_state": 0,
       "avoid_status_override": 0,

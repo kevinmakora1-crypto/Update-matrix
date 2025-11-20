@@ -285,7 +285,7 @@ def sync_google_tasks_with_todos():
         batch_size = 5
         for i in range(0, len(user_emails_having_google_account), batch_size):
             batch_user_emails = user_emails_having_google_account[i:i+batch_size]
-            frappe.enqueue(sync_google_tasks_for_users, user_emails=batch_user_emails, is_async=True)
+            frappe.enqueue(sync_google_tasks_for_users, user_emails=batch_user_emails, is_async=True, timeout=600)
 
         return { "error": False, "message" : "Google Tasks synchronized successfully" }
 
@@ -303,9 +303,9 @@ def sync_my_google_tasks_with_todos():
         if not is_google_task_synchronization_enabled() or logged_in_user == "Administrator":
             return { "error": True, "message" : "You are not allowed to sync google tasks" }
 
-        sync_google_tasks_for_users(user_emails=[logged_in_user])
+        frappe.enqueue(sync_google_tasks_for_users, user_emails=[logged_in_user], is_async=True, timeout=600)
 
-        return { "error": False, "message" : "My Google Tasks synchronized successfully" }
+        return { "error": False, "message" : "Your Google Tasks will be synced in the background." }
 
     except Exception as e:
         frappe.log_error(message =str(e),title = "Failed to sync google tasks to ERP ToDo")
@@ -313,16 +313,19 @@ def sync_my_google_tasks_with_todos():
 
 
 @frappe.whitelist()
-def sync_google_tasks_for_users(user_emails=[]):
+def sync_google_tasks_for_users(user_emails=[], timedelta_kwargs=None):
     all_google_tasks = []
 
-      # Iterate through user emails having google account and fetch each user's tasks
+    # Iterate through user emails having google account and fetch each user's tasks
     for user_email in user_emails:
         try:
             service = get_google_task_service(user_email)
 
-            five_minutes_ago = datetime.now(timezone.utc) - timedelta(minutes=5)
-            updated_min = five_minutes_ago.isoformat()
+            if timedelta_kwargs is None:
+                timedelta_kwargs = {"minutes": 5}
+
+            time_ago = datetime.now(timezone.utc) - timedelta(**timedelta_kwargs)
+            updated_min = time_ago.isoformat()
 
             results = service.tasks().list(tasklist="@default", showHidden=True, showDeleted=True, updatedMin=updated_min).execute()
             user_tasks = results.get("items", [])

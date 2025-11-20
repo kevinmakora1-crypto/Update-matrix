@@ -42,7 +42,8 @@ class PACI(Document):
             self.grd_operator_transfer = frappe.db.get_value('GRD Settings', None, 'default_grd_operator_transfer')
 
     def set_new_expiry_date(self):
-        self.new_civil_id_expiry_date = frappe.db.get_value("Employee", self.employee, "work_permit_expiry_date")
+        if not self.new_civil_id_expiry_date:
+            self.new_civil_id_expiry_date = frappe.db.get_value("Employee", self.employee, "work_permit_expiry_date")
 
 
     def on_update(self):

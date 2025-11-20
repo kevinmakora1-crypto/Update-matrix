@@ -23,7 +23,6 @@ from one_fm.utils import get_users_with_role_permitted_to_doctype
 from frappe.desk.form.assign_to import add as add_assignment, DuplicateToDoError, remove as remove_assignment, close_all_assignments
 
 class RequestforMaterial(BuyingController):
-    
     @frappe.whitelist()
     def get_conversion_factor(self, item_code, uom):
         edit_row = 0
@@ -780,12 +779,18 @@ def make_request_for_purchase(source_name, target_doc=None):
             target.qty = qty
             target.custom_request_for_material_item = obj.name
 
-    doclist = get_mapped_doc("Request for Material", source_name, 	{
+    doclist = get_mapped_doc("Request for Material", source_name, {
         "Request for Material": {
             "doctype": "Request for Purchase",
             "field_map": [
                 ["name", "request_for_material"],
-                ["t_warehouse","warehouse"]
+                ["t_warehouse", "warehouse"],
+                ["customer", "customer"],
+                ["project", "project"],
+                ["site", "site"],
+                ["is_refundable", "is_refundable"],
+                ["margin_type", "margin_type"],
+                ["margin_rate_or_amount", "margin_rate_or_amount"]
             ],
             "validation": {
                 "docstatus": ["=", 1]
@@ -798,7 +803,11 @@ def make_request_for_purchase(source_name, target_doc=None):
                 ["requested_item_name", "item_name"],
                 ["name", "request_for_material_item"],
                 ["name", "custom_request_for_material_item"],
-                ["parent", "request_for_material"]
+                ["parent", "request_for_material"],
+                ["is_refundable", "is_refundable"],
+                ["margin_known", "margin_known"],
+                ["margin_type", "margin_type"],
+                ["margin_rate_or_amount", "margin_rate_or_amount"]
             ],
             "postprocess": update_item,
             "condition": lambda doc: (doc.item_code and doc.custom_rfp_quantity < doc.qty and doc.reject_item==0)
@@ -826,9 +835,21 @@ def create_partial_request_for_purchase(source_name, items):
     rfp.company = source_doc.company
     rfp.request_for_material = source_name
     rfp.warehouse = source_doc.t_warehouse
+    rfp.customer = source_doc.customer
+    rfp.project = source_doc.project
+    rfp.site = source_doc.site
+    rfp.is_refundable = source_doc.is_refundable
+    rfp.margin_type = source_doc.margin_type
+    rfp.margin_rate_or_amount = source_doc.margin_rate_or_amount
 
     for item_data in items:
         source_item_doc = frappe.get_doc("Request for Material Item", item_data.get('request_for_material_item'))
+        
+        item_is_refundable = source_item_doc.is_refundable if source_item_doc.get('is_refundable') is not None else source_doc.is_refundable
+        item_margin_known = source_item_doc.margin_known if source_item_doc.get('margin_known') else source_doc.margin_known
+        item_margin_type = source_item_doc.margin_type if source_item_doc.get('margin_type') else source_doc.margin_type
+        item_margin_rate_or_amount = source_item_doc.margin_rate_or_amount if source_item_doc.get('margin_rate_or_amount') else source_doc.margin_rate_or_amount
+        
         rfp.append("items", {
             "item_code": item_data.get('item_code'),
             "qty": item_data.get('qty'),
@@ -838,7 +859,11 @@ def create_partial_request_for_purchase(source_name, items):
             "schedule_date": source_item_doc.schedule_date,
             "request_for_material": source_name,
             "request_for_material_item": item_data.get('request_for_material_item'),
-            "custom_request_for_material_item": item_data.get('request_for_material_item')
+            "custom_request_for_material_item": item_data.get('request_for_material_item'),
+            "is_refundable": item_is_refundable,
+            "margin_known": item_margin_known,
+            "margin_type": item_margin_type,
+            "margin_rate_or_amount": item_margin_rate_or_amount
         })
 
     rfp.insert(ignore_permissions=True)
@@ -1068,3 +1093,172 @@ def create_employee_uniform(rfm_name: str):
 		"message": _("{0} Employee Uniform document(s) created successfully").format(len(created_uniforms)),
 		"created_uniforms": created_uniforms
 	}
+
+
+@frappe.whitelist()
+def make_request_for_request_for_quotation(source_name, target_doc=None):
+    def set_missing_values(source, target):
+        target.transaction_date = nowdate()
+        target.status = "Draft"
+        target.company = source.company
+        
+    def update_item(source_doc, target_doc, source_parent):
+        target_doc.schedule_date = source_doc.schedule_date
+        
+        ordered = source_doc.ordered_qty or 0
+        purchase_qty = source_doc.qty or 0
+        remaining_qty = purchase_qty - ordered
+        
+        target_doc.qty = remaining_qty
+        target_doc.stock_qty = remaining_qty * (source_doc.conversion_factor or 1)
+        target_doc.uom = source_doc.uom
+        target_doc.stock_uom = source_doc.stock_uom
+        target_doc.conversion_factor = source_doc.conversion_factor
+        target_doc.warehouse = source_doc.warehouse or source_doc.t_warehouse
+        target_doc.project_name = source_parent.project
+        
+        target_doc.custom_request_for_material = source_parent.name
+        target_doc.custom_request_for_material_item = source_doc.name
+        
+    doclist = get_mapped_doc(
+        "Request for Material",
+        source_name,
+        {
+            "Request for Material": {
+                "doctype": "Request for Quotation",
+                "validation": {
+                    "docstatus": ["=", 1]
+                }
+            },
+            "Request for Material Item": {
+                "doctype": "Request for Quotation Item",
+                "field_map": {
+                    "item_code": "item_code",
+                    "item_name": "item_name",
+                    "description": "description",
+                },
+                "postprocess": update_item,
+                "condition": lambda doc: doc.item_code and not doc.reject_item
+            }
+        },
+        target_doc,
+        set_missing_values
+    )
+    
+    return doclist
+
+
+
+@frappe.whitelist()
+def make_supplier_quotation(source_name, target_doc=None):
+    def set_missing_values(source, target):
+        target.transaction_date = nowdate()
+        target.status = "Draft"
+        target.company = source.company
+        
+    def update_item(source_doc, target_doc, source_parent):
+        ordered = source_doc.ordered_qty or 0
+        purchase_qty = source_doc.qty or 0
+        remaining_qty = purchase_qty - ordered
+        
+        target_doc.qty = remaining_qty
+        target_doc.stock_qty = remaining_qty * (source_doc.conversion_factor or 1)
+        target_doc.uom = source_doc.uom
+        target_doc.stock_uom = source_doc.stock_uom
+        target_doc.conversion_factor = source_doc.conversion_factor
+        target_doc.warehouse = source_doc.warehouse or source_doc.t_warehouse
+        target_doc.project = source_parent.project
+
+        if source_doc.rate:
+            target_doc.rate = source_doc.rate
+            target_doc.amount = remaining_qty * source_doc.rate
+        
+        
+    doclist = get_mapped_doc(
+        "Request for Material",
+        source_name,
+        {
+            "Request for Material": {
+                "doctype": "Supplier Quotation",
+                "validation": {
+                    "docstatus": ["=", 1]
+                }
+            },
+            "Request for Material Item": {
+                "doctype": "Supplier Quotation Item",
+                "field_map": {
+                    "item_code": "item_code",
+                    "item_name": "item_name",
+                    "description": "description",
+                },
+                "postprocess": update_item,
+                "condition": lambda doc: doc.item_code and not doc.reject_item and (doc.ordered_qty or 0) < (doc.qty or 0)
+            }
+        },
+        target_doc,
+        set_missing_values
+    )
+    
+    return doclist
+
+@frappe.whitelist()
+def make_asset_movement(source_name, target_doc=None):
+    """
+    Create Asset Movement from Request for Material
+    """
+    def post_process(source, target):
+        """Create multiple rows for each asset based on pending quantity"""
+        target.assets = []  # Clear any existing items
+
+        for item in source.items:
+            # Only process fixed asset items with pending quantity
+            if item.is_fixed_asset and item.custom_pending_quantity > 0:
+                # Create rows based on pending quantity
+                for i in range(int(item.custom_pending_quantity)):
+                    asset_item = target.append('assets', {})
+                    asset_item.rfm_item_code = item.item_code
+                    asset_item.rfm_item_reference = item.name
+                    asset_item.rfm_item = item.name
+                    if source.purpose == "Issue":
+                        asset_item.to_employee = getattr(source, 'employee', None)
+
+        # Set the document as new (not saved)
+        target.docstatus = 0
+        target.__islocal = 1
+
+    # Map the document
+    doclist = get_asset_movement_doclist(source_name, target_doc)
+
+    # Run post-processing to create child rows
+    post_process(frappe.get_doc("Request for Material", source_name), doclist)
+
+    return doclist
+
+def get_asset_movement_doclist(source_name, target_doc=None):
+    def set_missing_values(source, target):
+        """Set values in the target document"""
+        target.transaction_date = frappe.utils.today()
+        target.reference_doctype = "Request for Material"
+        target.reference_name = source.name
+        if hasattr(source, 'company'):
+            target.company = source.company
+
+    return get_mapped_doc(
+        "Request for Material",
+        source_name,
+        {
+            "Request for Material": {
+                "doctype": "Asset Movement",
+                "field_map": {
+                    "name": "rfm_reference",
+                    "purpose": "purpose"
+                },
+                "validation": {
+                    "docstatus": ["=", 1]
+                }
+            }
+        },
+        target_doc,
+        set_missing_values,
+        ignore_permissions=False
+    )

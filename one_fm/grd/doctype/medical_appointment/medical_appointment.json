@@ -1,36 +1,40 @@
 {
  "actions": [],
  "autoname": "naming_series:",
- "creation": "2025-10-23 01:25:21",
- "default_view": "List",
+ "creation": "2025-11-07 16:55:00.520867",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "naming_series",
-  "company_name",
   "employee",
   "date_of_application",
-  "preparation",
   "column_break_4",
-  "appointment_type",
-  "pro_user",
+  "company_name",
+  "medical_appointment_type",
+  "preparation",
   "section_break_9",
   "date_and_time_confirmation",
+  "column_break_yhuu",
   "upload_appointment_form",
+  "supervisor_section",
+  "employee_supervisor",
+  "pickup_location",
+  "block_roster",
+  "reason_for_rejection",
+  "column_break_diby",
+  "operations_site",
+  "accommodation",
+  "accommodation_name",
+  "transportation_section",
+  "column_break_lutu",
   "required_transportation",
-  "section_break_13",
-  "preparing_documents",
-  "column_break_14",
-  "preparing_documents_on",
+  "column_break_qcdf",
+  "transportation_supervisor_user",
   "section_break_4",
-  "category",
-  "service_user",
-  "application",
   "governorate",
   "column_break_7",
   "service_location",
-  "service_type",
   "section_break_12",
   "civil_id",
   "full_name",
@@ -47,19 +51,13 @@
   "third_name_english",
   "last_name_english",
   "section_break_24",
-  "grd_operator_renewal",
-  "grd_operator_transfer",
-  "grd_supervisor",
-  "transport_user",
-  "operations_manager",
-  "reminded_grd_operator",
-  "reminded_grd_operator_again",
-  "reminded_grd_operator_documents",
-  "reminded_grd_operator_documents_again",
-  "notify_operations",
-  "notify_transport",
+  "government_relations_operator",
+  "pro_user",
+  "column_break_oemt",
   "completed_on",
   "website",
+  "payment_invoice",
+  "section_break_yfkx",
   "amended_from"
  ],
  "fields": [
@@ -71,20 +69,16 @@
    "options": "MAP-.YYYY.-"
   },
   {
-   "default": "One Facilities Management",
-   "fieldname": "company_name",
-   "fieldtype": "Data",
-   "label": "Company Name "
-  },
-  {
    "fieldname": "employee",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Employee",
    "options": "Employee",
-   "reqd": 1
+   "reqd": 1,
+   "ignore_user_permissions": 1
   },
   {
+   "default": "Today",
    "fieldname": "date_of_application",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -92,28 +86,28 @@
    "label": "Date of Application"
   },
   {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "One Facilities Management",
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "label": "Company Name "
+  },
+  {
+   "fieldname": "medical_appointment_type",
+   "fieldtype": "Select",
+   "label": "Medical Appointment Type",
+   "options": "\nFirst Time\nRenewal",
+   "reqd": 1
+  },
+  {
    "fieldname": "preparation",
    "fieldtype": "Link",
    "hidden": 1,
    "label": "Preparation",
    "options": "Preparation"
-  },
-  {
-   "fieldname": "column_break_4",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "appointment_type",
-   "fieldtype": "Select",
-   "label": "Appointment Type",
-   "options": "\nRenewal\nLocal Transfer"
-  },
-  {
-   "fieldname": "pro_user",
-   "fieldtype": "Link",
-   "label": "PRO User",
-   "options": "User",
-   "reqd": 1
   },
   {
    "fieldname": "section_break_9",
@@ -128,62 +122,105 @@
    "label": "Date and Time Confirmation"
   },
   {
+   "fieldname": "column_break_yhuu",
+   "fieldtype": "Column Break"
+  },
+  {
    "allow_on_submit": 1,
    "fieldname": "upload_appointment_form",
    "fieldtype": "Attach",
    "label": "Upload Appointment Form"
   },
   {
-   "fieldname": "required_transportation",
+   "fieldname": "supervisor_section",
+   "fieldtype": "Section Break",
+   "label": "Supervisor"
+  },
+  {
+   "fieldname": "employee_supervisor",
+   "fieldtype": "Link",
+   "label": "Employee Supervisor",
+   "no_copy": 1,
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "pickup_location",
    "fieldtype": "Select",
-   "label": "Required Transportation",
+   "label": "Pickup Location",
+   "options": "\nAccommodation\nOperations Site"
+  },
+  {
+   "fieldname": "block_roster",
+   "fieldtype": "Select",
+   "label": "Block Roster",
    "options": "\nYes\nNo"
   },
   {
-   "fieldname": "section_break_13",
-   "fieldtype": "Section Break"
-  },
-  {
-   "default": "No",
-   "fieldname": "preparing_documents",
+   "fieldname": "reason_for_rejection",
    "fieldtype": "Select",
-   "label": "Preparing Documents",
-   "options": "\nYes\nNo"
+   "label": "Reason for Rejection",
+   "options": "\nStaff Shortage\nAnother Employee has appointment from same site\nClient requested another appointment",
+   "read_only": 1
   },
   {
-   "fieldname": "column_break_14",
+   "fieldname": "column_break_diby",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "preparing_documents_on",
-   "fieldtype": "Datetime",
-   "label": "Preparing Documents On",
+   "depends_on": "eval: doc.pickup_location == \"Operations Site\"",
+   "fieldname": "operations_site",
+   "fieldtype": "Link",
+   "label": "Operations Site",
+   "options": "Operations Site"
+  },
+  {
+   "depends_on": "eval: doc.pickup_location == \"Accommodation\"",
+   "fieldname": "accommodation",
+   "fieldtype": "Link",
+   "label": "Accommodation",
+   "options": "Accommodation"
+  },
+  {
+   "depends_on": "eval: doc.pickup_location == \"Accommodation\"",
+   "fetch_from": "accommodation.accommodation",
+   "fieldname": "accommodation_name",
+   "fieldtype": "Data",
+   "label": "Accommodation Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "transportation_section",
+   "fieldtype": "Section Break",
+   "label": "Transportation"
+  },
+  {
+   "fieldname": "column_break_lutu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "required_transportation",
+   "fieldtype": "Select",
+   "label": "Required Transportation",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_qcdf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.required_transportation == \"Yes\"",
+   "fieldname": "transportation_supervisor_user",
+   "fieldtype": "Link",
+   "label": "Transportation Supervisor User",
+   "mandatory_depends_on": "eval: doc.required_transportation == \"Yes\"",
+   "options": "User"
   },
   {
    "fieldname": "section_break_4",
    "fieldtype": "Section Break"
-  },
-  {
-   "default": "Organization",
-   "fieldname": "category",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Category"
-  },
-  {
-   "default": "Expat",
-   "fieldname": "service_user",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Service User"
-  },
-  {
-   "default": "Criminal Evidence",
-   "fieldname": "application",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Application"
   },
   {
    "default": "Hawally",
@@ -200,13 +237,6 @@
    "fieldname": "service_location",
    "fieldtype": "Data",
    "label": "Service Location"
-  },
-  {
-   "default": "Fingerprint for Companies",
-   "fieldname": "service_type",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Service Type"
   },
   {
    "fieldname": "section_break_12",
@@ -325,92 +355,22 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "grd_operator_renewal",
+   "default": "User",
+   "fieldname": "government_relations_operator",
    "fieldtype": "Link",
-   "hidden": 1,
-   "label": "GRD Operator Renewal",
+   "label": "Government Relations Operator",
    "options": "User"
   },
   {
-   "fieldname": "grd_operator_transfer",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "GRD Operator Transfer"
-  },
-  {
-   "fieldname": "grd_supervisor",
+   "fieldname": "pro_user",
    "fieldtype": "Link",
-   "hidden": 1,
-   "label": "GRD Supervisor",
-   "options": "User"
-  },
-  {
-   "fieldname": "transport_user",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Transport user",
-   "options": "User"
-  },
-  {
-   "fieldname": "operations_manager",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Operations Manager",
-   "no_copy": 1,
+   "label": "PRO User",
    "options": "User",
-   "read_only": 1
+   "reqd": 1
   },
   {
-   "default": "0",
-   "fieldname": "reminded_grd_operator",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Reminded GRD Operator",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "reminded_grd_operator_again",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Reminded GRD Operator Again",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "reminded_grd_operator_documents",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Reminded GRD Operator Documents",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "reminded_grd_operator_documents_again",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Reminded GRD Operator Documents Again",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "notify_operations",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Notify Operations",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "notify_transport",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Notify Transport"
+   "fieldname": "column_break_oemt",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "completed_on",
@@ -427,6 +387,15 @@
    "label": "website"
   },
   {
+   "fieldname": "payment_invoice",
+   "fieldtype": "Attach",
+   "label": "Payment Invoice"
+  },
+  {
+   "fieldname": "section_break_yfkx",
+   "fieldtype": "Section Break"
+  },
+  {
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",
@@ -440,7 +409,7 @@
  "grid_page_length": 50,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-10-23 21:47:27.751741",
+ "modified": "2025-11-13 10:27:55.612430",
  "modified_by": "Administrator",
  "module": "GRD",
  "name": "Medical Appointment",

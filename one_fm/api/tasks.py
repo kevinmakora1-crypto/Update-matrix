@@ -831,8 +831,8 @@ def create_client_event_shift_assignment(date):
 def get_client_event_schedule(date, employment_type):
 	from frappe.query_builder import DocType
 
-	EmployeeSchedule = DocType('tabEmployee Schedule')
-	Employee = DocType('tabEmployee')
+	EmployeeSchedule = DocType('Employee Schedule')
+	Employee = DocType('Employee')
 
 	return (
 		frappe.qb.from_(EmployeeSchedule)

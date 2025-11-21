@@ -167,12 +167,15 @@ class Preparation(Document):
 
     @frappe.whitelist()
     def set_renewal_for_all_preparation_record(self, renew_all):
-        # Get costing of renewal for an year
-        costing  = get_grd_renewal_extension_cost("Renewal", "1 Year")
+        no_of_years = "1 Year"
+
         # Set the costing of renewal for an year in preparation record
         for preparation in self.preparation_record:
-            preparation.renewal_or_extend = "Renewal" if renew_all else ""
-            preparation.no_of_years = "1 Year" if renew_all else ""
+            # Get costing of renewal for an year
+            costing, extension_type  = get_renewal_extension_cost_for_employee(preparation.employee, no_of_years)
+
+            preparation.renewal_or_extend = extension_type if renew_all else ""
+            preparation.no_of_years = no_of_years if renew_all else ""
             preparation.work_permit_amount = costing.work_permit_amount if renew_all else ""
             preparation.medical_insurance_amount = costing.medical_insurance_amount if renew_all else ""
             preparation.residency_stamp_amount = costing.residency_stamp_amount if renew_all else ""
@@ -448,3 +451,16 @@ def update_preparation_employee_dates(preparation: str):
             }, update_modified=False)
             updated.append(row.name)
     return {'updated_rows': updated, 'data': data}
+
+def get_renewal_extension_cost_for_employee(employee, no_of_years = "1 Year"):
+    """
+        Get renewal/extension cost for an employee based on his nationality
+    """
+    employee_nationality = frappe.db.get_value("Employee", employee, "one_fm_nationality")
+
+    if employee_nationality == "Kuwaiti":
+        extension_type = "Renewal (Kuwaiti)"
+    else:
+        extension_type = "Renewal (Non-Kuwaiti)"
+    
+    return get_grd_renewal_extension_cost(extension_type, no_of_years), extension_type

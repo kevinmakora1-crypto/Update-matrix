@@ -155,5 +155,6 @@ def get_field_properties():
 	field_properties.extend(get_hd_pause_service_level_agreement_on_status_properties())
 	field_properties.extend(get_user_properties())
 	field_properties.extend(get_quality_feedback_template_properties())
+	field_properties.extend(get_user_properties())
 
 	return field_properties

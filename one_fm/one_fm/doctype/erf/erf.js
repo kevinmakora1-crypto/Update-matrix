@@ -66,14 +66,14 @@ frappe.ui.form.on('ERF', {
 		}
 		frm.set_query('recruiter_assigned', function() {
 			return{
-				filters: [["Has Role","role","=", "Recruiter"]],
+				filters: [["Has Role","role","=", "Recruiter"], ["User", "enabled", "=", 1]],
 				query: "one_fm.hiring.utils.fetch_recruiters"
 			}
     });
 
 		frm.set_query('secondary_recruiter_assigned', function() {
 			return{
-				filters: [["Has Role","role","=", "Recruiter"]],
+				filters: [["Has Role","role","=", "Recruiter"], ["User", "enabled", "=", 1]],
 				query: "one_fm.hiring.utils.fetch_recruiters"
 			}
 		});

@@ -184,6 +184,7 @@ class AttendanceCheck(Document):
     def on_submit(self):
         if not self.attendance_status:
             frappe.throw(_('To Approve the record set Attendance Status'))
+        self.update_employee_checkin_records()
         shift_working = frappe.db.get_value("Employee", self.employee, "shift_working")
         if self.attendance_status == "On Leave":
             self.check_on_leave_record()
@@ -191,6 +192,36 @@ class AttendanceCheck(Document):
             self.validate_day_off()
         if self.attendance_status != "On Leave":
             self.mark_attendance()
+
+    def update_employee_checkin_records(self):
+        if self.attendance_status == "Present":
+            employment_type = frappe.db.get_value("Employee", self.employee, "employment_type")
+            if employment_type == "Full-time":
+                if self.checkin_record:
+                    self.update_employee_checkin(self.checkin_record, self.start_time)
+                else:
+                    self.create_employee_checkin_record(self.start_time, "IN")
+                if self.checkout_record:
+                    self.update_employee_checkin(self.checkout_record, self.end_time)
+                else:
+                    self.create_employee_checkin_record(self.end_time, "OUT")
+
+    def update_employee_checkin(self, checkin_name, time):
+        frappe.db.set_value("Employee Checkin", checkin_name, {
+            "time": time,
+            "source": "Attendance Check"
+        })
+
+    def create_employee_checkin_record(self, time, log_type):
+        checkin = frappe.get_doc({
+            "doctype": "Employee Checkin",
+            "employee": self.employee,
+            "time": time,
+            "log_type": log_type,
+            "shift_assignment": self.shift_assignment,
+            "source": "Attendance Check"
+        })
+        checkin.insert(ignore_permissions=True)
 
     def check_on_leave_record(self):
         if self.attendance_status == "On Leave":

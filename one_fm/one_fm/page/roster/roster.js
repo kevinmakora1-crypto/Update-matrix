@@ -1175,7 +1175,9 @@ let classmap = {
 	"Half Day": "greenboxcolor",
 	"On Leave": "purplebox",
 	"Holiday": "greyboxcolor",
-	"On Hold": "orangeboxcolor"
+	"On Hold": "orangeboxcolor",
+	"Fingerprint Appointment": "cyanboxcolor",
+	"On-the-job Training": "tealboxcolor",
 };
 
 let abbr_map = {
@@ -1192,7 +1194,9 @@ let abbr_map = {
 	"Annual Leave": "AL",
 	"Emergency Leave": "EL",
 	"Leave Without Pay": "LWP",
-	"Working": "!"
+	"Working": "!",
+	"Fingerprint Appointment": "FA",
+	"On-the-job Training": "OJT",
 
 };
 
@@ -1320,6 +1324,7 @@ function render_roster(res, page) {
 		let basic_count = 0;
 		let ot_count = 0;
 		let employeeCellsHTML = ""; // Initialize for batch append
+		let is_fingerprint_appointment = false;
 
 		while (current_day_iter <= end_moment_iter) {
 			let sch = ``;
@@ -1347,6 +1352,10 @@ function render_roster(res, page) {
 						} else if (employee_availability && !post_abbrv){
 							bgclass = classmap[employee_availability];
 							data_selectid = `${employee}|${date}|${employee_availability}`;
+						}else if(employee_availability == "On-the-job Training") {
+							basic_count++;
+							bgclass = "tealboxcolor";
+							data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
 						}
 					}
 					else if (!attendance && roster_type == "Basic" && page.filters[applied_filter] != record[applied_filter] && day_off_ot == 0 ){
@@ -1357,6 +1366,10 @@ function render_roster(res, page) {
 						} else if (employee_availability && !post_abbrv){
 							bgclass = classmap[employee_availability];
 							data_selectid = `${employee}|${date}|${employee_availability}`;
+						} else if(employee_availability == "On-the-job Training") {
+							basic_count++;
+							bgclass = "tealboxcolor";
+							data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
 						}
 					}
 					else if (!attendance && roster_type == "Over-Time" && page.filters[applied_filter] == record[applied_filter]) {
@@ -1379,8 +1392,12 @@ function render_roster(res, page) {
 						bgclass = "diffdayoffot";
 						data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
 					}
-					else if (attendance && in_list(["Day Off", "On Leave", "Absent", "On Hold", "Client Day Off"], attendance)) {
+					else if (attendance && in_list(["Day Off", "On Leave", "Absent", "On Hold", "Client Day Off", "Fingerprint Appointment"], attendance)) {
 						data_selectid = `${employee}|${date}|${employee_availability}`;
+						if (attendance == "Fingerprint Appointment") {
+							is_fingerprint_appointment = true;
+						}
+
 						if (attendance == "Absent") {
 							if (roster_type == "Over-Time") { bgclass = bgclass ? `${bgclass}-absentot` : "absentot" }
 							else if (roster_type == "Basic" && day_off_ot == 1) { bgclass = "absentdayoffot" }
@@ -1403,7 +1420,10 @@ function render_roster(res, page) {
 					}
 
 					if (k == (employees_data[employee_key][date_key].length - 1)) {
-						if (attendance && attendance == "On Leave" && !employee_availability) {
+						if (attendance && attendance == "Fingerprint Appointment") {
+							tooltiptext += `Fingerprint Appointment`;
+							abbrv += `${abbr_map[attendance]}<br>`;
+						} else if (attendance && attendance == "On Leave" && !employee_availability) {
 							tooltiptext += `${leave_application}<br>${leave_type}`;
 							abbrv += `${abbr_map[attendance]}<br>`;
 						} else if (attendance && !employee_availability){
@@ -1447,13 +1467,15 @@ function render_roster(res, page) {
 					</td>`;
 			} else {
 				let tooltip_html = tooltiptext ? `<span class="customtooltiptext ${bgclass}">${tooltiptext}</span>` : "";
+				let hoverClass = is_fingerprint_appointment ? "forbidden" : (moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden");
 				sch = `
 					<td class="${todayClass}">
-						<div class="${moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden"} tablebox ${bgclass} d-flex justify-content-center align-items-center text-white so customtooltip"
+						<div class="${hoverClass} tablebox ${bgclass} d-flex justify-content-center align-items-center text-white so customtooltip"
 							data-selectid="${data_selectid}" data-ot="${data_ot}">${abbrv}${tooltip_html}</div>
 					</td>`;
 			}
 			employeeCellsHTML += sch;
+			is_fingerprint_appointment = false;
 			current_day_iter.add(1, "days");
 		}
 		$employeeRow.append(employeeCellsHTML);

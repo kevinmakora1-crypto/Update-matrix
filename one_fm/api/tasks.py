@@ -737,7 +737,7 @@ def assign_am_shift():
 			SELECT * from `tabEmployee Schedule` ES
 			WHERE
 			ES.date = '{date}'
-			AND ES.employee_availability = "Working"
+			AND ES.employee_availability IN ("Working", "On-the-job Training")
 			AND ES.is_replaced = 0
 			AND ES.roster_type = "Basic"
 			AND ES.shift_type IN(
@@ -755,7 +755,7 @@ def assign_am_shift():
 		roster.extend(non_shift)
 
 	create_shift_assignment(roster, date, 'AM')
-
+	create_client_event_shift_assignment(date)
 
 def assign_pm_shift():
 	date = cstr(getdate())
@@ -765,7 +765,7 @@ def assign_pm_shift():
 			SELECT * from `tabEmployee Schedule` ES
 			WHERE
 			ES.date = '{date}'
-			AND ES.employee_availability = "Working"
+			AND ES.employee_availability IN ("Working", "On-the-job Training")
 			AND ES.is_replaced = 0
 			AND ES.roster_type = "Basic"
 			AND ES.shift_type IN(
@@ -783,7 +783,74 @@ def assign_pm_shift():
 		roster.extend(non_shift)
 
 	create_shift_assignment(roster, date, 'PM')
+	create_client_event_shift_assignment(date)
 
+def create_client_event_shift_assignment(date):
+	date = cstr(getdate())
+	employment_type = ["Full-time", "Part-time", "Intern", "Subcontractor"]
+	roster = get_client_event_schedule(date, employment_type)
+	if not roster:
+		return
+	for employee_schedule in roster:
+		existing_assignments = frappe.db.get_list(
+			"Shift Assignment",
+			filters={
+				'employee': employee_schedule.employee,
+				'start_date': employee_schedule.start_datetime.date(),
+				'docstatus': 1,
+				'is_event_based_shift': 1
+			},
+			fields=['name']
+		)
+		if existing_assignments:
+			continue
+		try:
+			shift_assignment = frappe.get_doc(
+				{
+					"doctype": "Shift Assignment",
+					"employee": employee_schedule.employee,
+					"employee_name": employee_schedule.employee_name,
+					"start_date": employee_schedule.start_datetime.date(),
+					"end_date": employee_schedule.end_datetime.date(),
+					"shift": employee_schedule.shift,
+					"employee_schedule": employee_schedule.name,
+					"site": employee_schedule.site,
+					"project": employee_schedule.project,
+					"is_event_based_shift": 1,
+					"event_staff": employee_schedule.event_staff,
+					"start_datetime": employee_schedule.start_datetime,
+					"end_datetime": employee_schedule.end_datetime,
+					"site_location": employee_schedule.site_location,
+				}
+			)
+			shift_assignment.insert(ignore_permissions=True)
+			shift_assignment.submit()
+		except Exception as e:
+			frappe.log_error(message=frappe.get_traceback(), title='Error Creating Client Event Shift Assignment')
+
+def get_client_event_schedule(date, employment_type):
+	from frappe.query_builder import DocType
+
+	EmployeeSchedule = DocType('Employee Schedule')
+	Employee = DocType('Employee')
+
+	return (
+		frappe.qb.from_(EmployeeSchedule)
+		.select(EmployeeSchedule.star)
+		.where(
+			(EmployeeSchedule.date == date) &
+			(EmployeeSchedule.roster_type == "Basic") &
+			(EmployeeSchedule.is_event_schedule == 1) &
+			(EmployeeSchedule.employee.isin(
+				frappe.qb.from_(Employee)
+				.select(Employee.name)
+				.where(
+					(Employee.status == "Active") &
+					(Employee.employment_type.isin(employment_type))
+				)
+			))
+		)
+	).run(as_dict=True)
 
 def end_previous_shifts(time):
 	shift_type = get_shift_type(time)
@@ -805,8 +872,6 @@ def get_shift_type(time):
 
 def create_shift_assignment(roster, date, time):
 	try:
-		
-		
 		owner = frappe.session.user
 		creation = now()
 		shift_type = get_shift_type(time)
@@ -868,7 +933,7 @@ def create_shift_assignment(roster, date, time):
 				INSERT INTO `tabShift Assignment` (`name`, `company`, `docstatus`, `employee`, `employee_name`, `shift_type`, `site`, `project`, `status`,
 				`shift_classification`, `site_location`, `start_date`, `start_datetime`, `end_datetime`, `department`,
 				`shift`, `operations_role`, `post_abbrv`, `roster_type`, `owner`, `modified_by`, `creation`, `modified`,
-				`shift_request`, `check_in_site`, `check_out_site`,`custom_day_off_ot`)
+				`shift_request`, `check_in_site`, `check_out_site`,`custom_day_off_ot`, `employee_schedule`, `custom_on_the_job_training`)
 				VALUES
 			"""
 			query_body = """"""
@@ -895,7 +960,7 @@ def create_shift_assignment(roster, date, time):
 							"{_shift_request.site or ''}", "{_project_r or ''}", 'Active', '{_shift_request.shift_type}', "{sites_list_dict.get(_shift_request.site) or ''}", "{date}",
 							"{shift_r_start_time or str(date)+' 08:00:00'}", "{shift_r_end_time or str(date)+' 17:00:00'}", "{r.department}",
 							"{_shift_request.operations_shift or ''}", "{_shift_request.operations_role or ''}", "{r.post_abbrv or ''}", "{_shift_request.roster_type}",
-							"{owner}", "{owner}", "{creation}", "{creation}", "{_shift_request.name}", "{_shift_request.check_in_site}", "{_shift_request.check_out_site}","{_day_off_ot}"),"""
+							"{owner}", "{owner}", "{creation}", "{creation}", "{_shift_request.name}", "{_shift_request.check_in_site}", "{_shift_request.check_out_site}","{_day_off_ot}", "{r.name}", "{r.on_the_job_training if r.employee_availability == 'On-the-job Training' else ''}"),"""
 					else:
 						_shift_type = shift_types_dict.get(r.shift_type) or default_shift
 						query_body += f"""
@@ -904,7 +969,7 @@ def create_shift_assignment(roster, date, time):
 							"{r.site or ''}", "{r.project or ''}", 'Active', '{_shift_type.shift_type}', "{sites_list_dict.get(r.site) or ''}", "{date}",
 							"{_shift_type.start_datetime or str(date)+' 08:00:00'}",
 							"{_shift_type.end_datetime or str(date)+' 17:00:00'}", "{r.department}", "{r.shift or ''}", "{r.operations_role or ''}", "{r.post_abbrv or ''}", "{r.roster_type}",
-							"{owner}", "{owner}", "{creation}", "{creation}", '', '', '',"{_day_off_ot}"),"""
+							"{owner}", "{owner}", "{creation}", "{creation}", '', '', '',"{_day_off_ot}", '{r.name}', "{r.on_the_job_training if r.employee_availability == 'On-the-job Training' else ''}"),"""
 				else:
 					has_rostered.append(r.employee_name)
 
@@ -933,7 +998,9 @@ def create_shift_assignment(roster, date, time):
 					check_out_site = VALUES(check_out_site),
 					shift_classification = VALUES(shift_classification),
 					status = VALUES(status),
-					custom_day_off_ot = '{_day_off_ot}'
+					custom_day_off_ot = '{_day_off_ot}',
+					employee_schedule = VALUES(employee_schedule),
+					custom_on_the_job_training = VALUES(custom_on_the_job_training)
 				"""
 				frappe.db.sql(query, values=[], as_dict=1)
 				frappe.db.commit()

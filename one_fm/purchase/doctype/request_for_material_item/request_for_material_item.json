@@ -32,8 +32,9 @@
   "warehouse",
   "qty",
   "uom",
-  "conversion_factor",
   "stock_uom",
+  "conversion_factor",
+  "stock_qty",
   "quantity_to_transfer",
   "employee",
   "employee_name",
@@ -46,25 +47,30 @@
   "amount",
   "actual_qty",
   "pur_qty",
-  "stock_qty",
+  "is_refundable",
+  "margin_known",
+  "margin_type",
+  "margin_rate_or_amount",
   "remarks_and_manufacturers_details_section",
   "remarks",
   "manufacture_details",
   "manufacturer",
   "manufacturer_part_no",
   "more_info",
-  "lead_time_date",
-  "custom_rfp_quantity",
   "transferred_quantity",
-  "issued_quantity",
   "custom_pending_quantity",
-  "purchased_qty",
   "projected_qty",
-  "ordered_qty",
-  "received_qty",
   "reject_item",
   "linked_request_for_material",
-  "linked_employee_uniform"
+  "custom_rfp_quantity",
+  "lead_time_date",
+  "column_break_wgrt",
+  "issued_quantity",
+  "ordered_qty",
+  "linked_employee_uniform",
+  "received_qty",
+  "purchased_qty",
+  "purchase_rfm_quantity"
  ],
  "fields": [
   {
@@ -200,20 +206,25 @@
    "width": "70px"
   },
   {
-   "default": "1",
+   "allow_on_submit": 1,
+   "depends_on": "eval:doc.item_code!==\"\"",
    "fieldname": "conversion_factor",
    "fieldtype": "Float",
-   "hidden": 1,
    "label": "UOM Conversion Factor",
-   "print_hide": 1
+   "mandatory_depends_on": "eval:doc.conversion_factor <= 0",
+   "print_hide": 1,
+   "read_only_depends_on": "eval:doc.uom === doc.stock_uom || doc.conversion_factor > 0"
   },
   {
    "allow_on_submit": 1,
+   "depends_on": "eval:doc.item_code!==\"\"",
+   "fetch_from": "item_code.stock_uom",
    "fieldname": "stock_uom",
    "fieldtype": "Link",
    "label": "Stock UOM",
    "options": "UOM",
-   "print_hide": 1
+   "print_hide": 1,
+   "read_only": 1
   },
   {
    "allow_on_submit": 1,
@@ -291,6 +302,7 @@
   },
   {
    "default": "0",
+   "description": "The quantity of this item that is in valid Request for Purchase",
    "fieldname": "custom_rfp_quantity",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -299,7 +311,9 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "default": "0",
+   "description": "The quantity of this item that has not been  transferred, issued, or purchased",
    "fieldname": "custom_pending_quantity",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -330,6 +344,7 @@
    "read_only": 1
   },
   {
+   "description": "The quantity of this item that has been purchased via Purchase Order",
    "fieldname": "ordered_qty",
    "fieldtype": "Float",
    "label": "Ordered Qty",
@@ -341,6 +356,7 @@
   },
   {
    "depends_on": "eval:doc.docstatus==1",
+   "description": "The quantity of this item that has been received via Purchase Receipts",
    "fieldname": "received_qty",
    "fieldtype": "Float",
    "label": "Received Quantity",
@@ -408,6 +424,7 @@
    "fieldname": "quantity_to_transfer",
    "fieldtype": "Float",
    "label": "Quantity to Transfer",
+   "no_copy": 1,
    "print_hide": 1,
    "report_hide": 1
   },
@@ -505,15 +522,20 @@
    "options": "URL"
   },
   {
+   "description": "The quantity of this item that has been transferred via Stock Entry",
    "fieldname": "transferred_quantity",
    "fieldtype": "Float",
    "label": "Transferred Quantity",
+   "no_copy": 1,
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
+   "description": "The quantity of this item that has been Issued via Stock Entry",
    "fieldname": "issued_quantity",
    "fieldtype": "Float",
    "label": "Issued Quantity",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -525,6 +547,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "default": "0",
    "description": "If checked, this item line is for a uniform request.",
    "fieldname": "is_uniform_request",
@@ -540,6 +563,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "depends_on": "eval:doc.is_uniform_request",
    "fieldname": "employee",
    "fieldtype": "Link",
@@ -549,6 +573,7 @@
    "options": "Employee"
   },
   {
+   "allow_on_submit": 1,
    "fetch_from": "employee.employee_id",
    "fieldname": "employee_id",
    "fieldtype": "Data",
@@ -556,6 +581,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fetch_from": "employee.one_fm_civil_id",
    "fieldname": "civil_id",
    "fieldtype": "Data",
@@ -563,16 +589,53 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fetch_from": "employee.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
    "label": "Employee Name",
    "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "purchase_rfm_quantity",
+   "fieldtype": "Float",
+   "label": "Purchase RFM Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_wgrt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_refundable",
+   "fieldtype": "Check",
+   "label": "Refundable"
+  },
+  {
+   "depends_on": "eval:doc.is_refundable == 1",
+   "fieldname": "margin_known",
+   "fieldtype": "Select",
+   "label": "Margin Known?",
+   "options": "\nYes\nNo"
+  },
+  {
+   "fieldname": "margin_type",
+   "fieldtype": "Select",
+   "label": "Margin Type",
+   "options": "\nPercentage\nAmount"
+  },
+  {
+   "depends_on": "eval:doc.is_refundable == 1 && doc.margin_known == \"Yes\"",
+   "fieldname": "margin_rate_or_amount",
+   "fieldtype": "Float",
+   "label": "Margin Rate or Amount"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2025-11-03 17:06:17.867342",
+ "modified": "2025-11-04 01:48:02.996002",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Material Item",

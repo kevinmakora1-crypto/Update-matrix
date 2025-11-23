@@ -8,7 +8,7 @@ from datetime import datetime
 import pandas as pd
 from six import string_types
 
-
+from firebase_admin import messaging
 import frappe
 from frappe import _
 from frappe.auth import validate_ip_address
@@ -4442,3 +4442,28 @@ def get_experience_types():
         limit_page_length=100
     )
     return experience_types
+
+
+@frappe.whitelist()
+def send_push_notification(employee_id, title, body):   
+    try:
+        api.initialize_firebase()
+        employee_data = frappe.db.get_value("Employee", {"employee_id": employee_id}, ["fcm_token", "device_os"],as_dict=1)
+        if not employee_data:
+            employee_data = frappe.db.get_value("Employee", employee_id, ["fcm_token", "device_os"],as_dict=1)
+        deviceToken = employee_data.fcm_token
+        device_os = employee_data.device_os
+
+        if deviceToken:
+            message = messaging.Message(
+                notification=messaging.Notification(
+                    title=title,
+                    body=body
+                ),
+                token=deviceToken
+            )
+            messaging.send(message)
+            return True
+    except Exception as e:
+        frappe.log_error(message = frappe.get_traceback(), title = "Error in sending push notification")
+        return False

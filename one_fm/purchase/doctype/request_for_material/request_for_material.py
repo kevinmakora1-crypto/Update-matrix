@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 import frappe
 import json
+from erpnext.stock.doctype.item.item import  get_uom_conv_factor
 from collections import defaultdict
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
@@ -22,6 +23,39 @@ from one_fm.utils import get_users_with_role_permitted_to_doctype
 from frappe.desk.form.assign_to import add as add_assignment, DuplicateToDoError, remove as remove_assignment, close_all_assignments
 
 class RequestforMaterial(BuyingController):
+    @frappe.whitelist()
+    def get_conversion_factor(self, item_code, uom):
+        edit_row = 0
+        item = frappe.get_cached_value("Item", item_code, ["variant_of", "stock_uom"], as_dict=True)
+        if not item_code or not item or uom == item.stock_uom:
+            return {"conversion_factor": 1.0}
+
+        item_codes = [item_code]
+        if item.variant_of:
+            item_codes.append(item.variant_of)
+
+        parent = frappe.qb.DocType("Item")
+        child = frappe.qb.DocType("UOM Conversion Detail")
+        query = (
+            frappe.qb.from_(parent)
+            .join(child)
+            .on(parent.name == child.parent)
+            .select(child.conversion_factor)
+            .where((parent.name.isin(item_codes)) & (child.uom == uom))
+            .orderby(parent.has_variants)
+            .limit(1)
+        )
+        conversion_factor = query.run(pluck="conversion_factor")
+
+        if not conversion_factor:
+            conversion_factor = get_uom_conv_factor(uom, item.stock_uom)
+        else:
+            conversion_factor = conversion_factor[0]
+
+        if not conversion_factor:
+            edit_row = 1 
+        return {"edit_row": edit_row}
+    
     @frappe.whitelist()
     def get_default_warehouse(self):
         return frappe.db.get_single_value('Stock Settings', 'default_warehouse')
@@ -44,8 +78,32 @@ class RequestforMaterial(BuyingController):
         self.set_item_fields()
         self.set_title()
         self.validate_item_qty()
+        self.validate_uom_conversion()
         # self.validate_item_reservation()
         self.validate_linked_request_quantities()
+        
+        
+    def on_update_after_submit(self):
+        self.validate_uom_conversion()
+        self.set_purchase_rfm_quantity()
+        
+    def set_pending_quantity_per_item(self):
+        """Set the pending quantity per item based on Stock UOM"""
+        
+    def validate_uom_conversion(self):
+        for item in self.items:
+            if item.uom and item.stock_uom and item.uom != item.stock_uom:
+                if not item.conversion_factor or item.conversion_factor <= 0:
+                    frappe.throw(_("Row #{}: Conversion factor must be set for Item: {} ").format(item.idx,item.item_code))
+
+                item.stock_qty = flt(item.qty) * flt(item.conversion_factor)
+                
+                must_be_whole_number = frappe.db.get_value("UOM", item.stock_uom, "must_be_whole_number")
+                if must_be_whole_number and item.stock_qty % 1 != 0:
+                    frappe.throw(_("Row #{0}: Stock Qty for item {1} cannot be a fraction as it must be a whole number.").format(item.idx, item.item_code))
+            else:
+                item.stock_qty = item.qty
+            item.custom_pending_quantity = item.stock_qty
 
     def _initialize_custom_quantities(self):
             """
@@ -54,7 +112,10 @@ class RequestforMaterial(BuyingController):
             """
             for item in self.items:
                     item.custom_rfp_quantity = 0
-                    item.custom_pending_quantity = item.qty
+                    if item.uom != item.stock_uom:
+                        item.custom_pending_quantity = item.stock_qty
+                    else:
+                        item.custom_pending_quantity = item.qty
 
     def validate_item_reservation(self):
         # validate item reservation
@@ -94,6 +155,8 @@ class RequestforMaterial(BuyingController):
 
     #in process
     def validate_item_qty(self):
+        if self.purpose == "Purchase":
+            return
         if self.items:
             for d in self.items:
                 if not d.qty:
@@ -173,6 +236,7 @@ class RequestforMaterial(BuyingController):
     def before_cancel(self):
         if self.workflow_state == 'Rejected' and frappe.session.user == self.request_for_material_approver:
             self.notify_material_requester()
+        self.set_purchase_rfm_quantity()
 
     def on_submit(self):
         self._initialize_custom_quantities()
@@ -183,6 +247,7 @@ class RequestforMaterial(BuyingController):
             self.assign_to_warehouse_supervisor()
         if self.per_received == 100:
             close_all_assignments(self.doctype, self.name)
+        self.set_purchase_rfm_quantity()
 
     def _get_total_rfp_quantity(self):
         return frappe.db.sql("""
@@ -281,7 +346,43 @@ class RequestforMaterial(BuyingController):
                 pass
         elif self.technical_verification_needed == "No" and self.technical_verification_from:
             remove_assignment(self.doctype, self.name, self.technical_verification_from)
+            
+    def set_purchase_rfm_quantity(self):
+        """For Issue or Transfer RFMs, set the purchased quantity per item based on linked Purchase RFMs"""
+        if self.purpose in ['Transfer','Issue'] or not self.issue_transfer_rfm:
+            return
+        purchase_dict = {}
+        for item in self.items:
+            """Fetch the sum of all the RFMs that are linked to 
+            this RFM of Type Purchase and set the total value in 
+            the purchase_rfm_quantity  field """
+            
 
+            purchased_qty = frappe.db.sql("""
+                    SELECT 
+                        SUM(rfmi.stock_qty)
+                    FROM 
+                        `tabRequest for Material Item` AS rfmi
+                    JOIN 
+                        `tabRequest for Material` AS rfm ON rfmi.parent = rfm.name
+                    WHERE 
+                        rfm.issue_transfer_rfm = %s 
+                        AND rfm.purpose = 'Purchase' 
+                        AND rfm.docstatus = 1
+                        AND rfm.workflow_state != 'Rejected'
+                        AND rfmi.item_code = %s
+                """, (self.issue_transfer_rfm, item.item_code))[0][0] or 0
+            purchase_dict[item.item_code] = purchased_qty
+        rfm_doc = frappe.get_doc('Request for Material', self.issue_transfer_rfm)
+        for one in rfm_doc.items:
+            if  purchase_dict.get(one.item_code,0):
+                
+                new_pending_amount = one.stock_qty - purchase_dict[one.item_code]
+                one.db_set('custom_pending_quantity', new_pending_amount)
+                one.db_set('purchase_rfm_quantity', purchase_dict[one.item_code])
+        frappe.db.commit()
+    
+    
     def check_modified_date(self):
         mod_db = frappe.db.sql("""select modified from `tabRequest for Material` where name = %s""",
             self.name)
@@ -415,14 +516,14 @@ class RequestforMaterial(BuyingController):
             key_type, key_val = build_key(it)
             if not key_val:  # safety, should not happen per business rule
                 frappe.throw(_("Source RFM {0} contains a row without Item Code and Item Name.").format(frappe.bold(linked_name)))
-            add_to(source_totals, (key_type, key_val), it.qty)
+            add_to(source_totals, (key_type, key_val), it.stock_qty)
 
         current_totals = {}
         for it in self.items:
             key_type, key_val = build_key(it)
             if not key_val:
                 frappe.throw(_("Row {0}: missing Item Code and Item Name").format(it.idx))
-            add_to(current_totals, (key_type, key_val), it.qty)
+            add_to(current_totals, (key_type, key_val), it.stock_qty)
 
         violations = []
         for key, curr_qty in current_totals.items():
@@ -662,40 +763,6 @@ def make_delivery_note(source_name, target_doc=None):
 
     return doclist
 
-@frappe.whitelist()
-def create_partial_request_for_purchase(source_name, items):
-    """
-    Creates a Request for Purchase for a subset of items from a Request for Material.
-    :param source_name: The name of the source Request for Material.
-    :param items: A list of dicts of items to include in the RFP.
-    """
-    if isinstance(items, str):
-        items = json.loads(items)
-
-    source_doc = frappe.get_doc("Request for Material", source_name)
-
-    rfp = frappe.new_doc("Request for Purchase")
-    rfp.company = source_doc.company
-    rfp.request_for_material = source_name
-    rfp.warehouse = source_doc.t_warehouse
-
-    for item_data in items:
-        source_item_doc = frappe.get_doc("Request for Material Item", item_data.get('request_for_material_item'))
-        rfp.append("items", {
-            "item_code": item_data.get('item_code'),
-            "qty": item_data.get('qty'),
-            "item_name": source_item_doc.item_name,
-            "description": source_item_doc.requested_description,
-            "uom": source_item_doc.uom,
-            "schedule_date": source_item_doc.schedule_date,
-            "request_for_material": source_name,
-            "request_for_material_item": item_data.get('request_for_material_item'),
-            "custom_request_for_material_item": item_data.get('request_for_material_item')
-        })
-
-    rfp.insert(ignore_permissions=True)
-    
-    return rfp
 
 @frappe.whitelist()
 def make_request_for_purchase(source_name, target_doc=None):
@@ -712,12 +779,18 @@ def make_request_for_purchase(source_name, target_doc=None):
             target.qty = qty
             target.custom_request_for_material_item = obj.name
 
-    doclist = get_mapped_doc("Request for Material", source_name, 	{
+    doclist = get_mapped_doc("Request for Material", source_name, {
         "Request for Material": {
             "doctype": "Request for Purchase",
             "field_map": [
                 ["name", "request_for_material"],
-                ["t_warehouse","warehouse"]
+                ["t_warehouse", "warehouse"],
+                ["customer", "customer"],
+                ["project", "project"],
+                ["site", "site"],
+                ["is_refundable", "is_refundable"],
+                ["margin_type", "margin_type"],
+                ["margin_rate_or_amount", "margin_rate_or_amount"]
             ],
             "validation": {
                 "docstatus": ["=", 1]
@@ -730,7 +803,11 @@ def make_request_for_purchase(source_name, target_doc=None):
                 ["requested_item_name", "item_name"],
                 ["name", "request_for_material_item"],
                 ["name", "custom_request_for_material_item"],
-                ["parent", "request_for_material"]
+                ["parent", "request_for_material"],
+                ["is_refundable", "is_refundable"],
+                ["margin_known", "margin_known"],
+                ["margin_type", "margin_type"],
+                ["margin_rate_or_amount", "margin_rate_or_amount"]
             ],
             "postprocess": update_item,
             "condition": lambda doc: (doc.item_code and doc.custom_rfp_quantity < doc.qty and doc.reject_item==0)
@@ -741,10 +818,64 @@ def make_request_for_purchase(source_name, target_doc=None):
     
     return doclist
 
+
+@frappe.whitelist()
+def create_partial_request_for_purchase(source_name, items):
+    """
+    Creates a Request for Purchase for a subset of items from a Request for Material.
+    :param source_name: The name of the source Request for Material.
+    :param items: A list of dicts of items to include in the RFP.
+    """
+    if isinstance(items, str):
+        items = json.loads(items)
+
+    source_doc = frappe.get_doc("Request for Material", source_name)
+
+    rfp = frappe.new_doc("Request for Purchase")
+    rfp.company = source_doc.company
+    rfp.request_for_material = source_name
+    rfp.warehouse = source_doc.t_warehouse
+    rfp.customer = source_doc.customer
+    rfp.project = source_doc.project
+    rfp.site = source_doc.site
+    rfp.is_refundable = source_doc.is_refundable
+    rfp.margin_type = source_doc.margin_type
+    rfp.margin_rate_or_amount = source_doc.margin_rate_or_amount
+
+    for item_data in items:
+        source_item_doc = frappe.get_doc("Request for Material Item", item_data.get('request_for_material_item'))
+        
+        item_is_refundable = source_item_doc.is_refundable if source_item_doc.get('is_refundable') is not None else source_doc.is_refundable
+        item_margin_known = source_item_doc.margin_known if source_item_doc.get('margin_known') else source_doc.margin_known
+        item_margin_type = source_item_doc.margin_type if source_item_doc.get('margin_type') else source_doc.margin_type
+        item_margin_rate_or_amount = source_item_doc.margin_rate_or_amount if source_item_doc.get('margin_rate_or_amount') else source_doc.margin_rate_or_amount
+        
+        rfp.append("items", {
+            "item_code": item_data.get('item_code'),
+            "qty": item_data.get('qty'),
+            "item_name": source_item_doc.item_name,
+            "description": source_item_doc.requested_description,
+            "uom": source_item_doc.uom,
+            "schedule_date": source_item_doc.schedule_date,
+            "request_for_material": source_name,
+            "request_for_material_item": item_data.get('request_for_material_item'),
+            "custom_request_for_material_item": item_data.get('request_for_material_item'),
+            "is_refundable": item_is_refundable,
+            "margin_known": item_margin_known,
+            "margin_type": item_margin_type,
+            "margin_rate_or_amount": item_margin_rate_or_amount
+        })
+
+    rfp.insert(ignore_permissions=True)
+    
+    return rfp
+
+
+
 @frappe.whitelist()
 def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
     rfm = frappe.get_doc("Request for Material", rfm_name)
-    
+
     if stock_entry_type == "Material Issue" and rfm.purpose != "Issue":
         frappe.throw(_("RFM Purpose must be Issue for Material Issue"))
     
@@ -754,10 +885,10 @@ def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
     if rfm.docstatus != 1:
         frappe.throw(_("RFM must be approved (submitted)"))
     
-    non_uniform_items = [item for item in rfm.items if not item.is_uniform_request]
+    valid_items = [item for item in rfm.items if not item.is_uniform_request and item.item_code]
     
-    if not non_uniform_items:
-        frappe.throw(_("No items found to create Stock Entry. All items in this RFM are uniform requests."))
+    if not valid_items:
+        frappe.throw(_("No line items with Item Code are available for processing. Add valid Item Codes to proceed."))
     
     stock_entry = frappe.new_doc("Stock Entry")
     stock_entry.company = rfm.company
@@ -772,10 +903,7 @@ def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
     elif rfm.purpose == "Issue":
         stock_entry.stock_entry_type = "Material Issue"
 
-    for item in rfm.items:
-        if item.is_uniform_request:
-            continue
-        
+    for item in valid_items:
         if rfm.purpose == "Issue":
             stock_entry.append("items", {
                 "item_code": item.item_code,
@@ -799,7 +927,6 @@ def create_stock_entry_from_rfm(rfm_name, stock_entry_type):
                 "stock_uom": item.stock_uom,
                 "conversion_factor": item.conversion_factor or 1
             })
-
     
     stock_entry.insert()
     
@@ -825,6 +952,7 @@ def update_rfm_status_against_purchase_receipt(doc, method):
 
 @frappe.whitelist()
 def has_pending_uniform_items(rfm_name: str):
+
     rfm = frappe.get_doc("Request for Material", rfm_name)
     
     uniform_items = [
@@ -836,12 +964,10 @@ def has_pending_uniform_items(rfm_name: str):
         return False
     
     for item in uniform_items:
-        if not item.linked_employee_uniform:
-            return True
+        requested_qty = item.qty or 0
+        issued_qty = item.issued_quantity or 0
         
-        employee_uniform = frappe.get_doc("Employee Uniform", item.linked_employee_uniform)
-        
-        if not employee_uniform.stock_entry:
+        if issued_qty < requested_qty:
             return True
     
     return False
@@ -849,110 +975,290 @@ def has_pending_uniform_items(rfm_name: str):
 
 @frappe.whitelist()
 def create_employee_uniform(rfm_name: str):
-    rfm = frappe.get_doc("Request for Material", rfm_name)
-    
-    uniform_items = [
-        item for item in rfm.items 
-        if item.is_uniform_request and item.employee
-    ]
-    
-    if not uniform_items:
-        frappe.throw(_("No uniform request items found with assigned employees in this RFM."))
-    
-    already_linked = [
-        item for item in uniform_items 
-        if item.linked_employee_uniform
-    ]
-    
-    if already_linked:
-        frappe.throw(
-            _("Some items are already linked to Employee Uniform documents. Employee Uniform can only be created once per RFM item.")
-        )
-    
-    employee_warehouse_groups = defaultdict(lambda: defaultdict(list))
-    for item in uniform_items:
-        if not item.warehouse:
-            frappe.throw(_("Row {0}: No warehouse specified for item {1}").format(item.idx, item.item_code or item.requested_item_name))
-        employee_warehouse_groups[item.employee][item.warehouse].append(item)
-    
-    created_uniforms = []
-    
-    for employee, warehouse_groups in employee_warehouse_groups.items():
-        for warehouse, items in warehouse_groups.items():
-            try:
-                employee_uniform = frappe.new_doc("Employee Uniform")
+	rfm = frappe.get_doc("Request for Material", rfm_name)
 
-                employee_uniform.naming_series = "EUI-.YYYY.-" 
-                employee_uniform.type = "Issue"
-                employee_uniform.employee = employee
-                employee_uniform.warehouse = warehouse
-                employee_uniform.issued_on = frappe.utils.today()
-                employee_uniform.linked_rfm = rfm_name
-                
-                total_qty = 0
-                for rfm_item in items:
-                    uniform_item = employee_uniform.append("uniforms", {})
-                    uniform_item.item = rfm_item.item_code
-                    uniform_item.item_name = rfm_item.requested_item_name or rfm_item.item_name
-                    uniform_item.quantity = float(rfm_item.qty)
-                    uniform_item.uom = rfm_item.uom
-                    uniform_item.issued_on = frappe.utils.today()
-                    uniform_item.linked_rfm = rfm_name
-                    uniform_item.linked_rfm_reference = rfm_item.name
-                    
-                    total_qty += uniform_item.quantity
-                
-                employee_uniform.total_quantity = total_qty
-                
-                employee_uniform.insert(ignore_permissions=True)
-                
-                frappe.db.set_value(
-                    "Employee Uniform",
-                    employee_uniform.name,
-                    "workflow_state",
-                    "To be Issued",
-                    update_modified=False
-                )
-                
-                for rfm_item in items:
-                    frappe.db.set_value(
-                        "Request for Material Item",
-                        rfm_item.name,
-                        "linked_employee_uniform",
-                        employee_uniform.name,
-                        update_modified=False
-                    )
-                
-                created_uniforms.append({
-                    "name": employee_uniform.name,
-                    "employee": employee,
-                    "employee_name": employee_uniform.employee_name,
-                    "warehouse": warehouse,
-                    "total_items": len(items),
-                    "total_quantity": total_qty
-                })
-                
-                frappe.msgprint(
-                    _("Employee Uniform {0} created for {1} from warehouse {2}").format(
-                        frappe.bold(employee_uniform.name),
-                        frappe.bold(employee_uniform.employee_name),
-                        frappe.bold(warehouse)
-                    )
-                )
-                
-            except Exception as e:
-                frappe.log_error(
-                    message=frappe.get_traceback(),
-                    title=f"Error creating Employee Uniform for {employee} - {warehouse}"
-                )
-                frappe.throw(
-                    _("Error creating Employee Uniform for employee {0} from warehouse {1}: {2}").format(employee, warehouse, str(e))
-                )
+	uniform_items = [
+		item for item in rfm.items 
+		if item.is_uniform_request and item.employee and item.item_code
+	]
+
+	if not uniform_items:
+		frappe.throw(_("No uniform request items found with assigned employees and valid Item Codes in this RFM. Please ensure that items have 'Uniform Request' checked, an assigned employee, and a valid Item Code."))
+	
+	pending_items = [
+		item for item in uniform_items 
+		if (item.issued_quantity or 0) < (item.qty or 0)
+	]
+
+	if not pending_items:
+		frappe.throw(
+			_("All uniform items in this RFM have been fully issued. No pending quantities remaining.")
+		)
+	
+	employee_warehouse_groups = defaultdict(lambda: defaultdict(list))
+	for item in pending_items:
+		if not item.warehouse:
+			frappe.throw(_("Row {0}: No warehouse specified for item {1}").format(item.idx, item.item_code or item.requested_item_name))
+		employee_warehouse_groups[item.employee][item.warehouse].append(item)
+	
+	created_uniforms = []
+	
+	for employee, warehouse_groups in employee_warehouse_groups.items():
+		for warehouse, items in warehouse_groups.items():
+			try:
+				employee_uniform = frappe.new_doc("Employee Uniform")
+
+				employee_uniform.naming_series = "EUI-.YYYY.-" 
+				employee_uniform.type = "Issue"
+				employee_uniform.employee = employee
+				employee_uniform.warehouse = warehouse
+				employee_uniform.issued_on = frappe.utils.today()
+				employee_uniform.linked_rfm = rfm_name
+				
+				total_qty = 0
+				for rfm_item in items:
+					pending_qty = float(rfm_item.qty) - float(rfm_item.issued_quantity or 0)
+					
+					if pending_qty <= 0:
+						continue
+					
+					uniform_item = employee_uniform.append("uniforms", {})
+					uniform_item.item = rfm_item.item_code
+					uniform_item.item_name = rfm_item.requested_item_name or rfm_item.item_name
+					uniform_item.quantity = pending_qty
+					uniform_item.uom = rfm_item.uom
+					uniform_item.issued_on = frappe.utils.today()
+					uniform_item.linked_rfm = rfm_name
+					uniform_item.linked_rfm_reference = rfm_item.name
+					
+					total_qty += uniform_item.quantity
+				
+				if not employee_uniform.uniforms:
+					continue
+				
+				employee_uniform.total_quantity = total_qty
+				
+				employee_uniform.insert(ignore_permissions=True)
+				
+				frappe.db.set_value(
+					"Employee Uniform",
+					employee_uniform.name,
+					"workflow_state",
+					"To be Issued",
+					update_modified=False
+				)
+				
+				for rfm_item in items:
+					frappe.db.set_value(
+						"Request for Material Item",
+						rfm_item.name,
+						"linked_employee_uniform",
+						employee_uniform.name,
+						update_modified=False
+					)
+				
+				created_uniforms.append({
+					"name": employee_uniform.name,
+					"employee": employee,
+					"employee_name": employee_uniform.employee_name,
+					"warehouse": warehouse,
+					"total_items": len(employee_uniform.uniforms),
+					"total_quantity": total_qty
+				})
+				
+				frappe.msgprint(
+					_("Employee Uniform {0} created for {1} from warehouse {2}").format(
+						frappe.bold(employee_uniform.name),
+						frappe.bold(employee_uniform.employee_name),
+						frappe.bold(warehouse)
+					)
+				)
+				
+			except Exception as e:
+				frappe.log_error(
+					message=frappe.get_traceback(),
+					title=f"Error creating Employee Uniform for {employee} - {warehouse}"
+				)
+				frappe.throw(
+					_("Error creating Employee Uniform for employee {0} from warehouse {1}: {2}").format(employee, warehouse, str(e))
+				)
+	
+	if not created_uniforms:
+		frappe.throw(_("No Employee Uniform documents were created. All items may already be fully issued."))
+	
+	frappe.db.commit()
+	
+	return {
+		"success": True,
+		"message": _("{0} Employee Uniform document(s) created successfully").format(len(created_uniforms)),
+		"created_uniforms": created_uniforms
+	}
+
+
+@frappe.whitelist()
+def make_request_for_request_for_quotation(source_name, target_doc=None):
+    def set_missing_values(source, target):
+        target.transaction_date = nowdate()
+        target.status = "Draft"
+        target.company = source.company
+        
+    def update_item(source_doc, target_doc, source_parent):
+        target_doc.schedule_date = source_doc.schedule_date
+        
+        ordered = source_doc.ordered_qty or 0
+        purchase_qty = source_doc.qty or 0
+        remaining_qty = purchase_qty - ordered
+        
+        target_doc.qty = remaining_qty
+        target_doc.stock_qty = remaining_qty * (source_doc.conversion_factor or 1)
+        target_doc.uom = source_doc.uom
+        target_doc.stock_uom = source_doc.stock_uom
+        target_doc.conversion_factor = source_doc.conversion_factor
+        target_doc.warehouse = source_doc.warehouse or source_doc.t_warehouse
+        target_doc.project_name = source_parent.project
+        
+        target_doc.custom_request_for_material = source_parent.name
+        target_doc.custom_request_for_material_item = source_doc.name
+        
+    doclist = get_mapped_doc(
+        "Request for Material",
+        source_name,
+        {
+            "Request for Material": {
+                "doctype": "Request for Quotation",
+                "validation": {
+                    "docstatus": ["=", 1]
+                }
+            },
+            "Request for Material Item": {
+                "doctype": "Request for Quotation Item",
+                "field_map": {
+                    "item_code": "item_code",
+                    "item_name": "item_name",
+                    "description": "description",
+                },
+                "postprocess": update_item,
+                "condition": lambda doc: doc.item_code and not doc.reject_item
+            }
+        },
+        target_doc,
+        set_missing_values
+    )
     
-    frappe.db.commit()
+    return doclist
+
+
+
+@frappe.whitelist()
+def make_supplier_quotation(source_name, target_doc=None):
+    def set_missing_values(source, target):
+        target.transaction_date = nowdate()
+        target.status = "Draft"
+        target.company = source.company
+        
+    def update_item(source_doc, target_doc, source_parent):
+        ordered = source_doc.ordered_qty or 0
+        purchase_qty = source_doc.qty or 0
+        remaining_qty = purchase_qty - ordered
+        
+        target_doc.qty = remaining_qty
+        target_doc.stock_qty = remaining_qty * (source_doc.conversion_factor or 1)
+        target_doc.uom = source_doc.uom
+        target_doc.stock_uom = source_doc.stock_uom
+        target_doc.conversion_factor = source_doc.conversion_factor
+        target_doc.warehouse = source_doc.warehouse or source_doc.t_warehouse
+        target_doc.project = source_parent.project
+
+        if source_doc.rate:
+            target_doc.rate = source_doc.rate
+            target_doc.amount = remaining_qty * source_doc.rate
+        
+        
+    doclist = get_mapped_doc(
+        "Request for Material",
+        source_name,
+        {
+            "Request for Material": {
+                "doctype": "Supplier Quotation",
+                "validation": {
+                    "docstatus": ["=", 1]
+                }
+            },
+            "Request for Material Item": {
+                "doctype": "Supplier Quotation Item",
+                "field_map": {
+                    "item_code": "item_code",
+                    "item_name": "item_name",
+                    "description": "description",
+                },
+                "postprocess": update_item,
+                "condition": lambda doc: doc.item_code and not doc.reject_item and (doc.ordered_qty or 0) < (doc.qty or 0)
+            }
+        },
+        target_doc,
+        set_missing_values
+    )
     
-    return {
-        "success": True,
-        "message": _("{0} Employee Uniform document(s) created successfully").format(len(created_uniforms)),
-        "created_uniforms": created_uniforms
-    }
+    return doclist
+
+@frappe.whitelist()
+def make_asset_movement(source_name, target_doc=None):
+    """
+    Create Asset Movement from Request for Material
+    """
+    def post_process(source, target):
+        """Create multiple rows for each asset based on pending quantity"""
+        target.assets = []  # Clear any existing items
+
+        for item in source.items:
+            # Only process fixed asset items with pending quantity
+            if item.is_fixed_asset and item.custom_pending_quantity > 0:
+                # Create rows based on pending quantity
+                for i in range(int(item.custom_pending_quantity)):
+                    asset_item = target.append('assets', {})
+                    asset_item.rfm_item_code = item.item_code
+                    asset_item.rfm_item_reference = item.name
+                    asset_item.rfm_item = item.name
+                    if source.purpose == "Issue":
+                        asset_item.to_employee = getattr(source, 'employee', None)
+
+        # Set the document as new (not saved)
+        target.docstatus = 0
+        target.__islocal = 1
+
+    # Map the document
+    doclist = get_asset_movement_doclist(source_name, target_doc)
+
+    # Run post-processing to create child rows
+    post_process(frappe.get_doc("Request for Material", source_name), doclist)
+
+    return doclist
+
+def get_asset_movement_doclist(source_name, target_doc=None):
+    def set_missing_values(source, target):
+        """Set values in the target document"""
+        target.transaction_date = frappe.utils.today()
+        target.reference_doctype = "Request for Material"
+        target.reference_name = source.name
+        if hasattr(source, 'company'):
+            target.company = source.company
+
+    return get_mapped_doc(
+        "Request for Material",
+        source_name,
+        {
+            "Request for Material": {
+                "doctype": "Asset Movement",
+                "field_map": {
+                    "name": "rfm_reference",
+                    "purpose": "purpose"
+                },
+                "validation": {
+                    "docstatus": ["=", 1]
+                }
+            }
+        },
+        target_doc,
+        set_missing_values,
+        ignore_permissions=False
+    )

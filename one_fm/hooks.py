@@ -556,6 +556,12 @@ override_doctype_class = {
     "Loan Application": "one_fm.overrides.loan_application.LoanApplicationOverride",
     "Loan": "one_fm.overrides.loan.LoanOverride",
     "Stock Entry": "one_fm.overrides.stock_entry.StockEntryOverride",
+    "Sales Invoice": "one_fm.overrides.sales_invoice.SalesInvoiceOverride",
+    "Purchase Invoice": "one_fm.overrides.purchase_invoice.PurchaseInvoiceOverride",
+    "Purchase Receipt": "one_fm.overrides.purchase_receipt.PurchaseReceiptOverride",
+    "Asset": "one_fm.overrides.asset.AssetOverride",
+    "Asset Movement": "one_fm.overrides.asset_movement.AssetMovement",
+    
 }
 
 
@@ -620,8 +626,8 @@ scheduler_events = {
 			'one_fm.grd.doctype.work_permit.work_permit.system_remind_transfer_operator_to_apply',
 			'one_fm.grd.doctype.medical_insurance.medical_insurance.system_remind_renewal_operator_to_apply_mi',#mi
 			'one_fm.grd.doctype.medical_insurance.medical_insurance.system_remind_transfer_operator_to_apply_mi',
-			'one_fm.grd.doctype.moi_residency_jawazat.moi_residency_jawazat.system_remind_renewal_operator_to_apply',#moi
-			'one_fm.grd.doctype.moi_residency_jawazat.moi_residency_jawazat.system_remind_transfer_operator_to_apply',
+			'one_fm.grd.doctype.residency.residency.system_remind_renewal_operator_to_apply',#moi
+			'one_fm.grd.doctype.residency.residency.system_remind_transfer_operator_to_apply',
 			'one_fm.grd.doctype.paci.paci.system_remind_renewal_operator_to_apply',#paci
 			'one_fm.grd.doctype.paci.paci.system_remind_transfer_operator_to_apply',
 			'one_fm.grd.doctype.paci.paci.notify_operator_to_take_hawiyati_renewal',#paci hawiyati
@@ -838,11 +844,12 @@ override_whitelisted_methods = {
 	"hrms.hr.doctype.leave_application.leave_application.get_leave_details" : "one_fm.overrides.leave_application.get_leave_details",
     "frappe.desk.form.load.getdoc": "one_fm.permissions.getdoc",
     "frappe.desk.form.load.get_docinfo": "one_fm.permissions.get_docinfo",
-	"erpnext.controllers.accounts_controller.update_child_qty_rate":"one_fm.overrides.accounts_controller.update_child_qty_rate",
 	"hrms.hr.doctype.goal.goal.get_children":"one_fm.overrides.goal.get_childrens",
     "hrms.payroll.doctype.payroll_entry.payroll_entry.get_start_end_dates": "one_fm.overrides.payroll_entry.get_start_end_dates",
     "hrms.hr.doctype.job_applicant.job_applicant.create_interview": "one_fm.overrides.job_applicant.create_interview",
     "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_receipt":"one_fm.overrides.purchase_order.make_purchase_receipt",
+    "erpnext.accounts.doctype.purchase_invoice.purchase_invoice.make_purchase_receipt":"one_fm.overrides.purchase_invoice.make_purchase_receipt",
+    "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_invoice":"one_fm.overrides.purchase_order.make_purchase_invoice",
 
 }
 
@@ -851,6 +858,8 @@ override_doctype_dashboards = {
     'Project': 'one_fm.overrides.project_dashboard.get_data',
     'HD Ticket': 'one_fm.overrides.hd_ticket_dashboard.get_data',
     'Item': 'one_fm.overrides.item_dashboard.get_data',
+    'Sales Invoice': 'one_fm.overrides.sales_invoice_dashboard.get_data',
+    "Purchase Invoice": "one_fm.overrides.purchase_invoice_dashboard.get_data"
 }
 
 

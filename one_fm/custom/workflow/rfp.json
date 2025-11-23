@@ -1,6 +1,5 @@
 {
-  "name": "RFP",
-  "workflow_name": "RFP",
+  "workflow_name": "Request for Purchase",
   "document_type": "Request for Purchase",
   "is_active": 1,
   "override_status": 0,
@@ -119,6 +118,19 @@
     {
       "state": "Draft",
       "action": "Submit for Review",
+      "next_state": "Pending Approval",
+      "allowed": "Purchase Manager",
+      "allow_self_approval": 1,
+      "send_email_to_creator": 0,
+      "skip_multiple_action": 0,
+      "skip_creation_of_workflow_action": 0,
+      "custom_confirm_transition": 0,
+      "require_digital_signature": 0,
+      "doctype": "Workflow Transition"
+    },
+    {
+      "state": "Draft",
+      "action": "Submit for Review",
       "next_state": "Submit to Purchase Officer",
       "allowed": "Warehouse Supervisor",
       "allow_self_approval": 1,
@@ -229,5 +241,3 @@
     }
   ]
 }
-
-

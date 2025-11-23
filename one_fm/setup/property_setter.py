@@ -1,4 +1,3 @@
-
 # Property setter imports
 from one_fm.custom.property_setter.asset import get_asset_properties
 from one_fm.custom.property_setter.asset_category_account import get_asset_category_account_properties
@@ -149,6 +148,8 @@ def get_field_properties():
 	field_properties.extend(get_todo_properties())
 	field_properties.extend(get_vehicle_properties())
 	field_properties.extend(get_warehouse_properties())
+	field_properties.extend(get_hd_service_level_agreement_fulfilled_on_status_properties())
+	field_properties.extend(get_hd_pause_service_level_agreement_on_status_properties())
 	field_properties.extend(get_user_properties())
 
 	return field_properties

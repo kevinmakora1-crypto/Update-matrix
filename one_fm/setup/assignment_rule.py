@@ -4,6 +4,7 @@ from one_fm.custom.assignment_rule.assignment_rule import (
 
 def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("roster_post_action_site_supervisor.json"))
+	create_assignment_rule(get_assignment_rule_json_file("work_permit_completion_gr_operator.json"))
 	create_assignment_rule(get_assignment_rule_json_file("subcontract_staff_shortlist.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_poc_check.json"))
 	create_assignment_rule(get_assignment_rule_json_file("shift_permission_approver.json"))
@@ -41,11 +42,17 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("assign_rfp_to_purchase_officer.json"))
 	create_assignment_rule(get_assignment_rule_json_file("assign_to_purchase_manager_for_approval.json"))
 	create_assignment_rule(get_assignment_rule_json_file("assign_rfp_owner_on_rfp_return_to_draft.json"))
+	create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_pro.json"))
+	create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_supervisor.json"))
+	create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_transportation_supervisor.json"))
+	create_assignment_rule(get_assignment_rule_json_file("confirm_site_pickup_for_fingerprint_assignment.json"))
+	create_assignment_rule(get_assignment_rule_json_file("action_medical_appointment_pro.json"))
 	create_assignment_rule(get_assignment_rule_json_file("pathfinder_log_business_analyst.json"))
 	create_assignment_rule(get_assignment_rule_json_file("pathfinder_log_process_owner.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_medical_appointment_transportation_supervisor.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_medical_appointment_supervisor.json"))
 	create_assignment_rule(get_assignment_rule_json_file("confirm_site_pickup_for_medical_appointment_gr_operator.json"))
+	create_assignment_rule(get_assignment_rule_json_file("action_paci.json"))
 
 def delete_assignment_rules():
 	delete_assignment_rule(get_assignment_rule_json_file("roster_post_action_site_supervisor.json"))

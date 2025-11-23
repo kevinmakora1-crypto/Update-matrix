@@ -377,6 +377,8 @@ class GenerateContractComplianceChecker:
 		results = []
 		
 		for contract_item in contract_items_list:
+			if not contract_item.get("item_code"):
+				continue
 			try:
 				is_off_type_full_month = contract_item.off_type == "Full Month"
 				has_days_off = contract_item.off_type == "Days Off"

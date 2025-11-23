@@ -1,7 +1,13 @@
 import frappe
 from frappe.utils import flt
+from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+from one_fm.custom.custom_field.purchase_invoice import get_purchase_invoice_custom_fields
 
 def execute():
+    # Ensure custom fields are created
+    create_custom_fields(get_purchase_invoice_custom_fields())
+
+    # Initialize pending_si_quantity for existing Purchase Invoices
     purchase_invoices = frappe.get_all(
         "Purchase Invoice",
         filters={"docstatus": 1, "custom_refundable": 1},

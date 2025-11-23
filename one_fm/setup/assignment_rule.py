@@ -38,6 +38,8 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("review_and_approve_loan_application_senior_accountant.json"))
 	create_assignment_rule(get_assignment_rule_json_file("contract_compliance_checker.json"))
 	create_assignment_rule(get_assignment_rule_json_file("erf.json"))
+	create_assignment_rule(get_assignment_rule_json_file("assign_attendance_amendment_to_project_manager.json"))
+	create_assignment_rule(get_assignment_rule_json_file("assign_to_site_supervisor.json"))
 	create_assignment_rule(get_assignment_rule_json_file("preparation.json"))
 	create_assignment_rule(get_assignment_rule_json_file("assign_rfp_to_purchase_officer.json"))
 	create_assignment_rule(get_assignment_rule_json_file("assign_to_purchase_manager_for_approval.json"))

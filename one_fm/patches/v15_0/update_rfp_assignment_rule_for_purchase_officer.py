@@ -1,11 +1,10 @@
 import frappe
 from frappe.utils import today
-from one_fm.setup.assignment_rule import delete_assignment_rule, create_assignment_rule, get_assignment_rule_json_file
+from one_fm.setup.assignment_rule import create_assignment_rule, get_assignment_rule_json_file
 
 def execute():
     process_task_name = create_process_task()
     assignment_rule_data = get_assignment_rule_json_file("assign_rfp_to_purchase_officer.json")
-    # delete_assignment_rule(assignment_rule_data)
     create_assignment_rule(assignment_rule_data, process_task_name)
 
 

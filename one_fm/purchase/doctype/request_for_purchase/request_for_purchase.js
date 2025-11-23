@@ -340,6 +340,17 @@ frappe.ui.form.on('Request for Purchase', {
                 rfm_items_map[rfm_item.name] = rfm_item;
             });
         }
+
+        let item_codes = frm.doc.items.map(item => item.item_code).filter(code => code);
+        
+        let last_purchase_details = await frappe.call({
+            method: 'one_fm.purchase.doctype.request_for_purchase.request_for_purchase.get_last_purchase_details',
+            args: {
+                item_codes: item_codes
+            }
+        });
+        
+        let last_purchase_map = last_purchase_details.message || {};
         
         frm.doc.items.forEach((item) => {
             var items_to_order = frm.add_child('items_to_order');
@@ -377,6 +388,11 @@ frappe.ui.form.on('Request for Purchase', {
                 items_to_order.margin_known = item.margin_known || '';
                 items_to_order.margin_type = item.margin_type || '';
                 items_to_order.margin_rate_or_amount = item.margin_rate_or_amount || 0;
+            }
+
+            if (last_purchase_map[item.item_code]) {
+                items_to_order.last_purchase_supplier = last_purchase_map[item.item_code].supplier;
+                items_to_order.last_purchase_rate = last_purchase_map[item.item_code].rate;
             }
         });
         

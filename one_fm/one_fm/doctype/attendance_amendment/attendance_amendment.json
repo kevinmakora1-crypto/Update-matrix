@@ -7,11 +7,15 @@
  "field_order": [
   "section_break_mcqu",
   "project",
-  "site",
+  "project_manager",
+  "project_manager_user",
   "column_break_mqbt",
-  "year",
-  "month",
+  "site",
+  "site_supervisor",
+  "site_supervisor_user",
   "column_break_mqbp",
+  "month",
+  "year",
   "posting_date",
   "ot_data_required",
   "column_break_tvmh",
@@ -19,6 +23,7 @@
   "fetch_attendance_record",
   "section_break_ldig",
   "attendance_details",
+  "overtime_details",
   "remarks",
   "amended_from"
  ],
@@ -120,13 +125,48 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fetch_from": "project.account_manager",
+   "fieldname": "project_manager",
+   "fieldtype": "Link",
+   "label": "Project Manager",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "project_manager.user_id",
+   "fieldname": "project_manager_user",
+   "fieldtype": "Link",
+   "label": "Project Manager User",
+   "options": "User"
+  },
+  {
+   "fetch_from": "site.account_supervisor",
+   "fieldname": "site_supervisor",
+   "fieldtype": "Link",
+   "label": "Site Supervisor",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "site_supervisor.user_id",
+   "fieldname": "site_supervisor_user",
+   "fieldtype": "Link",
+   "label": "Site Supervisor User",
+   "options": "User"
+  },
+  {
+   "depends_on": "ot_data_required",
+   "fieldname": "overtime_details",
+   "fieldtype": "Table",
+   "label": "Overtime Details",
+   "options": "Attendance Amendment Item"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-03 19:38:11.733987",
+ "modified": "2025-11-23 20:06:00.168381",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Attendance Amendment",

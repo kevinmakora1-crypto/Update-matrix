@@ -108,7 +108,7 @@ frappe.ui.form.on("Leave Application", {
         }
         updateCustomIsPaidVisibility(frm)
         manage_leave_extension(frm)
-
+        // Leave Handover Creation
 		if (frm.doc.status == 'Approved') {
 			frm.add_custom_button(__('Leave Handover'), function() {
 				frappe.call({

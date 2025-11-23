@@ -22,6 +22,12 @@ def get_asset_custom_fields():
                 "label": "Asset Transfer",
                 "insert_after": "transfer_from_warehouse",
                 "options": "Asset Transfer Detail"
+            },
+            {
+                "fieldname": "custom_is_refundable",
+                "fieldtype": "Check",
+                "label": "Is Refundable",
+                "insert_after": "is_composite_asset"
             }
         ]
     }

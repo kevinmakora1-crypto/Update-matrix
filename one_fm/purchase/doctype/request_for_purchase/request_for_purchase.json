@@ -21,11 +21,16 @@
   "requested_by",
   "employee",
   "employee_name",
+  "customer",
   "project",
+  "site",
   "project_details",
   "column_break_8",
   "department",
   "warehouse",
+  "is_refundable",
+  "margin_type",
+  "margin_rate_or_amount",
   "currency_and_price_list_section",
   "currency",
   "exchange_rate",
@@ -311,6 +316,21 @@
    "read_only": 1
   },
   {
+   "default": "0",
+   "fieldname": "is_refundable",
+   "fieldtype": "Check",
+   "label": "Refundable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "margin_type",
+   "fieldtype": "Select",
+   "label": "Margin Type",
+   "options": "\nPercentage\nAmount",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
    "fieldname": "total",
    "fieldtype": "Currency",
    "label": "Total",
@@ -318,9 +338,30 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "base_total",
    "fieldtype": "Currency",
    "label": "Total (Company Currency)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "margin_rate_or_amount",
+   "fieldtype": "Float",
+   "label": "Margin Rate or Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Operations Site",
    "read_only": 1
   }
  ],
@@ -328,7 +369,7 @@
  "icon": "fa fa-shopping-cart",
  "is_submittable": 1,
  "links": [],
- "modified": "2025-10-26 10:30:46.631751",
+ "modified": "2025-11-04 12:45:05.946426",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Purchase",

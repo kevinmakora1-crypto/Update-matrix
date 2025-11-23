@@ -568,7 +568,7 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 			if day_off_ot_map.get((i["employee"], i["date"])):
 				i["day_off_ot"] = 1
 
-	employees_list_db = frappe.db.get_list("Employee", filters={"name": ["IN", employee_list]}, fields=["name", "employee_name", "department","date_of_joining"], ignore_permissions=True)
+	employees_list_db = frappe.db.get_list("Employee", filters={"name": ["IN", employee_list]}, fields=["name", "employee_name", "department","date_of_joining", "relieving_date"], ignore_permissions=True)
 	employees_dict = {}
 	for i in employees_list_db:
 		employees_dict[i.name] = i
@@ -583,7 +583,11 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 		# Ensure employee exists in employees_dict and has date_of_joining
 		employee_detail = employees_dict.get(i.get("employee"))
 		if employee_detail and employee_detail.get("date_of_joining"):
-			if getdate(employee_detail.get("date_of_joining")) <= getdate(i.get("date")):
+			joining_date = getdate(employee_detail.get("date_of_joining"))
+			current_date = getdate(i.get("date"))
+			relieving_date = employee_detail.get("relieving_date")
+
+			if joining_date <= current_date and (not relieving_date or current_date <= getdate(relieving_date)):
 				if employees_date_dict.get(i["employee"]):
 					employees_date_dict[i["employee"]].append({
 						"date":i["date"],
@@ -1903,9 +1907,9 @@ def get_leave_dates_by_employee_during_date_range(start_date, end_date):
         WHERE leave_type IN ('Annual Leave', 'Leave Without Pay')
 		AND status = 'Approved'
         AND (
-            (from_date BETWEEN %(start_date)s AND %(end_date)s)
-            OR
-            (to_date BETWEEN %(start_date)s AND %(end_date)s)
+            (from_date <= %(end_date)s)
+            AND
+            (to_date >= %(start_date)s)
         )
     """, { "start_date": start_date, "end_date": end_date }, as_dict=True)
 

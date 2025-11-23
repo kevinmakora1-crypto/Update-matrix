@@ -53,8 +53,8 @@ class GenerateContractComplianceChecker:
 			}
 		)
 	
-	def get_total_employee_schedule_count(self, operations_role, start_date, end_date, is_monthly=True):
-		if not operations_role:
+	def get_total_employee_schedule_count(self, operations_roles, start_date, end_date):
+		if not operations_roles:
 			return 0
 		
 		if self.day_before_yesterday >= start_date:
@@ -62,7 +62,7 @@ class GenerateContractComplianceChecker:
 				'roster_type': "Basic",
 				"status": "Present",
 				"attendance_date": ["between", [start_date, self.day_before_yesterday]],
-				"operations_role": ["in", operations_role]
+				"operations_role": ["in", operations_roles]
 			})
 		else:
 			attendance_count = 0
@@ -72,7 +72,7 @@ class GenerateContractComplianceChecker:
 				'roster_type': "Basic",
 				"employee_availability": "Working",
 				"date": ["between", [self.yesterday, end_date]],
-				"operations_role": ["in", operations_role]
+				"operations_role": ["in", operations_roles]
 			})
 		else:
 			schedule_count = 0
@@ -116,6 +116,7 @@ class GenerateContractComplianceChecker:
 				post_start_date = getdate(post.start_date)
 			if post.end_date and getdate(post.end_date) < post_end_date:
 				post_end_date = getdate(post.end_date)
+
 			expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
@@ -179,6 +180,7 @@ class GenerateContractComplianceChecker:
 				post_start_date = getdate(post.start_date)
 			if post.end_date and post.end_date < post_end_date:
 				post_end_date = getdate(post.end_date)
+
 			expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
@@ -222,7 +224,10 @@ class GenerateContractComplianceChecker:
 
 		actual_schedule_count = self.get_total_employee_schedule_count(operations_roles, start_date, end_date)
 
-		comment += self.get_diff_comment(expected_schedule_count, actual_schedule_count)
+		if actual_schedule_count > expected_schedule_count:
+			comment += f"More employee schedules created from {start_date} to {end_date}, expected {expected_schedule_count}, created {actual_schedule_count} for roles {operations_roles} against contract {contract_data.parent} in items row {contract_data.idx}\n\n"
+		elif actual_schedule_count < expected_schedule_count:
+			comment += f"Less employee schedules created from {start_date} to {end_date}, expected {expected_schedule_count}, created {actual_schedule_count} for roles {operations_roles} against contract {contract_data.parent} in items row {contract_data.idx}\n\n"
 
 		if actual_schedule_count != expected_schedule_count:
 			return True, {
@@ -257,9 +262,6 @@ class GenerateContractComplianceChecker:
 		elif total_operations_post > contract_data.count:
 			comment += f"More operations post created, expected: {contract_data.count}, created: {total_operations_post} for roles {operations_roles}\n\n"
 		
-		working_days_in_period = (date_diff(end_date, start_date) + 1)
-		expected_post_schedules = working_days_in_period - contract_data.no_of_days_off
-		
 		for post in operation_posts:
 			# Scope start_date and end_date per post
 			post_start_date = start_date
@@ -274,6 +276,10 @@ class GenerateContractComplianceChecker:
 				post_start_date = getdate(post.start_date)
 			if post.end_date and getdate(post.end_date) < post_end_date:
 				post_end_date = getdate(post.end_date)
+
+			working_days_in_period = (date_diff(post_end_date, post_start_date) + 1)
+			expected_post_schedules = working_days_in_period - contract_data.no_of_days_off
+
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
 					post=post,

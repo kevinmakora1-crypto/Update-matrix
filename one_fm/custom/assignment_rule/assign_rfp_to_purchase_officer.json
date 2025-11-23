@@ -12,37 +12,30 @@
   "doctype": "Assignment Rule",
   "assignment_days": [
     {
-      "name": "oi4j3v8umq",
       "day": "Monday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "oi4fvtt5mr",
       "day": "Tuesday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "oi4fg8vomj",
       "day": "Wednesday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "oi477j2uab",
       "day": "Thursday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "oi4i48dvtu",
       "day": "Friday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "oi408aasdk",
       "day": "Saturday",
       "doctype": "Assignment Rule Day"
     },
     {
-      "name": "oi4jj0ii23",
       "day": "Sunday",
       "doctype": "Assignment Rule Day"
     }

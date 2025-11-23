@@ -1,4 +1,4 @@
-def get_asset_movement_custom_fields():
+def get_asset_movement_item_custom_fields():
     return {
         "Asset Movement Item": [
             {

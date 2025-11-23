@@ -17,11 +17,17 @@ class PurchaseInvoiceOverride(PurchaseInvoice):
     def validate_purchase_receipt_required(self):
         if not self.items:
             return
+
+        if frappe.db.get_value("Buying Settings", None, "pr_required") == "Yes":
+            if frappe.get_value(
+                "Supplier", self.supplier, "allow_purchase_invoice_creation_without_purchase_receipt"
+            ):
+                return
         
-        has_purchase_receipt = any(item.purchase_receipt for item in self.items)
+            has_purchase_receipt = any(item.purchase_receipt for item in self.items)
         
-        if not has_purchase_receipt:
-            frappe.throw("Purchase Invoice must be created from a submitted Purchase Receipt.")
+            if not has_purchase_receipt:
+                frappe.throw("Purchase Invoice must be created from a submitted Purchase Receipt.")
 
             
     

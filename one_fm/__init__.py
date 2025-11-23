@@ -54,7 +54,7 @@ from one_fm.overrides.workflow import confirm_action as custom_confirm_action
 from one_fm.overrides.purchase_order import calculate_margin
 
 
-__version__ = '15.4.7'
+__version__ = '15.4.8'
 
 wa.confirm_action = custom_confirm_action
 user_permission.get_user_permissions = get_custom_user_permissions

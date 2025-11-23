@@ -45,7 +45,7 @@ def get_shift_request_custom_fields():
                 "insert_after": "shift",
                 "options": "Operations Site",
                 "fetch_from": "operations_shift.site",
-                "depends_on": "eval:doc.purpose != 'Assign Day Off'"
+                "depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
             },
             {
                 "fieldname": "roster_type",
@@ -219,7 +219,7 @@ def get_shift_request_custom_fields():
                 "fieldtype": "Section Break",
                 "label": "Site Request",
                 "insert_after": "amended_from",
-                "depends_on": "eval:doc.purpose != 'Assign Day Off'"
+                "depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
             },
             {
                 "fieldname": "operations_shift",

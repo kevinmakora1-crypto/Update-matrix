@@ -10,6 +10,7 @@ def update_currency_exchange_rates():
     try:
         settings = frappe.get_doc("Currency Exchange Settings")
         service_provider = settings.service_provider
+        business_currencies = [d.currency for d in settings.get("business_currencies", [])]
     except frappe.DoesNotExistError:
         frappe.log_error(
             title="Currency Exchange Settings Not Found",
@@ -24,17 +25,17 @@ def update_currency_exchange_rates():
         )
         return
 
-    currencies = ["INR", "USD", "AED", "SAR"]
     to_currency = "KWD"
     date = today()
 
     currency_pairs = []
-    for currency in currencies:
-        currency_pairs.append((currency, to_currency))
-        currency_pairs.append((to_currency, currency))
+    for currency in business_currencies:
+        if currency != to_currency:
+            currency_pairs.append((currency, to_currency))
+            currency_pairs.append((to_currency, currency))
 
-    for from_curr, to_curr in currency_pairs:
-        try:
+    try:
+        for from_curr, to_curr in currency_pairs:
             if frappe.db.exists("Currency Exchange", {
                 "date": date,
                 "from_currency": from_curr,
@@ -50,10 +51,11 @@ def update_currency_exchange_rates():
             new_rate.to_currency = to_curr
             new_rate.exchange_rate = exchange_rate
             new_rate.insert(ignore_permissions=True)
-            frappe.db.commit()
+        
+        frappe.db.commit()
 
-        except Exception:
-            frappe.log_error(
-                title=f"Currency Exchange Update Failed for {from_curr}-{to_curr}",
-                message=frappe.get_traceback()
-            )
+    except Exception:
+        frappe.log_error(
+            title="Currency Exchange Update Failed",
+            message=frappe.get_traceback()
+        )

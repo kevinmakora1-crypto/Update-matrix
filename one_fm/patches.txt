@@ -219,6 +219,7 @@ one_fm.patches.v15_0.create_medical_appointment_supervisor_notification
 one_fm.patches.v15_0.add_user_title_field_property_setter
 one_fm.patches.v15_0.update_employee_and_user_references
 one_fm.patches.v15_0.update_item_workflow
+one_fm.patches.v15_0.add_currency_exchange_settings_custom_fields
 
 [post_model_sync]
 one_fm.patches.v15_0.add_workflow_pathfinder_log #1
@@ -247,3 +248,4 @@ one_fm.patches.v15_0.add_shift_assignment_shift_type_mandatory_depends_on # re-r
 one_fm.patches.v15_0.add_update_custom_field #2025-11-10
 one_fm.patches.v15_0.add_quality_feedback_template_custom_field
 one_fm.patches.v15_0.add_quality_feedback_template_property_setter
+one_fm.patches.v15_0.apply_customizations_for_currency_exchange_settings

@@ -4467,3 +4467,11 @@ def send_push_notification(employee_id, title, body):
     except Exception as e:
         frappe.log_error(message = frappe.get_traceback(), title = "Error in sending push notification")
         return False
+    
+
+def get_field_with_label(doctype, field_name, value):
+    meta = frappe.get_meta(doctype)
+    return {
+        "name": meta.get_label(field_name),
+        "value": value
+    }

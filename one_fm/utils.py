@@ -4470,8 +4470,25 @@ def send_push_notification(employee_id, title, body):
     
 
 def get_field_with_label(doctype, field_name, value):
-    meta = frappe.get_meta(doctype)
+    """
+    Get the label for a field in a doctype and return it with its value.
+
+    Args:
+        doctype (str): Name of the doctype.
+        field_name (str): Name of the field.
+        value: Value of the field (can be None).
+
+    Returns:
+        dict: Dictionary with 'name' (field label or field name if label not found) and 'value' keys.
+    """
+    try:
+        meta = frappe.get_meta(doctype)
+        label = meta.get_label(field_name)
+        if not label:
+            label = field_name  # Fallback to field name if label not found
+    except Exception:
+        label = field_name  # Fallback if meta or get_label fails
     return {
-        "name": meta.get_label(field_name),
+        "name": label,
         "value": value
     }

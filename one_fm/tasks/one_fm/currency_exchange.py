@@ -20,8 +20,8 @@ def update_currency_exchange_rates():
 
     if not service_provider:
         frappe.log_error(
-            title="API Provider Not Set",
-            message="Please set an API provider in Currency Exchange Settings."
+            title="Service Provider Not Set",
+            message="Please set a service provider in Currency Exchange Settings."
         )
         return
 

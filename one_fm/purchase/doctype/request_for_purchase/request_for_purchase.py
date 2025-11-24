@@ -992,7 +992,7 @@ def get_last_purchase_details(item_codes):
 				poi.item_code = %s
 				AND po.docstatus = 1
 			ORDER BY
-				po.creation DESC
+				po.transaction_date DESC
 			LIMIT 1
 		""", (item_code,), as_dict=True)
 		

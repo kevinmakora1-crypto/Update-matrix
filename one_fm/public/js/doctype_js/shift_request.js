@@ -56,6 +56,8 @@ frappe.ui.form.on('Shift Request', {
 	}
 });
 
+
+
 function set_update_request_btn(frm) {
 	if(frm.doc.docstatus == 1 && frm.doc.workflow_state == 'Approved' && !frm.doc.update_request){
 		frappe.db.get_value('Employee', frm.doc.employee, 'user_id', function(r) {

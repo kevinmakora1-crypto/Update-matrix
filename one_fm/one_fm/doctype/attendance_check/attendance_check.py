@@ -486,7 +486,7 @@ def insert_attendance_check_records(details, attendance_date, is_unscheduled=Fal
 
 @frappe.whitelist()
 def check_attendance_manager(email: str) -> bool:
-    return frappe.db.get_value("Employee", {"user_id": email}) == frappe.db.get_single_value("ONEFM General Setting", "attendance_manager")
+    return (frappe.db.get_value("Employee", {"user_id": email}) == frappe.db.get_single_value("ONEFM General Setting", "attendance_manager")) or (frappe.session.user == "Administrator")
 
 def attendance_check_pending_approval_check():
     pending_approval_attendance_checks = get_pending_approval_attendance_check(48)

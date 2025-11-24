@@ -25,6 +25,12 @@ def update_currency_exchange_rates():
         )
         return
 
+    if not business_currencies:
+        frappe.log_error(
+            title="Business Currencies Not Set",
+            message="Please set at least one business currency in Currency Exchange Settings."
+        )
+        return
     to_currency = "KWD"
     date = today()
 

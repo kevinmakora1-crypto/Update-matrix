@@ -58,8 +58,7 @@ def sendemail(recipients, subject, header=None, message=None,
 
 	if recipients and len(recipients) > 0:
 		frappe.sendmail(template = template,
-			# recipients=recipients,
-			recipients=["adekunleabraham09@gmail.com"],
+			recipients=recipients,
 			sender= sender,
 			cc=cc,
 			subject=subject,

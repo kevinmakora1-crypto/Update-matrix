@@ -50,7 +50,7 @@ class AttendanceAmendment(Document):
 		child_table = "overtime_details" if type == "Overtime" else "attendance_details"
 		self.set(child_table, [])
 		for record in data:
-			if type== "Overtime" or self.attendance_based_on == "Shift Hours":
+			if type == "Overtime" or self.attendance_based_on == "Shift Hours":
 				day_fields = {f"day_{i}_hour": record.get(str(i), 'N/A' if type == "Overtime" else '') for i in range(1, 32)}
 			else:
 				day_fields = {f"day_{i}": record.get(str(i), '') for i in range(1, 32)}
@@ -253,7 +253,7 @@ def get_attendance_status(filters, employee_non_day_off_attendance, employee_day
 			if attendance_based_on == "Shift Hours":
 				if not status and employee_day_off_attendance:
 					status = employee_day_off_attendance.get(day, 0)
-				if status and status not in ["Day Off", "Client Day Off", "Absent", "On Leave"]: # Since status is working hours for Shift Hours
+				if status and status not in ["Day Off", "Client Day Off", "Absent", "On Leave"]: # For Shift Hours, status contains the working hours value
 					working_days += 1
 
 			if status in ["Day Off", "Client Day Off"]:
@@ -268,7 +268,7 @@ def get_attendance_status(filters, employee_non_day_off_attendance, employee_day
 
 	return attendance_values
 
-def get_ot_attendance_map(filters, attendance_based_on=None):
+def get_ot_attendance_map(filters):
 	non_day_off_attendance_records = get_ot_attendance_records(filters)
 
 	attendance_map = {}
@@ -324,7 +324,7 @@ def get_ot_rows(employee_details, filters, attendance_map):
 			# no attendance records found for employee
 			continue
 
-		attendance_for_employee = get_attendance_status(filters, employee_attendance, "Shift Hours")
+		attendance_for_employee = get_attendance_status(filters, employee_attendance, None, "Shift Hours")
 
 		# set employee details in the first row
 		for record in attendance_for_employee:

@@ -207,7 +207,7 @@ one_fm.patches.v15_0.add_assignment_rule_action_medical_appointment_pro # rerun
 one_fm.patches.v15_0.add_workflow_medical_appointment # rerun
 one_fm.patches.v15_0.create_medical_appointment_supervisor_notification
 one_fm.patches.v15_0.update_employee_and_user_references
-one_fm.patches.v15_0.update_item_workflow
+one_fm.patches.v15_0.update_item_workflow #2025-11-25
 one_fm.patches.v15_0.mark_present_attendance_check
 one_fm.patches.v15_0.update_shift_request_doctype
 one_fm.patches.v15_0.update_rfp_assignment_rule_for_purchase_officer

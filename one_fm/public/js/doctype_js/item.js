@@ -1,6 +1,7 @@
 frappe.ui.form.on('Item', {
 	refresh(frm) {
 		set_item_field_property(frm);
+		set_item_name_properties(frm);
 		set_change_request_btn(frm);
 		frm.set_query("subitem_group", function() {
 			return {
@@ -320,6 +321,17 @@ frappe.ui.form.on('Item', {
 
 var set_item_field_property = function(frm) {
 	frm.set_df_property('linked_items', 'reqd', false);
+}
+
+var set_item_name_properties = function(frm) {
+	if(frm.is_new()){
+		frm.set_df_property('item_name', 'read_only', false)
+		frm.set_df_property('item_name', 'reqd', true)
+	} else {
+		frm.set_df_property('item_name', 'read_only', true)
+		frm.set_df_property('item_name', 'reqd', false)
+	}
+	frm.refresh_field('item_name')
 }
 
 function get_item_code(frm){

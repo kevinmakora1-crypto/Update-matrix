@@ -38,6 +38,7 @@ def create_workflows():
 	create_workflow(get_workflow_json_file("purchase_request_wf.json"))
 	create_workflow(get_workflow_json_file("supplier_purchase_order_wf.json"))
 	create_workflow(get_workflow_json_file("legal_investigation.json"))
+	create_workflow(get_workflow_json_file("attendance_amendment.json"))
 	create_workflow(get_workflow_json_file("sales_invoice.json"))
 	create_workflow(get_workflow_json_file("asset.json"))
 	create_workflow(get_workflow_json_file("asset_movement.json"))

@@ -18,6 +18,7 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("attendance_check_shift_supervisor.json"))
 	create_assignment_rule(get_assignment_rule_json_file("rfm_approver.json"))
 	create_assignment_rule(get_assignment_rule_json_file("purchase_order_purchase_manager_action.json"))
+	create_assignment_rule(get_assignment_rule_json_file("action_hd_ticket_development_process_owner.json"))
 	create_assignment_rule(get_assignment_rule_json_file("purchase_order_finance_manager_action.json"))
 	create_assignment_rule(get_assignment_rule_json_file("employee_checkin_issue_approval.json"))
 	create_assignment_rule(get_assignment_rule_json_file("shift_request_draft.json"))

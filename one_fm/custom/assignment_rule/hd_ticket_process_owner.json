@@ -7,7 +7,7 @@
   "is_assignment_rule_with_workflow": 0,
   "assign_condition": "status == 'Open' and ticket_type != 'Bug'",
   "unassign_condition": "ticket_type == 'Bug'",
-  "close_condition": "status == 'Closed'",
+  "close_condition": "",
   "rule": "Based on Field",
   "field": "custom_process_owner",
   "doctype": "Assignment Rule",

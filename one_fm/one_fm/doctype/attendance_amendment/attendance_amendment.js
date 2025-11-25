@@ -31,19 +31,24 @@ frappe.ui.form.on("Attendance Amendment", {
     project(frm) {
         frm.events.filter_site_by_project(frm);
         frm.set_value("attendance_details", []);
+        frm.set_value("overtime_details", []);
         frm.set_value("site", "");
     },
     year(frm){
         frm.set_value("attendance_details", []);
+        frm.set_value("overtime_details", []);
     },
     month(frm){
         frm.set_value("attendance_details", []);
+        frm.set_value("overtime_details", []);
     },
     site(frm){
         frm.set_value("attendance_details", []);
+        frm.set_value("overtime_details", []);
     },
     attendance_based_on(frm){
         frm.set_value("attendance_details", []);
+        frm.set_value("overtime_details", []);
         toggle_day_value_fields_in_attendance_details(frm);
     },
     filter_site_by_project(frm){

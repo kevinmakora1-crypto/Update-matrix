@@ -3,6 +3,7 @@ frappe.ui.form.on('Item', {
 		set_item_field_property(frm);
 		set_item_name_properties(frm);
 		set_change_request_btn(frm);
+		set_field_access_for_unauthorised_users(frm);
 		frm.set_query("subitem_group", function() {
 			return {
 				filters: [
@@ -359,6 +360,15 @@ function set_change_request_btn(frm) {
 				change_request(frm);
 			}, "Actions");
 		}
+	}
+};
+
+function set_field_access_for_unauthorised_users(frm) {
+	if(frm.doc.workflow_state == 'Approved' && !(frappe.user.has_role('Finance Manager') || frappe.user.has_role('Purchase Manager'))){
+		// Set all fields (other than UOM) as read only
+		Object.keys(frm.fields_dict || {}).filter(f => f != "uoms").forEach(f => frm.set_df_property(f, "read_only", 1));
+
+		frm.refresh_fields();
 	}
 };
 

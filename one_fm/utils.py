@@ -3425,7 +3425,6 @@ def change_item_details(item, item_name=False, description=False):
     if description:
         item_obj.db_set("description", description)
     item_obj.db_set("change_request", True)
-    apply_workflow(item_obj, "Change Request")
 
 
 def translate_words(word: str, target_language_code: str="ar") -> str:

@@ -13,7 +13,9 @@ frappe.ui.form.on("Attendance Amendment", {
             doc: frm.doc,
             callback: function(r) {
                 frm.refresh_fields();
-            }
+            },
+            freeze: true,
+            freeze_message: "Fetching Attendance Records..."
         });
     },
     set_year_and_month(frm){

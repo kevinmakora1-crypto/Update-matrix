@@ -19,5 +19,5 @@
     { "day": "Saturday", "doctype": "Assignment Rule Day" },
     { "day": "Sunday", "doctype": "Assignment Rule Day" }
   ],
-  "field": "site_supervisor_users"
+  "field": "site_supervisor_user"
 }

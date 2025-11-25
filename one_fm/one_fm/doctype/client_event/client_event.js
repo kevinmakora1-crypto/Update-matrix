@@ -23,6 +23,25 @@ frappe.ui.form.on("Client Event", {
                                     options: "Employee",
                                     in_list_view: 1,
                                     reqd: 1,
+                                    get_query: () => {
+                                        let designations = (frm.doc.staffing_requirements || []).map(d => d.designation);
+                                        return {
+                                            filters: {
+                                                designation: ["in", designations]
+                                            }
+                                        };
+                                    },
+                                    onchange: function() {
+                                        let employee = this.get_value();
+                                        let row = this.grid_row;
+                                        if (employee) {
+                                            row.doc.roster_type = 'Basic';
+                                            frappe.db.get_value('Employee', employee, 'designation', (r) => {
+                                                row.doc.designation = r.designation;
+                                                row.refresh();
+                                            });
+                                        }
+                                    }
                                 },
                                 {
                                     label: __("Designation"),

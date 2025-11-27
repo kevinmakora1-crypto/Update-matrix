@@ -14,6 +14,7 @@ def execute():
         INNER JOIN `tabPurchase Order` po ON po.name = poi.parent
         INNER JOIN `tabItem` item ON item.name = poi.item_code
         WHERE po.modified >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        AND po.docstatus != 2
         AND (poi.description != item.description OR poi.description IS NULL)
     """, as_dict=1)
     

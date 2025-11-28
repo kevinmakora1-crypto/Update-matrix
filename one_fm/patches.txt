@@ -180,7 +180,7 @@ one_fm.patches.v15_0.rename_moi_residency_jawazath
 one_fm.patches.v15_0.sync_old_google_tasks
 one_fm.patches.v15_0.update_workflow_state_style
 one_fm.patches.v15_0.initialize_pending_si_quantities
-one_fm.patches.v15_0.update_attendance_status_options
+one_fm.patches.v15_0.update_attendance_status_options # 2
 one_fm.patches.v15_0.set_po_item_margin_fields_readonly
 one_fm.patches.v15_0.add_leave_handover_process_task
 one_fm.patches.v15_0.update_item_asset_naming_series

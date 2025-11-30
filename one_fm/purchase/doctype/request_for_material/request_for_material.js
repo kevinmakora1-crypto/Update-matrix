@@ -125,7 +125,6 @@ frappe.ui.form.on('Request for Material', {
 			frm.set_value('requested_by', frappe.session.user);
 		}
 
-		set_t_warehouse_hidden(frm);
 		// set schedule_date
 		set_schedule_date(frm);
 		frm.fields_dict["items"].grid.get_field("t_warehouse").get_query = function(doc) {
@@ -538,6 +537,9 @@ frappe.ui.form.on('Request for Material', {
 			});
 		}
 	},
+	warehouse: function(frm) {
+		set_source_warehouse(frm);
+	},
 	t_warehouse: function(frm) {
 		set_t_warehouse(frm);
 	},
@@ -557,7 +559,6 @@ frappe.ui.form.on('Request for Material', {
 		toggle_child_table_fields(frm);
 	},
 	project: function(frm) {
-		set_t_warehouse_hidden(frm);
 		set_warehouse_filters(frm);
 	},
 	department: function(frm) {
@@ -724,17 +725,6 @@ function create_stock_entry(frm, stock_entry_type) {
         }
     });
 }
-
-var set_t_warehouse_hidden = function(frm) {
-	if(frm.doc.project){
-		frm.set_df_property('t_warehouse', 'hidden', false);
-	}
-	else {
-		frm.set_df_property('t_warehouse', 'hidden', true);
-	}
-}
-
-
 
 var set_filters = function(frm) {
 	frm.set_query("erf", function() {
@@ -1249,6 +1239,14 @@ erpnext.buying.MaterialRequestController = class MaterialRequestController exten
 			this.frm.script_manager.copy_from_first_row("items", row, ["schedule_date"]);
 			this.frm.script_manager.copy_from_first_row("items", row, ["t_warehouse"]);
 		}
+		if (doc.warehouse) {
+			row.warehouse = doc.warehouse
+			refresh_field("warehouse", cdn, "items");
+		}
+		if (doc.t_warehouse) {
+			row.t_warehouse = doc.t_warehouse
+			refresh_field("t_warehouse", cdn, "items");
+		}
 	}
 
 	items_on_form_rendered() {
@@ -1277,6 +1275,12 @@ function set_intro(frm){
 	 let intro_string = "Only Warehouse Supervisor can convert this Request for Material to Request for Purchase/Purchase RFM or Material Transfer/Material Issue."
 	 frm.set_intro(intro_string);
 }
+
+function set_source_warehouse(frm){
+	if(frm.doc.warehouse){
+		erpnext.utils.copy_value_in_all_rows(frm.doc, frm.doc.doctype, frm.doc.name, "items", "warehouse");
+	}
+};
 
 function set_t_warehouse(frm){
 	if(frm.doc.t_warehouse){

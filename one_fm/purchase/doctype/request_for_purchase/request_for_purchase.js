@@ -310,7 +310,6 @@ frappe.ui.form.on('Request for Purchase', {
                 var items_to_order = frm.add_child('items_to_order');
                 items_to_order.item_code = item.item_code;
                 items_to_order.item_name = item.item_name;
-                items_to_order.description = item.description;
                 items_to_order.uom = item.uom;
                 items_to_order.t_warehouse = item.t_warehouse;
                 items_to_order.qty_requested = item.qty;
@@ -356,7 +355,6 @@ frappe.ui.form.on('Request for Purchase', {
             var items_to_order = frm.add_child('items_to_order');
             items_to_order.item_code = item.item_code;
             items_to_order.item_name = item.item_name;
-            items_to_order.description = item.description;
             items_to_order.t_warehouse = item.t_warehouse;
             items_to_order.qty_requested = item.qty;
             items_to_order.qty = item.qty;

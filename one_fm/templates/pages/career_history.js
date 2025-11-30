@@ -608,6 +608,7 @@ career_history = Class.extend({
       career_history['start_date'] = $(`.joined_company${company_no}`).val();
       career_history['monthly_salary_in_kwd'] = $(`.salary_company${company_no}`).val();
       career_history['responsibility_one'] = $(`.responsibilities_company_${company_no}`).val();
+      career_history['major_accomplishment'] = $(`.accomplishment_company_${company_no}`).val();
       career_history['job_title'] = $(`.starting_job_title_company_${company_no}`).val();
       career_history['employment_type'] = $(`.employment_type_company_${company_no}`).val();
       career_history['first_contact_name'] = $(`.first_contact_name_${company_no}`).val();
@@ -762,6 +763,15 @@ career_history = Class.extend({
             >Briefly describe your responsibilities in this role</label>
           <textarea
             class="form-control responsibilities_company_${company_no}"
+            rows="4"
+            placeholder="E.g. Managed a team of 5, handled client reports, etc."
+          ></textarea>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12">
+          <label class="form-label"
+            >Briefly describe your major accomplishment in this role</label>
+          <textarea
+            class="form-control accomplishment_company_${company_no}"
             rows="4"
             placeholder="E.g. Managed a team of 5, handled client reports, etc."
           ></textarea>

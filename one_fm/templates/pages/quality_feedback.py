@@ -4,7 +4,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_url, getdate, today, formatdate
 from one_fm.one_fm.doctype.magic_link.magic_link import authorize_magic_link as authenticate_magic_link
-from one_fm.utils import set_expire_magic_link
+from one_fm.utils import set_expire_magic_link, translate_words
 
 def get_context(context):
     """
@@ -137,3 +137,58 @@ def submit_feedback(docname, ratings=None, noticed_damage=None, damage_descripti
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), 'Quality Feedback Submission Failed')
         return {'success': False, 'message': _('An error occurred while submitting feedback.')}
+
+@frappe.whitelist(allow_guest=True)
+def translate_text(text, target_language='en'):
+    """
+    Translate text using Google Translate.
+    """
+    try:
+        if not text or target_language == 'en':
+            return text
+        
+        translated = translate_words(text, target_language)
+        return translated
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), 'Translation Failed')
+        return text  # Return original text if translation fails
+
+@frappe.whitelist(allow_guest=True)
+def get_all_languages():
+    """
+    Get all languages from Language doctype.
+    """
+    try:
+        languages = frappe.get_all(
+            'Language',
+            fields=['name', 'language_name'],
+            order_by='language_name'
+        )
+        return languages
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), 'Failed to fetch languages')
+        return []
+
+@frappe.whitelist(allow_guest=True)
+def translate_multiple(texts, target_language='en'):
+    """
+    Translate multiple texts at once.
+    """
+    try:
+        if not texts or target_language == 'en':
+            return texts if isinstance(texts, list) else [texts]
+        
+        if isinstance(texts, str):
+            texts = json.loads(texts)
+        
+        translated = []
+        for text in texts:
+            if text:
+                translated.append(translate_words(text, target_language))
+            else:
+                translated.append(text)
+        
+        return translated
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), 'Batch Translation Failed')
+        return texts if isinstance(texts, list) else [texts]

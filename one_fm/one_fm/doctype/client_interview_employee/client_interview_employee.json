@@ -8,12 +8,11 @@
  "field_order": [
   "employee",
   "employee_name",
-  "roster_type",
   "column_break_xhrc",
-  "attended_html",
-  "attended",
+  "roster_type",
+  "previous_employee_availability",
   "column_break_fcjs",
-  "selected_html",
+  "attended",
   "selected"
  ],
  "fields": [
@@ -46,42 +45,38 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "attended_html",
-   "fieldtype": "HTML",
-   "label": "Attended HTML"
-  },
-  {
+   "allow_on_submit": 1,
    "default": "0",
+   "depends_on": "attended",
    "fieldname": "attended",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Attended",
-   "read_only": 1
+   "label": "Attended"
   },
   {
    "fieldname": "column_break_fcjs",
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval: doc.attended",
-   "fieldname": "selected_html",
-   "fieldtype": "HTML",
-   "label": "Selected HTML"
-  },
-  {
+   "allow_on_submit": 1,
    "default": "0",
    "fieldname": "selected",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Selected",
-   "read_only": 1
+   "read_only_depends_on": "eval:!doc.attended"
+  },
+  {
+   "fieldname": "previous_employee_availability",
+   "fieldtype": "Data",
+   "label": "Previous Employee Evailability"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-11-28 12:45:29.715231",
+ "modified": "2025-12-01 14:45:27.088030",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Client Interview Employee",

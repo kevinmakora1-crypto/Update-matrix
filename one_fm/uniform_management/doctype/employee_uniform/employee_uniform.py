@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 import frappe
+import json
 from frappe.model.document import Document
 from frappe.utils import today, month_diff, add_days, getdate
 from frappe import _
@@ -435,3 +436,57 @@ def notify_gsd_and_employee_before_uniform_expiry(is_scheduled_event=True):
 				header=['Expiring Uniforms in seven days', 'yellow'],
 				is_scheduler_email=is_scheduled_event
 			)
+
+@frappe.whitelist()
+def get_item_types(items):
+	if not items:
+		return []
+	
+	if isinstance(items, str):
+		items = json.loads(items)
+
+
+	item_types = frappe.get_all(
+		"Item",
+		filters={"name": ("in", items)},
+		fields=["item_type"]
+	)
+
+	return [item.get("item_type") for item in item_types if item.get("item_type")]
+
+@frappe.whitelist()
+def create_quality_feedbacks(employee_uniform, selected_feedback_templates):
+	employee_uniform_doc = frappe.get_doc("Employee Uniform", employee_uniform)
+	if not selected_feedback_templates:
+		return
+
+	if isinstance(selected_feedback_templates, str):
+		selected_feedback_templates = json.loads(selected_feedback_templates)
+
+	for template in selected_feedback_templates:
+		target_feedback_schedule = frappe.db.get_value("Quality Feedback Template", template, "custom_feedback_schedule")
+
+		feedback_schedules = frappe.get_all(
+			"Feedback Schedule Item",
+			filters={"parent": target_feedback_schedule},
+			pluck="name"
+		)
+
+		for schedule_stage in feedback_schedules:
+			already_exists = frappe.db.exists(
+				"Quality Feedback",
+				{
+					"template": template,
+					"custom_feedback_schedule_stage": schedule_stage,
+					"custom_employee": employee_uniform_doc.employee,
+				}
+			)
+			if already_exists:
+				continue
+
+			feedback_doc = frappe.new_doc("Quality Feedback")
+			feedback_doc.template = template
+			feedback_doc.document_name = frappe.session.user
+			feedback_doc.custom_feedback_schedule_stage = schedule_stage
+			feedback_doc.custom_employee = employee_uniform_doc.employee
+			feedback_doc.insert(ignore_permissions=True)

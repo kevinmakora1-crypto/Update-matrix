@@ -127,11 +127,6 @@ frappe.ui.form.on('Request for Material', {
 
 		// set schedule_date
 		set_schedule_date(frm);
-		frm.fields_dict["items"].grid.get_field("t_warehouse").get_query = function(doc) {
-			return {
-				filters: {'company': doc.company}
-			};
-		};
 	},
 	onload_post_render: function(frm) {
 		frm.get_field("items").grid.set_multiple_add("item_code", "qty");
@@ -167,16 +162,15 @@ frappe.ui.form.on('Request for Material', {
 				method: 'get_default_warehouse',
 				callback: function(r) {
 					if(r && r.default_warehouse){
-						frm.set_value('t_warehouse', r.default_warehouse);
+						frm.set_value('target_warehouse', r.default_warehouse);
 					}
 					else{
-						frm.set_value('t_warehouse', '');
+						frm.set_value('target_warehouse', '');
 					}
 				}
 			});
 		}
 		set_filters(frm);
-		set_warehouse_filters(frm);
 		toggle_child_table_fields(frm);
 
 		if(frm.doc.linked_request_for_material){
@@ -537,11 +531,11 @@ frappe.ui.form.on('Request for Material', {
 			});
 		}
 	},
-	warehouse: function(frm) {
+	source_warehouse: function(frm) {
 		set_source_warehouse(frm);
 	},
-	t_warehouse: function(frm) {
-		set_t_warehouse(frm);
+	target_warehouse: function(frm) {
+		set_target_warehouse(frm);
 	},
 	status: function(frm) {
 		if(frm.doc.status && frm.doc.status == 'Rejected'){
@@ -554,18 +548,8 @@ frappe.ui.form.on('Request for Material', {
 	type: function(frm) {
 		set_employee_or_project(frm);
 		set_item_field_property(frm);
-		set_warehouse_filters(frm);
 		set_filters(frm);
 		toggle_child_table_fields(frm);
-	},
-	project: function(frm) {
-		set_warehouse_filters(frm);
-	},
-	department: function(frm) {
-		set_warehouse_filters(frm);
-	},
-	site: function(frm) {
-		set_warehouse_filters(frm);
 	},
 	is_refundable: function(frm) {
 		sync_child_table(frm, 'is_refundable');
@@ -748,11 +732,6 @@ var set_filters = function(frm) {
 			]
 		};
 	});
-	frm.set_query("t_warehouse", function() {
-		return {
-			filters: {'is_group': 0}
-		};
-	});
 };
 
 
@@ -862,24 +841,6 @@ var set_item_field_read_only = function(frm, fields) {
 		frappe.meta.get_docfield("Request for Material Item", field.fieldname, frm.doc.name).read_only = field.read_only;
 	});
 };
-
-var set_warehouse_filters = function(frm) {
-	var wh_filters = {'is_group': 0};
-	if(frm.doc.type == 'Department'){
-		wh_filters = {'is_group': 0, 'department': frm.doc.department};
-	}
-	if(frm.doc.type == 'Project'){
-		wh_filters = {'is_group': 0, 'one_fm_project': frm.doc.project};
-		if(frm.doc.site){
-			wh_filters['one_fm_site'] = frm.doc.site;
-		}
-	}
-	frm.set_query("t_warehouse", function() {
-		return {
-			filters: wh_filters
-		};
-	});
-}
 
 var set_employee_from_the_session_user = function(frm) {
 	if(frappe.session.user != 'Administrator'){
@@ -1187,6 +1148,8 @@ frappe.ui.form.on("Request for Material Item", {
 		frappe.model.set_value(cdt, cdn, 'margin_known', frm.doc.margin_known || '');
 		frappe.model.set_value(cdt, cdn, 'margin_type', frm.doc.margin_type || '');
 		frappe.model.set_value(cdt, cdn, 'margin_rate_or_amount', frm.doc.margin_rate_or_amount || 0);
+		frappe.model.set_value(cdt, cdn, 'warehouse', frm.doc.source_warehouse);
+		frappe.model.set_value(cdt, cdn, 'target_warehouse', frm.doc.target_warehouse);
 	},
 	items_remove: (frm) => {
 	},
@@ -1237,15 +1200,6 @@ erpnext.buying.MaterialRequestController = class MaterialRequestController exten
 			refresh_field("schedule_date", cdn, "items");
 		} else {
 			this.frm.script_manager.copy_from_first_row("items", row, ["schedule_date"]);
-			this.frm.script_manager.copy_from_first_row("items", row, ["t_warehouse"]);
-		}
-		if (doc.warehouse) {
-			row.warehouse = doc.warehouse
-			refresh_field("warehouse", cdn, "items");
-		}
-		if (doc.t_warehouse) {
-			row.t_warehouse = doc.t_warehouse
-			refresh_field("t_warehouse", cdn, "items");
 		}
 	}
 
@@ -1262,6 +1216,16 @@ erpnext.buying.MaterialRequestController = class MaterialRequestController exten
 // for backward compatibility: combine new and previous states
 extend_cscript(cur_frm.cscript, new erpnext.buying.MaterialRequestController({frm: cur_frm}));
 
+function set_value_in_all_items (frm, fieldname, value) {
+	if (value) {
+		var items = frm.doc.items || [];
+		for (var i = 0; i < items.length; i++) {
+			if (!items[i][fieldname]) items[i][fieldname] = value;
+		}
+	}
+	refresh_field("items");
+}
+
 function set_schedule_date(frm) {
 	if(frm.doc.schedule_date){
 		erpnext.utils.copy_value_in_all_rows(frm.doc, frm.doc.doctype, frm.doc.name, "items", "schedule_date");
@@ -1277,15 +1241,11 @@ function set_intro(frm){
 }
 
 function set_source_warehouse(frm){
-	if(frm.doc.warehouse){
-		erpnext.utils.copy_value_in_all_rows(frm.doc, frm.doc.doctype, frm.doc.name, "items", "warehouse");
-	}
+	set_value_in_all_items(frm, "warehouse", frm.doc.source_warehouse);
 };
 
-function set_t_warehouse(frm){
-	if(frm.doc.t_warehouse){
-		erpnext.utils.copy_value_in_all_rows(frm.doc, frm.doc.doctype, frm.doc.name, "items", "t_warehouse");
-	}
+function set_target_warehouse(frm){
+	set_value_in_all_items(frm, "t_warehouse", frm.doc.target_warehouse);
 };
 
 

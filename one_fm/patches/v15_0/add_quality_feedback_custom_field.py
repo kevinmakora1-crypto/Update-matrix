@@ -1,0 +1,8 @@
+from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+from one_fm.custom.custom_field.quality_feedback import get_quality_feedback_custom_fields
+from one_fm.custom.custom_field.quality_feedback_parameter import get_quality_feedback_parameter_custom_fields
+
+
+def execute():
+	create_custom_fields(get_quality_feedback_custom_fields())
+	create_custom_fields(get_quality_feedback_parameter_custom_fields())

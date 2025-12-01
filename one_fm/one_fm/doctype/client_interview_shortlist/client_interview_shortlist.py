@@ -65,6 +65,8 @@ class ClientInterviewShortlist(Document):
 		if attendance:
 			frappe.db.set_value("Attendance", attendance, "status", status)
 			frappe.db.set_value("Attendance", attendance, "roster_type", roster_type)
+			frappe.db.set_value("Attendance", attendance, "reference_doctype", self.doctype)
+			frappe.db.set_value("Attendance", attendance, "reference_docname", self.name)
 			frappe.msgprint(f"Attendance updated for {employee} on {self.interview_date}")
 		else:
 			doc = frappe.new_doc("Attendance")
@@ -72,5 +74,7 @@ class ClientInterviewShortlist(Document):
 			doc.attendance_date = self.interview_date
 			doc.status = status
 			doc.roster_type = roster_type
+			doc.reference_doctype = self.doctype
+			doc.reference_docname = self.name
 			doc.insert(ignore_permissions=True)
 			frappe.msgprint(f"Attendance created for {employee} on {self.interview_date}")

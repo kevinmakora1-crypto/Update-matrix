@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import getdate, today
 
 
 class ClientInterviewShortlist(Document):
@@ -38,7 +39,7 @@ class ClientInterviewShortlist(Document):
 			"employee_availability": "Client Interview",
 			"roster_type": roster_type,
 			"reference_doctype": self.doctype,
-			"reference_name": self.name,
+			"reference_docname": self.name,
 			"project": self.project
 		})
 		employee_schedule.insert(ignore_permissions=True)
@@ -51,7 +52,7 @@ class ClientInterviewShortlist(Document):
 			if not interview_employee.has_value_changed("attended"):
 				continue
 
-			status = "Present" if interview_employee.attended else "Absent"
+			status = "Client Interview" if interview_employee.attended else "Absent"
 			attendance_roster_type = "Over-Time" if interview_employee.previous_employee_availability == "Day Off" else "Basic"
 			self.mark_attendance(interview_employee.employee, status, attendance_roster_type)
 
@@ -59,7 +60,8 @@ class ClientInterviewShortlist(Document):
 	def mark_attendance(self, employee, status, roster_type):
 		attendance = frappe.db.exists("Attendance", {
 			"employee": employee,
-			"attendance_date": self.interview_date
+			"attendance_date": self.interview_date,
+			"document_status": ["!=", 2]
 		})
 
 		if attendance:
@@ -79,3 +81,39 @@ class ClientInterviewShortlist(Document):
 			doc.insert(ignore_permissions=True)
 			doc.submit()
 			frappe.msgprint(f"Attendance created for {employee} on {self.interview_date}")
+
+	def on_cancel(self):
+		self.check_if_interview_date_is_in_the_past()
+		self.delete_employee_schedule_and_attendance()
+
+	def check_if_interview_date_is_in_the_past(self):
+		if getdate(self.interview_date) < getdate(today()):
+			frappe.throw("Cannot cancel a client interview shortlist with a past interview date.")
+
+	def delete_employee_schedule_and_attendance(self):
+		self.delete_employee_schedule()
+		self.cancel_attendance()
+
+	def delete_employee_schedule(self):
+		schedules = frappe.get_all(
+			"Employee Schedule",
+			filters={
+				"date": self.interview_date,
+				"reference_doctype": self.doctype,
+				"reference_docname": self.name,
+			},
+		)
+		for schedule in schedules:
+			frappe.delete_doc("Employee Schedule", schedule.name, ignore_permissions=True)
+
+	def cancel_attendance(self):
+		attendances = frappe.get_all(
+			"Attendance",
+			filters={
+				"attendance_date": self.interview_date,
+				"reference_doctype": self.doctype,
+				"reference_docname": self.name,
+			},
+		)
+		for attendance in attendances:
+			frappe.get_doc("Attendance", attendance.name).cancel()

@@ -83,10 +83,10 @@ def get_feedback_data(docname):
         return None
 
 @frappe.whitelist(allow_guest=True)
-def submit_feedback(docname, ratings=None, noticed_damage=None, damage_description=None, feedback_text=None):
+def submit_feedback(docname, ratings=None, noticed_damage=None, damage_description=None, feedback_text=None, damage_attachment_url=None, damage_attachment_name=None):
     """
     Submit feedback for a given Quality Feedback document.
-    Accepts ratings array, damage information, and feedback text.
+    Accepts ratings array, damage information, feedback text, and damage attachment.
     """
     try:
         doc = frappe.get_doc('Quality Feedback', docname)
@@ -120,10 +120,35 @@ def submit_feedback(docname, ratings=None, noticed_damage=None, damage_descripti
         
         # Save feedback text
         if feedback_text:
-            doc.feedback = feedback_text
-            # Also save to custom field if exists for backward compatibility
-            if hasattr(doc, 'one_fm_unauthorized_feedback'):
-                doc.one_fm_unauthorized_feedback = feedback_text
+            if hasattr(doc, 'custom_feedback'):
+                doc.custom_feedback = feedback_text
+            # Also save to feedback field if it exists
+            if hasattr(doc, 'feedback'):
+                doc.feedback = feedback_text
+        
+        # Attach damage file if provided
+        if damage_attachment_url:
+            # The file should already be attached by upload_file API when doctype/docname are provided
+            # Just ensure the custom field is set
+            if hasattr(doc, 'custom_damage_attachment'):
+                doc.custom_damage_attachment = damage_attachment_url
+            
+            # Verify file attachment exists, create if not
+            existing_file = frappe.db.exists('File', {
+                'attached_to_doctype': 'Quality Feedback',
+                'attached_to_name': docname,
+                'attached_to_field': 'custom_damage_attachment'
+            })
+            
+            if not existing_file:
+                # File might not be linked, find it by URL and link it
+                file_doc = frappe.db.get_value('File', {'file_url': damage_attachment_url}, 'name')
+                if file_doc:
+                    file_doc = frappe.get_doc('File', file_doc)
+                    file_doc.attached_to_doctype = 'Quality Feedback'
+                    file_doc.attached_to_name = docname
+                    file_doc.attached_to_field = 'custom_damage_attachment'
+                    file_doc.save(ignore_permissions=True)
         
         doc.save(ignore_permissions=True)
         frappe.db.commit()

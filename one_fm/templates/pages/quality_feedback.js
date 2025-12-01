@@ -6,9 +6,151 @@ frappe.ready(() => {
     let selectedLanguageName = 'English';
     let feedbackData = null;
     let languages = [];
+    let formSubmitted = false; // Track if form was submitted
 
-    // Fetch languages from backend
-    fetchLanguages();
+    // Show dummy loading at the start
+    showLoader('Initializing...', [
+        'Loading Quality Feedback...',
+        'Preparing interface...',
+        'Almost ready...'
+    ]);
+
+    // Add a small delay for dummy loading, then fetch languages
+    setTimeout(() => {
+        fetchLanguages();
+    }, 1500);
+
+    // Show engaging loader with progress (full screen)
+    function showLoader(message, progressMessages = []) {
+        const messages = progressMessages.length > 0 ? progressMessages : [message];
+        let currentMessageIndex = 0;
+        
+        container.innerHTML = `
+            <div class="loader-container">
+                <div class="loader-wrapper">
+                    <div class="progress-spinner">
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                    </div>
+                    <div class="loader-content">
+                        <div class="loader-text" id="loader-text">${messages[0]}</div>
+                        <div class="loader-progress">
+                            <div class="progress-bar" id="progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Animate progress bar
+        const progressBar = document.getElementById('progress-bar');
+        const loaderText = document.getElementById('loader-text');
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 2;
+            if (progress > 90) progress = 90; // Don't reach 100% until done
+            if (progressBar) {
+                progressBar.style.width = progress + '%';
+            }
+            
+            // Change message periodically
+            if (messages.length > 1 && progress % 30 === 0) {
+                currentMessageIndex = (currentMessageIndex + 1) % messages.length;
+                if (loaderText) {
+                    loaderText.style.opacity = '0';
+                    setTimeout(() => {
+                        loaderText.textContent = messages[currentMessageIndex];
+                        loaderText.style.opacity = '1';
+                    }, 200);
+                }
+            }
+        }, 100);
+
+        // Return function to stop loader
+        return (immediate = false) => {
+            clearInterval(progressInterval);
+            if (progressBar) {
+                progressBar.style.width = '100%';
+            }
+            
+            const loaderContainer = document.querySelector('.loader-container');
+            if (loaderContainer) {
+                if (immediate) {
+                    // Remove immediately without fade animation
+                    loaderContainer.remove();
+                } else {
+                    // Fade out animation
+                    loaderContainer.style.opacity = '0';
+                    setTimeout(() => loaderContainer.remove(), 300);
+                }
+            }
+        };
+    }
+
+    // Show submit loader as overlay (doesn't replace container)
+    function showSubmitLoader(message, progressMessages = []) {
+        const messages = progressMessages.length > 0 ? progressMessages : [message];
+        let currentMessageIndex = 0;
+        
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'loader-overlay';
+        overlay.innerHTML = `
+            <div class="loader-wrapper overlay-loader">
+                <div class="progress-spinner">
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                </div>
+                <div class="loader-content">
+                    <div class="loader-text" id="submit-loader-text">${messages[0]}</div>
+                    <div class="loader-progress">
+                        <div class="progress-bar" id="submit-progress-bar"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        // Animate progress bar
+        const progressBar = document.getElementById('submit-progress-bar');
+        const loaderText = document.getElementById('submit-loader-text');
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 2;
+            if (progress > 90) progress = 90;
+            if (progressBar) {
+                progressBar.style.width = progress + '%';
+            }
+            
+            // Change message periodically
+            if (messages.length > 1 && progress % 30 === 0) {
+                currentMessageIndex = (currentMessageIndex + 1) % messages.length;
+                if (loaderText) {
+                    loaderText.style.opacity = '0';
+                    setTimeout(() => {
+                        loaderText.textContent = messages[currentMessageIndex];
+                        loaderText.style.opacity = '1';
+                    }, 200);
+                }
+            }
+        }, 100);
+
+        // Return function to stop loader
+        return () => {
+            clearInterval(progressInterval);
+            if (progressBar) {
+                progressBar.style.width = '100%';
+                setTimeout(() => {
+                    overlay.style.opacity = '0';
+                    setTimeout(() => overlay.remove(), 300);
+                }, 300);
+            }
+        };
+    }
 
     function fetchLanguages() {
         frappe.call({
@@ -33,6 +175,11 @@ frappe.ready(() => {
     }
 
     function showLanguageSelector() {
+        // Don't show language selector if form was already submitted
+        if (formSubmitted) {
+            return;
+        }
+
         container.innerHTML = `
             <div class="language-selector-container">
                 <div class="language-selector-card">
@@ -57,31 +204,39 @@ frappe.ready(() => {
                 // Find language name
                 const langObj = languages.find(l => l.code === langCode);
                 selectedLanguageName = langObj ? langObj.name : langCode;
-                container.innerHTML = '<div class="loading-message">Loading form...</div>';
+                
+                // Show loader with progress messages
+                const stopLoader = showLoader('Preparing form...', [
+                    'Preparing form...',
+                    'Loading your details...',
+                    'Fetching feedback questions...',
+                    'Almost ready...'
+                ]);
                 
                 // Fetch feedback data and render form
-                fetchFeedbackData();
+                fetchFeedbackData(stopLoader);
             });
         });
     }
 
-    function fetchFeedbackData() {
+    function fetchFeedbackData(stopLoaderCallback) {
         frappe.call({
             method: 'one_fm.templates.pages.quality_feedback.get_feedback_data',
             args: { docname: docname },
             callback: (r) => {
                 if (r.message) {
                     feedbackData = r.message;
-                    renderQualityFeedbackForm(feedbackData, docname);
+                    // Don't stop loader yet - keep it running until form is rendered
+                    renderQualityFeedbackForm(feedbackData, docname, stopLoaderCallback);
                 } else {
+                    if (stopLoaderCallback) stopLoaderCallback();
                     container.innerHTML = `<div class="alert alert-danger">Error loading feedback data.</div>`;
                 }
             },
             error: () => {
+                if (stopLoaderCallback) stopLoaderCallback();
                 container.innerHTML = `<div class="alert alert-danger">Error loading feedback data. Please try again later.</div>`;
-            },
-            freeze: true,
-            freeze_message: __('Loading feedback data...')
+            }
         });
     }
 
@@ -159,7 +314,13 @@ frappe.ready(() => {
         });
     }
 
-    async function renderQualityFeedbackForm(data, docname) {
+    async function renderQualityFeedbackForm(data, docname, stopLoaderCallback) {
+        // Update loader message to show we're preparing the form
+        const loaderText = document.getElementById('loader-text');
+        if (loaderText) {
+            loaderText.textContent = 'Preparing your form...';
+        }
+        
         const employeeName = data.employee_name || '[Employee Full Name]';
         const itemType = data.item_type || '[Item_Type]';
         const employeeId = data.employee_id || '';
@@ -169,6 +330,7 @@ frappe.ready(() => {
 
         // Translate all content (or skip translation if English)
         let translations, questions;
+        
         if (selectedLanguage === 'en') {
             // For English, use original texts without translation
             translations = [
@@ -182,10 +344,19 @@ frappe.ready(() => {
             ];
             questions = data.questions || [];
         } else {
-            container.innerHTML = '<div class="loading-message">Translating content...</div>';
+            // Update loader message for translation
+            if (loaderText) {
+                loaderText.textContent = 'Translating content...';
+            }
+            
             const translated = await translateAllContent(data, docname);
             translations = translated.translations;
             questions = translated.questions;
+            
+            // Update loader message to show form is being rendered
+            if (loaderText) {
+                loaderText.textContent = 'Rendering form...';
+            }
         }
 
         const [
@@ -313,14 +484,28 @@ frappe.ready(() => {
             </div>
         `;
 
-        // Initialize form interactions
+        // Form HTML is now set - loader is automatically replaced by innerHTML assignment
+        // Clear loader callback interval if it exists (loader HTML is already gone)
+        if (stopLoaderCallback) {
+            // Just clear the interval, don't try to remove loader (it's already replaced)
+            try {
+                stopLoaderCallback(true);
+            } catch(e) {
+                // Ignore if callback fails (loader already gone)
+            }
+        }
+
+        // Initialize form interactions immediately
         initializeFormInteractions(docname, submittingText, submitText);
         
         // Handle globe icon click to go back to language selection
         const globeIcon = document.getElementById('globe-icon');
         if (globeIcon) {
             globeIcon.addEventListener('click', () => {
-                showLanguageSelector();
+                // Don't allow going back to language selector if form was submitted
+                if (!formSubmitted) {
+                    showLanguageSelector();
+                }
             });
         }
     }
@@ -450,6 +635,7 @@ frappe.ready(() => {
         }
 
         // Validate damage fields if damage is noticed
+        let attachmentFile = null;
         if (formData.noticed_damage === 'Yes') {
             if (!formData.damage_description.trim()) {
                 frappe.msgprint(__('Please provide a damage description.'));
@@ -457,7 +643,7 @@ frappe.ready(() => {
                 return;
             }
             
-            const attachmentFile = document.getElementById('damage-attachment-input')?.files?.[0];
+            attachmentFile = document.getElementById('damage-attachment-input')?.files?.[0];
             if (!attachmentFile) {
                 frappe.msgprint(__('Please attach a damage photo or document.'));
                 return;
@@ -468,29 +654,140 @@ frappe.ready(() => {
         const responseDiv = document.getElementById('feedback-response');
         
         submitBtn.disabled = true;
-        submitBtn.textContent = submittingText || 'Submitting...';
+        const originalButtonText = submitBtn.textContent;
+        
+        // Show submission loader as overlay
+        const stopSubmitLoader = showSubmitLoader('Submitting your feedback...', [
+            'Validating your feedback...',
+            'Saving ratings...',
+            'Processing submission...',
+            'Almost done...'
+        ]);
 
+        // Upload file first if damage attachment exists, then submit feedback
+        if (attachmentFile) {
+            uploadDamageAttachment(attachmentFile, docname, formData, stopSubmitLoader, submitBtn, originalButtonText, responseDiv);
+        } else {
+            // No attachment, submit directly
+            submitFeedbackData(formData, stopSubmitLoader, submitBtn, originalButtonText, responseDiv);
+        }
+    }
+
+    function uploadDamageAttachment(file, docname, formData, stopSubmitLoader, submitBtn, originalButtonText, responseDiv) {
+        // Upload file using XMLHttpRequest (more reliable)
+        const xhr = new XMLHttpRequest();
+        const uploadFormData = new FormData();
+
+        xhr.open('POST', '/api/method/upload_file', true);
+        xhr.setRequestHeader('X-Frappe-CSRF-Token', frappe.csrf_token);
+        xhr.setRequestHeader('Accept', 'application/json');
+
+        uploadFormData.append('file', file);
+        uploadFormData.append('is_private', '1');
+        uploadFormData.append('folder', 'Home/Attachments');
+        uploadFormData.append('doctype', 'Quality Feedback');
+        uploadFormData.append('docname', docname);
+        uploadFormData.append('fieldname', 'custom_damage_attachment');
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response && response.message) {
+                            const fileUrl = response.message.file_url || response.message.message?.file_url;
+                            const fileName = response.message.file_name || file.name;
+                            
+                            if (fileUrl) {
+                                // File uploaded successfully, now include file URL in formData
+                                formData.damage_attachment_url = fileUrl;
+                                formData.damage_attachment_name = fileName;
+                                
+                                // Submit feedback with attachment
+                                submitFeedbackData(formData, stopSubmitLoader, submitBtn, originalButtonText, responseDiv);
+                            } else {
+                                throw new Error('File URL not received');
+                            }
+                        } else {
+                            throw new Error('Invalid response format');
+                        }
+                    } catch (error) {
+                        if (stopSubmitLoader) stopSubmitLoader();
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalButtonText;
+                        responseDiv.innerHTML = `<div class="alert alert-danger">Error uploading file: ${error.message}. Please try again.</div>`;
+                    }
+                } else {
+                    if (stopSubmitLoader) stopSubmitLoader();
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalButtonText;
+                    responseDiv.innerHTML = `<div class="alert alert-danger">Error uploading file (Status: ${xhr.status}). Please try again.</div>`;
+                }
+            }
+        };
+
+        xhr.onerror = function() {
+            if (stopSubmitLoader) stopSubmitLoader();
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalButtonText;
+            responseDiv.innerHTML = `<div class="alert alert-danger">Network error while uploading file. Please try again.</div>`;
+        };
+
+        xhr.send(uploadFormData);
+    }
+
+    function submitFeedbackData(formData, stopSubmitLoader, submitBtn, originalButtonText, responseDiv) {
         frappe.call({
             method: 'one_fm.templates.pages.quality_feedback.submit_feedback',
             args: formData,
             callback: (r) => {
+                if (stopSubmitLoader) stopSubmitLoader();
+                
                 submitBtn.disabled = false;
-                submitBtn.textContent = submitText || 'Submit Feedback';
+                submitBtn.textContent = originalButtonText;
                 
                 if (r.message && r.message.success) {
-                    responseDiv.innerHTML = `<div class="alert alert-success">Thank you! Your feedback has been submitted successfully.</div>`;
-                    // Optionally redirect or reset form
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
+                    formSubmitted = true; // Mark as submitted to prevent going back to language selector
+                    
+                    // Show success message
+                    responseDiv.innerHTML = `
+                        <div class="alert alert-success success-message-box">
+                            <div class="success-icon">✓</div>
+                            <div class="success-content">
+                                <h4>Success!</h4>
+                                <p>Thank you! Your feedback has been submitted successfully.</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Disable form fields
+                    document.querySelectorAll('input, select, textarea, button').forEach(el => {
+                        if (el.id !== 'globe-icon') {
+                            el.disabled = true;
+                        }
+                    });
+                    
+                    // Scroll to success message
+                    responseDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
-                    responseDiv.innerHTML = `<div class="alert alert-danger">${r.message?.message || 'An error occurred while submitting your feedback. Please try again.'}</div>`;
+                    // Show error message without losing form values
+                    responseDiv.innerHTML = `<div class="alert alert-danger error-message-box">${r.message?.message || 'An error occurred while submitting your feedback. Please try again.'}</div>`;
+                    
+                    // Scroll to error message
+                    responseDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             },
             error: () => {
+                if (stopSubmitLoader) stopSubmitLoader();
+                
                 submitBtn.disabled = false;
-                submitBtn.textContent = submitText || 'Submit Feedback';
-                responseDiv.innerHTML = `<div class="alert alert-danger">A server error occurred. Please try again later.</div>`;
+                submitBtn.textContent = originalButtonText;
+                
+                // Show error message without losing form values
+                responseDiv.innerHTML = `<div class="alert alert-danger error-message-box">A server error occurred. Please try again later.</div>`;
+                
+                // Scroll to error message
+                responseDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
     }

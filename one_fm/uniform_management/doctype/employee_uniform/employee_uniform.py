@@ -484,9 +484,13 @@ def create_quality_feedbacks(employee_uniform, selected_feedback_templates):
 			if already_exists:
 				continue
 
+			schedule_stage_doc = frappe.get_doc("Feedback Schedule Item", schedule_stage)
+
 			feedback_doc = frappe.new_doc("Quality Feedback")
 			feedback_doc.template = template
 			feedback_doc.document_name = frappe.session.user
 			feedback_doc.custom_feedback_schedule_stage = schedule_stage
+			feedback_doc.custom_issued_on = employee_uniform_doc.issued_on
+			feedback_doc.custom_feedback_due_on = add_days(employee_uniform_doc.issued_on or today(), schedule_stage_doc.days_after_issuance or 0)
 			feedback_doc.custom_employee = employee_uniform_doc.employee
 			feedback_doc.insert(ignore_permissions=True)

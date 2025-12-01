@@ -72,6 +72,7 @@ def get_quality_feedback_custom_fields():
 				"fieldtype": "Link",
 				"label": "Operations Site",
 				"options": "Operations Site",
+				"read_only": 1,
 				"fetch_from": "custom_employee.site",
 				"insert_after": "custom_employee_name"
 			},

@@ -24,6 +24,7 @@ def get_quality_feedback_parameter_properties():
 			"doctype_or_field": "DocField",
 			"field_name": "rating",
 			"property": "reqd",
+			"property_type": "Check",
 			"value": "0",
 		},
 		{
@@ -32,6 +33,7 @@ def get_quality_feedback_parameter_properties():
 			"doctype_or_field": "DocField",
 			"field_name": "parameter",
 			"property": "label",
+			"property_type": "Data",
 			"value": "Survey Question",
 		},
 	]

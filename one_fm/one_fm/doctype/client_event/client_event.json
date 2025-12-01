@@ -15,6 +15,7 @@
   "column_break_bajz",
   "event_location",
   "project",
+  "operations_manager",
   "section_break_zhpk",
   "staffing_requirements",
   "amended_from"
@@ -90,6 +91,12 @@
    "fieldtype": "Table",
    "label": "Staffing Requirements",
    "options": "Client Event Staff Requirement"
+  },
+  {
+   "fieldname": "operations_manager",
+   "fieldtype": "Link",
+   "label": "Operations Manager",
+   "options": "User"
   }
  ],
  "grid_page_length": 50,
@@ -109,7 +116,7 @@
    "link_fieldname": "client_event"
   }
  ],
- "modified": "2025-11-11 11:30:37.701862",
+ "modified": "2025-11-28 12:00:46.821775",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Client Event",

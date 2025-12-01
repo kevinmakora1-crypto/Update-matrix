@@ -1,0 +1,22 @@
+{% extends "templates/web.html" %}
+
+{% block script %}
+  <script>
+    {% include "templates/pages/quality_feedback.js" %}
+  </script>
+{% endblock %}
+
+{% block header %}
+<head>
+	<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One Facilities Management | Quality Feedback</title>
+	<link rel="stylesheet" href="assets/one_fm/assets/css/quality_feedback.css">
+</head>
+{% endblock %}
+
+{% block page_content %}
+<div id="quality-feedback-container">
+    <!-- This div will be populated by the JavaScript -->
+</div>
+{% endblock %}

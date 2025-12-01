@@ -784,7 +784,7 @@ def make_request_for_purchase(source_name, target_doc=None):
             "doctype": "Request for Purchase",
             "field_map": [
                 ["name", "request_for_material"],
-                ["t_warehouse", "warehouse"],
+                ["target_warehouse", "warehouse"],
                 ["customer", "customer"],
                 ["project", "project"],
                 ["site", "site"],
@@ -834,7 +834,7 @@ def create_partial_request_for_purchase(source_name, items):
     rfp = frappe.new_doc("Request for Purchase")
     rfp.company = source_doc.company
     rfp.request_for_material = source_name
-    rfp.warehouse = source_doc.t_warehouse
+    rfp.warehouse = source_doc.target_warehouse
     rfp.customer = source_doc.customer
     rfp.project = source_doc.project
     rfp.site = source_doc.site

@@ -1,0 +1,655 @@
+/* Quality Feedback Form - Modern Attractive Design with Animations */
+
+.quality-feedback-wrapper {
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    background: transparent;
+    min-height: 100vh;
+    animation: fadeInBackground 0.8s ease-in;
+}
+
+@keyframes fadeInBackground {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.quality-feedback-form {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 50px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUpFade 0.6s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.quality-feedback-form::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #1a1a1a;
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.quality-feedback-title {
+    color: #1a1a1a;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e2e8f0;
+    animation: fadeIn 0.8s ease-out;
+    letter-spacing: -0.5px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.quality-feedback-section {
+    margin-bottom: 50px;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    animation: sectionFadeIn 0.6s ease-out;
+    transition: box-shadow 0.3s ease;
+}
+
+/* Quality Feedback Details Section - Light Gray Design */
+.quality-feedback-section:first-of-type {
+    background: #6b7280;
+    border: 1px solid #9ca3af;
+    padding: 30px;
+}
+
+@keyframes sectionFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.quality-feedback-section:last-of-type {
+    border-bottom: none;
+}
+
+.section-title {
+    color: #1a1a1a;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 25px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.quality-feedback-section:first-of-type .section-title {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.3);
+    padding-bottom: 12px;
+    margin-bottom: 25px;
+}
+
+/* Quality Feedback Details Section - Clean Grid Design */
+.details-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+.detail-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    align-items: center;
+    padding: 0;
+    background: transparent;
+}
+
+.detail-row:hover {
+    background: transparent;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: #d1d5db;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-value {
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.detail-value.auto-fill::before {
+    display: none;
+}
+
+.detail-value.auto-fetch::before {
+    display: none;
+}
+
+/* Quality Feedback Questions Section */
+.questions-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 25px;
+}
+
+.question-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    grid-template-rows: auto auto;
+    gap: 20px;
+    align-items: start;
+    padding: 25px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    animation: questionSlideIn 0.5s ease-out;
+}
+
+.question-row:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.question-row:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.question-row:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+@keyframes questionSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.question-row:hover {
+    border-color: #cbd5e0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.question-label {
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 15px;
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.question-text {
+    color: #4a5568;
+    font-size: 15px;
+    font-weight: 400;
+    grid-column: 2;
+    grid-row: 1;
+    line-height: 1.6;
+}
+
+.question-text.auto-fetch::before {
+    display: none;
+}
+
+.rating-label {
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 15px;
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.rating-input-wrapper {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.rating-select {
+    width: 100%;
+    max-width: 350px;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #2d3748;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.rating-select:hover {
+    border-color: #cbd5e0;
+}
+
+.rating-select:focus {
+    outline: none;
+    border-color: #1a1a1a;
+    box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
+}
+
+/* Additional Details Section */
+.additional-details-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 25px;
+}
+
+.damage-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.damage-label {
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 16px;
+}
+
+.radio-group {
+    display: flex;
+    gap: 30px;
+    margin-top: 10px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.radio-option:hover {
+    background: #f1f3f5;
+}
+
+.radio-option input[type="radio"] {
+    margin-right: 10px;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    accent-color: #1a1a1a;
+}
+
+.radio-label {
+    color: #4a5568;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.radio-option input[type="radio"]:checked + .radio-label {
+    color: #1a1a1a;
+    font-weight: 600;
+}
+
+.radio-option input[type="radio"]:checked ~ .radio-label {
+    color: #1a1a1a;
+}
+
+/* Damage fields with fade animation */
+.damage-description-section,
+.damage-attachment-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.4s ease, max-height 0.4s ease, margin 0.4s ease;
+    margin-top: 0;
+    padding: 0 20px;
+}
+
+.damage-description-section:not(.damage-field-hidden),
+.damage-attachment-section:not(.damage-field-hidden) {
+    opacity: 1;
+    max-height: 500px;
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    animation: slideDownFade 0.4s ease-out;
+}
+
+.damage-field-hidden {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    margin-top: 0;
+    padding: 0;
+}
+
+@keyframes slideDownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 500px;
+    }
+}
+
+.feedback-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 16px;
+}
+
+.required-asterisk {
+    color: #e53e3e;
+    font-weight: 700;
+    margin-left: 3px;
+}
+
+.damage-textarea,
+.feedback-textarea {
+    width: 100%;
+    padding: 15px 18px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #2d3748;
+    font-size: 15px;
+    font-family: inherit;
+    resize: vertical;
+    transition: all 0.3s ease;
+    line-height: 1.6;
+}
+
+.damage-textarea:focus,
+.feedback-textarea:focus {
+    outline: none;
+    border-color: #1a1a1a;
+    box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
+}
+
+.damage-textarea:hover,
+.feedback-textarea:hover {
+    border-color: #cbd5e0;
+}
+
+.feedback-textarea {
+    min-height: 180px;
+}
+
+.attachment-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #ffffff;
+    border-radius: 10px;
+    border: 2px dashed #cbd5e0;
+    transition: all 0.3s ease;
+}
+
+.attachment-wrapper:hover {
+    border-color: #adb5bd;
+    background: #f8f9fa;
+}
+
+.attach-link {
+    color: #1a1a1a;
+    text-decoration: none;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 8px 16px;
+    background: #f1f3f5;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.attach-link:hover {
+    background: #1a1a1a;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.attachment-file-name {
+    color: #4a5568;
+    font-size: 14px;
+    font-weight: 500;
+    font-style: italic;
+}
+
+.attachment-file-name.file-attached {
+    color: #1a1a1a;
+    font-weight: 600;
+    font-style: normal;
+}
+
+/* Submit Section */
+.submit-section {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 2px solid #e2e8f0;
+    display: flex;
+    justify-content: center;
+    animation: fadeIn 1s ease-out;
+}
+
+.btn-submit-feedback {
+    background: #1a1a1a;
+    color: #ffffff;
+    border: none;
+    padding: 16px 50px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-submit-feedback:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    background: #2d2d2d;
+}
+
+.btn-submit-feedback:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Response Messages */
+#feedback-response {
+    margin-top: 25px;
+    animation: slideDownFade 0.5s ease-out;
+}
+
+.alert {
+    padding: 18px 24px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 500;
+    animation: alertSlideIn 0.5s ease-out;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes alertSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.alert-success {
+    background: #f1f3f5;
+    color: #1a1a1a;
+    border: 1px solid #adb5bd;
+}
+
+.alert-danger {
+    background: #f8f9fa;
+    color: #1a1a1a;
+    border: 1px solid #adb5bd;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .quality-feedback-wrapper {
+        padding: 20px 10px;
+        background: transparent;
+    }
+
+    .quality-feedback-form {
+        padding: 30px 20px;
+        border-radius: 15px;
+    }
+
+    .quality-feedback-title {
+        font-size: 24px;
+    }
+
+    .quality-feedback-section {
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+
+    .detail-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 12px;
+    }
+
+    .question-row {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto auto;
+        padding: 20px;
+        gap: 15px;
+    }
+
+    .question-label,
+    .question-text,
+    .rating-label,
+    .rating-input-wrapper {
+        grid-column: 1;
+    }
+
+    .question-label {
+        grid-row: 1;
+    }
+
+    .question-text {
+        grid-row: 2;
+    }
+
+    .rating-label {
+        grid-row: 3;
+    }
+
+    .rating-input-wrapper {
+        grid-row: 4;
+    }
+
+    .rating-select {
+        max-width: 100%;
+    }
+
+    .radio-group {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .btn-submit-feedback {
+        width: 100%;
+        padding: 16px 30px;
+    }
+}
+
+/* Hide file input */
+.d-none {
+    display: none !important;
+}
+
+/* Additional smooth animations */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Loading state animation */
+.quality-feedback-form.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}

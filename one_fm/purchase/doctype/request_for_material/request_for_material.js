@@ -1149,7 +1149,7 @@ frappe.ui.form.on("Request for Material Item", {
 		frappe.model.set_value(cdt, cdn, 'margin_type', frm.doc.margin_type || '');
 		frappe.model.set_value(cdt, cdn, 'margin_rate_or_amount', frm.doc.margin_rate_or_amount || 0);
 		frappe.model.set_value(cdt, cdn, 'warehouse', frm.doc.source_warehouse);
-		frappe.model.set_value(cdt, cdn, 'target_warehouse', frm.doc.target_warehouse);
+		frappe.model.set_value(cdt, cdn, 't_warehouse', frm.doc.target_warehouse);
 	},
 	items_remove: (frm) => {
 	},

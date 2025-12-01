@@ -14,7 +14,6 @@ def get_quality_feedback_parameter_custom_fields():
 				"fieldtype": "Data",
 				"label": "Rating Option",
 				"translatable": 1,
-				"fetch_from": "custom_ratings_.rating_option",
 				"insert_after": "custom_rating_scale_name"
 			},
 			{
@@ -23,7 +22,6 @@ def get_quality_feedback_parameter_custom_fields():
 				"label": "Rating Score",
 				"read_only": 1,
 				"description": "This field stores the quantitative value of the selected Rating Option and Rating Scale.",
-				"fetch_from": "custom_ratings_.rating_score",
 				"insert_after": "custom_rating_option"
 			}
 		]

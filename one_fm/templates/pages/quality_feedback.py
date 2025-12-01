@@ -20,7 +20,7 @@ def get_context(context):
     # Authenicate Magic Link
     magic_link = authenticate_magic_link(provided_magic_link, 'Quality Feedback', 'Quality Feedback')
     if magic_link:
-        context.quality_feedback = frappe.get_doc('Quality Feedback', frappe.db.get_value('Magic Link', magic_link, 'reference_docname'))
+        context.docname = frappe.db.get_value('Magic Link', magic_link, 'reference_docname')
 
 @frappe.whitelist(allow_guest=True)
 def get_feedback_data(docname):
@@ -37,13 +37,8 @@ def get_feedback_data(docname):
         operation_site = doc.get('custom_operations_site') or ''
         issued_on = formatdate(doc.get('custom_issued_on')) if doc.get('custom_issued_on') else ''
         feedback_schedule = doc.get('custom_feedback_schedule') or ''
-        item_type = doc.get('custom_item_type') or ''
-        
-        # Get item type name
-        if item_type:
-            item_type_name = frappe.db.get_value('Item Type', item_type, 'item_type') or item_type
-        else:
-            item_type_name = ''
+
+        item_type = frappe.db.get_value('Quality Feedback Template', doc.template, 'custom_item_type') or ''
         
         # Get template and questions
         template = doc.get('template')
@@ -80,7 +75,7 @@ def get_feedback_data(docname):
             'operation_site': operation_site,
             'issued_on': issued_on,
             'current_feedback_schedule': feedback_schedule,
-            'item_type': item_type_name,
+            'item_type': item_type,
             'questions': questions
         }
     except Exception as e:

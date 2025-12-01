@@ -1,6 +1,6 @@
 frappe.ready(() => {
     const container = document.getElementById('quality-feedback-container');
-    const docname = 'QA-FB-1574965';
+    const docname = container.getAttribute('data-docname');
     
     let selectedLanguage = 'en'; // Default to English
     let selectedLanguageName = 'English';

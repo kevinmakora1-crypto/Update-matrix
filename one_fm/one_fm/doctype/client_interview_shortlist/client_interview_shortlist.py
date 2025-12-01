@@ -77,4 +77,5 @@ class ClientInterviewShortlist(Document):
 			doc.reference_doctype = self.doctype
 			doc.reference_docname = self.name
 			doc.insert(ignore_permissions=True)
+			doc.submit()
 			frappe.msgprint(f"Attendance created for {employee} on {self.interview_date}")

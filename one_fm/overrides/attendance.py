@@ -444,7 +444,7 @@ def mark_attendance_for_unscheduled_employees(employees, date):
         existing_attendance = frappe.get_all("Attendance", {
             'attendance_date': date,
             'roster_type': 'Basic',
-            'status': ['IN', ['Present', 'Holiday', 'On Leave', 'Work From Home', 'On Hold', 'Day Off']]
+            'status': ['IN', ['Present', 'Holiday', 'On Leave', 'Work From Home', 'On Hold', 'Day Off', 'Client Day Off', 'Medical Appointment', 'Fingerprint Appointment', 'Client Interview']]
         }, pluck="employee")
         
         # Get employees with schedules

@@ -1,11 +1,29 @@
 frappe.ui.form.on('Purchase Invoice', {
     validate: function(frm){
-        validate_purchase_receipt_required(frm);
+        frm.events.validate_pr_required(frm);
         if(frm.doc.__islocal || frm.doc.docstatus==0){
             if(frm.doc.supplier){
                 set_expense_head(frm);
             }
         }     
+    },
+    validate_pr_required: function(frm) {
+        frappe.db.get_value('Buying Settings', 'Buying Settings', 'pr_required')
+        .then(r => {
+            if (r.message && r.message.pr_required == "Yes") {
+                // Get supplier setting
+                return frappe.db.get_value('Supplier', frm.doc.supplier, 'allow_purchase_invoice_creation_without_purchase_receipt');
+            }
+            return null;
+        })
+        .then(supplier_r => {
+            if (supplier_r && !supplier_r.message.allow_purchase_invoice_creation_without_purchase_receipt) {
+                validate_purchase_receipt_required(frm);
+            }
+        })
+        .catch(err => {
+            console.error('Error fetching settings:', err);
+        });
     },
     refresh: function(frm){
         add_create_sales_invoice_button(frm);

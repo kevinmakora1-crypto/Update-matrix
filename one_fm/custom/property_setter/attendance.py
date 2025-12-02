@@ -22,8 +22,36 @@ def get_attendance_properties():
             "doc_type": "Attendance",
             "doctype_or_field": "DocField",
             "field_name": "working_hours",
-            "property": "depends_on",
-            "property_type": "Data"
+            "property": "read_only",
+            "property_type": "Data",
+            "value": "1"
+        },
+        {
+            "doctype": "Property Setter",
+            "doc_type": "Attendance",
+            "doctype_or_field": "DocField",
+            "field_name": "working_hours",
+            "property": "allow_on_submit",
+            "property_type": "Data",
+            "value": "1"
+        },
+        {
+            "doctype": "Property Setter",
+            "doc_type": "Attendance",
+            "doctype_or_field": "DocField",
+            "field_name": "status",
+            "property": "allow_on_submit",
+            "property_type": "Data",
+            "value": "1"
+        },
+        {
+            "doctype": "Property Setter",
+            "doc_type": "Attendance",
+            "doctype_or_field": "DocField",
+            "field_name": "status",
+            "property": "read_only_depends_on",
+            "property_type": "Data",
+            "value": "eval:doc.docstatus==1"
         },
         {
             "doctype": "Property Setter",
@@ -68,6 +96,6 @@ def get_attendance_properties():
             "field_name": "status",
             "property": "options",
             "property_type": "Select",
-            "value": "Present\nAbsent\nOn Leave\nHalf Day\nWork From Home\nDay Off\nClient Day Off\nHoliday\nOn Hold"
+            "value": "Present\nAbsent\nOn Leave\nHalf Day\nWork From Home\nDay Off\nClient Day Off\nFingerprint Appointment\nMedical Appointment\nHoliday\nOn Hold"
         }
     ]

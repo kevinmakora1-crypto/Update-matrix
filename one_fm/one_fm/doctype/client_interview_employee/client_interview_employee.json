@@ -69,7 +69,7 @@
   {
    "fieldname": "previous_employee_availability",
    "fieldtype": "Data",
-   "label": "Previous Employee Evailability"
+   "label": "Previous Employee Availability"
   }
  ],
  "grid_page_length": 50,

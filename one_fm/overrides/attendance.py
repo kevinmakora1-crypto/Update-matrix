@@ -69,9 +69,9 @@ class AttendanceOverride(Attendance):
             self.roster_type='Basic'
 
     def validate_working_hours(self):
-        if self.status not in ['Absent', 'Day Off', 'Holiday', 'On Leave', 'On Hold', "Client Day Off", "Medical Appointment", "Fingerprint Appointment", "Client Interview"]:
+        if self.status in ["Present", "Work From Home"]:
             if not self.working_hours:frappe.throw("Working hours is required.")
-            if self.working_hours <= 0:frappe.throw("Working hours must be greater than 0 if staus is Presnet ot Work From Home.")
+            if self.working_hours <= 0:frappe.throw("Working hours must be greater than 0 if status is Present or Work From Home.")
 
     def after_insert(self):
         self.set_day_off_ot()

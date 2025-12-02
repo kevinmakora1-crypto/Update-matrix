@@ -13,7 +13,7 @@ class ClientInterviewShortlist(Document):
 	def create_employee_schedule_for_client_interview(self):
 		for interview_employee in self.client_interview_employee:
 			# Delete existing schedule on the same date with conflicting availability
-			employee_availability_list = ["Working", "Day Off", "Client Day Off", "On The Job Training"]
+			employee_availability_list = ["Working", "Day Off", "Client Day Off", "On-the-job Training"]
 			self.delete_existing_employee_schedules(interview_employee, employee_availability_list)
 			self.create_employee_schedule(interview_employee.employee, interview_employee.roster_type)
 

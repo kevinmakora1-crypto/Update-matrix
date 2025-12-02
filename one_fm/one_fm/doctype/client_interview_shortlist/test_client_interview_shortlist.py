@@ -5,11 +5,6 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import getdate
 
-from one_fm.one_fm.doctype.client_interview_shortlist.test_client_interview_shortlist_fixtures import (
-	create_client_interview_shortlist,
-)
-
-
 class TestClientInterviewShortlist(FrappeTestCase):
 	def setUp(self):
 		self.employee = frappe.get_doc(
@@ -77,3 +72,23 @@ class TestClientInterviewShortlist(FrappeTestCase):
 			},
 		)
 		self.assertTrue(new_schedule_exists)
+
+def create_client_interview_shortlist(employee, project, interview_date=None):
+	if not interview_date:
+		interview_date = getdate("2025-11-30")
+
+	shortlist = frappe.get_doc(
+		{
+			"doctype": "Client Interview Shortlist",
+			"company": "_Test Company",
+			"project": project,
+			"interview_date": interview_date,
+			"client_interview_employee": [
+				{
+					"employee": employee,
+					"roster_type": "Basic",
+				}
+			],
+		}
+	).insert(ignore_permissions=True)
+	return shortlist

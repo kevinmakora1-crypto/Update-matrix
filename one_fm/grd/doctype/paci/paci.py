@@ -53,7 +53,6 @@ class PACI(Document):
         if self.is_new() or payment_invoice_uploaded:
             work_permit_expiry = frappe.db.get_value("Employee", self.employee, "work_permit_expiry_date")
             self.new_civil_id_expiry_date = work_permit_expiry
-            
             if payment_invoice_uploaded:
                 self.residency_expiry_date = work_permit_expiry
 

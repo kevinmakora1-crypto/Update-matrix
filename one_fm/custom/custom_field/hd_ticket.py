@@ -57,7 +57,35 @@ def get_hd_ticket_custom_fields():
                 "label": "Execution Prompt Count",
                 "insert_after": "planning_prompts_count",
                 "depends_on": "eval:doc.ticket_type == 'Bug'"
+            },
+            {
+                "label": "Development Feedback",
+                "fieldname": "development_feedback_sb",
+                "insert_after": "feedback_extra",
+                "fieldtype": "Section Break",
+                "collapsible": 1,
+            },
+            {
+                "label": "Developer Feedback",
+                "fieldname": "developer_feedback",
+                "insert_after": "development_feedback_sb",
+                "fieldtype": "Small Text",
+                "depends_on": "eval:doc.ticket_type=='Bug'",
+                "mandatory_depends_on": "eval:doc.ticket_type==\"Bug\" && (doc.status == \"Closed\" || doc.status == \"Resolved\")",
+                "translatable": 1,
+            },
+            {
+                "fieldname": "column_break_banio",
+                "insert_after": "developer_feedback",
+                "fieldtype": "Column Break",
+            },
+            {
+                "label": "Development Process Owner Remark",
+                "fieldname": "development_process_owner_remark",
+                "insert_after": "column_break_banio",
+                "fieldtype": "Small Text",
+                "depends_on": "eval:doc.ticket_type==\"Bug\" && (doc.status == \"Closed\" || doc.status == \"Resolved\")",
+                "translatable": 1,
             }
         ]
     }
-

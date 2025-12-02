@@ -968,3 +968,38 @@ def get_rfm_item_uom_data(rfm_item_names):
 	)
 	
 	return rfm_items
+
+@frappe.whitelist()
+def get_last_purchase_details(item_codes):
+	if isinstance(item_codes, str):
+		item_codes = json.loads(item_codes)
+	
+	if not item_codes:
+		return {}
+	
+	last_purchase_details = {}
+	
+	for item_code in item_codes:
+		result = frappe.db.sql("""
+			SELECT
+				po.supplier,
+				poi.rate
+			FROM
+				`tabPurchase Order Item` AS poi
+			JOIN
+				`tabPurchase Order` AS po ON poi.parent = po.name
+			WHERE
+				poi.item_code = %s
+				AND po.docstatus = 1
+			ORDER BY
+				po.transaction_date DESC
+			LIMIT 1
+		""", (item_code,), as_dict=True)
+		
+		if result:
+			last_purchase_details[item_code] = {
+				'supplier': result[0].supplier,
+				'rate': result[0].rate
+			}
+	
+	return last_purchase_details

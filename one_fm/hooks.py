@@ -748,6 +748,9 @@ scheduler_events = {
 		"15 13 * * *":[ # Attendance Check
 			'one_fm.one_fm.doctype.attendance_check.attendance_check.attendance_check_pending_approval_check'
 		],
+        "0 6 * * *": [ # update currency exchange rates daily at 6 am
+			"one_fm.tasks.one_fm.currency_exchange.update_currency_exchange_rates"
+		],
 		"15 12 * * *": [ # create shift assignment
 			'one_fm.api.tasks.assign_pm_shift'
 		],

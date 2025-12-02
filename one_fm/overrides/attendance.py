@@ -57,7 +57,7 @@ class AttendanceOverride(Attendance):
     def validate(self):
         from erpnext.controllers.status_updater import validate_status
 
-        validate_status(self.status, ["Present", "Absent", "On Leave", "Half Day", "Work From Home", "Day Off", "Holiday", "On Hold", "Client Day Off", "Medical Appointment", "Fingerprint Appointment"])
+        validate_status(self.status, ["Present", "Absent", "On Leave", "Half Day", "Work From Home", "Day Off", "Holiday", "On Hold", "Client Day Off", "Medical Appointment", "Fingerprint Appointment", "Client Interview"])
         validate_active_employee(self.employee)
         self.validate_attendance_date()
         self.validate_duplicate_record()
@@ -69,9 +69,9 @@ class AttendanceOverride(Attendance):
             self.roster_type='Basic'
 
     def validate_working_hours(self):
-        if self.status not in ['Absent', 'Day Off', 'Holiday', 'On Leave', 'On Hold', "Client Day Off"]:
+        if self.status in ["Present", "Work From Home"]:
             if not self.working_hours:frappe.throw("Working hours is required.")
-            if self.working_hours <= 0:frappe.throw("Working hours must be greater than 0 if staus is Presnet ot Work From Home.")
+            if self.working_hours <= 0:frappe.throw("Working hours must be greater than 0 if status is Present or Work From Home.")
 
     def after_insert(self):
         self.set_day_off_ot()
@@ -444,7 +444,7 @@ def mark_attendance_for_unscheduled_employees(employees, date):
         existing_attendance = frappe.get_all("Attendance", {
             'attendance_date': date,
             'roster_type': 'Basic',
-            'status': ['IN', ['Present', 'Holiday', 'On Leave', 'Work From Home', 'On Hold', 'Day Off']]
+            'status': ['IN', ['Present', 'Holiday', 'On Leave', 'Work From Home', 'On Hold', 'Day Off', 'Client Day Off', 'Medical Appointment', 'Fingerprint Appointment', 'Client Interview']]
         }, pluck="employee")
         
         # Get employees with schedules

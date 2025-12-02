@@ -59,6 +59,7 @@ def create_workflows():
 	create_workflow(get_workflow_json_file("onboard_subcontract_employee.json"))
 	create_workflow(get_workflow_json_file("leave_extension_request.json"))
 	create_workflow(get_workflow_json_file("loan_application.json"))
+	create_workflow(get_workflow_json_file("client_interview_shortlist.json"))
 	create_workflow(get_workflow_json_file("pathfinder_log.json"))
 	create_workflow(get_workflow_json_file("employee_uniform.json"))
 	create_workflow(get_workflow_json_file("medical_appointment.json"))

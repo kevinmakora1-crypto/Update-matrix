@@ -180,7 +180,7 @@ one_fm.patches.v15_0.rename_moi_residency_jawazath
 one_fm.patches.v15_0.sync_old_google_tasks
 one_fm.patches.v15_0.update_workflow_state_style
 one_fm.patches.v15_0.initialize_pending_si_quantities
-one_fm.patches.v15_0.update_attendance_status_options
+one_fm.patches.v15_0.update_attendance_status_options # 2
 one_fm.patches.v15_0.set_po_item_margin_fields_readonly
 one_fm.patches.v15_0.add_leave_handover_process_task
 one_fm.patches.v15_0.update_item_asset_naming_series
@@ -224,10 +224,13 @@ one_fm.patches.v15_0.add_assignment_rule_assigning_operations_manager_for_approv
 one_fm.patches.v15_0.add_attendance_amendment_assignment_workflow #1
 one_fm.patches.v15_0.add_workflow_pathfinder_log #1
 one_fm.patches.v15_0.add_assignment_rule_pathfinder_log_business_analyst #2
+one_fm.patches.v15_0.add_workflow_client_interview_shortlist
 one_fm.patches.v15_0.add_assignment_rule_pathfinder_log_process_owner #1
 one_fm.patches.v15_0.add_assignment_rule_assign_rfp_to_purchase_officer #re-run
 one_fm.patches.v15_0.add_assignment_rule_assign_to_purchase_manager_for_approval #re-run
+one_fm.patches.v15_0.add_assignment_rule_submit_client_interview_shortlist_operations_supervisor
 one_fm.patches.v15_0.add_assignment_rule_assign_rfp_owner_on_rfp_return_to_draft #re-run
+one_fm.patches.v15_0.add_assignment_rule_for_client_interview_shortlist_process_task_based
 one_fm.patches.v15_0.create_attendance_check_process_task #re run again
 one_fm.patches.v15_0.add_task_assignment_rule
 one_fm.patches.v15_0.attendance_check_create

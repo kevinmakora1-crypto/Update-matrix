@@ -7,21 +7,31 @@ frappe.ready(() => {
     let feedbackData = null;
     let languages = [];
     let formSubmitted = false; // Track if form was submitted
+    let currentLoaderInterval = null; // Store interval ID globally
+    let currentLoaderTimeouts = []; // Store all setTimeout IDs for cleanup
 
-    // Show dummy loading at the start
+    // Show loading at the start
     showLoader('Initializing...', [
         'Loading Quality Feedback...',
         'Preparing interface...',
         'Almost ready...'
     ]);
 
-    // Add a small delay for dummy loading, then fetch languages
+    // Add a small delay for loading, then fetch languages
     setTimeout(() => {
         fetchLanguages();
     }, 1500);
-
-    // Show engaging loader with progress (full screen)
+    
     function showLoader(message, progressMessages = []) {
+        // Clear any existing loader interval and timeouts first
+        if (currentLoaderInterval) {
+            clearInterval(currentLoaderInterval);
+            currentLoaderInterval = null;
+        }
+        // Clear all pending timeouts
+        currentLoaderTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+        currentLoaderTimeouts = [];
+        
         const messages = progressMessages.length > 0 ? progressMessages : [message];
         let currentMessageIndex = 0;
         
@@ -36,45 +46,65 @@ frappe.ready(() => {
                     </div>
                     <div class="loader-content">
                         <div class="loader-text" id="loader-text">${messages[0]}</div>
-                        <div class="loader-progress">
-                            <div class="progress-bar" id="progress-bar"></div>
-                        </div>
                     </div>
                 </div>
             </div>
         `;
 
-        // Animate progress bar
-        const progressBar = document.getElementById('progress-bar');
+        // Change messages periodically if multiple messages provided
         const loaderText = document.getElementById('loader-text');
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-            progress += 2;
-            if (progress > 90) progress = 90; // Don't reach 100% until done
-            if (progressBar) {
-                progressBar.style.width = progress + '%';
-            }
-            
-            // Change message periodically
-            if (messages.length > 1 && progress % 30 === 0) {
-                currentMessageIndex = (currentMessageIndex + 1) % messages.length;
-                if (loaderText) {
-                    loaderText.style.opacity = '0';
-                    setTimeout(() => {
-                        loaderText.textContent = messages[currentMessageIndex];
-                        loaderText.style.opacity = '1';
-                    }, 200);
+        let intervalActive = true; // Flag to stop interval execution
+        
+        if (messages.length > 1) {
+            currentLoaderInterval = setInterval(() => {
+                if (!intervalActive) {
+                    clearInterval(currentLoaderInterval);
+                    currentLoaderInterval = null;
+                    return;
                 }
-            }
-        }, 100);
+                
+                // Check if loader container still exists
+                const loaderContainer = document.querySelector('.loader-container');
+                if (!loaderContainer || !intervalActive) {
+                    clearInterval(currentLoaderInterval);
+                    currentLoaderInterval = null;
+                    return;
+                }
+                
+                // Change message periodically
+                const currentLoaderText = document.getElementById('loader-text');
+                if (currentLoaderText && intervalActive) {
+                    currentMessageIndex = (currentMessageIndex + 1) % messages.length;
+                    currentLoaderText.style.opacity = '0';
+                    const timeoutId = setTimeout(() => {
+                        // Double-check element still exists and interval is still active
+                        const loaderContainerCheck = document.querySelector('.loader-container');
+                        const textEl = document.getElementById('loader-text');
+                        if (textEl && intervalActive && loaderContainerCheck) {
+                            textEl.textContent = messages[currentMessageIndex];
+                            textEl.style.opacity = '1';
+                        }
+                    }, 200);
+                    currentLoaderTimeouts.push(timeoutId);
+                }
+            }, 3000); // Change message every 3 seconds
+        }
 
         // Return function to stop loader
         return (immediate = false) => {
-            clearInterval(progressInterval);
-            if (progressBar) {
-                progressBar.style.width = '100%';
+            intervalActive = false; // Stop interval execution immediately
+            
+            // Clear interval
+            if (currentLoaderInterval) {
+                clearInterval(currentLoaderInterval);
+                currentLoaderInterval = null;
             }
             
+            // Clear all pending timeouts
+            currentLoaderTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+            currentLoaderTimeouts = [];
+            
+            // Remove loader HTML
             const loaderContainer = document.querySelector('.loader-container');
             if (loaderContainer) {
                 if (immediate) {
@@ -83,7 +113,12 @@ frappe.ready(() => {
                 } else {
                     // Fade out animation
                     loaderContainer.style.opacity = '0';
-                    setTimeout(() => loaderContainer.remove(), 300);
+                    const fadeTimeout = setTimeout(() => {
+                        if (loaderContainer.parentNode) {
+                            loaderContainer.remove();
+                        }
+                    }, 300);
+                    currentLoaderTimeouts.push(fadeTimeout);
                 }
             }
         };
@@ -107,48 +142,37 @@ frappe.ready(() => {
                 </div>
                 <div class="loader-content">
                     <div class="loader-text" id="submit-loader-text">${messages[0]}</div>
-                    <div class="loader-progress">
-                        <div class="progress-bar" id="submit-progress-bar"></div>
-                    </div>
                 </div>
             </div>
         `;
         document.body.appendChild(overlay);
 
-        // Animate progress bar
-        const progressBar = document.getElementById('submit-progress-bar');
+        // Change messages periodically if multiple messages provided
         const loaderText = document.getElementById('submit-loader-text');
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-            progress += 2;
-            if (progress > 90) progress = 90;
-            if (progressBar) {
-                progressBar.style.width = progress + '%';
-            }
-            
-            // Change message periodically
-            if (messages.length > 1 && progress % 30 === 0) {
+        let progressInterval = null;
+        
+        if (messages.length > 1) {
+            progressInterval = setInterval(() => {
                 currentMessageIndex = (currentMessageIndex + 1) % messages.length;
                 if (loaderText) {
                     loaderText.style.opacity = '0';
                     setTimeout(() => {
-                        loaderText.textContent = messages[currentMessageIndex];
-                        loaderText.style.opacity = '1';
+                        if (loaderText) {
+                            loaderText.textContent = messages[currentMessageIndex];
+                            loaderText.style.opacity = '1';
+                        }
                     }, 200);
                 }
-            }
-        }, 100);
+            }, 3000); // Change message every 3 seconds
+        }
 
         // Return function to stop loader
         return () => {
-            clearInterval(progressInterval);
-            if (progressBar) {
-                progressBar.style.width = '100%';
-                setTimeout(() => {
-                    overlay.style.opacity = '0';
-                    setTimeout(() => overlay.remove(), 300);
-                }, 300);
+            if (progressInterval) {
+                clearInterval(progressInterval);
             }
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 300);
         };
     }
 
@@ -242,8 +266,6 @@ frappe.ready(() => {
 
     function translateAllContent(data, docname) {
         return new Promise((resolve) => {
-            const employeeName = data.employee_name || '[Employee Full Name]';
-            const itemType = data.item_type || '[Item_Type]';
             
             // Prepare all texts to translate
             const textsToTranslate = [
@@ -315,60 +337,69 @@ frappe.ready(() => {
     }
 
     async function renderQualityFeedbackForm(data, docname, stopLoaderCallback) {
-        // Update loader message to show we're preparing the form
-        const loaderText = document.getElementById('loader-text');
-        if (loaderText) {
-            loaderText.textContent = 'Preparing your form...';
-        }
-        
-        const employeeName = data.employee_name || '[Employee Full Name]';
-        const itemType = data.item_type || '[Item_Type]';
-        const employeeId = data.employee_id || '';
-        const operationSite = data.operation_site || '';
-        const issuedOn = data.issued_on || '';
-        const feedbackSchedule = data.current_feedback_schedule || '';
-
-        // Translate all content (or skip translation if English)
-        let translations, questions;
-        
-        if (selectedLanguage === 'en') {
-            // For English, use original texts without translation
-            translations = [
-                'Hello', ', tell us about your Feedback about', 'Quality Feedback Details',
-                'Employee ID:', 'Operation Site:', 'Issued On:', 'Current Feedback Schedule:',
-                'Quality Feedback Questions', 'Survey Question', 'Rating Option:', 'Select Rating',
-                'Additional Details', 'Noticed Damage?:', 'No', 'Yes', 'Damage Description:',
-                'Describe any damage noticed...', 'Damage Attachment:', 'Attach', 'Feedback:',
-                'Share your feedback...', 'Submit Feedback', 'Submitting...',
-                'Very Poor', 'Poor', 'Average', 'Good', 'Excellent'
-            ];
-            questions = data.questions || [];
-        } else {
-            // Update loader message for translation
-            if (loaderText) {
-                loaderText.textContent = 'Translating content...';
+        try {
+            // Stop the animated loader (clear intervals) but keep a simple static loader visible
+            // This prevents infinite loop while avoiding blank screen
+            if (stopLoaderCallback) {
+                stopLoaderCallback(true);
             }
             
-            const translated = await translateAllContent(data, docname);
-            translations = translated.translations;
-            questions = translated.questions;
+            // Show static loader with same style as animated loader to prevent blank screen during translation
+            const staticMessage = selectedLanguage !== 'en' ? 'Translating and preparing form...' : 'Preparing form...';
+            container.innerHTML = `
+                <div class="loader-container">
+                    <div class="loader-wrapper">
+                        <div class="progress-spinner">
+                            <div class="spinner-ring"></div>
+                            <div class="spinner-ring"></div>
+                            <div class="spinner-ring"></div>
+                            <div class="spinner-ring"></div>
+                        </div>
+                        <div class="loader-content">
+                            <div class="loader-text">${staticMessage}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
             
-            // Update loader message to show form is being rendered
-            if (loaderText) {
-                loaderText.textContent = 'Rendering form...';
+            const employeeName = data.employee_name || '';
+            const itemType = data.item_type || '';
+            const employeeId = data.employee_id || '';
+            const operationSite = data.operation_site || '';
+            const issuedOn = data.issued_on || '';
+            const feedbackSchedule = data.current_feedback_schedule || '';
+
+            // Translate all content (or skip translation if English)
+            let translations, questions;
+            
+            if (selectedLanguage === 'en') {
+                // For English, use original texts without translation
+                translations = [
+                    'Hello', ', tell us about your Feedback about', 'Quality Feedback Details',
+                    'Employee ID:', 'Operation Site:', 'Issued On:', 'Current Feedback Schedule:',
+                    'Quality Feedback Questions', 'Survey Question', 'Rating Option:', 'Select Rating',
+                    'Additional Details', 'Noticed Damage?:', 'No', 'Yes', 'Damage Description:',
+                    'Describe any damage noticed...', 'Damage Attachment:', 'Attach', 'Feedback:',
+                    'Share your feedback...', 'Submit Feedback', 'Submitting...',
+                    'Very Poor', 'Poor', 'Average', 'Good', 'Excellent'
+                ];
+                questions = data.questions || [];
+            } else {
+                const translated = await translateAllContent(data, docname);
+                translations = translated.translations;
+                questions = translated.questions;
             }
-        }
 
-        const [
-            helloText, tellAboutText, detailsTitle, employeeIdLabel, operationSiteLabel,
-            issuedOnLabel, scheduleLabel, questionsTitle, surveyQuestionText, ratingLabel,
-            selectRatingText, additionalDetailsTitle, damageLabel, noText, yesText,
-            damageDescLabel, damagePlaceholder, damageAttachmentLabel, attachText,
-            feedbackLabel, feedbackPlaceholder, submitText, submittingText,
-            veryPoorText, poorText, averageText, goodText, excellentText
-        ] = translations;
+            const [
+                helloText, tellAboutText, detailsTitle, employeeIdLabel, operationSiteLabel,
+                issuedOnLabel, scheduleLabel, questionsTitle, surveyQuestionText, ratingLabel,
+                selectRatingText, additionalDetailsTitle, damageLabel, noText, yesText,
+                damageDescLabel, damagePlaceholder, damageAttachmentLabel, attachText,
+                feedbackLabel, feedbackPlaceholder, submitText, submittingText,
+                veryPoorText, poorText, averageText, goodText, excellentText
+            ] = translations;
 
-        container.innerHTML = `
+            container.innerHTML = `
             <div class="quality-feedback-form" data-lang="${selectedLanguage}">
                 <div class="form-header-controls">
                     <div class="language-controls">
@@ -484,29 +515,28 @@ frappe.ready(() => {
             </div>
         `;
 
-        // Form HTML is now set - loader is automatically replaced by innerHTML assignment
-        // Clear loader callback interval if it exists (loader HTML is already gone)
-        if (stopLoaderCallback) {
-            // Just clear the interval, don't try to remove loader (it's already replaced)
-            try {
-                stopLoaderCallback(true);
-            } catch(e) {
-                // Ignore if callback fails (loader already gone)
+            // Initialize form interactions immediately
+            initializeFormInteractions(docname, submittingText, submitText);
+            
+            // Handle globe icon click to go back to language selection
+            const globeIcon = document.getElementById('globe-icon');
+            if (globeIcon) {
+                globeIcon.addEventListener('click', () => {
+                    // Don't allow going back to language selector if form was submitted
+                    if (!formSubmitted) {
+                        showLanguageSelector();
+                    }
+                });
             }
-        }
-
-        // Initialize form interactions immediately
-        initializeFormInteractions(docname, submittingText, submitText);
-        
-        // Handle globe icon click to go back to language selection
-        const globeIcon = document.getElementById('globe-icon');
-        if (globeIcon) {
-            globeIcon.addEventListener('click', () => {
-                // Don't allow going back to language selector if form was submitted
-                if (!formSubmitted) {
-                    showLanguageSelector();
-                }
-            });
+        } catch (error) {
+            // Show error message if something goes wrong
+            container.innerHTML = `
+                <div class="alert alert-danger" style="margin: 20px; padding: 20px;">
+                    <h4>Error Loading Form</h4>
+                    <p>An error occurred while preparing the form. Please try again.</p>
+                    <button class="btn btn-primary" onclick="location.reload()">Reload Page</button>
+                </div>
+            `;
         }
     }
 
@@ -684,7 +714,6 @@ frappe.ready(() => {
 
         uploadFormData.append('file', file);
         uploadFormData.append('is_private', '1');
-        uploadFormData.append('folder', 'Home/Attachments');
         uploadFormData.append('doctype', 'Quality Feedback');
         uploadFormData.append('docname', docname);
         uploadFormData.append('fieldname', 'custom_damage_attachment');

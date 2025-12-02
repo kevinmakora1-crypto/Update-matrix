@@ -47,7 +47,9 @@ def get_attendance_custom_fields():
                 "fieldname": "comment",
                 "fieldtype": "Small Text",
                 "insert_after": "attendance_comment",
-                "label": "Comment"
+                "label": "Comment",
+                "allow_on_submit": 1,
+                "read_only_depends_on": "eval:doc.docstatus==1"
             },
             {
                 "fieldname": "attendance_comment",

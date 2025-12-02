@@ -4491,3 +4491,10 @@ def get_field_with_label(doctype, field_name, value):
         "name": label,
         "value": value
     }
+
+
+def send_quality_feedback_reminders():
+    """
+    Sends reminders to employees to submit quality feedback.
+    """
+    pass

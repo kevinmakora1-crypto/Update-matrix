@@ -40,6 +40,7 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("contract_compliance_checker.json"))
 	create_assignment_rule(get_assignment_rule_json_file("assigning_operations_manager_for_approval_client_event.json"))
 	create_assignment_rule(get_assignment_rule_json_file("returning_to_operations_supervisor_of_client_event.json"))
+	create_assignment_rule(get_assignment_rule_json_file("assigning_operations_manager_for_approval.json"))
 	create_assignment_rule(get_assignment_rule_json_file("erf.json"))
 	create_assignment_rule(get_assignment_rule_json_file("assign_attendance_amendment_to_project_manager.json"))
 	create_assignment_rule(get_assignment_rule_json_file("assign_to_site_supervisor.json"))
@@ -58,6 +59,7 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("action_medical_appointment_supervisor.json"))
 	create_assignment_rule(get_assignment_rule_json_file("confirm_site_pickup_for_medical_appointment_gr_operator.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_paci.json"))
+	create_assignment_rule(get_assignment_rule_json_file("returning_to_operations_supervisor_of_ojt_request.json"))
 
 def delete_assignment_rules():
 	delete_assignment_rule(get_assignment_rule_json_file("roster_post_action_site_supervisor.json"))

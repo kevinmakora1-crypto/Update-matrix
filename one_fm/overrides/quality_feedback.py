@@ -11,9 +11,19 @@ class QualityFeedbackOverride(QualityFeedback):
         # Call the original before_submit logic
         super(QualityFeedbackOverride, self).before_submit()
         
-        # ToDO: Calculate the Quality Score Percentage
-
-
+    @frappe.whitelist()
+    def set_parameters(self):
+        """
+        Set the parameters for the quality feedback.
+        """
+        if self.template and not getattr(self, "parameters", []):
+            template_parameters = frappe.get_doc("Quality Feedback Template", self.template).parameters
+            
+            for parameter in template_parameters:
+                self.append("parameters", {
+                    "parameter": parameter.parameter,
+                    "custom_rating_scale_name": parameter.custom_rating_scale
+                })
 
 def get_quality_feedback_magic_link_url(quality_feedback):
     """

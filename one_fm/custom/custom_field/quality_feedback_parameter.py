@@ -6,15 +6,14 @@ def get_quality_feedback_parameter_custom_fields():
 				"fieldtype": "Link",
 				"label": "Rating Scale",
 				"options": "Rating Scale",
-				"hidden": 1,
 				"insert_after": "rating"
 			},
 			{
 				"fieldname": "custom_rating_option",
 				"fieldtype": "Data",
 				"label": "Rating Option",
-				"translatable": 1,
-				"insert_after": "custom_rating_scale_name"
+				"read_only": 1,
+				"insert_after": "custom_rating_scale_name",
 			},
 			{
 				"fieldname": "custom_rating_score",
@@ -22,7 +21,7 @@ def get_quality_feedback_parameter_custom_fields():
 				"label": "Rating Score",
 				"read_only": 1,
 				"description": "This field stores the quantitative value of the selected Rating Option and Rating Scale.",
-				"insert_after": "custom_rating_option"
+				"insert_after": "custom_rating_option",
 			}
 		]
 	}

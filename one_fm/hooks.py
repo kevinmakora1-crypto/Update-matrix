@@ -561,7 +561,7 @@ override_doctype_class = {
     "Purchase Receipt": "one_fm.overrides.purchase_receipt.PurchaseReceiptOverride",
     "Asset": "one_fm.overrides.asset.AssetOverride",
     "Asset Movement": "one_fm.overrides.asset_movement.AssetMovement",
-    
+    "Quality Feedback": "one_fm.overrides.quality_feedback.QualityFeedbackOverride",
 }
 
 

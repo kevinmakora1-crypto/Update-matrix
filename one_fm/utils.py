@@ -4444,7 +4444,7 @@ def get_experience_types():
 
 
 @frappe.whitelist()
-def send_push_notification(employee_id, title, body):   
+def send_push_notification(employee_id, title, body, data=None):   
     try:
         api.initialize_firebase()
         employee_data = frappe.db.get_value("Employee", {"employee_id": employee_id}, ["fcm_token", "device_os"],as_dict=1)
@@ -4457,9 +4457,10 @@ def send_push_notification(employee_id, title, body):
             message = messaging.Message(
                 notification=messaging.Notification(
                     title=title,
-                    body=body
+                    body=body,
                 ),
-                token=deviceToken
+                token=deviceToken,
+                data=data
             )
             messaging.send(message)
             return True
@@ -4491,10 +4492,3 @@ def get_field_with_label(doctype, field_name, value):
         "name": label,
         "value": value
     }
-
-
-def send_quality_feedback_reminders():
-    """
-    Sends reminders to employees to submit quality feedback.
-    """
-    pass

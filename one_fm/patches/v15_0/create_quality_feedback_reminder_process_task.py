@@ -1,7 +1,7 @@
 import frappe
 
 def execute():
-    method = "one_fm.utils.send_quality_feedback_reminders"
+    method = "one_fm.overrides.quality_feedback.send_quality_feedback_reminders"
     document = "Quality Feedback"
     
     if not frappe.db.exists("Method", method):

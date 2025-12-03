@@ -124,7 +124,7 @@ def create_PACI_renewal(preparation_name):
             if employee.renewal_or_extend == 'Renewal (Non-Kuwaiti)' and employee.nationality != 'Kuwaiti':
                 try:
                     create_PACI(frappe.get_doc('Employee',employee.employee),"Renewal",preparation_name)
-                except Exception as e:
+                except Exception:
                     frappe.log_error(frappe.get_traceback(), f"Error creating PACI for Employee {employee.employee} in Preparation {preparation_name}")
                     continue
 

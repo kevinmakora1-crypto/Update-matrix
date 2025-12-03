@@ -218,7 +218,8 @@ def create_preparation_record():
     )
     employee_entries.sort(key=sort)
     for employee in employee_entries:
-        new_row = {"employee": employee.name}
+        new_row = {"employee": employee.name, "relieving_date": employee.relieving_date}
+
         
         if employee.one_fm_nationality == "Kuwaiti":
             new_row['renewal_or_extend'] = "Renewal (Kuwaiti)"

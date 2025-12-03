@@ -416,7 +416,11 @@ def create_work_permit_renewal(preparation_name):
     if employee_in_preparation.preparation_record:
         for employee in employee_in_preparation.preparation_record:
             if employee.renewal_or_extend in  ['Renewal (Non-Kuwaiti)','Renewal (Kuwaiti)']:
-                create_wp_renewal(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
+                try:
+                    create_wp_renewal(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
+                except Exception as e:
+                    frappe.log_error(frappe.get_traceback(), f"Work Permit Renewal Creation Failed for Employee {employee.employee} in Preparation {preparation_name}")
+                    continue
 
 
 #FOR RENEWAL
@@ -430,6 +434,7 @@ def create_wp_renewal(employee,status,name):
             work_permit_type = "Renewal Kuwaiti"
         if employee.one_fm_nationality != "Kuwaiti":
             work_permit_type = "Renewal Non Kuwaiti"
+
     if employee.one_fm_work_permit:
         work_permit = frappe.get_doc('Work Permit', employee.one_fm_work_permit)
         new_work_permit = frappe.copy_doc(work_permit)

@@ -4,10 +4,8 @@ frappe.ready(() => {
     
     let selectedLanguage = 'en'; // Default to English
     let selectedLanguageName = 'English';
-    let feedbackData = null;
     let languages = [];
     let formSubmitted = false; // Track if form was submitted
-    let currentLoaderInterval = null; // Store interval ID globally
     let currentLoaderTimeouts = []; // Store all setTimeout IDs for cleanup
 
     // Show loading at the start
@@ -23,17 +21,12 @@ frappe.ready(() => {
     }, 1500);
     
     function showLoader(message, progressMessages = []) {
-        // Clear any existing loader interval and timeouts first
-        if (currentLoaderInterval) {
-            clearInterval(currentLoaderInterval);
-            currentLoaderInterval = null;
-        }
         // Clear all pending timeouts
         currentLoaderTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
         currentLoaderTimeouts = [];
         
-        const messages = progressMessages.length > 0 ? progressMessages : [message];
-        let currentMessageIndex = 0;
+        // Use the first message from progressMessages if provided, otherwise use the message parameter
+        const displayMessage = progressMessages.length > 0 ? progressMessages[0] : message;
         
         container.innerHTML = `
             <div class="loader-container">
@@ -45,61 +38,14 @@ frappe.ready(() => {
                         <div class="spinner-ring"></div>
                     </div>
                     <div class="loader-content">
-                        <div class="loader-text" id="loader-text">${messages[0]}</div>
+                        <div class="loader-text" id="loader-text">${displayMessage}</div>
                     </div>
                 </div>
             </div>
         `;
 
-        // Change messages periodically if multiple messages provided
-        const loaderText = document.getElementById('loader-text');
-        let intervalActive = true; // Flag to stop interval execution
-        
-        if (messages.length > 1) {
-            currentLoaderInterval = setInterval(() => {
-                if (!intervalActive) {
-                    clearInterval(currentLoaderInterval);
-                    currentLoaderInterval = null;
-                    return;
-                }
-                
-                // Check if loader container still exists
-                const loaderContainer = document.querySelector('.loader-container');
-                if (!loaderContainer || !intervalActive) {
-                    clearInterval(currentLoaderInterval);
-                    currentLoaderInterval = null;
-                    return;
-                }
-                
-                // Change message periodically
-                const currentLoaderText = document.getElementById('loader-text');
-                if (currentLoaderText && intervalActive) {
-                    currentMessageIndex = (currentMessageIndex + 1) % messages.length;
-                    currentLoaderText.style.opacity = '0';
-                    const timeoutId = setTimeout(() => {
-                        // Double-check element still exists and interval is still active
-                        const loaderContainerCheck = document.querySelector('.loader-container');
-                        const textEl = document.getElementById('loader-text');
-                        if (textEl && intervalActive && loaderContainerCheck) {
-                            textEl.textContent = messages[currentMessageIndex];
-                            textEl.style.opacity = '1';
-                        }
-                    }, 200);
-                    currentLoaderTimeouts.push(timeoutId);
-                }
-            }, 3000); // Change message every 3 seconds
-        }
-
         // Return function to stop loader
         return (immediate = false) => {
-            intervalActive = false; // Stop interval execution immediately
-            
-            // Clear interval
-            if (currentLoaderInterval) {
-                clearInterval(currentLoaderInterval);
-                currentLoaderInterval = null;
-            }
-            
             // Clear all pending timeouts
             currentLoaderTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
             currentLoaderTimeouts = [];
@@ -249,9 +195,8 @@ frappe.ready(() => {
             args: { docname: docname },
             callback: (r) => {
                 if (r.message) {
-                    feedbackData = r.message;
                     // Don't stop loader yet - keep it running until form is rendered
-                    renderQualityFeedbackForm(feedbackData, docname, stopLoaderCallback);
+                    renderQualityFeedbackForm(r.message, docname, stopLoaderCallback);
                 } else {
                     if (stopLoaderCallback) stopLoaderCallback();
                     container.innerHTML = `<div class="alert alert-danger">Error loading feedback data.</div>`;
@@ -264,7 +209,7 @@ frappe.ready(() => {
         });
     }
 
-    function translateAllContent(data, docname) {
+    function translateAllContent(data) {
         return new Promise((resolve) => {
             
             // Prepare all texts to translate
@@ -346,21 +291,7 @@ frappe.ready(() => {
             
             // Show static loader with same style as animated loader to prevent blank screen during translation
             const staticMessage = selectedLanguage !== 'en' ? 'Translating and preparing form...' : 'Preparing form...';
-            container.innerHTML = `
-                <div class="loader-container">
-                    <div class="loader-wrapper">
-                        <div class="progress-spinner">
-                            <div class="spinner-ring"></div>
-                            <div class="spinner-ring"></div>
-                            <div class="spinner-ring"></div>
-                            <div class="spinner-ring"></div>
-                        </div>
-                        <div class="loader-content">
-                            <div class="loader-text">${staticMessage}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            showLoader(staticMessage);
             
             const employeeName = data.employee_name || '';
             const itemType = data.item_type || '';
@@ -385,7 +316,7 @@ frappe.ready(() => {
                 ];
                 questions = data.questions || [];
             } else {
-                const translated = await translateAllContent(data, docname);
+                const translated = await translateAllContent(data);
                 translations = translated.translations;
                 questions = translated.questions;
             }
@@ -446,15 +377,9 @@ frappe.ready(() => {
                                 <div class="question-text auto-fetch">${question.question || ''}</div>
                                 <div class="rating-label">${ratingLabel}</div>
                                 <div class="rating-input-wrapper">
-                                    <select class="form-control rating-select" name="question_${index + 1}_rating" data-question-index="${index}">
+                                    <select class="form-control rating-select" name="question_${index + 1}_rating" data-parameter-name="${question.name || ''}">
                                         <option value="">${selectRatingText}</option>
-                                        ${generateRatingOptions(question.rating_type, {
-                                            veryPoor: veryPoorText,
-                                            poor: poorText,
-                                            average: averageText,
-                                            good: goodText,
-                                            excellent: excellentText
-                                        })}
+                                        ${generateRatingOptions(question.options || [])}
                                     </select>
                                 </div>
                             </div>
@@ -516,7 +441,7 @@ frappe.ready(() => {
         `;
 
             // Initialize form interactions immediately
-            initializeFormInteractions(docname, submittingText, submitText);
+            initializeFormInteractions(docname);
             
             // Handle globe icon click to go back to language selection
             const globeIcon = document.getElementById('globe-icon');
@@ -540,23 +465,21 @@ frappe.ready(() => {
         }
     }
 
-    function generateRatingOptions(ratingType, translations = {}) {
-        const options = {
-            '1-5': ['1', '2', '3', '4', '5'].map(val => `<option value="${val}">${val}</option>`),
-            '1-10': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(val => `<option value="${val}">${val}</option>`),
-            'satisfaction': [
-                `<option value="Very Poor">${translations.veryPoor || 'Very Poor'}</option>`,
-                `<option value="Poor">${translations.poor || 'Poor'}</option>`,
-                `<option value="Average">${translations.average || 'Average'}</option>`,
-                `<option value="Good">${translations.good || 'Good'}</option>`,
-                `<option value="Excellent">${translations.excellent || 'Excellent'}</option>`
-            ]
-        };
+    function generateRatingOptions(optionsArray) {
+        if (!optionsArray || !Array.isArray(optionsArray) || optionsArray.length === 0) {
+            return '';
+        }
         
-        return options[ratingType] || options['1-5'].join('');
+        // Generate options from the options array
+        // Each option has 'option' (text) and 'score' (value) properties
+        return optionsArray.map(opt => {
+            const optionText = opt.option || '';
+            const optionValue = opt.score !== undefined ? opt.score : opt.option;
+            return `<option value="${optionValue}">${optionText}</option>`;
+        }).join('');
     }
 
-    function initializeFormInteractions(docname, submittingText, submitText) {
+    function initializeFormInteractions(docname) {
         // Handle damage visibility toggle
         const damageRadioButtons = document.querySelectorAll('input[name="noticed_damage"]');
         const damageDescriptionSection = document.getElementById('damage-description-section');
@@ -630,12 +553,12 @@ frappe.ready(() => {
         const submitBtn = document.getElementById('submit-feedback-btn');
         if (submitBtn) {
             submitBtn.addEventListener('click', () => {
-                submitFeedbackForm(docname, submittingText, submitText);
+                submitFeedbackForm(docname);
             });
         }
     }
 
-    function submitFeedbackForm(docname, submittingText, submitText) {
+    function submitFeedbackForm(docname) {
         const formData = {
             docname: docname,
             ratings: [],
@@ -644,11 +567,18 @@ frappe.ready(() => {
             feedback_text: document.getElementById('feedback-text')?.value || ''
         };
 
-        // Collect ratings
-        document.querySelectorAll('.rating-select').forEach((select, index) => {
+        // Collect ratings with option text and score
+        document.querySelectorAll('.rating-select').forEach((select) => {
+            const selectedScore = select.value;
+            const selectedOption = select.options[select.selectedIndex];
+            const optionText = selectedOption ? selectedOption.text : '';
+            const parameterName = select.getAttribute('data-parameter-name') || '';
+            
             formData.ratings.push({
-                question_index: index,
-                rating: select.value
+                parameter_name: parameterName,
+                rating: selectedScore,
+                rating_option: optionText,
+                rating_score: selectedScore ? parseInt(selectedScore) : null
             });
         });
 

@@ -46,27 +46,20 @@ def get_feedback_data(docname):
         
         if template:
             template_doc = frappe.get_doc('Quality Feedback Template', template)
-            rating_scale = template_doc.get('custom_rating_scale') or ''
-            
-            # Get rating scale options
-            rating_type = '1-5'  # default
-            if rating_scale:
-                rating_scale_doc = frappe.get_doc('Rating Scale', rating_scale)
-                if hasattr(rating_scale_doc, 'rating_options'):
-                    rating_options = [opt.rating_option for opt in rating_scale_doc.rating_options if opt.rating_option]
-                    if len(rating_options) == 10:
-                        rating_type = '1-10'
-                    elif any('satisfaction' in opt.lower() or 'excellent' in opt.lower() for opt in rating_options):
-                        rating_type = 'satisfaction'
             
             # Get parameters (questions) from template
             if hasattr(template_doc, 'parameters'):
                 for param in template_doc.parameters:
+                    rating_scale = param.get('custom_rating_scale') or ''
                     question_text = param.get('parameter') or ''
-                    if question_text:
+                    options_list = frappe.get_all('Rating Scale Item', filters={'parent': rating_scale}, fields=['rating_option', 'rating_score'], order_by='idx asc')
+                    options = [{'option': option.rating_option, 'score': option.rating_score} for option in options_list]
+
+                    if len(options) > 0:
                         questions.append({
+                            'name': param.name,
                             'question': question_text,
-                            'rating_type': rating_type
+                            'options': options
                         })
         
         return {
@@ -97,17 +90,37 @@ def submit_feedback(docname, ratings=None, noticed_damage=None, damage_descripti
         
         # Save ratings to parameters
         if ratings and hasattr(doc, 'parameters'):
+            # Get template parameters to match by name
+            template_doc = frappe.get_doc('Quality Feedback Template', doc.template)
+            template_parameters = list(template_doc.parameters) if hasattr(template_doc, 'parameters') else []
+            
+            # Ensure parameters exist in the document
+            if not doc.parameters:
+                # If parameters don't exist, create them from template
+                for param in template_parameters:
+                    doc.append('parameters', {
+                        'parameter': param.parameter,
+                        'custom_rating_scale_name': param.custom_rating_scale
+                    })
+            
+            # Create a map of template parameter names to document parameter rows
+            param_map = {}
+            for idx, param_row in enumerate(doc.parameters):
+                if idx < len(template_parameters):
+                    template_param_name = template_parameters[idx].name
+                    param_map[template_param_name] = param_row
+            
+            # Update parameters with ratings using parameter_name only
             for rating_data in ratings:
-                question_index = rating_data.get('question_index', 0)
-                rating_value = rating_data.get('rating')
+                parameter_name = rating_data.get('parameter_name', '')
+                rating_score = rating_data.get('rating_score')
+                rating_option = rating_data.get('rating_option', '')
                 
-                if rating_value and question_index < len(doc.parameters):
-                    # Update the rating for this parameter
-                    param = doc.parameters[question_index]
-                    param.rating = rating_value
-                    # Try to set custom rating option if field exists
-                    if hasattr(param, 'custom_rating_option'):
-                        param.custom_rating_option = rating_value
+                # Match by parameter_name only
+                if parameter_name and parameter_name in param_map:
+                    param_row = param_map[parameter_name]
+                    param_row.custom_rating_option = rating_option
+                    param_row.custom_rating_score = rating_score
         
         # Save damage information
         if noticed_damage:

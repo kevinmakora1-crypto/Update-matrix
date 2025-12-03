@@ -62,7 +62,7 @@ def valid_work_permit_exists(preparation_name):
                 try:
                     create_mi_record(frappe.get_doc('Work Permit',{'preparation':preparation_name,'employee':employee.employee}))
                 except Exception as e:
-                    frappe.log_error(frappe.get_traceback(),f"Error creating Medical Insurance for Work Permit of employee {employee.employee} in Preparation {preparation_name}")
+                    frappe.log_error(frappe.get_traceback(), f"Error creating Medical Insurance for Work Permit of employee {employee.employee} in Preparation {preparation_name}")
                     continue
 
 #Creating mi for transfer

@@ -418,7 +418,7 @@ def create_work_permit_renewal(preparation_name):
             if employee.renewal_or_extend in  ['Renewal (Non-Kuwaiti)','Renewal (Kuwaiti)']:
                 try:
                     create_wp_renewal(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
-                except Exception as e:
+                except Exception:
                     frappe.log_error(frappe.get_traceback(), f"Work Permit Renewal Creation Failed for Employee {employee.employee} in Preparation {preparation_name}")
                     continue
 

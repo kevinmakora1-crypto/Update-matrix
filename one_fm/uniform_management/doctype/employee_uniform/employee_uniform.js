@@ -140,8 +140,36 @@ var add_quality_feedback_schedule = function (frm) {
 
 					  let fields = [
 						  {
-							  fieldname: "quality_feedback_html",
-							  fieldtype: "HTML",
+							  fieldname: "quality_feedback_table",
+							  fieldtype: "Table",
+							  cannot_add_rows: true,
+							  in_place_edit: true,
+							  reqd: 1,
+							  fields: [
+								  {
+									  fieldname: "item_type",
+									  label: __("Item Type"),
+									  fieldtype: "Link",
+									  options: "Item Type",
+									  read_only: 1,
+									  in_list_view: 1,
+								  },
+								  {
+									  fieldname: "quality_feedback_template",
+									  label: __("Quality Feedback Template"),
+									  fieldtype: "Link",
+									  options: "Quality Feedback Template",
+									  in_list_view: 1,
+									  get_query(doc) {
+										  return {
+											  filters: {
+												  custom_is_enabled: 1,
+												  custom_item_type: doc.item_type,
+											  },
+										  };
+									  },
+								  },
+							  ],
 						  },
 					  ];
 
@@ -150,20 +178,14 @@ var add_quality_feedback_schedule = function (frm) {
 						  fields: fields,
 						  primary_action_label: __("Generate"),
 						  primary_action(values) {
-							  let quality_feedback_data = {};
-							  unique_item_types.forEach((item_type) => {
-								  let fieldname =
-									  sanitize_fieldname(item_type) +
-									  "_quality_feedback_template";
-								  let value = d.get_value(fieldname);
-								  if(value) {
-									  quality_feedback_data[item_type] = value;
-								  }
-							  });
+							  let selected_rows =
+								  (values && values.quality_feedback_table) || [];
 
-							  const selected_templates = Object.values(quality_feedback_data);
+							  let selected_templates = selected_rows
+								  .filter((row) => row.quality_feedback_template)
+								  .map((row) => row.quality_feedback_template);
 
-							  if (selected_templates.length === 0) {
+							  if (!selected_templates.length) {
 								  frappe.msgprint(
 									  __(
 										  "Please select at least one Quality Feedback Template."
@@ -193,59 +215,18 @@ var add_quality_feedback_schedule = function (frm) {
 						  },
 					  });
 
-					  let html = `<table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>${__("Item Type")}</th>
-                                    <th>${__("Quality Feedback Template")}</th>
-                                </tr>
-                            </thead>
-                            <tbody>`;
-
+					  // Pre-populate table rows with distinct item types
+					  let grid = d.fields_dict.quality_feedback_table.grid;
 					  unique_item_types.forEach((item_type) => {
-						  html += `<tr>
-                                        <td><a href="/app/item-type/${item_type}">${item_type}</a></td>
-                                        <td>
-                                            <div id="${sanitize_fieldname(
-							  item_type
-						  )}-quality-feedback-template-wrapper"></div>
-                                        </td>
-                                    </tr>`;
+						  grid.add_new_row();
+						  let data = grid.get_data();
+						  let row = data[data.length - 1];
+						  if (row) {
+							  row.item_type = item_type;
+						  }
 					  });
 
-					  html += `</tbody></table>`;
-					  d.get_field("quality_feedback_html").$wrapper.html(html);
-
-					  unique_item_types.forEach((item_type) => {
-						  let field_id = `${sanitize_fieldname(
-							  item_type
-						  )}-quality-feedback-template-wrapper`;
-						  let fieldname =
-							  sanitize_fieldname(item_type) + "_quality_feedback_template";
-
-						  let field = frappe.ui.form.make_control({
-							  df: {
-								  fieldname: fieldname,
-								  fieldtype: "Link",
-								  options: "Quality Feedback Template",
-								  label: __("Quality Feedback Template"),
-								  get_query() {
-									  return {
-										  filters: {
-											  custom_is_enabled: 1,
-											  custom_item_type: item_type,
-										  },
-									  };
-								  },
-							  },
-							  parent: d
-								  .get_field("quality_feedback_html")
-								  .$wrapper.find(`#${field_id}`),
-							  only_input: true,
-						  });
-						  field.make_input();
-						  d.fields_dict[fieldname] = field;
-					  });
+					  grid.refresh();
 
 					  d.show();
 				  },

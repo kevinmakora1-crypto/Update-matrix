@@ -25,6 +25,7 @@ class QualityFeedbackOverride(QualityFeedback):
                     "custom_rating_scale_name": parameter.custom_rating_scale
                 })
 
+@frappe.whitelist()
 def get_quality_feedback_magic_link_url(quality_feedback):
     """
     Create magic link url for the quality feedback.

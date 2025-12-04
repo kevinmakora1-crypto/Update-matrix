@@ -1806,9 +1806,9 @@ def fetch_employees_not_in_checkin():
 			sa.name as shift_assignment_id
 			FROM `tabShift Assignment` sa
 			INNER JOIN `tabEmployee` emp ON sa.employee = emp.name
-			RIGHT JOIN `tabShift Type` st ON sa.shift_type = st.name
-			RIGHT JOIN `tabOperations Shift` os ON sa.shift = os.name
-			RIGHT JOIN `tabOperations Site` osi ON sa.site = osi.name
+			INNER JOIN `tabShift Type` st ON sa.shift_type = st.name
+			INNER JOIN `tabOperations Shift` os ON sa.shift = os.name
+			INNER JOIN `tabOperations Site` osi ON sa.site = osi.name
 			WHERE {'sa.start_datetime' if log_type=='IN' else 'sa.end_datetime'} BETWEEN '{target_start_datetime_str}' AND '{target_end_datetime_str}'
 			AND emp.status = 'Active'
 			AND sa.status = 'Active' 

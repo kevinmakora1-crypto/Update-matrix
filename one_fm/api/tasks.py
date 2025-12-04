@@ -1781,8 +1781,8 @@ def fetch_employees_not_in_checkin():
 	attendance request, shift request, leave application based on log_type and
 	if their shift start or end falls within the past 1 hour
 	"""
-	if not production_domain():
-		return
+	# if not production_domain():
+	# 	return
 	# if not frappe.db.get_single_value('HR and Payroll Additional Settings', 'remind_employee_checkin_checkout') and not production_domain():
 	# 	return
 
@@ -1805,10 +1805,12 @@ def fetch_employees_not_in_checkin():
 			os.supervisor as shift_supervisor, osi.account_supervisor as site_supervisor,
 			sa.name as shift_assignment_id
 			FROM `tabShift Assignment` sa
+			INNER JOIN `tabEmployee` emp ON sa.employee = emp.name
 			RIGHT JOIN `tabShift Type` st ON sa.shift_type = st.name
 			RIGHT JOIN `tabOperations Shift` os ON sa.shift = os.name
 			RIGHT JOIN `tabOperations Site` osi ON sa.site = osi.name
 			WHERE {'sa.start_datetime' if log_type=='IN' else 'sa.end_datetime'} BETWEEN '{target_start_datetime_str}' AND '{target_end_datetime_str}'
+			AND emp.status = 'Active'
 			AND sa.status = 'Active' 
 			AND sa.docstatus = 1
 		""", as_dict=1)

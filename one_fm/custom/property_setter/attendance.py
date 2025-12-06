@@ -96,6 +96,6 @@ def get_attendance_properties():
             "field_name": "status",
             "property": "options",
             "property_type": "Select",
-            "value": "Present\nAbsent\nOn Leave\nHalf Day\nWork From Home\nDay Off\nClient Day Off\nFingerprint Appointment\nMedical Appointment\nHoliday\nOn Hold"
+            "value": "Present\nAbsent\nOn Leave\nHalf Day\nWork From Home\nDay Off\nClient Day Off\nFingerprint Appointment\nMedical Appointment\nHoliday\nOn Hold\nClient Interview"
         }
     ]

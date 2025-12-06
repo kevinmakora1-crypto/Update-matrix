@@ -42,8 +42,18 @@ class PACI(Document):
             self.grd_operator_transfer = frappe.db.get_value('GRD Settings', None, 'default_grd_operator_transfer')
 
     def set_new_expiry_date(self):
-        if not self.new_civil_id_expiry_date:
-            self.new_civil_id_expiry_date = frappe.db.get_value("Employee", self.employee, "work_permit_expiry_date")
+        """
+        Set civil ID and residency expiry dates from employee's work permit expiry date.
+        
+        - For new documents: Sets new_civil_id_expiry_date.
+        - When payment invoice is uploaded: Sets both new_civil_id_expiry_date and residency_expiry_date.
+        """
+        payment_invoice_uploaded = (self.has_value_changed('upload_civil_id_payment') and self.upload_civil_id_payment)
+        if self.is_new() or payment_invoice_uploaded:
+            work_permit_expiry = frappe.db.get_value("Employee", self.employee, "work_permit_expiry_date")
+            self.new_civil_id_expiry_date = work_permit_expiry
+            if payment_invoice_uploaded:
+                self.residency_expiry_date = work_permit_expiry
 
 
     def on_update(self):

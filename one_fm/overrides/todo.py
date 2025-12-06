@@ -27,6 +27,8 @@ def notify_todo_status_change(doc):
     """Notify user if ToDo status changes. Modular, clear, and logs notification."""
     if doc.is_new():
         return
+    if not doc.notify_allocated_to_via_email:
+        return
     status_in_db = frappe.db.get_value(doc.doctype, doc.name, "status")
     if status_in_db != doc.status and doc.assigned_by != doc.allocated_to:
         user = frappe.session.user

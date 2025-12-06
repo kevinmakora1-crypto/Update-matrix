@@ -131,6 +131,7 @@ class MedicalAppointment(Document):
 			"comment": _("Created via Medical Appointment: {0}").format(self.name)
 		})
 		attendance_doc.insert(ignore_permissions=True)
+		attendance_doc.submit()
 
 	def on_submit(self):
 		self.validate_appointment_date()
@@ -155,7 +156,7 @@ class MedicalAppointment(Document):
 			{
 				"attendance_date": getdate(self.date_and_time_confirmation),
 				"employee": self.employee,
-				"status": "On Hold"
+				"status": ["in", ["On Hold", "Absent"]]
 			}
 		)
 

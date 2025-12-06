@@ -259,6 +259,26 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
         if not employee:
             return response("Resource Not Found", 404, None,
                             "No employee record found with {employee_id}".format(employee_id=employee_id))
+        
+        today = getdate()
+        
+        # check for fingerprint appointment
+        fingerprint_appointment = frappe.db.exists("Employee Schedule", {
+            "employee": employee.name,
+            "date": today,
+            "employee_availability": "Fingerprint Appointment"
+        })
+        if fingerprint_appointment:
+            return response("Resource Not Found", 404, None, "You have a fingerprint appointment. See you soon!")
+
+        # check for medical appointment
+        medical_appointment = frappe.db.exists("Employee Schedule", {
+            "employee": employee.name,
+            "date": today,
+            "employee_availability": "Medical Appointment"
+        })
+        if medical_appointment:
+            return response("Resource Not Found", 404, None, "You have a medical appointment. See you soon!")
 
         shift = False
         shift_details = get_current_shift(employee.name)

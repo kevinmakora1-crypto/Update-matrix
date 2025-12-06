@@ -3,7 +3,6 @@
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from frappe.utils import get_random_string
 
 from one_fm.one_fm.doctype.leave_handover.leave_handover import get_handover_data
 
@@ -27,7 +26,7 @@ class TestLeaveHandover(FrappeTestCase):
 		self.project = frappe.get_doc(
 			{
 				"doctype": "Project",
-				"project_name": "Test Handover Project " + get_random_string(5),
+				"project_name": "Test Handover Project "+ frappe.generate_hash(length=5),
 				"account_manager": self.employee_on_leave.name,
 				"status": "Open",
 			}

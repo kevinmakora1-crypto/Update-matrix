@@ -281,7 +281,9 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
             return response("Resource Not Found", 404, None, "You have a medical appointment. See you soon!")
 
         shift = False
-        shift_details = get_current_shift(employee.name)
+        upcoming_shifts = []
+
+        shift_details = get_current_shift(employee.name, attach_upcoming_shifts=True)
         if shift_details:
             if shift_details['type'] == "Early":
                 # check if user can checkin with the correct time
@@ -295,6 +297,7 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
                                 f"Check-in for your shift starts in {shift_details['time']} minutes.")
             elif shift_details['type'] == "On Time":
                 shift = shift_details['data']  # Return the object of Shift Assignment
+                upcoming_shifts = shift_details['upcoming_shifts']
 
         date = cstr(getdate())
 
@@ -319,6 +322,14 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
             if location:
                 result = location
                 result['user_within_geofence_radius'] = True
+                # Convert upcoming_shifts to dictionaries with log_type
+                if upcoming_shifts:
+                    result['upcoming_shifts'] = [
+                        {**shift.as_dict(), 'log_type': shift.get_next_checkin_log_type()}
+                        for shift in upcoming_shifts
+                    ]
+                else:
+                    result['upcoming_shifts'] = []
 
                 distance = float(haversine(result.latitude, result.longitude, latitude, longitude))
                 if distance > float(result.geofence_radius):
@@ -326,7 +337,7 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
 
                 result['site_name'] = site
                 if shift:
-                    result['shift'] = shift
+                    result['shift'] = {**shift.as_dict(), 'log_type': log_type}
 
                 # log to checkin radius log
                 data = result.copy()

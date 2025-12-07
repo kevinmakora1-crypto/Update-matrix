@@ -4,7 +4,8 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_url, getdate, today, formatdate
 from one_fm.one_fm.doctype.magic_link.magic_link import authorize_magic_link as authenticate_magic_link
-from one_fm.utils import set_expire_magic_link, translate_words
+from one_fm.overrides.workflow import apply_workflow
+from one_fm.utils import expire_magic_link, translate_words
 
 def get_context(context):
     """
@@ -165,6 +166,9 @@ def submit_feedback(docname, ratings=None, noticed_damage=None, damage_descripti
         
         doc.save(ignore_permissions=True)
         frappe.db.commit()
+
+        apply_workflow(doc, "Submit")
+        expire_magic_link('Quality Feedback', docname, 'Quality Feedback')
         
         return {'success': True, 'message': _('Feedback submitted successfully.')}
     except Exception as e:

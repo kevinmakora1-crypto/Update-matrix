@@ -102,11 +102,10 @@ def send_quality_feedback_magic_link_to_employee(quality_feedback):
     quality_feedback_doc = frappe.get_doc("Quality Feedback", quality_feedback)
 
     if magic_link_url:
-        employee_id = frappe.db.get_value("Employee", quality_feedback_doc.employee, "employee_id")
+        employee_id = frappe.db.get_value("Employee", quality_feedback_doc.custom_employee, "employee_id")
 
-        send_push_notification(employee_id, "Quality Feedback", "Please submit your quality feedback" + quality_feedback.name, {
-            "type": "open_link",
-            "link": magic_link_url
+        send_push_notification(employee_id, "Quality Feedback", "Please submit your quality feedback", {
+            "url": magic_link_url
         })
         return True
         

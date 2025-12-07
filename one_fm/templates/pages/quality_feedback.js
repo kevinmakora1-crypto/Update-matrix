@@ -307,7 +307,7 @@ frappe.ready(() => {
                 // For English, use original texts without translation
                 translations = [
                     'Hello', ', tell us about your Feedback about', 'Quality Feedback Details',
-                    'Employee ID:', 'Operation Site:', 'Issued On:', 'Current Feedback Schedule:',
+                    'Employee ID:', 'Employee Name:', 'Operation Site:', 'Issued On:', 'Current Feedback Schedule:',
                     'Quality Feedback Questions', 'Survey Question', 'Rating Option:', 'Select Rating',
                     'Additional Details', 'Noticed Damage?:', 'No', 'Yes', 'Damage Description:',
                     'Describe any damage noticed...', 'Damage Attachment:', 'Attach', 'Feedback:',
@@ -322,7 +322,7 @@ frappe.ready(() => {
             }
 
             const [
-                helloText, tellAboutText, detailsTitle, employeeIdLabel, operationSiteLabel,
+                helloText, tellAboutText, detailsTitle, employeeIdLabel, employeeNameLabel, operationSiteLabel,
                 issuedOnLabel, scheduleLabel, questionsTitle, surveyQuestionText, ratingLabel,
                 selectRatingText, additionalDetailsTitle, damageLabel, noText, yesText,
                 damageDescLabel, damagePlaceholder, damageAttachmentLabel, attachText,
@@ -352,6 +352,10 @@ frappe.ready(() => {
                         <div class="detail-row">
                             <div class="detail-label">${employeeIdLabel}</div>
                             <div class="detail-value auto-fill">${employeeId}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">${employeeNameLabel}</div>
+                            <div class="detail-value auto-fill">${employeeName}</div>
                         </div>
                         <div class="detail-row">
                             <div class="detail-label">${operationSiteLabel}</div>

@@ -237,6 +237,3 @@ var add_quality_feedback_schedule = function (frm) {
   }
 }
 
-function sanitize_fieldname(str) {
-    return str.replace(/[^a-zA-Z0-9]/g, "_");
-}

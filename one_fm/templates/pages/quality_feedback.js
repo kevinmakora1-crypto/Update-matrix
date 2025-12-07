@@ -9,24 +9,17 @@ frappe.ready(() => {
     let currentLoaderTimeouts = []; // Store all setTimeout IDs for cleanup
 
     // Show loading at the start
-    showLoader('Initializing...', [
-        'Loading Quality Feedback...',
-        'Preparing interface...',
-        'Almost ready...'
-    ]);
+    showLoader('Initializing...');
 
     // Add a small delay for loading, then fetch languages
     setTimeout(() => {
         fetchLanguages();
     }, 1500);
     
-    function showLoader(message, progressMessages = []) {
+    function showLoader(message) {
         // Clear all pending timeouts
         currentLoaderTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
         currentLoaderTimeouts = [];
-        
-        // Use the first message from progressMessages if provided, otherwise use the message parameter
-        const displayMessage = progressMessages.length > 0 ? progressMessages[0] : message;
         
         container.innerHTML = `
             <div class="loader-container">
@@ -38,7 +31,7 @@ frappe.ready(() => {
                         <div class="spinner-ring"></div>
                     </div>
                     <div class="loader-content">
-                        <div class="loader-text" id="loader-text">${displayMessage}</div>
+                        <div class="loader-text" id="loader-text">${message}</div>
                     </div>
                 </div>
             </div>
@@ -175,13 +168,8 @@ frappe.ready(() => {
                 const langObj = languages.find(l => l.code === langCode);
                 selectedLanguageName = langObj ? langObj.name : langCode;
                 
-                // Show loader with progress messages
-                const stopLoader = showLoader('Preparing form...', [
-                    'Preparing form...',
-                    'Loading your details...',
-                    'Fetching feedback questions...',
-                    'Almost ready...'
-                ]);
+                // Show loader
+                const stopLoader = showLoader('Preparing form...');
                 
                 // Fetch feedback data and render form
                 fetchFeedbackData(stopLoader);

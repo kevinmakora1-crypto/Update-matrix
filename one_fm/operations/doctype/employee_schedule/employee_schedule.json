@@ -68,7 +68,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Employee Availability",
-   "options": "Working\nDay Off\nClient Day Off\nSick Leave\nAnnual Leave\nEmergency Leave\nFingerprint Appointment\nMedical Appointment\nOn-the-job Training\nClient Interview",
+   "options": "Working\nDay Off\nClient Day Off\nSick Leave\nAnnual Leave\nEmergency Leave\nFingerprint Appointment\nMedical Appointment\nClient Event\nOn-the-job Training\nClient Interview",
    "reqd": 1
   },
   {
@@ -276,7 +276,7 @@
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2025-11-28 12:51:48.652049",
+ "modified": "2025-12-07 13:38:37.495313",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Employee Schedule",

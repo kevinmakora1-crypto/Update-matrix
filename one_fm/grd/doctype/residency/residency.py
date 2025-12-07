@@ -167,9 +167,17 @@ def set_employee_list_for_moi(preparation_name):
     if employee_in_preparation.preparation_record:
         for employee in employee_in_preparation.preparation_record:
             if employee.renewal_or_extend == 'Renewal (Non-Kuwaiti)' and employee.nationality != 'Kuwaiti':# For renewals
-                create_moi_record(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
+                try:
+                    create_moi_record(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
+                except Exception as e:
+                    frappe.log_error(frappe.get_traceback(),f"Error creating MOI for Employee {employee.employee} in Preparation {preparation_name}")
+                    continue
             if employee.renewal_or_extend != 'Renewal (Non-Kuwaiti)' and employee.nationality != 'Kuwaiti':# For extend
-                create_moi_record(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
+                try:
+                    create_moi_record(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
+                except Exception as e:
+                    frappe.log_error(frappe.get_traceback(),f"Error creating MOI for Employee {employee.employee} in Preparation {preparation_name}")
+                    continue
 
 # Creat moi for transfer
 def creat_moi_for_transfer(work_permit_name):

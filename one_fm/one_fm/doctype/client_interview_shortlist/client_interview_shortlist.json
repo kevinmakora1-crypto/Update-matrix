@@ -1,0 +1,138 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2025-11-28 12:46:22.940381",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "interview_date",
+  "column_break_yybh",
+  "company",
+  "project",
+  "section_break_tkko",
+  "client_interview_employee",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "default": "OPS-CIS-.YYYY.-.####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "OPS-CIS-.YYYY.-.####",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "interview_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Interview Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_yybh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Project",
+   "options": "Project",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_tkko",
+   "fieldtype": "Section Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "client_interview_employee",
+   "fieldtype": "Table",
+   "label": "Client Interview Employee",
+   "options": "Client Interview Employee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Client Interview Shortlist",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-12-01 12:09:56.312334",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Client Interview Shortlist",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Operations Supervisor",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Operations Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

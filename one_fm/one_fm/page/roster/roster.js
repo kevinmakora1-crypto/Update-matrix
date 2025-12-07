@@ -1177,6 +1177,7 @@ let classmap = {
 	"Holiday": "greyboxcolor",
 	"On Hold": "orangeboxcolor",
 	"Fingerprint Appointment": "cyanboxcolor",
+	"Medical Appointment": "cyanboxcolor",
 	"On-the-job Training": "tealboxcolor",
 };
 
@@ -1196,6 +1197,7 @@ let abbr_map = {
 	"Leave Without Pay": "LWP",
 	"Working": "!",
 	"Fingerprint Appointment": "FA",
+	"Medical Appointment": "MA",
 	"On-the-job Training": "OJT",
 
 };
@@ -1325,6 +1327,7 @@ function render_roster(res, page) {
 		let ot_count = 0;
 		let employeeCellsHTML = ""; // Initialize for batch append
 		let is_fingerprint_appointment = false;
+		let is_medical_appointment = false;
 
 		while (current_day_iter <= end_moment_iter) {
 			let sch = ``;
@@ -1392,10 +1395,13 @@ function render_roster(res, page) {
 						bgclass = "diffdayoffot";
 						data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
 					}
-					else if (attendance && in_list(["Day Off", "On Leave", "Absent", "On Hold", "Client Day Off", "Fingerprint Appointment"], attendance)) {
+					else if (attendance && in_list(["Day Off", "On Leave", "Absent", "On Hold", "Client Day Off", "Fingerprint Appointment", "Medical Appointment"], attendance)) {
 						data_selectid = `${employee}|${date}|${employee_availability}`;
 						if (attendance == "Fingerprint Appointment") {
 							is_fingerprint_appointment = true;
+						}
+						if (attendance == "Medical Appointment") {
+							is_medical_appointment = true;
 						}
 
 						if (attendance == "Absent") {
@@ -1422,6 +1428,9 @@ function render_roster(res, page) {
 					if (k == (employees_data[employee_key][date_key].length - 1)) {
 						if (attendance && attendance == "Fingerprint Appointment") {
 							tooltiptext += `Fingerprint Appointment`;
+							abbrv += `${abbr_map[attendance]}<br>`;
+						} else if (attendance && attendance == "Medical Appointment") {
+							tooltiptext += `Medical Appointment`;
 							abbrv += `${abbr_map[attendance]}<br>`;
 						} else if (attendance && attendance == "On Leave" && !employee_availability) {
 							tooltiptext += `${leave_application}<br>${leave_type}`;
@@ -1465,7 +1474,16 @@ function render_roster(res, page) {
 						<div class="${moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden"} tablebox borderbox d-flex justify-content-center align-items-center so"
 							data-selectid="${employee}|${date_key}"></div>
 					</td>`;
-			} else {
+			} else if (is_medical_appointment) {
+				let tooltip_html = tooltiptext ? `<span class="customtooltiptext ${bgclass}">${tooltiptext}</span>` : "";
+				let hoverClass = is_medical_appointment ? "forbidden" : (moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden");
+				sch = `
+					<td class="${todayClass}">
+						<div class="${hoverClass} tablebox ${bgclass} d-flex justify-content-center align-items-center text-white so customtooltip"
+							data-selectid="${data_selectid}" data-ot="${data_ot}">${abbrv}${tooltip_html}</div>
+					</td>`;
+			}
+			else {
 				let tooltip_html = tooltiptext ? `<span class="customtooltiptext ${bgclass}">${tooltiptext}</span>` : "";
 				let hoverClass = is_fingerprint_appointment ? "forbidden" : (moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden");
 				sch = `
@@ -1476,6 +1494,7 @@ function render_roster(res, page) {
 			}
 			employeeCellsHTML += sch;
 			is_fingerprint_appointment = false;
+			is_medical_appointment = false;
 			current_day_iter.add(1, "days");
 		}
 		$employeeRow.append(employeeCellsHTML);

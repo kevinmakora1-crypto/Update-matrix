@@ -76,7 +76,7 @@ class SalesInvoiceOverride(SalesInvoice):
                 "contract_item_category": row.contract_item_category,
                 "base_net_amount": row.base_net_amount
             }
-            for row in self.get("custom_contract_item_categorywise_summary", [])
+            for row in self.get("custom_contract_item_categorywise_summary", []) or []
         ]
         # Sort both lists for reliable comparison
         new_summary_sorted = sorted(new_summary, key=lambda x: x["contract_item_category"])

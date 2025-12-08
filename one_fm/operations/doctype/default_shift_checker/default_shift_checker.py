@@ -156,25 +156,27 @@ def create_checker(start_date, end_date, is_day_off_reliever=False, is_weekend_r
 			doc.repeat_count = (yesterday_repeat_count or 0) + 1
 			doc.site_supervisor = frappe.db.get_value("Operations Site", employee.default_site, "account_supervisor")
 
-			if is_day_off_reliever:
-				doc.is_day_off_reliever = 1
-				doc.comment = f"Day Off Reliever has been assigned to the same shift for up to {threshold} time(s). Either allocate the Employee to the Shift and unmark as Day Off Reliever or reduce his/her schedule to the shift to less than {threshold} time(s)."
-			elif is_weekend_reliever:
-				doc.is_weekend_reliever = 1
-				doc.comment = f"Weekend Reliever has been assigned to the same shift for up to {threshold} time(s). Either allocate the Employee to the Shift and unmark as Weekend Reliever or reduce his/her schedule to the shift to less than {threshold} time(s)."
-			else:
-				doc.comment = f"Employee is not set as a Reliever and has been Rostered in other shifts for at least {threshold} time(s). Either reduce the allocation in each of the Shifts below the {threshold} or set the Employee as a reliever."
-
 			# Determine shift condition
 			shift_condition = (EmployeeSchedule.shift == employee.default_shift) if is_reliever else (EmployeeSchedule.shift != employee.default_shift)
 			shifts = get_shift_assignments(employee.employee, shift_condition, start_date, end_date, EmployeeSchedule)
 
+			count = 0
 			for shift_name, data in shifts.items():
+				count += data["count"]
 				doc.append(child_table_field_name, {
 					"operations_shift": shift_name,
 					"schedule_dates": data["dates"],
 					"count": data["count"]
 				})
+
+			if is_day_off_reliever:
+				doc.is_day_off_reliever = 1
+				doc.comment = f"Day OFF Reliever scheduled {count} day(s) in the same shift (Max: {threshold}). Please re-assign excess days to a different shift"
+			elif is_weekend_reliever:
+				doc.is_weekend_reliever = 1
+				doc.comment = f"Weekend Reliever scheduled {count} day(s) in the same shift (Max: {threshold}). Please re-assign excess days to a different shift"
+			else:
+				doc.comment = "Employee is scheduled outside their default allocation. Please move this shift to match their default"
 
 			doc.insert()
 		except Exception as e:

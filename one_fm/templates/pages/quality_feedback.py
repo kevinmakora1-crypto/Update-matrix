@@ -18,7 +18,7 @@ def get_context(context):
     if not provided_magic_link:
         frappe.throw(_("Magic Link is required to access this page."))
 
-    # Authenicate Magic Link
+    # Authenticate Magic Link
     magic_link = authenticate_magic_link(provided_magic_link, 'Quality Feedback', 'Quality Feedback')
     if magic_link:
         context.docname = frappe.db.get_value('Magic Link', magic_link, 'reference_docname')

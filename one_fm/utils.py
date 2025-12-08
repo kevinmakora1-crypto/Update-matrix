@@ -3475,18 +3475,25 @@ def get_current_shift(employee, attach_upcoming_shifts=False):
 
         # Find the current shift
         current_shift = None
+        is_shift_completed = False # Flag to check if employee has checked in and out for the shift
+
         for shift in shifts:
             # Check if the shift is currently active
-            checkin = frappe.db.get_list(
+            checkins = frappe.db.get_all(
                 "Employee Checkin",
                 filters={"employee": employee, "shift_assignment": shift.name},
                 fields=["log_type", "time", "shift_assignment"],
                 order_by="time desc",
-                limit=1,
+                limit_page_length=0,
             )
 
-            if checkin:
-                last_log = checkin[0]
+            if checkins:
+                # Temporary flag so callers can know completion state without DB write
+                has_in = any(log.log_type == "IN" for log in checkins)
+                has_out = any(log.log_type == "OUT" for log in checkins)
+                is_shift_completed = bool(has_in and has_out)
+
+                last_log = checkins[0]
                 # CASE 1: Last log is IN → Shift is active
                 if last_log.log_type == "IN":
                     if shift.checkin_time <= nowtime <= shift.checkout_time:
@@ -3499,7 +3506,7 @@ def get_current_shift(employee, attach_upcoming_shifts=False):
                         continue  # Skip this shift, check next one
                     else:
                         current_shift = shift
-                        break
+                        break                
             else:
                 # Allow checkin if within window
                 if shift.checkin_time <= nowtime <= shift.checkout_time:
@@ -3512,6 +3519,9 @@ def get_current_shift(employee, attach_upcoming_shifts=False):
         if current_shift:
             # Current shift found
             data = frappe.get_doc("Shift Assignment", current_shift.name)
+
+            data.is_completed = is_shift_completed # Carry over temporary completion flag (non-persistent)
+
             if current_shift.checkin_time > nowtime:
                 minutes = int((current_shift.checkin_time - nowtime).total_seconds() / 60)
                 response = {"type": "Early", "data": data, "time": minutes}

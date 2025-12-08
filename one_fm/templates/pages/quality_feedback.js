@@ -318,8 +318,17 @@ frappe.ready(() => {
                 veryPoorText, poorText, averageText, goodText, excellentText
             ] = translations;
 
+            // Escape selectedLanguage before including it in HTML attributes
+            function escapeAttribute(str) {
+                return String(str)
+                  .replace(/&/g, '&amp;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&#39;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;');
+            }
             container.innerHTML = `
-            <div class="quality-feedback-form" data-lang="${selectedLanguage}">
+            <div class="quality-feedback-form" data-lang="${escapeAttribute(selectedLanguage)}">
                 <div class="form-header-controls">
                     <div class="language-controls">
                         <button class="globe-icon-btn" id="globe-icon" title="Change Language">

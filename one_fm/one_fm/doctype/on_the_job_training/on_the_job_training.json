@@ -6,6 +6,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "is_extension_request",
+  "original_ojt_request",
   "on_the_job_training_name",
   "employee",
   "employee_name",
@@ -19,10 +21,13 @@
   "column_break_jmxt",
   "start_date",
   "end_date",
+  "date_extended",
   "start_time",
   "end_time",
   "mentor",
   "mentor_name",
+  "client_agreed_ojt_days",
+  "total_scheduled_ojt_days",
   "section_break_zxcc",
   "amended_from"
  ],
@@ -156,6 +161,41 @@
    "fieldtype": "Link",
    "label": "Operations Manager",
    "options": "User"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_extension_request",
+   "fieldtype": "Check",
+   "label": "Is Extension Request"
+  },
+  {
+   "depends_on": "is_extension_request",
+   "fieldname": "original_ojt_request",
+   "fieldtype": "Link",
+   "label": "Original OJT Request",
+   "mandatory_depends_on": "is_extension_request",
+   "options": "On the Job Training"
+  },
+  {
+   "fetch_from": "operations_role.client_agreed_ojt_days",
+   "fieldname": "client_agreed_ojt_days",
+   "fieldtype": "Int",
+   "label": "Client Agreed OJT Days",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_scheduled_ojt_days",
+   "fieldtype": "Int",
+   "label": "Total Scheduled OJT Days",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "date_extended",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Date Extended",
+   "no_copy": 1
   }
  ],
  "grid_page_length": 50,
@@ -171,7 +211,7 @@
    "link_fieldname": "custom_on_the_job_training"
   }
  ],
- "modified": "2025-11-28 12:24:33.692754",
+ "modified": "2025-12-08 18:38:20.056977",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "On the Job Training",

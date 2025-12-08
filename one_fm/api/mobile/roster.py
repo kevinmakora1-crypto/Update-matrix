@@ -288,21 +288,25 @@ def get_assigned_employees(shift, date, limit_start=None, limit_page_length=20):
 
 
 @frappe.whitelist()
-def get_assigned_projects(employee_id):
+def get_assigned_projects(employee_id=None):
 	try:
 		user, user_roles, user_employee = get_current_user_details()
 		if "Operations Manager"  in user_roles or 'Operation Admin' in user_roles:
 			return frappe.get_list("Project", {"project_type": "External", "is_active": "Yes"}, "name as project", limit_page_length=9999, order_by="name asc")
-		
+
+		if not employee_id:
+			return []
+
 		if "Projects Manager" in user_roles:
 			return frappe.get_list("Project", {"account_manager": employee_id, "project_type": "External", "is_active": "Yes"}, "name as project", limit_page_length=9999, order_by="name asc")
+
 		return []
 	except Exception as e:
 		return frappe.utils.response.report_error(e.http_status_code)
 
 
 @frappe.whitelist()
-def get_assigned_sites(employee_id, project=None):
+def get_assigned_sites(employee_id=None, project=None):
 	try:
 		user, user_roles, user_employee = get_current_user_details()
 		filters = { "status": "Active" }
@@ -315,6 +319,8 @@ def get_assigned_sites(employee_id, project=None):
 			return frappe.get_list("Operations Site", filters, ["name as site", "project"], limit_page_length=9999, order_by="name asc")
 
 		elif "Site Supervisor" in user_roles:
+			if not employee_id:
+				return []
 			filters.update({"account_supervisor": employee_id})
 			return frappe.get_list("Operations Site", filters, ["name as site", "project"], limit_page_length=9999, order_by="name asc")
 		return []
@@ -325,7 +331,7 @@ def get_assigned_sites(employee_id, project=None):
 
 
 @frappe.whitelist()
-def get_assigned_shifts(employee_id, project=None, site=None):
+def get_assigned_shifts(employee_id=None, project=None, site=None):
 	try:
 		user_roles = frappe.get_roles(frappe.session.user)
 		user_roles_set = set(user_roles)
@@ -333,9 +339,9 @@ def get_assigned_shifts(employee_id, project=None, site=None):
 		if any(role in user_roles_set for role in allowed_roles):
 			if not site:
 				return get_supervisor_operations_shifts()
-			return get_supervisor_operations_shifts(project, site)
+			return get_supervisor_operations_shifts(project=project, site=site)
 		elif "Shift Supervisor" in user_roles:
-			return get_supervisor_operations_shifts(employee_id, project, site)
+			return get_supervisor_operations_shifts(employee_id=employee_id, project=project, site=site)
 		return []
 
 	except Exception as e:

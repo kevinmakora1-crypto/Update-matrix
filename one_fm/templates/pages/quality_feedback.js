@@ -327,6 +327,15 @@ frappe.ready(() => {
                   .replace(/</g, '&lt;')
                   .replace(/>/g, '&gt;');
             }
+            // Escape text for HTML context (not attributes)
+            function escapeHTML(str) {
+                return String(str)
+                  .replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&#39;');
+            }
             container.innerHTML = `
             <div class="quality-feedback-form" data-lang="${escapeAttribute(selectedLanguage)}">
                 <div class="form-header-controls">
@@ -338,7 +347,7 @@ frappe.ready(() => {
                                 <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                             </svg>
                         </button>
-                        <span class="selected-language-display">${selectedLanguageName}</span>
+                        <span class="selected-language-display">${escapeHTML(selectedLanguageName)}</span>
                     </div>
                 </div>
                 <h2 class="quality-feedback-title">${helloText}, ${employeeName}${tellAboutText} ${itemType}!</h2>

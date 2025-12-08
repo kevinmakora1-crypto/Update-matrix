@@ -314,8 +314,7 @@ frappe.ready(() => {
                 issuedOnLabel, scheduleLabel, questionsTitle, surveyQuestionText, ratingLabel,
                 selectRatingText, additionalDetailsTitle, damageLabel, noText, yesText,
                 damageDescLabel, damagePlaceholder, damageAttachmentLabel, attachText,
-                feedbackLabel, feedbackPlaceholder, submitText, submittingText,
-                veryPoorText, poorText, averageText, goodText, excellentText
+                feedbackLabel, feedbackPlaceholder, submitText
             ] = translations;
 
             // Escape selectedLanguage before including it in HTML attributes

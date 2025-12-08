@@ -1,4 +1,3 @@
-
 # Custom field imports
 from one_fm.custom.custom_field.additional_salary import get_additional_salary_custom_fields
 from one_fm.custom.custom_field.asset import get_asset_custom_fields
@@ -97,6 +96,7 @@ from one_fm.custom.custom_field.request_for_quotation_item import get_request_fo
 from one_fm.custom.custom_field.asset_movement_item import get_asset_movement_item_custom_fields
 from one_fm.custom.custom_field.quality_feedback_template import get_quality_feedback_template_custom_fields
 from one_fm.custom.custom_field.currency_exchange_settings import get_currency_exchange_settings_custom_fields
+from one_fm.custom.custom_field.workflow_document_state import get_workflow_document_state_custom_fields
 
 def get_custom_fields():
 	"""ONEFM specific custom fields that need to be added to the masters in ERPNext"""
@@ -198,5 +198,6 @@ def get_custom_fields():
 	custom_fields.update(get_asset_movement_item_custom_fields())
 	custom_fields.update(get_quality_feedback_template_custom_fields())
 	custom_fields.update(get_currency_exchange_settings_custom_fields())
+	custom_fields.update(get_workflow_document_state_custom_fields())
 
 	return custom_fields

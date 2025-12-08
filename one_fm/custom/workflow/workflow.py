@@ -50,7 +50,7 @@ def create_workflow(workflow:dict):
         return
 
     try:
-        state_values = [{"workflow_state_name": state["state"], "style": state.get("style", "Primary")} for state in workflow["states"]]
+        state_values = [{"workflow_state_name": state["state"], "style": state.get("style")} for state in workflow["states"]]
         create_workflow_state(state_values)
 
         actions = list(set([transition["action"] for transition in workflow["transitions"]]))
@@ -86,10 +86,6 @@ def create_workflow_state(states: list):
         try:
             if not frappe.db.exists("Workflow State", state["workflow_state_name"]):
                 frappe.get_doc({"doctype": "Workflow State", **state}).insert(ignore_permissions=True)
-            else:
-                workflow_state = frappe.get_doc("Workflow State", state["workflow_state_name"])
-                workflow_state.update(state)
-                workflow_state.save()
         except Exception as e:
             frappe.log_error(
                 title="Workflow State Error",

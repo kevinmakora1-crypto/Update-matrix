@@ -3475,7 +3475,7 @@ def get_current_shift(employee, attach_upcoming_shifts=False):
 
         # Find the current shift
         current_shift = None
-        is_shift_completed = False # Flag to check if employee has checked in and out for the shift
+        is_current_shift_completed = False # Flag to check if employee has checked in and out for the current shift
 
         for shift in shifts:
             # Check if the shift is currently active
@@ -3491,7 +3491,7 @@ def get_current_shift(employee, attach_upcoming_shifts=False):
                 # Temporary flag so callers can know completion state without DB write
                 has_in = any(log.log_type == "IN" for log in checkins)
                 has_out = any(log.log_type == "OUT" for log in checkins)
-                is_shift_completed = bool(has_in and has_out)
+                is_current_shift_completed = bool(has_in and has_out)
 
                 last_log = checkins[0]
                 # CASE 1: Last log is IN → Shift is active
@@ -3520,7 +3520,7 @@ def get_current_shift(employee, attach_upcoming_shifts=False):
             # Current shift found
             data = frappe.get_doc("Shift Assignment", current_shift.name)
 
-            data.is_completed = is_shift_completed # Carry over temporary completion flag (non-persistent)
+            data.is_completed = is_current_shift_completed # Carry over temporary completion flag (non-persistent)
 
             if current_shift.checkin_time > nowtime:
                 minutes = int((current_shift.checkin_time - nowtime).total_seconds() / 60)

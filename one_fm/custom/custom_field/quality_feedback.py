@@ -13,10 +13,9 @@ def get_quality_feedback_custom_fields():
 			},
 			{
 				"fieldname": "custom_feedback_schedule_stage",
-				"fieldtype": "Link",
+				"fieldtype": "Data",
 				"label": "Feedback Schedule Stage",
-				"options": "Feedback Schedule Item",
-				"reqd": 1,
+				"read_only": 1,
 				"insert_after": "custom_feedback_schedule"
 			},
 			{

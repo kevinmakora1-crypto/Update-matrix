@@ -326,8 +326,8 @@ def get_site_location(employee_id: str = None, shift: str = None,latitude: float
                 # Convert upcoming_shifts to dictionaries with log_type
                 if upcoming_shifts:
                     result['upcoming_shifts'] = [
-                        {**shift.as_dict(), 'log_type': shift.get_next_checkin_log_type(), 'is_completed': shift.get("is_completed", False)}
-                        for shift in upcoming_shifts
+                        {**upcoming_shift.as_dict(), 'log_type': upcoming_shift.get_next_checkin_log_type(), 'is_completed': upcoming_shift.get("is_completed", False)}
+                        for upcoming_shift in upcoming_shifts
                     ]
                 else:
                     result['upcoming_shifts'] = []

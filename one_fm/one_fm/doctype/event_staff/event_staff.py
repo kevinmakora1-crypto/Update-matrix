@@ -159,7 +159,40 @@ class EventStaff(Document):
 		)
 
 	def on_cancel(self):
-		self.delete_employee_schedules(today())
+		self.cleanup_employee_schedules_on_cancel()
+
+	def cleanup_employee_schedules_on_cancel(self):
+		"""
+		Deletes Employee Schedules linked to this cancelled Event Staff
+		only if they have no associated Shift Assignments.
+		"""
+		employee_schedules = get_existing_schedules(event_staff=self.name)
+		if not employee_schedules:
+			return
+
+		deleted_count = 0
+		preserved_count = 0
+
+		for schedule in employee_schedules:
+			schedule_name = schedule.get("name")
+			has_shift_assignment = frappe.db.exists("Shift Assignment", {"employee_schedule": schedule_name})
+			if not has_shift_assignment:
+				try:
+					frappe.delete_doc("Employee Schedule", schedule_name, ignore_permissions=True)
+					deleted_count += 1
+				except Exception as e:
+					frappe.log_error(
+						message=f"Failed to delete Employee Schedule {schedule_name} for Event Staff {self.name}: {frappe.get_traceback()}",
+						title="Event Staff Cancellation Error"
+					)
+			else:
+				preserved_count += 1
+
+		if deleted_count or preserved_count:
+			message = f"Event Staff cancelled. {deleted_count} unused Employee Schedule(s) deleted."
+			if preserved_count:
+				message += f" {preserved_count} schedule(s) preserved as they are linked to Shift Assignments."
+			frappe.msgprint(message)
 
 @frappe.whitelist()
 def get_conflicting_dates(employee, start_date, end_date):
@@ -170,13 +203,21 @@ def get_conflicting_dates(employee, start_date, end_date):
 
 	return [schedule.get("date").strftime("%Y-%m-%d") for schedule in conflicting_schedules]
 
-def get_existing_schedules(employee, start_date, end_date):
+def get_existing_schedules(employee=None, start_date=None, end_date=None, event_staff=None):
+	if not event_staff and not (employee and start_date and end_date):
+		return []
+
+	filters = {"docstatus": ["!=", 2]}
+
+	if event_staff:
+		filters["event_staff"] = event_staff
+		filters["is_event_schedule"] = 1
+	else:
+		filters["employee"] = employee
+		filters["date"] = ["between", [start_date, end_date]]
+
 	return frappe.get_all(
 		"Employee Schedule",
-		filters={
-			"employee": employee,
-			"docstatus": ("!=", 2),
-			"date": ["between", [start_date, end_date]]
-		},
+		filters=filters,
 		fields=["name", "date"]
 	)

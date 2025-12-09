@@ -1,9 +1,19 @@
 import frappe
 from frappe.utils import now_datetime
 
+# Patch to reprocess on_submit methods for Preparation document PRE-2025-12-03-1598657
+# Reason: This document requires reprocessing due to a previous processing error or missed workflow step.
 def execute():
     doc_name = "PRE-2025-12-03-1598657"
     
+    # Check if the document exists before processing
+    if not frappe.db.exists("Preparation", doc_name):
+        frappe.log_error(
+            f"Document {doc_name} does not exist.",
+            "Preparation Patch Error"
+        )
+        print(f"Document {doc_name} does not exist.")
+        return
     try:
         doc = frappe.get_doc("Preparation", doc_name)
         

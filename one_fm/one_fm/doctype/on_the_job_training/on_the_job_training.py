@@ -12,53 +12,36 @@ from frappe.utils import getdate, add_days, get_datetime
 
 class OntheJobTraining(Document):
     def validate(self):
+        self.validate_dates()
+
+    def validate_dates(self):
+        today = getdate(frappe.utils.nowdate())
+
+        if self.start_date and getdate(self.start_date) < today:
+            frappe.throw(_("The scheduled event Start date can not be a past date."))
+
+        if self.end_date and getdate(self.end_date) < today:
+            frappe.throw(_("The scheduled event End date can not be a past date."))
+
         if self.start_date and self.end_date:
             if getdate(self.end_date) < getdate(self.start_date):
-                frappe.throw(_("End Date cannot be before Start Date"))
+                frappe.throw(
+                    _("The scheduled end date must be later than Start Date. Please adjust the event details.")
+                )
     
     def on_update(self):
         if self.workflow_state == "Approved":
-            self.create_or_update_employee_schedules()
+            if self.has_value_changed("end_date"):
+                self.handle_end_date_change()
+            else:
+                self.create_or_update_employee_schedules()
     
     def create_or_update_employee_schedules(self):
         if not self.employee or not self.start_date:
             frappe.throw(_("Employee and Start Date are required"))
-        
+
         end_date = self.end_date if self.end_date else self.start_date
-        
-        current_date = getdate(self.start_date)
-        end_date = getdate(end_date)
-        
-        schedules_created = []
-        schedules_updated = []
-        
-        while current_date <= end_date:
-            result = self.get_or_create_employee_schedule(current_date)
-            
-            if result.get("is_new"):
-                schedules_created.append(result["name"])
-            else:
-                schedules_updated.append(result["name"])
-            
-            current_date = add_days(current_date, 1)
-        
-        if schedules_created:
-            frappe.msgprint(
-                _("Created {0} Employee Schedule(s): {1}").format(
-                    len(schedules_created),
-                    ", ".join(schedules_created)
-                ),
-                indicator="green"
-            )
-        
-        if schedules_updated:
-            frappe.msgprint(
-                _("Updated {0} Employee Schedule(s): {1}").format(
-                    len(schedules_updated),
-                    ", ".join(schedules_updated)
-                ),
-                indicator="blue"
-            )
+        self.create_schedules_in_range(self.start_date, end_date)
     
     def get_or_create_employee_schedule(self, schedule_date):
         existing_schedule = frappe.db.get_value(
@@ -114,3 +97,81 @@ class OntheJobTraining(Document):
             
             if self.end_time < self.start_time:
                 schedule_doc.end_datetime = schedule_doc.end_datetime + timedelta(days=1)
+
+    def handle_end_date_change(self):
+        old_doc = self.get_doc_before_save()
+        today = getdate(frappe.utils.nowdate())
+        end_date = getdate(self.end_date)
+        old_end_date = getdate(old_doc.end_date) if old_doc.end_date else today
+
+        if end_date < today:
+            frappe.throw(_("Past dates cannot be provided in End Date field."))
+
+        if end_date == today:
+            checkin_exists = frappe.db.exists(
+                "Employee Checkin",
+                {
+                    "employee": self.employee,
+                    "date": today,
+                },
+            )
+            if checkin_exists:
+                frappe.throw(
+                    _("Cannot update the record for {0}").format(self.employee)
+                )
+            else:
+                self.delete_schedules_from_date(today)
+                return
+
+        if end_date < old_end_date:
+            self.delete_schedules_from_date(add_days(end_date, 1))
+        elif end_date > old_end_date:
+            start_creation_date = add_days(old_end_date, 1)
+            self.create_schedules_in_range(start_creation_date, end_date)
+
+    def create_schedules_in_range(self, start_date, end_date):
+        current_date = getdate(start_date)
+        end_date = getdate(end_date)
+        schedules_created = []
+        schedules_updated = []
+
+        while current_date <= end_date:
+            result = self.get_or_create_employee_schedule(current_date)
+            if result.get("is_new"):
+                schedules_created.append(result["name"])
+            else:
+                schedules_updated.append(result["name"])
+            current_date = add_days(current_date, 1)
+
+        if schedules_created:
+            frappe.msgprint(
+                _("Created {0} Employee Schedule(s): {1}").format(
+                    len(schedules_created), ", ".join(schedules_created)
+                ),
+                indicator="green",
+            )
+        if schedules_updated:
+            frappe.msgprint(
+                _("Updated {0} Employee Schedule(s): {1}").format(
+                    len(schedules_updated), ", ".join(schedules_updated)
+                ),
+                indicator="blue",
+            )
+
+    def delete_schedules_from_date(self, start_date):
+        schedules_to_delete = frappe.get_all(
+            "Employee Schedule",
+            filters={
+                "employee": self.employee,
+                "on_the_job_training": self.name,
+                "date": [">=", start_date],
+            },
+            pluck="name",
+        )
+        if schedules_to_delete:
+            for doc in schedules_to_delete:
+                frappe.delete_doc("Employee Schedule", doc, ignore_permissions=True)
+            frappe.msgprint(
+                _("Deleted {0} Employee Schedule(s)").format(len(schedules_to_delete)),
+                indicator="red",
+            )

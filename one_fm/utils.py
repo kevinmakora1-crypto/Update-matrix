@@ -3465,7 +3465,7 @@ def custom_validate_interviewer(self):
 
 
 @frappe.whitelist()
-def get_current_shift(employee):
+def get_current_shift(employee, attach_upcoming_shifts=False):
     try:
         nowtime = now_datetime()
         sql = f"""
@@ -3484,63 +3484,108 @@ def get_current_shift(employee):
             """
 
         shifts = frappe.db.sql(sql, as_dict=1)
-        if shifts:
-             # Find the current shift
-            current_shift = None
-            for shift in shifts:
-                # Check if the shift is currently active
-                checkin = frappe.db.get_list(
-                    "Employee Checkin",
-                    filters={"employee": employee, "shift_assignment":shift.name },
-                    fields=["log_type", "time", "shift_assignment"],
-                    order_by="time desc",
-                    limit=1,
-                )
+        if not shifts:
+            return False
 
-                if checkin:
-                    last_log = checkin[0]
-                    # CASE 1: Last log is IN → Shift is active
-                    if last_log.log_type == "IN":
-                        if shift.checkin_time <= nowtime <= shift.checkout_time:
-                            current_shift = shift
-                            break
-                    # CASE 2: Last log is OUT → Only skip if within grace period
-                    elif last_log.log_type == "OUT":
-                        # Check if OUT happened during grace period
-                        if shift.actual_end_time <= last_log.time <= shift.checkout_time:
-                            continue  # Skip this shift, check next one
-                        else:
-                            current_shift = shift
-                            break
-                else:
-                    # Allow checkin if within window
+        # Find the current shift
+        current_shift = None
+        is_current_shift_completed = False # Flag to check if employee has checked in and out for the current shift
+
+        for shift in shifts:
+            # Check if the shift is currently active
+            checkins = frappe.db.get_all(
+                "Employee Checkin",
+                filters={"employee": employee, "shift_assignment": shift.name},
+                fields=["log_type", "time", "shift_assignment"],
+                order_by="time desc",
+                limit_page_length=0,
+            )
+
+            if checkins:
+                # Temporary flag so callers can know completion state without DB write
+                has_in = any(log.log_type == "IN" for log in checkins)
+                has_out = any(log.log_type == "OUT" for log in checkins)
+                is_current_shift_completed = bool(has_in and has_out)
+
+                last_log = checkins[0]
+                # CASE 1: Last log is IN → Shift is active
+                if last_log.log_type == "IN":
                     if shift.checkin_time <= nowtime <= shift.checkout_time:
                         current_shift = shift
                         break
+                # CASE 2: Last log is OUT → Only skip if within grace period
+                elif last_log.log_type == "OUT":
+                    # Check if OUT happened during grace period
+                    if shift.actual_end_time <= last_log.time <= shift.checkout_time:
+                        continue  # Skip this shift, check next one
+                    else:
+                        current_shift = shift
+                        break                
+            else:
+                # Allow checkin if within window
+                if shift.checkin_time <= nowtime <= shift.checkout_time:
+                    current_shift = shift
+                    break
 
+        # Prepare response
+        response = {}
+        
+        if current_shift:
+            # Current shift found
+            data = frappe.get_doc("Shift Assignment", current_shift.name)
 
-            if current_shift:
-                # If a current shift is found, return its details
-                data = frappe.get_doc("Shift Assignment", current_shift.name)
-                if current_shift.checkin_time > nowtime:
-                    minutes = int((current_shift.checkin_time - nowtime).total_seconds() / 60)
-                    return{"type": "Early", "data": data, "time": minutes}
-                elif current_shift.checkout_time < nowtime:
-                    minutes = int((nowtime - current_shift.checkout_time).total_seconds() / 60)
-                    return{"type": "Late", "data": data, "time": minutes}
-                elif current_shift.checkin_time <= nowtime <= current_shift.checkout_time:
-                    return {"type": "On Time", "data": data, "time": 0}
+            data.is_completed = is_current_shift_completed # Carry over temporary completion flag (non-persistent)
 
-             # If no active shift is found, check if the next shift is about to start
-            for shift in shifts:
-                if shift.checkin_time > nowtime:  # Next shift starting in the future
-                    data = frappe.get_doc("Shift Assignment", shift.name)
-                    minutes = int((shift.checkin_time - nowtime).total_seconds() / 60)
-                    return {"type": "Upcoming", "data": data, "time": minutes}
-            return False
+            if current_shift.checkin_time > nowtime:
+                minutes = int((current_shift.checkin_time - nowtime).total_seconds() / 60)
+                response = {"type": "Early", "data": data, "time": minutes}
+            elif current_shift.checkout_time < nowtime:
+                minutes = int((nowtime - current_shift.checkout_time).total_seconds() / 60)
+                response = {"type": "Late", "data": data, "time": minutes}
+            else:
+                response = {"type": "On Time", "data": data, "time": 0}
+            
+            # Attach upcoming shifts if requested
+            if attach_upcoming_shifts:
+                upcoming_shifts = [
+                    frappe.get_doc("Shift Assignment", shift.name)
+                    for shift in shifts
+                    if shift.name != current_shift.name
+                ]
+                response["upcoming_shifts"] = upcoming_shifts
+            
+            return response
+        
+        # No active shift found - find next upcoming shift
+        target_shift = None
+        for shift in shifts:
+            if shift.checkin_time > nowtime:  # Next shift starting in the future
+                target_shift = shift
+                break
+        
+        if not target_shift:
+            # If no upcoming shift found, use first shift as target
+            target_shift = shifts[0] if shifts else None
+        
+        if target_shift:
+            data = frappe.get_doc("Shift Assignment", target_shift.name)
+            minutes = int((target_shift.checkin_time - nowtime).total_seconds() / 60)
+            response = {"type": "Upcoming", "data": data, "time": minutes}
+            
+            # Attach upcoming shifts if requested
+            if attach_upcoming_shifts:
+                upcoming_shifts = [
+                    frappe.get_doc("Shift Assignment", shift.name)
+                    for shift in shifts
+                    if shift.name != target_shift.name
+                ]
+                response["upcoming_shifts"] = upcoming_shifts
+            
+            return response
+        
         return False
     except Exception as e:
-        frappe.log_error(message = frappe.get_traceback(), title= "Error while getting current shift")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while getting current shift")
         return False
 
 

@@ -1,14 +1,11 @@
 # Copyright (c) 2025, ONE FM and contributors
 # For license information, please see license.txt
-
 from datetime import timedelta
-
 import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import getdate, add_days, get_datetime
-
-
+from frappe.model.workflow import apply_workflow
 
 class OntheJobTraining(Document):
     def validate(self):
@@ -52,17 +49,32 @@ class OntheJobTraining(Document):
     def on_update(self):
         if self.workflow_state == "Approved":
             if self.has_value_changed("end_date"):
+                self.calculate_total_scheduled_ojt_days()
+
+                date_extended_flag = 1 if self.total_scheduled_ojt_days > self.client_agreed_ojt_days else 0
+
+                if self.date_extended != date_extended_flag:
+                    frappe.db.set_value(self.doctype, self.name, "date_extended", date_extended_flag, update_modified=False)
+                    self.date_extended = date_extended_flag
+
+                if self.date_extended:
+                    apply_workflow(self, "Submit for Review")
+                    frappe.msgprint(_("OJT extension submitted for approval."), indicator="blue")
+
                 self.handle_end_date_change()
             else:
                 self.create_or_update_employee_schedules()
-    
+
+    def on_update_after_submit(self):
+        self.on_update()
+
     def create_or_update_employee_schedules(self):
         if not self.employee or not self.start_date:
             frappe.throw(_("Employee and Start Date are required"))
 
         end_date = self.end_date if self.end_date else self.start_date
         self.create_schedules_in_range(self.start_date, end_date)
-    
+
     def get_or_create_employee_schedule(self, schedule_date):
         existing_schedule = frappe.db.get_value(
             "Employee Schedule",
@@ -72,13 +84,13 @@ class OntheJobTraining(Document):
             },
             "name"
         )
-        
+
         if existing_schedule:
             schedule_doc = frappe.get_doc("Employee Schedule", existing_schedule)
-            
+
             self.update_employee_schedule_fields(schedule_doc, schedule_date)
             schedule_doc.save(ignore_permissions=True)
-            
+
             return {
                 "name": existing_schedule,
                 "is_new": False
@@ -89,11 +101,11 @@ class OntheJobTraining(Document):
             schedule_doc.employee = self.employee
             schedule_doc.date = schedule_date
             schedule_doc.roster_type = "Basic"
-            
+
             self.update_employee_schedule_fields(schedule_doc, schedule_date)
-            
+
             schedule_doc.insert(ignore_permissions=True)
-            
+
             return {
                 "name": schedule_doc.name,
                 "is_new": True

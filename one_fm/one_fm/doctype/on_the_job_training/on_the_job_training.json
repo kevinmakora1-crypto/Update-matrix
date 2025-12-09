@@ -177,6 +177,7 @@
    "options": "On the Job Training"
   },
   {
+   "allow_on_submit": 1,
    "fetch_from": "operations_role.client_agreed_ojt_days",
    "fieldname": "client_agreed_ojt_days",
    "fieldtype": "Int",
@@ -184,6 +185,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "total_scheduled_ojt_days",
    "fieldtype": "Int",
    "label": "Total Scheduled OJT Days",
@@ -211,7 +213,7 @@
    "link_fieldname": "custom_on_the_job_training"
   }
  ],
- "modified": "2025-12-08 18:38:20.056977",
+ "modified": "2025-12-09 09:23:29.820940",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "On the Job Training",

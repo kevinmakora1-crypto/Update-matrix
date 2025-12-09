@@ -17,11 +17,33 @@ class JobApplicantOverride(JobApplicant):
 	def autoname(self):
 		pass
 
+	def update_applicant_name(self):
+		"""
+		Constructs full applicant name from individual name components.
+		Triggered before save when any name field changes.
+		"""
+		name_parts = [
+			self.one_fm_first_name,
+			self.one_fm_second_name,
+			self.one_fm_third_name,
+			self.one_fm_fourth_name,
+			self.one_fm_last_name
+		]
+
+		# Filter out None and empty strings, join with space
+		full_name = " ".join(filter(None, name_parts))
+
+		if full_name and full_name != self.applicant_name:
+			self.applicant_name = full_name
+			return True
+		return False
+
 	def validate(self):
 		self.set_hiring_method()
 		self.validate_duplicate_application()
 		super(JobApplicantOverride, self).validate()
 		self.validate_transfer_reminder_date()
+		self.update_applicant_name()
 		self.convert_name_to_title_case()
 		if self.status == 'Open' and self.one_fm_applicant_status == 'Shortlisted':
 			self.mark_as_shortlisted_first = True
@@ -144,13 +166,133 @@ class JobApplicantOverride(JobApplicant):
 				...
 
 	def convert_name_to_title_case(self):
-		name_fields = ['applicant_name', 'one_fm_first_name', 'one_fm_second_name', 'one_fm_third_name', 'one_fm_forth_name', 'one_fm_last_name']
+		name_fields = ['applicant_name', 'one_fm_first_name', 'one_fm_second_name', 'one_fm_third_name', 'one_fm_fourth_name', 'one_fm_last_name']
 		for name_attr in name_fields:
 			current_name = getattr(self, name_attr, '')
 			if current_name is not None:
 				setattr(self, name_attr, current_name.title())
 
+	def on_update(self):
+		self.sync_fields_to_linked_documents()
 
+	def sync_fields_to_linked_documents(self):
+		"""
+		Synchronizes specified fields from Job Applicant to linked Job Offers and Onboard Employee records.
+		Only updates documents that are not cancelled (docstatus < 2 for Job Offer, any for Onboard Employee).
+		"""
+		field_mappings = self.get_change_field_mapping()
+
+		# Check if any monitored field has changed
+		changed_fields = [field for field in field_mappings.keys() if self.has_value_changed(field)]
+
+		if not changed_fields:
+			return
+
+		# Sync to Job Offers
+		self.sync_to_job_offers(field_mappings, changed_fields)
+
+		# Sync to Onboard Employee
+		self.sync_to_onboard_employee(field_mappings, changed_fields)
+
+
+	def get_change_field_mapping(self):
+		# Define field mappings: Job Applicant field -> (Job Offer field, Onboard Employee field)
+		return {
+			"one_fm_first_name_in_arabic": ("", "first_name_in_arabic"),
+			"one_fm_second_name_in_arabic": ("", "second_name_in_arabic"),
+			"one_fm_third_name_in_arabic": ("", "third_name_in_arabic"),
+			"one_fm_fourth_name_in_arabic": ("", "fourth_name_in_arabic"),
+			"one_fm_last_name_in_arabic": ("", "last_name_in_arabic"),
+			"applicant_name": ("applicant_name", "employee_name"),
+			"one_fm_gender": ("gender", "gender"),
+			"one_fm_date_of_birth": ("date_of_birth", "date_of_birth"),
+			"one_fm_nationality": ("nationality", "nationality"),
+			"one_fm_passport_number": ("passport_number", "passport_number"),
+			"one_fm_passport_issued": ("passport_issued", "passport_issued"),
+			"one_fm_passport_expire": ("passport_expire", "passport_expire")
+		}
+
+	def sync_to_job_offers(self, field_mappings, changed_fields):
+		"""Sync changes to Job Offer documents"""
+		job_offers = self.get_linked_job_offers()
+		name_fields = ["applicant_name", "one_fm_first_name_in_arabic", "one_fm_second_name_in_arabic", "one_fm_third_name_in_arabic", "one_fm_fourth_name_in_arabic", "one_fm_last_name_in_arabic"]
+
+		for job_offer_name in job_offers:
+			try:
+				job_offer = frappe.get_doc("Job Offer", job_offer_name)
+				updated = False
+				if "applicant_name" in changed_fields:
+					if job_offer.applicant_name != self.applicant_name:
+						job_offer.applicant_name = self.applicant_name
+						updated = True
+
+				for job_applicant_field in changed_fields:
+					jo_field = field_mappings[job_applicant_field][0]
+					if job_applicant_field not in name_fields:
+						if hasattr(job_offer, jo_field):
+							new_value = self.get(job_applicant_field)
+							if job_offer.get(jo_field) != new_value:
+								job_offer.set(jo_field, new_value)
+								updated = True
+
+				if updated:
+					job_offer.flags.ignore_validate_update_after_submit = True
+					job_offer.flags.ignore_mandatory = True
+					job_offer.save(ignore_permissions=True)
+					frappe.db.commit()
+
+			except Exception as e:
+				frappe.log_error(
+					title=f"Failed to sync to Job Offer {job_offer_name}",
+					message=f"Error: {str(e)}\n\n{frappe.get_traceback()}"
+				)
+
+	def get_linked_job_offers(self):
+		return frappe.get_all(
+			"Job Offer",
+			filters={
+				"job_applicant": self.name,
+				"docstatus": ["<", 2]  # Draft or Submitted, not Cancelled
+			},
+			pluck="name"
+		)
+
+	def sync_to_onboard_employee(self, field_mappings, changed_fields):
+		"""Sync changes to Onboard Employee documents"""
+		onboard_employees = self.get_linked_onboard_employees()
+
+		for onboard_emp_name in onboard_employees:
+			try:
+				onboard_emp = frappe.get_doc("Onboard Employee", onboard_emp_name)
+				updated = False
+
+				for job_applicant_field in changed_fields:
+					oe_field = field_mappings[job_applicant_field][1]
+					if hasattr(onboard_emp, oe_field):
+						new_value = self.get(job_applicant_field)
+						if onboard_emp.get(oe_field) != new_value:
+							onboard_emp.set(oe_field, new_value)
+							updated = True
+
+				if updated:
+					onboard_emp.flags.ignore_validate_update_after_submit = True
+					onboard_emp.flags.ignore_mandatory = True
+					onboard_emp.save(ignore_permissions=True)
+					frappe.db.commit()
+
+			except Exception as e:
+				frappe.log_error(
+					title=f"Failed to sync to Onboard Employee {onboard_emp_name}",
+					message=f"Error: {str(e)}\n\n{frappe.get_traceback()}"
+				)
+	def get_linked_onboard_employees(self):
+		return frappe.get_all(
+			"Onboard Employee",
+			filters={
+				"job_applicant": self.name
+			},
+			pluck="name"
+		)
 
 def notify_hr_manager_about_local_transfer() -> None:
 	if production_domain() and is_scheduler_emails_enabled():

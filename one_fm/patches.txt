@@ -259,3 +259,4 @@ one_fm.patches.v15_0.add_assignment_rule_for_hd_ticket_process_task_based #1
 one_fm.patches.v15_0.add_quality_feedback_custom_field
 one_fm.patches.v15_0.add_quality_feedback_property_setter
 one_fm.patches.v15_0.rename_warehouse_fields_in_rfm
+one_fm.patches.v15_0.rename_job_applicant_forth_name #3

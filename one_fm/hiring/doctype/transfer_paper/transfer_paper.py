@@ -90,29 +90,29 @@ class TransferPaper(Document):
         """This method arranges the names in the print format based on what is filled in job applicant doctype"""
         if self.applicant:
             applicant = frappe.get_doc('Job Applicant',self.applicant)
-            if applicant.one_fm_first_name_in_arabic and not applicant.one_fm_second_name_in_arabic and not applicant.one_fm_third_name_in_arabic and not applicant.one_fm_forth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
+            if applicant.one_fm_first_name_in_arabic and not applicant.one_fm_second_name_in_arabic and not applicant.one_fm_third_name_in_arabic and not applicant.one_fm_fourth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
                 self.first_name_in_arabic = applicant.one_fm_first_name_in_arabic
                 self.second_name_in_arabic = applicant.one_fm_last_name_in_arabic
                 self.third_name_in_arabic = ''
-                self.forth_name_in_arabic = ''
+                self.fourth_name_in_arabic = ''
                 self.last_name_in_arabic = ''
-            elif applicant.one_fm_first_name_in_arabic and applicant.one_fm_second_name_in_arabic and not applicant.one_fm_third_name_in_arabic and not applicant.one_fm_forth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
+            elif applicant.one_fm_first_name_in_arabic and applicant.one_fm_second_name_in_arabic and not applicant.one_fm_third_name_in_arabic and not applicant.one_fm_fourth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
                 self.first_name_in_arabic = applicant.one_fm_first_name_in_arabic
                 self.second_name_in_arabic = applicant.one_fm_second_name_in_arabic
                 self.third_name_in_arabic = applicant.one_fm_last_name_in_arabic
-                self.forth_name_in_arabic = ''
+                self.fourth_name_in_arabic = ''
                 self.last_name_in_arabic = ''
-            elif applicant.one_fm_first_name_in_arabic and applicant.one_fm_second_name_in_arabic and applicant.one_fm_third_name_in_arabic and not applicant.one_fm_forth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
+            elif applicant.one_fm_first_name_in_arabic and applicant.one_fm_second_name_in_arabic and applicant.one_fm_third_name_in_arabic and not applicant.one_fm_fourth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
                 self.first_name_in_arabic = applicant.one_fm_first_name_in_arabic
                 self.second_name_in_arabic = applicant.one_fm_second_name_in_arabic
                 self.third_name_in_arabic = applicant.one_fm_third_name_in_arabic
-                self.forth_name_in_arabic = applicant.one_fm_last_name_in_arabic
+                self.fourth_name_in_arabic = applicant.one_fm_last_name_in_arabic
                 self.last_name_in_arabic = ''
-            elif applicant.one_fm_first_name_in_arabic and applicant.one_fm_second_name_in_arabic and not applicant.one_fm_third_name_in_arabic and applicant.one_fm_forth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
+            elif applicant.one_fm_first_name_in_arabic and applicant.one_fm_second_name_in_arabic and not applicant.one_fm_third_name_in_arabic and applicant.one_fm_fourth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
                 self.first_name_in_arabic = applicant.one_fm_first_name_in_arabic
                 self.second_name_in_arabic = applicant.one_fm_second_name_in_arabic
-                self.third_name_in_arabic = applicant.one_fm_forth_name_in_arabic
-                self.forth_name_in_arabic = applicant.one_fm_last_name_in_arabic
+                self.third_name_in_arabic = applicant.one_fm_fourth_name_in_arabic
+                self.fourth_name_in_arabic = applicant.one_fm_last_name_in_arabic
                 self.last_name_in_arabic = ''
 
     def check_workflow_states(self):

@@ -21,9 +21,9 @@ frappe.ui.form.on("Event Staff", {
 					let message = "";
 
 					if (conflicting_dates.length === total_days) {
-						message = __("Warning: Do you want to Replace the Existing Employee Schedule?");
+						message = __("Do you want to Replace the Existing Employee Schedule?");
 					} else {
-						message = __("Warning: Employee Schedule exists for {0} out of {1} days. <br>Details: {2}. <br>Do you want to Replace the Existing Employee Schedules for conflicting days?", [conflicting_dates.length, total_days, conflicting_dates.join(", ")]);
+						message = __("Employee Schedule exists for {0} out of {1} days. <br>Details: {2}. <br>Do you want to Replace the Existing Employee Schedules for conflicting days?", [conflicting_dates.length, total_days, conflicting_dates.join(", ")]);
 					}
 
 					frappe.confirm(

@@ -341,7 +341,7 @@ def get_assigned_shifts(employee_id=None, project=None, site=None):
 				return get_supervisor_operations_shifts()
 			return get_supervisor_operations_shifts(project=project, site=site)
 		elif "Shift Supervisor" in user_roles:
-			return get_supervisor_operations_shifts(employee_id=employee_id, project=project, site=site)
+			return get_supervisor_operations_shifts(supervisor=employee_id, project=project, site=site)
 		return []
 
 	except Exception as e:

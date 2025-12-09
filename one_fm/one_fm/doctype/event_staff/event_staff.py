@@ -207,7 +207,7 @@ def get_existing_schedules(employee=None, start_date=None, end_date=None, event_
 	if not event_staff and not (employee and start_date and end_date):
 		return []
 
-	filters = {"docstatus": ["!=", 2]}
+	filters = {"docstatus": 1}
 
 	if event_staff:
 		filters["event_staff"] = event_staff

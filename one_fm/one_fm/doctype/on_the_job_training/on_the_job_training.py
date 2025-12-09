@@ -13,6 +13,26 @@ from frappe.utils import getdate, add_days, get_datetime
 class OntheJobTraining(Document):
     def validate(self):
         self.validate_dates()
+        self.validate_extension_request()
+        self.calculate_total_scheduled_ojt_days()
+
+    def validate_extension_request(self):
+        if self.is_extension_request and self.original_ojt_request:
+            original_ojt = frappe.get_doc("On the Job Training", self.original_ojt_request)
+            if not original_ojt.end_date:
+                frappe.throw(_("Original OJT Request must have an End Date."))
+
+            if getdate(self.start_date) <= getdate(original_ojt.end_date):
+                frappe.throw(_("Extension Start Date must be after the End Date of the Original OJT Request."))
+
+    def calculate_total_scheduled_ojt_days(self):
+        if self.start_date and self.end_date:
+            days = (getdate(self.end_date) - getdate(self.start_date)).days + 1
+            if self.is_extension_request and self.original_ojt_request:
+                original_ojt_days = frappe.db.get_value("On the Job Training", self.original_ojt_request, "total_scheduled_ojt_days")
+                self.total_scheduled_ojt_days = original_ojt_days + days
+            else:
+                self.total_scheduled_ojt_days = days
 
     def validate_dates(self):
         today = getdate(frappe.utils.nowdate())
@@ -175,3 +195,27 @@ class OntheJobTraining(Document):
                 _("Deleted {0} Employee Schedule(s)").format(len(schedules_to_delete)),
                 indicator="red",
             )
+@frappe.whitelist()
+def create_ojt_extension(source_name, target_doc=None):
+	source_doc = frappe.get_doc("On the Job Training", source_name)
+
+	doc = frappe.new_doc("On the Job Training")
+
+	doc.is_extension_request = 1
+	doc.original_ojt_request = source_doc.name
+
+	doc.on_the_job_training_name = source_doc.on_the_job_training_name
+	doc.employee = source_doc.employee
+	doc.employee_name = source_doc.employee_name
+	doc.employee_id = source_doc.employee_id
+	doc.operations_role = source_doc.operations_role
+	doc.operations_shift = source_doc.operations_shift
+	doc.operations_site = source_doc.operations_site
+	doc.operations_supervisor = source_doc.operations_supervisor
+	doc.project = source_doc.project
+	doc.operations_manager = source_doc.operations_manager
+	doc.mentor = source_doc.mentor
+	doc.mentor_name = source_doc.mentor_name
+	doc.client_agreed_ojt_days = source_doc.client_agreed_ojt_days
+
+	return doc

@@ -2,7 +2,7 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("On the Job Training", {
-	refresh(frm) {
+    refresh(frm) {
         if (frm.doc.docstatus === 1 && !frm.doc.is_extension_request) {
             frm.add_custom_button(__("OJT Extension"), function() {
                 frappe.model.open_mapped_doc({
@@ -11,5 +11,5 @@ frappe.ui.form.on("On the Job Training", {
                 })
             });
         }
-	},
+    },
 });

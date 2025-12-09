@@ -35,10 +35,10 @@ class OntheJobTraining(Document):
         today = getdate(frappe.utils.nowdate())
 
         if self.start_date and getdate(self.start_date) < today:
-            frappe.throw(_("The scheduled event Start date can not be a past date."))
+            frappe.throw(_("The scheduled event Start date cannot be a past date."))
 
         if self.end_date and getdate(self.end_date) < today:
-            frappe.throw(_("The scheduled event End date can not be a past date."))
+            frappe.throw(_("The scheduled event End date cannot be a past date."))
 
         if self.start_date and self.end_date:
             if getdate(self.end_date) < getdate(self.start_date):
@@ -148,9 +148,7 @@ class OntheJobTraining(Document):
                 },
             )
             if checkin_exists:
-                frappe.throw(
-                    _("Cannot update the record for {0}").format(self.employee)
-                )
+                frappe.throw(_("Cannot update OJT end date for {0} because an Employee Checkin exists for today").format(self.employee))
             else:
                 self.delete_schedules_from_date(today)
                 return
@@ -207,27 +205,28 @@ class OntheJobTraining(Document):
                 _("Deleted {0} Employee Schedule(s)").format(len(schedules_to_delete)),
                 indicator="red",
             )
+
 @frappe.whitelist()
 def create_ojt_extension(source_name, target_doc=None):
-	source_doc = frappe.get_doc("On the Job Training", source_name)
+    source_doc = frappe.get_doc("On the Job Training", source_name)
 
-	doc = frappe.new_doc("On the Job Training")
+    doc = frappe.new_doc("On the Job Training")
 
-	doc.is_extension_request = 1
-	doc.original_ojt_request = source_doc.name
+    doc.is_extension_request = 1
+    doc.original_ojt_request = source_doc.name
 
-	doc.on_the_job_training_name = source_doc.on_the_job_training_name
-	doc.employee = source_doc.employee
-	doc.employee_name = source_doc.employee_name
-	doc.employee_id = source_doc.employee_id
-	doc.operations_role = source_doc.operations_role
-	doc.operations_shift = source_doc.operations_shift
-	doc.operations_site = source_doc.operations_site
-	doc.operations_supervisor = source_doc.operations_supervisor
-	doc.project = source_doc.project
-	doc.operations_manager = source_doc.operations_manager
-	doc.mentor = source_doc.mentor
-	doc.mentor_name = source_doc.mentor_name
-	doc.client_agreed_ojt_days = source_doc.client_agreed_ojt_days
+    doc.on_the_job_training_name = source_doc.on_the_job_training_name
+    doc.employee = source_doc.employee
+    doc.employee_name = source_doc.employee_name
+    doc.employee_id = source_doc.employee_id
+    doc.operations_role = source_doc.operations_role
+    doc.operations_shift = source_doc.operations_shift
+    doc.operations_site = source_doc.operations_site
+    doc.operations_supervisor = source_doc.operations_supervisor
+    doc.project = source_doc.project
+    doc.operations_manager = source_doc.operations_manager
+    doc.mentor = source_doc.mentor
+    doc.mentor_name = source_doc.mentor_name
+    doc.client_agreed_ojt_days = source_doc.client_agreed_ojt_days
 
-	return doc
+    return doc

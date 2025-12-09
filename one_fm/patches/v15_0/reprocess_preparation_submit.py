@@ -6,6 +6,9 @@ from frappe.utils import now_datetime
 def execute():
     doc_name = "PRE-2025-12-03-1598657"
     
+    if not frappe.db.exists("Preparation", doc_name):
+        print(f"Document {doc_name} does not exist. Skipping patch.")
+        return
     # Check if the document exists before processing
     if not frappe.db.exists("Preparation", doc_name):
         frappe.log_error(

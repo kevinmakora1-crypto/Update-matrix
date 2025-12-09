@@ -124,7 +124,7 @@
    "fieldtype": "Select",
    "label": "Justification",
    "mandatory_depends_on": "eval:doc.attendance_status=='Present'",
-   "options": "\nMobile isn't supporting the app\nOut-of-site location\nUser not assigned to shift\nEmployees insist that he/she did check in or out\nChecked in and out at the same time\nForgot to check in\nOther\nApproved by Administrator"
+   "options": "\nMobile isn't supporting the app\nOut-of-site location\nUser not assigned to shift\nEmployees insist that he/she did check in or out\nChecked in and out at the same time\nForgot to check in\nOther\nApproved by Administrator\nApplication is missing geolocation permissions"
   },
   {
    "fieldname": "attendance_status",
@@ -346,12 +346,12 @@
    "mandatory_depends_on": "eval:doc.justification == \"Mobile isn't supporting the app\""
   },
   {
-   "depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\"].includes(doc.justification)",
+   "depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\", \"Application is missing geolocation permissions\"].includes(doc.justification)",
    "description": "Upload screenshot with the same issue!",
    "fieldname": "screenshot",
    "fieldtype": "Attach",
    "label": "Screenshot",
-   "mandatory_depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\"].includes(doc.justification)"
+   "mandatory_depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\", \"Application is missing geolocation permissions\"].includes(doc.justification)"
   },
   {
    "depends_on": "eval:doc.justification == \"Other\"",
@@ -411,7 +411,7 @@
    "link_fieldname": "reference_docname"
   }
  ],
- "modified": "2025-09-08 16:01:31.309905",
+ "modified": "2025-12-08 10:24:01.685117",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Attendance Check",

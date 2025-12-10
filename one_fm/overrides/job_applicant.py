@@ -180,72 +180,38 @@ class JobApplicantOverride(JobApplicant):
 		Synchronizes specified fields from Job Applicant to linked Job Offers and Onboard Employee records.
 		Only updates documents that are not cancelled (docstatus < 2 for Job Offer, any for Onboard Employee).
 		"""
-		field_mappings = self.get_change_field_mapping()
-
-		# Check if any monitored field has changed
-		changed_fields = [field for field in field_mappings.keys() if self.has_value_changed(field)]
-
-		if not changed_fields:
-			return
-
-		# Sync to Job Offers
-		self.sync_to_job_offers(field_mappings, changed_fields)
-
-		# Sync to Onboard Employee
-		self.sync_to_onboard_employee(field_mappings, changed_fields)
-
-
-	def get_change_field_mapping(self):
-		# Define field mappings: Job Applicant field -> (Job Offer field, Onboard Employee field)
-		return {
-			"one_fm_first_name_in_arabic": ("", "first_name_in_arabic"),
-			"one_fm_second_name_in_arabic": ("", "second_name_in_arabic"),
-			"one_fm_third_name_in_arabic": ("", "third_name_in_arabic"),
-			"one_fm_fourth_name_in_arabic": ("", "fourth_name_in_arabic"),
-			"one_fm_last_name_in_arabic": ("", "last_name_in_arabic"),
-			"applicant_name": ("applicant_name", "employee_name"),
-			"one_fm_gender": ("gender", "gender"),
-			"one_fm_date_of_birth": ("date_of_birth", "date_of_birth"),
-			"one_fm_nationality": ("nationality", "nationality"),
-			"one_fm_passport_number": ("passport_number", "passport_number"),
-			"one_fm_passport_issued": ("passport_issued", "passport_issued"),
-			"one_fm_passport_expire": ("passport_expire", "passport_expire")
+		job_offer_fields = {
+			"applicant_name": "applicant_name",
+			"one_fm_nationality": "nationality"
 		}
+		job_offer_changed_fields = [field for field in job_offer_fields.keys() if self.has_value_changed(field)]
 
-	def sync_to_job_offers(self, field_mappings, changed_fields):
-		"""Sync changes to Job Offer documents"""
-		job_offers = self.get_linked_job_offers()
-		name_fields = ["applicant_name", "one_fm_first_name_in_arabic", "one_fm_second_name_in_arabic", "one_fm_third_name_in_arabic", "one_fm_fourth_name_in_arabic", "one_fm_last_name_in_arabic"]
+		onboard_employee_field_mapping = self.get_onboard_employee_field_mapping()
+		onboard_employee_changed_fields = [field for field in onboard_employee_field_mapping.keys() if self.has_value_changed(field)]
 
-		for job_offer_name in job_offers:
-			try:
-				job_offer = frappe.get_doc("Job Offer", job_offer_name)
-				updated = False
-				if "applicant_name" in changed_fields:
-					if job_offer.applicant_name != self.applicant_name:
-						job_offer.applicant_name = self.applicant_name
-						updated = True
+		if job_offer_changed_fields:
+			job_offers = self.get_linked_job_offers()
+			self.update_linked_documents(job_offers, "Job Offer", job_offer_fields, job_offer_changed_fields)
 
-				for job_applicant_field in changed_fields:
-					jo_field = field_mappings[job_applicant_field][0]
-					if job_applicant_field not in name_fields:
-						if hasattr(job_offer, jo_field):
-							new_value = self.get(job_applicant_field)
-							if job_offer.get(jo_field) != new_value:
-								job_offer.set(jo_field, new_value)
-								updated = True
+		if onboard_employee_changed_fields:
+			onboard_employees = self.get_linked_onboard_employees()
+			self.update_linked_documents(onboard_employees, "Onboard Employee", onboard_employee_field_mapping, onboard_employee_changed_fields)
 
-				if updated:
-					job_offer.flags.ignore_validate_update_after_submit = True
-					job_offer.flags.ignore_mandatory = True
-					job_offer.save(ignore_permissions=True)
-					frappe.db.commit()
-
-			except Exception as e:
-				frappe.log_error(
-					title=f"Failed to sync to Job Offer {job_offer_name}",
-					message=f"Error: {str(e)}\n\n{frappe.get_traceback()}"
-				)
+	def get_onboard_employee_field_mapping(self):
+		return {
+			"one_fm_first_name_in_arabic": "first_name_in_arabic",
+			"one_fm_second_name_in_arabic": "second_name_in_arabic",
+			"one_fm_third_name_in_arabic": "third_name_in_arabic",
+			"one_fm_fourth_name_in_arabic": "fourth_name_in_arabic",
+			"one_fm_last_name_in_arabic": "last_name_in_arabic",
+			"applicant_name": "employee_name",
+			"one_fm_gender": "gender",
+			"one_fm_date_of_birth": "date_of_birth",
+			"one_fm_nationality": "nationality",
+			"one_fm_passport_number": "passport_number",
+			"one_fm_passport_issued": "passport_issued",
+			"one_fm_passport_expire": "passport_expire"
+		}
 
 	def get_linked_job_offers(self):
 		return frappe.get_all(
@@ -256,6 +222,31 @@ class JobApplicantOverride(JobApplicant):
 			},
 			pluck="name"
 		)
+
+	def update_linked_documents(self, linked_docs, linked_doctype, field_mappings, changed_fields):
+		for linked_doc_name in linked_docs:
+			try:
+				linked_doc = frappe.get_doc(linked_doctype, linked_doc_name)
+				updated = False
+				for job_applicant_field in changed_fields:
+					linked_doc_field = field_mappings[job_applicant_field]
+					if hasattr(linked_doc, linked_doc_field):
+						new_value = self.get(job_applicant_field)
+						if linked_doc.get(linked_doc_field) != new_value:
+							linked_doc.set(linked_doc_field, new_value)
+							updated = True
+
+				if updated:
+					linked_doc.flags.ignore_validate_update_after_submit = True
+					linked_doc.flags.ignore_mandatory = True
+					linked_doc.save(ignore_permissions=True)
+					frappe.db.commit()
+
+			except Exception as e:
+				frappe.log_error(
+					title=f"Failed to sync to {linked_doctype} {linked_doc_name}",
+					message=f"Error: {str(e)}\n\n{frappe.get_traceback()}"
+				)
 
 	def sync_to_onboard_employee(self, field_mappings, changed_fields):
 		"""Sync changes to Onboard Employee documents"""

@@ -211,7 +211,7 @@ def get_all_languages():
         language_names = []
         for row in language_rows:
             # Handle both dict and object access patterns
-            language_name = row.language if hasattr(row, "language") else row.get("language") if isinstance(row, dict) else None
+            language_name = row.get('language') if isinstance(row, dict) else getattr(row, 'language', None)
             if language_name:
                 language_names.append(language_name)
         

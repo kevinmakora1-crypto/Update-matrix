@@ -58,25 +58,27 @@ class GenerateContractComplianceChecker:
 		if not operations_roles:
 			return 0
 		
+		# Attendance: count all days up until day_before_yesterday, within start_date and end_date
+		attendance_count = 0
 		if self.day_before_yesterday >= start_date:
+			attendance_end_date = min(self.day_before_yesterday, end_date)
 			attendance_count = frappe.db.count('Attendance', {
 				'roster_type': "Basic",
 				"status": "Present",
-				"attendance_date": ["between", [start_date, self.day_before_yesterday]],
+				"attendance_date": ["between", [start_date, attendance_end_date]],
 				"operations_role": ["in", operations_roles]
 			})
-		else:
-			attendance_count = 0
 			
+		# Employee Schedule: count days from yesterday and above, within start_date and end_date
+		schedule_count = 0
 		if self.yesterday <= end_date:
+			schedule_start_date = max(self.yesterday, start_date)
 			schedule_count = frappe.db.count('Employee Schedule', {
 				'roster_type': "Basic",
 				"employee_availability": "Working",
-				"date": ["between", [self.yesterday, end_date]],
+				"date": ["between", [schedule_start_date, end_date]],
 				"operations_role": ["in", operations_roles]
 			})
-		else:
-			schedule_count = 0
 
 		return attendance_count + schedule_count
 	

@@ -212,7 +212,7 @@ def upload_image():
                         if i==2:
                             frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_third_name', j.title())
                         if i==3:
-                            frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_forth_name', j.title())
+                            frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_fourth_name', j.title())
             response_data['passport']=result_dict
             # return frappe._dict()
         except Exception as e:
@@ -419,7 +419,7 @@ def update_job_applicant():
         data = frappe.form_dict
 
         # All fields for name
-        name_fields = ['applicant_name', 'one_fm_first_name', 'one_fm_second_name', 'one_fm_third_name', 'one_fm_forth_name', 'one_fm_last_name']
+        name_fields = ['applicant_name', 'one_fm_first_name', 'one_fm_second_name', 'one_fm_third_name', 'one_fm_fourth_name', 'one_fm_last_name']
 
         # If updated field is a name field then convert it into title case
         if data.field in name_fields:

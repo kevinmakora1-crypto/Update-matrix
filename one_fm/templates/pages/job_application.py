@@ -122,7 +122,7 @@ def create_job_applicant_from_job_portal(applicant_name, country, applicant_emai
         job_applicant.one_fm_third_name = third_name
 
 
-        job_applicant.one_fm_forth_name = fourth_name
+        job_applicant.one_fm_fourth_name = fourth_name
 
 
         job_applicant.resume_attachment = resume_attachment_url

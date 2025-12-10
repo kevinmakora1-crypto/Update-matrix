@@ -241,7 +241,7 @@ def has_day_off(employee,date):
 
 
 @frappe.whitelist()
-def get_site_location(employee_id: str = None, latitude: float = None, longitude: float = None) -> dict:
+def get_site_location(employee_id: str = None, shift: str = None,latitude: float = None, longitude: float = None) -> dict:
     try:
         if not employee_id:
             return response("Bad Request", 400, None, "Employee ID required.")
@@ -280,21 +280,25 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
         if medical_appointment:
             return response("Resource Not Found", 404, None, "You have a medical appointment. See you soon!")
 
-        shift = False
-        shift_details = get_current_shift(employee.name)
-        if shift_details:
-            if shift_details['type'] == "Early":
-                # check if user can checkin with the correct time
-                return response("Resource Not Found", 404, None,
-                                f"You are checking in too early. Check-in is allowed in {shift_details['time']} minutes.")
-            elif shift_details['type'] == "Late":
-                return response("Resource Not Found", 404, None,
-                                f"You are checking out too late. Check-out was allowed until {shift_details['time']} minutes ago.")
-            elif shift_details['type'] == "Upcoming":
-                return response("Resource Not Found", 404, None,
-                                f"Check-in for your shift starts in {shift_details['time']} minutes.")
-            elif shift_details['type'] == "On Time":
-                shift = shift_details['data']  # Return the object of Shift Assignment
+        shift = frappe.get_doc("Shift Assignment", shift) if shift else None
+        upcoming_shifts = []
+
+        if not shift:
+            shift_details = get_current_shift(employee.name, attach_upcoming_shifts=True)
+            if shift_details:
+                if shift_details['type'] == "Early":
+                    # check if user can checkin with the correct time
+                    return response("Resource Not Found", 404, None,
+                                    f"You are checking in too early. Check-in is allowed in {shift_details['time']} minutes.")
+                elif shift_details['type'] == "Late":
+                    return response("Resource Not Found", 404, None,
+                                    f"You are checking out too late. Check-out was allowed until {shift_details['time']} minutes ago.")
+                elif shift_details['type'] == "Upcoming":
+                    return response("Resource Not Found", 404, None,
+                                    f"Check-in for your shift starts in {shift_details['time']} minutes.")
+                elif shift_details['type'] == "On Time":
+                    shift = shift_details['data']  # Return the object of Shift Assignment
+                    upcoming_shifts = shift_details['upcoming_shifts']
 
         date = cstr(getdate())
 
@@ -319,6 +323,14 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
             if location:
                 result = location
                 result['user_within_geofence_radius'] = True
+                # Convert upcoming_shifts to dictionaries with log_type
+                if upcoming_shifts:
+                    result['upcoming_shifts'] = [
+                        {**upcoming_shift.as_dict(), 'log_type': upcoming_shift.get_next_checkin_log_type(), 'is_completed': upcoming_shift.get("is_completed", False)}
+                        for upcoming_shift in upcoming_shifts
+                    ]
+                else:
+                    result['upcoming_shifts'] = []
 
                 distance = float(haversine(result.latitude, result.longitude, latitude, longitude))
                 if distance > float(result.geofence_radius):
@@ -326,7 +338,7 @@ def get_site_location(employee_id: str = None, latitude: float = None, longitude
 
                 result['site_name'] = site
                 if shift:
-                    result['shift'] = shift
+                    result['shift'] = {**shift.as_dict(), 'log_type': log_type, 'is_completed': shift.get("is_completed", False)}
 
                 # log to checkin radius log
                 data = result.copy()

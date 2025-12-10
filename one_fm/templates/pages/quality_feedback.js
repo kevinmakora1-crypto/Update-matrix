@@ -7,6 +7,7 @@ frappe.ready(() => {
     let languages = [];
     let formSubmitted = false; // Track if form was submitted
     let currentLoaderTimeouts = []; // Store all setTimeout IDs for cleanup
+    const rtlLanguages = ['ar'];
 
     // Show loading at the start
     showLoader('Initializing...');
@@ -335,8 +336,17 @@ frappe.ready(() => {
                   .replace(/"/g, '&quot;')
                   .replace(/'/g, '&#39;');
             }
+            
+            // Determine text direction based on selected language
+            const textDirection = rtlLanguages.includes(selectedLanguage) ? 'rtl' : 'ltr';
+            const textAlign = rtlLanguages.includes(selectedLanguage) ? 'right' : 'left';
+            
+            // Set direction on container
+            container.setAttribute('dir', textDirection);
+            container.style.textAlign = textAlign;
+            
             container.innerHTML = `
-            <div class="quality-feedback-form" data-lang="${escapeAttribute(selectedLanguage)}">
+            <div class="quality-feedback-form" data-lang="${escapeAttribute(selectedLanguage)}" dir="${textDirection}" style="text-align: ${textAlign};">
                 <div class="form-header-controls">
                     <div class="language-controls">
                         <button class="globe-icon-btn" id="globe-icon" title="Change Language">

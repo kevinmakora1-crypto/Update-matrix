@@ -4526,7 +4526,6 @@ def send_push_notification(employee_id, title, body, data=None):
     except Exception as e:
         frappe.log_error(message = frappe.get_traceback(), title = "Error in sending push notification")
         return False
-    
 
 def get_field_with_label(doctype, field_name, value):
     """
@@ -4551,3 +4550,57 @@ def get_field_with_label(doctype, field_name, value):
         "name": label,
         "value": value
     }
+
+def create_process_task(process_name, erp_document, task_description, employee, process_owner=None, business_analyst=None, task_type="Repetitive", is_routine_task=0):
+    create_process_if_not_exists(process_name, process_owner, business_analyst)
+    task_type = get_task_type(task_type, is_routine_task)
+
+    return frappe.get_doc({
+        "naming_series": "P-TASK-.YYYY.-",
+        "process_name": process_name,
+        "is_erp_task": 1,
+        "is_automated": 0,
+        "is_active": 1,
+        "erp_document": erp_document,
+        "task": task_description,
+        "task_type": task_type,
+        "frequency": "",
+        "repeat_on_day": 0,
+        "repeat_on_last_day": 0,
+        "hours_per_frequency": 0.0,
+        "coordination_needed": "No",
+        "employee": employee,
+        "start_date": today(),
+        "report_frequency": "",
+        "doctype": "Process Task",
+        "coordination_method": [],
+        "repeat_on_days": []
+    }).insert(ignore_permissions=True)
+
+def create_process_if_not_exists(process_name, process_owner="Administrator", business_analyst="Administrator"):
+    if not frappe.db.exists("Process", process_name):
+        process_owner_name = "Administrator"
+        business_analyst_name = "Administrator"
+        if process_owner:
+            process_owner_name = frappe.db.get_value("User", process_owner, "full_name")
+        if business_analyst:
+            business_analyst_name = frappe.db.get_value("User", business_analyst, "full_name")
+        frappe.get_doc({
+            "process_name": process_name,
+            "description": process_name,
+            "doctype": "Process",
+            "process_owner": process_owner,
+            "process_owner_name": process_owner_name,
+            "business_analyst": business_analyst,
+            "business_analyst_name": business_analyst_name
+        }).insert(ignore_permissions=True)
+
+def get_task_type(task_type="Repetitive", is_routine_task=0):
+    if not frappe.db.exists("Task Type", task_type):
+        task_type = frappe.get_doc({
+            "name": task_type,
+            "is_routine_task": is_routine_task,
+            "doctype": "Task Type"
+        }).insert(ignore_permissions=True)
+        return task_type.name
+    return task_type

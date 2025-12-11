@@ -257,12 +257,12 @@ one_fm.patches.v15_0.add_workflow_client_event
 one_fm.patches.v15_0.add_shift_assignment_event_based_fields
 one_fm.patches.v15_0.add_shift_assignment_shift_type_mandatory_depends_on # re-run
 one_fm.patches.v15_0.add_update_custom_field #2025-11-10
-one_fm.patches.v15_0.add_quality_feedback_template_custom_field
+one_fm.patches.v15_0.add_quality_feedback_template_custom_field #2025-12-11
 one_fm.patches.v15_0.add_quality_feedback_template_property_setter
 one_fm.patches.v15_0.apply_customizations_for_currency_exchange_settings
 one_fm.patches.v15_0.add_feedback_fields_to_hd_ticket
 one_fm.patches.v15_0.add_assignment_rule_for_hd_ticket_process_task_based #1
-one_fm.patches.v15_0.add_quality_feedback_custom_field #2025-12-04
+one_fm.patches.v15_0.add_quality_feedback_custom_field #2025-12-10
 one_fm.patches.v15_0.add_quality_feedback_property_setter #2025-12-04
 one_fm.patches.v15_0.add_quality_feedback_workflow #2025-12-04
 one_fm.patches.v15_0.rename_warehouse_fields_in_rfm

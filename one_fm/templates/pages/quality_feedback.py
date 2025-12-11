@@ -193,14 +193,39 @@ def translate_text(text, target_language='en'):
 @frappe.whitelist(allow_guest=True)
 def get_all_languages():
     """
-    Get all languages from Language doctype.
+    Get all languages from Quality Feedback Form Languages in Stock Settings.
     """
     try:
+        # Get Stock Settings document
+        stock_settings = frappe.get_single("Stock Settings")
+        
+        # Get the quality_feedback_form_languages field (Table MultiSelect)
+        # Access as attribute (Frappe pattern for child tables)
+        language_rows = getattr(stock_settings, "quality_feedback_form_languages", []) or []
+        
+        if not language_rows:
+            return []
+        
+        # Extract language names from the child table rows
+        # The child table has a 'language' field that links to Language doctype
+        language_names = []
+        for row in language_rows:
+            # Handle both dict and object access patterns
+            language_name = row.get('language') if isinstance(row, dict) else getattr(row, 'language', None)
+            if language_name:
+                language_names.append(language_name)
+        
+        if not language_names:
+            return []
+        
+        # Get language details from Language doctype
         languages = frappe.get_all(
             'Language',
+            filters={'name': ['in', language_names]},
             fields=['name', 'language_name'],
             order_by='language_name'
         )
+        
         return languages
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), 'Failed to fetch languages')

@@ -436,11 +436,13 @@ frappe.ready(() => {
                        <div class="damage-attachment-section damage-field-hidden" id="damage-attachment-section" style="display: none;">
                             <label class="form-label">${damageAttachmentLabel} <span class="required-asterisk">*</span></label>
                             <div class="attachment-wrapper">
-                                <button type="button" class="btn btn-sm btn-default" id="camera-btn">
-                                    📷 Camera
+                                <button type="button" class="btn btn-sm btn-default" id="camera-btn" aria-label="Camera">
+                                    <span class="icon-camera" aria-hidden="true"></span>
+                                    <span class="sr-only">Camera</span>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-default" id="file-btn">
-                                    📁 Choose File
+                                <button type="button" class="btn btn-sm btn-default" id="file-btn" aria-label="Choose File">
+                                    <span class="icon-file" aria-hidden="true"></span>
+                                    <span class="sr-only">Choose File</span>
                                 </button>
                                 <span class="attachment-file-name" id="attachment-file-name"></span>
                             </div>

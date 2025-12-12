@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-import frappe, json
+import frappe, json, os
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_url, getdate, today, formatdate
@@ -167,6 +167,9 @@ def submit_feedback(docname, ratings=None, noticed_damage=None, damage_descripti
         doc.save(ignore_permissions=True)
         frappe.db.commit()
 
+        if damage_attachment_url:
+            rename_damage_attachment(doc, damage_attachment_url)
+
         apply_workflow(doc, "Submit")
         expire_magic_link('Quality Feedback', docname, 'Quality Feedback')
         
@@ -174,6 +177,39 @@ def submit_feedback(docname, ratings=None, noticed_damage=None, damage_descripti
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), 'Quality Feedback Submission Failed')
         return {'success': False, 'message': _('An error occurred while submitting feedback.')}
+
+
+def rename_damage_attachment(doc, damage_attachment_url):
+    if not damage_attachment_url:
+        return
+    
+    try:
+        file_doc_name = frappe.db.get_value('File', {'file_url': damage_attachment_url}, 'name')
+        if not file_doc_name:
+            return
+        
+        file_doc = frappe.get_doc('File', file_doc_name)
+        
+        employee_id = doc.custom_employee
+        template_name = doc.template
+        clean_template = template_name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+        
+        file_ext = os.path.splitext(file_doc.file_name)[1]
+        
+        counter = 1
+        new_file_name = f"{employee_id}_{clean_template}_{counter:03d}{file_ext}"
+        
+        while frappe.db.exists('File', {'file_name': new_file_name, 'name': ['!=', file_doc.name]}):
+            counter += 1
+            new_file_name = f"{employee_id}_{clean_template}_{counter:03d}{file_ext}"
+        
+        file_doc.file_name = new_file_name
+        file_doc.save(ignore_permissions=True)
+        
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), 'File Rename Failed')
+
+
 
 @frappe.whitelist(allow_guest=True)
 def translate_text(text, target_language='en'):

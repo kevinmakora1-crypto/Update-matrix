@@ -164,12 +164,11 @@ def submit_feedback(docname, ratings=None, noticed_damage=None, damage_descripti
                     file_doc.attached_to_field = 'custom_damage_attachment'
                     file_doc.save(ignore_permissions=True)
         
-        doc.save(ignore_permissions=True)
-        frappe.db.commit()
-
         if damage_attachment_url:
             rename_damage_attachment(doc, damage_attachment_url)
 
+        doc.save(ignore_permissions=True)
+        frappe.db.commit()
         apply_workflow(doc, "Submit")
         expire_magic_link('Quality Feedback', docname, 'Quality Feedback')
         

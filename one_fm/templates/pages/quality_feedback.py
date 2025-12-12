@@ -189,8 +189,11 @@ def rename_damage_attachment(doc, damage_attachment_url):
         
         file_doc = frappe.get_doc('File', file_doc_name)
         
-        employee_id = doc.custom_employee
-        template_name = doc.template
+        employee_id = getattr(doc, "custom_employee", None)
+        template_name = getattr(doc, "template", None)
+        if not employee_id or not template_name:
+            frappe.log_error("Missing custom_employee or template in doc for file rename.", "File Rename Failed")
+            return
         clean_template = template_name.replace(' ', '_').replace('/', '_').replace('\\', '_')
         
         file_ext = os.path.splitext(file_doc.file_name)[1]

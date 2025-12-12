@@ -206,7 +206,7 @@ def rename_damage_attachment(doc, damage_attachment_url):
         file_doc.save(ignore_permissions=True)
         
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), 'File Rename Failed')
+        frappe.log_error(f"{frappe.get_traceback()}\nException: {str(e)}", 'File Rename Failed')
 
 
 

@@ -6,6 +6,7 @@ frappe.ready(() => {
     let selectedLanguageName = 'English';
     let languages = [];
     let formSubmitted = false; // Track if form was submitted
+    let selectedAttachmentFile = null;
     let currentLoaderTimeouts = []; // Store all setTimeout IDs for cleanup
     const rtlLanguages = ['ar'];
 
@@ -431,14 +432,24 @@ frappe.ready(() => {
                                 rows="4" 
                                 placeholder="${damagePlaceholder}"></textarea>
                         </div>
-                        <div class="damage-attachment-section damage-field-hidden" id="damage-attachment-section" style="display: none;">
+
+                       <div class="damage-attachment-section damage-field-hidden" id="damage-attachment-section" style="display: none;">
                             <label class="form-label">${damageAttachmentLabel} <span class="required-asterisk">*</span></label>
                             <div class="attachment-wrapper">
-                                <a href="#" class="attach-link" id="attach-link">${attachText}</a>
+                                <button type="button" class="btn btn-sm btn-default" id="camera-btn" aria-label="Camera">
+                                    <span class="icon-camera" aria-hidden="true"></span>
+                                    <span class="sr-only">Camera</span>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-default" id="file-btn" aria-label="Choose File">
+                                    <span class="icon-file" aria-hidden="true"></span>
+                                    <span class="sr-only">Choose File</span>
+                                </button>
                                 <span class="attachment-file-name" id="attachment-file-name"></span>
                             </div>
-                            <input type="file" id="damage-attachment-input" class="d-none" accept="image/*,.pdf">
+                            <input type="file" id="damage-attachment-camera" class="d-none" accept="image/*" capture="environment">
+                            <input type="file" id="damage-attachment-file" class="d-none" accept="image/*,.pdf">
                         </div>
+
                         <div class="feedback-section">
                             <label class="form-label" for="feedback-text">${feedbackLabel}</label>
                             <textarea 
@@ -550,20 +561,38 @@ frappe.ready(() => {
         });
 
         // Handle file attachment
-        const attachLink = document.getElementById('attach-link');
-        const attachmentInput = document.getElementById('damage-attachment-input');
+        const cameraBtn = document.getElementById('camera-btn');
+        const fileBtn = document.getElementById('file-btn');
+        const cameraInput = document.getElementById('damage-attachment-camera');
+        const fileInput = document.getElementById('damage-attachment-file');
         const fileNameDisplay = document.getElementById('attachment-file-name');
 
-        if (attachLink && attachmentInput) {
-            attachLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                attachmentInput.click();
+        if (cameraBtn && cameraInput) {
+            cameraBtn.addEventListener('click', () => {
+                cameraInput.click();
             });
 
-            attachmentInput.addEventListener('change', (e) => {
+            cameraInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
-                    fileNameDisplay.textContent = e.target.files[0].name;
+                    selectedAttachmentFile = e.target.files[0];
+                    fileNameDisplay.textContent = `📷 ${e.target.files[0].name}`;
                     fileNameDisplay.classList.add('file-attached');
+                    fileInput.value = '';
+                }
+            });
+        }
+
+        if (fileBtn && fileInput) {
+            fileBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    selectedAttachmentFile = e.target.files[0];
+                    fileNameDisplay.textContent = `📁 ${e.target.files[0].name}`;
+                    fileNameDisplay.classList.add('file-attached');
+                    cameraInput.value = '';
                 }
             });
         }
@@ -622,7 +651,7 @@ frappe.ready(() => {
                 return;
             }
             
-            attachmentFile = document.getElementById('damage-attachment-input')?.files?.[0];
+            attachmentFile = selectedAttachmentFile;
             if (!attachmentFile) {
                 frappe.msgprint(__('Please attach a damage photo or document.'));
                 return;

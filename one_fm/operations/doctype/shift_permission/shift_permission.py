@@ -36,9 +36,10 @@ class ShiftPermission(Document):
 			self.title = self.emp_name
 
 	def validate_attendance(self):
-		attendance = frappe.db.exists('Attendance',{'attendance_date': self.date, 'employee': self.employee, 'docstatus': 1})
-		if attendance:
-			frappe.throw(_('There is an Attendance {0} exists for the Employee {1} on {2}'.format(attendance, self.emp_name, format_date(self.date))), exc=ExistAttendance)
+		if self.workflow_state not in {"Approved"}:
+			attendance = frappe.db.exists('Attendance',{'attendance_date': self.date, 'employee': self.employee, 'docstatus': 1})
+			if attendance:
+				frappe.throw(_('There is an Attendance {0} exists for the Employee {1} on {2}'.format(attendance, self.emp_name, format_date(self.date))), exc=ExistAttendance)
 
 	def on_update(self):
 		self.update_shift_assignment_checkin()
@@ -51,7 +52,7 @@ class ShiftPermission(Document):
 
 	# This method validates the permission date and avoid creating permission for previous days
 	def validate_date(self):
-		if getdate(self.date) < getdate() and frappe.session.user not in ['Administrator']:
+		if getdate(self.date) < getdate() and frappe.session.user not in ['Administrator'] and self.workflow_state not in {"Approved"}:
 			frappe.throw(_("Please note that shift permission can not be created for past date")) if self.is_new() else frappe.throw("Please note that shift permission can not be updated to a past date")
 
 	# This method validates any dublicate permission for the employee on same day

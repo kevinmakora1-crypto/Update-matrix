@@ -25,8 +25,8 @@ def get_context(context):
 	if context.driving_license_required != 0:
 		context.type_of_license = ["Light", "Heavy", "Motor Bike", "Inshaya"]
 	context.visa_type = frappe.get_all("Visa Type", ["name"])
-	# Get Country List to the context to show in the portal
-	context.country_list = frappe.get_all('Country', fields=['name'])
+	# Get Nationality List to the context to show in the portal
+	context.nationality_list = frappe.get_all('Nationality', fields=['name'])
 	languages = frappe.get_all(
 		'Employee Language Requirement',
 		fields = ['language', 'language_name'],
@@ -76,12 +76,12 @@ def easy_apply(first_name, second_name, third_name, last_name, nationality, civi
         return 0
 
 @frappe.whitelist(allow_guest=True)
-def create_job_applicant_from_job_portal(applicant_name, country, applicant_email, applicant_mobile, job_opening, name_of_file, resume_attachment_url="", rotation_shift=None, night_shift=None, travel=None, travel_type=None, driving_license=None,license_type=None, visa=None, visa_type=None, in_kuwait=None, languages=[]):
+def create_job_applicant_from_job_portal(applicant_name, nationality, applicant_email, applicant_mobile, job_opening, name_of_file, resume_attachment_url="", rotation_shift=None, night_shift=None, travel=None, travel_type=None, driving_license=None,license_type=None, visa=None, visa_type=None, in_kuwait=None, languages=[]):
     '''
         Method to create Job Applicant from Portal
         args:
             applicant_name: Name of the Applicant
-            country: Country of the Applicant
+            nationality: Nationality of the Applicant
             applicant_email: Applicant Email ID
             applicant_mobile: Applicant Mobile Number
             job_opening: Job Opening ID
@@ -89,8 +89,6 @@ def create_job_applicant_from_job_portal(applicant_name, country, applicant_emai
         Return True if Job Applicant created Succesfully
     '''
     try:
-        # Get Nationality from country given by the applicant
-        nationality = frappe.db.exists('Nationality', {'country': country})
         # Create Job Applicant
         applicant_name = applicant_name.title()
         split_name = parse_names(applicant_name)

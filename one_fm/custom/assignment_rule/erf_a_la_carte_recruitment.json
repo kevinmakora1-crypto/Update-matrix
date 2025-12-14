@@ -1,0 +1,22 @@
+{
+  "name": "ERF- A la Carte Recruitment",
+  "document_type": "ERF",
+  "priority": 0,
+  "disabled": 0,
+  "description": "<p>Here is to inform you that the following {{ doctype }}({{ name }}) requires your attention/action.\n        <br>\n        The details of the request are as follows:\n        <br>\n        </p><table cellpadding=\"0\" cellspacing=\"0\" border=\"1\" style=\"border-collapse: collapse;\">\n            <thead>\n                <tr>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Label</th>\n                    <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Value</th>\n                </tr>\n            </thead>\n        <tbody>\n        \n            <tr>\n                <td style=\"padding: 10px;\">Reason for Request</td>\n                <td style=\"padding: 10px;\">{{reason_for_request}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Number of Candidates Required</td>\n                <td style=\"padding: 10px;\">{{number_of_candidates_required}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Department</td>\n                <td style=\"padding: 10px;\">{{department}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Designation</td>\n                <td style=\"padding: 10px;\">{{designation}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Expected Date of Deployment</td>\n                <td style=\"padding: 10px;\">{{expected_date_of_deployment}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Job Title</td>\n                <td style=\"padding: 10px;\">{{job_title}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Day Off Category</td>\n                <td style=\"padding: 10px;\">{{day_off_category}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Number of Days Off</td>\n                <td style=\"padding: 10px;\">{{number_of_days_off}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Employment Type</td>\n                <td style=\"padding: 10px;\">{{employment_type}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Hiring Method</td>\n                <td style=\"padding: 10px;\">{{hiring_method}}</td>\n            </tr>\n            \n            <tr>\n                <td style=\"padding: 10px;\">Reports To</td>\n                <td style=\"padding: 10px;\">{{reports_to}}</td>\n            </tr>\n            </tbody></table><p></p>",
+  "is_assignment_rule_with_workflow": 1,
+  "assign_condition": "hiring_method == \"A la carte Recruitment\" and workflow_state == \"Submit to Recruitment Manager\"",
+  "close_condition": "workflow_state in [\"Accepted\", \"Rejected\"]",
+  "rule": "Based on Process Task",
+  "doctype": "Assignment Rule",
+  "assignment_days": [
+    { "day": "Monday" },
+    { "day": "Tuesday" },
+    { "day": "Wednesday" },
+    { "day": "Thursday" },
+    { "day": "Friday" },
+    { "day": "Saturday" },
+    { "day": "Sunday" }
+  ],
+  "users": []
+}

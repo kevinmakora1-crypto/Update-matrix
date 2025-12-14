@@ -1,10 +1,10 @@
 frappe.ui.form.on('Quality Feedback Template', {
 	refresh: function(frm) {
-		attach_damaged_attachments(frm);
+		render_damaged_attachments(frm);
 	},
 });
 
-const attach_damaged_attachments = function (frm) {
+const render_damaged_attachments = function (frm) {
 	// Don't render attachments for new/unsaved templates
 	if (!frm.doc.name || frm.is_new()) {
 		return;

@@ -122,7 +122,7 @@ class Contracts(Document):
                     if item.rate_type == "Monthly" and len(post_schedules) == 0:
                         frappe.throw(f"Post Schedules are missing for {item.item_code}")
 
-                    billable_period_count = get_billable_period_count_for_item(item.rate_type, post_schedules, self.project, selected_period_start_date, selected_period_end_date)
+                    billable_period_count = get_billable_period_count_for_item(item.item_code, item.rate_type, post_schedules, self.project, selected_period_start_date, selected_period_end_date)
 
                     quantity = billable_period_count # Sum of all attended days/hours in the date range
 
@@ -1131,7 +1131,7 @@ def get_post_schedules_for_item(item_code, project, start_date, end_date):
         fields=["name", "project", "site"]
     )
 
-def get_billable_period_count_for_item(rate_type, post_schedules, project, start_date, end_date):
+def get_billable_period_count_for_item(item_code, rate_type, post_schedules, project, start_date, end_date):
     """Get billable period count for a given item code, post schedules, project, and date range."""
 
     if not post_schedules:
@@ -1219,6 +1219,7 @@ def get_billable_period_count_for_item(rate_type, post_schedules, project, start
                 "attendance_date": ["between", [start_date, end_date]],
                 "project": project,
                 "site": site,
+                "sale_item": item_code,
                 "status": "Present",
                 "docstatus": 1
             }

@@ -118,7 +118,6 @@ class ProjectOverride(Project):
         self.validate_from_to_dates("actual_start_date", "actual_end_date")
         validate_poc_list(self, None)
         validate_project(self, None)
-            
     def after_insert(self):
         super().after_insert()
         update_project_user_assignment(self, None)

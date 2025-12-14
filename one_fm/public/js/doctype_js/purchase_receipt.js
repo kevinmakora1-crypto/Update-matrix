@@ -9,7 +9,7 @@ frappe.ui.form.on('Purchase Receipt', {
 });
 
 frappe.ui.form.on('Purchase Receipt Item', {
-    items_add: function(frm, cdt, cdn) {
+    items_add: function(frm) {
         set_readonly_for_warehouse_users(frm);
     }
 });

@@ -255,7 +255,6 @@ def get_next_possible_transitions(workflow_name, state, doc=None):
 	transitions = frappe.get_all('Workflow Transition', fields='*', filters=filters)
 	valid_transitions = []
 	seen_actions = set()
-	
 	for transition in transitions:
 		if isinstance(doc, dict):
 			doc_obj = frappe.get_doc(doc)

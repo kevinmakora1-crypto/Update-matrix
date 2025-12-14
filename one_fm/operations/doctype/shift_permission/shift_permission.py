@@ -53,7 +53,7 @@ class ShiftPermission(Document):
 	# This method validates the permission date and avoid creating permission for previous days
 	def validate_date(self):
 		if getdate(self.date) < getdate() and frappe.session.user not in ['Administrator'] and self.workflow_state not in {"Approved"}:
-			frappe.throw(_("Please note that shift permission can not be created for past date")) if self.is_new() else frappe.throw("Please note that shift permission can not be updated to a past date")
+			frappe.throw(_("Please note that shift permission can not be created for past date")) if self.is_new() else frappe.throw(_("Please note that shift permission can not be updated to a past date"))
 
 	# This method validates any dublicate permission for the employee on same day
 	def validate_record(self):

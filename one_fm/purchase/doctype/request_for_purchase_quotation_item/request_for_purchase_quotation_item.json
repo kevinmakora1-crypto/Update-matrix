@@ -255,6 +255,7 @@
    "label": "Qty in Stock UOM"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "stock_rate",
    "fieldtype": "Currency",
    "label": "Stock Rate",
@@ -306,8 +307,8 @@
  "grid_page_length": 50,
  "istable": 1,
  "links": [],
- "modified": "2025-11-23 22:36:05.336272",
- "modified_by": "Administrator",
+ "modified": "2025-12-14 15:10:51.002480",
+ "modified_by": "c.akeru@one-fm.com",
  "module": "Purchase",
  "name": "Request for Purchase Quotation Item",
  "naming_rule": "Expression (old style)",

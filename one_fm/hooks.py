@@ -333,19 +333,6 @@ doc_events = {
 		"on_update": "one_fm.accommodation.doctype.accommodation.accommodation.accommodation_contact_update",
         "validate": "one_fm.accommodation.doctype.accommodation.accommodation.validate_contact",
 	},
-	"Project": {
-		"validate": [
-			"one_fm.one_fm.project_custom.validate_poc_list",
-			"one_fm.one_fm.project_custom.validate_project"
-		],
-		"after_insert": "one_fm.overrides.project.update_project_user_assignment",
-		"onload": "one_fm.one_fm.project_custom.get_depreciation_expense_amount",
-		"on_update": [
-						"one_fm.api.doc_events.on_project_update_switch_shift_site_post_to_inactive",
-						"one_fm.api.doc_events.update_project_manager_name"
-					]
-			# 	"on_update": "one_fm.api.doc_events.project_on_update"
-	},
 	"Attendance": {
 		"on_submit": [
 			"one_fm.one_fm.utils.manage_attendance_on_holiday"
@@ -562,6 +549,7 @@ override_doctype_class = {
     "Purchase Receipt": "one_fm.overrides.purchase_receipt.PurchaseReceiptOverride",
     "Asset": "one_fm.overrides.asset.AssetOverride",
     "Asset Movement": "one_fm.overrides.asset_movement.AssetMovement",
+    "Project": "one_fm.overrides.project.ProjectOverride",
     "Quality Feedback": "one_fm.overrides.quality_feedback.QualityFeedbackOverride",
 }
 

@@ -2,7 +2,11 @@ import frappe
 from frappe.core.doctype.version.version import get_diff
 from frappe.desk.form.assign_to import add as assign, DuplicateToDoError, remove as remove_assignment
 from frappe import _
+from one_fm.api.doc_events import update_project_manager_name, on_project_update_switch_shift_site_post_to_inactive
 from one_fm.processor import sendemail
+from one_fm.one_fm.project_custom import validate_poc_list, validate_project, get_depreciation_expense_amount
+
+from erpnext.projects.doctype.project.project import Project
 
 
 def notify_project_team(doc):
@@ -100,3 +104,28 @@ def get_changed_users(project):
     removed_users = list(set(old_users) - set(new_users))
 
     return added_users, removed_users
+
+
+
+class ProjectOverride(Project):
+     
+    def validate(self):
+        if not self.is_new():
+            self.copy_from_template()
+        self.update_costing()
+        self.update_percent_complete()
+        self.validate_from_to_dates("expected_start_date", "expected_end_date")
+        self.validate_from_to_dates("actual_start_date", "actual_end_date")
+        validate_poc_list(self, None)
+        validate_project(self, None)
+    def after_insert(self):
+        super().after_insert()
+        update_project_user_assignment(self, None)
+    def onload(self):
+        super().onload()
+        get_depreciation_expense_amount(self)
+
+    def on_update(self):
+        super().on_update()
+        update_project_manager_name(self, None)
+        on_project_update_switch_shift_site_post_to_inactive(self, None)

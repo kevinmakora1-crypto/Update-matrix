@@ -86,7 +86,7 @@ def create_job_applicant_from_job_portal(applicant_name, nationality, applicant_
             applicant_mobile: Applicant Mobile Number
             job_opening: Job Opening ID
             files: The CV attached
-        Return True if Job Applicant created Succesfully
+        Return True if Job Applicant created Successfully
     '''
     try:
         # Create Job Applicant

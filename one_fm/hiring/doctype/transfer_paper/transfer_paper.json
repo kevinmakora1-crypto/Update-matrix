@@ -42,13 +42,13 @@
   "first_name",
   "second_name",
   "third_name",
-  "forth_name",
+  "fourth_name",
   "last_name",
   "column_break_22",
   "first_name_in_arabic",
   "second_name_in_arabic",
   "third_name_in_arabic",
-  "forth_name_in_arabic",
+  "fourth_name_in_arabic",
   "last_name_in_arabic",
   "section_break_27",
   "date_of_birth",
@@ -428,16 +428,16 @@
    "label": "Date of Application"
   },
   {
-   "fetch_from": "applicant.one_fm_forth_name",
-   "fieldname": "forth_name",
+   "fetch_from": "applicant.one_fm_fourth_name",
+   "fieldname": "fourth_name",
    "fieldtype": "Data",
-   "label": "Forth Name "
+   "label": "Fourth Name"
   },
   {
-   "fetch_from": "applicant.one_fm_forth_name_in_arabic",
-   "fieldname": "forth_name_in_arabic",
+   "fetch_from": "applicant.one_fm_fourth_name_in_arabic",
+   "fieldname": "fourth_name_in_arabic",
    "fieldtype": "Data",
-   "label": "Forth Name in Arabic"
+   "label": "Fourth Name in Arabic"
   },
   {
    "fieldname": "work_permit_ref",
@@ -486,7 +486,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2021-09-15 11:54:23.424767",
+ "modified": "2025-12-08 11:54:23.424767",
  "modified_by": "Administrator",
  "module": "Hiring",
  "name": "Transfer Paper",

@@ -15,6 +15,7 @@ frappe.ui.form.on('Employee Uniform', {
 		if(frm.is_new() && frm.doc.stock_entry){
 			frm.set_value("stock_entry", "");
 		}
+		add_quality_feedback_schedule(frm)
 	},
 	employee: function(frm) {
 		set_uniform_details(frm);
@@ -120,3 +121,119 @@ var update_employees_list = function(frm) {
 		};
 	});
 };
+
+var add_quality_feedback_schedule = function (frm) {
+  if (frm.doc.docstatus == 1 && frm.doc.type === "Issue" && frm.doc.uniforms.length > 0) {
+	  frm.add_custom_button(
+		  __("Quality Feedback"),
+		  function () {
+			  let item_codes = frm.doc.uniforms.map((item) => item.item);
+			  frappe.call({
+				  method:
+					  "one_fm.uniform_management.doctype.employee_uniform.employee_uniform.get_item_types",
+				  args: {
+					  items: item_codes,
+				  },
+				  callback: function (r) {
+					  let item_types = r.message;
+					  let unique_item_types = [...new Set(item_types)];
+
+					  let fields = [
+						  {
+							  fieldname: "quality_feedback_table",
+							  fieldtype: "Table",
+							  cannot_add_rows: true,
+							  in_place_edit: true,
+							  reqd: 1,
+							  fields: [
+								  {
+									  fieldname: "item_type",
+									  label: __("Item Type"),
+									  fieldtype: "Link",
+									  options: "Item Type",
+									  read_only: 1,
+									  in_list_view: 1,
+								  },
+								  {
+									  fieldname: "quality_feedback_template",
+									  label: __("Quality Feedback Template"),
+									  fieldtype: "Link",
+									  options: "Quality Feedback Template",
+									  in_list_view: 1,
+									  get_query(doc) {
+										  return {
+											  filters: {
+												  custom_is_enabled: 1,
+												  custom_item_type: doc.item_type,
+											  },
+										  };
+									  },
+								  },
+							  ],
+						  },
+					  ];
+
+					  let d = new frappe.ui.Dialog({
+						  title: __("Quality Feedback"),
+						  fields: fields,
+						  primary_action_label: __("Generate"),
+						  primary_action(values) {
+							  let selected_rows =
+								  (values && values.quality_feedback_table) || [];
+
+							  let selected_templates = selected_rows
+								  .filter((row) => row.quality_feedback_template)
+								  .map((row) => row.quality_feedback_template);
+
+							  if (!selected_templates.length) {
+								  frappe.msgprint(
+									  __(
+										  "Please select at least one Quality Feedback Template."
+									  )
+								  );
+								  return;
+							  }
+
+							  frappe.call({
+								  method:
+									  "one_fm.uniform_management.doctype.employee_uniform.employee_uniform.create_quality_feedbacks",
+								  args: {
+									  employee_uniform: frm.doc.name,
+									  selected_feedback_templates: selected_templates,
+								  },
+								  callback: function (r) {
+									  if (!r.exc) {
+										  frappe.msgprint(
+											  __(
+												  "Quality Feedback Scheduled Successfully"
+											  )
+										  );
+										  d.hide();
+									  }
+								  },
+							  });
+						  },
+					  });
+
+					  // Pre-populate table rows with distinct item types
+					  let grid = d.fields_dict.quality_feedback_table.grid;
+					  unique_item_types.forEach((item_type) => {
+						  grid.add_new_row();
+						  let data = grid.get_data();
+						  let row = data[data.length - 1];
+						  if (row) {
+							  row.item_type = item_type;
+						  }
+					  });
+
+					  grid.refresh();
+
+					  d.show();
+				  },
+			  });
+		  },
+		  __("Create")
+	  );
+  }
+}
+

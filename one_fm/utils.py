@@ -1516,9 +1516,6 @@ def validate_job_applicant(doc, method):
     if doc.one_fm_night_shift:
         frappe.db.set_value("Job Applicant", doc.name, "one_fm_night_shift", doc.one_fm_night_shift)
 
-    # Because first name and last name are mandatory so merge both to generate applicant name
-    doc.applicant_name = doc.one_fm_first_name + " " + doc.one_fm_last_name
-
     from one_fm.one_fm.utils import check_mendatory_fields_for_grd_and_recruiter
     check_mendatory_fields_for_grd_and_recruiter(doc, method)#fix visa 22
     # validate_pam_file_number_and_pam_designation(doc, method)
@@ -2718,6 +2715,20 @@ def set_expire_magic_link(reference_doctype, reference_docname, link_for):
             expired_field = "career_history_ml_expired"
         frappe.db.set_value(reference_doctype, reference_docname, expired_field, True)
 
+def expire_magic_link(reference_doctype, reference_docname, link_for):
+    """
+        Method used to expire magic link
+        based on the reference_doctype, reference_docname and link_for values
+        args:
+            reference_doctype: DocType name (Example: 'Job Applicant')
+            reference_docname: Data (Example: 'HR-APP-2022-00286')
+            link_for: Data (Example: Career History)
+    """
+    magic_link = frappe.db.exists('Magic Link', {'reference_doctype': reference_doctype,
+        'reference_docname': reference_docname, 'link_for': link_for, 'expired': False})
+    if magic_link:
+        frappe.db.set_value('Magic Link', magic_link, {'expired': True, "expired_on": now_datetime()})
+
 def check_path(path):
     return os.path.isdir(path)
 
@@ -3451,7 +3462,7 @@ def custom_validate_interviewer(self):
 
 
 @frappe.whitelist()
-def get_current_shift(employee):
+def get_current_shift(employee, attach_upcoming_shifts=False):
     try:
         nowtime = now_datetime()
         sql = f"""
@@ -3470,63 +3481,108 @@ def get_current_shift(employee):
             """
 
         shifts = frappe.db.sql(sql, as_dict=1)
-        if shifts:
-             # Find the current shift
-            current_shift = None
-            for shift in shifts:
-                # Check if the shift is currently active
-                checkin = frappe.db.get_list(
-                    "Employee Checkin",
-                    filters={"employee": employee, "shift_assignment":shift.name },
-                    fields=["log_type", "time", "shift_assignment"],
-                    order_by="time desc",
-                    limit=1,
-                )
+        if not shifts:
+            return False
 
-                if checkin:
-                    last_log = checkin[0]
-                    # CASE 1: Last log is IN → Shift is active
-                    if last_log.log_type == "IN":
-                        if shift.checkin_time <= nowtime <= shift.checkout_time:
-                            current_shift = shift
-                            break
-                    # CASE 2: Last log is OUT → Only skip if within grace period
-                    elif last_log.log_type == "OUT":
-                        # Check if OUT happened during grace period
-                        if shift.actual_end_time <= last_log.time <= shift.checkout_time:
-                            continue  # Skip this shift, check next one
-                        else:
-                            current_shift = shift
-                            break
-                else:
-                    # Allow checkin if within window
+        # Find the current shift
+        current_shift = None
+        is_current_shift_completed = False # Flag to check if employee has checked in and out for the current shift
+
+        for shift in shifts:
+            # Check if the shift is currently active
+            checkins = frappe.db.get_all(
+                "Employee Checkin",
+                filters={"employee": employee, "shift_assignment": shift.name},
+                fields=["log_type", "time", "shift_assignment"],
+                order_by="time desc",
+                limit_page_length=0,
+            )
+
+            if checkins:
+                # Temporary flag so callers can know completion state without DB write
+                has_in = any(log.log_type == "IN" for log in checkins)
+                has_out = any(log.log_type == "OUT" for log in checkins)
+                is_current_shift_completed = bool(has_in and has_out)
+
+                last_log = checkins[0]
+                # CASE 1: Last log is IN → Shift is active
+                if last_log.log_type == "IN":
                     if shift.checkin_time <= nowtime <= shift.checkout_time:
                         current_shift = shift
                         break
+                # CASE 2: Last log is OUT → Only skip if within grace period
+                elif last_log.log_type == "OUT":
+                    # Check if OUT happened during grace period
+                    if shift.actual_end_time <= last_log.time <= shift.checkout_time:
+                        continue  # Skip this shift, check next one
+                    else:
+                        current_shift = shift
+                        break                
+            else:
+                # Allow checkin if within window
+                if shift.checkin_time <= nowtime <= shift.checkout_time:
+                    current_shift = shift
+                    break
 
+        # Prepare response
+        response = {}
+        
+        if current_shift:
+            # Current shift found
+            data = frappe.get_doc("Shift Assignment", current_shift.name)
 
-            if current_shift:
-                # If a current shift is found, return its details
-                data = frappe.get_doc("Shift Assignment", current_shift.name)
-                if current_shift.checkin_time > nowtime:
-                    minutes = int((current_shift.checkin_time - nowtime).total_seconds() / 60)
-                    return{"type": "Early", "data": data, "time": minutes}
-                elif current_shift.checkout_time < nowtime:
-                    minutes = int((nowtime - current_shift.checkout_time).total_seconds() / 60)
-                    return{"type": "Late", "data": data, "time": minutes}
-                elif current_shift.checkin_time <= nowtime <= current_shift.checkout_time:
-                    return {"type": "On Time", "data": data, "time": 0}
+            data.is_completed = is_current_shift_completed # Carry over temporary completion flag (non-persistent)
 
-             # If no active shift is found, check if the next shift is about to start
-            for shift in shifts:
-                if shift.checkin_time > nowtime:  # Next shift starting in the future
-                    data = frappe.get_doc("Shift Assignment", shift.name)
-                    minutes = int((shift.checkin_time - nowtime).total_seconds() / 60)
-                    return {"type": "Upcoming", "data": data, "time": minutes}
-            return False
+            if current_shift.checkin_time > nowtime:
+                minutes = int((current_shift.checkin_time - nowtime).total_seconds() / 60)
+                response = {"type": "Early", "data": data, "time": minutes}
+            elif current_shift.checkout_time < nowtime:
+                minutes = int((nowtime - current_shift.checkout_time).total_seconds() / 60)
+                response = {"type": "Late", "data": data, "time": minutes}
+            else:
+                response = {"type": "On Time", "data": data, "time": 0}
+            
+            # Attach upcoming shifts if requested
+            if attach_upcoming_shifts:
+                upcoming_shifts = [
+                    frappe.get_doc("Shift Assignment", shift.name)
+                    for shift in shifts
+                    if shift.name != current_shift.name
+                ]
+                response["upcoming_shifts"] = upcoming_shifts
+            
+            return response
+        
+        # No active shift found - find next upcoming shift
+        target_shift = None
+        for shift in shifts:
+            if shift.checkin_time > nowtime:  # Next shift starting in the future
+                target_shift = shift
+                break
+        
+        if not target_shift:
+            # If no upcoming shift found, use first shift as target
+            target_shift = shifts[0] if shifts else None
+        
+        if target_shift:
+            data = frappe.get_doc("Shift Assignment", target_shift.name)
+            minutes = int((target_shift.checkin_time - nowtime).total_seconds() / 60)
+            response = {"type": "Upcoming", "data": data, "time": minutes}
+            
+            # Attach upcoming shifts if requested
+            if attach_upcoming_shifts:
+                upcoming_shifts = [
+                    frappe.get_doc("Shift Assignment", shift.name)
+                    for shift in shifts
+                    if shift.name != target_shift.name
+                ]
+                response["upcoming_shifts"] = upcoming_shifts
+            
+            return response
+        
         return False
     except Exception as e:
-        frappe.log_error(message = frappe.get_traceback(), title= "Error while getting current shift")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while getting current shift")
         return False
 
 
@@ -4444,7 +4500,7 @@ def get_experience_types():
 
 
 @frappe.whitelist()
-def send_push_notification(employee_id, title, body):   
+def send_push_notification(employee_id, title, body, data=None):   
     try:
         api.initialize_firebase()
         employee_data = frappe.db.get_value("Employee", {"employee_id": employee_id}, ["fcm_token", "device_os"],as_dict=1)
@@ -4457,16 +4513,16 @@ def send_push_notification(employee_id, title, body):
             message = messaging.Message(
                 notification=messaging.Notification(
                     title=title,
-                    body=body
+                    body=body,
                 ),
-                token=deviceToken
+                token=deviceToken,
+                data=data
             )
             messaging.send(message)
             return True
     except Exception as e:
         frappe.log_error(message = frappe.get_traceback(), title = "Error in sending push notification")
         return False
-    
 
 def get_field_with_label(doctype, field_name, value):
     """
@@ -4491,3 +4547,57 @@ def get_field_with_label(doctype, field_name, value):
         "name": label,
         "value": value
     }
+
+def create_process_task(process_name, erp_document, task_description, employee, process_owner=None, business_analyst=None, task_type="Repetitive", is_routine_task=0):
+    create_process_if_not_exists(process_name, process_owner, business_analyst)
+    task_type = get_task_type(task_type, is_routine_task)
+
+    return frappe.get_doc({
+        "naming_series": "P-TASK-.YYYY.-",
+        "process_name": process_name,
+        "is_erp_task": 1,
+        "is_automated": 0,
+        "is_active": 1,
+        "erp_document": erp_document,
+        "task": task_description,
+        "task_type": task_type,
+        "frequency": "",
+        "repeat_on_day": 0,
+        "repeat_on_last_day": 0,
+        "hours_per_frequency": 0.0,
+        "coordination_needed": "No",
+        "employee": employee,
+        "start_date": today(),
+        "report_frequency": "",
+        "doctype": "Process Task",
+        "coordination_method": [],
+        "repeat_on_days": []
+    }).insert(ignore_permissions=True)
+
+def create_process_if_not_exists(process_name, process_owner="Administrator", business_analyst="Administrator"):
+    if not frappe.db.exists("Process", process_name):
+        process_owner_name = "Administrator"
+        business_analyst_name = "Administrator"
+        if process_owner:
+            process_owner_name = frappe.db.get_value("User", process_owner, "full_name")
+        if business_analyst:
+            business_analyst_name = frappe.db.get_value("User", business_analyst, "full_name")
+        frappe.get_doc({
+            "process_name": process_name,
+            "description": process_name,
+            "doctype": "Process",
+            "process_owner": process_owner,
+            "process_owner_name": process_owner_name,
+            "business_analyst": business_analyst,
+            "business_analyst_name": business_analyst_name
+        }).insert(ignore_permissions=True)
+
+def get_task_type(task_type="Repetitive", is_routine_task=0):
+    if not frappe.db.exists("Task Type", task_type):
+        task_type = frappe.get_doc({
+            "name": task_type,
+            "is_routine_task": is_routine_task,
+            "doctype": "Task Type"
+        }).insert(ignore_permissions=True)
+        return task_type.name
+    return task_type

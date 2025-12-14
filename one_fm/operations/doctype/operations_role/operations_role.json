@@ -16,7 +16,8 @@
   "site",
   "column_break_9",
   "project",
-  "attendance_by_client"
+  "attendance_by_client",
+  "client_agreed_ojt_days"
  ],
  "fields": [
   {
@@ -92,6 +93,11 @@
    "fieldname": "attendance_by_client",
    "fieldtype": "Check",
    "label": "Attendance By Client"
+  },
+  {
+   "fieldname": "client_agreed_ojt_days",
+   "fieldtype": "Int",
+   "label": "Client Agreed OJT Days"
   }
  ],
  "links": [
@@ -100,7 +106,7 @@
    "link_fieldname": "post_template"
   }
  ],
- "modified": "2025-03-02 14:30:08.454369",
+ "modified": "2025-12-08 15:28:51.605004",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Operations Role",
@@ -186,6 +192,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

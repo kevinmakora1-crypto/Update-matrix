@@ -36,6 +36,22 @@ def get_quality_feedback_template_custom_fields():
 				"fieldtype": "Check",
 				"label": "Enabled",
 				"insert_after": "custom_feedback_schedule"
+			},
+			{
+				"fieldname": "custom_tab_break_damaged_attachments",
+				"fieldtype": "Tab Break",
+				"label": "Damaged Attachments",
+				"read_only": 1,
+				"print_hide": 1,
+				"insert_after": "parameters"
+			},
+			{
+				"fieldname": "custom_damaged_attachments_html",
+				"fieldtype": "HTML",
+				"label": "Damaged Attachments Grid",
+				"print_hide": 1,
+				"read_only": 1,
+				"insert_after": "custom_tab_break_damaged_attachments"
 			}
 		]
 	}

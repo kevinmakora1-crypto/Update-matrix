@@ -121,7 +121,8 @@ doctype_js = {
     "Contact": "public/js/doctype_js/contact.js",
     "ToDo": "public/js/doctype_js/todo.js",
     "Loan": "public/js/doctype_js/loan.js",
-    "Quality Feedback": "public/js/doctype_js/quality_feedback.js"
+    "Quality Feedback": "public/js/doctype_js/quality_feedback.js",
+    "Quality Feedback Template": "public/js/doctype_js/quality_feedback_template.js"
 }
 doctype_list_js = {
 	"Job Applicant" : "public/js/doctype_js/job_applicant_list.js",
@@ -563,6 +564,7 @@ override_doctype_class = {
     "Asset": "one_fm.overrides.asset.AssetOverride",
     "Asset Movement": "one_fm.overrides.asset_movement.AssetMovement",
     "Quality Feedback": "one_fm.overrides.quality_feedback.QualityFeedbackOverride",
+	"Quality Feedback Template": "one_fm.overrides.quality_feedback_template.QualityFeedbackTemplateOverride",
 }
 
 

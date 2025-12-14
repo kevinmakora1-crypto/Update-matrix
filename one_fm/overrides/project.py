@@ -111,7 +111,7 @@ class ProjectOverride(Project):
      
     def validate(self):
         if not self.is_new():
-            self.copy_from_template() 
+            self.copy_from_template()
         self.update_costing()
         self.update_percent_complete()
         self.validate_from_to_dates("expected_start_date", "expected_end_date")

@@ -284,6 +284,14 @@ def get_shift_request_custom_fields():
                 "read_only": 1,
                 "options": "User",
                 "ignore_user_permissions": 1
-             }
+             },
+            {
+                "fieldname": "reason",
+                "fieldtype": "Small Text",
+                "insert_after": "status",
+                "label": "Reason",
+                "reqd": 1,
+                "translatable": 1
+            }
         ]
     }

@@ -204,15 +204,16 @@ def upload_image():
                 if(k=="expiry_date" and v):
                     frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_passport_expire', v)
                 if(k=="given_names" and v):
-                    for i, j in enumerate(v):
-                        if i==0:
-                            frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_first_name', j.title())
-                        if i==1:
-                            frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_second_name', j.title())
-                        if i==2:
-                            frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_third_name', j.title())
-                        if i==3:
-                            frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_fourth_name', j.title())
+                    #given_names is a space separated string, split by space and allocate each name to first second third and fourth names
+                    given_names = v.split(" ")
+                    if len(given_names) >= 1:
+                        frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_first_name', given_names[0].title())
+                    if len(given_names) >= 2:
+                        frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_second_name', given_names[1].title())
+                    if len(given_names) >= 3:
+                        frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_third_name', given_names[2].title())
+                    if len(given_names) >= 4:
+                        frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_fourth_name', given_names[3].title())
             response_data['passport']=result_dict
             # return frappe._dict()
         except Exception as e:

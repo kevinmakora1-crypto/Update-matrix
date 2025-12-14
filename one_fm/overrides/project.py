@@ -121,7 +121,6 @@ class ProjectOverride(Project):
     def after_insert(self):
         super().after_insert()
         update_project_user_assignment(self, None)
-    
     def onload(self):
         super().onload()
         get_depreciation_expense_amount(self)

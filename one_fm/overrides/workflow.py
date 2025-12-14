@@ -166,6 +166,15 @@ def apply_workflow(doc, action):
 
 	return doc
 
+def apply_workflow_ignore_permissions(doc, action):
+    frappe.set_user("Administrator")
+    try:
+        result = apply_workflow(doc, action)
+        frappe.db.commit()
+        return result
+    finally:
+        frappe.set_user("Guest")
+
 def validate_workflow(doc):
 	'''Validate Workflow State and Transition for the current user.
 

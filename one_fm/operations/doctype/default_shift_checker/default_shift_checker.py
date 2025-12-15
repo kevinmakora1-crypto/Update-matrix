@@ -171,12 +171,12 @@ def create_checker(start_date, end_date, is_day_off_reliever=False, is_weekend_r
 
 			if is_day_off_reliever:
 				doc.is_day_off_reliever = 1
-				doc.comment = f"Day OFF Reliever scheduled {count} day(s) in the same shift (Max: {threshold}). Please re-assign excess days to a different shift"
+				doc.comment = f"The Day OFF Reliever is scheduled for {count} day(s) in the same shift. Either re-assign the excess days to a different shift or if the current assignment is long-term, remove the employee from the Day OFF Reliever role."
 			elif is_weekend_reliever:
 				doc.is_weekend_reliever = 1
-				doc.comment = f"Weekend Reliever scheduled {count} day(s) in the same shift (Max: {threshold}). Please re-assign excess days to a different shift"
+				doc.comment = f"The Weekend Reliever is scheduled for {count} day(s) in the same shift. Either re-assign the excess days to a different shift or if the current assignment is long-term, remove the employee from the Weekend Reliever role."
 			else:
-				doc.comment = "Employee is scheduled outside their default allocation. Please move this shift to match their default"
+				doc.comment = f"Employee is scheduled {count} day(s) outside their defined default shift allocation. Either relocate the shift to match the employee's default shift allocation or update the employee's default shift allocation."
 
 			doc.insert()
 		except Exception as e:

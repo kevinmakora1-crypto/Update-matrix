@@ -279,8 +279,7 @@ def get_site_location(employee_id: str = None, shift: str = None,latitude: float
         })
         if medical_appointment:
             return response("Resource Not Found", 404, None, "You have a medical appointment. See you soon!")
-
-        shift = frappe.get_doc("Shift Assignment", shift) if shift else None
+        shift = frappe.get_doc("Shift Assignment", shift) if shift not in [None, 'undefined', ''] else None
         upcoming_shifts = []
 
         if not shift:

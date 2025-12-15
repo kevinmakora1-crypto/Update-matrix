@@ -122,15 +122,10 @@ class Contracts(Document):
                     if item.rate_type == "Monthly" and len(post_schedules) == 0:
                         frappe.throw(f"Post Schedules are missing for {item.item_code}")
 
-                    billable_period_count = get_billable_period_count_for_item(item.item_code, item.rate_type, post_schedules, self.project, selected_period_start_date, selected_period_end_date)
+                    quantity = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project, selected_period_start_date, selected_period_end_date)
 
-                    quantity = billable_period_count # Sum of all attended days/hours in the date range
-
-                    # Pro-rata calculation for Monthly rate type
-                    if item.rate_type == "Monthly":
-                        quantity = billable_period_count / len(post_schedules) * item.count
-
-                    print("="*100, item.rate_type, billable_period_count, len(post_schedules), item.count, quantity)
+                    if item.rate_type == "Monthly" and quantity > item.count:
+                        frappe.throw("Can not bill more than Contract's mentioned count for each Operations Role.")
 
                     if post_schedules:
                         sales_invoice_doc.append('items', {
@@ -1131,8 +1126,8 @@ def get_post_schedules_for_item(item_code, project, start_date, end_date):
         fields=["name", "project", "site"]
     )
 
-def get_billable_period_count_for_item(item_code, rate_type, post_schedules, project, start_date, end_date):
-    """Get billable period count for a given item code, post schedules, project, and date range."""
+def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, project, start_date, end_date):
+    """Get billable quantity for a given item code, rate type, count, post schedules, project, and date range."""
 
     if not post_schedules:
         return 0
@@ -1150,7 +1145,7 @@ def get_billable_period_count_for_item(item_code, rate_type, post_schedules, pro
     month, year = start_date.strftime("%B %Y").split(" ")
     is_hourly = rate_type == "Hourly"
 
-    billable_count = 0
+    quantity = 0
 
     for site in site_names:
         existing_attendance_amendment = frappe.db.exists("Attendance Amendment", {"month": month, "year": year, "project": project, "site": site, "attendance_based_on": "Shift Hours" if is_hourly else "Attendance Status", "docstatus": 1})
@@ -1195,7 +1190,7 @@ def get_billable_period_count_for_item(item_code, rate_type, post_schedules, pro
                     for day in days_in_range
                 )
                 
-                return flt(billable_basic_hours + billable_overtime_hours)
+                quantity += flt(billable_basic_hours + billable_overtime_hours)
             else:
                 billable_basic_days = sum(
                     1
@@ -1211,7 +1206,7 @@ def get_billable_period_count_for_item(item_code, rate_type, post_schedules, pro
                     if record.get(f"day_{day}") == "Present"
                 )
                 
-                return billable_basic_days + billable_overtime_days
+                quantity += billable_basic_days + billable_overtime_days
 
         else:
             # Build attendance filters
@@ -1224,6 +1219,23 @@ def get_billable_period_count_for_item(item_code, rate_type, post_schedules, pro
                 "docstatus": 1
             }
             
-            billable_count += frappe.db.count("Attendance", attendance_filters)
+            if is_hourly:
+                # Sum the working hours for the attendance
+                hourly_attendance = frappe.get_list(
+                    "Attendance",
+                    filters=attendance_filters,
+                    fields=["working_hours"]
+                )
+                total_working_hours = sum(
+                    flt(att.get("working_hours") or 0) for att in hourly_attendance
+                )
+                quantity += total_working_hours
+            else:
+                # Count the number of days for the attendance
+                quantity += frappe.db.count("Attendance", attendance_filters)
 
-    return billable_count
+    # Pro-rata calculation for Monthly rate type
+    if rate_type == "Monthly":
+        quantity = quantity / len(post_schedules) * count
+
+    return quantity

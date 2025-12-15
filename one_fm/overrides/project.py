@@ -126,6 +126,5 @@ class ProjectOverride(Project):
         get_depreciation_expense_amount(self)
 
     def on_update(self):
-        super().on_update()
         update_project_manager_name(self, None)
         on_project_update_switch_shift_site_post_to_inactive(self, None)

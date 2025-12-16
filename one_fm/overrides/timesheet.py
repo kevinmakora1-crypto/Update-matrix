@@ -185,6 +185,8 @@ def timesheet_automation(start_date=None,end_date=None,project=None):
             date = cstr(attendance.attendance_date)
             holiday_list = frappe.db.get_value('Contracts', {'project': attendance.project}, 'holiday_list')
             post = get_post(key, attendance.operations_shift, date)
+            if not post:
+                continue
             public_holiday = frappe.db.get_value('Holiday', {'parent': holiday_list, 'holiday_date': date}, ['description'])
             if public_holiday:
                 public_holiday_rate_multiplier = frappe.db.get_value('Contracts', {'project': attendance.project}, 'public_holiday_rate')
@@ -242,14 +244,17 @@ def calculate_hourly_rate(project = None,item_code = None,monthly_rate = None,sh
     return hourly_rate
 
 def get_post(employee, operations_shift, date):
-    return frappe.db.sql("""
+    post = frappe.db.sql("""
             SELECT
                 e.post
             FROM `tabPost Allocation Plan` p,`tabPost Allocation Employee Assignment` e
             WHERE p.name = e.parent and e.parenttype = 'Post Allocation Plan'
                 and e.employee = %s and p.operations_shift = %s
                 and p.date = %s
-            """, (employee, operations_shift, date), as_dict=1)[0].post
+            """, (employee, operations_shift, date), as_dict=1)
+    if post:
+        return post[0].post
+    return None
 
 #pass shift_hours, gender, uom, day_offs if needed
 def get_contrat_item_detail(project, item, gender, shift_hours):

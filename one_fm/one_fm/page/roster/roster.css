@@ -291,10 +291,3 @@ body[data-route="roster"] .switch-container {
 .tealboxcolor {
     background-color: #00897B;
 }
-
-.role-name-cell {
-	max-width: 250px;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}

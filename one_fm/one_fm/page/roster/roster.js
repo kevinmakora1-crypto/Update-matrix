@@ -1213,7 +1213,6 @@ function render_roster(res, page) {
 
 
 	for (operations_role_name in operations_roles_data) {
-		console.log(operations_role_name);
 		let full_name = operations_roles_data[operations_role_name].name;
 		
 		let pt_row_html = `

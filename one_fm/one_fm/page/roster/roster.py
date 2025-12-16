@@ -224,7 +224,6 @@ def get_roster_view(start_date, end_date, employee_search_id=None, employee_sear
 		if shift:
 			post_map_filters["shift"] = shift
 
-		print(post_map_filters, "=================post_map_filters===================", "\n\n\n\n")
 		post_map = PostMap(start=start_date, end=end_date, operations_roles_list=operations_roles, filters=post_map_filters)
 		master_data["operations_roles_data"] = post_map.template
 

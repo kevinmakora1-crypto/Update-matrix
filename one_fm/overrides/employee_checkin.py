@@ -114,6 +114,11 @@ def exists_checkin(current_shift_assignment, checkin_name, log_type="IN"):
 def after_insert_background(employee_checkin,current_shift):
 	self = frappe.get_doc("Employee Checkin", employee_checkin)
 	try:
+		if not current_shift:
+			shift_details = get_current_shift(self.employee)
+			if shift_details:
+				current_shift = shift_details.get('data').get('name')
+
 		# update shift if not exists
 		curr_shift = frappe.get_doc("Shift Assignment", current_shift)
 		if curr_shift:

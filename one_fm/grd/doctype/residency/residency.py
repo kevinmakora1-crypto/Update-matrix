@@ -270,7 +270,7 @@ def email_notification_reminder(grd_user,moi_list,reminder_number, action,type, 
         message_list.append(message)
 
     if message_list:
-        message = "<p>{0}: Please {1} {2} Residencyw</p><ol>".format(reminder_number,action,type)
+        message = "<p>{0}: Please {1} {2} Residency</p><ol>".format(reminder_number,action,type)
         for msg in message_list:
             message += "<li>"+msg+"</li>"
         message += "<ol>"

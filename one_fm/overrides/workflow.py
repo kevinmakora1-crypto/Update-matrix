@@ -255,7 +255,7 @@ def filter_allowed_users(users, doc, transition):
 
 	return filtered_users
 
-def get_next_possible_transitions(workflow_name, state,doc=None):
+def get_next_possible_transitions(workflow_name, state, doc=None):
 	filters = [
 		['parent', '=', workflow_name],
 		['state', '=', state],
@@ -263,6 +263,7 @@ def get_next_possible_transitions(workflow_name, state,doc=None):
 	]
 	transitions = frappe.get_all('Workflow Transition', fields='*', filters=filters)
 	valid_transitions = []
+	seen_actions = set()
 	for transition in transitions:
 		if isinstance(doc, dict):
 			doc_obj = frappe.get_doc(doc)
@@ -270,7 +271,9 @@ def get_next_possible_transitions(workflow_name, state,doc=None):
 			doc_obj = doc
 
 		if is_transition_condition_satisfied(transition, doc_obj):
-			valid_transitions.append(transition)
+			if transition.action not in seen_actions:
+				seen_actions.add(transition.action)
+				valid_transitions.append(transition)
 
 	return valid_transitions
 			

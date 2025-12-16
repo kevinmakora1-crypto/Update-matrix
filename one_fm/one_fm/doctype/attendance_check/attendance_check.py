@@ -207,10 +207,11 @@ class AttendanceCheck(Document):
                     self.create_employee_checkin_record(self.end_time, "OUT")
 
     def update_employee_checkin(self, checkin_name, time):
-        frappe.db.set_value("Employee Checkin", checkin_name, {
-            "time": time,
-            "source": "Attendance Check"
-        })
+        pass
+        # frappe.db.set_value("Employee Checkin", checkin_name, {
+        #     "time": time,
+        #     "source": "Attendance Check"
+        # })
 
     def create_employee_checkin_record(self, time, log_type):
         checkin = frappe.get_doc({
@@ -221,7 +222,7 @@ class AttendanceCheck(Document):
             "shift_assignment": self.shift_assignment,
             "source": "Attendance Check"
         })
-        checkin.insert(ignore_permissions=True)
+        #checkin.insert(ignore_permissions=True)
 
     def check_on_leave_record(self):
         if self.attendance_status == "On Leave":

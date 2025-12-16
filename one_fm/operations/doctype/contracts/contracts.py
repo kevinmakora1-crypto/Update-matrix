@@ -102,6 +102,24 @@ class Contracts(Document):
 
     @frappe.whitelist()
     def generate_sales_invoice(self, month, year):
+        """
+        Generate a Sales Invoice for this contract for a specific month and year.
+
+        Args:
+            month (int or str): The month (1-12) for which to generate the invoice.
+            year (int or str): The year (e.g., 2024) for which to generate the invoice.
+
+        Returns:
+            Document: The created Sales Invoice document.
+
+        Raises:
+            frappe.ValidationError: If there is an error during invoice creation.
+
+        This method creates and saves a new Sales Invoice in the database for the specified
+        month and year, using the contract's client, project, and items. The invoice will
+        include all relevant items for the contract and set the due date to one day after
+        the current date.
+        """
         try:
             # Create date string for the first day of selected month/year
             month = cint(month)

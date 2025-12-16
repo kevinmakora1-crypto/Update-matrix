@@ -5,6 +5,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate, add_days, date_diff, today
 import datetime
+import json
 
 class EventStaff(Document):
 	def validate(self):
@@ -98,6 +99,7 @@ class EventStaff(Document):
 				new_schedule = frappe.new_doc("Employee Schedule")
 				new_schedule.update(employee_schedule_data)
 				new_schedule.insert(ignore_permissions=True)
+			frappe.msgprint(f"Employee Schedule for {current_date} processed.", alert=True)
 
 	def get_event_start_end_date_time(self, date=None):
 		start_time = frappe.utils.get_datetime(self.start_datetime).time()
@@ -157,6 +159,7 @@ class EventStaff(Document):
 				"date": [">", getdate(date)]
 			}
 		)
+		frappe.msgprint("Employee Schedules linked to the staff event beyond the new End Date have been deleted.", alert=True)
 
 	def on_cancel(self):
 		self.cleanup_employee_schedules_on_cancel()
@@ -207,13 +210,25 @@ def get_existing_schedules(employee=None, start_date=None, end_date=None, event_
 	if not event_staff and not (employee and start_date and end_date):
 		return []
 
-	filters = {"docstatus": 1}
+	filters = {"docstatus": 0}
+
+	# Handle employee parameter - could be a list, JSON string, or simple string
+	if isinstance(employee, str):
+		# Try to parse as JSON first (for list of employees)
+		try:
+			employee = json.loads(employee)
+		except (json.JSONDecodeError, ValueError):
+			# If JSON parsing fails, it's a simple employee ID string
+			pass
 
 	if event_staff:
 		filters["event_staff"] = event_staff
 		filters["is_event_schedule"] = 1
 	else:
-		filters["employee"] = employee
+		if isinstance(employee, list):
+			filters["employee"] = ["in", employee]
+		else:
+			filters["employee"] = employee
 		filters["date"] = ["between", [start_date, end_date]]
 
 	return frappe.get_all(

@@ -36,3 +36,21 @@ def set_up_face_recognition_server_credentials():
     except Exception as e:
         frappe.log_error("Face Recognition Setup", frappe.get_traceback())
         return {'error':True, 'message':e}
+
+@frappe.whitelist()
+def get_workflow_state_banner_message(doctype, workflow_state):
+    """
+    Retrieves a banner message from the Workflow Document State.
+    """
+    if not doctype or not workflow_state:
+        return None
+
+    workflow_name = frappe.db.get_value("Workflow", {"document_type": doctype, "is_active": 1}, "name")
+
+    if not workflow_name:
+        return None
+
+    message = frappe.db.get_value("Workflow Document State", {"parent": workflow_name, "state": workflow_state}, "banner_message")
+    style = frappe.db.get_value("Workflow State", workflow_state, "style")
+
+    return {"message": message, "style": style}

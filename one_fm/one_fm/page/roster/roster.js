@@ -1211,7 +1211,10 @@ function render_roster(res, page) {
 	let $rosterMonthbody = $rosterMonth.find("#calenderviewtable tbody");
 	$rosterMonthbody.empty();
 
+
 	for (operations_role_name in operations_roles_data) {
+		let full_name = operations_roles_data[operations_role_name].name;
+		
 		let pt_row_html = `
 		<tr class="colorclass scheduledStaff" data-name="${operations_role_name}">
 			<td class="sticky">
@@ -1219,13 +1222,15 @@ function render_roster(res, page) {
 					<div class="font16 paddingdiv cursorpointer orangecolor">
 						<i class="fa fa-plus" aria-hidden="true"></i>
 					</div>
-					<div class="font16 paddingdiv borderleft cursorpointer">
-						${operations_role_name}
+					<div class="paddingdiv borderleft cursorpointer">
+						<div class="font16 font-weight-bold">${operations_role_name}</div>
+						<div class="text-muted" style="font-size: 12px;">${full_name}</div>
 					</div>
 				</div>
 			</td>
 		</tr>
 		`;
+		
 		$rosterMonthbody.append(pt_row_html);
 		let $roleRow = $rosterMonthbody.find(`tr[data-name="${escape_values(operations_role_name)}"]`);
 
@@ -1235,22 +1240,20 @@ function render_roster(res, page) {
 		let i = 0;
 
 		while (current_day <= end_moment) {
-			// Ensure operations_roles_data has data for the current index
-			if (operations_roles_data[operations_role_name] && operations_roles_data[operations_role_name][i]) {
-				let { date, operations_role, count, highlight } = operations_roles_data[operations_role_name][i];
+			if (operations_roles_data[operations_role_name] && operations_roles_data[operations_role_name].data[i]) {
+				let { date, operations_role, count, highlight } = operations_roles_data[operations_role_name].data[i];
 				let pt_count_html = `
 				<td class="${highlight}">
 					<div class="text-center" data-selectid="${operations_role + "|" + date}">${count}</div>
 				</td>`;
 				$roleRow.append(pt_count_html);
 			} else {
-				// Append an empty cell if data is missing, to maintain table structure
 				$roleRow.append("<td><div class='text-center'>&nbsp;</div></td>");
 			}
 			i++;
 			current_day.add(1, "days");
 		}
-		$roleRow.append(`<td></td>`); // Total column
+		$roleRow.append(`<td></td>`);
 	}
 
 	let emp_row_wrapper = `

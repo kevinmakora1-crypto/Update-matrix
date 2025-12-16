@@ -3927,6 +3927,10 @@ def disable_out_of_office(employee_email):
     except Exception as e:
         frappe.log_error(title="Failed to disable out-of-office", message=str(e))
 
+@frappe.whitelist()
+def queue_set_out_of_office_for_leaves():
+    frappe.enqueue(set_out_of_office_for_leaves, queue='long', timeout=800)
+
 
 def set_out_of_office_for_leaves():
     today = datetime.now().date()

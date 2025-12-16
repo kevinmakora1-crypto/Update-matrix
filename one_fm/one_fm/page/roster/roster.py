@@ -1577,19 +1577,26 @@ def reliever_roster_assignment(reliver_emp_name, roster_list_arg):
 
 			shift_val = roster_data_item["shift"]
 			operations_role_val = roster_data_item["operations_role"]
-			start_date_val = roster_data_item["start_datetime"].date() if isinstance(roster_data_item["start_datetime"], datetime) else getdate(roster_data_item["start_datetime"]).date()
-			end_date_val = roster_data_item["end_datetime"].date() if isinstance(roster_data_item["end_datetime"], datetime) else getdate(roster_data_item["end_datetime"]).date()
 
 			# Ensure date is correctly formatted string YYYY-MM-DD
 			date_val_str = roster_data_item["date"].strftime("%Y-%m-%d") if isinstance(roster_data_item["date"], (datetime, pd.Timestamp)) else cstr(roster_data_item["date"])
 
 			employees_for_extreme = [{"employee":reliver_emp_name,"date":date_val_str}]
 
-			extreme_schedule(employees=employees_for_extreme, shift=shift_val, operations_role=operations_role_val, otRoster=otRoster,
-				start_date=start_date_val.strftime("%Y-%m-%d"),
-				end_date=end_date_val.strftime("%Y-%m-%d"),
-				keep_days_off=keep_days_off, day_off_ot=day_off_ot,
-				employee_list=employee_list_for_extreme, selected_reliever=reliver_emp_name)
+			# For reliever assignment, roster only for the specific day-off date
+			# and do not expand to a date range based on start/end datetimes.
+			extreme_schedule(
+				employees=employees_for_extreme,
+				shift=shift_val,
+				operations_role=operations_role_val,
+				otRoster=otRoster,
+				start_date=date_val_str,
+				end_date=None,
+				keep_days_off=keep_days_off,
+				day_off_ot=day_off_ot,
+				employee_list=employee_list_for_extreme,
+				selected_reliever=reliver_emp_name,
+			)
 		else:
 			frappe.log_error(f"Skipping reliever assignment due to incomplete roster_data: {roster_data_item}", "Reliever Assignment")
 

@@ -31,7 +31,7 @@ class PostMap():
 		self.start_mapping()
 
 	def create_template(self,row):
-		self.template[row.post_abbrv] = []
+		self.template[row.post_abbrv] = {"name":row.operations_role, "data":[]} 
 		return
 
 	def sort_post_schedule(self,each):
@@ -39,14 +39,14 @@ class PostMap():
 		if self.post_schedule_map.get(each.operations_role):
 			pass
 		else:
-			self.post_schedule_map[each.operations_role] = [one for one in self.post_schedule_count if one.operations_role ==each.operations_role]
+			self.post_schedule_map[each.operations_role] = [one for one in self.post_schedule_count if one.operations_role == each.operations_role]
 		return self.post_schedule_map
 
 	def sort_post_filled(self,each):
 		if self.post_filled_map.get(each.operations_role):
 			pass
 		else:
-			self.post_filled_map[each.operations_role] = [one for one in self.post_filled_count if one.operations_role==each.operations_role]
+			self.post_filled_map[each.operations_role] = [one for one in self.post_filled_count if one.operations_role == each.operations_role]
 		return self.post_filled_map
 
 	def summarise_schedule_data(self,data):
@@ -64,8 +64,9 @@ class PostMap():
 
 		if not self.preformated_data.get(self.abbrvs.get(row.get('operations_role'))):
 			self.preformated_data[self.abbrvs.get(row.get('operations_role'))] = [row]
-		else:
+		else: 
 			self.preformated_data[self.abbrvs.get(row.get('operations_role'))].append(row)
+
 
 	def create_second_section(self,row):
 		highlight = "bggreen"
@@ -84,18 +85,19 @@ class PostMap():
 			highlight = "bgred"
 		row['highlight'] = highlight
 		row['operations_role'] = row['abbr']
+
 		if not self.template.get(row['abbr']):
-			self.template[row['abbr']] = [row]
+			self.template[row['abbr']]["data"] = [row]
 		else:
-			self.template[row['abbr']].append(row)
+			self.template[row['abbr']]["data"].append(row)
+
 
 		return self.template
 
 	def create_date_post_summary(self,date):
 		self.cur_date = cstr(date).split(' ')[0]
-		summary_data =  list(map(self.summarise_post_data,self.post_filled_map))
-		list(map(self.create_part_result,summary_data  ))
-
+		summary_data =  list(map(self.summarise_post_data, self.post_filled_map))
+		list(map(self.create_part_result,summary_data))
 		self.post_filled_summary.append(summary_data)
 
 	def create_date_schedule_summary(self,date):

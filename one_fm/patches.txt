@@ -223,6 +223,7 @@ one_fm.patches.v15_0.add_style_field_to_workflow_document_state
 one_fm.patches.v15_0.add_reason_field_to_shift_request
 one_fm.patches.v15_0.add_workflow_on_the_job_training #2
 one_fm.patches.v15_0.reprocess_preparation_submit
+one_fm.patches.v15_0.add_banner_message_field_to_workflow_document_state
 one_fm.patches.v15_0.add_stock_settings_custom_fields
 
 [post_model_sync]

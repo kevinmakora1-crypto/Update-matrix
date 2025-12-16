@@ -1,10 +1,14 @@
 frappe.ui.form.on('Purchase Receipt', {
     onload: function(frm) {
-        set_readonly_for_warehouse_users(frm);
+        setTimeout(() => {
+            set_readonly_for_warehouse_users(frm);
+        }, 100);
     },
     
     refresh: function(frm) {
-        set_readonly_for_warehouse_users(frm);
+        setTimeout(() => {
+            set_readonly_for_warehouse_users(frm);
+        }, 100);
     }
 });
 
@@ -35,7 +39,10 @@ function set_readonly_for_warehouse_users(frm) {
         'Assignee',
         'Penalty Recipient',
         'Employee',
-        'Employee Self Service'
+        'Employee Self Service',
+        'All', 
+        'Guest',
+        'Desk User'
     ];
     
     const warehouse_stock_roles = [
@@ -54,15 +61,25 @@ function set_readonly_for_warehouse_users(frm) {
         'distributed_discount_amount'
     ];
     
-    const user_roles = frappe.user_roles.filter(role => 
+    // Get all roles excluding default roles
+    const non_default_roles = frappe.user_roles.filter(role => 
         !default_roles.includes(role)
     );
-    
-    const has_warehouse_role = user_roles.some(role => 
+
+    // Check if user has warehouse roles
+    const has_warehouse_role = non_default_roles.some(role => 
         warehouse_stock_roles.includes(role)
+        
+    );
+
+    
+    // Get roles that are neither default nor warehouse
+    const other_roles = non_default_roles.filter(role => 
+        !warehouse_stock_roles.includes(role)
     );
     
-    if (has_warehouse_role) {
+    // Make read-only ONLY if user has warehouse role BUT no other roles
+    if (has_warehouse_role && other_roles.length === 0) {
         readonly_fields.forEach(field => {
             frm.fields_dict.items.grid.update_docfield_property(
                 field,
@@ -74,3 +91,7 @@ function set_readonly_for_warehouse_users(frm) {
         frm.refresh_field('items');
     }
 }
+
+
+
+

@@ -30,7 +30,7 @@ def generate_contracts_invoice():
                 contract_doc.generate_sales_invoice()
 
     except Exception as e:
-        frappe.log(str(e), "Contracts Invoice")
+        frappe.log_error(message=str(e), title="Contracts Invoice")
 
 
 def roster_projection_view_task():

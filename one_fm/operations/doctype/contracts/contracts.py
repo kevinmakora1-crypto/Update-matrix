@@ -101,186 +101,68 @@ class Contracts(Document):
             self.duration = cstr(months) + ' month'
 
     @frappe.whitelist()
-    def generate_sales_invoice(self):
-        # if period, contract came from frontend else scheduler (use dnow())
+    def generate_sales_invoice(self, month, year):
+        """
+        Generate a Sales Invoice for this contract for a specific month and year.
 
-        curent_month = False
-        calculation_date = None
-        if str(self.month_of_invoice).lower() == "current month":
-            current_month = True
-            calculation_date = cstr(getdate())
+        Args:
+            month (int or str): The month (1-12) for which to generate the invoice.
+            year (int or str): The year (e.g., 2024) for which to generate the invoice.
 
-        elif str(self.month_of_invoice).lower() == "previous month":
-            calculation_date = add_to_date(getdate(), months=-1)
+        Returns:
+            Document: The created Sales Invoice document.
 
-        period = frappe.form_dict.period
-        date = period if period else calculation_date
+        Raises:
+            frappe.ValidationError: If there is an error during invoice creation.
 
-        if str(self.due_date).lower() != "end of month":
-            temp_invoice_year = date.split("-")[0]
-            temp_invoice_month = date.split("-")[1]
-            invoice_date = temp_invoice_year + "-" + temp_invoice_month + "-" + cstr(self.due_date)
-        else:
-            invoice_date = cstr(getdate())
-
-        # sys_invoice_date = datetime.fromisoformat(invoice_date).date()
-        last_day = get_last_day(date)
-        if datetime.today().date() < last_day:
-            contract_invoice_date = invoice_date
-        else:
-            contract_invoice_date = datetime.fromisoformat(date).date()
-        # create invoice variable
-        sales_invoice_doc = frappe.new_doc("Sales Invoice")
-        sales_invoice_doc.customer = self.client
-        sales_invoice_doc.due_date = add_to_date(getdate(), days=1) #invoice_date
-        sales_invoice_doc.project = self.project
-        sales_invoice_doc.contracts = self.name
-        sales_invoice_doc.ignore_pricing_rule = 1
-        sales_invoice_doc.set_posting_time = 1
-        sales_invoice_doc.posting_date = contract_invoice_date
-
-
-        for obj in self.items:
-            if obj.rate_type == "Daily":
-                item_obj = calculate_rate_for_daily_rate_type(obj=obj, period=period)
-                sales_invoice_doc.append("items", item_obj)
-
+        This method creates and saves a new Sales Invoice in the database for the specified
+        month and year, using the contract's client, project, and items. The invoice will
+        include all relevant items for the contract and set the due date to one day after
+        the current date.
+        """
         try:
-            if self.create_sales_invoice_as == "Single Invoice":
-                items_amounts = get_service_items_invoice_amounts(self, date, current_month)
-                sales_invoice_doc.title = self.client + ' - ' + 'Single Invoice'
+            # Create date string for the first day of selected month/year
+            month = cint(month)
+            year = cint(year)
+            selected_period_start_date = getdate(f"{year}-{month:02d}-01")
+            selected_period_end_date = get_last_day(selected_period_start_date)
 
-                income_account = frappe.db.get_value("Project", self.project, ["income_account"])
+            sales_invoice_doc = frappe.new_doc("Sales Invoice")
+            sales_invoice_doc.customer = self.client
+            sales_invoice_doc.due_date = add_to_date(getdate(), days=1)
+            sales_invoice_doc.project = self.project
+            sales_invoice_doc.contracts = self.name
 
-                for item in items_amounts:
-                    sales_invoice_doc.append('items', {
-                        'item_code': item["item_code"],
-                        'item_name': item["item_code"],
-                        'description': item["item_description"],
-                        'qty': item["qty"],
-                        'uom': item["uom"],
-                        'rate': item["rate"],
-                        'amount': item["amount"],
-                        'income_account': income_account
-                    })
+            for item in self.items:
+                if item.item_type == "Manpower":
+                    post_schedules = get_post_schedules_for_item(item.item_code, self.project, selected_period_start_date, selected_period_end_date)
 
-                # get delivery note
-                delivery_note = get_delivery_note(self, date)
-                for item in delivery_note:
-                    sales_invoice_doc.append('items', {
-                        'item_code': item.item_code,
-                        'item_name': item.item_name,
-                        'qty': item.qty,
-                        'uom': item.uom,
-                        'rate': item.rate,
-                        'amount': item.amount,
-                        'description': f'{item.description}\nPosted on {item.posting_date}',
-                        'income_account': income_account
-                    })
+                    if item.rate_type == "Monthly" and len(post_schedules) == 0:
+                        frappe.throw(f"Post Schedules are missing for {item.item_code}")
 
-                sales_invoice_doc.save()
-                frappe.db.commit()
+                    quantity = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project, selected_period_start_date, selected_period_end_date)
 
-                return sales_invoice_doc
+                    if item.rate_type == "Monthly" and quantity > item.count:
+                        frappe.throw("Can not bill more than Contract's mentioned count for each Operations Role.")
 
-            if self.create_sales_invoice_as == "Separate Invoice for Each Site":
-                sales_invoice_docs = []
-                site_invoices = get_separate_invoice_for_sites(self, date, current_month)
-                # get delivery note
-                delivery_note = get_delivery_note(self, date)
-
-                for site, items_amounts in site_invoices.items():
-                    sales_invoice_doc = frappe.new_doc("Sales Invoice")
-                    sales_invoice_doc.customer = self.client
-                    sales_invoice_doc.title = self.client + ' - ' + site
-                    sales_invoice_doc.due_date = add_to_date(getdate(), days=1)
-                    sales_invoice_doc.project = self.project
-                    sales_invoice_doc.contracts = self.name
-                    sales_invoice_doc.ignore_pricing_rule = 1
-                    sales_invoice_doc.set_posting_time = 1
-                    sales_invoice_doc.posting_date = date
-
-                    income_account = frappe.db.get_value("Project", self.project, ["income_account"])
-
-                    for item in items_amounts:
-                        sales_invoice_doc.append('items', {
-                            'item_code': item["item_code"],
-                            'item_name': item["item_code"],
-                            'description': item["item_description"],
-                            'site': site,
-                            'qty': item["qty"],
-                            'uom': item["uom"],
-                            'rate': item["rate"],
-                            'amount': item["amount"],
-                            'income_account': income_account
-                        })
-
-                    # add delivery Note
-                    for item in delivery_note:
-                        if(item.site==site):
-                            sales_invoice_doc.append('items', {
-                                'item_code': item.item_code,
-                                'item_name': item.item_name,
-                                'qty': item.qty,
-                                'uom': item.uom,
-                                'rate': item.rate,
-                                'amount': item.amount,
-                                'site': item.site,
-                                'description': f'{item.description}\nPosted on {item.posting_date}',
-                                'income_account': income_account
-                            })
-
-                    sales_invoice_doc.save()
-                    frappe.db.commit()
-
-                    sales_invoice_docs.append(sales_invoice_doc)
-
-                return sales_invoice_docs
-
-            if self.create_sales_invoice_as == "Separate Item Line for Each Site":
-                separate_site_items = get_single_invoice_for_separate_sites(self, date, current_month)
-                # get delivery note
-                delivery_note = get_delivery_note(self, date)
-                sales_invoice_doc.title = self.client + ' - ' + 'Item Lines'
-
-                income_account = frappe.db.get_value("Project", self.project, ["income_account"])
-
-                for site, item in separate_site_items.items(): #explode dictionary
-                    sales_invoice_doc.append('items', {
-                        'item_code': item["item_code"],
-                        'item_name': item["item_code"],
-                        'description': item["item_description"],
-                        'qty': item["qty"],
-                        'uom': item["uom"],
-                        'rate': item["rate"],
-                        'amount': item["amount"],
-                        'income_account': income_account,
-                        'site': site, #add site to item
-                    })
-
-                # add delivery Note
-                for item in delivery_note:
-                    if(item.site):
+                    if post_schedules:
                         sales_invoice_doc.append('items', {
                             'item_code': item.item_code,
-                            'item_name': item.item_name,
-                            'qty': item.qty,
+                            'item_name': item.item_code,
+                            'description': item.item_name or item.item_code or "",
+                            'qty': quantity,
                             'uom': item.uom,
                             'rate': item.rate,
-                            'amount': item.amount,
-                            'site': item.site,
-                            'description': f'{item.description}\nPosted on {item.posting_date}',
-                            'income_account': income_account
+                            'amount': quantity * item.rate,
                         })
 
+            sales_invoice_doc.insert(ignore_permissions=True)
+            sales_invoice_doc.save()
 
-                sales_invoice_doc.save()
-                frappe.db.commit()
-
-                return sales_invoice_doc
+            return sales_invoice_doc
 
         except Exception as error:
-            frappe.throw(_(error))
+            frappe.throw(_(str(error)))
 
 
     def on_cancel(self):
@@ -1219,3 +1101,159 @@ def calculate_rate_for_daily_rate_type(obj, period):
         "item_name": obj.item_name,
         "qty": the_attendance_count
     }
+
+
+def get_post_schedules_for_item(item_code, project, start_date, end_date):
+    """Get post schedules for a given item code, project, and date range."""
+    operation_roles = frappe.db.get_list(
+        "Operations Role",
+        filters={
+            "sale_item": item_code,
+            "status": "Active",
+            "project": project
+        },
+        pluck="name"
+    )
+    
+    if not operation_roles:
+        return []
+    
+    # Get operation post names only
+    operation_post_names = frappe.db.get_list(
+        "Operations Post",
+        filters={
+            "project": project,
+            "post_template": ["in", operation_roles],
+            "status": "Active"
+        },
+        pluck="name"
+    )
+    
+    if not operation_post_names:
+        return []
+    
+    # Get post schedules for the posts in the date range
+    return frappe.db.get_list(
+        "Post Schedule",
+        filters={
+            "date": ["between", [start_date, end_date]],
+            "project": project,
+            "post": ["in", operation_post_names],
+            "post_status": "Planned"
+        },
+        fields=["name", "project", "site"]
+    )
+
+def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, project, start_date, end_date):
+    """Get billable quantity for a given item code, rate type, count, post schedules, project, and date range."""
+
+    if not post_schedules:
+        return 0
+
+    site_names = list(set([
+        post_schedule.get("site") 
+        for post_schedule in post_schedules 
+        if post_schedule.get("site")
+    ]))
+    
+    if not site_names:
+        return 0
+
+    # Convert start_date to "October" and "2025" format
+    month, year = start_date.strftime("%B %Y").split(" ")
+    is_hourly = rate_type == "Hourly"
+
+    quantity = 0
+
+    for site in site_names:
+        existing_attendance_amendment = frappe.db.exists("Attendance Amendment", {"month": month, "year": year, "project": project, "site": site, "attendance_based_on": "Shift Hours" if is_hourly else "Attendance Status", "docstatus": 1})
+        
+        if existing_attendance_amendment:
+            # Get day numbers within the date range
+            start_day = start_date.day
+            end_day = end_date.day
+            days_in_range = list(range(start_day, end_day + 1))
+            
+            # Build field list - only fetch fields for days in range plus all day fields (needed for both status and hours)
+            # Note: We fetch all day fields because we need both day_X (status) and day_X_hour (hours) fields
+            day_fields = [f"day_{i}_hour" for i in range(1, end_day + 1)] if is_hourly else [f"day_{i}" for i in range(1, end_day + 1)]
+            
+            # Fetch all attendance amendment items in one query with shift filter
+            basic_attendance_records = frappe.db.get_all(
+                "Attendance Amendment Item",
+                filters={
+                    "parent": existing_attendance_amendment,
+                },
+                fields=day_fields
+            )
+            
+            overtime_attendance_records = frappe.db.get_all(
+                "Attendance Amendment OT Item",
+                filters={
+                    "parent": existing_attendance_amendment,
+                },
+                fields=day_fields
+            )
+
+            if is_hourly:
+                billable_basic_hours = sum(
+                    flt(record.get(f"day_{day}_hour") or 0)
+                    for record in basic_attendance_records
+                    for day in days_in_range
+                )
+                
+                billable_overtime_hours = sum(
+                    flt(record.get(f"day_{day}_hour") or 0)
+                    for record in overtime_attendance_records
+                    for day in days_in_range
+                )
+                
+                quantity += flt(billable_basic_hours + billable_overtime_hours)
+            else:
+                billable_basic_days = sum(
+                    1
+                    for record in basic_attendance_records
+                    for day in days_in_range
+                    if record.get(f"day_{day}") == "Present"
+                )
+                
+                billable_overtime_days = sum(
+                    1
+                    for record in overtime_attendance_records
+                    for day in days_in_range
+                    if record.get(f"day_{day}") == "Present"
+                )
+                
+                quantity += billable_basic_days + billable_overtime_days
+
+        else:
+            # Build attendance filters
+            attendance_filters = {
+                "attendance_date": ["between", [start_date, end_date]],
+                "project": project,
+                "site": site,
+                "sale_item": item_code,
+                "status": "Present",
+                "docstatus": 1
+            }
+            
+            if is_hourly:
+                # Sum the working hours for the attendance
+                hourly_attendance = frappe.get_list(
+                    "Attendance",
+                    filters=attendance_filters,
+                    fields=["working_hours"]
+                )
+                total_working_hours = sum(
+                    flt(att.get("working_hours") or 0) for att in hourly_attendance
+                )
+                quantity += total_working_hours
+            else:
+                # Count the number of days for the attendance
+                quantity += frappe.db.count("Attendance", attendance_filters)
+
+    # Pro-rata calculation for Monthly rate type
+    if rate_type == "Monthly":
+        quantity = quantity / len(post_schedules) * count
+
+    return quantity

@@ -137,41 +137,84 @@ frappe.ui.form.on('Contracts', {
 			frm.add_custom_button(__("Create Delivery Note"), function() {
 				create_delivery_note(frm);
 			}).addClass('btn btn-danger');
+
 			// Generate Invoice
 			frm.add_custom_button(__("Generate Invoice"), function() {
-				// ask for invoice date, then use it for the rest of the activity
+				// Get contract start year and current year
+				let contract_start_year = frm.doc.start_date ? new Date(frm.doc.start_date).getFullYear() : new Date().getFullYear();
+				let current_year = new Date().getFullYear();
+				
+				// Generate year options from current year back to contract start year
+				let year_options = [];
+				for (let year = current_year; year >= contract_start_year; year--) {
+					year_options.push({ value: year.toString(), label: year.toString() });
+				}
+				
+				// Month options
+				let month_options = [
+					{ value: 1, label: __("January") },
+					{ value: 2, label: __("February") },
+					{ value: 3, label: __("March") },
+					{ value: 4, label: __("April") },
+					{ value: 5, label: __("May") },
+					{ value: 6, label: __("June") },
+					{ value: 7, label: __("July") },
+					{ value: 8, label: __("August") },
+					{ value: 9, label: __("September") },
+					{ value: 10, label: __("October") },
+					{ value: 11, label: __("November") },
+					{ value: 12, label: __("December") },
+				];
+				
+				// Set default to current month and year
+				let current_month = (new Date().getMonth() + 1).toString();
+				let current_year_str = current_year.toString();
+				
 				let d = new frappe.ui.Dialog({
-					title: 'Select Contracts Period',
+					title: __('Select Invoice Period'),
 					fields: [
-							{
-									label: 'Contract Period',
-									fieldname: 'period',
-									fieldtype: 'Date',
-						reqd:1
-							}
-					],
-					primary_action_label: 'Generate',
-					primary_action(values) {
-					// process generate invoice
-					frappe.call({
-						doc: frm.doc,
-						method: 'generate_sales_invoice',
-						args: values,
-						callback: function(r) {
-							if(!r.exc){
-								frappe.show_alert({
-										message:__('Sales Invoice created successfully'),
-										indicator:'green'
-								}, 5);
-								frappe.msgprint(__('Sales Invoice created successfully'))
-								frm.reload_doc();
-							}
+						{
+								label: __('Month'),
+								fieldname: 'month',
+								fieldtype: 'Select',
+								options: month_options,
+								default: current_month,
+								reqd: 1
 						},
-						freeze: true,
-						freeze_message: (__('Creating Sales Invoice'))
-					})
-					// end process generate invoice
-							d.hide();
+						{
+								label: __('Year'),
+								fieldname: 'year',
+								fieldtype: 'Select',
+								options: year_options,
+								default: current_year_str,
+								reqd: 1
+						}
+					],
+					primary_action_label: __('Generate'),
+					primary_action(values) {						
+						frappe.call({
+							doc: frm.doc,
+							method: 'generate_sales_invoice',
+							args: values,
+							callback: function(r) {
+								if(!r.exc){
+									frappe.show_alert({
+											message:__('Sales Invoice created successfully'),
+											indicator:'green'
+									}, 5);
+									
+									if(r.message && r.message.name) {
+										frappe.set_route('Form', 'Sales Invoice', r.message.name);
+									} else {
+										frappe.msgprint(__('Sales Invoice created successfully'));
+										frm.reload_doc();
+									}
+								}
+							},
+							freeze: true,
+							freeze_message: (__('Creating Sales Invoice'))
+						})
+						d.hide();
 					}
 			});
 

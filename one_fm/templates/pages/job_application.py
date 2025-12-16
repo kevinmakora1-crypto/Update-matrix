@@ -189,7 +189,7 @@ def create_job_applicant_from_job_portal(applicant_name, nationality, applicant_
         # job_applicant.save(ignore_permissions=True)
         return True
     except:
-        frappe.log_error(frappe.get_traceback(), "Error while uploading file (Easy Apply)")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while uploading file (Easy Apply)")
         frappe.throw("An Error Occured while submitting the job application")
 
 @frappe.whitelist()
@@ -209,7 +209,7 @@ def attach_file_to_job_applicant(filedata, job_applicant):
                 # Set resume_attachment as url of the file stored
                 job_applicant.resume_attachment = filedoc.file_url
     except:
-        frappe.log_error(frappe.get_traceback(), "Error while uploading file (Easy Apply)")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while uploading file (Easy Apply)")
 
 
 def create_job_applicant_for_easy_apply(applicant_name, first_name, second_name, third_name, last_name, nationality,

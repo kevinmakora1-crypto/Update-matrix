@@ -459,7 +459,7 @@ class DataExporter:
 
 			return response
 		except Exception as e:
-			frappe.log_error(e)
+			frappe.log_error(message=str(e), title="Error Adding Sheet to Google Sheet")
 
 
 

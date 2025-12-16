@@ -71,7 +71,7 @@ def notify_for_employee_docs_expiry():
             send_employee_doc_expiry_notification(employees, recipients)
 
     except Exception as e:
-        frappe.log_error(str(e), 'Employee Docs Expiry')
+        frappe.log_error(message=str(e), title='Employee Docs Expiry')
 
 def get_employees_by_expiry_doc(notify_days_before):
     target_expiry_date = add_days(today(), notify_days_before)

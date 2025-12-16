@@ -41,7 +41,7 @@ def create_shift_permission(employee, permission_type, date, reason, leaving_tim
             return response("Could Not Create Shift Permission, Shift Details are missing.", {}, False, 400)
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Create Shift Permission Error')
         return response(e, {}, False, 500)
 
 # This method validates any duplicate permission for the employee on same day
@@ -127,7 +127,7 @@ def shift_permission_approved(supervisor_id, shift_permission_id):
         elif shift_supervisor != supervisor_id:
             return response("Only Supervisor Has The Right to Approve", {}, False, 400)
     except Exception as e:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Shift Permission Approval Error')
         return response(e, {}, False, 500)
 
 # This function allows Shift Permission supervisor to reject the permission and notify the employee.
@@ -153,7 +153,7 @@ def shift_permission_rejected(supervisor_id, shift_permission_id):
         elif shift_supervisor != supervisor_id:
             return response("Only Supervisor Has The Right to Reject", {}, False, 400)
     except Exception as e:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Shift Permission Rejection Error')
         return response(e, {}, False, 500)
 
 # This function allows Shift Permission supervisor to cancel the permission and notify the employee.
@@ -180,7 +180,7 @@ def shift_permission_cancelled(supervisor_id, shift_permission_id):
         elif shift_supervisor != supervisor_id:
             return response("Only Supervisor Has The Right to Cancel", {}, False, 400)
     except Exception as e:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Shift Permission Cancellation Error')
         return response(e, {}, False, 500)
 
 # This method sends notification

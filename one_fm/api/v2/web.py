@@ -89,7 +89,7 @@ def enroll():
 
 	except Exception as exc:
 		print(frappe.get_traceback())
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(message=frappe.get_traceback(), title='Face Recognition Enrollment Error')
 		raise exc
 
 
@@ -131,7 +131,7 @@ def verify():
 		# create_checkin_log()
 		response("Success", 200, check_in(log_type, skip_attendance, latitude, longitude, "Mobile Web"))        
 	except Exception as exc:
-		frappe.log_error(frappe.get_traceback() + '\n\n\n' + str(frappe.form_dict))
+		frappe.log_error(message=frappe.get_traceback() + '\n\n\n' + str(frappe.form_dict), title='Face Recognition Verify Error')
 		response("Error", 500, None, frappe.get_traceback())  
 
 @frappe.whitelist()
@@ -182,7 +182,7 @@ def check_in(log_type, skip_attendance, latitude, longitude, source):
 		frappe.db.commit()
 		return _('Check {log_type} successful! {docname}'.format(log_type=log_type.lower(), docname=checkin.name))
 	except:
-		frappe.log_error(frappe.get_traceback(), 'Mobile Web Checkin')
+		frappe.log_error(message=frappe.get_traceback(), title='Mobile Web Checkin Error')
 
 @frappe.whitelist()
 def forced_checkin(employee, log_type, time):

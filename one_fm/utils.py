@@ -895,7 +895,7 @@ def create_leave_allocation(employee, policy_detail, leave_type_details, from_da
 			allocation.save(ignore_permissions = True)
 			allocation.submit()
 		except Exception as e:
-			frappe.log_error(str(e), 'Leave allocation builder exception against {0}/{1}'.format(employee.name, leave_type))
+			frappe.log_error(message=str(e), title='Leave allocation builder exception against {0}/{1}'.format(employee.name, leave_type))
 
 
 def increase_daily_leave_balance():
@@ -944,13 +944,13 @@ def increase_daily_leave_balance():
 
             except Exception as e:
                 try:
-                    frappe.log_error(f"Error processing Leave Allocation {leave_allocation.name}: {str(e)}")
+                    frappe.log_error(title=f"Error processing Leave Allocation {leave_allocation.name}", message=str(e))
                 except Exception as log_error:
                     print(f"Logging failed for Leave Allocation {leave_allocation.name}: {str(log_error)}")
                 continue
 
     except Exception as e:
-          frappe.log_error(f"Error processing Leave Allocation {leave_allocation.name}: {str(e)}")
+          frappe.log_error(title=f"Error processing Leave Allocation {leave_allocation.name}", message=str(e))
 
 
 def update_leave_ledger_for_paid_annual_leave(allocation, is_carry_forward):
@@ -2016,7 +2016,7 @@ def notify_payroll_officer(doc):
         else:
             frappe.throw("Please add Payroll Officer in the HR and Payroll Additional Settings")
     except:
-        frappe.log_error(message = frappe.get_traceback(),title = "Error while sending notification of local transfer")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while sending notification of local transfer")
 
 
 def send_roster_report():
@@ -3444,7 +3444,7 @@ def translate_words(word: str, target_language_code: str="ar") -> str:
             translated = GoogleTranslator(source='auto', target=target_language_code).translate(word)
             return translated
         except:
-            frappe.log_error(message = frappe.get_traceback(), title = "Error while translating word")
+            frappe.log_error(message=frappe.get_traceback(), title="Error while translating word")
             return word
     return word
 
@@ -3801,7 +3801,7 @@ def set_employee_status():
     )
    
     if not all_leaves:
-        frappe.log_error(_("No employees found with approved leave applications for today or earlier."))
+        frappe.log_error(title=_("No employees found with approved leave applications for today or earlier."))
         return
 
     # Split into leaves_ending and leaves_starting
@@ -3851,8 +3851,7 @@ def set_employee_status():
         frappe.log(_("Employee statuses updated: {0} set to 'Vacation', {1} set to 'Active'.")
                 .format(employees_set_to_vacation, employees_set_to_active))
     except:
-        
-        frappe.log_error(message = frappe.get_traceback(),title= "Error occurred while trying to reassign duties")
+        frappe.log_error(message=frappe.get_traceback(), title="Error occurred while trying to reassign duties")
 
 
 
@@ -3880,7 +3879,7 @@ def get_service(employee_email, api, version, scopes):
         with open(credentials_path, 'r') as file:
             credentials_dict = json.load(file)
     except Exception as e:
-        frappe.log_error(f"Error reading Google credentials: {str(e)}")
+        frappe.log_error(title="Error reading Google credentials:", message=str(e))
         return
 
     credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=scopes)
@@ -4024,7 +4023,7 @@ def call_to_get_assurance_level(employees):
                 data = response.json()
                 return data.get("data", None)
             else:
-                frappe.log_error(title = "ERROR CALLING ASSURANCE API" ,message = frappe.get_traceback())
+                frappe.log_error(title="ERROR CALLING ASSURANCE API", message=frappe.get_traceback())
                 return {"error": response.status_code, "title": response.json()}
         else:
             url = f"https://staging-apiwrapper.one-fm.com/api/DigitalSigning/BulkCheckMobileIdentity"
@@ -4041,14 +4040,14 @@ def call_to_get_assurance_level(employees):
                         all_results.extend(batch_result)
                         frappe.msgprint(f"Batch {i} sent successfully.")
                     else:
-                        frappe.log_error(message = frappe.get_traceback(), title = "Error calling assurance API")
+                        frappe.log_error(message=frappe.get_traceback(), title="Error calling assurance API")
                         return {"error": response.status_code, "title": response.json()}
                 except Exception as e:
-                        frappe.log_error(message = frappe.get_traceback(), title = "Error calling assurance API")
+                        frappe.log_error(message=frappe.get_traceback(), title="Error calling assurance API")
                         return {"error": str(e), "title": "API call failed"}
             return all_results
     except Exception as e:
-        frappe.log_error(message = frappe.get_traceback(),title = f"An error occurred while making the API call: {str(e)}")
+        frappe.log_error(message=frappe.get_traceback(), title=f"An error occurred while making the API call: {str(e)}")
         return {"error": str(e), "title": "API Call Failed"}
 
 
@@ -4150,10 +4149,10 @@ def get_json_file(file_name, folder):
             data = json.load(f)
 
     except json.JSONDecodeError as e:
-        frappe.log_error(f"Invalid JSON format in file {file_path}: {str(e)}")
+        frappe.log_error(title=f"Invalid JSON format in file {file_path}", message=str(e))
 
     except Exception as e:
-        frappe.log_error(f"An error occurred while reading the file {file_path}: {str(e)}")
+        frappe.log_error(title=f"An error occurred while reading the file {file_path}", message=str(e))
 
     return data
 
@@ -4382,7 +4381,7 @@ def send_absences_notification(absent_employees):
     category = "Report"
     attendance_manager = get_employee_user_id(frappe.db.get_single_value("ONEFM General Setting", "attendance_manager"))
     if not attendance_manager:
-        frappe.log_error("Attendance Manager user not found. Notification not sent.", "send_absences_notification")
+        frappe.log_error(title="Attendance Manager user not found. Notification not sent.", message="send_absences_notification")
         return
     recipients = [attendance_manager]
     for user in recipients:
@@ -4525,7 +4524,7 @@ def send_push_notification(employee_id, title, body, data=None):
             messaging.send(message)
             return True
     except Exception as e:
-        frappe.log_error(message = frappe.get_traceback(), title = "Error in sending push notification")
+        frappe.log_error(message=frappe.get_traceback(), title="Error in sending push notification")
         return False
 
 def get_field_with_label(doctype, field_name, value):

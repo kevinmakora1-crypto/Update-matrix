@@ -97,7 +97,7 @@ class MissingCheckinRecord:
                     shift = obj["shift"]
                     data_dict[shift].append(obj["name"])
                 except Exception as e:
-                    frappe.log_error(frappe.get_traceback(), "Missing Checkin A")
+                    frappe.log_error(message=frappe.get_traceback(), title="Missing Checkin A")
                     
             for k, v in data_dict.items():
                 try:
@@ -119,7 +119,7 @@ class MissingCheckinRecord:
                     if attendance_manager_user:
                         self.assign_to_attendance_manager(missing_checkin=new_missing_checkin, attendance_manager_user=attendance_manager_user)
                 except Exception as e:
-                    frappe.log_error(frappe.get_traceback(), "Missing Checkin B")
+                    frappe.log_error(message=frappe.get_traceback(), title="Missing Checkin B")
             frappe.db.commit()
     
         

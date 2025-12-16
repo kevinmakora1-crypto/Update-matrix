@@ -187,7 +187,7 @@ class ERF(Document):
 					frappe.enqueue(sendemail, recipients=manager_emails, subject=title, content=msg, at_front=True, is_async=True)
 					frappe.msgprint(_('Recruitment manager will be notified by email.'))
 		except:
-			frappe.log_error(frappe.get_traceback(), "Error while sending mail to recruitment manager(ERF) ")
+			frappe.log_error(message=frappe.get_traceback(), title="Error while sending mail to recruitment manager(ERF)")
 
 
 

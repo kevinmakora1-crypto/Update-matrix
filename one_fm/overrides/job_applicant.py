@@ -162,7 +162,7 @@ class JobApplicantOverride(JobApplicant):
 					frappe.throw(_("Oops! You can't choose a date in the past or today. Please select a future date."))
 
 			except Exception as e:
-				frappe.log_error(frappe.get_traceback(), "Error while validating date of local transfer in Job Applicant")
+				frappe.log_error(message=frappe.get_traceback(), title="Error while validating date of local transfer in Job Applicant")
 				...
 
 	def convert_name_to_title_case(self):
@@ -335,7 +335,7 @@ class NotifyLocalTransfer:
 						msg = frappe.render_template('one_fm/templates/emails/notify_recruiter_about_local_transfer.html', context=data)
 						sendemail(recipients=receivers, subject=title, content=msg)
 		except:
-			frappe.log_error(frappe.get_traceback(), "Error while sending notification of local transfer")
+			frappe.log_error(message=frappe.get_traceback(), title="Error while sending notification of local transfer")
 
 @frappe.whitelist()
 def create_interview(doc,interview_round):

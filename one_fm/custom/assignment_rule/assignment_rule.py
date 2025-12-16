@@ -36,11 +36,11 @@ def create_assignment_rule(assignment_rule:dict, process_task_name:str=None):
         None
     """
     if not assignment_rule or not isinstance(assignment_rule, dict):
-        frappe.log_error("Invalid assignment rule data.")
+        frappe.log_error(title="Invalid assignment rule data.")
         return
 
     if "name" not in assignment_rule:
-        frappe.log_error("Missing required field: 'name'.")
+        frappe.log_error(title="Missing required field: 'name'.")
         return
 
     assignment_rule_name = assignment_rule["name"]
@@ -70,12 +70,12 @@ def delete_assignment_rule(assignment_rule:dict):
         None
     """
     if not assignment_rule or not isinstance(assignment_rule, dict):
-        frappe.log_error("Invalid assignment rule data.")
+        frappe.log_error(title="Invalid assignment rule data.")
         return
 
     name = assignment_rule.get("name")
     if not name:
-        frappe.log_error("Missing 'name' in assignment rule.")
+        frappe.log_error(title="Missing 'name' in assignment rule.")
         return
 
     try:

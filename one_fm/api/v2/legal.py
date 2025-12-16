@@ -111,7 +111,7 @@ def issue_penalty(penalty_category, issuing_time, issuing_location, penalty_loca
 		return response("Success", 201, penalty_issuance)
 
 	except Exception as error:
-		frappe.log_error(error, 'Penalty Issance Error')
+		frappe.log_error(message=str(error), title='Penalty Issuance Error')
 		return response("Internal Server Error", 500, None, error)@frappe.whitelist()
 
 

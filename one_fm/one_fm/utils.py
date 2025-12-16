@@ -519,7 +519,7 @@ def validate_store_keeper_project_supervisor_roles(doc):
             return roles_check
         return False
     except Exception as e:
-        frappe.log_error(e, "Validate Purchase Order(store keeper)")
+        frappe.log_error(message=str(e), title="Validate Purchase Order(store keeper)")
         return False
    
 

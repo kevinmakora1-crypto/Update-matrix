@@ -34,7 +34,7 @@ def set_up_face_recognition_server_credentials():
                 timeout=300)
         return {'error':False, 'message':'Face Recognition Server credentials setup successfully.'}
     except Exception as e:
-        frappe.log_error("Face Recognition Setup", frappe.get_traceback())
+        frappe.log_error(title="Face Recognition Setup", message=frappe.get_traceback())
         return {'error':True, 'message':e}
 
 @frappe.whitelist()

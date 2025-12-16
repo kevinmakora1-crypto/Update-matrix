@@ -656,7 +656,7 @@ def get_salary_detail(structure_dict, doc, components):
             frappe.throw(f"The total number of payment days of the components {sum(all_payment_days)} does not match the total payment days on the form {doc.payment_days} ")
     except:
         print(frappe.get_traceback())
-        frappe.log_error("Error Generating Salary",frappe.get_traceback())
+        frappe.log_error(title="Error Generating Salary", message=frappe.get_traceback())
         frappe.throw("An error ocurred while generating salary, Kindly review error Logs")
 
 
@@ -698,7 +698,7 @@ def get_prorated_amount(component, doc, data, payment_days_for_period):
             salary_slip_amount = (salary_slip_amount*payment_days_for_period)/doc.total_working_days
         return salary_slip_amount
     except:
-        frappe.log_error("Error Generating Salary Amount",frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title="Error Generating Salary Amount")
         frappe.throw("An error ocurred while generating salary, Kindly review error Logs")
 
 

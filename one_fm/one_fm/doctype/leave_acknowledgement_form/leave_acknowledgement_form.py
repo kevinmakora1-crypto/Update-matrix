@@ -92,7 +92,7 @@ def get_employees_with_cf_leaves_over_threshold():
 		}
 
 	except Exception:
-		frappe.log_error(frappe.get_traceback(), "Error fetching employees with leaves more than the threshold")
+		frappe.log_error(message=frappe.get_traceback(), title="Error fetching employees with leaves more than the threshold")
 		return {}
 		
 

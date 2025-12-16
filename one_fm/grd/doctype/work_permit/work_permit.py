@@ -419,7 +419,7 @@ def create_work_permit_renewal(preparation_name):
                 try:
                     create_wp_renewal(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
                 except Exception:
-                    frappe.log_error(frappe.get_traceback(), f"Work Permit Renewal Creation Failed for Employee {employee.employee} in Preparation {preparation_name}")
+                    frappe.log_error(message=frappe.get_traceback(), title=f"Work Permit Renewal Creation Failed for Employee {employee.employee} in Preparation {preparation_name}")
                     continue
 
 

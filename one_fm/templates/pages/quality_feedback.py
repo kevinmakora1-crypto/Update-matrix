@@ -73,7 +73,7 @@ def get_feedback_data(docname):
             'questions': questions
         }
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), 'Quality Feedback Data Fetch Failed')
+        frappe.log_error(message=frappe.get_traceback(), title='Quality Feedback Data Fetch Failed')
         return None
 
 @frappe.whitelist(allow_guest=True)
@@ -174,7 +174,7 @@ def submit_feedback(docname, ratings=None, noticed_damage=None, damage_descripti
         
         return {'success': True, 'message': _('Feedback submitted successfully.')}
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), 'Quality Feedback Submission Failed')
+        frappe.log_error(message=frappe.get_traceback(), title='Quality Feedback Submission Failed')
         return {'success': False, 'message': _('An error occurred while submitting feedback.')}
 
 
@@ -192,7 +192,7 @@ def rename_damage_attachment(doc, damage_attachment_url):
         employee_id = getattr(doc, "custom_employee", None)
         template_name = getattr(doc, "template", None)
         if not employee_id or not template_name:
-            frappe.log_error("Missing custom_employee or template in doc for file rename.", "File Rename Failed")
+            frappe.log_error(title="Missing custom_employee or template in doc for file rename.", message="File Rename Failed")
             return
         clean_template = template_name.replace(' ', '_').replace('/', '_').replace('\\', '_')
         
@@ -209,7 +209,7 @@ def rename_damage_attachment(doc, damage_attachment_url):
         file_doc.save(ignore_permissions=True)
         
     except Exception as e:
-        frappe.log_error(f"{frappe.get_traceback()}\nException: {str(e)}", 'File Rename Failed')
+        frappe.log_error(message=f"{frappe.get_traceback()}\nException: {str(e)}", title='File Rename Failed')
 
 
 
@@ -225,7 +225,7 @@ def translate_text(text, target_language='en'):
         translated = translate_words(text, target_language)
         return translated
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), 'Translation Failed')
+        frappe.log_error(message=frappe.get_traceback(), title='Translation Failed')
         return text  # Return original text if translation fails
 
 @frappe.whitelist(allow_guest=True)
@@ -266,7 +266,7 @@ def get_all_languages():
         
         return languages
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), 'Failed to fetch languages')
+        frappe.log_error(message=frappe.get_traceback(), title='Failed to fetch languages')
         return []
 
 @frappe.whitelist(allow_guest=True)
@@ -290,5 +290,5 @@ def translate_multiple(texts, target_language='en'):
         
         return translated
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), 'Batch Translation Failed')
+        frappe.log_error(message=frappe.get_traceback(), title='Batch Translation Failed')
         return texts if isinstance(texts, list) else [texts]

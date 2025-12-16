@@ -125,7 +125,7 @@ def create_PACI_renewal(preparation_name):
                 try:
                     create_PACI(frappe.get_doc('Employee',employee.employee),"Renewal",preparation_name)
                 except Exception:
-                    frappe.log_error(frappe.get_traceback(), f"Error creating PACI for Employee {employee.employee} in Preparation {preparation_name}")
+                    frappe.log_error(message=frappe.get_traceback(), title=f"Error creating PACI for Employee {employee.employee} in Preparation {preparation_name}")
                     continue
 
 def create_PACI_for_transfer(employee_name):

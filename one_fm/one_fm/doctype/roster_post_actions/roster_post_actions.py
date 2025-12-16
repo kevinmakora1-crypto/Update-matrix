@@ -230,7 +230,7 @@ def create_roster_post_actions():
 
                 roster_post_actions_doc.save()
             except:
-                frappe.log_error(frappe.get_traceback(), "Error while creating roster post actions")
+                frappe.log_error(message=frappe.get_traceback(), title="Error while creating roster post actions")
 
         frappe.db.commit()
 

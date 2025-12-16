@@ -51,8 +51,8 @@ def notify_for_employee_docs_expiry():
         Method to notify Onboarding officers about employee docs expiration
     """
     try:
-        # Get the GRD Settings to make the recipients
-        grd_settings = frappe.get_single('GRD Settings')
+        # Get the HR Settings to make the recipients
+        grd_settings = frappe.get_single('HR Settings')
         recipients = list(
             set([
                 grd_settings.default_grd_supervisor,

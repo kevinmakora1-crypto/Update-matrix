@@ -40,9 +40,9 @@ class Residency(Document):
 
     def set_grd_values(self):
         if not self.grd_supervisor:
-            self.grd_supervisor = frappe.db.get_value('GRD Settings', None, 'default_grd_supervisor')
+            self.grd_supervisor = frappe.db.get_value('HR Settings', None, 'default_grd_supervisor')
         if not self.grd_operator:
-            self.grd_operator = frappe.db.get_value('GRD Settings', None, 'default_grd_operator')
+            self.grd_operator = frappe.db.get_value('HR Settings', None, 'default_grd_operator')
     def set_new_expiry_date(self):
         if self.category != "Extend":
             self.new_residency_expiry_date = frappe.db.get_value("Employee", self.employee, "work_permit_expiry_date")

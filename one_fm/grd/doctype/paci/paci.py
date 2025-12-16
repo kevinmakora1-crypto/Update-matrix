@@ -35,11 +35,11 @@ class PACI(Document):
 
     def set_grd_values(self):
         if not self.grd_supervisor:
-            self.grd_supervisor = frappe.db.get_value('GRD Settings', None, 'default_grd_supervisor')
+            self.grd_supervisor = frappe.db.get_value('HR Settings', None, 'default_grd_supervisor')
         if not self.grd_operator:
-            self.grd_operator = frappe.db.get_value('GRD Settings', None, 'default_grd_operator')
+            self.grd_operator = frappe.db.get_value('HR Settings', None, 'default_grd_operator')
         if not self.grd_operator_transfer:
-            self.grd_operator_transfer = frappe.db.get_value('GRD Settings', None, 'default_grd_operator_transfer')
+            self.grd_operator_transfer = frappe.db.get_value('HR Settings', None, 'default_grd_operator_transfer')
 
     def set_new_expiry_date(self):
         """

@@ -83,7 +83,7 @@ class Preparation(Document):
         """
 		runs: `validate`
 		param: preparation object
-		This method is fetching values of grd supervisor or operator for renewal from GRD settings
+		This method is fetching values of grd supervisor or operator for renewal from HR Settings
 		"""
         if not self.grd_supervisor:
             self.grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
@@ -185,7 +185,7 @@ class Preparation(Document):
 # Calculate the date of the next month (First & Last) (monthly cron in hooks)
 def auto_create_preparation_record():
     """
-    runs: at the Preparation Record Creation Day configured in the GRD Settings
+    runs: at the Preparation Record Creation Day configured in the HR Settings
     This method will create preparation record that contain list of all employees that their residency expiry date will be between the first and the last date of the next month
     This record will go to HR user to set value for each employee either renewal or extend and on the submit of this record it will ask for hr permission and approval.
     Then, it will create wp, mi, moi, and paci records for all employees in the list.

@@ -18,8 +18,8 @@ def sendmail_reminder_to_book_appointment_for_pifss(): #before 1 week of the new
     today = date.today()
     first_day = today.replace(day=1) + relativedelta(months=1)
     if date_diff(first_day,today) == 7: 
-        operator = frappe.db.get_single_value('GRD Settings', 'default_grd_operator_pifss')
-        supervisor = frappe.db.get_single_value('GRD Settings', 'default_grd_supervisor')
+        operator = frappe.db.get_single_value('HR Settings', 'default_grd_operator_pifss')
+        supervisor = frappe.db.get_single_value('HR Settings', 'default_grd_supervisor')
         if ('@' in operator):
             email_name = operator.split('@')[0]
         content = "<h4>Dear "+ email_name +",</h4><p>This month will end soon. Please make sure to book an apointment now for collecting PIFSS documents.</p>"       
@@ -32,8 +32,8 @@ def sendmail_reminder_to_collect_pifss_documents(): # before 1 day of the new mo
     today = date.today()
     first_day = today.replace(day=1) + relativedelta(months=1)
     if date_diff(first_day,today) == 1:
-        operator = frappe.db.get_single_value('GRD Settings', 'default_grd_operator')
-        supervisor = frappe.db.get_single_value('GRD Settings', 'default_grd_supervisor')
+        operator = frappe.db.get_single_value('HR Settings', 'default_grd_operator')
+        supervisor = frappe.db.get_single_value('HR Settings', 'default_grd_supervisor')
         if ('@' in operator):
             email_name = operator.split('@')[0]
         content = "<h4>Dear "+ email_name +",</h4><p> This email is reminder for you to collect PIFSS documents.</p>"       

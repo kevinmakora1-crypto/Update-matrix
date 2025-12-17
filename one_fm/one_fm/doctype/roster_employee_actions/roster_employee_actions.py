@@ -122,7 +122,7 @@ def create_roster_employee_actions():
 				roster_employee_actions.save()
 
 			except Exception as e:
-				frappe.log_error(frappe.get_traceback(), "Error while generating Roster employee actions")
+				frappe.log_error(message=frappe.get_traceback(), title="Error while generating Roster employee actions")
 				continue
 
 			frappe.db.commit()
@@ -154,7 +154,7 @@ def get_employees_not_rostered(start_date, end_date):
 		for obj in employees_not_rostered:
 			employees_not_rostered_dict.setdefault(obj[0], []).append(obj[1])
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), "Error while generating missing dates(Roster Employee Actions)")
+		frappe.log_error(message=frappe.get_traceback(), title="Error while generating missing dates(Roster Employee Actions)")
 
 	return employees_not_rostered_dict
 

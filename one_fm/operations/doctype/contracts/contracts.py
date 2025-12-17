@@ -1002,7 +1002,7 @@ def send_contract_reminders(is_scheduled_event=True):
                 msg = frappe.render_template('one_fm/templates/emails/contracts_reminder.html', context=context)
                 sendemail(recipients=users, subject="Expiring Contracts", content=msg,is_scheduler_email=is_scheduled_event)
     except Exception as e:
-        frappe.log_error(e)    
+        frappe.log_error(message=str(e), title="Contract Reminder Error")
 
 @frappe.whitelist()
 def renew_contracts_by_termination_date():

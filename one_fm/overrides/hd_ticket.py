@@ -132,7 +132,7 @@ class HDTicketOverride(HDTicket):
                     body=dumps(bot_message),
                 )
         except Exception as e:
-             frappe.log_error(frappe.get_traceback(), "Error while sending google notification")
+             frappe.log_error(message=frappe.get_traceback(), title="Error while sending google notification")
 
     @property
     def get_name_for_mailing(self):
@@ -400,7 +400,7 @@ def _fetch_list(doctype):
             "data": data,
         }
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), f"Error fetching list for {doctype}")
+        frappe.log_error(message=frappe.get_traceback(), title=f"Error fetching list for {doctype}")
         return {
             "message": f"Failed to fetch {doctype}",
             "status_code": 500,
@@ -511,7 +511,7 @@ def update_ticket_with_feedback(ticket_id, feedback, action):
         }
         
     except Exception as e:
-        frappe.log_error(f"Error in update_ticket_with_feedback: {str(e)}")
+        frappe.log_error(message=f"Error in update_ticket_with_feedback: {str(e)}", title="HD Ticket Feedback Update Error")
         return {
             "success": False,
             "message": "An error occurred while updating the ticket"

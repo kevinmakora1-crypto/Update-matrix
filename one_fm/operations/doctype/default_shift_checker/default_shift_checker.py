@@ -180,7 +180,7 @@ def create_checker(start_date, end_date, is_day_off_reliever=False, is_weekend_r
 
 			doc.insert()
 		except Exception as e:
-			frappe.log_error("Default Shift Checker Error", str(e))
+			frappe.log_error(title="Default Shift Checker Error", message=str(e))
 
 
 def get_shift_assignments(employee_id, shift_condition, start_date, end_date, EmployeeSchedule):

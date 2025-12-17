@@ -59,5 +59,5 @@ def send_contact_email(name, email, subject, message):
         message=f"""Name: {name}\nSubject: {subject}\nEmail: {email}\n\n{message}""")
         return True
     except Exception as e:
-        frappe.log_error(e)
+        frappe.log_error(message=str(e), title="Error while sending contact email")
         return False

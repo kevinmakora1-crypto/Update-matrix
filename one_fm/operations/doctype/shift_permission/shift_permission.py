@@ -226,9 +226,9 @@ def approve_open_shift_permission(start_date, end_date):
 				apply_workflow(shift_permission, 'Approve')
 			except Exception as e:
 				error_list += str(e)+'\n\n'
-		if error_list:frappe.log_error(error_list, 'Shift Permission')
+		if error_list:frappe.log_error(message=error_list, title='Shift Permission')
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), 'Shift Permission')
+		frappe.log_error(message=frappe.get_traceback(), title='Shift Permission')
 
 def create_checkin(shift_permission):
 	# create checkin from shift permission

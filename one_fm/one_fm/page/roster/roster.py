@@ -192,7 +192,7 @@ def get_employees_for_roster_view(start_date, end_date, employee_search_id=None,
 		employees = frappe.db.sql(combined_query, as_dict=True)
 		return employees
 	except Exception as e:
-		frappe.log_error("Employees for Roster View", frappe.get_traceback())
+		frappe.log_error(title="Employees for Roster View", message=frappe.get_traceback())
 
 
 @frappe.whitelist()
@@ -398,7 +398,7 @@ def schedule_overtime(employees, shift, operations_role,start_date,end_date=None
 
 		response("success", 200, {"message":"Successfully scheduled overtime for employees"})
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), "Schedule Overtime")
+		frappe.log_error(message=frappe.get_traceback(), title="Schedule Overtime")
 		response("error", 200, None, str(e))
 
 
@@ -478,7 +478,7 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
 			""".format(start_date=start_date, end_date=end_date, emp_tuple=emp_tuple), as_dict=1)
 
 		if len(validation_logs) > 0:
-			frappe.log_error(str(validation_logs), "Roster Schedule")
+			frappe.log_error(message=str(validation_logs), title="Roster Schedule")
 			frappe.throw(str(validation_logs))
 		else:
 			# extreme schedule
@@ -491,7 +491,7 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
 
 			response("success", 200, {"message":"Successfully rostered employees"})
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), "Schedule Roster")
+		frappe.log_error(message=frappe.get_traceback(), title="Schedule Roster")
 		response("error", 200, None, str(e))
 
 def update_roster(key):
@@ -600,7 +600,7 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 					employees_date_dict[i["employee"]] =[{"date":i["date"], "start_datetime": datetime.strptime(f"{i['date']} {shift_start_time}", "%Y-%m-%d %H:%M:%S"), "end_datetime":datetime.strptime(f"{add_days(i['date'], 1) if next_day else i['date']} {shift_end_time}", "%Y-%m-%d %H:%M:%S")}]
 		else:
 			# Log or handle cases where employee details or date_of_joining is missing
-			frappe.log_error(f"Employee {i.get('employee')} missing details or date_of_joining.", "Extreme Schedule Data Prep")
+			frappe.log_error(message=f"Employee {i.get('employee')} missing details or date_of_joining.", title="Extreme Schedule Data Prep")
 
 
 	# check for intersection schedules
@@ -860,7 +860,7 @@ def schedule_leave(employees, leave_type, start_date, end_date):
 				roster.save(ignore_permissions=True)
 		frappe.db.commit()
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), "Schedule Leave Error")
+		frappe.log_error(message=frappe.get_traceback(), title="Schedule Leave Error")
 		response("error", 500, None, str(e))
 
 
@@ -1409,7 +1409,7 @@ def delete_existing_post_schedules(date_str_arg,post_name_arg):
 		frappe.db.sql(f"""DELETE from `tabPost Schedule` where date = "{date_str_arg}" and post = "{post_name_arg}" """)
 		frappe.db.commit()
 	except:
-		frappe.log_error("Error Deleting Post Schedules",frappe.get_traceback())
+		frappe.log_error(message=frappe.get_traceback(), title="Error Deleting Post Schedules")
 
 @frappe.whitelist()
 def dayoff(employees, client_day_off=0, selected_dates=0, selected_reliever=None, repeat=0, repeat_freq=None, week_days=[], repeat_till=None, project_end_date=None):
@@ -1563,7 +1563,7 @@ def dayoff(employees, client_day_off=0, selected_dates=0, selected_reliever=None
 
 		return response("success", 200, {"message":"Days Off set successfully."})
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), "Day Off Error")
+		frappe.log_error(message=frappe.get_traceback(), title="Day Off Error")
 		return response("error", 500, None, str(e))
 
 
@@ -1599,13 +1599,13 @@ def reliever_roster_assignment(reliver_emp_name, roster_list_arg):
 				selected_reliever=reliver_emp_name,
 			)
 		else:
-			frappe.log_error(f"Skipping reliever assignment due to incomplete roster_data: {roster_data_item}", "Reliever Assignment")
+			frappe.log_error(message=f"Skipping reliever assignment due to incomplete roster_data: {roster_data_item}", title="Reliever Assignment")
 
 
 def get_shift_details_of_employee(emp_name_arg, date_arg):
 	emp_project, emp_site, emp_shift, designation = frappe.db.get_value("Employee", emp_name_arg, ["project", "site", "shift", "designation"])
 	if not emp_shift:
-		frappe.log_error(f"Employee {emp_name_arg} has no default shift assigned.", "Get Shift Details")
+		frappe.log_error(message=f"Employee {emp_name_arg} has no default shift assigned.", title="Get Shift Details")
 		return None # Or raise error, or return a default structure
 
 	operations_shift_doc = frappe.get_doc("Operations Shift",emp_shift, ignore_permissions=True)
@@ -1633,7 +1633,7 @@ def get_shift_details_of_employee(emp_name_arg, date_arg):
 		# Fallback: try finding a role only by shift if the specific one isn"t found
 		operation_role_name = frappe.get_value("Operations Role", {"shift": emp_shift, "status":"Active"}, "name")
 		if not operation_role_name:
-			frappe.log_error(f"No matching Operations Role for emp {emp_name_arg}, shift {emp_shift}, designation {designation}, project {emp_project}", "Get Shift Details")
+			frappe.log_error(message=f"No matching Operations Role for emp {emp_name_arg}, shift {emp_shift}, designation {designation}, project {emp_project}", title="Get Shift Details")
 			return {
 				"date": getdate(date_str),
 				"shift": emp_shift,
@@ -1673,7 +1673,7 @@ def assign_staff(employees, shift, custom_is_reliever, custom_is_weekend_relieve
 		return response("Success", 200, {"message": "Assignment request processed."})
 
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), "Assign Staff Error")
+		frappe.log_error(message=frappe.get_traceback(), title="Assign Staff Error")
 		return response("Error", 500, None, str(e))
 
 
@@ -1784,8 +1784,8 @@ def create_employee_schedule():
     for emp in employees:
         if not emp.shift or not emp.custom_operations_role_allocation:
             frappe.log_error(
-                f"Missing shift or operations role for employee {emp.name}",
-                "Employee Schedule Creation Error"
+                message=f"Missing shift or operations role for employee {emp.name}",
+                title="Employee Schedule Creation Error"
             )
             continue
 
@@ -1794,8 +1794,8 @@ def create_employee_schedule():
             role_doc = frappe.get_doc("Operations Role", emp.custom_operations_role_allocation, ignore_permissions=True)
         except frappe.DoesNotExistError:
             frappe.log_error(
-                f"Invalid shift or operations role for employee {emp.name}",
-                "Employee Schedule Creation Error"
+                message=f"Invalid shift or operations role for employee {emp.name}",
+                title="Employee Schedule Creation Error"
             )
             continue
 
@@ -1906,7 +1906,7 @@ def create_or_update_schedule_for_employee(employee, date_val, availability, ope
 			new_schedule_doc.insert(ignore_permissions=True)
 
 	except Exception as e:
-		frappe.log_error(f"Error for employee {employee.name} on {date_str}: {str(e)} \nTraceback: {frappe.get_traceback()}", "Employee Schedule Error")
+		frappe.log_error(message=f"Error for employee {employee.name} on {date_str}: {str(e)} \nTraceback: {frappe.get_traceback()}", title="Employee Schedule Error")
 
 def get_leave_dates_by_employee_during_date_range(start_date, end_date):
     leave_applications = frappe.db.sql("""
@@ -2010,7 +2010,7 @@ def get_employee_details(employee_id):
 	except frappe.DoesNotExistError:
 		return {"error": f"Employee {employee_id} not found."}
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), f"Error fetching details for Employee {employee_id}")
+		frappe.log_error(message=frappe.get_traceback(), title=f"Error fetching details for Employee {employee_id}")
 		return {"error": str(e)}
 
 
@@ -2054,7 +2054,7 @@ def bulk_employee_record_update(updates):
 			frappe.db.set_value("Employee", employee_name_to_update, update_data)
 			updated_records_names.append(employee_name_to_update)
 		except Exception as e:
-			frappe.log_error(f"Failed to update Employee {employee_name_to_update}: {str(e)} \nTraceback: {frappe.get_traceback()}", "Bulk Employee Update Error")
+			frappe.log_error(message=f"Failed to update Employee {employee_name_to_update}: {str(e)} \nTraceback: {frappe.get_traceback()}", title="Bulk Employee Update Error")
 			failed_updates.append({"employee": employee_name_to_update, "reason": str(e)})
 
 	if updated_records_names: # Only commit if successful updates occurred

@@ -183,5 +183,5 @@ def create_checkin_issue(employee, issue_type, log_type, latitude, longitude, re
 		frappe.db.commit()
 		response("Success", 200, checkin_issue_doc.as_dict())
 	except:
-		frappe.log_error(frappe.get_traceback(), 'Employee Checkin Issue')
+		frappe.log_error(message=frappe.get_traceback(), title='Employee Checkin Issue')
 		response("Bad Request", 400, None, "Employee Checkin Issue")

@@ -12,7 +12,7 @@ def get_employee_list(shift, penalty_occurence_time):
 		return get_filtered_employees(shift, penalty_occurence_time, as_dict=1)
 	except Exception as exc:
 		print(frappe.get_traceback())
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(message=frappe.get_traceback(), title='Get Employee List Error')
 		return frappe.utils.response.report_error(exc)
 
 
@@ -22,7 +22,7 @@ def get_penalty_types():
 		return frappe.db.sql("""SELECT name, penalty_name_arabic FROM `tabPenalty Type` """, as_dict=1)
 	except Exception as exc:
 		print(frappe.get_traceback())
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(message=frappe.get_traceback(), title='Get Penalty Types Error')
 		return frappe.utils.response.report_error(exc)
 
 
@@ -35,7 +35,7 @@ def get_all_shifts():
 			ORDER BY name ASC """, as_dict=1)
 	except Exception as exc:
 		print(frappe.get_traceback())
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(message=frappe.get_traceback(), title='Get All Shifts Error')
 		return frappe.utils.response.report_error(exc)
 
 
@@ -95,7 +95,7 @@ def issue_penalty(penalty_category, issuing_time, issuing_location, penalty_loca
 
 	except Exception as exc:
 		print(frappe.get_traceback())
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(message=frappe.get_traceback(), title='Penalty Issuance Error')
 		return frappe.utils.response.report_error(exc)
 
 	
@@ -196,7 +196,7 @@ def accept_penalty(file, retries, docname):
 			# frappe.throw(_("Face could not be recognized. You have {0} retries left.").format(frappe.bold(retries_left)), title='Validation Error')
 
 	except Exception as exc:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(message=frappe.get_traceback(), title='Penalty Acceptance Error')
 		return response(exc,{},False, 500)
 
 @frappe.whitelist()
@@ -220,5 +220,5 @@ def reject_penalty(rejection_reason, docname):
 		else:
 			return response("No penalty {docname} found." , {}, False, 401)
 	except Exception as exc:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(message=frappe.get_traceback(), title='Penalty Rejection Error')
 		return response(exc,{},False, 500)

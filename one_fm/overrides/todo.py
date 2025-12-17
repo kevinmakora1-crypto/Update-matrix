@@ -97,6 +97,10 @@ def is_google_task_synchronization_enabled():
 
 def get_google_task_service(employee_email):
     """Return Google Tasks API service for the given employee email. Logs and returns None on error."""
+
+    if not is_user_id_company_prefred_email_in_employee(employee_email):
+        return
+
     credentials_path = frappe.get_site_path("private", "files", "gcp.json")
     try:
         with open(credentials_path, "r") as file:

@@ -40,9 +40,9 @@ class Residency(Document):
 
     def set_grd_values(self):
         if not self.grd_supervisor:
-            self.grd_supervisor = frappe.db.get_value('GRD Settings', None, 'default_grd_supervisor')
+            self.grd_supervisor = frappe.db.get_value('HR Settings', None, 'default_grd_supervisor')
         if not self.grd_operator:
-            self.grd_operator = frappe.db.get_value('GRD Settings', None, 'default_grd_operator')
+            self.grd_operator = frappe.db.get_value('HR Settings', None, 'default_grd_operator')
     def set_new_expiry_date(self):
         if self.category != "Extend":
             self.new_residency_expiry_date = frappe.db.get_value("Employee", self.employee, "work_permit_expiry_date")
@@ -170,13 +170,13 @@ def set_employee_list_for_moi(preparation_name):
                 try:
                     create_moi_record(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
                 except Exception as e:
-                    frappe.log_error(frappe.get_traceback(),f"Error creating MOI for Employee {employee.employee} in Preparation {preparation_name}")
+                    frappe.log_error(message=frappe.get_traceback(), title=f"Error creating MOI for Employee {employee.employee} in Preparation {preparation_name}")
                     continue
             if employee.renewal_or_extend != 'Renewal (Non-Kuwaiti)' and employee.nationality != 'Kuwaiti':# For extend
                 try:
                     create_moi_record(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
                 except Exception as e:
-                    frappe.log_error(frappe.get_traceback(),f"Error creating MOI for Employee {employee.employee} in Preparation {preparation_name}")
+                    frappe.log_error(message=frappe.get_traceback(), title=f"Error creating MOI for Employee {employee.employee} in Preparation {preparation_name}")
                     continue
 
 # Creat moi for transfer

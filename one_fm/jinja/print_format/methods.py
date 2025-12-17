@@ -232,7 +232,7 @@ def sic_attendance_absent_present(doc):
             return '', context
     except Exception as e:
         print(str(e))
-        frappe.log_error(str(e), 'Print Format')
+        frappe.log_error(message=str(e), title='Print Format')
         context = {}
         return '', context
 
@@ -372,7 +372,7 @@ def sic_separate_invoice_attendance(doc):
             return '', context
     except Exception as e:
         print(str(e), 'ERRPR\n\n\n')
-        frappe.log_error(str(e), 'Print Format')
+        frappe.log_error(message=str(e), title='Print Format')
         context = {}
         return '', context
 
@@ -527,7 +527,7 @@ def sic_single_invoice_separate_attendance(doc):
             return '', context
     except Exception as e:
         print(str(e), 'ERRPRROO\n\n\n')
-        frappe.log_error(str(e), 'Print Format')
+        frappe.log_error(message=str(e), title='Print Format')
         context = {}
         return '', context
 

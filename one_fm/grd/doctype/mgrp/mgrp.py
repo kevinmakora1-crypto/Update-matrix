@@ -64,7 +64,7 @@ class MGRP(Document):
 		"""
 		runs: `validate`
 		param: mgrp object
-		This method sets the user_id for both GRD Supervisor and Operator handling pifss form GRD Settings Doctype
+		This method sets the user_id for both GRD Supervisor and Operator handling pifss form HR Settings Doctype
 		"""
 		if not self.grd_supervisor:
 			self.grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")

@@ -40,9 +40,9 @@ class Residency(Document):
 
     def set_grd_values(self):
         if not self.grd_supervisor:
-            self.grd_supervisor = frappe.db.get_value('GRD Settings', None, 'default_grd_supervisor')
+            self.grd_supervisor = frappe.db.get_value('HR Settings', None, 'default_grd_supervisor')
         if not self.grd_operator:
-            self.grd_operator = frappe.db.get_value('GRD Settings', None, 'default_grd_operator')
+            self.grd_operator = frappe.db.get_value('HR Settings', None, 'default_grd_operator')
     def set_new_expiry_date(self):
         if self.category != "Extend":
             self.new_residency_expiry_date = frappe.db.get_value("Employee", self.employee, "work_permit_expiry_date")
@@ -170,13 +170,13 @@ def set_employee_list_for_moi(preparation_name):
                 try:
                     create_moi_record(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
                 except Exception as e:
-                    frappe.log_error(frappe.get_traceback(),f"Error creating MOI for Employee {employee.employee} in Preparation {preparation_name}")
+                    frappe.log_error(message=frappe.get_traceback(), title=f"Error creating MOI for Employee {employee.employee} in Preparation {preparation_name}")
                     continue
             if employee.renewal_or_extend != 'Renewal (Non-Kuwaiti)' and employee.nationality != 'Kuwaiti':# For extend
                 try:
                     create_moi_record(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
                 except Exception as e:
-                    frappe.log_error(frappe.get_traceback(),f"Error creating MOI for Employee {employee.employee} in Preparation {preparation_name}")
+                    frappe.log_error(message=frappe.get_traceback(), title=f"Error creating MOI for Employee {employee.employee} in Preparation {preparation_name}")
                     continue
 
 # Creat moi for transfer
@@ -226,7 +226,7 @@ def system_remind_transfer_operator_to_apply():# cron job at 4pm
     """This is a cron method runs every day at 4pm. It gets Draft transfer MOI list and reminds operator to apply on pam website"""
     supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
     transfer_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
-    moi_list = frappe.db.get_list('MOI Residency Jawazat',
+    moi_list = frappe.db.get_list('Residency',
     {'date_of_application':['<=',date.today()],'workflow_state':['=',('Apply Online by PRO')],'category':['=',('Transfer')]},
     ['one_fm_civil_id','name','reminded_grd_operator','reminded_grd_operator_again'])
     
@@ -253,29 +253,29 @@ def notification_reminder(moi_list,supervisor,operator,type):
     elif second_reminder_list and len(second_reminder_list)>0:
         email_notification_reminder(operator,second_reminder_list,"Second Reminder","Apply for",type)
         for moi in second_reminder_list:
-            frappe.db.set_value('MOI Residency Jawazat',moi.name,'reminded_grd_operator_again',1)
+            frappe.db.set_value('Residency',moi.name,'reminded_grd_operator_again',1)
     elif first_reminder_list and len(first_reminder_list)>0:
         email_notification_reminder(operator,first_reminder_list,"First Reminder","Apply for",type)
         for moi in first_reminder_list:
-            frappe.db.set_value('MOI Residency Jawazat',moi.name,'reminded_grd_operator',1)
+            frappe.db.set_value('Residency',moi.name,'reminded_grd_operator',1)
 
 def email_notification_reminder(grd_user,moi_list,reminder_number, action,type, cc=[]):
     """
-    This method send email to the required operator with the list of MOI Residency Jawazat that their date of application is today or passed already
+    This method send email to the required operator with the list of Residency that their date of application is today or passed already
     """
     message_list=[]
     for moi in moi_list:
-        page_link = get_url(frappe.get_doc("MOI Residency Jawazat", moi.name).get_url())
+        page_link = get_url(frappe.get_doc("Residency", moi.name).get_url())
         message = "<a href='{0}'>{1}</a>".format(page_link, moi.one_fm_civil_id)
         message_list.append(message)
 
     if message_list:
-        message = "<p>{0}: Please {1} {2} MOI Residency Jawazat listed below</p><ol>".format(reminder_number,action,type)
+        message = "<p>{0}: Please {1} {2} Residency</p><ol>".format(reminder_number,action,type)
         for msg in message_list:
             message += "<li>"+msg+"</li>"
         message += "<ol>"
         make(
-            subject=_('{0}: {1} {2} MOI Residency Jawazat'.format(reminder_number,action,type)),
+            subject=_('{0}: {1} {2} Residency'.format(reminder_number,action,type)),
             content=message,
             recipients=[grd_user],
             cc=cc,

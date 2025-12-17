@@ -332,7 +332,7 @@ class RequestforPurchase(Document):
 				frappe.delete_doc('Purchase Order', po.name, force=1)
 				
 			except Exception as e:
-				frappe.log_error(f"Error deleting PO {po.name}: {str(e)}")
+				frappe.log_error(message=f"Error deleting PO {po.name}: {str(e)}", title="Error Deleting Purchase Order")
 				frappe.throw(_("Error deleting Purchase Order {0}: {1}").format(po.name, str(e)))
 
  
@@ -550,7 +550,7 @@ class RequestforPurchase(Document):
 				if rate:  # guaranteed non-zero/non-negative by business rules
 					self.exchange_rate = rate
 		except Exception as e:
-			frappe.log_error(f"Exchange rate fetch failed for RFP {getattr(self, 'name', 'NEW')}: {e}", 'RFP Exchange Rate Fetch')
+			frappe.log_error(message=f"Exchange rate fetch failed for RFP {getattr(self, 'name', 'NEW')}: {e}", title='RFP Exchange Rate Fetch')
 
 	def validate_conversion_factors(self):
 		for item in self.items_to_order:

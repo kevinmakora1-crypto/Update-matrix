@@ -131,7 +131,7 @@ def issue_penalty(penalty_category, issuing_location, issuing_time, penalty_loca
 		return response("Success", 201, penalty_issuance)
 
 	except Exception as error:
-		frappe.log_error(error, 'Penalty Issuance Error')
+		frappe.log_error(message=str(error), title='Penalty Issuance Error')
 		return response("Internal Server Error", 500, None, error)
 
 
@@ -348,7 +348,7 @@ def get_pending_penalties(employee_id: str = None, role: str = None, is_pending:
 		return response("Success", 200, result)
 			
 	except Exception as error:
-		frappe.log_error(str(error), "Error while getting penalties (API)")
+		frappe.log_error(message=str(error), title="Error while getting penalties (API)")
 		return response("Internal Server Error", 500, None, error)
 
 
@@ -364,7 +364,7 @@ def get_subordinates(employee: str = None):
 		the_subordinates = frappe.db.get_list("Employee", {"reports_to": employee}, ["employee_name", "name"])
 		return response("Success", 200, the_subordinates)
 	except Exception as e:
-		frappe.log_error(str(e), "Error while getting subordinates (API)")
+		frappe.log_error(message=str(e), title="Error while getting subordinates (API)")
 		return response("Internal Server Error", 500, None, e)
         
     
@@ -430,7 +430,7 @@ def new_issue_penalty(penalty_category, issuing_location, penalty_location, pena
 		return response("Success", 201, penalty_issuance)
 
 	except Exception as error:
-		frappe.log_error(error, 'Penalty Issuance Error')
+		frappe.log_error(message=str(error), title='Penalty Issuance Error')
 		return response("Internal Server Error", 500, None, error)
 
 
@@ -510,5 +510,5 @@ def new_accept_penalty(docname: str = None) -> dict:
 			return response("Unauthorized", 401, None, "Face not recognized. Please try again.")
 
 	except Exception as error:
-		frappe.log_error(error, "Penalty Acceptance Error")
+		frappe.log_error(message=str(error), title="Penalty Acceptance Error")
 		return response("Internal Server Error", 500, None, error)

@@ -304,7 +304,7 @@ def create_new_leave_application(employee_id: str = None, from_date: str = None,
         return response("Success", 201, doc)
     
     except Exception as error:
-        frappe.log_error(error, 'Leave API')
+        frappe.log_error(message=str(error), title='Leave API')
         return response("Internal Server Error", 500, None, error)
     
 
@@ -366,5 +366,5 @@ def leave_approver_action(leave_id: str,status: str) -> dict:
         return response("Success", 201, doc)
         #return response('Leave Application was'+status,doc, 201)
     except Exception as e:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Leave Approver Action Error')
         frappe.respond_as_web_page(_("Error"), e , http_status_code=417)

@@ -260,7 +260,7 @@ def get_passport_text():
         return result
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Passport Reader")
+        frappe.log_error(message=frappe.get_traceback(), title="Passport Reader")
         frappe.throw(e)
 
 
@@ -304,7 +304,7 @@ def get_passport_data(image_path):
             surname=passport_fields.surnames.value
         ))
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Mindee")
+        frappe.log_error(message=frappe.get_traceback(), title="Mindee")
         return frappe._dict({})
     return result_dict
 
@@ -479,7 +479,7 @@ def update_application_function(job_applicant, data):
             "type_of_copy": "Soft Copy",
             })
     except Exception as e:
-        frappe.log_error(e, "Update Job Applicant (Magic Link)")
+        frappe.log_error(message=str(e), title="Update Job Applicant (Magic Link)")
         
     return new_doc
 

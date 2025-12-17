@@ -256,9 +256,9 @@ var set_authorized_signatory_name_arabic = function(frm) {
 
 var set_grd_supervisor = function(frm) {
     if(frm.is_new()){
-        frappe.db.get_value('GRD Settings', {name: 'GRD Settings'}, 'default_grd_supervisor', function(r) {
+        frappe.db.get_value('HR Settings', {name: 'HR Settings'}, 'default_grd_supervisor', function(r) {
             if(r && r.default_grd_supervisor){
-                frm.set_value('grd_supervisor', r.default_grd_supervisor);//the field in the work permit will be set based on the default_grd_supervisor field in GRD settings
+                frm.set_value('grd_supervisor', r.default_grd_supervisor);//the field in the work permit will be set based on the default_grd_supervisor field in HR Settings
             }
         });
     }

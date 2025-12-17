@@ -41,3 +41,4 @@ class ClientEvent(Document):
 			doc.operations_shift = record.get("operations_shift")
 			doc.save(ignore_permissions=True)
 			doc.submit()
+		return True

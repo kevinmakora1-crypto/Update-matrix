@@ -30,7 +30,7 @@ def generate_contracts_invoice():
                 contract_doc.generate_sales_invoice()
 
     except Exception as e:
-        frappe.log(str(e), "Contracts Invoice")
+        frappe.log_error(message=str(e), title="Contracts Invoice")
 
 
 def roster_projection_view_task():
@@ -51,8 +51,8 @@ def notify_for_employee_docs_expiry():
         Method to notify Onboarding officers about employee docs expiration
     """
     try:
-        # Get the GRD Settings to make the recipients
-        grd_settings = frappe.get_single('GRD Settings')
+        # Get the HR Settings to make the recipients
+        grd_settings = frappe.get_single('HR Settings')
         recipients = list(
             set([
                 grd_settings.default_grd_supervisor,
@@ -71,7 +71,7 @@ def notify_for_employee_docs_expiry():
             send_employee_doc_expiry_notification(employees, recipients)
 
     except Exception as e:
-        frappe.log_error(str(e), 'Employee Docs Expiry')
+        frappe.log_error(message=str(e), title='Employee Docs Expiry')
 
 def get_employees_by_expiry_doc(notify_days_before):
     target_expiry_date = add_days(today(), notify_days_before)

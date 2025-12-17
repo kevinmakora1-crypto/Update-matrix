@@ -56,7 +56,7 @@ def create_vector_index():
 
         return vector_index_
     except:
-        frappe.log_error(frappe.get_traceback(), "Error while adding to bot memory(Chat-BOT)")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while adding to bot memory(Chat-BOT)")
 
 
 
@@ -99,7 +99,7 @@ def ask_question(question: str = None):
         answer = query_engine.query(question)
         return response(message="Success", status_code=200, data={"question": question, "answer": answer.response})
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Error while generating answer(Chat-BOT)")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while generating answer(Chat-BOT)")
         return response(e, 500, {}, False, )
 
 
@@ -123,7 +123,7 @@ def fetch_wiki_and_add_to_bot_memory():
 
         return "Done"
     except:
-        frappe.log_error(frappe.get_traceback(), "Error while adding to bot memory")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while adding to bot memory")
         return "Failed"
 
 
@@ -150,7 +150,7 @@ def add_wiki_page_to_bot_memory(doc):
         queue_delete_all_uploaded_files()
         return True
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Error while adding to bot memory")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while adding to bot memory")
         return False
 
 
@@ -166,7 +166,7 @@ def delete_all_uploaded_files():
             if os.path.isfile(file_path):
                 os.remove(file_path)
     except:
-        frappe.log_error(frappe.get_traceback(), "Error while deleting files CHATBOT")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while deleting files CHATBOT")
 
 
 def get_folder_path():

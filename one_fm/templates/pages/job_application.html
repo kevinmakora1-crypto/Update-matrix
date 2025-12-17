@@ -23,15 +23,15 @@
     </div>
   </div>
 
-  <!-- Country List Section -->
-  <p style='margin-top: 30px' class="applicant_country"></p>
+  <!-- Nationality List Section -->
+  <p style='margin-top: 30px' class="applicant_nationality"></p>
 
-  <div class="row applicant_country_section">
+  <div class="row applicant_nationality_section">
     <div class="col-sm-6">
-      <select class="form-control country_list hide">
-        <option>Select Country</option>
-        {% for country in country_list %}
-          <option>{{country.name}}</option>
+      <select class="form-control nationality_list hide">
+        <option>Select Nationality</option>
+        {% for nationality in nationality_list %}
+          <option>{{nationality.name}}</option>
         {% endfor %}
       </select>
     </div>

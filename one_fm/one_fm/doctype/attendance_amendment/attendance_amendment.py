@@ -188,7 +188,7 @@ def get_rows(employee_details, filters, attendance_map, attendance_based_on):
 
 	return records
 
-def get_day_off_attendance_map(filters):
+def get_day_off_attendance_map(filters, roster_type="Basic"):
 	Attendance = frappe.qb.DocType("Attendance")
 
 	query = (
@@ -204,6 +204,7 @@ def get_day_off_attendance_map(filters):
 			& (Extract("month", Attendance.attendance_date) == filters.month)
 			& (Extract("year", Attendance.attendance_date) == filters.year)
 			& (Attendance.status.isin(["Day Off", "Client Day Off"]))
+			& (Attendance.roster_type == roster_type)
 		)
 		.orderby(Attendance.employee, Attendance.attendance_date)
 	)
@@ -318,13 +319,16 @@ def get_ot_attendance_records(filters):
 def get_ot_rows(employee_details, filters, attendance_map):
 	records = []
 
+	day_off_attendance_map = get_day_off_attendance_map(filters, "Over-Time")
+
 	for employee, details in employee_details.items():
 		employee_attendance = attendance_map.get(employee)
+		employee_day_off_attendance = day_off_attendance_map.get(employee, {})
 		if not employee_attendance:
 			# no attendance records found for employee
 			continue
 
-		attendance_for_employee = get_attendance_status(filters, employee_attendance, None, "Shift Hours")
+		attendance_for_employee = get_attendance_status(filters, employee_attendance, employee_day_off_attendance, "Shift Hours")
 
 		# set employee details in the first row
 		for record in attendance_for_employee:

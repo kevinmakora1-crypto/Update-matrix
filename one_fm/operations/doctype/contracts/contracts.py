@@ -133,8 +133,6 @@ class Contracts(Document):
             sales_invoice_doc.project = self.project
             sales_invoice_doc.contracts = self.name
 
-            base_grand_total = 0.0
-
             for item in self.items:
                 if item.item_type == "Manpower":
                     post_schedules = get_post_schedules_for_item(item.item_code, self.project, selected_period_start_date, selected_period_end_date)
@@ -158,7 +156,7 @@ class Contracts(Document):
                             'rate': item.rate,
                             'amount': quantity * item.rate,
                         })
-                        base_grand_total += (quantity * item.rate)
+                        
                     
             if not sales_invoice_doc.items:
                 frappe.throw("No billable items found for the selected period.")
@@ -1270,6 +1268,3 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
         quantity = quantity / len(post_schedules) * count
 
     return quantity
-    # Pro-rata calculation for Monthly rate type
-    if rate_type == "Monthly":
-        quantity = quantity / len(post_schedules) * count

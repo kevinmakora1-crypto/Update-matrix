@@ -222,12 +222,12 @@ class AttendanceCheck(Document):
             "shift_assignment": self.shift_assignment,
             "source": "Attendance Check"
         })
-        #checkin.insert(ignore_permissions=True)
+        # checkin.insert(ignore_permissions=True)
 
     def check_on_leave_record(self):
         if self.attendance_status == "On Leave":
-            #Check for approved leave record
-            if not self.get_approved_leave_records(): #if approval occurs while the document is still being created
+            # Check for approved leave record
+            if not self.get_approved_leave_records(): # if approval occurs while the document is still being created
                 draft_leave_records = self.get_draft_leave_records()
                 if draft_leave_records and len(draft_leave_records) > 0:
                     doc_url = get_url_to_form('Leave Application',draft_leave_records[0].get('name'))
@@ -633,7 +633,7 @@ def create_todos(manager,todos):
         today_datetime = frappe.utils.get_datetime()
 
         if len(todos)>10000:
-            #Query needs to be split to avoid max query package error
+            # Query needs to be split to avoid max query package error
             split_query =create_split_query(todos,10000,manager,today,today_datetime)
             for each in split_query:
                 frappe.db.sql(each,values=[])

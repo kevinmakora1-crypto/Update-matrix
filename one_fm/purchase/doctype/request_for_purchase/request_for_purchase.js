@@ -472,8 +472,8 @@ frappe.ui.form.on('Request for Purchase', {
 				doctype: 'Currency Exchange',
 				fields: ['name','exchange_rate','date'],
 				filters: {
-					from_currency: from_currency,
-					to_currency: to_currency,
+					from_currency: to_currency,
+					to_currency: from_currency,
 					date: ['<=', frappe.datetime.get_today()]
 				},
 				order_by: 'date desc',
@@ -1061,7 +1061,7 @@ function calculate_item_values(frm, cdt, cdn) {
     
     if (item.rate && item.qty) {
         let amount = flt(item.rate) * flt(item.qty);
-        let base_rate = flt(item.rate) * (1 / exchange_rate);
+        let base_rate = flt(item.rate) * exchange_rate;
         let base_amount = flt(item.qty) * base_rate;
 
         frappe.model.set_value(cdt, cdn, 'amount', flt(amount, 2));

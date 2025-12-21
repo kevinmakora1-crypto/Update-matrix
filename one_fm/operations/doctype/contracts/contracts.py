@@ -133,14 +133,18 @@ class Contracts(Document):
             sales_invoice_doc.project = self.project
             sales_invoice_doc.contracts = self.name
 
+            base_grand_total = 0.0
+
             for item in self.items:
                 if item.item_type == "Manpower":
                     post_schedules = get_post_schedules_for_item(item.item_code, self.project, selected_period_start_date, selected_period_end_date)
+                    print("POST SCHEDULES\n\n\n", len(post_schedules))
 
                     if item.rate_type == "Monthly" and len(post_schedules) == 0:
                         frappe.throw(f"Post Schedules are missing for {item.item_code}")
 
-                    quantity = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project, selected_period_start_date, selected_period_end_date)
+                    quantity = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project,
+                                                               selected_period_start_date, selected_period_end_date)
 
                     if item.rate_type == "Monthly" and quantity > item.count:
                         frappe.throw("Can not bill more than Contract's mentioned count for each Operations Role.")
@@ -155,7 +159,13 @@ class Contracts(Document):
                             'rate': item.rate,
                             'amount': quantity * item.rate,
                         })
+                        base_grand_total += (quantity * item.rate)
+                    
+            if not sales_invoice_doc.items:
+                frappe.throw("No billable items found for the selected period.")
 
+            # sales_invoice_doc.base_grand_total = base_grand_total
+            # sales_invoice_doc.grand_total = base_grand_total
             sales_invoice_doc.insert(ignore_permissions=True)
             sales_invoice_doc.save()
 
@@ -1155,6 +1165,8 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
         for post_schedule in post_schedules 
         if post_schedule.get("site")
     ]))
+
+    print(site_names)
     
     if not site_names:
         return 0
@@ -1163,10 +1175,11 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
     month, year = start_date.strftime("%B %Y").split(" ")
     is_hourly = rate_type == "Hourly"
 
+
     quantity = 0
 
     for site in site_names:
-        existing_attendance_amendment = frappe.db.exists("Attendance Amendment", {"month": month, "year": year, "project": project, "site": site, "attendance_based_on": "Shift Hours" if is_hourly else "Attendance Status", "docstatus": 1})
+        existing_attendance_amendment = frappe.db.get_all("Attendance Amendment", {"month": month, "year": year, "project": project, "site": site, "attendance_based_on": "Shift Hours" if is_hourly else "Attendance Status", "docstatus": 1}, pluck="name")
         
         if existing_attendance_amendment:
             # Get day numbers within the date range
@@ -1182,7 +1195,7 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
             basic_attendance_records = frappe.db.get_all(
                 "Attendance Amendment Item",
                 filters={
-                    "parent": existing_attendance_amendment,
+                    "parent": ["IN", existing_attendance_amendment],
                 },
                 fields=day_fields
             )
@@ -1190,7 +1203,7 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
             overtime_attendance_records = frappe.db.get_all(
                 "Attendance Amendment OT Item",
                 filters={
-                    "parent": existing_attendance_amendment,
+                   "parent": ["IN", existing_attendance_amendment],
                 },
                 fields=day_fields
             )
@@ -1209,6 +1222,7 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                 )
                 
                 quantity += flt(billable_basic_hours + billable_overtime_hours)
+
             else:
                 billable_basic_days = sum(
                     1
@@ -1247,13 +1261,17 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                 total_working_hours = sum(
                     flt(att.get("working_hours") or 0) for att in hourly_attendance
                 )
-                quantity += total_working_hours
+                quantity += total_working_hours                
+
             else:
-                # Count the number of days for the attendance
                 quantity += frappe.db.count("Attendance", attendance_filters)
+
 
     # Pro-rata calculation for Monthly rate type
     if rate_type == "Monthly":
         quantity = quantity / len(post_schedules) * count
 
     return quantity
+    # Pro-rata calculation for Monthly rate type
+    if rate_type == "Monthly":
+        quantity = quantity / len(post_schedules) * count

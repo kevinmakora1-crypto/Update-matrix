@@ -138,7 +138,6 @@ class Contracts(Document):
             for item in self.items:
                 if item.item_type == "Manpower":
                     post_schedules = get_post_schedules_for_item(item.item_code, self.project, selected_period_start_date, selected_period_end_date)
-                    print("POST SCHEDULES\n\n\n", len(post_schedules))
 
                     if item.rate_type == "Monthly" and len(post_schedules) == 0:
                         frappe.throw(f"Post Schedules are missing for {item.item_code}")
@@ -164,8 +163,6 @@ class Contracts(Document):
             if not sales_invoice_doc.items:
                 frappe.throw("No billable items found for the selected period.")
 
-            # sales_invoice_doc.base_grand_total = base_grand_total
-            # sales_invoice_doc.grand_total = base_grand_total
             sales_invoice_doc.insert(ignore_permissions=True)
             sales_invoice_doc.save()
 
@@ -1166,7 +1163,6 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
         if post_schedule.get("site")
     ]))
 
-    print(site_names)
     
     if not site_names:
         return 0
@@ -1196,6 +1192,7 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                 "Attendance Amendment Item",
                 filters={
                     "parent": ["IN", existing_attendance_amendment],
+                    "sale_item": item_code,
                 },
                 fields=day_fields
             )
@@ -1204,6 +1201,7 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                 "Attendance Amendment OT Item",
                 filters={
                    "parent": ["IN", existing_attendance_amendment],
+                   "sale_item": item_code,
                 },
                 fields=day_fields
             )

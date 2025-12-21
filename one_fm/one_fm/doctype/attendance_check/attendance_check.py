@@ -273,7 +273,6 @@ class AttendanceCheck(Document):
             """,
             as_dict=True
         )
-    
     def get_approved_leave_records(self):
         return frappe.db.sql(f"""
             select

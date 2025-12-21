@@ -156,8 +156,6 @@ class Contracts(Document):
                             'rate': item.rate,
                             'amount': quantity * item.rate,
                         })
-                        
-                    
             if not sales_invoice_doc.items:
                 frappe.throw("No billable items found for the selected period.")
 

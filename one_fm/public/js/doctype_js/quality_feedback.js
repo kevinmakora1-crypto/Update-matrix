@@ -24,7 +24,7 @@ const add_copy_magic_link_button = function (frm) {
         },
         callback: function (r) {
             if (r.message) {
-                navigator.clipboard.writeText(r.message);
+                frappe.utils.copy_to_clipboard(r.message);
                 frappe.show_alert({
                     message: __('Quality feedback link copied to clipboard'),
                     indicator: 'green'

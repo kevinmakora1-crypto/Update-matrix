@@ -345,7 +345,7 @@ def get_assigned_shifts(employee_id=None, project=None, site=None):
 		return []
 
 	except Exception as e:
-		frappe.log_error(frappe.traceback(), str(e))
+		frappe.log_error(message=str(e), title='Get Assigned Shifts Error')
 		return frappe.utils.response.report_error(str(e))
 
 def get_supervisor_operations_shifts(supervisor=None, project=None, site=None):
@@ -530,7 +530,7 @@ def schedule_staff(employee, shift, operations_role, start_date, end_date=None, 
 				roster.save(ignore_permissions=True)
 			return True
 	except Exception as e:
-		frappe.log_error(e)
+		frappe.log_error(message=str(e), title='Schedule Staff Error')
 		frappe.throw(_(e))
 
 

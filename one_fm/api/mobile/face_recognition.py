@@ -57,7 +57,7 @@ def enroll(video):
         return _("Successfully Enrolled!")
     
     except Exception as exc:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Face Recognition Enrollment Error')
         return frappe.utils.response.report_error(exc)
 
 
@@ -101,7 +101,7 @@ def verify(video, log_type, skip_attendance, latitude, longitude):
         return check_in(log_type, skip_attendance, latitude, longitude)
 
     except Exception as exc:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Face Recognition Verification Error')
         return frappe.utils.response.report_error(exc)
 
 
@@ -127,5 +127,5 @@ def get_site_location(employee):
             return {"message": "You are not currently assign with a shift.","data_obj": {},"status_code" : 500}	
     except Exception as e:
         print(frappe.get_traceback())
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Face Recognition Error')
         return frappe.utils.response.report_error(e)		

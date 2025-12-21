@@ -64,7 +64,7 @@ class EmployeeOverride(EmployeeMaster):
                     if not any((frappe.db.exists("Has Role", {"role": ["IN", ["HR Manager", "HR Supervisor", "Attendance Manager"]], "parent": frappe.session.user}), frappe.session.user == "Administrator")):
                         frappe.throw("You Are Not Permitted To Toggle Auto-Attendance")
         except Exception as e:
-            frappe.log_error(title = f"{str(e)}", message = frappe.get_traceback())
+            frappe.log_error(message=f"{str(e)}", title="Employee Auto Attendance Toggle")
 
     def set_employee_id_based_on_residency(self):
         if self.employee_id:
@@ -493,7 +493,7 @@ class NotifyAttendanceManagerOnStatusChange:
 
             return data_dict
         except Exception as e:
-            frappe.log_error(frappe.get_traceback(), "Employee Status Change Notification")
+            frappe.log_error(message=frappe.get_traceback(), title="Employee Status Change Notification")
             return dict()
 
 
@@ -661,7 +661,7 @@ def toggle_auto_attendance(employee_names: list | str, status: bool):
             return response(message=f"Updated {len(employee_names)} Successfully", status_code=201)
         return response(message="You are not permitted to carry out this action", status_code=400)
     except Exception as e:
-        frappe.log_error(title = f"{str(e)}",message = frappe.get_traceback())
+        frappe.log_error(title="Error while toggling auto attendance", message=frappe.get_traceback())
         return response(message=str(e), status_code=400)
 
 
@@ -680,7 +680,7 @@ def fetch_accomodation_name(name: str):
         """, (name,), as_dict=True)
         return response(message="Success", status_code=200, data=dict(accomodation=accomodation[0].get("accommodation", "") if accomodation else ""))
     except Exception as e:
-        frappe.log_error(title = f"{str(e)}", message = frappe.get_traceback())
+        frappe.log_error(title=f"Error while fetching accommodation name", message=frappe.get_traceback())
         return response(message=str(e), status_code=400)
 
 
@@ -694,4 +694,4 @@ def get_assurance_level_of_employee(doc, method):
                 doc.custom_civil_id_assurance_level = verification_level
             return True
     except Exception as e:
-            frappe.log_error(frappe.get_traceback(),f"DSS returned NONE values,No API key")
+            frappe.log_error(message=frappe.get_traceback(), title=f"DSS returned NONE values,No API key")

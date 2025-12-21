@@ -36,7 +36,7 @@ def close_leaves(leave_ids, user=None):
             leave_doc.flags.ignore_validate = True
             leave_doc.submit()
         except:
-            frappe.log_error("Error while closing {0}".format(leave))
+            frappe.log_error(title="Error while closing {0}".format(leave))
             approved_leaves.remove(leave)
             not_approved_leaves.append(leave)
             continue
@@ -100,7 +100,7 @@ class LeaveApplicationOverride(LeaveApplication):
                     frappe.db.set_value("ToDo",each.get("name"),'status','Closed')
                 frappe.db.commit()
         except:
-            frappe.log_error(frappe.get_traceback(),"Error Closing ToDos")
+            frappe.log_error(message=frappe.get_traceback(), title="Error Closing ToDos")
 
     def on_submit(self):
         self.close_todo()
@@ -198,7 +198,7 @@ class LeaveApplicationOverride(LeaveApplication):
                     frappe.db.sql(query)
                 frappe.msgprint(msg = f"Shift Assignments for {self.employee_name} between {self.from_date} and {self.to_date} have been deleted",alert=1)
         except:
-            frappe.log_error(frappe.get_traceback(),"Error Closing Shifts")
+            frappe.log_error(message=frappe.get_traceback(), title="Error Closing Shifts")
 
     def unlink_attendance_check(self, shift):
         attcheck_exists = frappe.db.exists("Attendance Check",  {"shift_assignment": shift})
@@ -407,7 +407,7 @@ class LeaveApplicationOverride(LeaveApplication):
                                 }
                             ).insert(ignore_permissions=True)
                 except:
-                    frappe.log_error(frappe.get_traceback(),"Error assigning to User")
+                    frappe.log_error(message=frappe.get_traceback(), title="Error assigning to User")
                     frappe.throw("Error while assigning leave application")
 
     def validate_dates(self):
@@ -471,7 +471,7 @@ class LeaveApplicationOverride(LeaveApplication):
             except frappe.OutgoingEmailError:
                 pass
             except:
-                frappe.log_error(frappe.get_traceback(),"Error Sending Notification")
+                frappe.log_error(message=frappe.get_traceback(), title="Error Sending Notification")
 
     def on_cancel(self):
         emp = frappe.get_doc("Employee", self.employee)

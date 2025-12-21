@@ -312,7 +312,7 @@ def get_issue_type():
 		options = field.options.split("\n")
 		return response("Operation Successful", 200, options)
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), _("Error while fetching issue type (Employee Checkin Issue)"))
+		frappe.log_error(message=frappe.get_traceback(), title="Error while fetching issue type (Employee Checkin Issue)")
 		return response("Internal Server Error", 500, None, str(e))
 
 
@@ -334,5 +334,5 @@ def get_checkin_issue_list(employee_id: str):
 			return response("Operation Successful", 200, data, None)
 		return response("Resource not found", 404, None, "No employee found with {employee_id}".format(employee_id=employee_id))
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), _("Error while fetching Employee Checkin Issue"))
+		frappe.log_error(message=frappe.get_traceback(), title=_("Error while fetching Employee Checkin Issue"))
 		return response("Internal Server Error", 500, None, str(e))

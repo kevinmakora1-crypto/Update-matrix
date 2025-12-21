@@ -662,7 +662,7 @@ def get_filtered_values(start_date, end_date, project=None, site=None, shift=Non
 
 
     except:
-        frappe.log_error(frappe.get_traceback(), 'Roster API Error')
+        frappe.log_error(message=frappe.get_traceback(), title='Roster API Error')
 
 
 @frappe.whitelist()

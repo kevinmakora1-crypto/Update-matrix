@@ -39,7 +39,7 @@ def create_new_schedule_for_project(proj):
             frappe.enqueue(create_post_schedules, operations_posts=all_operations_post_, queue="long",job_name = 'Create Post Schedules')
             return response("Post Creation Scheduled Sucessfully",{}, True, 200)
     except:
-        frappe.log_error("Post Schedule Creation Error",frappe.get_traceback())
+        frappe.log_error(title="Post Schedule Creation Error", message=frappe.get_traceback())
 
 
 
@@ -71,7 +71,7 @@ def update_ops_post(projects):
         if response:
             posts = [i.name for i in response]
     except:
-        frappe.log_error("Post Schedule Creation Error",frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title="Post Schedule Creation Error")
 
     try:
         for each in posts:
@@ -80,7 +80,7 @@ def update_ops_post(projects):
             create_post_schedule_for_operations_post(doc)
             frappe.db.commit()
     except:
-        frappe.log_error("Error Creating Post Schedules",frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title="Error Creating Post Schedules")
 
 
 
@@ -200,6 +200,6 @@ def queue_create_post_schedule_for_operations_post(operations_post, contracts, e
             frappe.msgprint(_("Post is scheduled as Planned."))
     except Exception as e:
         frappe.db.rollback()
-        frappe.log_error('Post Schedule from Operations Post', e)
+        frappe.log_error(message=str(e), title='Post Schedule from Operations Post')
         frappe.msgprint(_("Error log is added."), alert=True, indicator='orange')
         operations_post.reload()

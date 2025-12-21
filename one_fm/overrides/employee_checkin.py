@@ -89,7 +89,7 @@ class EmployeeCheckinOverride(EmployeeCheckin):
 			if self.log_type == "IN":
 				frappe.enqueue(notify_supervisor_about_late_entry, checkin=self)
 		except Exception as e:
-			frappe.log_error(frappe.get_traceback(), 'Employee Checkin')
+			frappe.log_error(message=frappe.get_traceback(), title='Employee Checkin')
 
 def exists_checkin(current_shift_assignment, checkin_name, log_type="IN"):
 	'''
@@ -151,7 +151,7 @@ def after_insert_background(employee_checkin,current_shift):
 			frappe.db.sql(query, values=[], as_dict=1)
 			frappe.db.commit()
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), 'Employee Checkin')
+		frappe.log_error(message=frappe.get_traceback(), title='Employee Checkin')
 
 	# send notification
 	# continue to notification
@@ -303,7 +303,7 @@ def notify_supervisor_about_late_entry(checkin):
 						if get_site_supervisor:
 							return send_push_notification_for_late_entry(get_site_supervisor, checkin.employee_name, roster_type=the_roster_type if the_roster_type else "Basic", time_difference=time_diff, shift=op_shift, time_of_arrival=time_of_arrival)
 	except Exception as e:
-		frappe.log_error(e)
+		frappe.log_error(message=str(e), title='Employee Checkin')
 		pass
 
 

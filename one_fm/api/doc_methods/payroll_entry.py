@@ -184,7 +184,7 @@ def set_bank_details(self, employee_details):
 			bank_code = frappe.db.get_value("Bank", {'name': bank}, ["bank_code"])
 			employee.bank_code = bank_code
 		except Exception as e:
-			frappe.log_error(str(e), 'Payroll Entry')
+			frappe.log_error(message=str(e), title='Payroll Entry')
 			frappe.throw(str(e))
 
 	if len(missing_ssa) > 0:
@@ -294,7 +294,7 @@ def create_monthly_payroll_entry(payroll_date, start_date, end_date):
 			payroll_entry.submit()
 			frappe.db.commit()
 	except Exception:
-		frappe.log_error(frappe.get_traceback(), cstr(start_date)+' | '+cstr(end_date))
+		frappe.log_error(message=frappe.get_traceback(), title=cstr(start_date)+' | '+cstr(end_date))
 
 def get_payroll_start_end_date_by_start_day(payroll_date, start_day):
 	if start_day == 'Month Start':
@@ -566,7 +566,7 @@ def export_cash_payroll(cash_salary_employees, doc_name):
 		destination_wb.save(filename=destination_file)
 
 	except Exception as e:
-		frappe.log_error(e)
+		frappe.log_error(message=str(e), title='Payroll Entry')
 
 @frappe.whitelist()
 def email_missing_payment_information(recipients):
@@ -802,4 +802,4 @@ def notify_for_open_leave_application(is_scheduled_event=True):
 
 			sendemail(recipients= recipient , subject="Leave Application need approval", message=message, is_scheduler_email=is_scheduled_event)
 	except Exception as error:
-		frappe.log_error(str(error), 'Open Leave Application reminder failed')
+		frappe.log_error(message=str(error), title='Open Leave Application reminder failed')

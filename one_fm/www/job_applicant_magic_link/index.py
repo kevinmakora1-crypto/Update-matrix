@@ -92,7 +92,7 @@ def get_magic_link():
             result = {}
         return result
     except:
-        frappe.log_error(frappe.get_traceback(), 'Magic Link')
+        frappe.log_error(message=frappe.get_traceback(), title='Magic Link')
         return result
 
 @frappe.whitelist(allow_guest=True)
@@ -216,7 +216,7 @@ def upload_image():
             response_data['passport']=result_dict
             # return frappe._dict()
         except Exception as e:
-            frappe.log_error(frappe.get_traceback(), "Mindee-Passport")
+            frappe.log_error(message=frappe.get_traceback(), title="Mindee-Passport")
             errors.append("We could not process your passport document.")
 
     # process high school certificate   
@@ -344,7 +344,7 @@ def upload_image():
             frappe.db.commit()
 
         except Exception as e:
-            frappe.log_error(frappe.get_traceback(), "Mindee-Civil ID")
+            frappe.log_error(message=frappe.get_traceback(), title="Mindee-Civil ID")
             errors.append("We could not process your Civil ID document.")
 
     # civil id Back
@@ -410,7 +410,7 @@ def delete_existing_files(reference_doctype,reference_docname, file_url_filter, 
 
         frappe.db.commit()
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Error deleting existing files")
+        frappe.log_error(message=frappe.get_traceback(), title="Error deleting existing files")
 
 
 @frappe.whitelist(allow_guest=True)

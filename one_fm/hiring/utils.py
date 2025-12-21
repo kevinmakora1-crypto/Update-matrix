@@ -164,7 +164,7 @@ def create_employee_user_from_employee_id(doc):
 			doc.reload()
 			create_employee_user(doc, f"{doc.employee_id.upper()}@one-fm.com")
 	except Exception as e:
-		frappe.log_error(str(e), 'CREATE USER')
+		frappe.log_error(message=str(e), title='CREATE USER')
 
 def create_employee_user(doc, email):
 	try:
@@ -189,7 +189,7 @@ def create_employee_user(doc, email):
 		doc.db_set("create_user_permission", 1)
 		doc.reload()
 	except Exception as e:
-		frappe.log_error(str(e), 'CREATE USER')
+		frappe.log_error(message=str(e), title='CREATE USER')
 
 
 def generate_employee_id(doc):
@@ -651,7 +651,7 @@ def create_leave_policy(leave_policy_assignments):
 				leave_policy_assignment.save(ignore_permissions=True)
 				leave_policy_assignment.submit()
 		except Exception as e:
-			frappe.log_error(frappe.get_traceback(), "Error while creating leave policy assignment")
+			frappe.log_error(message=frappe.get_traceback(), title="Error while creating leave policy assignment")
 			continue
 
 def update_onboarding_doc_workflow_sate(doc):

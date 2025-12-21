@@ -77,7 +77,7 @@ def checkin_checkout_initial_reminder():
 		frappe.enqueue(schedule_initial_reminder, shifts_list=shifts_list, now_time=now_time, is_async=True, queue='long')
 
 	except Exception as error:
-		frappe.log_error(str(error), 'Checkin/checkout initial reminder failed')
+		frappe.log_error(message=str(error), title='Checkin/checkout initial reminder failed')
 
 def schedule_initial_reminder(shifts_list, now_time):
 	notification_title = _("Checkin/Checkout reminder")
@@ -116,7 +116,7 @@ def checkin_checkout_final_reminder():
 		#Send final reminder to checkin or checkout to employees who have not even after shift has ended
 		frappe.enqueue(schedule_final_notification, shifts_list=shifts_list, now_time=now_time, is_async=True, queue='long')
 	except Exception as error:
-		frappe.log_error(str(error), 'Checkin/checkout final reminder failed')
+		frappe.log_error(message=str(error), title='Checkin/checkout final reminder failed')
 
 def schedule_final_notification(shifts_list, now_time):
 	notification_title = _("Final Reminder")
@@ -1006,7 +1006,7 @@ def create_shift_assignment(roster, date, time):
 				frappe.db.commit()
 
 	except Exception as e:
-		frappe.log_error(f'Shift Assignment - {time}', frappe.get_traceback())
+		frappe.log_error(title=f'Shift Assignment - {time}', message=frappe.get_traceback())
 		sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
 		recipient = frappe.get_value("Email Account", {"name":"Support"}, ["email_id"])
 		msg = frappe.render_template('one_fm/templates/emails/missing_shift_assignment.html', context={"rosters": roster})
@@ -1212,7 +1212,7 @@ def process_overtime_shift(roster, date, time):
 				else:
 					create_overtime_shift_assignment(schedule, date)
 		except Exception as e:
-			frappe.log_error(title="Error Creating Overtime Shift Assignment",message = frappe.get_traceback())
+			frappe.log_error(title="Error Creating Overtime Shift Assignment", message=frappe.get_traceback())
 			continue
 
 def create_overtime_shift_assignment(schedule, date):
@@ -1241,7 +1241,7 @@ def create_overtime_shift_assignment(schedule, date):
 			pass
 		except Exception:
 			# Log all the errors except the OverlappingShiftError(ValidationError)
-			frappe.log_error(frappe.get_traceback(), "Create Overtime Shift Assignment")
+			frappe.log_error(title="Create Overtime Shift Assignment", message=frappe.get_traceback())
 
 def update_shift_type():
 	today_datetime = now_datetime()
@@ -1282,7 +1282,7 @@ def generate_payroll():
 	try:
 		auto_create_payroll_entry()
 	except Exception:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(title="Error Generating Payroll", message=frappe.get_traceback())
 
 def generate_penalties():
 	# start_date = add_to_date(getdate(), months=-1)
@@ -1474,7 +1474,7 @@ def create_additional_salary(employee, amount, component, end_date, notes):
 			additional_salary.submit()
 		frappe.db.commit()
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), 'Additional Salary - {0}'.format(component))
+		frappe.log_error(title='Additional Salary - {0}'.format(component), message=frappe.get_traceback())
 
 def generate_ot_additional_salary():
 	# Gather the required Date details such as start date, and respective end date.
@@ -1549,7 +1549,7 @@ def process_attendance_for_ot_additional_salary(attendance_doc, overtime_compone
 				create_additional_salary(attendance_doc.employee, amount, overtime_component, end_date, notes)
 			else:
 				error_msg = _("Overtime rate must be greater than zero for project: {project}".format(project=project))
-				frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+				frappe.log_error(title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name), message=error_msg)
 
 		# If no overtime rate is specified, follow labor law => (Basic Hourly Wage * number of worked hours * 1.5)
 		else:
@@ -1575,8 +1575,8 @@ def process_attendance_for_ot_additional_salary(attendance_doc, overtime_compone
 							notes = f"Attendance: {attendance_doc.name} \nCalculated based on working day rate => Basic hourly wage*Duration of worked hours*Working day overtime rate => {hourly_wage}*{overtime_duration}*{working_day_overtime_rate} = {amount} \n\n"
 							create_additional_salary(attendance_doc.employee, amount, overtime_component, end_date, notes)
 						else:
-							error_msg = _("No Wroking Day overtime rate set in HR and Payroll Additional Settings.")
-							frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+							error_msg = _("No Working Day overtime rate set in HR and Payroll Additional Settings.")
+							frappe.log_error(message=error_msg, title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
 
 					# Check if attendance date falls in a holiday list
 					elif holiday_list:
@@ -1597,7 +1597,7 @@ def process_attendance_for_ot_additional_salary(attendance_doc, overtime_compone
 								create_additional_salary(attendance_doc.employee, amount, overtime_component, end_date, notes)
 							else:
 								error_msg = _("No Day Off overtime rate set in HR and Payroll Additional Settings.")
-								frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+								frappe.log_error(message=error_msg, title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
 
 						# Check for weekly off days set to "False", ie, Public/additional holidays in holiday list
 						elif len(holidays_public_holiday) > 0:
@@ -1609,16 +1609,16 @@ def process_attendance_for_ot_additional_salary(attendance_doc, overtime_compone
 								create_additional_salary(attendance_doc.employee, amount, overtime_component, end_date, notes)
 							else:
 								error_msg = _("No Public Holiday overtime rate set in HR and Payroll Additional Settings.")
-								frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+								frappe.log_error(message=error_msg, title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
 					else:
 						error_msg = _("No basic Employee Schedule or Holiday List found for employee: {employee}".format(employee=attendance_doc.employee))
-						frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+						frappe.log_error(message=error_msg, title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
 				else:
 					error_msg = _("Basic Salary not set for employee: {employee} in the employee record.".format(employee=attendance_doc.employee))
-					frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+					frappe.log_error(message=error_msg, title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
 			else:
 				error_msg = _("Shift not set for employee: {employee} in the employee record.".format(employee=attendance_doc.employee))
-				frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+				frappe.log_error(message=error_msg, title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
 
 def generate_sick_leave_deduction():
 	# Gather the required Date details such as start date, and respective end date.
@@ -2171,7 +2171,7 @@ def run_checkin_reminder():
 		if res:
 			initiate_checkin_notification(res)
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), 'Checkin Notification')
+		frappe.log_error(message=frappe.get_traceback(), title='Checkin Notification')
 
 
 

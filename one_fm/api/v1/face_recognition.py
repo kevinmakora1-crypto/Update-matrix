@@ -209,7 +209,7 @@ def verify_checkin_checkout(employee_id: str = None, log_type: str = None,shift:
         return response("Success", 201, doc, None)
 
     except Exception as error:
-        frappe.log_error(frappe.get_traceback(), 'Verify Checkin')
+        frappe.log_error(message=frappe.get_traceback(), title="Verify Checkin Error")
         return response("Internal Server Error", 500, None, error)
 
 

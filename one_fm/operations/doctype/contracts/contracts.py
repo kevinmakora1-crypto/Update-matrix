@@ -1198,8 +1198,8 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
             overtime_attendance_records = frappe.db.get_all(
                 "Attendance Amendment OT Item",
                 filters={
-                   "parent": ["IN", existing_attendance_amendment],
-                   "sale_item": item_code,
+                    "parent": ["IN", existing_attendance_amendment],
+                    "sale_item": item_code,
                 },
                 fields=day_fields
             )

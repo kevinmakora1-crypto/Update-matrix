@@ -1257,7 +1257,7 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                 total_working_hours = sum(
                     flt(att.get("working_hours") or 0) for att in hourly_attendance
                 )
-                quantity += total_working_hours                
+                quantity += total_working_hours
 
             else:
                 quantity += frappe.db.count("Attendance", attendance_filters)

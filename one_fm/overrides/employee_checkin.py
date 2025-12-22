@@ -111,9 +111,36 @@ def exists_checkin(current_shift_assignment, checkin_name, log_type="IN"):
 
 	return False
 
+
+def validate_shift_assignment(employee_checkin,shift):
+	"""
+		Method to validate shift assignment
+		Does the following. 
+		1. Checks if no shift assignment is set, then set one
+		2. Checks that the date in the shift assignment is the same as the checkin date if the source is Mobile App, that is for Checkins, the checkin date should be the same as the shift assignment date
+	"""
+	try:
+		if isinstance(employee_checkin, str):
+			employee_checkin = frappe.get_doc("Employee Checkin", employee_checkin)
+		if employee_checkin.source == "Mobile App" and getdate(employee_checkin.creation)==getdate():#Ensure that the checkin is being created now
+			current_shift = get_current_shift(employee_checkin.employee)
+			if current_shift.get('data'):
+				if current_shift.get('data').get('name') != shift:
+					return current_shift.get('data').get('name')
+				else:
+					return shift
+		return shift
+	except Exception as e:
+		frappe.log_error(message = frappe.get_traceback(),title = 'Checkin Shift Validation')
+
+	
+
+
+
 def after_insert_background(employee_checkin,current_shift):
 	self = frappe.get_doc("Employee Checkin", employee_checkin)
 	try:
+		current_shift = validate_shift_assignment(employee_checkin,current_shift)
 		if not current_shift:
 			shift_details = get_current_shift(self.employee)
 			if shift_details:

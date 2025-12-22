@@ -530,7 +530,7 @@ def replace_employee_schedule(doc, existing_schedules, schedule_date_range):
             replaced_employee_schedule.db_set("replaced_employee_schedule", es.name)
     except Exception as e:
         frappe.throw(_("Error Replacing Employee Schedule"))
-        frappe.log_error(frappe.get_traceback(), "Error Replacing Employee Schedule")
+        frappe.log_error(message=frappe.get_traceback(), title="Error Replacing Employee Schedule")
 
 
 def create_shift_assignment_from_request(shift_request, submit=True,day_off_ot = False):

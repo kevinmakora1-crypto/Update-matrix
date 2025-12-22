@@ -219,30 +219,8 @@ def upload_image(base64image, OUTPUT_IMAGE_PATH):
 			fh.write(base64.standard_b64decode(base64image.encode()))
 			return (OUTPUT_IMAGE_PATH)
 	except Exception as exc:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(message=frappe.get_traceback())
 		raise exc
-
-# def match_encodings(encodings, face_data):
-# 	try:
-# 		# loop over the facial embeddings
-# 		for encoding in encodings:
-# 			# attempt to match each face in the input image to our known
-# 			# encodings
-# 			matches = face_recognition.compare_faces(
-# 				face_data["encodings"], encoding)
-# 			print(matches)
-# 			# check to see if we have found a match
-# 			if True in matches:
-# 				# find the indexes of all matched faces
-# 				matchedIdxs = [i for (i, b) in enumerate(matches) if b]
-# 				print(matchedIdxs)
-# 				return True if ((len(matchedIdxs) / len(matches)) * 100 > 80) else False
-# 			else:
-# 				return False
-# 		else:
-# 			return False
-# 	except Exception as e:
-# 		print(frappe.get_traceback())
 
 @frappe.whitelist()
 def get_permission_query_conditions(user):
@@ -298,7 +276,7 @@ def automatic_reject():
 				if is_scheduler_emails_enabled():
 					send_email_to_legal(penalty, _("Penalty was rejected after 48 hours automatically. Please review."))
 			except Exception as e:
-				frappe.log_error(str(e), 'Auto Penalty Reject Failed')
+				frappe.log_error(message=str(e), title='Auto Penalty Reject Failed')
 				error_list += f"""{penalty.name}, {penalty.recipient_employee}<br>"""
 
 		frappe.set_user(session_user) #restore session user

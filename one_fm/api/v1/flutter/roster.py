@@ -182,7 +182,7 @@ def get_roster_view(start_date: str, end_date: str, assigned: int = 0, scheduled
 
         response("Success", 200, master_data)
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), 'Get Roster View')
+        frappe.log_error(message=frappe.get_traceback(), title='Get Roster View Error')
         return response("Server Error", 500, None, str(e))
 
 def get_active_employees(start_date, end_date, master_data):
@@ -253,7 +253,7 @@ def get_post_view(start_date, end_date,  project=None, site=None, shift=None, op
         master_data.update({"post_data": post_data, "total": len(post_data)})
         return response('success', 200, master_data)
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), 'Get Post View - Flutter')
+        frappe.log_error(message=frappe.get_traceback(), title='Get Post View - Flutter')
         return response('error', 500, None, frappe.get_traceback())
 
 @frappe.whitelist()
@@ -317,7 +317,7 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
 
         if len(validation_logs) > 0:
             frappe.throw(validation_logs)
-            frappe.log_error(validation_logs)
+            frappe.log_error(message=validation_logs, title='Schedule Staff Validation Error')
         else:
             employees = json.loads(employees)
             # extreme schedule
@@ -1005,7 +1005,7 @@ def assign_staff(employees, shift, request_employee_assignment):
 
     if len(validation_logs) > 0:
         frappe.throw(validation_logs)
-        frappe.log_error(validation_logs)
+        frappe.log_error(message=validation_logs, title='Schedule Staff Validation Error')
     else:
         try:
             start = time.time()
@@ -1023,7 +1023,7 @@ def assign_staff(employees, shift, request_employee_assignment):
             return True
 
         except Exception as e:
-            frappe.log_error(e)
+            frappe.log_error(message=str(e), title='Error while creating request employee assignment')
             frappe.throw(_(e))
 
 def create_request_employee_assignment(employee, from_shift, to_shift):

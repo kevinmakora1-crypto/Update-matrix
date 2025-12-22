@@ -278,5 +278,5 @@ def push_notification_rest_api_for_lms(user_id, message):
             res = messaging.send(message)
             return v1_api.utils.response("success", 200, {'response': str(res)})
     except Exception as e:
-        frappe.log_error(title = "Error Sending  Push notification for LMS",message= frappe.get_traceback())
+        frappe.log_error(title="Error Sending  Push notification for LMS", message=frappe.get_traceback())
         return v1_api.utils.response("error", 500, {}, str(e))

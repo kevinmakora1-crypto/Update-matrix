@@ -37,7 +37,7 @@ def get_working_site_supervisor(project, date):
 		return None
 
 	except Exception as e:
-		frappe.log_error(title=str(e), message=frappe.get_traceback())
+		frappe.log_error(message=str(e), title="Error fetching working site supervisor")
 
 	
 def get_post_scheduler_items(contract, project):

@@ -71,12 +71,15 @@ class SalesInvoiceOverride(SalesInvoice):
         ]
 
         # Normalize current summary for comparison (ignore order)
+        # `self.get("custom_contract_item_categorywise_summary")` can be None on new docs,
+        # so coerce to an empty list before iterating to avoid `'NoneType' object is not iterable`.
+        existing_rows = self.get("custom_contract_item_categorywise_summary") or []
         current_summary = [
             {
                 "contract_item_category": row.contract_item_category,
                 "base_net_amount": row.base_net_amount
             }
-            for row in self.get("custom_contract_item_categorywise_summary", [])
+            for row in existing_rows
         ]
         # Sort both lists for reliable comparison
         new_summary_sorted = sorted(new_summary, key=lambda x: x["contract_item_category"])

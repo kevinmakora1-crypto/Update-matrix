@@ -815,7 +815,7 @@ def mark_daily_attendance(start_date, end_date):
             timeout=7000
         )
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Attendance Marking")
+        frappe.log_error(message=frappe.get_traceback(), title="Attendance Marking")
 
 def remark_attendance(start_date, end_date):
     try:
@@ -832,7 +832,7 @@ def remark_attendance(start_date, end_date):
         for employee in missing_attendances:
             mark_bulk_attendance(employee, start_date, start_date)
     except:
-        frappe.log_error(frappe.get_traceback(), 'Remark Attendance')
+        frappe.log_error(message=frappe.get_traceback(), title='Remark Attendance')
 
 
 def update_employee_checkin_with_attendance(attendance_dict):
@@ -853,7 +853,7 @@ def update_day_off_ot(attendances):
                 if day_off_ot:
                     att.db_set("day_off_ot", day_off_ot)
             except:
-                frappe.log_error(frappe.get_traceback(), "Attendance Marking OT")
+                frappe.log_error(message=frappe.get_traceback(), title="Attendance Marking OT")
 
 
 def mark_open_timesheet_and_create_attendance():
@@ -866,7 +866,7 @@ def mark_open_timesheet_and_create_attendance():
         try:
             apply_workflow(frappe.get_doc("Timesheet", i.name), 'Approve')
         except Exception as e:
-            frappe.log_error(frappe.get_traceback(), "Timesheet Marking")
+            frappe.log_error(message=frappe.get_traceback(), title="Timesheet Marking")
 
     present_employees = frappe.db.get_list("Timesheet", filters={"start_date": the_date, "workflow_state": "Approved"}, pluck="employee")
     for obj in employee_list:
@@ -890,7 +890,7 @@ def mark_open_timesheet_and_create_attendance():
                     att.insert(ignore_permissions=True)
                     att.submit()
                 except Exception as e:
-                    frappe.log_error(frappe.get_traceback(), "TImesheet Attendance Marking")
+                    frappe.log_error(message=frappe.get_traceback(), title="Timesheet Attendance Marking")
     frappe.db.commit()
 
 
@@ -901,7 +901,7 @@ def approve_pending_employee_checkin_issue():
             try:
                 apply_workflow(frappe.get_doc("Employee Checkin Issue", obj), "Approve")
             except Exception as e:
-                frappe.log_error(frappe.get_traceback(), "Error while approving employee checkin issue")
+                frappe.log_error(message=frappe.get_traceback(), title="Error while approving employee checkin issue")
             frappe.db.commit()
 
 

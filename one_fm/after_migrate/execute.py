@@ -706,6 +706,6 @@ def update_ticket_status():
         print(f"⚠️ Warning: Original file not found at: {source_file}. Skipping replacement.")
     except Exception as e:
         print(f"🔥 An unexpected error occurred: {e}")
-        frappe.log_error("ONEFM TicketStatus.ts Override Failed", frappe.get_traceback())
+        frappe.log_error(title="ONEFM TicketStatus.ts Override Failed", message=frappe.get_traceback())
 
     return False

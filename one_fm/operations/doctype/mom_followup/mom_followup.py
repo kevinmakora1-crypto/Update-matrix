@@ -12,45 +12,15 @@ from one_fm.api.tasks import issue_penalty
 from frappe.utils.data import nowdate
 from datetime import datetime
 
-# bench execute one_fm.operations.doctype.mom_followup.mom_followup.mom_project_followup
-# bench execute one_fm.operations.doctype.mom_followup.mom_followup.mom_followup_reminder
-# bench execute one_fm.operations.doctype.mom_followup.mom_followup.mom_sites_followup
-# bench execute one_fm.operations.doctype.mom_followup.mom_followup.on_update
-# bench execute one_fm.operations.doctype.mom_followup.mom_followup.test_function
-# bench execute one_fm.operations.doctype.mom_followup.mom_followup.mom_followup_penalty
-
 class MOMFollowup(Document):
 	def on_update(self):
 		
 		if self.workflow_state == 'Approved By Projects Manager':
 			create_notification_log("NO ACTION Required - Missed MOM Reason Approved for site {0}".format(self.site), "Your Reason for Missed MOM has been Approved", [frappe.db.get_value('Employee',self.site_supervisor, 'user_id')],self)
 
-		# elif self.workflow_state == 'Issue Penalty':
-		# 	create_notification_log("PENALTY Issued - Missed MOM Reason NOT Approved for site {0}".format(self.site), "Your Reason for Missed MOM has been Approved", [frappe.db.get_value('Employee',self.site_supervisor, 'user_id')],self)
-			
-		# 	if self.penalty_type:
-		# 		issue_penalty(self.site_supervisor, nowdate(),self.penalty_code,frappe.get_value('Shift Assignment',{'employee':self.site_supervisor},'shift'), self.project_manager,"Head Office")
-		# else:
-		# 	pass
 	def on_update_after_submit(self):
 		if self.penalty_type:
 				issue_penalty(self.site_supervisor, nowdate(),self.penalty_code,frappe.get_value('Shift Assignment',{'employee':self.site_supervisor,'start_date':nowdate()},'shift'), self.project_manager,"Head Office")
-
-
-	# def on_update(self):
-	# 	if self.workflow_state == 'Review by Projects Manager':
-	# 		count = 0
-	# 		for assigned in self.assign:
-	# 			project_manager = frappe.db.get_value('Employee',self.project_manager, 'user_id')
-	# 			if assigned == project_manager:
-	# 				count = count + 1
-	# 		if count == 0:
-	# 			add_assignment({
-	# 				'doctype': 'MOM Followup',
-	# 				'name': self.name,
-	# 				'assign_to': frappe.db.get_value('Employee',self.project_manager, 'user_id'),
-	# 				'description': _("ACTION - Missed MOM - {0}, Missed the MOM for Site {1} and a reason has been inputted".format(self.site_supervisor_name,self.site))
-	# 			})
 
 @frappe.whitelist()
 def mom_sites_followup():
@@ -59,28 +29,18 @@ def mom_sites_followup():
 		FROM `tabMOM` 
 		WHERE `date` BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 1 WEEK) AND CURRENT_DATE()
 		""", as_dict=1)
-	
-	
 
-##################################
-	# Make a list of all POC's in the MOM based on the SQL Query 
-	
+	# Make a list of all POC's in the MOM based on the SQL Query 	
 	moms_poc = []
-
 	for m in moms:
-
 		moms_poc_list = frappe.get_doc('MOM', m.name) 
 		for each_moms_poc_list in moms_poc_list.attendees:
 			moms_poc.append(each_moms_poc_list)
-
-##################################
 
 	sites = frappe.db.sql("""
 		SELECT *
 		FROM `tabOperations Site`
 		""", as_dict=1)
-	
-	
 
 	for s in sites:
 		sites_poc_list = frappe.get_doc('Operations Site', s.name) 
@@ -103,7 +63,7 @@ def mom_sites_followup():
 			add_assignment({
 					'doctype': 'MOM Followup',
 					'name': followup.name,
-					'assign_to': frappe.db.get_value('Employee',site.account_supervisor, 'user_id'),
+					'assign_to': [frappe.db.get_value('Employee',site.account_supervisor, 'user_id')],
 					'description': _('Please explain your reason of missing the MOM for this site/POC within 48 hours')
 				})
 def mom_followup_reminder():
@@ -119,7 +79,7 @@ def mom_followup_reminder():
 		add_assignment({
 					'doctype': 'MOM Followup',
 					'name': re.name,
-					'assign_to': frappe.db.get_value('Employee',re.project_manager, 'user_id'),
+					'assign_to': [frappe.db.get_value('Employee',re.project_manager, 'user_id')],
 					'description': _('Please take Action')
 		})
 

@@ -24,16 +24,16 @@ class BestReference(Document):
 			erf = frappe.db.get_value("Job Applicant", self.job_applicant, "one_fm_erf")
 			if not erf:
 				frappe.log_error(
-					f"No ERF found for Job Applicant: {self.job_applicant}",
-					"Best Reference - Missing ERF"
+					message=f"No ERF found for Job Applicant: {self.job_applicant}",
+					title="Best Reference - Missing ERF"
 				)
 				return
 			
 			assigned_recruiter = frappe.db.get_value("ERF", erf, "recruiter_assigned")
 			if not assigned_recruiter:
 				frappe.log_error(
-					f"No recruiter assigned to ERF: {erf}",
-					"Best Reference - Missing Recruiter"
+					message=f"No recruiter assigned to ERF: {erf}",
+					title="Best Reference - Missing Recruiter"
 				)
 				return
 			
@@ -49,6 +49,6 @@ class BestReference(Document):
 			
 		except Exception as e:
 			frappe.log_error(
-				f"Error assigning recruiter for {self.name}: {str(e)}",
-				"Best Reference Assignment Error"
+				message=f"Error assigning recruiter for {self.name}: {str(e)}",
+				title="Best Reference Assignment Error"
 			)

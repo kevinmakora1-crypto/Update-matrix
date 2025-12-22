@@ -44,4 +44,4 @@ def due_purchase_order_payment_terms(is_scheduled_event=True):
                 subject="Due Purchase Order Payment",
                 message=content, is_scheduler_email=is_scheduled_event)
     except Exception as e:
-        frappe.log_error(str(e), 'Purchase Order payment schedule')
+        frappe.log_error(message=str(e), title='Purchase Order payment schedule')

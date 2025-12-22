@@ -168,8 +168,8 @@ class NotifyReportsToOnAbsenceOfReport:
 				is_scheduler_email=True,
 			)
 		except Exception as e:
-			frappe.log_error(f"Failed to send notification to {recipient}: {str(e)}", 
-							"Employee Daily Action Check Notification")
+			frappe.log_error(message=f"Failed to send notification to {recipient}: {str(e)}", 
+							title="Employee Daily Action Check Notification")
 
 	def notify_employee(self):
 		if not self.non_compliant_employees:

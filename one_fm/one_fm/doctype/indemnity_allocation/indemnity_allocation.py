@@ -87,6 +87,9 @@ def get_per_day_indemnity_amount(date_of_joining, to_date, indemnity_amount = 0)
     Returns:
         amount: Per day indemnity amount
     """
+    if not indemnity_amount:
+        return 0
+
     total_working_year = relativedelta(to_date, date_of_joining).years
     total_working_days = (to_date - date_of_joining).days
     per_day_amount = indemnity_amount/26

@@ -22,7 +22,7 @@ class CheckinRadiusLog(Document):
 		try:
 			self.employee = frappe.db.get_value("Employee", {'employee_id':self.employee_id}, ['name'])
 		except Exception as e:
-			frappe.log_error(str(e), 'Log checkin raius')
+			frappe.log_error(message=str(e), title='Log checkin radius')
 
 	@staticmethod
 	def clear_old_logs(days=30):

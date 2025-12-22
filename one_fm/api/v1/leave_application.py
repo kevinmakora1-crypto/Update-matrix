@@ -416,7 +416,7 @@ def leave_approver_action(leave_id: str,status: str) -> dict:
         frappe.db.commit()
         return response("Success", 201, doc)
     except Exception as e:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title="Leave Application Error")
         return response("error", 500, {}, str(e))
 
 @frappe.whitelist()
@@ -503,6 +503,6 @@ def fetch_proof_document(file_name: str, docname: str, doctype: str) -> dict:
         }
         return response("Success", 200, data)
     except Exception as e:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title="Fetch Proof Document Error")
         frappe.respond_as_web_page(_("Error"), e , http_status_code=417)
         return response("Bad Request", 404, None, "Unable to fetch proof document")

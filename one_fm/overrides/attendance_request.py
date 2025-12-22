@@ -134,7 +134,7 @@ class AttendanceRequestOverride(AttendanceRequest):
 				attendance.save(ignore_permissions=True)
 				attendance.submit()
 		except Exception as e:
-			frappe.log_error(str(frappe.get_traceback()), 'Attendance Request')
+			frappe.log_error(message=str(frappe.get_traceback()), title='Attendance Request')
 
 
 	def send_notification(self):
@@ -232,7 +232,7 @@ def mark_future_attendance_request():
 		try:
 			frappe.get_doc("Attendance Request", row.name).mark_attendance(str(getdate()))
 		except Exception as e:
-			frappe.log_error(str(e), 'Attendance Request')
+			frappe.log_error(message=str(e), title='Attendance Request')
 
 
 @frappe.whitelist()
@@ -252,4 +252,4 @@ def approve_pending_attendance_request(start_date):
             doc = frappe.get_doc("Attendance Request", row.name)
             apply_workflow(doc, "Approve")
         except Exception as e:
-            frappe.log_error(frappe.get_traceback(), "Attendance Request Marking")
+            frappe.log_error(message=frappe.get_traceback(), title="Attendance Request Marking")

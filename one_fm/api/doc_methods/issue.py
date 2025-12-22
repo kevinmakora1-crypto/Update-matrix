@@ -40,7 +40,7 @@ def log_pivotal_tracker(**kwargs):
                 frappe.throw(f"Pivotal Tracker story could not be created:\n {req.json()}")
     except Exception as e:
         frappe.throw(f"Pivotal Tracker story could not be created:\n {str(e)}")
-        frappe.log_error(str(e), 'Issue Pivotal Tracker')
+        frappe.log_error(message=str(e), title='Issue Pivotal Tracker')
 
 
 # SEND REPLY TO WHATSAPP
@@ -76,7 +76,7 @@ def whatsapp_reply_issue(**kwargs):
         )).insert(ignore_permissions=1)
         return True
     except Exception as e:
-        frappe.log_error(str(e), 'Issue Whatsapp Reply')
+        frappe.log_error(message=str(e), title='Issue Whatsapp Reply')
         return False
 
 def notify_issue_raiser(doc, method):
@@ -105,4 +105,4 @@ def notify_issue_raiser(doc, method):
             sendemail(recipients=[doc.raised_by], subject=email_subject, header=header, message=message)
 
     except Exception as error:
-        frappe.log_error(error)
+        frappe.log_error(title='Issue Notification', message=error)

@@ -51,8 +51,8 @@ job_application = Class.extend({
     this.on_change_email();
     // Bind Contact Number on change
     this.on_change_number();
-    // Bind Country on change
-    this.on_change_country();
+    // Bind Nationality on change
+    this.on_change_nationality();
     // Bind Work Detail on change
     this.on_change_work_details();
     // Bind submit button event
@@ -63,16 +63,16 @@ job_application = Class.extend({
     $(".applicant_name").on("change", function(){
       var applicant_name = $(".applicant_name").val();
       if(applicant_name){
-        // Show country section
-        me.show_country(applicant_name);
+        // Show nationality section
+        me.show_nationality(applicant_name);
       }
     });
   },
-  show_country: function(applicant_name) {
+  show_nationality: function(applicant_name) {
     if(applicant_name){
-      $(".applicant_country").empty();
-      $(".applicant_country").append(`<h5>Hey ${applicant_name}, what's your nationality?</h5>`)
-      $(".country_list").removeClass('hide');
+      $(".applicant_nationality").empty();
+      $(".applicant_nationality").append(`<h5>Hey ${applicant_name}, what's your nationality?</h5>`)
+      $(".nationality_list").removeClass('hide');
     }
   },
   show_applicant_contact_details: function() {
@@ -116,9 +116,9 @@ job_application = Class.extend({
       me.on_change_contact_details();
     });
   },
-  on_change_country: function() {
+  on_change_nationality: function() {
     var me  = this;
-    $(".country_list").on("change", function(){
+    $(".nationality_list").on("change", function(){
       // Show Contact details
       me.show_applicant_contact_details();
     });
@@ -231,7 +231,7 @@ job_application = Class.extend({
 
       // POST Job Application if all the conditions are satisfied
 
-      if ($(".applicant_name").val() && $(".country_list").val() && $(".contact_email").val() && $(".contact_number").val() && cv){
+      if ($(".applicant_name").val() && $(".nationality_list").val() && $(".contact_email").val() && $(".contact_number").val() && cv){
         frappe.freeze();
         var response = await upload_image_to_server(cv)
         var url = (response && response.message) ? response.message.file_url : "";
@@ -257,7 +257,7 @@ job_application = Class.extend({
           method: "one_fm.templates.pages.job_application.create_job_applicant_from_job_portal",
           args: {
             applicant_name: $(".applicant_name").val(),
-            country: $(".country_list").val(),
+            nationality: $(".nationality_list").val(),
             applicant_email: $(".contact_email").val(),
             applicant_mobile: $(".contact_number").val(),
             job_opening: $('#job_opening').attr("data"),

@@ -25,7 +25,7 @@ class DutyCommencement(Document):
 			self.project_in_arabic = project_arr
 			self.position_in_arabic = position_arr
 		except: 
-			frappe.log_error("Error Translating Duty Commencement fields",frappe.get_traceback())
+			frappe.log_error(title="Error Translating Duty Commencement fields", message=frappe.get_traceback())
 			frappe.msgprint("Error Occured while translating page",alert=1)
 	
 	
@@ -156,7 +156,7 @@ class DutyCommencement(Document):
 				frappe.msgprint(_("Make sure to roster employee before Duty Commencement start date."), alert=True, indicator='orange')
 
 		except Exception as e:
-			frappe.log_error(e)
+			frappe.log_error(message=str(e), title='DUTY COMMENCEMENT')
 
 	def on_cancel(self):
 		if self.workflow_state == 'Cancelled':

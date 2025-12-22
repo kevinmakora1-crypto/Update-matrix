@@ -442,7 +442,7 @@ class ReassignRelieverAssignment(Document):
 		matching_docs_list = [doc for doc in Doctype.as_dict().documents if doc.get('reference_doctype') == reference_type]
 		
 		if not matching_docs_list:
-			frappe.log_error(f"No matching documents found for reference_doctype: {reference_type}")
+			frappe.log_error(title=f"No matching documents found for reference_doctype: {reference_type}")
 			return 
 		
 		matching_docs = matching_docs_list[0]

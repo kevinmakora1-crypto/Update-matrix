@@ -5,6 +5,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate, add_days, date_diff, today
 import datetime
+import json
 
 class EventStaff(Document):
 	def validate(self):
@@ -211,11 +212,23 @@ def get_existing_schedules(employee=None, start_date=None, end_date=None, event_
 
 	filters = {"docstatus": 0}
 
+	# Handle employee parameter - could be a list, JSON string, or simple string
+	if isinstance(employee, str):
+		# Try to parse as JSON first (for list of employees)
+		try:
+			employee = json.loads(employee)
+		except (json.JSONDecodeError, ValueError):
+			# If JSON parsing fails, it's a simple employee ID string
+			pass
+
 	if event_staff:
 		filters["event_staff"] = event_staff
 		filters["is_event_schedule"] = 1
 	else:
-		filters["employee"] = employee
+		if isinstance(employee, list):
+			filters["employee"] = ["in", employee]
+		else:
+			filters["employee"] = employee
 		filters["date"] = ["between", [start_date, end_date]]
 
 	return frappe.get_all(

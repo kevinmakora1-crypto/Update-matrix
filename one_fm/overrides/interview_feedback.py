@@ -17,7 +17,7 @@ class InterviewFeedbackOverride(InterviewFeedback):
             
             self.average_rating = flt((skill_assessment_avg + interview_assessment_avg) / divisor) / 5
         except Exception as e:
-            frappe.log_error(frappe.get_traceback(), f"Error calculating average rating: {e}")
+            frappe.log_error(message=frappe.get_traceback(), title=f"Error calculating average rating: {e}")
             self.average_rating = 0
     
     def before_save(self):

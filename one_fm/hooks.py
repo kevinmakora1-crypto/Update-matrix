@@ -33,7 +33,8 @@ app_include_js = [
 		"/assets/one_fm/js/desk.js",
         "/assets/one_fm/js/showdown.min.js",
 		"/assets/one_fm/js/form_overrides/workflow_override.js",
-        "text_editor.bundle.js"
+        "text_editor.bundle.js",
+        "/assets/one_fm/js/workflow_banner.js"
 ]
 # include js, css files in header of web template
 # web_include_css = "/assets/one_fm/css/one_fm.css"
@@ -121,7 +122,8 @@ doctype_js = {
     "Contact": "public/js/doctype_js/contact.js",
     "ToDo": "public/js/doctype_js/todo.js",
     "Loan": "public/js/doctype_js/loan.js",
-    "Quality Feedback": "public/js/doctype_js/quality_feedback.js"
+    "Quality Feedback": "public/js/doctype_js/quality_feedback.js",
+    "Quality Feedback Template": "public/js/doctype_js/quality_feedback_template.js"
 }
 doctype_list_js = {
 	"Job Applicant" : "public/js/doctype_js/job_applicant_list.js",
@@ -551,6 +553,7 @@ override_doctype_class = {
     "Asset Movement": "one_fm.overrides.asset_movement.AssetMovement",
     "Project": "one_fm.overrides.project.ProjectOverride",
     "Quality Feedback": "one_fm.overrides.quality_feedback.QualityFeedbackOverride",
+	"Quality Feedback Template": "one_fm.overrides.quality_feedback_template.QualityFeedbackTemplateOverride",
 }
 
 
@@ -583,7 +586,7 @@ scheduler_events = {
 		"one_fm.operations.doctype.contracts.contracts.renew_contracts_by_termination_date",
         "one_fm.developer.doctype.bug_buster.bug_buster.roster_bug_buster",
         'one_fm.utils.set_employee_status',
-        'one_fm.utils.set_out_of_office_for_leaves',
+        'one_fm.utils.queue_set_out_of_office_for_leaves',
         'one_fm.utils.update_active_employees_assurance_level',
         'one_fm.operations.doctype.process_task.process_task.create_task_on_monthly_on_day',
         'one_fm.operations.doctype.process_task.process_task.trigger_method_from_monthly_on_day_process_task',

@@ -170,7 +170,7 @@ def fetch_designation_of_users(list_of_users: list = []):
 							WHERE user_id IN %s
 							""",(tuple(loads(list_of_users)), ) ,as_dict=1)
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), "Error encountered while fetching users designation (MOM)")
+		frappe.log_error(message=frappe.get_traceback(), title="Error encountered while fetching users designation (MOM)")
 
 
 @frappe.whitelist()

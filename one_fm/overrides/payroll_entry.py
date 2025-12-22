@@ -345,7 +345,7 @@ def set_bank_details(self, employee_details):
 			bank_code = frappe.db.get_value("Bank", {"name": bank}, ["bank_code"])
 			employee.bank_code = bank_code
 		except Exception as e:
-			frappe.log_error(str(e), "Payroll Entry")
+			frappe.log_error(message=str(e), title="Payroll Entry")
 			frappe.throw(str(e))
 
 	# check for missing details, log and report

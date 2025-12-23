@@ -225,7 +225,17 @@ class AttendanceCheck(Document):
             "shift_assignment": self.shift_assignment,
             "source": "Attendance Check"
         })
-        # checkin.insert(ignore_permissions=True)
+        checkin.insert(ignore_permissions=True)
+
+    def get_existing_employee_checkin(self, time, log_type):
+        return frappe.db.get_value(
+            "Employee Checkin",
+            {
+                "employee": self.employee,
+                "time": time,
+                "log_type": log_type
+            }
+        )
 
     def check_on_leave_record(self):
         if self.attendance_status == "On Leave":

@@ -225,7 +225,7 @@ one_fm.patches.v15_0.add_workflow_on_the_job_training #2
 one_fm.patches.v15_0.reprocess_preparation_submit
 one_fm.patches.v15_0.add_banner_message_field_to_workflow_document_state
 one_fm.patches.v15_0.add_stock_settings_custom_fields
-one_fm.patches.v15_0.update_contracts_workflow
+one_fm.patches.v15_0.update_contracts_workflow #rerun
 one_fm.patches.v15_0.add_workflow_shift_permission
 
 [post_model_sync]

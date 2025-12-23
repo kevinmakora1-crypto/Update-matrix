@@ -85,7 +85,8 @@ class EmployeeCheckinOverride(EmployeeCheckin):
 			frappe.db.commit()
 			self.reload()
 			# if not (self.shift_assignment and self.shift_type and self.operations_shift and self.shift_actual_start and self.shift_actual_end):
-			frappe.enqueue(after_insert_background, employee_checkin=self.name, current_shift=self.shift_assignment)
+			# frappe.enqueue(after_insert_background, employee_checkin=self.name, current_shift=self.shift_assignment)
+			after_insert_background(self.name, self.shift_assignment)
 			if self.log_type == "IN":
 				frappe.enqueue(notify_supervisor_about_late_entry, checkin=self)
 		except Exception as e:
@@ -123,9 +124,14 @@ def validate_shift_assignment(employee_checkin,shift):
 		if isinstance(employee_checkin, str):
 			employee_checkin = frappe.get_doc("Employee Checkin", employee_checkin)
 		if employee_checkin.source == "Mobile App" and getdate(employee_checkin.creation)==getdate():#Ensure that the checkin is being created now
-			current_shift = get_current_shift(employee_checkin.employee)
+			current_shift = get_current_shift(employee_checkin.employee,attach_upcoming_shifts=True)
 			if current_shift.get('data'):
 				if current_shift.get('data').get('name') != shift:
+					#Check upcoming shift 
+					if current_shift.get('upcoming_shifts'):
+						upcoming_shift_name = current_shift.get('upcoming_shifts')[0].name
+						if shift == upcoming_shift_name:
+							return shift
 					return current_shift.get('data').get('name')
 				else:
 					return shift

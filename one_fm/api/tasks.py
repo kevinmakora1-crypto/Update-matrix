@@ -1349,7 +1349,10 @@ def calculate_penalty_amount(employee, start_date, end_date, logs):
 		else:
 			basic_salary = basic[0].amount
 	else:
-		frappe.log_error("Salary Structure not found for employee {}".format(employee), "Penalty Calculation Error")
+		frappe.log_error(
+			"Salary Structure not found for employee {} with filters {}".format(employee, filters),
+			"Penalty Calculation Error"
+		)
 		return
 
 	#Single day salary of employee = Basic Salary(WP salary) divided by 26 days

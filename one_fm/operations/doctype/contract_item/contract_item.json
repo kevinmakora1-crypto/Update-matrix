@@ -25,25 +25,35 @@
   "item_name",
   "shift_hours",
   "gender",
+  "service_type",
   "rate_type",
   "off_type",
   "is_yearly_month",
-  "service_type",
   "days_off_category",
   "no_of_days_off",
   "include_actual_hour",
   "overtime_rate",
-  "site"
+  "site",
+  "operational_requirements_section",
+  "operational_frequency",
+  "select_specific_days",
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "column_break_ilmm",
+  "monthly_count"
  ],
  "fields": [
   {
    "columns": 4,
-   "depends_on": "eval:doc.item_type != \"Items\"",
    "fieldname": "item_code",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Item Code",
-   "mandatory_depends_on": "eval:doc.item_type == \"Manpower\"",
    "options": "Item"
   },
   {
@@ -68,7 +78,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.subitem_group=='Service' && doc.item_type != \"Items\"",
+   "depends_on": "eval:doc.subitem_group=='Service'",
    "fetch_from": "item_price.shift_hours",
    "fieldname": "shift_hours",
    "fieldtype": "Float",
@@ -133,7 +143,6 @@
   },
   {
    "columns": 2,
-   "depends_on": "eval:doc.item_type != \"Items\"",
    "fetch_from": "item_code.stock_uom",
    "fetch_if_empty": 1,
    "fieldname": "uom",
@@ -170,7 +179,6 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.item_type != \"Items\"",
    "fieldname": "overtime_rate",
    "fieldtype": "Currency",
    "label": "Overtime Rate"
@@ -197,7 +205,7 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Count",
-   "mandatory_depends_on": "eval: doc.item_type ==\"Manpower\""
+   "mandatory_depends_on": "eval:doc.item_type != \"Items\""
   },
   {
    "fieldname": "rate_type",
@@ -209,7 +217,7 @@
   },
   {
    "default": "Full Month",
-   "depends_on": "eval:doc.rate_type=='Monthly' && doc.item_type != \"Items\"",
+   "depends_on": "eval:doc.rate_type=='Monthly'",
    "fieldname": "off_type",
    "fieldtype": "Select",
    "label": "Off Type",
@@ -217,12 +225,11 @@
    "reqd": 1
   },
   {
-   "depends_on": "eval:doc.item_type != \"Items\"",
    "fieldname": "service_type",
    "fieldtype": "Select",
    "label": "Service Type",
-   "mandatory_depends_on": "eval:doc.item_type == \"Manpower\"",
-   "options": "\nManpower\nPost Schedule"
+   "options": "\nManpower\nPost Schedule",
+   "reqd": 1
   },
   {
    "depends_on": "eval:doc.off_type=='Days Off' && doc.rate_type=='Monthly'",
@@ -267,11 +274,89 @@
    "label": "Contract Item Category",
    "mandatory_depends_on": "eval:doc.item_type == \"Items\"",
    "options": "Contract Item Category"
+  },
+  {
+   "fieldname": "operational_requirements_section",
+   "fieldtype": "Section Break",
+   "label": "Operational Requirements"
+  },
+  {
+   "fieldname": "operational_frequency",
+   "fieldtype": "Select",
+   "label": "Operational Frequency",
+   "options": "Weekly\nMonthly"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.operational_frequency == 'Weekly'",
+   "description": "Check to specify days manually. Leave unchecked to use system defaults.",
+   "fieldname": "select_specific_days",
+   "fieldtype": "Check",
+   "label": "Select Specific Days"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "fieldname": "sunday",
+   "fieldtype": "Check",
+   "label": "Sunday"
+  },
+  {
+   "fieldname": "column_break_ilmm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "fieldname": "monday",
+   "fieldtype": "Check",
+   "label": "Monday"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "fieldname": "tuesday",
+   "fieldtype": "Check",
+   "label": "Tuesday"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "fieldname": "wednesday",
+   "fieldtype": "Check",
+   "label": "Wednesday"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "fieldname": "thursday",
+   "fieldtype": "Check",
+   "label": "Thursday"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "fieldname": "friday",
+   "fieldtype": "Check",
+   "label": "Friday"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "fieldname": "saturday",
+   "fieldtype": "Check",
+   "label": "Saturday"
+  },
+  {
+   "depends_on": "eval:doc.operational_frequency == 'Monthly'",
+   "fieldname": "monthly_count",
+   "fieldtype": "Int",
+   "label": "Monthly Count"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2025-11-12 11:52:06.139737",
+ "modified": "2025-12-24 21:42:55.913278",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Contract Item",

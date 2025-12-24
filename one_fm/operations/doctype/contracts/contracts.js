@@ -300,7 +300,7 @@ frappe.ui.form.on('Contracts', {
         }
         frm.refresh_field("assets");
 		set_hide_management_fee_fields(frm);
-
+		frm.events.open_sections_onload(frm);
 	},
 	customer_address:function(frm){
 		if(frm.doc.customer_address){
@@ -344,6 +344,19 @@ frappe.ui.form.on('Contracts', {
 			frm.toggle_enable('is_auto_renewal', 1);
 			frm.toggle_display('is_auto_renewal', 1);
 		}
+	},
+	open_sections_onload(frm) {
+		// run after layout is ready
+        frappe.after_ajax(() => {
+            let keep_closed = ['section_break_15', 'section_break_36', 'section_break_55', 'sales_invoice_print_settings_section'];
+			frm.layout.sections.forEach(sec => {
+                if (sec.df && sec.df.collapsible) {
+					if (!keep_closed.includes(sec.df.fieldname)) {
+                        sec.collapse(false);
+                    }
+                }
+            });
+        });
 	}
 });
 

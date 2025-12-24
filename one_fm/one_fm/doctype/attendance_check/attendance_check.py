@@ -452,14 +452,13 @@ def create_attendance_check(attendance_date=None):
         # Create attendance check for employee who is shift working but no attendance marked on the date
         attendance_not_marked_shift_employees = get_attendance_not_marked_shift_employees(attendance_date)
         if attendance_not_marked_shift_employees:
-            insert_attendance_check_records(attendance_not_marked_shift_employees, attendance_date, True)
+            insert_attendance_check_records(attendance_not_marked_shift_employees, attendance_date)
 
 def get_absentees_on_date(attendance_date):
     return frappe.get_all("Attendance",
         filters={
             'docstatus': 1,
             'status': 'Absent',
-            "is_unscheduled":0,
             'attendance_date': attendance_date,
             "employee": ["not in", frappe.db.get_list('Shift Permission', filters={'date': attendance_date}, pluck='employee')]
         },
@@ -477,43 +476,76 @@ def get_attendance_not_marked_shift_employees(attendance_date):
     # Fetch the list of employees, attendance marked for the date and basic roster
     
     # Fetch all the employees who is shift working but no attendance marked
-    return frappe.db.get_all("Attendance",
+    return frappe.db.sql("""
+        SELECT
+            sa.employee
+        FROM
+            `tabShift Assignment` sa
+        LEFT JOIN
+            `tabAttendance` att
+        ON
+            sa.employee = att.employee AND att.attendance_date = %(attendance_date)s
+        WHERE
+            sa.start_date <= %(attendance_date)s
+            AND sa.end_date >= %(attendance_date)s
+            AND sa.docstatus = 1
+            AND sa.status = 'Active'
+            AND att.name IS NULL
+    """, {"attendance_date": attendance_date}, as_dict=1)
+
+def insert_attendance_check_records(details, attendance_date):
+    employee_ids = [d["employee"] for d in details]
+
+    # Fetch shift assignments for all employees in a single query
+    shift_assignments = frappe.get_all("Shift Assignment",
         filters={
-            "attendance_date": attendance_date,
-            "roster_type": "Basic",
-            "docstatus": 1,
-            'is_unscheduled':1
+            "employee": ["in", employee_ids],
+            "start_date": ["<=", attendance_date],
+            "end_date": [">=", attendance_date],
+            "status": "Active",
+            "docstatus": 1
         },
         fields=["employee"]
     )
+    employees_with_shifts = {sa.employee for sa in shift_assignments}
 
-def insert_attendance_check_records(details, attendance_date, is_unscheduled=False):
+    # Fetch employees with attendance by timesheet in a single query
+    employees_by_timesheet = frappe.get_all("Employee",
+        filters={
+            "name": ["in", employee_ids],
+            "attendance_by_timesheet": 1
+        },
+        fields=["name"]
+    )
+    employees_with_timesheet = {emp.name for emp in employees_by_timesheet}
+
     for count, data in enumerate(details):
         try:
-            attendance_by_timesheet = False
-            if not is_unscheduled:
-                attendance_by_timesheet = frappe.db.get_value("Employee", data["employee"], "attendance_by_timesheet")
-            filters = {
-                "doctype": "Attendance Check",
-                "employee": data["employee"],
-                "date": attendance_date,
-                "attendance": data["attendance"] if "attendance" in data else "",
-                "roster_type": data["roster_type"] if "roster_type" in data else "Basic",
-                'is_unscheduled': is_unscheduled,
-                "attendance_by_timesheet": attendance_by_timesheet,
-                "marked_attendance_status": data["attendance_status"] if "attendance_status" in data else "",
-                "shift_assignment": data["shift_assignment"] if "shift_assignment" in data else "",
-                "attendance_marked": 1 if "attendance" in data else 0,
-                "comment": data["attendance_comment"] if "attendance_comment" in data else ""
-            }
+            employee = data["employee"]
+            has_shift = employee in employees_with_shifts
+            on_timesheet = employee in employees_with_timesheet
 
-            doc = frappe.get_doc(filters)
-            doc.flags.ignore_mandatory = 1
-            doc.insert(ignore_permissions=1)
+            if has_shift or on_timesheet:
+                filters = {
+                    "doctype": "Attendance Check",
+                    "employee": employee,
+                    "date": attendance_date,
+                    "attendance": data.get("attendance", ""),
+                    "roster_type": data.get("roster_type", "Basic"),
+                    "attendance_by_timesheet": on_timesheet,
+                    "marked_attendance_status": data.get("attendance_status", ""),
+                    "shift_assignment": data.get("shift_assignment", ""),
+                    "attendance_marked": 1 if data.get("attendance") else 0,
+                    "comment": data.get("attendance_comment", "")
+                }
+
+                doc = frappe.get_doc(filters)
+                doc.flags.ignore_mandatory = 1
+                doc.insert(ignore_permissions=1)
         except Exception as e:
-            if not "Attendance Check already exist for" in str(e):
+            if "Attendance Check already exist for" not in str(e):
                 frappe.log_error(message=frappe.get_traceback(), title="Attendance Check Creation")
-        if count%10==0:
+        if count % 10 == 0:
             frappe.db.commit()
     frappe.db.commit()
 

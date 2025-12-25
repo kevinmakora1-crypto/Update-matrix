@@ -76,8 +76,13 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         upatch.stopall()
 
     def test_attendance_check_not_created_if_no_shift_and_not_timesheet(self):
-        frappe.db.exists.return_value = False
-        frappe.db.get_value.return_value = 0
+        # Mock frappe.get_all to return empty lists for both shift assignments and timesheet employees
+        # First call: Shift Assignment query returns empty (no shift)
+        # Second call: Employee query returns empty (not on timesheet)
+        frappe.get_all.side_effect = [
+            [],  # No shift assignments
+            []   # No employees with timesheet attendance
+        ]
         details = [{"employee": self.employee.name}]
 
         insert_attendance_check_records(details, "2025-08-20")
@@ -86,8 +91,13 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         frappe.get_doc.assert_not_called()
 
     def test_attendance_check_created_if_no_shift_but_on_timesheet(self):
-        frappe.db.exists.return_value = False
-        frappe.db.get_value.return_value = 1
+        # Mock frappe.get_all to return employee in timesheet list but not in shift assignments
+        # First call: Shift Assignment query returns empty (no shift)
+        # Second call: Employee query returns the employee (on timesheet)
+        frappe.get_all.side_effect = [
+            [],  # No shift assignments
+            [{"name": self.employee.name}]  # Employee has timesheet attendance
+        ]
         details = [{"employee": self.employee.name}]
 
         insert_attendance_check_records(details, "2025-08-20")
@@ -96,8 +106,28 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         frappe.get_doc.assert_called()
 
     def test_attendance_check_created_if_shift_and_not_on_timesheet(self):
-        frappe.db.exists.return_value = True
-        frappe.db.get_value.return_value = 0
+        # Mock frappe.get_all to return employee in shift assignments but not in timesheet list
+        # First call: Shift Assignment query returns the employee (has shift)
+        # Second call: Employee query returns empty (not on timesheet)
+        frappe.get_all.side_effect = [
+            [{"employee": self.employee.name}],  # Employee has shift assignment
+            []  # No employees with timesheet attendance
+        ]
+        details = [{"employee": self.employee.name}]
+
+        insert_attendance_check_records(details, "2025-08-20")
+
+        # Verify that get_doc was called, meaning an Attendance Check was created
+        frappe.get_doc.assert_called()
+
+    def test_attendance_check_created_if_shift_and_on_timesheet(self):
+        # Mock frappe.get_all to return employee in both shift assignments and timesheet list
+        # First call: Shift Assignment query returns the employee (has shift)
+        # Second call: Employee query returns the employee (on timesheet)
+        frappe.get_all.side_effect = [
+            [{"employee": self.employee.name}],  # Employee has shift assignment
+            [{"name": self.employee.name}]  # Employee has timesheet attendance
+        ]
         details = [{"employee": self.employee.name}]
 
         insert_attendance_check_records(details, "2025-08-20")

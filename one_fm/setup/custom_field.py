@@ -61,7 +61,6 @@ from one_fm.custom.custom_field.purchase_order import get_purchase_order_custom_
 from one_fm.custom.custom_field.purchase_order_item import get_purchase_order_item_custom_fields
 from one_fm.custom.custom_field.purchase_receipt import get_purchase_receipt_custom_fields
 from one_fm.custom.custom_field.purchase_receipt_item import get_purchase_receipt_item_custom_fields
-from one_fm.custom.custom_field.religion import get_religion_custom_fields
 from one_fm.custom.custom_field.salary_slip import get_salary_slip_custom_fields
 from one_fm.custom.custom_field.salary_component_account import get_salary_component_account_custom_fields
 from one_fm.custom.custom_field.salary_structure_assignment import get_salary_structure_assignment_custom_fields
@@ -144,7 +143,6 @@ def get_custom_fields():
 	custom_fields.update(get_sales_invoice_advance_custom_fields())
 	custom_fields.update(get_notification_settings_custom_fields())
 	custom_fields.update(get_shift_type_custom_fields())
-	custom_fields.update(get_religion_custom_fields())
 	custom_fields.update(get_sales_invoice_timesheet_custom_fields())
 	custom_fields.update(get_task_type_custom_fields())
 	custom_fields.update(get_shift_request_custom_fields())

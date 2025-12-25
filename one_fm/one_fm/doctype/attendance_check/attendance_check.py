@@ -232,8 +232,7 @@ class AttendanceCheck(Document):
             "Employee Checkin",
             {
                 "employee": self.employee,
-                "time": time,
-                "log_type": log_type
+                "time": time
             }
         )
 

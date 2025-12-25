@@ -1329,7 +1329,11 @@ def calculate_penalty_amount(employee, start_date, end_date, logs):
 	else:
 		frappe.throw("Please Add Basic Salary Component in HR and Payroll Additional Settings.")
 
-	salary_structure, base = frappe.get_value("Salary Structure Assignment", filters, ["salary_structure","base"], order_by="from_date desc")
+
+	salary_structure_assignment = frappe.db.get_value("Salary Structure Assignment", filters, ["salary_structure","base"], order_by="from_date desc", as_dict=1)
+
+	salary_structure = salary_structure_assignment.salary_structure if salary_structure_assignment else None
+	base = salary_structure_assignment.base if salary_structure_assignment else 0
 
 	if salary_structure:
 		basic = frappe.db.sql("""
@@ -1344,6 +1348,12 @@ def calculate_penalty_amount(employee, start_date, end_date, logs):
 			basic_salary = int(base)*float(percent)
 		else:
 			basic_salary = basic[0].amount
+	else:
+		frappe.log_error(
+			"Salary Structure not found for employee {} with filters {}".format(employee, filters),
+			"Penalty Calculation Error"
+		)
+		return
 
 	#Single day salary of employee = Basic Salary(WP salary) divided by 26 days
 	single_day_salary = basic_salary / 26

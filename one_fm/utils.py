@@ -39,7 +39,7 @@ from frappe.workflow.doctype.workflow_action.workflow_action import (
 
 import erpnext
 from erpnext.setup.doctype.employee.employee import (
-    get_holiday_list_for_employee, get_all_employee_emails, get_employee_email
+    get_holiday_list_for_employee, get_employee_email
 )
 
 
@@ -51,7 +51,7 @@ from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import (
 
 from one_fm.api.notification import create_notification_log, get_employee_user_id
 
-from one_fm.processor import sendemail
+from one_fm.processor import sendemail, is_user_id_company_prefred_email_in_employee
 from one_fm.one_fm.payroll_utils import get_user_list_by_role
 from one_fm.operations.doctype.operations_shift.operations_shift import get_shift_supervisor
 from one_fm.api import api
@@ -3660,65 +3660,63 @@ def get_sender_email() -> str | None:
 @frappe.whitelist()
 def send_birthday_reminders():
     """Send Employee birthday reminders if no 'Stop Birthday Reminders' is not set."""
-    from hrms.controllers.employee_reminders import send_birthday_reminder, get_employees_who_are_born_today,get_birthday_reminder_text_and_message
+    from hrms.controllers.employee_reminders import send_birthday_reminder, get_employees_who_are_born_today, get_birthday_reminder_text_and_message
 
     to_send = int(frappe.db.get_single_value("HR Settings", "send_birthday_reminders")) or is_scheduler_emails_enabled()
     if not to_send:
         return
 
     sender = get_sender_email()
+    if not sender:
+        return
+
     employees_born_today = get_employees_who_are_born_today()
 
     for company, birthday_persons in employees_born_today.items():
-        employee_emails = get_all_employee_emails(company,is_birthday = True)
+        employee_emails = get_users_for_reminders(birthday=True)
 
-        birthday_person_emails = [get_employee_email(doc) for doc in birthday_persons]
+        birthday_person_emails = [birthday_person.get("user_id") for birthday_person in birthday_persons]
         recipients = list(set(employee_emails) - set(birthday_person_emails))
 
         reminder_text, message = get_birthday_reminder_text_and_message(birthday_persons)
-        send_birthday_reminder(recipients, reminder_text, birthday_persons, message, sender)
+        if recipients and len(recipients) > 0:
+            send_birthday_reminder(recipients, reminder_text, birthday_persons, message, sender)
 
-        if len(birthday_persons) > 1:
+        if birthday_persons and len(birthday_persons) > 1:
             # special email for people sharing birthdays
             for person in birthday_persons:
-                person_email = person["user_id"] or person["personal_email"] or person["company_email"]
-                if frappe.get_value("Notification Settings",person['user_id'],'custom_enable_employee_birthday_notification'):
+                if not person.get('user_id'):
+                    continue
+                allowed_to_remind = get_users_for_reminders(birthday=True, user_id=person.get('user_id'))
+                if allowed_to_remind:
                     others = [d for d in birthday_persons if d != person]
                     reminder_text, message = get_birthday_reminder_text_and_message(others)
-                    send_birthday_reminder(person_email, reminder_text, others, message, sender)
+                    send_birthday_reminder(person.get('user_id'), reminder_text, others, message, sender)
 
+def get_users_for_reminders(birthday=False, anniversary=False, user_id=False):
+    """Returns a list of user IDs for employees who have opted in for birthday or anniversary reminders."""
+    allowed_users = []
+    if not birthday and not anniversary:
+        return allowed_users
 
+    filters = {}
+    if birthday:
+        filters["custom_enable_employee_birthday_notification"] = 1
+    if anniversary:
+        filters["custom_enable_work_anniversary_notification"] = 1
+    if user_id:
+        filters["name"] = user_id
 
-def get_all_employee_emails(company,is_birthday=False,is_anniversary = False):
-    """Returns list of employee emails either based on user_id or company_email"""
-
-    if not is_birthday and not is_anniversary:
-        return []
-    all_users=[]
-    if is_anniversary:
-        all_users = frappe.get_all("Notification Settings",{'custom_enable_work_anniversary_notification':1},['name'])
-    if is_birthday:
-        all_users = frappe.get_all("Notification Settings",{'custom_enable_employee_birthday_notification':1},['name'])
-    if all_users and None not in all_users:
-        all_users = [i.name for i in all_users]
-    else:
-        return []
-    employee_list = frappe.get_all(
-        "Employee", fields=["name", "employee_name"], filters={'user_id':['IN',all_users],"status": "Active", "company": company}
+    users = frappe.get_all(
+        "Notification Settings",
+        filters=filters,
+        fields=['name']
     )
-
-    employee_emails = []
-    for employee in employee_list:
-        if not employee:
-            continue
-        user, company_email, personal_email = frappe.db.get_value(
-            "Employee", employee, ["user_id", "company_email", "personal_email"]
-        )
-        email = user or company_email or personal_email
-        if email:
-            employee_emails.append(email)
-    return employee_emails
-
+    if users:
+        for user in users:
+            if is_user_id_company_prefred_email_in_employee(user.name):
+                allowed_users.append(user.name)
+    return allowed_users
 
 @frappe.whitelist()
 def send_work_anniversary_reminders():
@@ -3736,7 +3734,7 @@ def send_work_anniversary_reminders():
     message += _("Everyone, let’s congratulate them on their work anniversary!")
 
     for company, anniversary_persons in employees_joined_today.items():
-        employee_emails = get_all_employee_emails(company,is_anniversary=True)
+        employee_emails = get_users_for_reminders(anniversary=True)
 
         anniversary_person_emails = [get_employee_email(doc) for doc in anniversary_persons]
         recipients = list(set(employee_emails) - set(anniversary_person_emails))

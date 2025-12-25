@@ -115,7 +115,36 @@ class ShiftPermission(Document):
 				create_notification_log(subject, message, [employee_user], self)
 
 	def on_cancel(self):
-		pass
+		if getdate(self.date) < getdate():
+			frappe.throw(_("Cannot cancel shift permission for a past date."))
+
+		# Revert checkin
+		checkins = frappe.get_all("Employee Checkin", filters={"shift_permission": self.name}, fields=["name"])
+		for checkin in checkins:
+			frappe.delete_doc("Employee Checkin", checkin.name, ignore_permissions=True)
+
+		# Revert shift assignment datetimes
+		if self.assigned_shift:
+			shift_assignment = frappe.get_doc("Shift Assignment", self.assigned_shift)
+			if shift_assignment.shift_type:
+				shift_type = frappe.get_value("Shift Type", shift_assignment.shift_type, ["start_time", "end_time"], as_dict=True)
+
+				start_time = shift_type.start_time
+				end_time = shift_type.end_time
+
+				# Recalculate start_datetime
+				start_datetime = datetime.combine(shift_assignment.start_date, datetime.min.time()) + start_time
+
+				# Recalculate end_datetime, handling midnight crossing
+				end_date = shift_assignment.start_date
+				if start_time > end_time:
+					end_date = frappe.utils.add_days(end_date, 1)
+				end_datetime = datetime.combine(end_date, datetime.min.time()) + end_time
+
+				frappe.db.set_value("Shift Assignment", self.assigned_shift, {
+					"start_datetime": start_datetime,
+					"end_datetime": end_datetime
+				})
 
 
 	def update_shift_assignment_checkin(self) -> None:

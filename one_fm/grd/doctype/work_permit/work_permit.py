@@ -67,7 +67,7 @@ class WorkPermit(Document):
         # check for required fields based on workflow
         if db_state in states:
             msg = False
-            if  not self.attach_invoice:
+            if not self.attach_invoice:
                 msg = "Upload the required document(Invoice)"
             if not self.new_work_permit_expiry_date:
                 msg = ((msg+" and ") if msg else "") + "Set <i>Updated Work Permit Expiry Date</i>"
@@ -239,7 +239,7 @@ class WorkPermit(Document):
                 self.set_work_permit_attachment_in_employee_doctype(self.new_work_permit_expiry_date)
             else:
                 msg = False
-                if  not self.attach_invoice:
+                if not self.attach_invoice:
                     msg = "Upload the required document(Invoice)"
                 if not self.new_work_permit_expiry_date:
                     msg = ((msg+" and ") if msg else "") + "Set <i>Updated Work Permit Expiry Date</i>"

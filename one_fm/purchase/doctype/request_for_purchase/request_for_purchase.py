@@ -45,8 +45,6 @@ class RequestforPurchase(Document):
 		self.validate_conversion_factors()
 		self.calculate_stock_quantities()
 		self.calculate_stock_rates()
-		if self.currency:
-			self.set_exchange_rate()
 		self.calculate_item_values()
 		self.calculate_totals()
 
@@ -537,8 +535,8 @@ class RequestforPurchase(Document):
 			latest = frappe.get_list(
 				'Currency Exchange',
 				filters={
-					'from_currency': from_currency,
-					'to_currency': to_currency,
+					'from_currency': to_currency,
+					'to_currency': from_currency,
 					'date': ['<=', frappe.utils.today()]
 				},
 				fields=['name', 'exchange_rate', 'date', 'creation'],
@@ -642,8 +640,8 @@ class RequestforPurchase(Document):
 @frappe.whitelist()
 def get_exchange_rate(from_currency, to_currency, transaction_date):
     filters = {
-        "from_currency": from_currency,
-        "to_currency": to_currency,
+        "from_currency": to_currency,
+        "to_currency": from_currency,
         "date": ("<=", transaction_date)
     }
     

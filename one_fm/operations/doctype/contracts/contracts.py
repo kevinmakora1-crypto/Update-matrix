@@ -140,7 +140,8 @@ class Contracts(Document):
                     if item.rate_type == "Monthly" and len(post_schedules) == 0:
                         frappe.throw(f"Post Schedules are missing for {item.item_code}")
 
-                    quantity = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project, selected_period_start_date, selected_period_end_date)
+                    quantity = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project,
+                                                               selected_period_start_date, selected_period_end_date)
 
                     if item.rate_type == "Monthly" and quantity > item.count:
                         frappe.throw("Can not bill more than Contract's mentioned count for each Operations Role.")
@@ -155,6 +156,8 @@ class Contracts(Document):
                             'rate': item.rate,
                             'amount': quantity * item.rate,
                         })
+            if not sales_invoice_doc.items:
+                frappe.throw("No billable items found for the selected period.")
 
             sales_invoice_doc.insert(ignore_permissions=True)
             sales_invoice_doc.save()
@@ -949,9 +952,7 @@ def send_contract_reminders(is_scheduled_event=True):
     """
     try:
         contracts_due_internal_notification = frappe.get_all("Contracts",{'contract_end_internal_notification_date':getdate(), 'workflow_state': 'Active'},['contract_end_internal_notification',\
-            'contract_end_internal_notification_date','engagement_type','contract_termination_decision_period','contract_termination_decision_period_date','name','start_date','end_date','duration','client'])
-        contracts_due_termination_notification = frappe.get_all("Contracts",{'contract_termination_decision_period_date':getdate(), 'workflow_state': 'Active'},['contract_end_internal_notification',\
-            'contract_end_internal_notification_date','engagement_type','contract_termination_decision_period','contract_termination_decision_period_date','name','start_date','end_date','duration','client'])
+            'contract_end_internal_notification_date','engagement_type','contract_termination_decision_period','contract_termination_decision_period_date','name','start_date','end_date','duration','client', 'contract'])
 
         relevant_roles = ["Finance Manager",'Legal Manager','Projects Manager','Operations Manager']
         active_users = frappe.get_all("User",{'enabled':1})
@@ -980,27 +981,6 @@ def send_contract_reminders(is_scheduled_event=True):
                 }
                 msg = frappe.render_template('one_fm/templates/emails/contracts_reminder.html', context=context)
                 sendemail(recipients=users, subject="Expiring Contracts", content=msg, is_scheduler_email=is_scheduled_event)
-        if contracts_due_termination_notification:
-            contracts_due_termination_notification_list = [[i.contract_termination_decision_period,i.contract_end_internal_notification,\
-                get_date_str(i.contract_termination_decision_period_date) if i.contract_termination_decision_period_date else None,i.name,get_date_str(i.start_date),get_date_str(i.contract_end_internal_notification_date) if i.contract_end_internal_notification_date else None,\
-                get_date_str(i.end_date),i.duration,i.client,i.engagement_type, i.contract] for i in contracts_due_termination_notification]
-            for each in contracts_due_termination_notification_list:
-                context = {
-                    "project": each[8],
-                    "contract_end_internal_notif_period": get_field_with_label("Contracts", "contract_end_internal_notification", each[1]),
-                    "start_date": each[4],
-                    "engagement_type": each[9],
-                    "contract_end_internal_notif_date": get_field_with_label("Contracts", "contract_end_internal_notification_date", each[5]),
-                    "contract_termination_decision_period": get_field_with_label("Contracts", "contract_termination_decision_period", each[0]),
-                    "contract_termination_decision_date": get_field_with_label("Contracts", "contract_termination_decision_period_date", each[2]),
-                    "end_date": each[6],
-                    "duration": each[7],
-                    "document_id": each[3],
-                    "link": frappe.utils.get_url_to_form("Contracts", each[3]),
-                    "attachment": frappe.utils.get_url(each[10]) if each[10] else None
-                }
-                msg = frappe.render_template('one_fm/templates/emails/contracts_reminder.html', context=context)
-                sendemail(recipients=users, subject="Expiring Contracts", content=msg,is_scheduler_email=is_scheduled_event)
     except Exception as e:
         frappe.log_error(message=str(e), title="Contract Reminder Error")
 
@@ -1155,6 +1135,7 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
         for post_schedule in post_schedules 
         if post_schedule.get("site")
     ]))
+
     
     if not site_names:
         return 0
@@ -1163,10 +1144,11 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
     month, year = start_date.strftime("%B %Y").split(" ")
     is_hourly = rate_type == "Hourly"
 
+
     quantity = 0
 
     for site in site_names:
-        existing_attendance_amendment = frappe.db.exists("Attendance Amendment", {"month": month, "year": year, "project": project, "site": site, "attendance_based_on": "Shift Hours" if is_hourly else "Attendance Status", "docstatus": 1})
+        existing_attendance_amendment = frappe.db.get_all("Attendance Amendment", {"month": month, "year": year, "project": project, "site": site, "attendance_based_on": "Shift Hours" if is_hourly else "Attendance Status", "docstatus": 1}, pluck="name")
         
         if existing_attendance_amendment:
             # Get day numbers within the date range
@@ -1182,7 +1164,8 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
             basic_attendance_records = frappe.db.get_all(
                 "Attendance Amendment Item",
                 filters={
-                    "parent": existing_attendance_amendment,
+                    "parent": ["IN", existing_attendance_amendment],
+                    "sale_item": item_code,
                 },
                 fields=day_fields
             )
@@ -1190,7 +1173,8 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
             overtime_attendance_records = frappe.db.get_all(
                 "Attendance Amendment OT Item",
                 filters={
-                    "parent": existing_attendance_amendment,
+                    "parent": ["IN", existing_attendance_amendment],
+                    "sale_item": item_code,
                 },
                 fields=day_fields
             )
@@ -1209,6 +1193,7 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                 )
                 
                 quantity += flt(billable_basic_hours + billable_overtime_hours)
+
             else:
                 billable_basic_days = sum(
                     1
@@ -1248,9 +1233,10 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                     flt(att.get("working_hours") or 0) for att in hourly_attendance
                 )
                 quantity += total_working_hours
+
             else:
-                # Count the number of days for the attendance
                 quantity += frappe.db.count("Attendance", attendance_filters)
+
 
     # Pro-rata calculation for Monthly rate type
     if rate_type == "Monthly":

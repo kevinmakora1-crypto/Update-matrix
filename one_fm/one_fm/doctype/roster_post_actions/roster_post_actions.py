@@ -93,23 +93,33 @@ def create_roster_post_actions():
             JOIN `tabOperations Post` op ON ps.post = op.name
             JOIN `tabOperations Role` opr ON ps.operations_role = opr.name
             JOIN `tabProject` pr ON opr.project = pr.name
+            JOIN `tabContracts` c ON c.project = pr.name
+            JOIN `tabContract Item` ci ON ci.parent = c.name
             WHERE ps.post_status = 'Planned'
             AND osh.status = 'Active'
             AND os.status = 'Active'
             AND op.status = 'Active'
             AND opr.status = 'Active'
             AND pr.is_active = 'Yes'
+            AND ci.item_code = opr.sale_item
+            AND ci.service_type = 'Post Schedule'
             AND ps.date BETWEEN '{start_date}' AND '{end_date}'
-            ORDER BY date ASC
+            ORDER BY ps.date ASC
         """, as_dict=1)
 
         # Fetch employee schedules in the date range that are working
         employee_schedules = frappe.db.sql(f"""
             SELECT es.date, es.shift, es.operations_role, es.employee
             FROM `tabEmployee Schedule` es
+            JOIN `tabOperations Role` opr ON es.operations_role = opr.name
+            JOIN `tabProject` pr ON opr.project = pr.name
+            JOIN `tabContracts` c ON c.project = pr.name
+            JOIN `tabContract Item` ci ON ci.parent = c.name
             WHERE es.employee_availability = 'Working'
+            AND ci.item_code = opr.sale_item
+            AND ci.service_type = 'Post Schedule'
             AND es.date BETWEEN '{start_date}' AND '{end_date}'
-            ORDER BY date ASC
+            ORDER BY es.date ASC
         """, as_dict=1)
 
         attendance_list = frappe.db.sql(""" 
@@ -263,18 +273,24 @@ def get_overfilled_underfilled_posts():
     shifts_sub_query = f" AND ps.shift in {shift_tuple}" if len(shift_tuple) > 1 else f" AND ps.shift = '{shift_tuple[0]}'"
     # Fetch post schedules in the date range that are active
     post_schedules = frappe.db.sql(f"""
-		SELECT ps.name, ps.date, ps.shift, ps.operations_role, ps.post
-        FROM `tabPost Schedule` ps
-        JOIN `tabOperations Site` os ON ps.site=os.name
-        JOIN `tabOperations Post` op ON ps.post=op.name
-        JOIN `tabOperations Role` opr ON ps.operations_role=opr.name
-        JOIN `tabProject` pr ON opr.project=pr.name
-          WHERE
-        ps.post_status='Planned' AND os.status='Active'
-        AND op.status='Active' AND opr.status='Active'
-        AND pr.is_active='Yes' {shifts_sub_query}
-        AND ps.date BETWEEN '{start_date}' AND '{end_date}'
-        ORDER BY date ASC
+    SELECT ps.name, ps.date, ps.shift, ps.operations_role, ps.post
+    FROM `tabPost Schedule` ps
+    JOIN `tabOperations Site` os ON ps.site = os.name
+    JOIN `tabOperations Post` op ON ps.post = op.name
+    JOIN `tabOperations Role` opr ON ps.operations_role = opr.name
+    JOIN `tabProject` pr ON opr.project = pr.name
+    JOIN `tabContracts` c ON c.project = pr.name
+    JOIN `tabContract Item` ci ON ci.parent = c.name
+    WHERE ps.post_status = 'Planned' 
+    AND os.status = 'Active'
+    AND op.status = 'Active' 
+    AND opr.status = 'Active'
+    AND pr.is_active = 'Yes'
+    AND ci.item_code = opr.sale_item
+    AND ci.service_type = 'Post Schedule'
+    {shifts_sub_query}
+    AND ps.date BETWEEN '{start_date}' AND '{end_date}'
+    ORDER BY ps.date ASC
     """, as_dict=1)
 
 

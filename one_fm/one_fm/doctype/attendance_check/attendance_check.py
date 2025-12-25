@@ -239,11 +239,13 @@ class AttendanceCheck(Document):
 
     def check_on_leave_record(self):
         if self.attendance_status == "On Leave":
-            draft_leave_records = self.get_draft_leave_records()
-            if draft_leave_records and len(draft_leave_records) > 0:
-                doc_url = get_url_to_form('Leave Application',draft_leave_records[0].get('name'))
-                error_template = frappe.render_template(
-                    'one_fm/templates/emails/attendance_check_alert.html',
+            # Check for approved leave record
+            if not self.get_approved_leave_records(): # if approval occurs while the document is still being created
+                draft_leave_records = self.get_draft_leave_records()
+                if draft_leave_records and len(draft_leave_records) > 0:
+                    doc_url = get_url_to_form('Leave Application',draft_leave_records[0].get('name'))
+                    error_template = frappe.render_template(
+                        'one_fm/templates/emails/attendance_check_alert.html',
                     context={
                         'doctype':'Leave Application',
                         'current_user':frappe.session.user,
@@ -252,20 +254,20 @@ class AttendanceCheck(Document):
                         'page_link':doc_url,
                         'employee_name':self.employee_name
                     }
-                )
-                frappe.throw(error_template)
-            else:
-                link_to_new_leave = frappe.utils.get_url('/app/leave-application/new-leave-application-1')
-                frappe.throw(f"""
-                    <p>Please note that a Leave Application has not been created for <b>{self.employee_name}</b>.</p>
-                    <hr>
-                    To create a leave application
-                    <a class="btn btn-primary btn-sm"
-                    href='{link_to_new_leave}?doc_id={self.name}&doctype={self.doctype}'
-                    target="_blank" onclick=" ">
-                        Click Here
-                    </a>
-                 """)
+                    )
+                    frappe.throw(error_template)
+                else:
+                    link_to_new_leave = frappe.utils.get_url('/app/leave-application/new-leave-application-1')
+                    frappe.throw(f"""
+                        <p>Please note that a Leave Application has not been created for <b>{self.employee_name}</b>.</p>
+                        <hr>
+                        To create a leave application
+                        <a class="btn btn-primary btn-sm"
+                        href='{link_to_new_leave}?doc_id={self.name}&doctype={self.doctype}'
+                        target="_blank" onclick=" ">
+                            Click Here
+                        </a>
+                    """)
 
     def get_draft_leave_records(self):
         return frappe.db.sql(f"""
@@ -281,6 +283,23 @@ class AttendanceCheck(Document):
                 '{self.date}' <= to_date
                 and
                 docstatus = 0
+            """,
+            as_dict=True
+        )
+    def get_approved_leave_records(self):
+        return frappe.db.sql(f"""
+            select
+                employee_name, leave_approver_name, name
+            from
+                `tabLeave Application`
+            where
+                employee = '{self.employee}'
+                and
+                '{self.date}' >= from_date
+                and
+                '{self.date}' <= to_date
+                and
+                docstatus = 1
             """,
             as_dict=True
         )
@@ -627,7 +646,7 @@ def create_todos(manager,todos):
         today_datetime = frappe.utils.get_datetime()
 
         if len(todos)>10000:
-            #Query needs to be split to avoid max query package error
+            # Query needs to be split to avoid max query package error
             split_query =create_split_query(todos,10000,manager,today,today_datetime)
             for each in split_query:
                 frappe.db.sql(each,values=[])

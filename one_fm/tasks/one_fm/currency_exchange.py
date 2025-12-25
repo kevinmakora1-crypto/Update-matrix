@@ -38,7 +38,6 @@ def update_currency_exchange_rates():
     for currency in business_currencies:
         if currency != to_currency:
             currency_pairs.append((currency, to_currency))
-            currency_pairs.append((to_currency, currency))
 
     try:
         for from_curr, to_curr in currency_pairs:

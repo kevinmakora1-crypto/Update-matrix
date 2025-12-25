@@ -54,7 +54,7 @@
   "section_break_xzkb1",
   "comment",
   "amended_from",
-  "is_unscheduled"
+  "has_no_shift_assignment"
  ],
  "fields": [
   {
@@ -362,7 +362,7 @@
   },
   {
    "default": "0",
-   "fieldname": "is_unscheduled",
+   "fieldname": "has_no_shift_assignment",
    "fieldtype": "Check",
    "label": "Has No Shift Assignment",
    "read_only": 1

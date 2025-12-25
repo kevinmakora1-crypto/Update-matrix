@@ -459,7 +459,7 @@ def get_absentees_on_date(attendance_date):
         filters={
             'docstatus': 1,
             'status': 'Absent',
-            "is_unscheduled":0,
+            "has_no_shift_assignment":0,
             'attendance_date': attendance_date,
             "employee": ["not in", frappe.db.get_list('Shift Permission', filters={'date': attendance_date}, pluck='employee')]
         },
@@ -482,16 +482,16 @@ def get_attendance_not_marked_shift_employees(attendance_date):
             "attendance_date": attendance_date,
             "roster_type": "Basic",
             "docstatus": 1,
-            'is_unscheduled':1
+            'has_no_shift_assignment':1
         },
         fields=["employee"]
     )
 
-def insert_attendance_check_records(details, attendance_date, is_unscheduled=False):
+def insert_attendance_check_records(details, attendance_date, has_no_shift_assignment=False):
     for count, data in enumerate(details):
         try:
             attendance_by_timesheet = False
-            if not is_unscheduled:
+            if not has_no_shift_assignment:
                 attendance_by_timesheet = frappe.db.get_value("Employee", data["employee"], "attendance_by_timesheet")
             filters = {
                 "doctype": "Attendance Check",
@@ -499,7 +499,7 @@ def insert_attendance_check_records(details, attendance_date, is_unscheduled=Fal
                 "date": attendance_date,
                 "attendance": data["attendance"] if "attendance" in data else "",
                 "roster_type": data["roster_type"] if "roster_type" in data else "Basic",
-                'is_unscheduled': is_unscheduled,
+                'has_no_shift_assignment': has_no_shift_assignment,
                 "attendance_by_timesheet": attendance_by_timesheet,
                 "marked_attendance_status": data["attendance_status"] if "attendance_status" in data else "",
                 "shift_assignment": data["shift_assignment"] if "shift_assignment" in data else "",

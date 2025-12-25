@@ -335,16 +335,6 @@ frappe.ui.form.on('Contracts', {
 	create_sales_invoice_as: function(frm){
 		set_hide_management_fee_fields(frm);
 	},
-	engagement_type: (frm)=>{
-		// disable is auto renewal if engagement type is one-off
-		if(frm.doc.engagement_type=='One-off'){
-			frm.toggle_enable('is_auto_renewal', 0);
-			frm.toggle_display('is_auto_renewal', 0);
-		} else {
-			frm.toggle_enable('is_auto_renewal', 1);
-			frm.toggle_display('is_auto_renewal', 1);
-		}
-	},
 	open_sections_onload(frm) {
 		// run after layout is ready
         frappe.after_ajax(() => {

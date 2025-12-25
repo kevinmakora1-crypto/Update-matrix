@@ -1077,10 +1077,15 @@ def validate_shift_assignment(is_scheduled_event=True):
 				roster_emp.append(r)
 
 	if len(roster)>0:
-		sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
-		recipient = frappe.get_value("Email Account", {"name":"Develop"}, ["email_id"])
-		msg = frappe.render_template('one_fm/templates/emails/missing_shift_assignment.html', context={"rosters": roster})
-		sendemail(sender=sender, recipients= recipient, content=msg, subject="Missed Shift Assignments List", delayed=False, is_scheduler_email=is_scheduled_event)
+		missing_shift_assignment_support_email(roster, is_scheduled_event)
+
+def missing_shift_assignment_support_email(roster, is_scheduler_email=True):
+	sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
+	recipient = frappe.get_value("Email Account", {"name":"Support"}, ["email_id"])
+	if not recipient:
+		return
+	msg = frappe.render_template('one_fm/templates/emails/missing_shift_assignment.html', context={"rosters": roster})
+	sendemail(sender=sender, recipients= recipient, content=msg, subject="Missed Shift Assignments List", delayed=False, is_scheduler_email=is_scheduler_email)
 
 def validate_am_shift_assignment(is_scheduled_event=True):
 	"""
@@ -1126,10 +1131,7 @@ def validate_am_shift_assignment(is_scheduled_event=True):
 	roster = [i for i in roster if not i.employee in todays_leaves]
 
 	if len(roster)>0:
-		sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
-		recipient = frappe.get_value("Email Account", {"name":"Support"}, ["email_id"])
-		msg = frappe.render_template('one_fm/templates/emails/missing_shift_assignment.html', context={"rosters": roster})
-		sendemail(sender=sender, recipients= recipient, content=msg, subject="Missed Shift Assignments List", delayed=False, is_scheduler_email=True)
+		missing_shift_assignment_support_email(roster)
 		frappe.enqueue(create_shift_assignment, roster = roster, date = date, time='AM', is_async=True, queue='long')
 
 def validate_pm_shift_assignment():
@@ -1170,12 +1172,8 @@ def validate_pm_shift_assignment():
 	roster = [i for i in roster if not i.employee in todays_leaves]
 
 	if len(roster)>0:
-		sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
-		recipient = frappe.get_value("Email Account", {"name":"Support"}, ["email_id"])
-		msg = frappe.render_template('one_fm/templates/emails/missing_shift_assignment.html', context={"rosters": roster})
-		sendemail(sender=sender, recipients= recipient, content=msg, subject="Missed Shift Assignments List", delayed=False)
+		missing_shift_assignment_support_email(roster)
 		frappe.enqueue(create_shift_assignment, roster = roster, date = date, time='PM', is_async=True, queue='long')
-
 
 def overtime_shift_assignment():
 	"""

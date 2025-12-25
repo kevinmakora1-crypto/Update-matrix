@@ -63,7 +63,7 @@ class EmployeeCheckinOverride(EmployeeCheckin):
 			frappe.throw(frappe.get_traceback())
 
 	def validate_duplicate_log(self):
-		doc = frappe.db.sql(f""" select name from `tabEmployee Checkin` where employee = '{self.employee}' and time = '{self.time}' and (NOT name = '{self.name}')""", as_dict=1)
+		doc = frappe.db.sql(f""" select name from `tabEmployee Checkin` where employee = '{self.employee}' and shift_assignment ='{self.shift_assignment}' and time = '{self.time}' and (NOT name = '{self.name}')""", as_dict=1)
 		if doc:
 			doc_link = frappe.get_desk_link("Employee Checkin", doc[0]["name"])
 			frappe.throw(

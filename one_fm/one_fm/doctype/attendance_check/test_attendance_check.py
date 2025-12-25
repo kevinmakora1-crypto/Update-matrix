@@ -79,6 +79,8 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         # Mock frappe.get_all to return empty lists for both shift assignments and timesheet employees
         # First call: Shift Assignment query returns empty (no shift)
         # Second call: Employee query returns empty (not on timesheet)
+        frappe.get_all.reset_mock()
+        frappe.get_doc.reset_mock()
         frappe.get_all.side_effect = [
             [],  # No shift assignments
             []   # No employees with timesheet attendance
@@ -87,6 +89,8 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
 
         insert_attendance_check_records(details, "2025-08-20")
 
+        # Verify frappe.get_all was called twice (shift assignments + timesheet query)
+        self.assertEqual(frappe.get_all.call_count, 2)
         # Verify that get_doc was NOT called, meaning no Attendance Check was created
         frappe.get_doc.assert_not_called()
 
@@ -94,6 +98,8 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         # Mock frappe.get_all to return employee in timesheet list but not in shift assignments
         # First call: Shift Assignment query returns empty (no shift)
         # Second call: Employee query returns the employee (on timesheet)
+        frappe.get_all.reset_mock()
+        frappe.get_doc.reset_mock()
         frappe.get_all.side_effect = [
             [],  # No shift assignments
             [{"name": self.employee.name}]  # Employee has timesheet attendance
@@ -102,6 +108,8 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
 
         insert_attendance_check_records(details, "2025-08-20")
 
+        # Verify frappe.get_all was called twice (shift assignments + timesheet query)
+        self.assertEqual(frappe.get_all.call_count, 2)
         # Verify that get_doc was called, meaning an Attendance Check was created
         frappe.get_doc.assert_called()
 
@@ -109,6 +117,8 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         # Mock frappe.get_all to return employee in shift assignments but not in timesheet list
         # First call: Shift Assignment query returns the employee (has shift)
         # Second call: Employee query returns empty (not on timesheet)
+        frappe.get_all.reset_mock()
+        frappe.get_doc.reset_mock()
         frappe.get_all.side_effect = [
             [{"employee": self.employee.name}],  # Employee has shift assignment
             []  # No employees with timesheet attendance
@@ -117,6 +127,8 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
 
         insert_attendance_check_records(details, "2025-08-20")
 
+        # Verify frappe.get_all was called twice (shift assignments + timesheet query)
+        self.assertEqual(frappe.get_all.call_count, 2)
         # Verify that get_doc was called, meaning an Attendance Check was created
         frappe.get_doc.assert_called()
 
@@ -124,6 +136,8 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         # Mock frappe.get_all to return employee in both shift assignments and timesheet list
         # First call: Shift Assignment query returns the employee (has shift)
         # Second call: Employee query returns the employee (on timesheet)
+        frappe.get_all.reset_mock()
+        frappe.get_doc.reset_mock()
         frappe.get_all.side_effect = [
             [{"employee": self.employee.name}],  # Employee has shift assignment
             [{"name": self.employee.name}]  # Employee has timesheet attendance
@@ -132,6 +146,8 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
 
         insert_attendance_check_records(details, "2025-08-20")
 
+        # Verify frappe.get_all was called twice (shift assignments + timesheet query)
+        self.assertEqual(frappe.get_all.call_count, 2)
         # Verify that get_doc was called, meaning an Attendance Check was created
         frappe.get_doc.assert_called()
 

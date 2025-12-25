@@ -101,7 +101,7 @@ class Preparation(Document):
 
     def on_submit(self):
         self.validate_mandatory_fields_on_submit()
-
+        validate_preparation_table(self)
         self.db_set('submitted_by', frappe.session.user)
         self.db_set('submitted_on', now_datetime())
         self.recall_create_work_permit_renewal() ## create work permit record for renewals
@@ -373,8 +373,8 @@ def cancel_delete_doc(doctype,source,row):
 
 def validate_preparation_table(doc):
     """Ensure that all the employees in the preparation table are in Active Status"""
-    
-    all_active_staff = frappe.get_all("Employee",{'status': ["IN",["Active","Vacation"]]})
+
+    all_active_staff = frappe.get_all("Employee",{'status': ["IN",["Active"]]})
     if all_active_staff:
         all_active_staff_list = [o.name for o in all_active_staff]
         for each in doc.preparation_record:

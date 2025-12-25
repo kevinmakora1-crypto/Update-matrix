@@ -473,9 +473,8 @@ def get_absentees_on_date(attendance_date):
     )
 
 def get_attendance_not_marked_shift_employees(attendance_date):
-    # Fetch the list of employees, attendance marked for the date and basic roster
+    # Fetch employees with active shift assignments on the given date who do not have attendance marked
     
-    # Fetch all the employees who is shift working but no attendance marked
     return frappe.db.sql("""
         SELECT
             sa.employee

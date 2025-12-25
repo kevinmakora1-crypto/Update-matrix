@@ -1079,7 +1079,7 @@ def validate_shift_assignment(is_scheduled_event=True):
 	if len(roster)>0:
 		missing_shift_assignment_support_email(roster, is_scheduled_event)
 
-def missing_shift_assignment_support_email(roster, is_scheduler_email=True):
+def missing_shift_assignment_support_email(roster, is_scheduler_email=False):
 	sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
 	recipient = frappe.get_value("Email Account", {"name":"Support"}, ["email_id"])
 	if not recipient:
@@ -1131,7 +1131,7 @@ def validate_am_shift_assignment(is_scheduled_event=True):
 	roster = [i for i in roster if not i.employee in todays_leaves]
 
 	if len(roster)>0:
-		missing_shift_assignment_support_email(roster)
+		missing_shift_assignment_support_email(roster, True)
 		frappe.enqueue(create_shift_assignment, roster = roster, date = date, time='AM', is_async=True, queue='long')
 
 def validate_pm_shift_assignment():

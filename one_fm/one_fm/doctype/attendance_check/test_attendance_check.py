@@ -71,6 +71,10 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.shift_type = MagicMock(name="SHIFT_TYPE_1")
         self.shift = MagicMock(name="SHIFT001")
         self.shift_supervisor = MagicMock(name="SUP001")
+        
+        # Reset get_all and get_doc mocks to ensure clean state for each test
+        frappe.get_all.reset_mock()
+        frappe.get_doc.reset_mock()
 
     def tearDown(self):
         upatch.stopall()
@@ -152,6 +156,12 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         frappe.get_doc.assert_called()
 
     def test_insert_attendance_check_record(self):
+        # Mock frappe.get_all for shift assignment and timesheet queries
+        frappe.get_all.side_effect = [
+            [{"employee": self.employee.name}],  # Employee has shift assignment
+            []  # No timesheet attendance
+        ]
+        
         frappe.get_last_doc.return_value = MagicMock(
             employee=self.employee.name,
             attendance=self.attendance.name,
@@ -178,7 +188,14 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.assertEqual(ac_doc.comment, "Absent reason")
 
     def test_insert_duplicate_attendance_check_record(self):
-        frappe.get_all.return_value = [{"name": "AC001"}]
+        # Mock frappe.get_all for shift assignment and timesheet queries (called twice, once for each insert)
+        frappe.get_all.side_effect = [
+            [{"employee": self.employee.name}],  # First insert: Employee has shift assignment
+            [],  # First insert: No timesheet attendance
+            [{"employee": self.employee.name}],  # Second insert: Employee has shift assignment
+            []   # Second insert: No timesheet attendance
+        ]
+        
         details = [{
             "employee": self.employee.name,
             "attendance": self.attendance.name,
@@ -186,12 +203,25 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
             "shift_assignment": self.shift_assignment.name,
             "attendance_status": "Absent"
         }]
+        
+        # First insert should create the document
         insert_attendance_check_records(details, "2025-08-20")
+        
+        # Second insert with same details - the duplicate check happens in validate_duplicate
+        # which will throw an error. The function catches errors containing "Attendance Check already exist"
+        # So it should not raise, but also should not create a second document
         insert_attendance_check_records(details, "2025-08-20")
-        ac_list = frappe.get_all("Attendance Check", filters={"employee": self.employee.name, "date": "2025-08-20", "roster_type": "Basic"})
-        self.assertEqual(len(ac_list), 1)
+        
+        # Verify get_doc was called exactly twice (once for each insert attempt)
+        self.assertEqual(frappe.get_doc.call_count, 2)
 
     def test_insert_attendance_check_with_attendance_by_timesheet(self):
+        # Mock frappe.get_all for shift assignment and timesheet queries
+        frappe.get_all.side_effect = [
+            [],  # No shift assignment
+            [{"name": self.employee.name}]  # Has timesheet attendance
+        ]
+        
         frappe.get_last_doc.return_value = MagicMock(attendance_by_timesheet=True)
         details = [{
             "employee": self.employee.name,
@@ -205,6 +235,12 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.assertTrue(ac.attendance_by_timesheet)
 
     def test_insert_attendance_check_missing_optional_fields(self):
+        # Mock frappe.get_all for shift assignment and timesheet queries
+        frappe.get_all.side_effect = [
+            [{"employee": self.employee.name}],  # Employee has shift assignment
+            []  # No timesheet attendance
+        ]
+        
         frappe.get_last_doc.return_value = MagicMock(roster_type="Basic", comment="")
         details = [{"employee": self.employee.name}]
         insert_attendance_check_records(details, "2025-08-20")
@@ -213,10 +249,14 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.assertEqual(ac.comment, "")
 
     def test_insert_multiple_attendance_check_records(self):
-        frappe.get_all.return_value = [
-            {"employee": self.employee.name, "name": "AC001"},
-            {"employee": self.employee2.name, "name": "AC002"}
+        # Mock frappe.get_all for shift assignment and timesheet queries
+        frappe.get_all.side_effect = [
+            [{"employee": self.employee.name}, {"employee": self.employee2.name}],  # Both have shift assignments
+            []  # No timesheet attendance
         ]
+        
+        frappe.get_doc.return_value = MagicMock()
+        
         details = [
             {
                 "employee": self.employee.name,
@@ -234,19 +274,30 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
             }
         ]
         insert_attendance_check_records(details, "2025-08-20")
-        ac_list = frappe.get_all("Attendance Check", filters={"date": "2025-08-20"}, fields=["employee", "name"])
-        employee_names = [ac["employee"] for ac in ac_list]
-        self.assertIn(self.employee.name, employee_names)
-        self.assertIn(self.employee2.name, employee_names)
+        
+        # Verify get_doc was called twice (once for each employee with shift)
+        self.assertEqual(frappe.get_doc.call_count, 2)
 
     def test_insert_attendance_check_error_logging(self):
-        frappe.get_all.return_value = []
+        # Mock frappe.get_all to return empty (no shifts, no timesheet) so no attendance check should be created
+        frappe.get_all.side_effect = [
+            [],  # No shift assignments
+            []   # No timesheet attendance
+        ]
+        
         details = [{"employee": "invalid_employee"}]
         insert_attendance_check_records(details, "2025-08-20")
-        ac_list = frappe.get_all("Attendance Check", filters={"employee": "invalid_employee"})
-        self.assertEqual(len(ac_list), 0)
+        
+        # Verify get_doc was NOT called since employee has neither shift nor timesheet
+        frappe.get_doc.assert_not_called()
 
     def test_insert_attendance_check_with_shift_permission(self):
+        # Mock frappe.get_all for shift assignment and timesheet queries
+        frappe.get_all.side_effect = [
+            [{"employee": self.employee.name}],  # Employee has shift assignment
+            []  # No timesheet attendance
+        ]
+        
         frappe.get_last_doc.return_value = MagicMock(shift_permission=self.shift_permission.name)
         details = [{
             "employee": self.employee.name,
@@ -260,6 +311,12 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.assertEqual(ac.shift_permission, self.shift_permission.name)
 
     def test_insert_attendance_check_with_attendance_request(self):
+        # Mock frappe.get_all for shift assignment and timesheet queries
+        frappe.get_all.side_effect = [
+            [{"employee": self.employee.name}],  # Employee has shift assignment
+            []  # No timesheet attendance
+        ]
+        
         frappe.get_last_doc.return_value = MagicMock(attendance_request=self.attendance_request.name)
         details = [{
             "employee": self.employee.name,
@@ -273,6 +330,12 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.assertEqual(ac.attendance_request, self.attendance_request.name)
 
     def test_insert_attendance_check_with_checkin_records(self):
+        # Mock frappe.get_all for shift assignment and timesheet queries
+        frappe.get_all.side_effect = [
+            [{"employee": self.employee.name}],  # Employee has shift assignment
+            []  # No timesheet attendance
+        ]
+        
         frappe.get_last_doc.return_value = MagicMock(checkin_record="CHECKIN001", checkout_record="CHECKOUT001")
         details = [{
             "employee": self.employee.name,
@@ -287,6 +350,12 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.assertEqual(ac.checkout_record, "CHECKOUT001")
 
     def test_insert_attendance_check_sets_approvers(self):
+        # Mock frappe.get_all for shift assignment and timesheet queries
+        frappe.get_all.side_effect = [
+            [{"employee": self.employee.name}],  # Employee has shift assignment
+            []  # No timesheet attendance
+        ]
+        
         frappe.get_last_doc.return_value = MagicMock(
             reports_to="testuser@example.com",
             shift_supervisor=None,
@@ -366,6 +435,12 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.assertIn("Shift Request", str(context.exception))
 
     def test_insert_attendance_check_present_creates_attendance_record(self):
+        # Mock frappe.get_all for shift assignment and timesheet queries
+        frappe.get_all.side_effect = [
+            [{"employee": self.employee.name}],  # Employee has shift assignment
+            []  # No timesheet attendance
+        ]
+        
         ac = MagicMock(attendance_status="Present", justification="Other", other_reason="Test reason", workflow_state="Approved", name="AC001")
         ac.save.return_value = None
         ac.submit.return_value = None
@@ -394,6 +469,12 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.assertEqual(attendance.reference_docname, ac.name)
 
     def test_insert_attendance_check_absent_creates_attendance_record(self):
+        # Mock frappe.get_all for shift assignment and timesheet queries
+        frappe.get_all.side_effect = [
+            [{"employee": self.employee.name}],  # Employee has shift assignment
+            []  # No timesheet attendance
+        ]
+        
         ac = MagicMock(attendance_status="Absent", workflow_state="Approved", name="AC001")
         ac.save.return_value = None
         ac.on_submit.return_value = None

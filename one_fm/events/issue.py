@@ -88,9 +88,9 @@ def send_google_chat_notification(doc, method):
             body=dumps(bot_message),
         )
 
-def send_open_issue_count_to_google_chat_notification(doc, method):
+def send_open_hd_ticket_count_to_google_chat_notification():
 	query = frappe.db.sql("""
-		SELECT COUNT(status) as status_count FROM `tabIssue` WHERE status='Open' AND DATEDIFF(NOW(), modified)>0;
+		SELECT COUNT(status) as status_count FROM `tabHD Ticket` WHERE status='Open' AND DATEDIFF(NOW(), modified)>0;
 	""", as_dict=1)
 
 
@@ -106,7 +106,7 @@ def send_open_issue_count_to_google_chat_notification(doc, method):
 		url = f"""{google_chat.url}/spaces/{google_chat.api_parameter[0].get_password('value')}/messages?key={google_chat.get_password('api_key')}&token={google_chat.get_password('api_token')}"""
 
 		# Construct Message Body
-		message = f"""<b>There are {query[0].status_count} open issue(s) that have not been replied to in the last 24 hour</b><br>"""
+		message = f"""<b>There are {query[0].status_count} open hd ticket(s) that have not been replied to in the last 24 hour</b><br>"""
 
 		# Construct Card the allows Button action
 		bot_message = {
@@ -131,11 +131,14 @@ def send_open_issue_count_to_google_chat_notification(doc, method):
 		}
 
 		# Call the API
-		message_headers = {'Content-Type': 'application/json; charset=UTF-8'}
-		http_obj = Http()
-		response = http_obj.request(
-			uri=url,
-			method='POST',
-			headers=message_headers,
-			body=dumps(bot_message),
-		)
+        try:
+            message_headers = {'Content-Type': 'application/json; charset=UTF-8'}
+            http_obj = Http()
+            response = http_obj.request(
+                uri=url,
+                method='POST',
+                headers=message_headers,
+                body=dumps(bot_message),
+            )
+        except Exception as e:
+            frappe.log_error(message=str(e), title='Google Chat Notification - Send Open HD Ticket Count')

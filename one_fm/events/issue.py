@@ -131,14 +131,14 @@ def send_open_hd_ticket_count_to_google_chat_notification():
 		}
 
 		# Call the API
-        try:
-            message_headers = {'Content-Type': 'application/json; charset=UTF-8'}
-            http_obj = Http()
-            response = http_obj.request(
-                uri=url,
-                method='POST',
-                headers=message_headers,
-                body=dumps(bot_message),
-            )
-        except Exception as e:
-            frappe.log_error(message=str(e), title='Google Chat Notification - Send Open HD Ticket Count')
+		try:
+			message_headers = {'Content-Type': 'application/json; charset=UTF-8'}
+			http_obj = Http()
+			response = http_obj.request(
+				uri=url,
+				method='POST',
+				headers=message_headers,
+				body=dumps(bot_message),
+			)
+		except Exception as e:
+			frappe.log_error(message=str(e), title='Google Chat Notification - Send Open HD Ticket Count')

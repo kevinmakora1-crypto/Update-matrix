@@ -85,9 +85,9 @@ frappe.ui.form.on('Employee', {
         }
 	},
 	check_religion_for_hajj: function(frm) {
-		frappe.db.get_value('Religion', frm.doc.one_fm_religion, 'custom_hajj_check_required')
+		frappe.db.get_value('Religion', frm.doc.one_fm_religion, 'eligible_for_hajj')
 			.then(r => {
-				if (r.message && r.message.custom_hajj_check_required) {
+				if (r.message && r.message.eligible_for_hajj) {
 					frm.set_df_property('went_to_hajj', 'read_only', 0);
 				} else {
 					frm.set_df_property('went_to_hajj', 'read_only', 1);

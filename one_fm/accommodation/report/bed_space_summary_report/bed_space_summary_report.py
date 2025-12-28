@@ -33,10 +33,13 @@ def get_data(filters):
 		filters['accommodation'] = acc.name
 		filters['disabled'] = 0
 		total_no_of_bed_space = frappe.db.count('Bed', filters)
-		filters['status'] = 'Occupied'
-		occupied_bed = frappe.db.count('Bed', filters)
-		filters['status'] = 'Occupied Temporarily'
-		occupied_temporarily = frappe.db.count('Bed', filters)
+		# filters['status'] = 'Occupied'
+		# occupied_bed = frappe.db.count('Bed', filters)
+		occupied_bed = get_submitted_occupied_count(filters, is_temp=False)
+
+		# filters['status'] = 'Occupied Temporarily'
+		# occupied_temporarily = frappe.db.count('Bed', filters)
+		occupied_temporarily = get_submitted_occupied_count(filters, is_temp=True)
 		filters['status'] = 'Booked'
 		booked_bed = frappe.db.count('Bed', filters)
 		filters['status'] = 'Vacant'
@@ -89,3 +92,61 @@ def get_total_row(data):
 		total_occupied_percent,
 		total_vacant_percent,
 	]
+
+
+def get_submitted_occupied_count(filters, is_temp=False):
+	"""
+	Count occupied beds based on SUBMITTED (docstatus=1) Accommodation Checkin Checkout documents.
+	This avoids counting beds reserved by Draft check-ins.
+	"""
+	conditions = []
+	values = {}
+
+	# Basic Bed filters
+	if filters.get('accommodation'):
+		conditions.append("b.accommodation = %(accommodation)s")
+		values['accommodation'] = filters.get('accommodation')
+	
+	if filters.get('bed_space_type'):
+		conditions.append("b.bed_space_type = %(bed_space_type)s")
+		values['bed_space_type'] = filters.get('bed_space_type')
+
+	if filters.get('gender'):
+		conditions.append("b.gender = %(gender)s")
+		values['gender'] = filters.get('gender')
+		
+	conditions.append("b.disabled = 0")
+
+	conditions.append("c.docstatus = 1") # Only Submitted Checkins
+	conditions.append("c.type = 'IN'")
+	conditions.append("c.checked_out = 0")
+
+	# Policy condition for Temporary vs Permanent
+	if is_temp:
+		# Temporary: Policy is MISSING or EMPTY
+		conditions.append("(c.attach_print_accommodation_policy IS NULL OR c.attach_print_accommodation_policy = '')")
+	else:
+		# Permanent: Policy is PRESENT
+		conditions.append("(c.attach_print_accommodation_policy IS NOT NULL AND c.attach_print_accommodation_policy != '')")
+
+	# We use count(distinct b.name) to handle rare cases of data inconsistency where 
+	# a bed might be linked to multiple active, submitted check-ins.
+	
+	# Performance Note:
+	# For optimal performance, especially with large datasets, ensure the following indexes exist
+	# on the 'tabAccommodation Checkin Checkout' table:
+	# 1. bed (Link field, used in JOIN)
+	# 2. docstatus, type, checked_out (Used in WHERE clause)
+	# Consider adding a composite index on (docstatus, type, checked_out, bed) covers the query perfectly.
+	
+	where_clause = " AND ".join(conditions)
+	
+	query = f"""
+		SELECT count(distinct b.name)
+		FROM `tabBed` b
+		INNER JOIN `tabAccommodation Checkin Checkout` c ON b.name = c.bed
+		WHERE {where_clause}
+	"""
+	
+	result = frappe.db.sql(query, values)
+	return result[0][0] if result else 0

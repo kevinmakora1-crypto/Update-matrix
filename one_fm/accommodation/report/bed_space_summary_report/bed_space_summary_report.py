@@ -117,7 +117,8 @@ def get_submitted_occupied_count(filters, is_temp=False):
 		
 	conditions.append("b.disabled = 0")
 
-	conditions.append("c.docstatus = 1") # Only Submitted Checkins
+	# We allow both Draft (0) and Submitted (1) check-ins, but we ensure uniqueness using DISTINCT.
+	conditions.append("c.docstatus IN (0, 1)") 
 	conditions.append("c.type = 'IN'")
 	conditions.append("c.checked_out = 0")
 
@@ -129,8 +130,8 @@ def get_submitted_occupied_count(filters, is_temp=False):
 		# Permanent: Policy is PRESENT
 		conditions.append("(c.attach_print_accommodation_policy IS NOT NULL AND c.attach_print_accommodation_policy != '')")
 
-	# We use count(distinct b.name) to handle rare cases of data inconsistency where 
-	# a bed might be linked to multiple active, submitted check-ins.
+	# We use count(distinct b.name) to handle cases where a bed might be linked to multiple check-ins (e.g. duplicates).
+	# This ensures we count the BED once, regardless of how many drafted check-ins exist for it.
 	
 	# Performance Note:
 	# For optimal performance, especially with large datasets, ensure the following indexes exist

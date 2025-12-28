@@ -150,6 +150,4 @@ def get_submitted_occupied_count(filters, is_temp=False):
 	"""
 	
 	result = frappe.db.sql(query, values)
-	print("samdani")
-	print(result)
 	return result[0][0] if result else 0

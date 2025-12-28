@@ -95,47 +95,47 @@ def get_total_row(data):
 
 
 def get_submitted_occupied_count(filters, is_temp=False):
-    """
-    Count occupied beds based on SUBMITTED (docstatus=1) Accommodation Checkin Checkout documents.
-    This avoids counting beds reserved by Draft check-ins.
-    """
-    conditions = []
-    values = {}
+	"""
+	Count occupied beds based on SUBMITTED (docstatus=1) Accommodation Checkin Checkout documents.
+	This avoids counting beds reserved by Draft check-ins.
+	"""
+	conditions = []
+	values = {}
 
-    # Basic Bed filters
-    if filters.get('accommodation'):
-        conditions.append("b.accommodation = %(accommodation)s")
-        values['accommodation'] = filters.get('accommodation')
-    
-    if filters.get('bed_space_type'):
-        conditions.append("b.bed_space_type = %(bed_space_type)s")
-        values['bed_space_type'] = filters.get('bed_space_type')
+	# Basic Bed filters
+	if filters.get('accommodation'):
+		conditions.append("b.accommodation = %(accommodation)s")
+		values['accommodation'] = filters.get('accommodation')
+	
+	if filters.get('bed_space_type'):
+		conditions.append("b.bed_space_type = %(bed_space_type)s")
+		values['bed_space_type'] = filters.get('bed_space_type')
 
-    if filters.get('gender'):
-        conditions.append("b.gender = %(gender)s")
-        values['gender'] = filters.get('gender')
-        
-    conditions.append("b.disabled = 0")
+	if filters.get('gender'):
+		conditions.append("b.gender = %(gender)s")
+		values['gender'] = filters.get('gender')
+		
+	conditions.append("b.disabled = 0")
 
-    # Policy condition for Temporary vs Permanent
-    if is_temp:
-        # Temporary: Policy is MISSING or EMPTY
-        policy_condition = "(c.attach_print_accommodation_policy IS NULL OR c.attach_print_accommodation_policy = '')"
-    else:
-        # Permanent: Policy is PRESENT
-        policy_condition = "(c.attach_print_accommodation_policy IS NOT NULL AND c.attach_print_accommodation_policy != '')"
+	# Policy condition for Temporary vs Permanent
+	if is_temp:
+		# Temporary: Policy is MISSING or EMPTY
+		policy_condition = "(c.attach_print_accommodation_policy IS NULL OR c.attach_print_accommodation_policy = '')"
+	else:
+		# Permanent: Policy is PRESENT
+		policy_condition = "(c.attach_print_accommodation_policy IS NOT NULL AND c.attach_print_accommodation_policy != '')"
 
-    query = f"""
-        SELECT count(distinct b.name)
-        FROM `tabBed` b
-        INNER JOIN `tabAccommodation Checkin Checkout` c ON b.name = c.bed
-        WHERE
-            c.docstatus = 1  -- Only Submitted Checkins
-            AND c.type = 'IN' 
-            AND c.checked_out = 0 
-            AND {policy_condition}
-            AND {" AND ".join(conditions)}
-    """
-    
-    result = frappe.db.sql(query, values)
-    return result[0][0] if result else 0
+	query = f"""
+		SELECT count(distinct b.name)
+		FROM `tabBed` b
+		INNER JOIN `tabAccommodation Checkin Checkout` c ON b.name = c.bed
+		WHERE
+			c.docstatus = 1  -- Only Submitted Checkins
+			AND c.type = 'IN' 
+			AND c.checked_out = 0 
+			AND {policy_condition}
+			AND {" AND ".join(conditions)}
+	"""
+	
+	result = frappe.db.sql(query, values)
+	return result[0][0] if result else 0

@@ -117,24 +117,35 @@ def get_submitted_occupied_count(filters, is_temp=False):
         
     conditions.append("b.disabled = 0")
 
+    conditions.append("c.docstatus = 1") # Only Submitted Checkins
+    conditions.append("c.type = 'IN'")
+    conditions.append("c.checked_out = 0")
+    
     # Policy condition for Temporary vs Permanent
     if is_temp:
         # Temporary: Policy is MISSING or EMPTY
-        policy_condition = "(c.attach_print_accommodation_policy IS NULL OR c.attach_print_accommodation_policy = '')"
+        conditions.append("(c.attach_print_accommodation_policy IS NULL OR c.attach_print_accommodation_policy = '')")
     else:
         # Permanent: Policy is PRESENT
-        policy_condition = "(c.attach_print_accommodation_policy IS NOT NULL AND c.attach_print_accommodation_policy != '')"
+        conditions.append("(c.attach_print_accommodation_policy IS NOT NULL AND c.attach_print_accommodation_policy != '')")
 
+    # We use count(distinct b.name) to handle rare cases of data inconsistency where 
+    # a bed might be linked to multiple active, submitted check-ins.
+    
+    # Performance Note:
+    # For optimal performance, especially with large datasets, ensure the following indexes exist
+    # on the 'tabAccommodation Checkin Checkout' table:
+    # 1. bed (Link field, used in JOIN)
+    # 2. docstatus, type, checked_out (Used in WHERE clause)
+    # Consider adding a composite index on (docstatus, type, checked_out, bed) covers the query perfectly.
+    
+    where_clause = " AND ".join(conditions)
+    
     query = f"""
         SELECT count(distinct b.name)
         FROM `tabBed` b
         INNER JOIN `tabAccommodation Checkin Checkout` c ON b.name = c.bed
-        WHERE
-            c.docstatus = 1  -- Only Submitted Checkins
-            AND c.type = 'IN' 
-            AND c.checked_out = 0 
-            AND {policy_condition}
-            AND {" AND ".join(conditions)}
+        WHERE {where_clause}
     """
     
     result = frappe.db.sql(query, values)

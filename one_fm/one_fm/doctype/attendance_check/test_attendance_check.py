@@ -95,7 +95,7 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
 
         # Verify frappe.get_all was called twice (shift assignments + timesheet query)
         self.assertEqual(frappe.get_all.call_count, 2)
-        # Verify that get_doc was called, meaning an Attendance Check was created
+        # Verify that get_doc was NOT called, meaning no Attendance Check was created
         frappe.get_doc.assert_not_called()
 
     def test_shift_assignment_query_uses_correct_date_range_filter(self):
@@ -613,3 +613,19 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
             attendance_check_pending_approval_check()
             mock_penalty.assert_called()
             mock_assign.assert_called()
+
+
+def create_attendance_check_record(details, date):
+    """Helper function to create an Attendance Check record"""
+    attendance_check = frappe.get_doc({
+        "doctype": "Attendance Check",
+        "employee": details.get("employee"),
+        "attendance": details.get("attendance"),
+        "date": date,
+        "roster_type": details.get("roster_type", ""),
+        "shift_assignment": details.get("shift_assignment", ""),
+        "attendance_status": details.get("attendance_status", ""),
+        "comment": details.get("attendance_comment", ""),
+    })
+    attendance_check.insert()
+    return attendance_check

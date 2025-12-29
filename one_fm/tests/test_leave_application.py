@@ -7,23 +7,9 @@ from one_fm.tests.utils import (
     get_test_employee, get_test_leave_type, create_test_leave_allocation,
     create_test_company, make_leave_application
 )
+from one_fm.one_fm.doctype.attendance_check.test_attendance_check import create_attendance_check_record
 from frappe.workflow.doctype.workflow_action.workflow_action import apply_workflow
 from unittest.mock import patch
-
-def create_attendance_check_record(details, date):
-    """Helper function to create an Attendance Check record"""
-    attendance_check = frappe.get_doc({
-        "doctype": "Attendance Check",
-        "employee": details.get("employee"),
-        "attendance": details.get("attendance"),
-        "date": date,
-        "roster_type": details.get("roster_type", ""),
-        "shift_assignment": details.get("shift_assignment", ""),
-        "attendance_status": details.get("attendance_status", ""),
-        "comment": details.get("attendance_comment", ""),
-    })
-    attendance_check.insert()
-    return attendance_check
 
 class TestLeaveApplicationOverride(FrappeTestCase):
     """

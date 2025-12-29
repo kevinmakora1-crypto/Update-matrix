@@ -232,8 +232,7 @@ class AttendanceCheck(Document):
             "Employee Checkin",
             {
                 "employee": self.employee,
-                "time": time,
-                "log_type": log_type
+                "time": time
             }
         )
 
@@ -459,6 +458,7 @@ def get_absentees_on_date(attendance_date):
         filters={
             'docstatus': 1,
             'status': 'Absent',
+            "has_no_shift_assignment":0,
             'attendance_date': attendance_date,
             "employee": ["not in", frappe.db.get_list('Shift Permission', filters={'date': attendance_date}, pluck='employee')]
         },
@@ -499,11 +499,10 @@ def insert_attendance_check_records(details, attendance_date):
     # Fetch shift assignments for all employees in a single query
     shift_assignments = frappe.get_all("Shift Assignment",
         filters={
-            "employee": ["in", employee_ids],
-            "start_date": ["<=", attendance_date],
-            "end_date": [">=", attendance_date],
-            "status": "Active",
-            "docstatus": 1
+            "attendance_date": attendance_date,
+            "roster_type": "Basic",
+            "docstatus": 1,
+            'has_no_shift_assignment':1
         },
         fields=["employee"]
     )
@@ -519,11 +518,25 @@ def insert_attendance_check_records(details, attendance_date):
     )
     employees_with_timesheet = {emp.name for emp in employees_by_timesheet}
 
+def insert_attendance_check_records(details, attendance_date, has_no_shift_assignment=False):
     for count, data in enumerate(details):
         try:
-            employee = data["employee"]
-            has_shift = employee in employees_with_shifts
-            on_timesheet = employee in employees_with_timesheet
+            attendance_by_timesheet = False
+            if not has_no_shift_assignment:
+                attendance_by_timesheet = frappe.db.get_value("Employee", data["employee"], "attendance_by_timesheet")
+            filters = {
+                "doctype": "Attendance Check",
+                "employee": data["employee"],
+                "date": attendance_date,
+                "attendance": data["attendance"] if "attendance" in data else "",
+                "roster_type": data["roster_type"] if "roster_type" in data else "Basic",
+                'has_no_shift_assignment': has_no_shift_assignment,
+                "attendance_by_timesheet": attendance_by_timesheet,
+                "marked_attendance_status": data["attendance_status"] if "attendance_status" in data else "",
+                "shift_assignment": data["shift_assignment"] if "shift_assignment" in data else "",
+                "attendance_marked": 1 if "attendance" in data else 0,
+                "comment": data["attendance_comment"] if "attendance_comment" in data else ""
+            }
 
             if has_shift or on_timesheet:
                 filters = {

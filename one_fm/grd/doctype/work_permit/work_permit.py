@@ -62,17 +62,18 @@ class WorkPermit(Document):
                 frappe.throw(_("{0}'s Relieving Date has been set to {1}. Work Permit processing is not allowed.").format(employee_details.employee_name, employee_details.relieving_date))
 
     def validate_workflow_state_fields(self):
-        states = ['Pending By PAM Operator', 'Pending By Operator']
+        states = ['Pending By Supervisor', 'Pending By PAM']
         db_state = frappe.db.get_value("Work Permit", self.name, 'workflow_state')
         # check for required fields based on workflow
-        if db_state in states and not self.new_work_permit_expiry_date:
-            frappe.throw("Missing Data fill Updated Work Permit Expiry Date field.")
-
-        # check if receipt uploaded and status is supervisor
-        if self.attach_invoice and self.workflow_state=="Pending By PAM Operator":
-            # send email to perm operation
-            send_workflow_action_email(self, [self.pam_operator])
-        # frappe.throw(f"""{pam_operator_email}, {self.attach_invoice}, {self.workflow_state}""")
+        if db_state in states:
+            msg = False
+            if not self.attach_invoice:
+                msg = "Upload the required document(Invoice)"
+            if not self.new_work_permit_expiry_date:
+                msg = ((msg+" and ") if msg else "") + "Set <i>Updated Work Permit Expiry Date</i>"
+            if msg:
+                msg += " to submit"
+                frappe.throw(_(msg))
 
 
     def send_work_permit_receipt_to_perm_operator(self):
@@ -238,7 +239,7 @@ class WorkPermit(Document):
                 self.set_work_permit_attachment_in_employee_doctype(self.new_work_permit_expiry_date)
             else:
                 msg = False
-                if  not self.attach_invoice:
+                if not self.attach_invoice:
                     msg = "Upload the required document(Invoice)"
                 if not self.new_work_permit_expiry_date:
                     msg = ((msg+" and ") if msg else "") + "Set <i>Updated Work Permit Expiry Date</i>"

@@ -16,6 +16,13 @@
   "event_location",
   "project",
   "operations_manager",
+  "activity_of_the_day",
+  "space",
+  "section_break_nwcj",
+  "timing_of_informing",
+  "method_of_informing",
+  "column_break_nvtm",
+  "poc_name_that_informed",
   "section_break_zhpk",
   "staffing_requirements",
   "amended_from"
@@ -97,6 +104,39 @@
    "fieldtype": "Link",
    "label": "Operations Manager",
    "options": "User"
+  },
+  {
+   "fieldname": "activity_of_the_day",
+   "fieldtype": "Data",
+   "label": "Activity of the Day"
+  },
+  {
+   "fieldname": "space",
+   "fieldtype": "Data",
+   "label": "Space"
+  },
+  {
+   "fieldname": "section_break_nwcj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "timing_of_informing",
+   "fieldtype": "Data",
+   "label": "Timing of Informing"
+  },
+  {
+   "fieldname": "method_of_informing",
+   "fieldtype": "Data",
+   "label": "Method of Informing"
+  },
+  {
+   "fieldname": "column_break_nvtm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "poc_name_that_informed",
+   "fieldtype": "Data",
+   "label": "POC Name that informed"
   }
  ],
  "grid_page_length": 50,
@@ -116,7 +156,7 @@
    "link_fieldname": "client_event"
   }
  ],
- "modified": "2025-11-28 12:00:46.821775",
+ "modified": "2025-12-26 10:03:41.481140",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Client Event",

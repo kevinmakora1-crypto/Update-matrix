@@ -33,8 +33,8 @@ from frappe.utils import (
 )
 from frappe.workflow.doctype.workflow_action.workflow_action import (
     get_email_template, deduplicate_actions, get_next_possible_transitions,
-    get_doc_workflow_state, get_workflow_name, get_workflow_action_url,get_confirm_workflow_action_url,
-    get_users_next_action_data as _get_users_next_action_data
+    get_doc_workflow_state, get_workflow_name, get_workflow_action_url, get_confirm_workflow_action_url,
+    get_users_next_action_data as _get_users_next_action_data, get_email_template_from_workflow
 )
 
 import erpnext
@@ -65,7 +65,7 @@ def get_common_email_args(doc):
 	doctype = doc.get("doctype")
 	docname = doc.get("name")
 
-	email_template = get_email_template(doc)
+	email_template = get_email_template_from_workflow(doc)
 	if email_template:
 		subject = frappe.render_template(email_template.subject, vars(doc))
 		response = frappe.render_template(email_template.response, vars(doc))

@@ -63,7 +63,7 @@ class EmployeeCheckinOverride(EmployeeCheckin):
 			frappe.throw(frappe.get_traceback())
 
 	def validate_duplicate_log(self):
-		doc = frappe.db.sql(f""" select name from `tabEmployee Checkin` where employee = '{self.employee}' and time = '{self.time}' and (NOT name = '{self.name}')""", as_dict=1)
+		doc = frappe.db.sql(f""" select name from `tabEmployee Checkin` where employee = '{self.employee}' and shift_assignment ='{self.shift_assignment}' and time = '{self.time}' and (NOT name = '{self.name}')""", as_dict=1)
 		if doc:
 			doc_link = frappe.get_desk_link("Employee Checkin", doc[0]["name"])
 			frappe.throw(
@@ -111,9 +111,57 @@ def exists_checkin(current_shift_assignment, checkin_name, log_type="IN"):
 
 	return False
 
+
+def validate_shift_assignment(employee_checkin,shift):
+	"""
+		Validate and normalize the shift assignment for an Employee Checkin.
+
+		This helper ensures that Mobile App checkins use the employee's
+		current active shift assignment rather than a potentially stale one.
+
+		Behavior:
+			- If ``employee_checkin`` is a name (string), it is loaded as a
+			  full "Employee Checkin" document.
+			- If the checkin source is "Mobile App" and the checkin is being
+			  created now (``creation`` date equals today's date), the
+			  employee's current shift is fetched via ``get_current_shift``.
+			  If the current shift name differs from the provided ``shift``
+			  argument, the current shift name is returned; otherwise the
+			  original ``shift`` is returned.
+			- For all other cases, the provided ``shift`` argument is
+			  returned unchanged.
+
+		Note: This function does not set or update the shift assignment on
+		the Employee Checkin document; it only validates and returns the
+		appropriate shift name to use.
+	"""
+	try:
+		if isinstance(employee_checkin, str):
+			employee_checkin = frappe.get_doc("Employee Checkin", employee_checkin)
+		if employee_checkin.source == "Mobile App" and getdate(employee_checkin.creation)==getdate():#Ensure that the checkin is being created now
+			current_shift = get_current_shift(employee_checkin.employee,attach_upcoming_shifts=True)
+			if current_shift.get('data'):
+				if current_shift.get('data').get('name') != shift:
+					#Check upcoming shift 
+					if current_shift.get('upcoming_shifts'):
+						upcoming_shift_name = current_shift.get('upcoming_shifts')[0].name
+						if shift == upcoming_shift_name:
+							return shift
+					return current_shift.get('data').get('name')
+				else:
+					return shift
+		return shift
+	except Exception as e:
+		frappe.log_error(message = frappe.get_traceback(),title = 'Checkin Shift Validation')
+
+	
+
+
+
 def after_insert_background(employee_checkin,current_shift):
 	self = frappe.get_doc("Employee Checkin", employee_checkin)
 	try:
+		current_shift = validate_shift_assignment(employee_checkin,current_shift)
 		if not current_shift:
 			shift_details = get_current_shift(self.employee)
 			if shift_details:

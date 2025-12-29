@@ -17,7 +17,6 @@ from one_fm.custom.property_setter.leave_application import get_leave_applicatio
 from one_fm.custom.property_setter.leave_type import get_leave_type_properties
 from one_fm.custom.property_setter.location import get_location_properties
 from one_fm.custom.property_setter.purchase_invoice import get_purchase_invoice_properties
-from one_fm.custom.property_setter.religion import get_religion_properties
 from one_fm.custom.property_setter.sales_invoice import get_sales_invoice_properties
 from one_fm.custom.property_setter.sales_invoice_advance import get_sales_invoice_advance_properties
 from one_fm.custom.property_setter.shift_request import get_shift_request_properties
@@ -129,7 +128,6 @@ def get_field_properties():
 	field_properties.extend(get_purchase_order_item_properties())
 	field_properties.extend(get_purchase_receipt_properties())
 	field_properties.extend(get_purchase_receipt_item_properties())
-	field_properties.extend(get_religion_properties())
 	field_properties.extend(get_salary_component_account_properties())
 	field_properties.extend(get_salary_slip_properties())
 	field_properties.extend(get_sales_invoice_properties())

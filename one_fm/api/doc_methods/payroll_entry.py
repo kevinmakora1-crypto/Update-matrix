@@ -90,31 +90,6 @@ def fill_employee_details(self):
 		self.append('employees', d)
 	self.number_of_employees = len(self.employees)
 
-# @frappe.whitelist()
-# def get_emp_list(self, project_list=False):
-# 	"""
-# 		Returns list of active employees based on selected criteria
-# 		and for which salary structure exists
-# 	"""
-# 	self.check_mandatory()
-# 	filters = self.make_filters()
-# 	cond = get_filter_condition(filters)
-# 	cond += get_joining_relieving_condition(self.start_date, self.end_date)
-
-# 	sal_struct = get_salary_structure(
-# 		self.company, self.currency, self.salary_slip_based_on_timesheet, self.payroll_frequency
-# 	)
-
-# 	if sal_struct:
-# 		cond += "and t2.salary_structure IN %(sal_struct)s "
-# 		cond += "and t2.payroll_payable_account = %(payroll_payable_account)s "
-# 		cond += "and %(from_date)s >= t2.from_date "
-# 		if project_list:
-# 			cond += "and t1.project IN ({0})".format(project_list)
-# 		employee_list = get_employee_list(sal_struct, cond, self.end_date, self.payroll_payable_account)
-# 		employee_list = remove_payrolled_employees(employee_list, self.start_date, self.end_date)
-# 		return employee_list
-
 @frappe.whitelist()
 def get_employee_list(sal_struct, cond, end_date, payroll_payable_account):
 	return frappe.db.sql(
@@ -246,71 +221,7 @@ def auto_create_payroll_entry(payroll_date=None):
 		# Calculate payroll date
 		payroll_date = (datetime(getdate().year, getdate().month, cint(payroll_date_day))).strftime("%Y-%m-%d")
 
-	# Find default from date and end date for payroll
-	default_payroll_start_day = frappe.db.get_single_value('HR and Payroll Additional Settings', 'default_payroll_start_day')
-
-	# Get Payroll cycle list from HR and Payroll Settings and itrate for payroll cycle
-	query = '''
-		select
-			distinct payroll_start_day
-		from
-			`tabProject Payroll Cycle`
-	'''
-	data = frappe.db.sql(query, as_dict=True)
-
-	payroll_start_day_list = [d['payroll_start_day'] for d in data]
-
-	for payroll_start_day in payroll_start_day_list:
-		# Find from date and end date for payroll
-		start_date, end_date = get_payroll_start_end_date_by_start_day(payroll_date, payroll_start_day)
-
-		# Create Payroll Entry
-		create_monthly_payroll_entry(payroll_date, start_date, end_date)
-
-	if default_payroll_start_day and default_payroll_start_day not in payroll_start_day_list:
-		default_start_date, default_end_date = get_payroll_start_end_date_by_start_day(payroll_date, default_payroll_start_day)
-
-		create_monthly_payroll_entry(payroll_date, default_start_date, default_end_date)
-
-def create_monthly_payroll_entry(payroll_date, start_date, end_date):
-	try:
-		# payroll_type = ["Basic", "Over-Time"]
-		payroll_type = ["Basic"]
-		for types in payroll_type:
-			payroll_entry = frappe.new_doc("Payroll Entry")
-			payroll_entry.posting_date = getdate(payroll_date)
-			payroll_entry.payroll_frequency = "Monthly"
-			payroll_entry.exchange_rate = 0
-			payroll_entry.payroll_payable_account = frappe.get_value("Company", erpnext.get_default_company(), "default_payroll_payable_account")
-			payroll_entry.company = erpnext.get_default_company()
-			payroll_entry.start_date = start_date
-			payroll_entry.end_date = end_date
-			payroll_entry.payroll_type = types
-			payroll_entry.cost_center = frappe.get_value("Company", erpnext.get_default_company(), "cost_center")
-			payroll_entry.save()
-			# Fetch employees with the project filter
-			payroll_entry.fill_employee_details()
-			payroll_entry.save()
-			payroll_entry.submit()
-			frappe.db.commit()
-	except Exception:
-		frappe.log_error(message=frappe.get_traceback(), title=cstr(start_date)+' | '+cstr(end_date))
-
-def get_payroll_start_end_date_by_start_day(payroll_date, start_day):
-	if start_day == 'Month Start':
-		start_day = 1
-	if start_day == 'Month End':
-		start_day = getdate(get_first_day(getdate(payroll_date))).day
-	year = getdate(payroll_date).year - 1 if getdate(payroll_date).day < cint(start_day) and  getdate(payroll_date).month == 1 else getdate(payroll_date).year
-	month = getdate(payroll_date).month if getdate(payroll_date).day >= cint(start_day) else getdate(payroll_date).month - 1
-	date = datetime(year, month, cint(start_day)).strftime("%Y-%m-%d")
-	if getdate(payroll_date) <= getdate(date):
-		start_date = add_to_date(date, months=-1)
-		end_date = add_to_date(date, days=-1)
-	else:
-		start_date = getdate(date)
-		end_date = add_to_date(date, days=-1, months=1)
-	return start_date, end_date
+	# Creating payroll definition is under processing
 
 def get_start_date(date):
 	if isinstance(date, str):
@@ -323,24 +234,6 @@ def get_start_date(date):
 		return 'Month End'
 	else:
 		return date.day
-
-def get_basic_salary(employee):
-	filters = {
-		'docstatus': 1,
-		'employee': employee
-	}
-	salary_structure = frappe.get_value("Salary Structure Assignment", filters, "salary_structure", order_by="from_date desc")
-	if salary_structure:
-		basic_salary = frappe.db.sql("""
-			SELECT amount FROM `tabSalary Detail`
-			WHERE parenttype="Salary Structure"
-			AND parent=%s
-			AND salary_component="Basic"
-		""",(salary_structure), as_dict=1)
-
-		return basic_salary[0].amount if len(basic_salary) > 0 else 0.00
-	else:
-		frappe.throw(_("No Assigned Salary Structure found for the selected employee."))
 
 @frappe.whitelist()
 def export_payroll(doc, method):
@@ -567,15 +460,6 @@ def export_cash_payroll(cash_salary_employees, doc_name):
 
 	except Exception as e:
 		frappe.log_error(message=str(e), title='Payroll Entry')
-
-@frappe.whitelist()
-def email_missing_payment_information(recipients):
-	"""
-		Send missing salary payment information
-		as an email.
-	"""
-	# print(frappe.session.data)
-	# print(recipients, '\n\n\n')
 
 def log_payroll_failure(process, payroll_entry, error):
 	error_log = frappe.log_error(

@@ -23,8 +23,12 @@ frappe.ready(() => {
         currentLoaderTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
         currentLoaderTimeouts = [];
         
+        // Determine text direction based on selected language
+        const textDirection = rtlLanguages.includes(selectedLanguage) ? 'rtl' : 'ltr';
+        const textAlign = rtlLanguages.includes(selectedLanguage) ? 'right' : 'left';
+
         container.innerHTML = `
-            <div class="loader-container">
+            <div class="loader-container" dir="${textDirection}" style="text-align: ${textAlign};">
                 <div class="loader-wrapper">
                     <div class="progress-spinner">
                         <div class="spinner-ring"></div>
@@ -139,6 +143,29 @@ frappe.ready(() => {
         });
     }
 
+    // New function to translate loader text and show loader
+    function translate_and_show_loader(message_key, default_message) {
+        if (selectedLanguage === 'en') {
+            showLoader(default_message);
+            return;
+        }
+
+        frappe.call({
+            method: 'one_fm.templates.pages.quality_feedback.translate_multiple',
+            args: {
+                texts: [message_key],
+                target_language: selectedLanguage
+            },
+            callback: (r) => {
+                const translated_message = r.message && r.message.length > 0 ? r.message[0] : default_message;
+                showLoader(translated_message);
+            },
+            error: () => {
+                showLoader(default_message); // Fallback to default message
+            }
+        });
+    }
+
     function showLanguageSelector() {
         // Don't show language selector if form was already submitted
         if (formSubmitted) {
@@ -227,6 +254,8 @@ frappe.ready(() => {
                 'Share your feedback...',
                 'Submit Feedback',
                 'Submitting...',
+                'Camera',
+                'Choose File',
                 'Very Poor',
                 'Poor',
                 'Average',
@@ -280,8 +309,7 @@ frappe.ready(() => {
             }
             
             // Show static loader with same style as animated loader to prevent blank screen during translation
-            const staticMessage = selectedLanguage !== 'en' ? 'Translating and preparing form...' : 'Preparing form...';
-            showLoader(staticMessage);
+            translate_and_show_loader('Preparing form...', 'Preparing form...');
             
             const employeeName = data.employee_name || '';
             const itemType = data.item_type || '';
@@ -316,7 +344,7 @@ frappe.ready(() => {
                 issuedOnLabel, scheduleLabel, questionsTitle, surveyQuestionText, ratingLabel,
                 selectRatingText, additionalDetailsTitle, damageLabel, noText, yesText,
                 damageDescLabel, damagePlaceholder, damageAttachmentLabel, attachText,
-                feedbackLabel, feedbackPlaceholder, submitText
+                feedbackLabel, feedbackPlaceholder, submitText, cameraText, chooseFileText
             ] = translations;
 
             // Escape selectedLanguage before including it in HTML attributes
@@ -437,10 +465,10 @@ frappe.ready(() => {
                             <label class="form-label">${damageAttachmentLabel} <span class="required-asterisk">*</span></label>
                             <div class="attachment-wrapper">
                                <button type="button" class="btn btn-sm btn-default" id="camera-btn">
-                                📷 Camera
+                                📷 ${cameraText}
                             </button>
                             <button type="button" class="btn btn-sm btn-default" id="file-btn">
-                                📁 Choose File
+                                📁 ${chooseFileText}
                             </button>
                                 <span class="attachment-file-name" id="attachment-file-name"></span>
                             </div>

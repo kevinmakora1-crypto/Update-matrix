@@ -12,11 +12,11 @@ from one_fm.processor import sendemail
 from frappe.desk.form.assign_to import remove
 from erpnext.crm.utils import get_open_todos
 from one_fm.api.api import push_notification_rest_api_for_leave_application
-from one_fm.api.tasks import remove_assignment
 from one_fm.overrides.employee import NotifyAttendanceManagerOnStatusChange
 from one_fm.utils import get_approver_user, leave_application_on_cancel, fetch_leave_types_update_employee_status, get_workflow_action_buttons_html, cancel_calendar_event, disable_out_of_office
 from hrms.hr.utils import get_holidays_for_employee
 from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import ReassignRelieverAssignment, reassign_responsibilities
+from frappe.workflow.doctype.workflow_action.workflow_action import apply_workflow
 
 
 def validate_active_staff(doc,event):
@@ -490,7 +490,7 @@ class LeaveApplicationOverride(LeaveApplication):
         frappe.enqueue(cancel_calendar_event, employee_email=emp.user_id, leave_application_name=self.name, queue='short', timeout=1200, is_async=True)
 
 
-    def validate_attendance_check(self):
+    def approve_attendance_check(self):
         """
             Validate if there are any draft attendance checks for the period and update
         """
@@ -499,10 +499,9 @@ class LeaveApplicationOverride(LeaveApplication):
                 att_checks = frappe.get_all("Attendance Check",{'docstatus':0,'employee':self.employee, 'date': ['between', (getdate(self.from_date), getdate(self.to_date))]},['name'])
                 if att_checks:
                     for each in att_checks:
-                        frappe.db.set_value("Attendance Check",each.name,'workflow_state','Approved')
-                        frappe.db.set_value("Attendance Check",each.name,'attendance_status','On Leave')
-                        frappe.db.set_value("Attendance Check",each.name,'docstatus',1)
-                        remove_assignment(each.name)
+                        doc = frappe.get_doc("Attendance Check",each.name)
+                        frappe.db.set_value("Attendance Check", doc.name, 'attendance_status', 'On Leave')
+                        apply_workflow(doc, "Approve")
             frappe.db.commit()
         except:
             frappe.log_error(title = "Error Updating Attendance Check",message=frappe.get_traceback())
@@ -557,7 +556,7 @@ class LeaveApplicationOverride(LeaveApplication):
                 # frappe.db.set_value(), will not call the validate.
                 if self.leave_type in fetch_leave_types_update_employee_status():
                     frappe.db.set_value("Employee", self.employee, "status", "Vacation")
-            self.validate_attendance_check()
+            self.approve_attendance_check()
         self.clear_employee_schedules()
 
         # When workflow state changes from 'Draft' to 'Pending Approval'
@@ -656,14 +655,6 @@ def update_attendance_recods(self):
             self.create_or_update_attendance(attendance_name, date, 'On Leave')
 
     frappe.msgprint(_("Attendance are created for the leave Appication {0}!".format(self.name)), alert=True)
-
-
-def remove_assignment(attendance_check):
-    open_todo = get_open_todos("Attendance Check",attendance_check)
-    if open_todo:
-        for each in open_todo:
-            remove("Attendance Check",attendance_check,each.allocated_to,ignore_permissions=1)
-
 
 @frappe.whitelist()
 def get_leave_details(employee, date):

@@ -8,7 +8,6 @@ from one_fm.tests.utils import (
     create_test_company, make_leave_application
 )
 from one_fm.one_fm.doctype.attendance_check.test_attendance_check import create_attendance_check_record
-from erpnext.setup.doctype.holiday_list.test_holiday_list import set_holiday_list
 from frappe.workflow.doctype.workflow_action.workflow_action import apply_workflow
 from unittest.mock import patch
 
@@ -58,7 +57,7 @@ class TestLeaveApplicationOverride(FrappeTestCase):
 
     @patch("frappe.sendmail")
     def test_approve_leave_application_attendance_checks_approval(self, mock_sendmail):
-        """Test1: suite for approve_attendance_check method"""
+        """Test 1: suite for approve_attendance_check method"""
         mock_sendmail.return_value = None
         leave_date = add_days(nowdate(), 1)
         attendance_check = self._create_draft_attendance_check(leave_date)

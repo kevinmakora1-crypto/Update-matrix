@@ -10,52 +10,52 @@ def get_test_employee():
     return frappe.get_doc("Employee", {"user_id": "test_employee@example.com"})
 
 def make_employee(user, company=None, **kwargs):
-	if not frappe.db.get_value("User", user):
-		frappe.get_doc(
-			{
-				"doctype": "User",
-				"email": user,
-				"first_name": user,
-				"new_password": "password",
-				"send_welcome_email": 0,
-				"roles": [{"doctype": "Has Role", "role": "Employee"}],
-			}
-		).insert()
+    if not frappe.db.get_value("User", user):
+        frappe.get_doc(
+            {
+                "doctype": "User",
+                "email": user,
+                "first_name": user,
+                "new_password": "password",
+                "send_welcome_email": 0,
+                "roles": [{"doctype": "Has Role", "role": "Employee"}],
+            }
+        ).insert()
 
-	if not frappe.db.get_value("Employee", {"user_id": user}):
-		employee = frappe.get_doc(
-			{
-				"doctype": "Employee",
-				"naming_series": "EMP-",
+    if not frappe.db.get_value("Employee", {"user_id": user}):
+        employee = frappe.get_doc(
+            {
+                "doctype": "Employee",
+                "naming_series": "EMP-",
                 "name": "_T-Employee-00001",
-				"first_name": user,
-				"company": company or erpnext.get_default_company(),
-				"user_id": user,
-				"date_of_birth": "1990-05-08",
-				"date_of_joining": "2013-01-01",
-				"department": frappe.get_all("Department", fields="name")[0].name,
-				"gender": "Female",
-				"company_email": user,
-				"prefered_contact_email": "Company Email",
-				"prefered_email": user,
-				"status": "Active",
-				"employment_type": "Intern",
+                "first_name": user,
+                "company": company or erpnext.get_default_company(),
+                "user_id": user,
+                "date_of_birth": "1990-05-08",
+                "date_of_joining": "2013-01-01",
+                "department": frappe.get_all("Department", fields="name")[0].name,
+                "gender": "Female",
+                "company_email": user,
+                "prefered_contact_email": "Company Email",
+                "prefered_email": user,
+                "status": "Active",
+                "employment_type": "Intern",
                 "last_name": "Test",
                 "one_fm_first_name_in_arabic": "اختبار",
                 "one_fm_last_name_in_arabic": "الموظف",
                 "one_fm_basic_salary": 1000
-			}
-		)
-		if kwargs:
-			employee.update(kwargs)
-		employee.insert()
-		return employee
-	else:
-		employee = frappe.get_doc("Employee", {"employee_name": user})
-		employee.update(kwargs)
-		employee.status = "Active"
-		employee.save()
-		return employee
+            }
+        )
+        if kwargs:
+            employee.update(kwargs)
+        employee.insert()
+        return employee
+    else:
+        employee = frappe.get_doc("Employee", {"user_id": user})
+        employee.update(kwargs)
+        employee.status = "Active"
+        employee.save()
+        return employee
 
 
 def get_test_leave_type(**kwargs):
@@ -127,35 +127,26 @@ def create_test_company():
         })
         company.insert(ignore_permissions=True)
 
-def make_leave_application(
-	employee,
-	from_date,
-	to_date,
-	leave_type,
-	company=None,
-	half_day=False,
-	half_day_date=None,
-	submit=False,
-):
-	create_user("test@example.com")
+def make_leave_application(employee, from_date, to_date, leave_type, company=None, half_day=False, half_day_date=None, submit=False):
+    create_user("test@example.com")
 
-	leave_application = frappe.get_doc(
-		dict(
-			doctype="Leave Application",
-			employee=employee,
-			leave_type=leave_type,
-			from_date=from_date,
-			to_date=to_date,
-			half_day=half_day,
-			half_day_date=half_day_date,
-			company=company or erpnext.get_default_company() or "_Test Company",
-			status="Open",
-			leave_approver="test@example.com",
+    leave_application = frappe.get_doc(
+        dict(
+            doctype="Leave Application",
+            employee=employee,
+            leave_type=leave_type,
+            from_date=from_date,
+            to_date=to_date,
+            half_day=half_day,
+            half_day_date=half_day_date,
+            company=company or erpnext.get_default_company() or "_Test Company",
+            status="Open",
+            leave_approver="test@example.com",
             resumption_date=add_days(to_date, 1)
-		)
-	).insert()
+        )
+    ).insert()
 
-	if submit:
-		leave_application.submit()
+    if submit:
+        leave_application.submit()
 
-	return leave_application
+    return leave_application

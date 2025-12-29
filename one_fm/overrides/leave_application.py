@@ -489,24 +489,6 @@ class LeaveApplicationOverride(LeaveApplication):
         frappe.enqueue(disable_out_of_office, employee_email=emp.user_id, queue='short', timeout=1200, is_async=True)
         frappe.enqueue(cancel_calendar_event, employee_email=emp.user_id, leave_application_name=self.name, queue='short', timeout=1200, is_async=True)
 
-
-    def approve_attendance_check(self):
-        """
-            Validate if there are any draft attendance checks for the period and update
-        """
-        try:
-            if frappe.db.exists("Attendance Check",{'docstatus':0,'employee':self.employee, 'date': ['between', (getdate(self.from_date), getdate(self.to_date))]}):
-                att_checks = frappe.get_all("Attendance Check",{'docstatus':0,'employee':self.employee, 'date': ['between', (getdate(self.from_date), getdate(self.to_date))]},['name'])
-                if att_checks:
-                    for each in att_checks:
-                        doc = frappe.get_doc("Attendance Check",each.name)
-                        frappe.db.set_value("Attendance Check", doc.name, 'attendance_status', 'On Leave')
-                        apply_workflow(doc, "Approve")
-            frappe.db.commit()
-        except:
-            frappe.log_error(title = "Error Updating Attendance Check",message=frappe.get_traceback())
-            frappe.throw("An Error Occured while updating Attendance Checks. Please review the error logs")
-
     def on_update(self):
         # from one_fm.utils import set_out_of_office
         if self.workflow_state == "New Dates Proposed":
@@ -566,7 +548,22 @@ class LeaveApplicationOverride(LeaveApplication):
 
         self.assign_unassign_reliever()
 
-        
+    def approve_attendance_check(self):
+        """
+            Approve attendance checks if there are any draft attendance checks for the period of leave
+        """
+        try:
+            if frappe.db.exists("Attendance Check",{'docstatus':0,'employee':self.employee, 'date': ['between', (getdate(self.from_date), getdate(self.to_date))]}):
+                att_checks = frappe.get_all("Attendance Check",{'docstatus':0,'employee':self.employee, 'date': ['between', (getdate(self.from_date), getdate(self.to_date))]},['name'])
+                if att_checks:
+                    for each in att_checks:
+                        doc = frappe.get_doc("Attendance Check",each.name)
+                        frappe.db.set_value("Attendance Check", doc.name, 'attendance_status', 'On Leave')
+                        apply_workflow(doc, "Approve")
+            frappe.db.commit()
+        except Exception as e:
+            frappe.log_error(title = "Error Updating Attendance Check", message=frappe.get_traceback())
+            frappe.throw("An Error Occured while updating Attendance Checks. Please review the error logs")
 
     def clear_employee_schedules(self):
         last_doc = self.get_doc_before_save()

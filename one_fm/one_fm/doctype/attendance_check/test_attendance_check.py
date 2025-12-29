@@ -145,7 +145,7 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
     def test_insert_multiple_attendance_check_records(self):
         frappe.get_all.return_value = [
             {"employee": self.employee.name, "name": "AC001"},
-            {"employee": self.employee2.name, "name": "AC002"}        
+            {"employee": self.employee2.name, "name": "AC002"}]        
         details = [
             {
                 "employee": self.employee.name,

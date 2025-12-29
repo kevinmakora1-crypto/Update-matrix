@@ -260,26 +260,44 @@ frappe.ready(() => {
                 'Choose File',
             ];
 
-            // Add question texts
-            const questionTexts = (data.questions || []).map(q => q.question || '');
+            // Add question texts and their rating options
+            const questionTexts = [];
+            const optionTexts = [];
+            (data.questions || []).forEach(q => {
+                questionTexts.push(q.question || '');
+                if (q.options && q.options.length) {
+                    q.options.forEach(opt => optionTexts.push(opt.option || ''));
+                }
+            });
             
+            const allTextsForTranslation = textsToTranslate.concat(questionTexts).concat(optionTexts);
+
             // Batch translate all texts
             frappe.call({
                 method: 'one_fm.templates.pages.quality_feedback.translate_multiple',
                 args: {
-                    texts: textsToTranslate.concat(questionTexts),
+                    texts: allTextsForTranslation,
                     target_language: selectedLanguage
                 },
                 callback: (r) => {
-                    const translated = r.message || textsToTranslate.concat(questionTexts);
+                    const translated = r.message || allTextsForTranslation;
                     const translations = translated.slice(0, textsToTranslate.length);
-                    const translatedQuestions = translated.slice(textsToTranslate.length);
-                    
-                    // Map translated questions back to question objects
-                    const questions = (data.questions || []).map((q, idx) => ({
-                        ...q,
-                        question: translatedQuestions[idx] || q.question
-                    }));
+                    const translatedQuestions = translated.slice(textsToTranslate.length, textsToTranslate.length + questionTexts.length);
+                    const translatedOptions = translated.slice(textsToTranslate.length + questionTexts.length);
+
+                    let optionIdx = 0;
+                    const questions = (data.questions || []).map((q, idx) => {
+                        const newOptions = (q.options || []).map(opt => {
+                            const translatedOption = { ...opt, option: translatedOptions[optionIdx] || opt.option };
+                            optionIdx++;
+                            return translatedOption;
+                        });
+                        return {
+                            ...q,
+                            question: translatedQuestions[idx] || q.question,
+                            options: newOptions
+                        };
+                    });
 
                     resolve({
                         translations,

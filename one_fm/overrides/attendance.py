@@ -422,11 +422,10 @@ def mark_for_active_employees(from_date=None, to_date=None):
         "status": ["=", "Active"],
         "attendance_by_timesheet":0,
     }, ["name", "employee_name", "company", "department", "holiday_list"])
-    
-    # Process employees with schedules/shifts
+
     for employee in active_employees:
         mark_bulk_attendance(employee.name, from_date, to_date)
-    
+
     # Process employees without schedules/shifts
     mark_attendance_for_unscheduled_employees(active_employees, from_date)
     
@@ -483,7 +482,7 @@ def mark_attendance_for_unscheduled_employees(employees, date):
                 `name`, `naming_series`, `employee`, `employee_name`, 
                 `status`, `attendance_date`, `company`, `department`,
                 `roster_type`, `docstatus`, `modified_by`, `owner`,
-                `creation`, `modified`, `comment`, `is_unscheduled`
+                `creation`, `modified`, `comment`, `has_no_shift_assignment`
             ) VALUES
         """
         

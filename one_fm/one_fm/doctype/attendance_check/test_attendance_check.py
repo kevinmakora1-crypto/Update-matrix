@@ -128,8 +128,8 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         ac = frappe.get_last_doc("Attendance Check")
         self.assertTrue(ac.attendance_by_timesheet)
 
-    def test_insert_attendance_check_is_unscheduled(self):
-        frappe.get_last_doc.return_value = MagicMock(is_unscheduled=True)
+    def test_insert_attendance_check_has_no_shift_assignment(self):
+        frappe.get_last_doc.return_value = MagicMock(has_no_shift_assignment=True)
         details = [{
             "employee": self.employee.name,
             "attendance": self.attendance.name,
@@ -137,9 +137,9 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
             "shift_assignment": self.shift_assignment.name,
             "attendance_status": "Absent"
         }]
-        insert_attendance_check_records(details, "2025-08-20", is_unscheduled=True)
+        insert_attendance_check_records(details, "2025-08-20", has_no_shift_assignment=True)
         ac = frappe.get_last_doc("Attendance Check")
-        self.assertTrue(ac.is_unscheduled)
+        self.assertTrue(ac.has_no_shift_assignment)
 
     def test_insert_attendance_check_missing_optional_fields(self):
         frappe.get_last_doc.return_value = MagicMock(roster_type="Basic", comment="")

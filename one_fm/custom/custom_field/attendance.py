@@ -146,7 +146,7 @@ def get_attendance_custom_fields():
                 "insert_after": "early_exit"
             },
             {
-                "fieldname": "is_unscheduled",
+                "fieldname": "has_no_shift_assignment",
                 "fieldtype": "Check",
                 "insert_after": "reference",
                 "label": "Has No Shift Assignment"

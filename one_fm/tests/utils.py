@@ -123,10 +123,10 @@ def create_test_company():
             "abbr": "_TC",
             "default_currency": "KWD",
             "country": "Kuwait",
-            "default_language": "en",
+            "default_language": "en"
         })
         company.insert(ignore_permissions=True)
-        
+
 def make_leave_application(employee, from_date, to_date, leave_type, company=None, half_day=False, half_day_date=None, submit=False):
     create_user("test@example.com")
 

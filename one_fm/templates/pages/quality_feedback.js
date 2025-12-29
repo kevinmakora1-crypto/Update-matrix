@@ -209,7 +209,10 @@ frappe.ready(() => {
     function fetchFeedbackData(stopLoaderCallback) {
         frappe.call({
             method: 'one_fm.templates.pages.quality_feedback.get_feedback_data',
-            args: { docname: docname },
+            args: {
+                docname: docname,
+                target_language: selectedLanguage
+            },
             callback: (r) => {
                 if (r.message) {
                     // Don't stop loader yet - keep it running until form is rendered

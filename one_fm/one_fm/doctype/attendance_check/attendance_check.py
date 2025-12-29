@@ -497,7 +497,12 @@ def insert_attendance_check_records(details, attendance_date):
     # Fetch shift assignments for all employees in a single query
     shift_assignments = frappe.get_all(
         "Shift Assignment",
-        filters={"start_date": attendance_date, "docstatus": 1, "employee": ["in", employee_ids]},
+        filters=[
+            ["start_date", "<=", attendance_date],
+            ["end_date", ">=", attendance_date],
+            ["docstatus", "=", 1],
+            ["employee", "in", employee_ids],
+        ],
         fields=["employee"],
     )
     employees_with_shifts = {sa.employee for sa in shift_assignments}

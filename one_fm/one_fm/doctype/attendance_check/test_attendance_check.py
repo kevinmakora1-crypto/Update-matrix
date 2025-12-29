@@ -95,8 +95,37 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
 
         # Verify frappe.get_all was called twice (shift assignments + timesheet query)
         self.assertEqual(frappe.get_all.call_count, 2)
-        # Verify that get_doc was NOT called, meaning no Attendance Check was created
+        # Verify that get_doc was called, meaning an Attendance Check was created
         frappe.get_doc.assert_not_called()
+
+    def test_shift_assignment_query_uses_correct_date_range_filter(self):
+        """Verify that the filter for Shift Assignments correctly checks if the
+        attendance date is within the assignment's start and end date."""
+        frappe.get_all.reset_mock()
+        # Mock side effect to handle both calls (shifts and timesheets)
+        frappe.get_all.side_effect = [[], []]
+
+        details = [{"employee": "EMP001"}]
+        attendance_date = "2025-08-20"
+        insert_attendance_check_records(details, attendance_date)
+
+        # Ensure frappe.get_all was called for shifts (it's the first call)
+        self.assertGreaterEqual(frappe.get_all.call_count, 1)
+
+        # Inspect the arguments of the first call to frappe.get_all
+        call_args, call_kwargs = frappe.get_all.call_args_list[0]
+
+        # Check the doctype queried
+        self.assertEqual(call_args[0], "Shift Assignment")
+
+        # Check the filters passed in kwargs
+        expected_filters = [
+            ["start_date", "<=", attendance_date],
+            ["end_date", ">=", attendance_date],
+            ["docstatus", "=", 1],
+            ["employee", "in", ["EMP001"]],
+        ]
+        self.assertEqual(call_kwargs.get("filters"), expected_filters)
 
     def test_attendance_check_created_if_no_shift_but_on_timesheet(self):
         # Mock frappe.get_all to return employee in timesheet list but not in shift assignments
@@ -584,20 +613,3 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
             attendance_check_pending_approval_check()
             mock_penalty.assert_called()
             mock_assign.assert_called()
-
-
-def create_attendance_check_record(details, date, is_unscheduled=False):
-    """Helper function to create an Attendance Check record"""
-    attendance_check = frappe.get_doc({
-        "doctype": "Attendance Check",
-        "employee": details.get("employee"),
-        "attendance": details.get("attendance"),
-        "date": date,
-        "roster_type": details.get("roster_type", ""),
-        "shift_assignment": details.get("shift_assignment", ""),
-        "attendance_status": details.get("attendance_status", ""),
-        "comment": details.get("attendance_comment", ""),
-        "is_unscheduled": is_unscheduled
-    })
-    attendance_check.insert()
-    return attendance_check

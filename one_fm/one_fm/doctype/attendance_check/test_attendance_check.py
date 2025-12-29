@@ -437,7 +437,7 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
             mock_assign.assert_called()
 
 
-def create_attendance_check_record(details, date, is_unscheduled=False):
+def create_attendance_check_record(details, date):
     """Helper function to create an Attendance Check record"""
     attendance_check = frappe.get_doc({
         "doctype": "Attendance Check",
@@ -448,7 +448,6 @@ def create_attendance_check_record(details, date, is_unscheduled=False):
         "shift_assignment": details.get("shift_assignment", ""),
         "attendance_status": details.get("attendance_status", ""),
         "comment": details.get("attendance_comment", ""),
-        "is_unscheduled": is_unscheduled
     })
     attendance_check.insert()
     return attendance_check

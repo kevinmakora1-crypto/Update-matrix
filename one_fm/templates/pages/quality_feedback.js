@@ -238,6 +238,7 @@ frappe.ready(() => {
                 ', tell us about your Feedback about',
                 'Quality Feedback Details',
                 'Employee ID:',
+                'Employee Name:',
                 'Operation Site:',
                 'Issued On:',
                 'Current Feedback Schedule:',
@@ -252,18 +253,11 @@ frappe.ready(() => {
                 'Damage Description:',
                 'Describe any damage noticed...',
                 'Damage Attachment:',
-                'Attach',
                 'Feedback:',
                 'Share your feedback...',
                 'Submit Feedback',
-                'Submitting...',
                 'Camera',
                 'Choose File',
-                'Very Poor',
-                'Poor',
-                'Average',
-                'Good',
-                'Excellent'
             ];
 
             // Add question texts
@@ -331,9 +325,8 @@ frappe.ready(() => {
                     'Employee ID:', 'Employee Name:', 'Operation Site:', 'Issued On:', 'Current Feedback Schedule:',
                     'Quality Feedback Questions', 'Survey Question', 'Rating Option:', 'Select Rating',
                     'Additional Details', 'Noticed Damage?:', 'No', 'Yes', 'Damage Description:',
-                    'Describe any damage noticed...', 'Damage Attachment:', 'Attach', 'Feedback:',
-                    'Share your feedback...', 'Submit Feedback', 'Submitting...',
-                    'Very Poor', 'Poor', 'Average', 'Good', 'Excellent'
+                    'Describe any damage noticed...', 'Damage Attachment:', 'Feedback:',
+                    'Share your feedback...', 'Submit Feedback', 'Camera', 'Choose File',
                 ];
                 questions = data.questions || [];
             } else {
@@ -346,7 +339,7 @@ frappe.ready(() => {
                 helloText, tellAboutText, detailsTitle, employeeIdLabel, employeeNameLabel, operationSiteLabel,
                 issuedOnLabel, scheduleLabel, questionsTitle, surveyQuestionText, ratingLabel,
                 selectRatingText, additionalDetailsTitle, damageLabel, noText, yesText,
-                damageDescLabel, damagePlaceholder, damageAttachmentLabel, attachText,
+                damageDescLabel, damagePlaceholder, damageAttachmentLabel,
                 feedbackLabel, feedbackPlaceholder, submitText, cameraText, chooseFileText
             ] = translations;
 

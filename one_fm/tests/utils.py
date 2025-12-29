@@ -115,7 +115,13 @@ def create_test_leave_allocation(employee, leave_type, **kwargs):
     return leave_allocation
 
 def create_test_company():
-    # Ensure test company exists
+    # Ensure test company and a default holiday list exist
+    if not frappe.db.exists("Holiday List", "_Test Holiday List"):
+        frappe.get_doc({
+            "doctype": "Holiday List",
+            "holiday_list_name": "_Test Holiday List",
+        }).insert()
+
     if not frappe.db.exists("Company", "_Test Company"):
         company = frappe.get_doc({
             "doctype": "Company",
@@ -123,9 +129,13 @@ def create_test_company():
             "abbr": "_TC",
             "default_currency": "KWD",
             "country": "Kuwait",
-            "default_language": "en"
+            "default_language": "en",
+            "default_holiday_list": "_Test Holiday List"
         })
         company.insert(ignore_permissions=True)
+    else:
+        # Ensure existing test company has a holiday list
+        frappe.db.set_value("Company", "_Test Company", "default_holiday_list", "_Test Holiday List")
 
 def make_leave_application(employee, from_date, to_date, leave_type, company=None, half_day=False, half_day_date=None, submit=False):
     create_user("test@example.com")

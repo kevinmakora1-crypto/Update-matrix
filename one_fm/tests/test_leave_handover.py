@@ -4,13 +4,36 @@ from frappe.test_runner import make_test_records
 
 class TestLeaveHandover(unittest.TestCase):
     def setUp(self):
-        make_test_records("User")
-        make_test_records("Employee")
+        # Create test users if they don't exist
+        if not frappe.db.exists("User", "test@example.com"):
+            frappe.get_doc({"doctype": "User", "email": "test@example.com", "first_name": "Test"}).insert()
+        if not frappe.db.exists("User", "test1@example.com"):
+            frappe.get_doc({"doctype": "User", "email": "test1@example.com", "first_name": "Test1"}).insert()
+
+        # Create test employees if they don't exist
+        if not frappe.db.exists("Employee", {"user_id": "test@example.com"}):
+            self.employee = frappe.get_doc({
+                "doctype": "Employee",
+                "employee_name": "Test Employee",
+                "user_id": "test@example.com",
+                "company": "_Test Company",
+            }).insert()
+        else:
+            self.employee = frappe.get_doc("Employee", {"user_id": "test@example.com"})
+
+        if not frappe.db.exists("Employee", {"user_id": "test1@example.com"}):
+            self.reliever = frappe.get_doc({
+                "doctype": "Employee",
+                "employee_name": "Test Reliever",
+                "user_id": "test1@example.com",
+                "company": "_Test Company",
+            }).insert()
+        else:
+            self.reliever = frappe.get_doc("Employee", {"user_id": "test1@example.com"})
+
         make_test_records("Leave Application")
         make_test_records("Role")
         make_test_records("Role Profile")
-        self.employee = frappe.get_doc("Employee", {"user_id": "test@example.com"})
-        self.reliever = frappe.get_doc("Employee", {"user_id": "test1@example.com"})
         self.leave_application = frappe.get_doc("Leave Application", {"employee": self.employee.name})
         self.leave_handover = create_leave_handover(self.employee.name, self.leave_application.name)
 

@@ -78,6 +78,8 @@ class PostMap():
 		else:
 			row.update(cur_date_values[0])
 		row['abbr'] = self.abbrvs.get(row.get('operations_role'))
+		if not row['abbr']:
+			return
 		row['count'] = cstr(row['sche_count'])+'/'+cstr(row['post_count'])
 		if row['sche_count'] > row['post_count']:
 			highlight = "bgyellow"

@@ -486,6 +486,12 @@ def mark_attendance_for_unscheduled_employees(employees, date):
         )
 
 def mark_absent_for_non_active_employees(date, non_active_status):
+    """
+        Marks non-active employees as absent for a given date.
+        Args:
+            date (str): Date for which attendance needs to be marked
+            non_active_status (str): Status of non-active employees
+    """
     employees = frappe.get_all("Employee", {
         'status': non_active_status,
         'attendance_by_timesheet':0
@@ -494,6 +500,16 @@ def mark_absent_for_non_active_employees(date, non_active_status):
     mark_absent_for_employees(employees, date, f"{non_active_status} employee")
 
 def mark_absent_for_employees(employees, date, comment, consider_holiday=False):
+    """
+        Marks employees as absent for a given date.
+        Args:
+            employees (list): List of employee dictionaries containing employee details
+            date (str): Date for which attendance needs to be marked
+            comment (str): Comment to be added to the attendance record
+            consider_holiday (bool): Whether to consider holidays while marking attendance
+    """
+    if not employees:
+        return
     try:
         creation = now()
         owner = frappe.session.user
@@ -509,12 +525,16 @@ def mark_absent_for_employees(employees, date, comment, consider_holiday=False):
         """
 
         query_body = ""
+
+        holiday_today = {}
+        if consider_holiday:
+            holiday_today = get_holiday_today(date)
+
         for employee in employees:
             status = "Absent"
             name = f"HR-ATT_{date}_{employee.name}_Basic"
 
             if consider_holiday:
-                holiday_today = get_holiday_today(date)
                 if holiday_today.get(employee.holiday_list):
                     status = "Holiday"
                     comment = f"Holiday - {holiday_today.get(employee.holiday_list)}"
@@ -524,7 +544,7 @@ def mark_absent_for_employees(employees, date, comment, consider_holiday=False):
                     "{name}", "{naming_series}", "{employee.name}", "{employee.employee_name}",
                     "{status}", "{date}", "{employee.company}", "{employee.department}",
                     "Basic", 1, "{owner}", "{owner}",
-                    "{creation}", "{creation}", "{comment}", 0
+                    "{creation}", "{creation}", "{comment}", 1
                 ),"""
 
         if query_body:

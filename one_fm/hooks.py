@@ -136,6 +136,7 @@ doctype_list_js = {
     "Employee": "public/js/doctype_list_js/employee_list.js",
     "ToDo": "public/js/doctype_list_js/todo_list.js",
     "Designation": "public/js/doctype_list_js/designation_list.js",
+    "Shift Request": "public/js/doctype_list_js/shift_request_list.js",
 }
 doctype_tree_js = {
 	"Warehouse" : "public/js/doctype_tree_js/warehouse_tree.js",

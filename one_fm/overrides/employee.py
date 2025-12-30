@@ -24,7 +24,7 @@ from one_fm.operations.doctype.operations_shift.operations_shift import get_supe
 class EmployeeOverride(EmployeeMaster):
     def validate(self):
         from erpnext.controllers.status_updater import validate_status
-        validate_status(self.status, ["Active", "Court Case", "Absconding", "Left","Vacation"])
+        validate_status(self.status, ["Active", "Court Case", "Absconding", "Left", "Vacation", "Not Returned from Leave"])
 
         if self.pam_type == "Kuwaiti":
             self.residency_expiry_date = None
@@ -371,7 +371,7 @@ def get_employee_id_based_on_residency(employee_id, residency, employee=False, e
 def update_user_doc(doc):
     if not doc.is_new():
         old_self = doc.get_doc_before_save().status
-        if doc.status in ['Left','Absconding','Court Case'] and doc.status not in [old_self] and doc.user_id:
+        if doc.status in ['Left','Absconding','Court Case', 'Not Returned from Leave'] and doc.status not in [old_self] and doc.user_id:
             user_doc = frappe.get_doc('User',doc.user_id)
             if user_doc.enabled == 1:
                 user_doc.enabled = 0

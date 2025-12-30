@@ -148,7 +148,7 @@ const set_current_address = (frm) => {
 
 // SET MANDATORY FIELDS
 let set_mandatory = frm => {
-	if (['Left', 'Court Case', 'Absconding', 'Vacation'].includes(frm.doc.status)){
+	if (['Left', 'Court Case', 'Absconding', 'Vacation', 'Not Returned from Leave'].includes(frm.doc.status)){
 		toggle_required(frm, 0);
 	} else {
 		toggle_required(frm, 1);

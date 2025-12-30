@@ -16,7 +16,7 @@ def generate_contracts_invoice():
         dt = datetime
         contracts = frappe.get_list('Contracts', filters={
             'workflow_state': 'Active',
-            # 'due_date':str(dt.today().date().day)
+            # 'due_date':str(getdate().day)
         })
         # generate
         for contract in contracts:
@@ -26,7 +26,7 @@ def generate_contracts_invoice():
             if str(contract_due_date).lower() == "end of month" and getdate() == get_last_day(getdate()):
                 contract_doc.generate_sales_invoice()
 
-            elif contract_due_date == str(dt.today().date().day):
+            elif contract_due_date == str(getdate().day):
                 contract_doc.generate_sales_invoice()
 
     except Exception as e:
@@ -42,7 +42,7 @@ def roster_projection_view_task():
     report = frappe.get_doc("Report", 'Roster Projection View')
     background_enqueue_run(report.name,
                            filters=json.dumps(
-                               {'month': dt.today().month, 'year': dt.today().year}), user='Administrator'
+                               {'month': getdate().month, 'year': getdate().year}), user='Administrator'
                            )
 
 

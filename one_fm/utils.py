@@ -3908,7 +3908,7 @@ def set_out_of_office(employee_email, start_date, end_date, custom_reliever_name
         service.users().settings().updateVacation(userId='me', body=vacation_settings).execute()
         frappe.msgprint(f"Out-of-office set for {employee_email} from {start_date} to {end_date}.")
     except Exception as e:
-        frappe.log_error(title="Failed to set out-of-office", message=str(e))
+        frappe.log_error(title="Failed to set out-of-office - {0} - {1}".format(employee_email, start_date), message=str(e))
 
 
 def disable_out_of_office(employee_email):
@@ -4253,7 +4253,7 @@ def add_calendar_event(employee_email, start_date, end_date, employee_name, leav
 
         frappe.msgprint(f"Calendar event created for {employee_email} leave.")
     except Exception as e:
-        frappe.log_error(title="Failed to create calendar event", message=str(e))
+        frappe.log_error(title="Failed to create calendar event - {0} - {1}".format(employee_email, leave_application_name), message=str(e))
 
 
 def cancel_calendar_event(employee_email, leave_application_name):

@@ -140,10 +140,14 @@ class TimesheetOveride(Timesheet):
 
 
     def delete_todo(self):
-        return frappe.db.sql("""
-            DELETE FROM `tabToDo`
-            WHERE reference_type = %s AND reference_name = %s
-        """, (self.doctype, self.name))
+        todos_linked_to_timesheet = frappe.db.get_all('ToDo',
+            filters={'reference_type': self.doctype, 'reference_name': self.name},
+            pluck='name'
+        )
+        if not todos_linked_to_timesheet:
+            return
+        for todo in todos_linked_to_timesheet:
+            frappe.delete_doc('ToDo', todo, ignore_permissions=True)
 
 
     def fetch_description(self):

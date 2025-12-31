@@ -24,7 +24,7 @@ def get_context(context):
         context.docname = frappe.db.get_value('Magic Link', magic_link, 'reference_docname')
 
 @frappe.whitelist(allow_guest=True)
-def get_feedback_data(docname):
+def get_feedback_data(docname, target_language='en'):
     """
     Get feedback data for rendering the form.
     Returns employee details, questions, and related information.
@@ -62,6 +62,16 @@ def get_feedback_data(docname):
                             'question': question_text,
                             'options': options
                         })
+
+        # Translate dynamic data if a target language is provided
+        if target_language and target_language != 'en':
+            def _translate(text):
+                return translate_words(text, target_language) if text else ''
+
+            employee_name = _translate(employee_name)
+            operation_site = _translate(operation_site)
+            feedback_schedule = _translate(feedback_schedule)
+            item_type = _translate(item_type)
         
         return {
             'employee_name': employee_name,

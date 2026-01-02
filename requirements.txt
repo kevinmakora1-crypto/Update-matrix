@@ -3,7 +3,7 @@ bleach-allowlist==1.0.3
 gspread
 mindee==4.28.2
 twilio==9.0.5
-pandas==2.1.2
+pandas>=2.2.2
 deep-translator==1.11.4
 firebase-admin==6.5.0
 google-cloud-core==2.3.3

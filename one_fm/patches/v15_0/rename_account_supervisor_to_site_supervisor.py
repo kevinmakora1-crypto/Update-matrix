@@ -18,6 +18,7 @@ def execute():
         SET site_supervisor_name = account_supervisor_name
         WHERE account_supervisor_name IS NOT NULL
           AND site_supervisor_name IS NULL
+          AND site_supervisor_name IS NULL
     """)
     
     frappe.db.commit()

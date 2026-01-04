@@ -10,12 +10,14 @@ def execute():
         UPDATE `tabOperations Site`
         SET site_supervisor = account_supervisor
         WHERE account_supervisor IS NOT NULL
+          AND site_supervisor IS NULL
     """)
 
     frappe.db.sql("""
         UPDATE `tabOperations Site`
         SET site_supervisor_name = account_supervisor_name
         WHERE account_supervisor_name IS NOT NULL
+          AND site_supervisor_name IS NULL
     """)
     
     frappe.db.commit()

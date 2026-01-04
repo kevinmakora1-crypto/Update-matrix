@@ -347,7 +347,7 @@ def notify_supervisor_about_late_entry(checkin):
 						return send_push_notification_for_late_entry(get_reports_to, checkin.employee_name, roster_type=the_roster_type if the_roster_type else "Basic", time_difference=time_diff, shift=op_shift, time_of_arrival=time_of_arrival)
 					get_site = frappe.db.get_value("Employee", {"name": checkin.employee}, ['site'])
 					if get_site:
-						get_site_supervisor = frappe.db.get_value("Operations Site", {"name": get_site}, ['account_supervisor'])
+						get_site_supervisor = frappe.db.get_value("Operations Site", {"name": get_site}, ['site_supervisor'])
 						if get_site_supervisor:
 							return send_push_notification_for_late_entry(get_site_supervisor, checkin.employee_name, roster_type=the_roster_type if the_roster_type else "Basic", time_difference=time_diff, shift=op_shift, time_of_arrival=time_of_arrival)
 	except Exception as e:

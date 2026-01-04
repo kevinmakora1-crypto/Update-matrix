@@ -276,7 +276,7 @@ class FingerprintAppointment(Document):
         if site:
             site_doc = frappe.get_doc("Operations Site",site)
             if site_doc:
-                employee = frappe.get_doc("Employee", site_doc.account_supervisor)
+                employee = frappe.get_doc("Employee", site_doc.site_supervisor)
                 send_email_notification(self, [employee.user_id])
 
     def notify_shift_supervisor(self):

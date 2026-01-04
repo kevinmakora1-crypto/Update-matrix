@@ -183,7 +183,7 @@ def create_roster_post_actions():
                     ORDER BY oss.idx ASC
                     LIMIT 1
                 ) AS shift_supervisor,
-                op_site.account_supervisor AS site_supervisor
+                op_site.site_supervisor AS site_supervisor
             FROM `tabOperations Shift` op_shift
             LEFT JOIN `tabOperations Site` op_site ON op_site.name = op_shift.site
             WHERE op_shift.status = 'Active'
@@ -376,7 +376,7 @@ def get_project_shifts(employee):
         return []
 
 def get_site_shifts(employee):
-    active_sites = frappe.get_all("Operations Site",{'status':"Active",'account_supervisor':employee},pluck ="name")
+    active_sites = frappe.get_all("Operations Site",{'status':"Active",'site_supervisor':employee},pluck ="name")
     if active_sites:
         all_shifts = frappe.get_all("Operations Shift",{'status':'Active','site':['in',active_sites]},pluck ="name")
         return all_shifts

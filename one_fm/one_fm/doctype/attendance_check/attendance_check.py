@@ -131,7 +131,7 @@ class AttendanceCheck(Document):
         if employee.shift:
             self.shift_supervisor = get_shift_supervisor(employee.shift)
         if employee.site:
-            self.site_supervisor = frappe.db.get_value('Operations Site', employee.site, 'account_supervisor')
+            self.site_supervisor = frappe.db.get_value('Operations Site', employee.site, 'site_supervisor')
 
     def after_insert(self):
         """

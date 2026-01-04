@@ -3118,7 +3118,7 @@ def get_employee_site_supervisor(employee):
     employee_field_list = ["user_id", "reports_to", "shift", "site", "shift_working", "employee_name"]
     employee_data = frappe.db.get_value('Employee', employee, employee_field_list, as_dict=1)
     if employee_data.site:
-        site_supervisor = frappe.db.get_value('Operations Site', employee_data.site, 'account_supervisor')
+        site_supervisor = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
         return site_supervisor
     return None
 
@@ -3158,14 +3158,14 @@ def get_approver(employee, date=False):
                 if line_manager:
                     return line_manager
             if not line_manager and employee_data.site:
-                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'account_supervisor')
+                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
                 if not line_manager:
                     project = frappe.db.get_value('Operations Site', employee_data.site, 'project')
                     if project:
                         line_manager = frappe.db.get_value('Project', project, 'account_manager')
         else:
             if employee_data.site:
-                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'account_supervisor')
+                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
 
             if not line_manager and employee_data.shift:
                 line_manager = get_shift_supervisor(employee_data.shift, date)
@@ -3222,7 +3222,7 @@ def get_approver_for_many_employees(supervisor=None):
     if has_roles:
         return [i.name for i in frappe.db.get_list("Employee", ignore_permissions=True)]
     employees = [i.name for i in frappe.db.get_list('Employee', {'reports_to':supervisor}, "name", ignore_permissions=True)]
-    operations_site = [i.name for i in frappe.db.get_list('Operations Site', {'account_supervisor':supervisor}, "name", ignore_permissions=True)]
+    operations_site = [i.name for i in frappe.db.get_list('Operations Site', {'site_supervisor':supervisor}, "name", ignore_permissions=True)]
     if operations_site:
         employees += [i.name for i in frappe.db.get_list('Employee', {'site':['IN', operations_site]}, "name", ignore_permissions=True) if not i.name in employees]
     operations_shift = [i.name for i in frappe.db.get_list('Operations Shift', {'supervisor':supervisor}, "name", ignore_permissions=True)]
@@ -3259,13 +3259,13 @@ def get_other_managers(employee):
 
                     UNION
 
-                    SELECT account_supervisor  as manager FROM `tabOperations Site`
+                    SELECT site_supervisor  as manager FROM `tabOperations Site`
                     WHERE name = '{emp_data.get('site')}' AND status = 'Active'
 
                     """
             else:
                 query = f"""
-                    SELECT account_supervisor as manager FROM `tabOperations Site`
+                    SELECT site_supervisor as manager FROM `tabOperations Site`
                 WHERE name = '{emp_data.get('site')}' AND status = 'Active'
 
                 """
@@ -4437,15 +4437,15 @@ def send_enrollment_status():
 		site_details = frappe.get_value(
 			"Operations Site",
 			emp.site,
-			["account_supervisor", "account_supervisor_name"],
+			["site_supervisor", "site_supervisor_name"],
 			as_dict=True
 		)
 
-		if not site_details or not site_details.account_supervisor:
+		if not site_details or not site_details.site_supervisor:
 			continue
 
-		supervisor_id = site_details.account_supervisor
-		supervisor_name = site_details.account_supervisor_name
+		supervisor_id = site_details.site_supervisor
+		supervisor_name = site_details.site_supervisor_name
 
 		supervisor_email = frappe.get_value("Employee", supervisor_id, "user_id")
 

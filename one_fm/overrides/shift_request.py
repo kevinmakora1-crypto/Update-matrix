@@ -775,11 +775,11 @@ def get_manager(doctype, employee):
     Returns:
         _type_: _description_
     """
-    if doctype =="Operations Shift":
+    if doctype == "Operations Shift":
         return get_supervisor_operations_shifts(employee)
 
     else:
-        field_map = {"Project": "account_manager", "Operations Site": "account_supervisor"}
+        field_map = {"Project": "account_manager", "Operations Site": "site_supervisor"}
         if doctype in field_map:
             values = frappe.get_all(doctype, {field_map[doctype]:employee},['name'])
             if values:

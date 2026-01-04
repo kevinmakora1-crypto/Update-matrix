@@ -321,7 +321,7 @@ def get_assigned_sites(employee_id=None, project=None):
 		elif "Site Supervisor" in user_roles:
 			if not employee_id:
 				return []
-			filters.update({"account_supervisor": employee_id})
+			filters.update({"site_supervisor": employee_id})
 			return frappe.get_list("Operations Site", filters, ["name as site", "project"], limit_page_length=9999, order_by="name asc")
 		return []
 
@@ -408,7 +408,7 @@ def get_employees():
 			projects = frappe.get_all("Project", {"account_manager": user_employee.name}, ["name as project"], limit_page_length=9999, order_by="name asc")
 			filters["project"] = ["IN", [project.project for project in projects]]
 		elif "Site Supervisor" in user_roles:
-			sites = frappe.get_all("Operations Site", {"account_supervisor": user_employee.name}, ["name as site"], limit_page_length=9999, order_by="name asc")
+			sites = frappe.get_all("Operations Site", {"site_supervisor": user_employee.name}, ["name as site"], limit_page_length=9999, order_by="name asc")
 			filters["site"] = ["IN", [site.site for site in sites]]
 		elif "Shift Supervisor" in user_roles:
 			shifts = frappe.get_all("Operations Shift Supervisor", {"supervisor": user_employee.name}, ["distinct parent as shift"], limit_page_length=9999, order_by="parent asc")

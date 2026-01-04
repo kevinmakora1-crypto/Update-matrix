@@ -196,8 +196,10 @@ class PurchaseOrderOverride(PurchaseOrder):
 
     def validate(self):
         super(PurchaseOrderOverride, self).validate()
-        if self.request_for_material and not self.one_fm_request_for_purchase:
-            frappe.throw(_("Request for Purchase is required for this Purchase Order to be processed further"))
+        buying_settings = frappe.get_single("Buying Settings")
+        if buying_settings.po_from_rfm == "No":
+            if self.request_for_material and not self.one_fm_request_for_purchase:
+                frappe.throw(_("Request for Purchase is required for this Purchase Order to be processed further"))
 
     def on_submit(self):
         self.update_purchased_quantities()

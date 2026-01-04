@@ -412,7 +412,7 @@ class NotifyAttendanceManagerOnStatusChange:
 
     @property
     def _operations_site_supervisor(self) -> list:
-        operation_sites = frappe.db.sql(""" SELECT name from `tabOperations Site` WHERE account_supervisor = %s AND status = 'Active' """, (self.employee_object.name), as_list=1)
+        operation_sites = frappe.db.sql(""" SELECT name from `tabOperations Site` WHERE site_supervisor = %s AND status = 'Active' """, (self.employee_object.name), as_list=1)
         return list(chain.from_iterable(operation_sites)) if operation_sites else list()
 
     @property

@@ -25,14 +25,14 @@ def get_post_schedules(project, post, first_day, last_day):
 
 def get_working_site_supervisor(project, date):
 	try:
-		site_supevisor_list = frappe.db.sql(f"""SELECT account_supervisor from `tabOperations Site`
+		site_supevisor_list = frappe.db.sql(f"""SELECT site_supervisor from `tabOperations Site`
 							 			WHERE project = '{project}'
-										AND account_supervisor in (SELECT employee from `tabEmployee Schedule`
+										AND site_supervisor in (SELECT employee from `tabEmployee Schedule`
 										WHERE employee_availability = 'Working'
 										AND date = '{date}')""", as_dict=1)
 		if site_supevisor_list:
 			site = site_supevisor_list[0]
-			return site["account_supervisor"]
+			return site["site_supervisor"]
 			
 		return None
 

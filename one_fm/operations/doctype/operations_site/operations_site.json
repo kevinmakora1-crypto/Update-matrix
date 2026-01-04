@@ -13,8 +13,8 @@
   "site_name",
   "site_location",
   "column_break_7",
-  "account_supervisor",
-  "account_supervisor_name",
+  "site_supervisor",
+  "site_supervisor_name",
   "site_allowance_section",
   "include_site_allowance",
   "allowance_amount",
@@ -66,13 +66,6 @@
    "fieldtype": "Link",
    "label": "Project",
    "options": "Project"
-  },
-  {
-   "fieldname": "account_supervisor",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "Site Supervisor",
-   "options": "Employee"
   },
   {
    "fieldname": "section_break_15",
@@ -140,15 +133,6 @@
    "label": "POC List"
   },
   {
-   "fetch_from": "account_supervisor.employee_name",
-   "fieldname": "account_supervisor_name",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Supervisor Name",
-   "read_only": 1
-  },
-  {
    "fieldname": "poc",
    "fieldtype": "Table",
    "label": "POC",
@@ -192,10 +176,26 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Active\nInactive"
+  },
+  {
+   "fieldname": "site_supervisor",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Site Supervisor",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "site_supervisor.employee_name",
+   "fieldname": "site_supervisor_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Supervisor Name",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2025-08-27 18:00:27.356342",
+ "modified": "2026-01-04 10:25:50.345146",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Operations Site",
@@ -216,6 +216,7 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

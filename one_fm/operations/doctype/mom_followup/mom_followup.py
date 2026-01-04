@@ -58,12 +58,12 @@ def mom_sites_followup():
 			followup.poc = site.poc
 			followup.project = site.project 
 			followup.site = site.name 
-			followup.site_supervisor = site.account_supervisor
+			followup.site_supervisor = site.site_supervisor
 			followup.insert()
 			add_assignment({
 					'doctype': 'MOM Followup',
 					'name': followup.name,
-					'assign_to': [frappe.db.get_value('Employee',site.account_supervisor, 'user_id')],
+					'assign_to': [frappe.db.get_value('Employee',site.site_supervisor, 'user_id')],
 					'description': _('Please explain your reason of missing the MOM for this site/POC within 48 hours')
 				})
 def mom_followup_reminder():

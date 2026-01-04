@@ -154,7 +154,7 @@ def create_checker(start_date, end_date, is_day_off_reliever=False, is_weekend_r
 			doc.start_date = start_date
 			doc.end_date = end_date
 			doc.repeat_count = (yesterday_repeat_count or 0) + 1
-			doc.site_supervisor = frappe.db.get_value("Operations Site", employee.default_site, "account_supervisor")
+			doc.site_supervisor = frappe.db.get_value("Operations Site", employee.default_site, "site_supervisor")
 
 			# Determine shift condition
 			shift_condition = (EmployeeSchedule.shift == employee.default_shift) if is_reliever else (EmployeeSchedule.shift != employee.default_shift)

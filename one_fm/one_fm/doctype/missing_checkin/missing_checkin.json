@@ -76,14 +76,14 @@
    "options": "Operations Site"
   },
   {
-   "fetch_from": "operations_site.account_supervisor",
+   "fetch_from": "operations_site.site_supervisor",
    "fieldname": "site_supervisor",
    "fieldtype": "Data",
    "label": "Site Supervisor",
    "read_only": 1
   },
   {
-   "fetch_from": "operations_site.account_supervisor_name",
+   "fetch_from": "operations_site.site_supervisor_name",
    "fieldname": "site_supervisor_name",
    "fieldtype": "Data",
    "label": "Site Supervisor Name",

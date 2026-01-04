@@ -42,7 +42,7 @@ def get_notification_user(doc, employee=None):
 		line_manager = get_shift_supervisor(doc.operations_shift)
 		if not line_manager:
 			site = frappe.db.get_value('Operations Shift', doc.operations_shift, 'site')
-			line_manager = frappe.db.get_value('Operations Site', site, 'account_supervisor')
+			line_manager = frappe.db.get_value('Operations Site', site, 'site_supervisor')
 			if not line_manager:
 				project = frappe.db.get_value('Operations Site', site, 'project')
 				if project:

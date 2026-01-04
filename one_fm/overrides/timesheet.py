@@ -140,15 +140,18 @@ class TimesheetOveride(Timesheet):
 
 
     def delete_todo(self):
-        todos_linked_to_timesheet = frappe.db.get_all('ToDo',
+        todos_linked_to_timesheet = frappe.db.get_list('ToDo',
             filters={'reference_type': self.doctype, 'reference_name': self.name},
             pluck='name'
         )
         if not todos_linked_to_timesheet:
             return
         for todo in todos_linked_to_timesheet:
-            frappe.delete_doc('ToDo', todo, ignore_permissions=True)
-
+            try:
+                frappe.delete_doc('ToDo', todo, ignore_permissions=True)
+            except Exception as e:
+                frappe.log_error(message=f"Failed to delete ToDo {todo} on Timesheet update: {e}", title="Timesheet ToDo Deletion Error")
+                continue
 
     def fetch_description(self):
         return f"""

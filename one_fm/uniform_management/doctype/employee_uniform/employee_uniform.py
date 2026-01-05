@@ -506,6 +506,9 @@ def create_quality_feedbacks(employee_uniform, selected_feedbacks):
             continue
         target_feedback_schedule = frappe.db.get_value(
             "Quality Feedback Template", template, "custom_feedback_schedule")
+        if not target_feedback_schedule:
+            frappe.logger().warning(f"No feedback schedule found for template {template}.")
+            continue
         feedback_schedules = frappe.get_all(
             "Feedback Schedule Item",
             filters={"parent": target_feedback_schedule},
@@ -519,7 +522,7 @@ def create_quality_feedbacks(employee_uniform, selected_feedbacks):
                     "template": template,
                     "custom_feedback_schedule_stage": schedule_stage,
                     "custom_employee": employee_uniform_doc.employee,
-                    "custom_item_code": row["item_code"],
+                    "custom_item_code": row.get("item_code"),
                 }
             )
             if already_exists:
@@ -534,7 +537,7 @@ def create_quality_feedbacks(employee_uniform, selected_feedbacks):
             feedback_doc.custom_feedback_due_on = add_days(
                 employee_uniform_doc.issued_on or today(), schedule_stage_doc.days_after_issuance or 0)
             feedback_doc.custom_employee = employee_uniform_doc.employee
-            feedback_doc.custom_item_code = row["item_code"]
+            feedback_doc.custom_item_code = row.get("item_code")
             feedback_doc.custom_item_name = row.get("item_name")
             feedback_doc.custom_quantity = row.get("quantity")
             feedback_doc.custom_item_type = row.get("item_type")

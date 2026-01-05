@@ -17,14 +17,6 @@ class AccommodationSpace(Document):
 		if not self.is_new():
 			bed_space_type = frappe.db.get_value('Accommodation Space', self.name, 'bed_space_type')
 			if bed_space_type != self.bed_space_type:
-				# if frappe.db.count('Bed', {'status': 'Occupied', 'disabled': False, 'accommodation_space': self.name}) > 0:
-				# 	frappe.throw(_("There are Occupied Bed in this Space. To change Bed Space Type, Please make all Bed Vacant"))
-				# elif frappe.db.count('Bed', {'status': 'Booked', 'disabled': False, 'accommodation_space': self.name}) > 0:
-				# 	frappe.throw(_("There are Booked Bed in this Space. To change Bed Space Type, Please make all Bed Vacant"))
-				# elif frappe.db.count('Bed', {'status': 'Temporarily Booked', 'disabled': False, 'accommodation_space': self.name}) > 0:
-				# 	frappe.throw(_("There are Temporarily Booked Bed in this Space. To change Bed Space Type, Please make all Bed Vacant"))
-				# else:
-				# 	self.disable_rest_of_beds()
 				self.disable_rest_of_beds()
 
 	def disable_rest_of_beds(self):
@@ -148,69 +140,3 @@ def filter_floor(doctype, txt, searchfield, start, page_len, filters):
 			'txt': "%%%s%%" % txt
 		}
 	)
-
-def change_room_type():
-	space_details = [
-		{"D":"01010110111"},
-		{"D":"01010110112"},
-		{"D":"01010110113"},
-		{"D":"01010120121"},
-		{"D":"01010120122"},
-		{"D":"01010120123"},
-		{"D":"01020210211"},
-		{"D":"01020210212"},
-		{"D":"01020210213"},
-		{"D":"01020230231"},
-		{"B":"01030310311"},
-		{"D":"01030310313"},
-		{"D":"01030320321"},
-		{"D":"01030320322"},
-		{"D":"01030320323"},
-		{"D":"01030330331"},
-		{"D":"01030330332"},
-		{"D":"01030330333"},
-		{"D":"01040410411"},
-		{"D":"01040410412"},
-		{"C":"01040410413"},
-		{"D":"01040420421"},
-		{"D":"01040420422"},
-		{"D":"01040420423"},
-		{"D":"01040430431"},
-		{"D":"01040430432"},
-		{"D":"01040430433"},
-		{"D":"01050510511"},
-		{"D":"01050510512"},
-		{"D":"01050510513"},
-		{"D":"01050520521"},
-		{"D":"01050520522"},
-		{"D":"01050520523"},
-		{"D":"01050530531"},
-		{"D":"01050530532"},
-		{"D":"01050530533"},
-		{"C":"01060610611"},
-		{"C":"01060610612"},
-		{"C":"01060610613"},
-		{"D":"01060620621"},
-		{"D":"01060620622"},
-		{"D":"01060620623"},
-		{"D":"01060630631"},
-		{"D":"01060630632"},
-		{"D":"01060630633"},
-		{"D":"01070710711"},
-		{"D":"01070710712"},
-		{"D":"01070710716"},
-		{"D":"01070720721"},
-		{"D":"01101021021"},
-		{"D":"01070730731"},
-		{"D":"01070730732"},
-		{"D":"01070730733"},
-		{"D":"01080820821"},
-		{"D":"01080830831"},
-		{"D":"01090930931"},
-		{"D":"01101031031"}
-	]
-	for space in space_details:
-		for key in space:
-			accommodation_space = frappe.get_doc('Accommodation Space', space[key])
-			accommodation_space.bed_space_type = key
-			accommodation_space.save(ignore_permissions=True)

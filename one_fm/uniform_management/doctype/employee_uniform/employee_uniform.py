@@ -12,306 +12,329 @@ from erpnext.stock.get_item_details import get_item_details
 from frappe.model.mapper import get_mapped_doc
 from one_fm.processor import sendemail
 
+
 class EmployeeUniform(Document):
-	def before_insert(self):
-		if self.type == 'Return':
-			self.naming_series = 'EUR-.YYYY.-'
-		else:
-			self.naming_series = 'EUI-.YYYY.-'
-		if not self.employee and self.employee_id:
-			employee = frappe.db.get_value('Employee', {'employee_id': self.employee_id})
-			if employee:
-				self.employee = employee
+    def before_insert(self):
+        if self.type == 'Return':
+            self.naming_series = 'EUR-.YYYY.-'
+        else:
+            self.naming_series = 'EUI-.YYYY.-'
+        if not self.employee and self.employee_id:
+            employee = frappe.db.get_value(
+                'Employee', {'employee_id': self.employee_id})
+            if employee:
+                self.employee = employee
 
-	def on_submit(self):
-		self.validate_handover_form()
-		if self.type == "Issue":
-			self.db_set('status', 'Issued')
-			self.db_set('issued_on', today())
+    def on_submit(self):
+        self.validate_handover_form()
+        if self.type == "Issue":
+            self.db_set('status', 'Issued')
+            self.db_set('issued_on', today())
 
-		elif self.type == "Return":
-			self.db_set('status', 'Returned')
-			self.db_set('returned_on', today())
-			for item in self.uniforms:
-				if item.issued_item_link:
-					returned = frappe.db.get_value('Employee Uniform Item', item.issued_item_link, 'returned')
-					frappe.db.set_value('Employee Uniform Item', item.issued_item_link, 'returned', returned+item.quantity)
-		self.onboard_employee_update()
-		make_stock_entry(self)
-        
+        elif self.type == "Return":
+            self.db_set('status', 'Returned')
+            self.db_set('returned_on', today())
+            for item in self.uniforms:
+                if item.issued_item_link:
+                    returned = frappe.db.get_value(
+                        'Employee Uniform Item', item.issued_item_link, 'returned')
+                    frappe.db.set_value(
+                        'Employee Uniform Item', item.issued_item_link, 'returned', returned+item.quantity)
+        self.onboard_employee_update()
+        make_stock_entry(self)
 
-	def on_cancel(self):
-		# self.onboard_employee_update(True)
-		self.cancel_stock_entry()
+    def on_cancel(self):
+        # self.onboard_employee_update(True)
+        self.cancel_stock_entry()
 
-	def cancel_stock_entry(self):
-		'''
-			Method to cancel the stock entry linked to the Employee Uniform
-			args:
-				self: the object of Employee Uniform
-		'''
-		# Check if there is a Stock Entry reference in the Employee Uniform
-		if self.stock_entry:
-			# Get the Draft/Submitted Stock Entry linked to the Employee Uniform
-			se_exists = frappe.db.exists("Stock Entry", {"name": self.stock_entry, "docstatus": ["<", 2]})
-			# Cancel the linked stock entry
-			frappe.get_doc("Stock Entry", se_exists).cancel()
-			# Unlink the Stock Entry reference from the Employee Uniform
-			frappe.db.set_value("Employee Uniform", self.name, "stock_entry", "")
-			frappe.msgprint(_("Cancelled the Stock Entry {0} linked with this Employee Uniform".format(self.stock_entry)))
+    def cancel_stock_entry(self):
+        '''
+                Method to cancel the stock entry linked to the Employee Uniform
+                args:
+                        self: the object of Employee Uniform
+        '''
+        # Check if there is a Stock Entry reference in the Employee Uniform
+        if self.stock_entry:
+            # Get the Draft/Submitted Stock Entry linked to the Employee Uniform
+            se_exists = frappe.db.exists(
+                "Stock Entry", {"name": self.stock_entry, "docstatus": ["<", 2]})
+            # Cancel the linked stock entry
+            frappe.get_doc("Stock Entry", se_exists).cancel()
+            # Unlink the Stock Entry reference from the Employee Uniform
+            frappe.db.set_value("Employee Uniform",
+                                self.name, "stock_entry", "")
+            frappe.msgprint(
+                _("Cancelled the Stock Entry {0} linked with this Employee Uniform".format(self.stock_entry)))
 
-	def onboard_employee_update(self, on_cancel=False):
-		if self.type == 'Issue':
-			if on_cancel:
-				oe_name = frappe.db.exists('Onboard Employee', {'employee': self.employee, 'uniform_issued': True, 'employee_uniform_issue_reference': self.name})
-			else:
-				oe_name = frappe.db.exists('Onboard Employee', {'employee': self.employee, 'uniform_issued': False})
-			if oe_name:
-				oe = frappe.get_doc('Onboard Employee', oe_name)
-				oe.uniform_issued = False if on_cancel else True
-				oe.employee_uniform_issue_reference = '' if on_cancel else self.name
-				oe.save(ignore_permissions=True)
+    def onboard_employee_update(self, on_cancel=False):
+        if self.type == 'Issue':
+            if on_cancel:
+                oe_name = frappe.db.exists('Onboard Employee', {
+                                           'employee': self.employee, 'uniform_issued': True, 'employee_uniform_issue_reference': self.name})
+            else:
+                oe_name = frappe.db.exists(
+                    'Onboard Employee', {'employee': self.employee, 'uniform_issued': False})
+            if oe_name:
+                oe = frappe.get_doc('Onboard Employee', oe_name)
+                oe.uniform_issued = False if on_cancel else True
+                oe.employee_uniform_issue_reference = '' if on_cancel else self.name
+                oe.save(ignore_permissions=True)
 
-	def validate_handover_form(self):
-		if not self.handover_form and not self.linked_rfm :
-			frappe.throw(_("Attach Signed copy of Uniform Handover Form to Submit.!"))
+    def validate_handover_form(self):
+        if not self.handover_form and not self.linked_rfm:
+            frappe.throw(
+                _("Attach Signed copy of Uniform Handover Form to Submit.!"))
 
-	def validate(self):
-		if not self.uniforms:
-			frappe.throw(_("Uniforms required in Employee Uniform"))
-		self.validate_issue()
-		self.validate_return()
-		self.validate_items()
-		self.calculate_amount_pay_back()
+    def validate(self):
+        if not self.uniforms:
+            frappe.throw(_("Uniforms required in Employee Uniform"))
+        self.validate_issue()
+        self.validate_return()
+        self.validate_items()
+        self.calculate_amount_pay_back()
 
-	def validate_items(self):
-		total_quantity = 0
-		for uniform in self.uniforms:
-			if self.issued_on and not uniform.issued_on:
-				uniform.issued_on = self.issued_on
-			if not uniform.rate:
-				args = {
-					'item_code': uniform.item,
-					'doctype': self.doctype,
-					'buying_price_list': frappe.defaults.get_defaults().buying_price_list,
-					'currency': frappe.defaults.get_defaults().currency,
-					'name': self.name,
-					'qty': uniform.quantity,
-					'company': self.company,
-					'conversion_rate': 1,
-					'plc_conversion_rate': 1
-				}
-				uniform.rate = get_item_details(args).price_list_rate
-			if self.issued_on and not uniform.expire_on:
-				uniform.expire_on = frappe.utils.add_months(self.issued_on, 12)
-			total_quantity += uniform.quantity
-		self.total_quantity = total_quantity
+    def validate_items(self):
+        total_quantity = 0
+        for uniform in self.uniforms:
+            if self.issued_on and not uniform.issued_on:
+                uniform.issued_on = self.issued_on
+            if not uniform.rate:
+                args = {
+                    'item_code': uniform.item,
+                    'doctype': self.doctype,
+                    'buying_price_list': frappe.defaults.get_defaults().buying_price_list,
+                    'currency': frappe.defaults.get_defaults().currency,
+                    'name': self.name,
+                    'qty': uniform.quantity,
+                    'company': self.company,
+                    'conversion_rate': 1,
+                    'plc_conversion_rate': 1
+                }
+                uniform.rate = get_item_details(args).price_list_rate
+            if self.issued_on and not uniform.expire_on:
+                uniform.expire_on = frappe.utils.add_months(self.issued_on, 12)
+            total_quantity += uniform.quantity
+        self.total_quantity = total_quantity
 
-	def validate_issue(self):
-		if self.type == "Issue":
-			self.validate_issued_no_of_items()
+    def validate_issue(self):
+        if self.type == "Issue":
+            self.validate_issued_no_of_items()
 
-	def validate_issued_no_of_items(self):
-		if self.designation:
-			uniforms = get_project_uniform_details(self.designation)
-			if uniforms:
-				for item in self.uniforms:
-					uniform = sorted(uniforms, key=lambda k: k.item == item.item)
-					if uniform and len(uniform) == 1:
-						total_issued = item.quantity + get_issued_item_quantity(item.item, self.employee)
-						if total_issued > uniform[0].quantity:
-							frappe.throw(_("According to Designation Profile - Uniforms for {3} you can issue only {0} {1} of {2} in total".format(uniform[0].quantity, uniform[0].uom, uniform[0].item_name, self.designation)))
+    def validate_issued_no_of_items(self):
+        if self.designation:
+            uniforms = get_project_uniform_details(self.designation)
+            if uniforms:
+                for item in self.uniforms:
+                    uniform = sorted(
+                        uniforms, key=lambda k: k.item == item.item)
+                    if uniform and len(uniform) == 1:
+                        total_issued = item.quantity + \
+                            get_issued_item_quantity(item.item, self.employee)
+                        if total_issued > uniform[0].quantity:
+                            frappe.throw(_("According to Designation Profile - Uniforms for {3} you can issue only {0} {1} of {2} in total".format(
+                                uniform[0].quantity, uniform[0].uom, uniform[0].item_name, self.designation)))
 
-	def validate_return(self):
-		if self.type == 'Return':
-			if not self.reason_for_return:
-				frappe.throw(_("Reason for Return required in Employee Uniform"))
-			self.validate_item_return_before_expiry()
+    def validate_return(self):
+        if self.type == 'Return':
+            if not self.reason_for_return:
+                frappe.throw(
+                    _("Reason for Return required in Employee Uniform"))
+            self.validate_item_return_before_expiry()
 
-	def validate_item_return_before_expiry(self):
-		if self.reason_for_return in ['Item Expired']:
-			for item in self.uniforms:
-				if item.expire_on > self.returned_on:
-					frappe.throw(_("Row {0} - {1} will expire only on {2}".format(item.idx, item.item_name, item.expire_on)))
+    def validate_item_return_before_expiry(self):
+        if self.reason_for_return in ['Item Expired']:
+            for item in self.uniforms:
+                if item.expire_on > self.returned_on:
+                    frappe.throw(
+                        _("Row {0} - {1} will expire only on {2}".format(item.idx, item.item_name, item.expire_on)))
 
-	def calculate_amount_pay_back(self):
-		pay_back = 0
-		for item in self.uniforms:
-			if self.type == 'Return' and self.reason_for_return in ['Item Damage', 'Employee Exit'] and item.expire_on > self.returned_on:
-				per_month_rate = (item.quantity * item.rate) / month_diff(item.expire_on, item.issued_on)
-				pay_back += per_month_rate * month_diff(item.expire_on, self.returned_on)
-			elif self.type == 'Issue':
-				pay_back += item.quantity * item.rate
-		self.pay_back_to_company = pay_back
+    def calculate_amount_pay_back(self):
+        pay_back = 0
+        for item in self.uniforms:
+            if self.type == 'Return' and self.reason_for_return in ['Item Damage', 'Employee Exit'] and item.expire_on > self.returned_on:
+                per_month_rate = (item.quantity * item.rate) / \
+                    month_diff(item.expire_on, item.issued_on)
+                pay_back += per_month_rate * \
+                    month_diff(item.expire_on, self.returned_on)
+            elif self.type == 'Issue':
+                pay_back += item.quantity * item.rate
+        self.pay_back_to_company = pay_back
 
-	@frappe.whitelist()
-	def set_uniform_details(self):
-		uniforms = False
-		if self.employee:
-			if self.type == "Issue" and self.designation:
-				uniforms = get_project_uniform_details(self.designation)
-				if not uniforms:
-					frappe.msgprint(msg = 'No Designation Profile - Uniforms Found',
-				       title = 'Warning',
-				       indicator = 'red'
-				    )
-			elif self.type == "Return":
-				uniforms = get_items_to_return(self.employee)
+    @frappe.whitelist()
+    def set_uniform_details(self):
+        uniforms = False
+        if self.employee:
+            if self.type == "Issue" and self.designation:
+                uniforms = get_project_uniform_details(self.designation)
+                if not uniforms:
+                    frappe.msgprint(msg='No Designation Profile - Uniforms Found',
+                                    title='Warning',
+                                    indicator='red'
+                                    )
+            elif self.type == "Return":
+                uniforms = get_items_to_return(self.employee)
 
-		if uniforms:
-			for uniform in uniforms:
-				uniform_issue_ret = self.append('uniforms')
-				uniform_issue_ret.item = uniform.item
-				uniform_issue_ret.item_name = uniform.item_name
-				uniform_issue_ret.actual_quantity = uniform.quantity
-				uniform_issue_ret.quantity = uniform.quantity
-				uniform_issue_ret.uom = uniform.uom
-				if self.type == "Issue":
-					args = {
-						'item_code': uniform.item,
-						'doctype': self.doctype,
-						'buying_price_list': frappe.defaults.get_defaults().buying_price_list,
-						'currency': frappe.defaults.get_defaults().currency,
-						'name': self.name,
-						'qty': uniform.quantity,
-						'company': self.company,
-						'conversion_rate': 1,
-						'plc_conversion_rate': 1
-					}
-					uniform_issue_ret.rate = get_item_details(args).price_list_rate
-					if self.issued_on:
-						uniform_issue_ret.expire_on = frappe.utils.add_months(self.issued_on, 12)
-				elif self.type == "Return":
-					uniform_issue_ret.expire_on = uniform.expire_on
-					uniform_issue_ret.rate = uniform.rate
-					uniform_issue_ret.issued_item_link = uniform.issued_item_link
-					uniform_issue_ret.issued_on = uniform.issued_on
+        if uniforms:
+            for uniform in uniforms:
+                uniform_issue_ret = self.append('uniforms')
+                uniform_issue_ret.item = uniform.item
+                uniform_issue_ret.item_name = uniform.item_name
+                uniform_issue_ret.actual_quantity = uniform.quantity
+                uniform_issue_ret.quantity = uniform.quantity
+                uniform_issue_ret.uom = uniform.uom
+                if self.type == "Issue":
+                    args = {
+                        'item_code': uniform.item,
+                        'doctype': self.doctype,
+                        'buying_price_list': frappe.defaults.get_defaults().buying_price_list,
+                        'currency': frappe.defaults.get_defaults().currency,
+                        'name': self.name,
+                        'qty': uniform.quantity,
+                        'company': self.company,
+                        'conversion_rate': 1,
+                        'plc_conversion_rate': 1
+                    }
+                    uniform_issue_ret.rate = get_item_details(
+                        args).price_list_rate
+                    if self.issued_on:
+                        uniform_issue_ret.expire_on = frappe.utils.add_months(
+                            self.issued_on, 12)
+                elif self.type == "Return":
+                    uniform_issue_ret.expire_on = uniform.expire_on
+                    uniform_issue_ret.rate = uniform.rate
+                    uniform_issue_ret.issued_item_link = uniform.issued_item_link
+                    uniform_issue_ret.issued_on = uniform.issued_on
 
 
 def make_stock_entry(employee_uniform):
-	source_name = employee_uniform.name
-	target_doc = None
+    source_name = employee_uniform.name
+    target_doc = None
 
-	def update_item(obj, target, source_parent):
-		if employee_uniform.type == "Issue":
-			target.s_warehouse = employee_uniform.warehouse
-		else:
-			target.t_warehouse = employee_uniform.warehouse
-		
-		if hasattr(obj, 'name'):
-			target.linked_employee_uniform_item = obj.name
-		
-		if hasattr(obj, 'linked_rfm_reference') and obj.linked_rfm_reference:
-			target.linked_rfm_reference = obj.linked_rfm_reference
+    def update_item(obj, target, source_parent):
+        if employee_uniform.type == "Issue":
+            target.s_warehouse = employee_uniform.warehouse
+        else:
+            target.t_warehouse = employee_uniform.warehouse
 
-	def set_missing_values(source, target):
-		target.purpose = 'Material Receipt'
-		if employee_uniform.type == "Issue":
-			target.purpose = 'Material Issue'
-		
-		target.linked_employee_uniform = employee_uniform.name
-		
-		if hasattr(employee_uniform, 'linked_rfm') and employee_uniform.linked_rfm:
-			target.linked_request_for_material = employee_uniform.linked_rfm
-		
-		target.run_method("calculate_rate_and_amount")
-		target.set_stock_entry_type()
-		target.set_job_card_data()
+        if hasattr(obj, 'name'):
+            target.linked_employee_uniform_item = obj.name
 
-	doclist = get_mapped_doc("Employee Uniform", source_name, {
-		"Employee Uniform": {
-			"doctype": "Stock Entry",
-			"validation": {
-				"docstatus": ["=", 1]
-			}
-		},
-		"Employee Uniform Item": {
-			"doctype": "Stock Entry Detail",
-			"field_map": {
-				"item": "item_code",
-				"quantity": "qty",
-				"allow_zero_valuation_rate": "allow_zero_valuation_rate"
-			},
-			"postprocess": update_item,
-			"condition": lambda doc: doc.item
-		}
-	}, target_doc, set_missing_values)
+        if hasattr(obj, 'linked_rfm_reference') and obj.linked_rfm_reference:
+            target.linked_rfm_reference = obj.linked_rfm_reference
 
-	doclist.save(ignore_permissions=True)
-	doclist.submit()
-	frappe.db.set_value("Employee Uniform", employee_uniform.name, "stock_entry", doclist.name)
+    def set_missing_values(source, target):
+        target.purpose = 'Material Receipt'
+        if employee_uniform.type == "Issue":
+            target.purpose = 'Material Issue'
 
-	if hasattr(employee_uniform, 'linked_rfm') and employee_uniform.linked_rfm and employee_uniform.type == "Issue":
-		update_rfm_issued_quantities(employee_uniform.linked_rfm)
+        target.linked_employee_uniform = employee_uniform.name
 
-	return doclist.name
+        if hasattr(employee_uniform, 'linked_rfm') and employee_uniform.linked_rfm:
+            target.linked_request_for_material = employee_uniform.linked_rfm
+
+        target.run_method("calculate_rate_and_amount")
+        target.set_stock_entry_type()
+        target.set_job_card_data()
+
+    doclist = get_mapped_doc("Employee Uniform", source_name, {
+        "Employee Uniform": {
+            "doctype": "Stock Entry",
+            "validation": {
+                "docstatus": ["=", 1]
+            }
+        },
+        "Employee Uniform Item": {
+            "doctype": "Stock Entry Detail",
+            "field_map": {
+                "item": "item_code",
+                        "quantity": "qty",
+                "allow_zero_valuation_rate": "allow_zero_valuation_rate"
+            },
+            "postprocess": update_item,
+            "condition": lambda doc: doc.item
+        }
+    }, target_doc, set_missing_values)
+
+    doclist.save(ignore_permissions=True)
+    doclist.submit()
+    frappe.db.set_value("Employee Uniform",
+                        employee_uniform.name, "stock_entry", doclist.name)
+
+    if hasattr(employee_uniform, 'linked_rfm') and employee_uniform.linked_rfm and employee_uniform.type == "Issue":
+        update_rfm_issued_quantities(employee_uniform.linked_rfm)
+
+    return doclist.name
 
 
 def update_rfm_issued_quantities(rfm_name):
-	rfm_doc = frappe.get_doc("Request for Material", rfm_name)
-	
-	if rfm_doc.purpose != "Issue":
-		return
-	
-	for rfm_item in rfm_doc.items:
-		rfm_item.issued_quantity = 0
-	
-	linked_uniforms = frappe.get_all(
-		"Employee Uniform",
-		filters={
-			"linked_rfm": rfm_name,
-			"docstatus": 1,
-			"type": "Issue"
-		},
-		pluck="name"
-	)
-	
-	for uniform_name in linked_uniforms:
-		uniform_doc = frappe.get_doc("Employee Uniform", uniform_name)
-		
-		if uniform_doc.stock_entry:
-			stock_entry_doc = frappe.get_doc("Stock Entry", uniform_doc.stock_entry)
-			for stock_item in stock_entry_doc.items:
-				if stock_item.linked_rfm_reference:
-					for rfm_item in rfm_doc.items:
-						if rfm_item.name == stock_item.linked_rfm_reference:
-							rfm_item.issued_quantity = (rfm_item.issued_quantity or 0) + (stock_item.qty or 0)
-							break
-	
-	rfm_doc.status = calculate_rfm_status(rfm_doc)
-	rfm_doc.save(ignore_permissions=True)
-	frappe.db.commit()
+    rfm_doc = frappe.get_doc("Request for Material", rfm_name)
+
+    if rfm_doc.purpose != "Issue":
+        return
+
+    for rfm_item in rfm_doc.items:
+        rfm_item.issued_quantity = 0
+
+    linked_uniforms = frappe.get_all(
+        "Employee Uniform",
+        filters={
+            "linked_rfm": rfm_name,
+            "docstatus": 1,
+            "type": "Issue"
+        },
+        pluck="name"
+    )
+
+    for uniform_name in linked_uniforms:
+        uniform_doc = frappe.get_doc("Employee Uniform", uniform_name)
+
+        if uniform_doc.stock_entry:
+            stock_entry_doc = frappe.get_doc(
+                "Stock Entry", uniform_doc.stock_entry)
+            for stock_item in stock_entry_doc.items:
+                if stock_item.linked_rfm_reference:
+                    for rfm_item in rfm_doc.items:
+                        if rfm_item.name == stock_item.linked_rfm_reference:
+                            rfm_item.issued_quantity = (
+                                rfm_item.issued_quantity or 0) + (stock_item.qty or 0)
+                            break
+
+    rfm_doc.status = calculate_rfm_status(rfm_doc)
+    rfm_doc.save(ignore_permissions=True)
+    frappe.db.commit()
 
 
 def calculate_rfm_status(rfm_doc):
-	total_requested = 0
-	total_issued = 0
-	
-	for item in rfm_doc.items:
-		requested_qty = item.qty or 0
-		issued_qty = item.issued_quantity or 0
-		
-		total_requested += requested_qty
-		total_issued += issued_qty
-	
-	if total_issued == 0:
-		return "Pending"
-	elif total_issued < total_requested:
-		return "Partially Issued"
-	else:
-		return "Issued"
+    total_requested = 0
+    total_issued = 0
+
+    for item in rfm_doc.items:
+        requested_qty = item.qty or 0
+        issued_qty = item.issued_quantity or 0
+
+        total_requested += requested_qty
+        total_issued += issued_qty
+
+    if total_issued == 0:
+        return "Pending"
+    elif total_issued < total_requested:
+        return "Partially Issued"
+    else:
+        return "Issued"
+
 
 def get_issued_item_quantity(item, employee):
-	issued_qty = 0
-	item_dict = get_issued_items_not_returned(employee, item)
-	if item_dict and len(item_dict) == 1:
-		issued_qty = item_dict[0].quantity
-	return issued_qty
+    issued_qty = 0
+    item_dict = get_issued_items_not_returned(employee, item)
+    if item_dict and len(item_dict) == 1:
+        issued_qty = item_dict[0].quantity
+    return issued_qty
+
 
 def get_project_uniform_details(designation_id, project_id=''):
-	if frappe.db.get_value('Designation', designation_id, 'one_fm_is_uniform_needed_for_this_job'):
-		filters = {'designation': designation_id, 'project': project_id}
-		query = """
+    if frappe.db.get_value('Designation', designation_id, 'one_fm_is_uniform_needed_for_this_job'):
+        filters = {'designation': designation_id, 'project': project_id}
+        query = """
 			select
 				name
 			from
@@ -320,24 +343,29 @@ def get_project_uniform_details(designation_id, project_id=''):
 				designation=%(designation)s {condition}
 		"""
 
-		condition = "and project IS NULL"
-		if project_id:
-			condition = "and project=%(project)s"
+        condition = "and project IS NULL"
+        if project_id:
+            condition = "and project=%(project)s"
 
-		profile_id = frappe.db.sql(query.format(condition=condition), filters, as_dict=1)
-		if not profile_id and project_id:
-			condition = "and project IS NULL"
-			profile_id = frappe.db.sql(query.format(condition=condition), filters, as_dict=1)
-		if profile_id and profile_id[0]['name']:
-			profile = frappe.get_doc('Designation Profile', profile_id[0]['name'])
-			return profile.uniforms if profile.uniforms else False
-	return False
+        profile_id = frappe.db.sql(query.format(
+            condition=condition), filters, as_dict=1)
+        if not profile_id and project_id:
+            condition = "and project IS NULL"
+            profile_id = frappe.db.sql(query.format(
+                condition=condition), filters, as_dict=1)
+        if profile_id and profile_id[0]['name']:
+            profile = frappe.get_doc(
+                'Designation Profile', profile_id[0]['name'])
+            return profile.uniforms if profile.uniforms else False
+    return False
+
 
 def get_items_to_return(employee_id):
-	return get_issued_items_not_returned(employee_id)
+    return get_issued_items_not_returned(employee_id)
+
 
 def get_issued_items_not_returned(employee_id, item=False):
-	query = """
+    query = """
 		select
 			i.item, i.item_name, (i.quantity - i.returned) as quantity, i.uom, i.expire_on, i.rate,
 			i.name as issued_item_link, u.issued_on
@@ -347,13 +375,14 @@ def get_issued_items_not_returned(employee_id, item=False):
 			i.parent=u.name and u.employee = %(employee)s and i.returned < i.quantity and u.type = 'Issue'
 			and u.docstatus = 1
 	"""
-	if item:
-		query += " and %(item)s"
-	return frappe.db.sql(query,{'employee': employee_id, 'item': item}, as_dict=True)
+    if item:
+        query += " and %(item)s"
+    return frappe.db.sql(query, {'employee': employee_id, 'item': item}, as_dict=True)
+
 
 @frappe.whitelist()
 def issued_items_not_returned(doctype, txt, searchfield, start, page_len, filters):
-	query = """
+    query = """
 		select
 			i.item, i.item_name
 		from
@@ -362,21 +391,22 @@ def issued_items_not_returned(doctype, txt, searchfield, start, page_len, filter
 			i.parent=u.name and u.employee = %(employee)s and i.returned < i.quantity and u.type = 'Issue'
 			and u.docstatus = 1 and (i.item like %(txt)s or i.item_name like %(txt)s)
 			limit %(start)s, %(page_len)s"""
-	return frappe.db.sql(query,
-		{
-			'employee': filters.get("employee"),
-			'start': start,
-			'page_len': page_len,
-			'txt': "%%%s%%" % txt
-		}
-	)
+    return frappe.db.sql(query,
+                         {
+                             'employee': filters.get("employee"),
+                             'start': start,
+                             'page_len': page_len,
+                             'txt': "%%%s%%" % txt
+                         }
+                         )
+
 
 def notify_gsd_and_employee_before_uniform_expiry(is_scheduled_event=True):
-	"""
-    Args:
-        is_scheduled_event -> Boolean (Default True) If method is triggered from anywhere else than the scheduled event, Pass "False" to avoid email trigger check from "ONEFM General Setting"
     """
-	query = """
+Args:
+    is_scheduled_event -> Boolean (Default True) If method is triggered from anywhere else than the scheduled event, Pass "False" to avoid email trigger check from "ONEFM General Setting"
+"""
+    query = """
 		select
 			i.item, i.item_name, (i.quantity - i.returned) as quantity, i.uom, i.expire_on, i.rate,
 			i.name as issued_item_link, u.issued_on, u.employee
@@ -386,23 +416,25 @@ def notify_gsd_and_employee_before_uniform_expiry(is_scheduled_event=True):
 			i.parent=u.name and i.returned < i.quantity and u.type = 'Issue'
 			and u.docstatus = 1 and i.expire_on = %(expire_on)s
 	"""
-	expire_on = getdate(add_days(today(), 7))
-	item_list = frappe.db.sql(query,{'expire_on': expire_on}, as_dict=True)
-	recipients = {}
-	uniforms = {}
-	for item in item_list:
-		if item.employee:
-			employee_user = frappe.get_value('Employee', item.employee, 'user_id')
-			if employee_user in recipients:
-				recipients[employee_user].append(item)
-			else:
-				recipients[employee_user]=[item]
+    expire_on = getdate(add_days(today(), 7))
+    item_list = frappe.db.sql(query, {'expire_on': expire_on}, as_dict=True)
+    recipients = {}
+    uniforms = {}
+    for item in item_list:
+        if item.employee:
+            employee_user = frappe.get_value(
+                'Employee', item.employee, 'user_id')
+            if employee_user in recipients:
+                recipients[employee_user].append(item)
+            else:
+                recipients[employee_user] = [item]
 
-	if recipients:
-		message_to_gsd = ""
-		for recipient in recipients:
-			message = "<p>Expiring Uniforms in seven days of employee {0}</p>".format(recipients[recipient][0].employee)
-			message += """
+    if recipients:
+        message_to_gsd = ""
+        for recipient in recipients:
+            message = "<p>Expiring Uniforms in seven days of employee {0}</p>".format(
+                recipients[recipient][0].employee)
+            message += """
 			<p>
 				<table class="table table-bordered table-hover">
 					<thead>
@@ -415,82 +447,97 @@ def notify_gsd_and_employee_before_uniform_expiry(is_scheduled_event=True):
 					</thead>
 					<tbody>
 			"""
-			for uniform in recipients[recipient]:
-				message += "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>".format(uniform.item, uniform.item_name,
-					uniform.quantity, uniform.expire_on)
+            for uniform in recipients[recipient]:
+                message += "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>".format(uniform.item, uniform.item_name,
+                                                                                              uniform.quantity, uniform.expire_on)
 
-			message += "</tbody></table></p><br/>"
-			message_to_gsd += message
-			sendemail(
-				recipients=[recipient],
-				subject=_('Expiring Uniforms in seven days'),
-				message=message,
-				header=['Expiring Uniforms in seven days', 'yellow'],
-				is_scheduler_email=is_scheduled_event
-			)
-		if message_to_gsd:
-			sendemail(
-				recipients=['georges@armor-services.com'],
-				subject=_('Expiring Uniforms in seven days'),
-				message=message_to_gsd,
-				header=['Expiring Uniforms in seven days', 'yellow'],
-				is_scheduler_email=is_scheduled_event
-			)
+            message += "</tbody></table></p><br/>"
+            message_to_gsd += message
+            sendemail(
+                recipients=[recipient],
+                subject=_('Expiring Uniforms in seven days'),
+                message=message,
+                header=['Expiring Uniforms in seven days', 'yellow'],
+                is_scheduler_email=is_scheduled_event
+            )
+        if message_to_gsd:
+            sendemail(
+                recipients=['georges@armor-services.com'],
+                subject=_('Expiring Uniforms in seven days'),
+                message=message_to_gsd,
+                header=['Expiring Uniforms in seven days', 'yellow'],
+                is_scheduler_email=is_scheduled_event
+            )
+
 
 @frappe.whitelist()
 def get_item_types(items):
-	if not items:
-		return []
-	
-	if isinstance(items, str):
-		items = json.loads(items)
+    if not items:
+        return []
 
+    if isinstance(items, str):
+        items = json.loads(items)
 
-	item_types = frappe.get_all(
-		"Item",
-		filters={"name": ("in", items)},
-		fields=["item_type"]
-	)
+    item_types = frappe.get_all(
+        "Item",
+        filters={"name": ("in", items)},
+        fields=["item_type"]
+    )
 
-	return [item.get("item_type") for item in item_types if item.get("item_type")]
+    return [item.get("item_type") for item in item_types if item.get("item_type")]
+
 
 @frappe.whitelist()
-def create_quality_feedbacks(employee_uniform, selected_feedback_templates):
-	employee_uniform_doc = frappe.get_doc("Employee Uniform", employee_uniform)
-	if not selected_feedback_templates:
-		return
+def create_quality_feedbacks(employee_uniform, selected_feedbacks):
+    """
+    Create Quality Feedback documents for each selected feedback row (item + template).
+    selected_feedbacks: list of dicts with keys: item_code, item_name, quantity, version_no, quality_feedback_template, feedback_template_version, etc.
+    """
+    employee_uniform_doc = frappe.get_doc("Employee Uniform", employee_uniform)
+    if not selected_feedbacks:
+        return
 
-	if isinstance(selected_feedback_templates, str):
-		selected_feedback_templates = json.loads(selected_feedback_templates)
+    if isinstance(selected_feedbacks, str):
+        selected_feedbacks = json.loads(selected_feedbacks)
 
-	for template in selected_feedback_templates:
-		target_feedback_schedule = frappe.db.get_value("Quality Feedback Template", template, "custom_feedback_schedule")
-
-		feedback_schedules = frappe.get_all(
-			"Feedback Schedule Item",
-			filters={"parent": target_feedback_schedule},
-			pluck="name"
-		)
-
-		for schedule_stage in feedback_schedules:
-			already_exists = frappe.db.exists(
-				"Quality Feedback",
-				{
-					"template": template,
-					"custom_feedback_schedule_stage": schedule_stage,
-					"custom_employee": employee_uniform_doc.employee,
-				}
-			)
-			if already_exists:
-				continue
-
-			schedule_stage_doc = frappe.get_doc("Feedback Schedule Item", schedule_stage)
-
-			feedback_doc = frappe.new_doc("Quality Feedback")
-			feedback_doc.template = template
-			feedback_doc.document_name = frappe.session.user
-			feedback_doc.custom_feedback_schedule_stage = schedule_stage
-			feedback_doc.custom_issued_on = employee_uniform_doc.issued_on
-			feedback_doc.custom_feedback_due_on = add_days(employee_uniform_doc.issued_on or today(), schedule_stage_doc.days_after_issuance or 0)
-			feedback_doc.custom_employee = employee_uniform_doc.employee
-			feedback_doc.insert(ignore_permissions=True)
+    for row in selected_feedbacks:
+        template = row.get("quality_feedback_template")
+        if not template:
+            continue
+        target_feedback_schedule = frappe.db.get_value(
+            "Quality Feedback Template", template, "custom_feedback_schedule")
+        feedback_schedules = frappe.get_all(
+            "Feedback Schedule Item",
+            filters={"parent": target_feedback_schedule},
+            pluck="name"
+        )
+        for schedule_stage in feedback_schedules:
+            # Uniqueness: one doc per item/template/schedule/employee
+            already_exists = frappe.db.exists(
+                "Quality Feedback",
+                {
+                    "template": template,
+                    "custom_feedback_schedule_stage": schedule_stage,
+                    "custom_employee": employee_uniform_doc.employee,
+                    "custom_item_code": row["item_code"],
+                }
+            )
+            if already_exists:
+                continue
+            schedule_stage_doc = frappe.get_doc(
+                "Feedback Schedule Item", schedule_stage)
+            feedback_doc = frappe.new_doc("Quality Feedback")
+            feedback_doc.template = template
+            feedback_doc.document_name = frappe.session.user
+            feedback_doc.custom_feedback_schedule_stage = schedule_stage
+            feedback_doc.custom_issued_on = employee_uniform_doc.issued_on
+            feedback_doc.custom_feedback_due_on = add_days(
+                employee_uniform_doc.issued_on or today(), schedule_stage_doc.days_after_issuance or 0)
+            feedback_doc.custom_employee = employee_uniform_doc.employee
+            feedback_doc.custom_item_code = row["item_code"]
+            feedback_doc.custom_item_name = row.get("item_name")
+            feedback_doc.custom_item_quantity = row.get("quantity")
+            feedback_doc.custom_item_type = row.get("item_type")
+            feedback_doc.custom_version_no = row.get("version_no") or row.get("feedback_template_version")
+            feedback_doc.status = "Draft"
+            feedback_doc.insert(ignore_permissions=True)

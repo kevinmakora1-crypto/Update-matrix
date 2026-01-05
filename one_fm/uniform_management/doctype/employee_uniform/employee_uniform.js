@@ -151,15 +151,18 @@ var add_quality_feedback_schedule = function (frm) {
 				   cssClass: "quality-feedback-dialog-wide",
 				   primary_action_label: __("Generate"),
 				   primary_action(values) {
-					   let selected_rows = (values && values.quality_feedback_table) || [];
-					   let selected_templates = selected_rows.filter(row => row.quality_feedback_template).map(row => row.quality_feedback_template);
-					   if (!selected_templates.length) {
+					   let all_rows = (values && values.quality_feedback_table) || [];
+					   let selected_feedbacks = all_rows.filter(row => row.quality_feedback_template);
+					   if (!selected_feedbacks.length) {
 						   frappe.msgprint(__("Please select at least one Quality Feedback Template."));
 						   return;
 					   }
 					   frappe.call({
 						   method: "one_fm.uniform_management.doctype.employee_uniform.employee_uniform.create_quality_feedbacks",
-						   args: { employee_uniform: frm.doc.name, selected_feedback_templates: selected_templates },
+						   args: {
+							   employee_uniform: frm.doc.name,
+							   selected_feedbacks: selected_feedbacks // each object has item and template info
+						   },
 						   callback: function (r) {
 							   if (!r.exc) {
 								   frappe.msgprint(__("Quality Feedback Scheduled Successfully"));

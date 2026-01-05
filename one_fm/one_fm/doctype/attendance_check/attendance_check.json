@@ -14,15 +14,7 @@
   "attendance_by_timesheet",
   "column_break_1",
   "date",
-  "reports_to",
-  "reports_to_user",
-  "report_to_name",
-  "site_supervisor",
-  "site_supervisor_name",
-  "site_supervisor_user",
-  "shift_supervisor",
-  "shift_supervisor_name",
-  "shift_supervisor_user",
+  "approver",
   "justification_section",
   "attendance_status",
   "justification",
@@ -65,6 +57,13 @@
    "read_only": 1
   },
   {
+   "fieldname": "approver",
+   "fieldtype": "Link",
+   "label": "Approver",
+   "options": "User",
+   "read_only": 1
+  },
+  {
    "fieldname": "employee",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
@@ -87,34 +86,6 @@
    "fieldtype": "Link",
    "label": "Department",
    "options": "Department",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "employee.reports_to",
-   "fieldname": "reports_to",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "in_standard_filter": 1,
-   "label": "Reports To",
-   "options": "Employee",
-   "read_only": 1
-  },
-  {
-   "fieldname": "site_supervisor",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "in_standard_filter": 1,
-   "label": "Site Supervisor",
-   "options": "Employee",
-   "read_only": 1
-  },
-  {
-   "fieldname": "shift_supervisor",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "in_standard_filter": 1,
-   "label": "Shift Supervisor",
-   "options": "Employee",
    "read_only": 1
   },
   {
@@ -254,36 +225,6 @@
    "label": "Justification Section"
   },
   {
-   "fetch_from": "reports_to.user_id",
-   "fieldname": "reports_to_user",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "ignore_user_permissions": 1,
-   "label": "Reports To User",
-   "options": "User",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "site_supervisor.user_id",
-   "fieldname": "site_supervisor_user",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "ignore_user_permissions": 1,
-   "label": "Site Supervisor User",
-   "options": "User",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "shift_supervisor.user_id",
-   "fieldname": "shift_supervisor_user",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "ignore_user_permissions": 1,
-   "label": "Shift Supervisor User",
-   "options": "User",
-   "read_only": 1
-  },
-  {
    "default": "Basic",
    "fieldname": "roster_type",
    "fieldtype": "Select",
@@ -299,30 +240,6 @@
    "fieldname": "attendance_comment",
    "fieldtype": "Data",
    "label": "Attendance Comment",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "reports_to.employee_name",
-   "fetch_if_empty": 1,
-   "fieldname": "report_to_name",
-   "fieldtype": "Data",
-   "label": "Report to Name",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "site_supervisor.employee_name",
-   "fetch_if_empty": 1,
-   "fieldname": "site_supervisor_name",
-   "fieldtype": "Data",
-   "label": "Site Supervisor Name",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "shift_supervisor.employee_name",
-   "fetch_if_empty": 1,
-   "fieldname": "shift_supervisor_name",
-   "fieldtype": "Data",
-   "label": "Shift Supervisor Name",
    "read_only": 1
   },
   {
@@ -403,7 +320,7 @@
    "link_fieldname": "reference_docname"
   }
  ],
- "modified": "2025-12-08 10:24:01.685117",
+ "modified": "2026-01-02 10:24:01.685117",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Attendance Check",

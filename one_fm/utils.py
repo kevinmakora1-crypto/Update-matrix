@@ -4611,8 +4611,6 @@ def get_next(doctype, value, prev, filters=None, sort_order="desc", sort_field="
 		filters = []
 	if isinstance(filters, str):
 		filters = json.loads(filters)
-    
-
 	condition = ">" if sort_order.lower() == "asc" else "<"
 
 	if prev:

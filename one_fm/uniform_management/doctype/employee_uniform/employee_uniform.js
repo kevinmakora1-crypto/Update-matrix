@@ -228,8 +228,25 @@ var add_quality_feedback_schedule = function (frm) {
 					   args: { items: itemCodesToFetch },
 					   callback: function(r) {
 						   let itemTypeMap = {};
-						   if (r.message && Array.isArray(r.message)) {
-							   itemCodesToFetch.forEach((code, idx) => { itemTypeMap[code] = r.message[idx]; });
+						   if (r && r.message) {
+							   // If backend already returns a map/object keyed by item code, use it directly.
+							   if (!Array.isArray(r.message) && typeof r.message === "object") {
+								   itemTypeMap = r.message;
+							   } else if (Array.isArray(r.message)) {
+								   // Backward-compatible: if lengths match, assume positional alignment.
+								   if (r.message.length === itemCodesToFetch.length) {
+									   itemCodesToFetch.forEach(function (code, idx) {
+										   itemTypeMap[code] = r.message[idx];
+									   });
+								   } else if (r.message.every(function (entry) {
+									   return entry && typeof entry === "object" && "item_code" in entry && "item_type" in entry;
+								   })) {
+									   // Support array of objects: [{ item_code, item_type }, ...]
+									   r.message.forEach(function (entry) {
+										   itemTypeMap[entry.item_code] = entry.item_type;
+									   });
+								   }
+							   }
 						   }
 						   fillRows(itemTypeMap);
 					   }

@@ -175,7 +175,7 @@ var add_quality_feedback_schedule = function (frm) {
 			   let uniforms = frm.doc.uniforms || [];
 			   let itemCodesToFetch = uniforms.filter(u => !u.item_type || u.item_type === "").map(u => u.item);
 
-			   function fillRows(itemTypeMap) {
+			   function fill_rows(itemTypeMap) {
 				   uniforms.forEach(uniform => {
 					   grid.add_new_row();
 					   let data = grid.get_data();
@@ -230,11 +230,11 @@ var add_quality_feedback_schedule = function (frm) {
 						   if (r.message && Array.isArray(r.message)) {
 							   itemCodesToFetch.forEach((code, idx) => { itemTypeMap[code] = r.message[idx]; });
 						   }
-						   fillRows(itemTypeMap);
+						   fill_rows(itemTypeMap);
 					   }
 				   });
 			   } else {
-				   fillRows({});
+				   fill_rows({});
 			   }
 		   },
 		   __("Create")

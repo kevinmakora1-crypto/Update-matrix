@@ -183,42 +183,42 @@ var add_quality_feedback_schedule = function (frm) {
 					   if (row) {
 						   row.item_code = uniform.item;
 						   row.item_name = uniform.item_name;
-						   row.item_type = uniform.item_type || item_type_map[uniform.item] || "";
+						   row.item_type = uniform.item_type || itemTypeMap[uniform.item] || "";
 						   row.quantity = uniform.quantity;
 						   // Template and version left for user selection
 					   }
 				   });
-				grid.refresh();
-				d.show();
-				// Attach event for template selection to auto-fill version synchronously
-				setTimeout(function() {
-					let $dialog = $(d.$wrapper);
-					if (grid) {
-						$dialog.on('change blur', 'input[data-fieldname="quality_feedback_template"]', function(e) {
-							let $input = $(this);
-							let value = $input.val();
-							let $row = $input.closest('.grid-row');
-							let row_idx = $row.index();
-							let data = grid.get_data();
-							let row = data[row_idx];
-							if (value && row) {
-								frappe.call({
-									method: "frappe.client.get",
-									args: { doctype: "Quality Feedback Template", name: value },
-									callback: function (r) {
-										if (r.message && (r.message.custom_version_no || r.message.version_no)) {
-											row.feedback_template_version = r.message.custom_version_no || r.message.version_no;
-											grid.refresh();
-										}
-									},
-								});
-							} else if (row) {
-								row.feedback_template_version = "";
-								grid.refresh();
-							}
-						});
-					}
-				}, 200);
+				   grid.refresh();
+				   d.show();
+				   // Attach event for template selection to auto-fill version synchronously
+				   setTimeout(function() {
+					   let $dialog = $(d.$wrapper);
+					   if (grid) {
+						   $dialog.on('change blur', 'input[data-fieldname="quality_feedback_template"]', function(e) {
+							   let $input = $(this);
+							   let value = $input.val();
+							   let $row = $input.closest('.grid-row');
+							   let row_idx = $row.index();
+							   let data = grid.get_data();
+							   let row = data[row_idx];
+							   if (value && row) {
+								   frappe.call({
+									   method: "frappe.client.get",
+									   args: { doctype: "Quality Feedback Template", name: value },
+									   callback: function (r) {
+										   if (r.message && (r.message.custom_version_no || r.message.version_no)) {
+											   row.feedback_template_version = r.message.custom_version_no || r.message.version_no;
+											   grid.refresh();
+										   }
+									   },
+								   });
+							   } else if (row) {
+								   row.feedback_template_version = "";
+								   grid.refresh();
+							   }
+						   });
+					   }
+				   }, 200);
 			   }
 
 			   if (item_codes_to_fetch.length > 0) {
@@ -228,9 +228,9 @@ var add_quality_feedback_schedule = function (frm) {
 					   callback: function(r) {
 						   let item_type_map = {};
 						   if (r.message && Array.isArray(r.message)) {
-							   item_codes_to_fetch.forEach((code, idx) => { itemTypeMap[code] = r.message[idx]; });
+							   item_codes_to_fetch.forEach((code, idx) => { item_type_map[code] = r.message[idx]; });
 						   }
-						   fill_rows(itemTypeMap);
+						   fill_rows(item_type_map);
 					   }
 				   });
 			   } else {

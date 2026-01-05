@@ -173,9 +173,9 @@ var add_quality_feedback_schedule = function (frm) {
 			   // Pre-populate table rows with data from uniforms table
 			   let grid = d.fields_dict.quality_feedback_table.grid;
 			   let uniforms = frm.doc.uniforms || [];
-			   let itemCodesToFetch = uniforms.filter(u => !u.item_type || u.item_type === "").map(u => u.item);
+			   let item_codes_to_fetch = uniforms.filter(u => !u.item_type || u.item_type === "").map(u => u.item);
 
-			   function fillRows(item_type_map) {
+			   function fill_rows(itemTypeMap) {
 				   uniforms.forEach(uniform => {
 					   grid.add_new_row();
 					   let data = grid.get_data();
@@ -221,20 +221,20 @@ var add_quality_feedback_schedule = function (frm) {
 				}, 200);
 			   }
 
-			   if (itemCodesToFetch.length > 0) {
+			   if (item_codes_to_fetch.length > 0) {
 				   frappe.call({
 					   method: "one_fm.uniform_management.doctype.employee_uniform.employee_uniform.get_item_types",
-					   args: { items: itemCodesToFetch },
+					   args: { items: item_codes_to_fetch },
 					   callback: function(r) {
 						   let item_type_map = {};
 						   if (r.message && Array.isArray(r.message)) {
-							   itemCodesToFetch.forEach((code, idx) => { item_type_map[code] = r.message[idx]; });
+							   item_codes_to_fetch.forEach((code, idx) => { itemTypeMap[code] = r.message[idx]; });
 						   }
-						   fillRows(item_type_map);
+						   fill_rows(itemTypeMap);
 					   }
 				   });
 			   } else {
-				   fillRows({});
+				   fill_rows({});
 			   }
 		   },
 		   __("Create")

@@ -27,6 +27,7 @@ class GenerateContractComplianceChecker:
 			INNER JOIN `tabContracts` c ON ci.parent = c.name
 			AND c.workflow_state = %s
 			AND ci.item_code IS NOT NULL
+			AND c.name = 'Grand Hyatt-Grand Hyatt Kuwait-2022-07-01'
 		""", ("Active"), as_dict=1)
 	
 	def get_operation_roles(self, sale_item, project):

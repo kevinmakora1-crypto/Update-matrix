@@ -536,7 +536,7 @@ def create_quality_feedbacks(employee_uniform, selected_feedbacks):
             feedback_doc.custom_employee = employee_uniform_doc.employee
             feedback_doc.custom_item_code = row["item_code"]
             feedback_doc.custom_item_name = row.get("item_name")
-            feedback_doc.custom_item_quantity = row.get("quantity")
+            feedback_doc.custom_quantity = row.get("quantity")
             feedback_doc.custom_item_type = row.get("item_type")
             feedback_doc.custom_version_no = row.get("version_no") or row.get("feedback_template_version")
             feedback_doc.status = "Draft"

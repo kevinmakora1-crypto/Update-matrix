@@ -188,38 +188,37 @@ var add_quality_feedback_schedule = function (frm) {
 						   // Template and version left for user selection
 					   }
 				   });
-				   grid.refresh();
-				   d.show();
-				   // Attach event for template selection to auto-fill version synchronously
-				   setTimeout(function() {
-					   let $dialog = $(d.$wrapper);
-					   let grid = d.fields_dict.quality_feedback_table.grid;
-					   if (grid) {
-						   $dialog.on('change blur', 'input[data-fieldname="quality_feedback_template"]', function(e) {
-							   let $input = $(this);
-							   let value = $input.val();
-							   let $row = $input.closest('.grid-row');
-							   let row_idx = $row.index();
-							   let data = grid.get_data();
-							   let row = data[row_idx];
-							   if (value && row) {
-								   frappe.call({
-									   method: "frappe.client.get",
-									   args: { doctype: "Quality Feedback Template", name: value },
-									   callback: function (r) {
-										   if (r.message && (r.message.custom_version_no || r.message.version_no)) {
-											   row.feedback_template_version = r.message.custom_version_no || r.message.version_no;
-											   grid.refresh();
-										   }
-									   },
-								   });
-							   } else if (row) {
-								   row.feedback_template_version = "";
-								   grid.refresh();
-							   }
-						   });
-					   }
-				   }, 200);
+				grid.refresh();
+				d.show();
+				// Attach event for template selection to auto-fill version synchronously
+				setTimeout(function() {
+					let $dialog = $(d.$wrapper);
+					if (grid) {
+						$dialog.on('change blur', 'input[data-fieldname="quality_feedback_template"]', function(e) {
+							let $input = $(this);
+							let value = $input.val();
+							let $row = $input.closest('.grid-row');
+							let row_idx = $row.index();
+							let data = grid.get_data();
+							let row = data[row_idx];
+							if (value && row) {
+								frappe.call({
+									method: "frappe.client.get",
+									args: { doctype: "Quality Feedback Template", name: value },
+									callback: function (r) {
+										if (r.message && (r.message.custom_version_no || r.message.version_no)) {
+											row.feedback_template_version = r.message.custom_version_no || r.message.version_no;
+											grid.refresh();
+										}
+									},
+								});
+							} else if (row) {
+								row.feedback_template_version = "";
+								grid.refresh();
+							}
+						});
+					}
+				}, 200);
 			   }
 
 			   if (itemCodesToFetch.length > 0) {

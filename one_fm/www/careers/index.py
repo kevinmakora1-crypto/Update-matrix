@@ -2,8 +2,8 @@ import frappe
 from frappe.utils import getdate
 from .utils import remove_html_tags, get_department_list
 
-@frappe.whitelist(allow_guest=True)
 def get_context(context):
+    context.allow_guest = True
     context.no_cache = 1
     # Get recent openings
     context.recent_openings = get_recent_openings()

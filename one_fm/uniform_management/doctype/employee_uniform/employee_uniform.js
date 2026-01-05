@@ -175,7 +175,7 @@ var add_quality_feedback_schedule = function (frm) {
 			   let uniforms = frm.doc.uniforms || [];
 			   let itemCodesToFetch = uniforms.filter(u => !u.item_type || u.item_type === "").map(u => u.item);
 
-			   function fillRows(itemTypeMap) {
+			   function fillRows(item_type_map) {
 				   uniforms.forEach(uniform => {
 					   grid.add_new_row();
 					   let data = grid.get_data();
@@ -183,7 +183,7 @@ var add_quality_feedback_schedule = function (frm) {
 					   if (row) {
 						   row.item_code = uniform.item;
 						   row.item_name = uniform.item_name;
-						   row.item_type = uniform.item_type || itemTypeMap[uniform.item] || "";
+						   row.item_type = uniform.item_type || item_type_map[uniform.item] || "";
 						   row.quantity = uniform.quantity;
 						   // Template and version left for user selection
 					   }
@@ -226,11 +226,11 @@ var add_quality_feedback_schedule = function (frm) {
 					   method: "one_fm.uniform_management.doctype.employee_uniform.employee_uniform.get_item_types",
 					   args: { items: itemCodesToFetch },
 					   callback: function(r) {
-						   let itemTypeMap = {};
+						   let item_type_map = {};
 						   if (r.message && Array.isArray(r.message)) {
-							   itemCodesToFetch.forEach((code, idx) => { itemTypeMap[code] = r.message[idx]; });
+							   itemCodesToFetch.forEach((code, idx) => { item_type_map[code] = r.message[idx]; });
 						   }
-						   fillRows(itemTypeMap);
+						   fillRows(item_type_map);
 					   }
 				   });
 			   } else {

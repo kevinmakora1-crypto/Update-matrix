@@ -4602,3 +4602,69 @@ def get_task_type(task_type="Repetitive", is_routine_task=0):
         }).insert(ignore_permissions=True)
         return task_type.name
     return task_type
+
+
+@frappe.whitelist()
+def get_next(doctype, value, prev, filters=None, sort_order="desc", sort_field="modified"):
+	prev = int(prev)
+	if not filters:
+		filters = []
+	if isinstance(filters, str):
+		filters = json.loads(filters)
+	condition = ">" if sort_order.lower() == "asc" else "<"
+
+	if prev:
+		sort_order = "asc" if sort_order.lower() == "desc" else "desc"
+		condition = "<" if condition == ">" else ">"
+
+
+	if sort_field == "status":
+		current_status = frappe.db.get_value(doctype, value, "status")
+		current_modified = frappe.db.get_value(doctype, value, "modified")
+		
+		same_status_filters = filters + [
+			[doctype, "status", "=", current_status],
+			[doctype, "modified", condition, current_modified]
+		]
+		
+		res = frappe.get_list(
+			doctype,
+			fields=["name"],
+			filters=same_status_filters,
+			order_by=f"`tab{doctype}`.modified {sort_order}",
+			limit_page_length=1,
+			as_list=True,
+		)
+		
+		if not res:
+			different_status_filters = filters + [
+				[doctype, "status", condition, current_status]
+			]
+			
+			res = frappe.get_list(
+				doctype,
+				fields=["name"],
+				filters=different_status_filters,
+				order_by=f"`tab{doctype}`.status {sort_order}, `tab{doctype}`.modified {sort_order}",
+				limit_page_length=1,
+				as_list=True,
+			)
+	
+	else:
+		filters.append([doctype, sort_field, condition, frappe.get_value(doctype, value, sort_field)])
+		
+		res = frappe.get_list(
+			doctype,
+			fields=["name"],
+			filters=filters,
+			order_by=f"`tab{doctype}`.{sort_field} {sort_order}",
+			limit_start=0,
+			limit_page_length=1,
+			as_list=True,
+		)
+
+	if not res:
+		frappe.msgprint(_("No further records"))
+		return None
+	else:
+		return res[0][0]

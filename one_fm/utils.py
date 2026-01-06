@@ -4549,20 +4549,25 @@ def get_field_with_label(doctype, field_name, value):
         "value": value
     }
 
-def create_process_task(process_name, erp_document, task_description, employee, process_owner=None, business_analyst=None, task_type="Repetitive", is_routine_task=0):
+def create_process_task(process_name, erp_document, task_description, employee=None, process_owner=None, business_analyst=None, task_type="Repetitive", is_routine_task=0, frequency="", cron_format="", is_automated=0, method=""):
     create_process_if_not_exists(process_name, process_owner, business_analyst)
+    create_method_if_not_exists(method, erp_document)
     task_type = get_task_type(task_type, is_routine_task)
+
+    if frequency == "Cron" and not cron_format:
+        frappe.throw("Please provide a valid cron format for the task frequency.")
 
     return frappe.get_doc({
         "naming_series": "P-TASK-.YYYY.-",
         "process_name": process_name,
         "is_erp_task": 1,
-        "is_automated": 0,
+        "is_automated": is_automated,
         "is_active": 1,
         "erp_document": erp_document,
         "task": task_description,
         "task_type": task_type,
-        "frequency": "",
+        "frequency": frequency,
+        "cron_format": cron_format,
         "repeat_on_day": 0,
         "repeat_on_last_day": 0,
         "hours_per_frequency": 0.0,
@@ -4572,7 +4577,8 @@ def create_process_task(process_name, erp_document, task_description, employee, 
         "report_frequency": "",
         "doctype": "Process Task",
         "coordination_method": [],
-        "repeat_on_days": []
+        "repeat_on_days": [],
+        "method": method
     }).insert(ignore_permissions=True)
 
 def create_process_if_not_exists(process_name, process_owner="Administrator", business_analyst="Administrator"):
@@ -4591,6 +4597,15 @@ def create_process_if_not_exists(process_name, process_owner="Administrator", bu
             "process_owner_name": process_owner_name,
             "business_analyst": business_analyst,
             "business_analyst_name": business_analyst_name
+        }).insert(ignore_permissions=True)
+
+def create_method_if_not_exists(method, document_type):
+    if method and not frappe.db.exists("Method", method):
+        frappe.get_doc({
+            "method": method,
+            "description": method,
+            "document_type": document_type,
+            "doctype": "Method"
         }).insert(ignore_permissions=True)
 
 def get_task_type(task_type="Repetitive", is_routine_task=0):

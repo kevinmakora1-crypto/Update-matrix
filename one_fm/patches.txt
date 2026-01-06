@@ -233,6 +233,7 @@ one_fm.patches.v15_0.add_update_custom_field #2026-01-04
 one_fm.patches.v15_0.rename_account_supervisor_to_site_supervisor
 one_fm.patches.v15_0.set_conversion_factor_precision
 one_fm.patches.v15_0.add_buying_settings_custom_field
+one_fm.patches.v15_0.create_process_task_for_medical_reminders
 one_fm.patches.v15_0.add_assignment_rule_action_attendance_check_approver
 one_fm.patches.v15_0.update_existing_attendance_checks
 

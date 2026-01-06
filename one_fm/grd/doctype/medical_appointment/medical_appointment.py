@@ -4,7 +4,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import today, getdate
+from frappe.utils import today, getdate, nowdate, add_days, format_datetime
 from one_fm.utils import get_employee_site_supervisor_user, get_approver_user
 
 class MedicalAppointment(Document):
@@ -210,3 +210,82 @@ def create_medical_appointment_notification_log(medical_appointment, subject, me
 		"type": "Alert"
 	}
 	frappe.get_doc(notification_doc).insert(ignore_permissions=True)
+
+def send_medical_appointment_reminders():
+	"""
+	Sends daily reminders to Transportation Supervisors for medical appointments
+	scheduled for the next day.
+	"""
+	tomorrow_date = getdate(add_days(nowdate(), 1))
+
+	appointments_by_supervisor = get_appointments_for_supervisor(tomorrow_date)
+
+	for supervisor, supervisor_appointments in appointments_by_supervisor.items():
+		pickup_locations_list = []
+		for appointment in supervisor_appointments:
+			pickup_time = format_datetime(appointment.date_and_time_confirmation, "hh:mm a")
+			pickup_location_name = ""
+			if appointment.pickup_location == "Operations Site" and appointment.operations_site:
+				pickup_location_name = appointment.operations_site
+			elif appointment.pickup_location == "Accommodation" and appointment.accommodation_name:
+				pickup_location_name = appointment.accommodation_name
+
+			if pickup_location_name:
+				pickup_locations_list.append(
+					f"<li>{appointment.full_name}: {pickup_time} from {pickup_location_name}</li>"
+				)
+
+		if not pickup_locations_list:
+			continue
+
+		pickup_locations_html = f"<ol>{''.join(pickup_locations_list)}</ol>"
+
+		email_content = f"""
+		<p>You have {len(supervisor_appointments)} employees scheduled to attend medical appointments on {format_datetime(tomorrow_date, 'd MMMM YYYY')}.</p>
+		<p>Pick-up locations:</p>
+		{pickup_locations_html}
+		"""
+
+		frappe.new_doc(
+			"Notification Log",
+			{
+				"for_user": supervisor,
+				"document_type": "Medical Appointment",
+				"subject": f"Reminder: {len(supervisor_appointments)} medical appointments for tomorrow.",
+				"email_content": email_content,
+			},
+		).insert(ignore_permissions=True)
+
+def get_appointments_for_supervisor(tomorrow_date):
+	tomorrow_start = f"{tomorrow_date} 00:00:00"
+	tomorrow_end = f"{tomorrow_date} 23:59:59"
+
+	appointments = frappe.get_all(
+		"Medical Appointment",
+		filters={
+			"workflow_state": "Pending Transportation Supervisor",
+			"date_and_time_confirmation": ["between", (tomorrow_start, tomorrow_end)],
+			"transportation_supervisor_user": ('is', 'set')
+		},
+		fields=[
+			"full_name",
+			"date_and_time_confirmation",
+			"transportation_supervisor_user",
+			"pickup_location",
+			"operations_site",
+			"accommodation_name",
+		],
+	)
+
+	if not appointments:
+		return {}
+
+	# Group appointments by supervisor
+	appointments_by_supervisor = {}
+	for appointment in appointments:
+		supervisor = appointment.get("transportation_supervisor_user")
+		if supervisor not in appointments_by_supervisor:
+			appointments_by_supervisor[supervisor] = []
+		appointments_by_supervisor[supervisor].append(appointment)
+
+	return appointments_by_supervisor

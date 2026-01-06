@@ -7,15 +7,15 @@ import frappe, re
 from frappe.model.document import Document
 from frappe.contacts.address_and_contact import load_address_and_contact, delete_contact_and_address
 from frappe import _
-from frappe.utils import getdate, today
-from one_fm.one_fm.doctype.demand_letter.demand_letter import get_valid_demand_letter
-from one_fm.one_fm.doctype.agency_contract.agency_contract import get_valid_agency_contract
+from frappe.utils import getdate, today, add_days
+from one_fm.processor import sendemail
 
 class Agency(Document):
 	def validate(self):
-		self.validate_active_agency()
 		if self.agency_website:
 			validate_website_adress(self.agency_website)
+
+	def after_insert(self):
 		create_supplier_for_agency(self)
 		self.create_user_for_agency()
 
@@ -37,12 +37,6 @@ class Agency(Document):
 
 	def on_trash(self):
 		delete_contact_and_address('Customer', self.name)
-
-	def validate_active_agency(self):
-		if self.active:
-			active_details = is_agency_active(self)
-			if not active_details['active']:
-				frappe.throw(_(active_details['message']))
 
 @frappe.whitelist()
 def validate_website_adress(website):
@@ -67,31 +61,73 @@ def create_supplier_for_agency(agency):
 		supplier.save(ignore_permissions=True)
 		agency.supplier_code = supplier.name
 
-def is_agency_active(agency):
-	active = True
-	msg = "Active"
-	if not agency.attach_copy_of_agency_license:
-		active = False
-		msg = "Attach Copy of Agency Lisence to Make Agency Active"
-	elif not agency.verify_copy_of_agency_license:
-		active = False
-		msg = "Please Verify if the Agency has an Country Authorized Licences"
-	elif getdate(today()) > getdate(agency.license_validity_date):
-		active = False
-		msg = "Agency Lisence Validity is Expired"
-	elif not get_valid_agency_contract(agency.name):
-		active = False
-		msg = "Agency has no Active or Valid Contract"
-	elif not get_valid_demand_letter(agency.name):
-		active = False
-		msg = "Agency has no Valid Demand Letter"
-
-	return {'active': active, 'message': msg}
-
-def make_agency_active(agency):
-	if is_agency_active(agency)['active']:
-		agency.active = True
-		agency.save(ignore_permissions=True)
-
 def agency_has_website_permission(doc, ptype, user, verbose=False):
-    return True
+	return True
+
+def inactive_agency_on_license_expiry():
+	if not frappe.db.get_single_value("Hiring Settings", "inactive_agency_on_license_expiry"):
+		return
+
+	agencies = frappe.get_all("Agency", filters={"active": 1, "license_validity_date": ["<", today()]}, fields=["name"])
+	for agency in agencies:
+		frappe.db.set_value("Agency", agency.name, "active", 0)
+
+def inform_license_expiry():
+	if not frappe.db.get_single_value("Hiring Settings", "inform_agency_license_expiry_to_recruitment_team"):
+		return
+
+	inform_period_days = frappe.db.get_single_value("Hiring Settings", "agency_license_expiry_inform_period_days") or 0
+
+	notify_date = add_days(today(), inform_period_days)
+	agencies = frappe.get_all("Agency", filters={"active": 1, "license_validity_date": notify_date}, fields=["name", "license_validity_date", "company_email"])
+
+	if not agencies:
+		return
+
+	# Get the notification email from settings
+	notification_email = frappe.db.get_single_value("Hiring Settings", "agency_expiry_notification_email")
+
+	if not notification_email:
+		return
+
+	# Build the message with all agency details
+	agency_details = ""
+	for agency in agencies:
+		if agency.name:
+			agency_details += f"""
+				<tr>
+					<td style="padding: 8px; border: 1px solid #ddd;">{agency.name}</td>
+					<td style="padding: 8px; border: 1px solid #ddd;">{agency.license_validity_date}</td>
+					<td style="padding: 8px; border: 1px solid #ddd;">{agency.company_email or 'N/A'}</td>
+				</tr>
+			"""
+
+	if not agency_details:
+		return
+
+	message = f"""
+		<p>Dear Team,</p>
+		<p>The following agencies have licenses expiring on {notify_date}:</p>
+		<table style="border-collapse: collapse; width: 100%; margin: 20px 0;">
+			<thead>
+				<tr style="background-color: #f2f2f2;">
+					<th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Agency Name</th>
+					<th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Expiry Date</th>
+					<th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Company Email</th>
+				</tr>
+			</thead>
+			<tbody>
+				{agency_details}
+			</tbody>
+		</table>
+		<p>Please take the necessary actions to follow up on license renewals.</p>
+		<p>Best regards,<br>ONE FM Team</p>
+	"""
+
+
+	sendemail(
+		recipients=[notification_email],
+		subject=f"Agency License Expiry Notification - {len(agencies)} Agency(ies) Expiring on {notify_date}",
+		message=message,
+		is_external_mail=True
+	)

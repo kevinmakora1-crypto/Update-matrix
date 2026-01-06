@@ -30,7 +30,14 @@
   "easy_apply_to",
   "subcontract_hiring_settings_section",
   "subcontract_employment_type",
-  "subcontract_residency_status"
+  "subcontract_residency_status",
+  "agency_tab",
+  "hiring_agency_section",
+  "inform_agency_license_expiry_to_recruitment_team",
+  "agency_license_expiry_inform_period_days",
+  "agency_expiry_notification_email",
+  "column_break_cpky",
+  "inactive_agency_on_license_expiry"
  ],
  "fields": [
   {
@@ -195,11 +202,51 @@
    "label": "Job Offer Print Format",
    "mandatory_depends_on": "auto_email_job_offer",
    "options": "Print Format"
+  },
+  {
+   "fieldname": "hiring_agency_section",
+   "fieldtype": "Section Break",
+   "label": "Hiring Agency Settings"
+  },
+  {
+   "default": "0",
+   "fieldname": "inform_agency_license_expiry_to_recruitment_team",
+   "fieldtype": "Check",
+   "label": "Inform Agency License Expiry to Recruitment Team"
+  },
+  {
+   "fieldname": "agency_tab",
+   "fieldtype": "Tab Break",
+   "label": "Agency"
+  },
+  {
+   "fieldname": "column_break_cpky",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "inform_agency_license_expiry_to_recruitment_team",
+   "fieldname": "agency_expiry_notification_email",
+   "fieldtype": "Data",
+   "label": "Agency Expiry Notification Email",
+   "options": "Email"
+  },
+  {
+   "default": "0",
+   "fieldname": "inactive_agency_on_license_expiry",
+   "fieldtype": "Check",
+   "label": "Inactive Agency on License Expiry"
+  },
+  {
+   "depends_on": "inform_agency_license_expiry_to_recruitment_team",
+   "description": "Leave zero then, system will inform recruitment team on the day of license expiry. For example if the value is 30 then the system will inform the recruitment team 30 days prior to the license expiry date",
+   "fieldname": "agency_license_expiry_inform_period_days",
+   "fieldtype": "Int",
+   "label": "Agency License Expiry Inform Period Days"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-12-30 17:44:45.951842",
+ "modified": "2026-01-06 07:50:49.204202",
  "modified_by": "Administrator",
  "module": "Hiring",
  "name": "Hiring Settings",
@@ -216,6 +263,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

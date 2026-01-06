@@ -68,9 +68,14 @@ def inactive_agency_on_license_expiry():
 	if not frappe.db.get_single_value("Hiring Settings", "inactive_agency_on_license_expiry"):
 		return
 
-	agencies = frappe.get_all("Agency", filters={"active": 1, "license_validity_date": ["<", today()]}, fields=["name"])
-	for agency in agencies:
-		frappe.db.set_value("Agency", agency.name, "active", 0)
+	frappe.db.sql("""
+		UPDATE 
+			`tabAgency`
+		SET 
+			active = 0
+		WHERE 
+			active = 1 AND license_validity_date < %s
+	""", today())
 
 def inform_license_expiry():
 	if not frappe.db.get_single_value("Hiring Settings", "inform_agency_license_expiry_to_recruitment_team"):

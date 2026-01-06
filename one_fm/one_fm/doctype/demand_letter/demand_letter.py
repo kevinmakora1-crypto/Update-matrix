@@ -26,7 +26,7 @@ def get_demand_letter_quota(agency, designation, gender):
 def get_demand_letter(agency, designation, gender):
 	demand_letters = frappe.db.get_all("Demand Letter", {
 		"agency": agency,
-		"docstatus": 0,
+		"docstatus": 1,
 		"valid_till_date": [">=", today()]
 	}, ["name"])
 	if not demand_letters:
@@ -85,7 +85,7 @@ def inform_demand_letter_validity_expiry():
 
 	sendemail(
 		recipients=[notification_email],
-		subject=f"Demand Letter Validity Expiry Notification - {len(demand_letters)} Demand Letter(s) Expiring Today",
+		subject=f"Demand Letter Validity Expiry Notification - {len(demand_letters)} Demand Letter(s) Expiring on {notify_date}",
 		message=message,
 		is_external_mail=True
 	)

@@ -2,6 +2,8 @@ import frappe
 
 def execute():
     doctype_name = "Operations Site"
+
+    frappe.reload_doctype(doctype_name)
     
     if not frappe.db.has_column(doctype_name, "account_supervisor"):
         return

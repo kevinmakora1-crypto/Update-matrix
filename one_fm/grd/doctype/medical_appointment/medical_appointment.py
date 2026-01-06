@@ -222,17 +222,17 @@ def send_medical_appointment_reminders():
 
 	for supervisor, supervisor_appointments in appointments_by_supervisor.items():
 		pickup_locations_list = []
-		for app in supervisor_appointments:
-			pickup_time = format_datetime(app.date_and_time_confirmation, "hh:mm a")
+		for appointment in supervisor_appointments:
+			pickup_time = format_datetime(appointment.date_and_time_confirmation, "hh:mm a")
 			pickup_location_name = ""
-			if app.pickup_location == "Operations Site" and app.operations_site:
-				pickup_location_name = app.operations_site
-			elif app.pickup_location == "Accommodation" and app.accommodation_name:
-				pickup_location_name = app.accommodation_name
+			if appointment.pickup_location == "Operations Site" and appointment.operations_site:
+				pickup_location_name = appointment.operations_site
+			elif appointment.pickup_location == "Accommodation" and appointment.accommodation_name:
+				pickup_location_name = appointment.accommodation_name
 
 			if pickup_location_name:
 				pickup_locations_list.append(
-					f"<li>{app.full_name}: {pickup_time} from {pickup_location_name}</li>"
+					f"<li>{appointment.full_name}: {pickup_time} from {pickup_location_name}</li>"
 				)
 
 		if not pickup_locations_list:

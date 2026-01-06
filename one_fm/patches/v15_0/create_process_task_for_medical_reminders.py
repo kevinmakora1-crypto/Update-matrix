@@ -11,5 +11,5 @@ def execute():
         frequency= "Cron",
         cron_format= "0 9 * * *",
 		is_automated= 1,
-		method= "one_fm.grd.doctype.medical_appointment.medical_appointment_reminder.send_medical_appointment_reminders"
+		method= "one_fm.grd.doctype.medical_appointment.medical_appointment.send_medical_appointment_reminders"
 	)

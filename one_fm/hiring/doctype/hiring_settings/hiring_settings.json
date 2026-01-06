@@ -37,7 +37,14 @@
   "agency_license_expiry_inform_period_days",
   "agency_expiry_notification_email",
   "column_break_cpky",
-  "inactive_agency_on_license_expiry"
+  "inactive_agency_on_license_expiry",
+  "demand_letter_settings_section",
+  "inform_demand_letter_validity_expiry_to_recruitment_team",
+  "demand_letter_validity_expiry_inform_period_days",
+  "demand_letter_validity_expiry_notification_email",
+  "column_break_iofg",
+  "inform_demand_letter_quota_completion",
+  "demand_letter_quota_completion_notification_email"
  ],
  "fields": [
   {
@@ -206,7 +213,7 @@
   {
    "fieldname": "hiring_agency_section",
    "fieldtype": "Section Break",
-   "label": "Hiring Agency Settings"
+   "label": "Agency Settings"
   },
   {
    "default": "0",
@@ -242,11 +249,54 @@
    "fieldname": "agency_license_expiry_inform_period_days",
    "fieldtype": "Int",
    "label": "Agency License Expiry Inform Period Days"
+  },
+  {
+   "fieldname": "demand_letter_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Demand Letter Settings"
+  },
+  {
+   "default": "0",
+   "fieldname": "inform_demand_letter_validity_expiry_to_recruitment_team",
+   "fieldtype": "Check",
+   "label": "Inform Demand Letter Validity Expiry to Recruitment Team"
+  },
+  {
+   "depends_on": "inform_demand_letter_validity_expiry_to_recruitment_team",
+   "description": "Leave zero then, system will inform recruitment team on the day of demand letter validity till date. For example if the value is 30 then the system will inform the recruitment team 30 days prior to the demand letter validity till date",
+   "fieldname": "demand_letter_validity_expiry_inform_period_days",
+   "fieldtype": "Int",
+   "label": "Demand Letter Validity Expiry Inform Period Days"
+  },
+  {
+   "depends_on": "inform_demand_letter_validity_expiry_to_recruitment_team",
+   "fieldname": "demand_letter_validity_expiry_notification_email",
+   "fieldtype": "Data",
+   "label": "Demand Letter Validity Expiry Notification Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "column_break_iofg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Inform the recruitment team and show message on screen if demand letter quota completed on employee creation for the agency, designation and gender",
+   "fieldname": "inform_demand_letter_quota_completion",
+   "fieldtype": "Check",
+   "label": "Inform Demand Letter Quota Completion"
+  },
+  {
+   "depends_on": "inform_demand_letter_quota_completion",
+   "fieldname": "demand_letter_quota_completion_notification_email",
+   "fieldtype": "Data",
+   "label": "Demand Letter Quota Completion Notification Email",
+   "options": "Email"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-01-06 07:50:49.204202",
+ "modified": "2026-01-06 09:07:14.570098",
  "modified_by": "Administrator",
  "module": "Hiring",
  "name": "Hiring Settings",

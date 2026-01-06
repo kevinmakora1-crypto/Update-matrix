@@ -20,6 +20,7 @@ from one_fm.utils import call_to_get_assurance_level, get_domain, get_standard_n
 from six import string_types
 from frappe import _
 from one_fm.operations.doctype.operations_shift.operations_shift import get_supervisor_operations_shifts
+from one_fm.one_fm.doctype.demand_letter.demand_letter import get_demand_letter, get_demand_letter_quota
 
 class EmployeeOverride(EmployeeMaster):
     def validate(self):
@@ -55,6 +56,7 @@ class EmployeeOverride(EmployeeMaster):
         employee_validate_attendance_by_timesheet(self, method=None)
         validate_leaves(self)
         self.validate_relieving_date()
+        self.update_agency_employee_count()
 
     def toggle_auto_attendance(self):
         try:
@@ -116,6 +118,7 @@ class EmployeeOverride(EmployeeMaster):
     def after_insert(self):
         employee_after_insert(self, method=None)
         self.assign_role_profile_based_on_designation()
+        self.update_agency_employee_count()
 
     @frappe.whitelist()
     def run_employee_id_generation(self):
@@ -137,6 +140,41 @@ class EmployeeOverride(EmployeeMaster):
                 user.save()
             else:
                 frappe.msgprint("Role profile not set in Designation, please set default.")
+
+    def update_agency_employee_count(self):
+        if not self.job_applicant:
+            return
+        agency = frappe.db.get_value("Job Applicant", self.job_applicant, "one_fm_agency")
+        if not agency:
+            return
+        if agency:
+            if not  get_demand_letter(agency, self.designation, self.gender):
+                return
+            demand_letter = get_demand_letter_quota(agency, self.designation, self.gender)
+            available_quota = 0
+            if demand_letter:
+                available_quota = demand_letter.quantity - demand_letter.used_quantity
+            if available_quota <= 0:
+                inform_demand_letter_quota_completion = frappe.db.get_single_value("Hiring Settings", "inform_demand_letter_quota_completion")
+                if not inform_demand_letter_quota_completion:
+                    return
+
+                if inform_demand_letter_quota_completion:
+                    frappe.msgprint(f"Demand letter quota for agency {self.agency} has been exhausted.")
+                    completion_notification_email = frappe.db.get_single_value("Hiring Settings", "demand_letter_quota_completion_notification_email")
+
+                    if not completion_notification_email:
+                        return
+
+                    sendemail(
+                        recipients=[completion_notification_email],
+                        subject="Demand Letter Quota Exhausted",
+                        message=f"The demand letter quota for agency {self.agency} has been exhausted."
+                    )
+            elif demand_letter:
+                # Update used quantity
+                new_used_quantity = demand_letter.used_quantity + 1
+                frappe.db.set_value("Demand Letter Demand", demand_letter.name, "used_quantity", new_used_quantity)
 
     def on_update(self):
         super(EmployeeOverride, self).on_update()

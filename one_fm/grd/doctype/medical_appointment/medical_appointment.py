@@ -246,9 +246,9 @@ def send_medical_appointment_reminders():
 		{pickup_locations_html}
 		"""
 
-		frappe.new_doc(
-			"Notification Log",
+		frappe.get_doc(
 			{
+				"doctype": "Notification Log",
 				"for_user": supervisor,
 				"document_type": "Medical Appointment",
 				"subject": f"Reminder: {len(supervisor_appointments)} medical appointments for tomorrow.",

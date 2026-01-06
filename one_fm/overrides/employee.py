@@ -56,7 +56,6 @@ class EmployeeOverride(EmployeeMaster):
         employee_validate_attendance_by_timesheet(self, method=None)
         validate_leaves(self)
         self.validate_relieving_date()
-        self.update_agency_employee_count()
 
     def toggle_auto_attendance(self):
         try:
@@ -160,7 +159,7 @@ class EmployeeOverride(EmployeeMaster):
                     return
 
                 if inform_demand_letter_quota_completion:
-                    frappe.msgprint(f"Demand letter quota for agency {self.agency} has been exhausted.")
+                    frappe.msgprint(f"Demand letter quota for agency {agency} has been exhausted.")
                     completion_notification_email = frappe.db.get_single_value("Hiring Settings", "demand_letter_quota_completion_notification_email")
 
                     if not completion_notification_email:
@@ -169,7 +168,7 @@ class EmployeeOverride(EmployeeMaster):
                     sendemail(
                         recipients=[completion_notification_email],
                         subject="Demand Letter Quota Exhausted",
-                        message=f"The demand letter quota for agency {self.agency} has been exhausted."
+                        message=f"The demand letter quota for agency {agency} has been exhausted."
                     )
             elif demand_letter:
                 # Update used quantity

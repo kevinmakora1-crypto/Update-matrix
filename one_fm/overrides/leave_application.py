@@ -822,7 +822,7 @@ class ReassignDutiesToReliever(NotifyAttendanceManagerOnStatusChange):
         operations_site_supervisor = self._operations_site_supervisor
         if operations_site_supervisor:
             for obj in operations_site_supervisor:
-                frappe.db.set_value("Operations Site", obj, "account_supervisor", self._reliever.name)
+                frappe.db.set_value("Operations Site", obj, "site_supervisor", self._reliever.name)
             self._reassigned_documents.update({"Operations Site": operations_site_supervisor})
 
 
@@ -879,7 +879,7 @@ class ReassignDocumentToLeaveApplicant:
 
     def reassign_operations_site(self, sites: list):
         for obj in sites:
-            frappe.db.set_value("Operations Site", obj, "account_supervisor", self._employee.name)
+            frappe.db.set_value("Operations Site", obj, "site_supervisor", self._employee.name)
 
 
     def reassign_operation_shift(self, shifts: list):

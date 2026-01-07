@@ -229,6 +229,15 @@ one_fm.patches.v15_0.update_contracts_workflow #rerun
 one_fm.patches.v15_0.add_workflow_shift_permission
 one_fm.patches.v15_0.update_attendance_is_unscheduled
 one_fm.patches.v15_0.update_employee_status_options
+one_fm.patches.v15_0.add_update_custom_field #2026-01-04
+one_fm.patches.v15_0.rename_account_supervisor_to_site_supervisor
+one_fm.patches.v15_0.set_conversion_factor_precision
+one_fm.patches.v15_0.add_buying_settings_custom_field
+one_fm.patches.v15_0.create_process_task_for_medical_reminders
+one_fm.patches.v15_0.add_assignment_rule_action_attendance_check_approver
+one_fm.patches.v15_0.update_existing_attendance_checks
+one_fm.patches.v15_0.add_process_task_agency_expiry_actions
+one_fm.patches.v15_0.add_process_task_demand_letter_expiry
 
 [post_model_sync]
 one_fm.patches.v15_0.add_assignment_rule_returning_to_operations_supervisor_of_client_event
@@ -268,7 +277,7 @@ one_fm.patches.v15_0.add_quality_feedback_template_property_setter
 one_fm.patches.v15_0.apply_customizations_for_currency_exchange_settings
 one_fm.patches.v15_0.add_feedback_fields_to_hd_ticket
 one_fm.patches.v15_0.add_assignment_rule_for_hd_ticket_process_task_based #1
-one_fm.patches.v15_0.add_quality_feedback_custom_field #2025-12-10
+one_fm.patches.v15_0.add_quality_feedback_custom_field #2026-01-05
 one_fm.patches.v15_0.add_quality_feedback_property_setter #2025-12-04
 one_fm.patches.v15_0.add_quality_feedback_workflow #2025-12-04
 one_fm.patches.v15_0.rename_warehouse_fields_in_rfm

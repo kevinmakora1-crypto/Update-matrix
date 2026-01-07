@@ -4,9 +4,16 @@
 frappe.ui.form.on('Google Sheet Data Export', {
 	refresh: (frm) => {
 		if(!frm.is_new()){
-			frm.add_custom_button(__('Export Sheet'), function(){
-				export_data(frm);
-			});
+			const is_system_manager = frappe.user_roles.includes('System Manager');
+			const is_in_export_access = frm.doc.export_access && 
+				frm.doc.export_access.some(row => row.user === frappe.session.user);
+			
+			if (is_system_manager || is_in_export_access) {
+				frm.add_custom_button(__('Export Sheet'), function(){
+					export_data(frm);
+				});
+			}
+
 			const doctype = frm.doc.reference_doctype;
 			if (doctype) {
 				frappe.model.with_doctype(doctype, () => set_filters_and_field(frm));

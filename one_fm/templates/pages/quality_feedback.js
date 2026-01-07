@@ -242,6 +242,9 @@ frappe.ready(() => {
                 'Operation Site:',
                 'Issued On:',
                 'Current Feedback Schedule:',
+                'Item Code:',
+                'Item Name:',
+                'Quantity:',
                 'Quality Feedback Questions',
                 'Survey Question',
                 'Rating Option:',
@@ -332,15 +335,18 @@ frappe.ready(() => {
             const operationSite = data.operation_site || '';
             const issuedOn = data.issued_on || '';
             const feedbackSchedule = data.current_feedback_schedule || '';
+            const itemCode = data.item_code || '';
+            const itemName = data.item_name || '';
+            const itemQuantity = data.item_quantity || '';
 
             // Translate all content (or skip translation if English)
             let translations, questions;
-            
             if (selectedLanguage === 'en') {
                 // For English, use original texts without translation
                 translations = [
                     'Hello', ', tell us about your Feedback about', 'Quality Feedback Details',
                     'Employee ID:', 'Employee Name:', 'Operation Site:', 'Issued On:', 'Current Feedback Schedule:',
+                    'Item Code:', 'Item Name:', 'Quantity:',
                     'Quality Feedback Questions', 'Survey Question', 'Rating Option:', 'Select Rating',
                     'Additional Details', 'Noticed Damage?:', 'No', 'Yes', 'Damage Description:',
                     'Describe any damage noticed...', 'Damage Attachment:', 'Feedback:',
@@ -355,7 +361,8 @@ frappe.ready(() => {
 
             const [
                 helloText, tellAboutText, detailsTitle, employeeIdLabel, employeeNameLabel, operationSiteLabel,
-                issuedOnLabel, scheduleLabel, questionsTitle, surveyQuestionText, ratingLabel,
+                issuedOnLabel, scheduleLabel, itemCodeLabel, itemNameLabel, itemQuantityLabel,
+                questionsTitle, surveyQuestionText, ratingLabel,
                 selectRatingText, additionalDetailsTitle, damageLabel, noText, yesText,
                 damageDescLabel, damagePlaceholder, damageAttachmentLabel,
                 feedbackLabel, feedbackPlaceholder, submitText, cameraText, chooseFileText
@@ -414,6 +421,18 @@ frappe.ready(() => {
                         <div class="detail-row">
                             <div class="detail-label">${employeeNameLabel}</div>
                             <div class="detail-value auto-fill">${employeeName}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">${itemCodeLabel}</div>
+                            <div class="detail-value auto-fill">${itemCode}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">${itemNameLabel}</div>
+                            <div class="detail-value auto-fill">${itemName}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">${itemQuantityLabel}</div>
+                            <div class="detail-value auto-fill">${itemQuantity}</div>
                         </div>
                         <div class="detail-row">
                             <div class="detail-label">${operationSiteLabel}</div>

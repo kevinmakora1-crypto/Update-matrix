@@ -56,7 +56,7 @@ class LeaveHandover(Document):
 		for item in self.handover_items:
 			field_to_update = {
 				"Project": "account_manager",
-				"Operations Site": "account_supervisor",
+				"Operations Site": "site_supervisor",
 				"Process Task": "employee",
 				"Employee": "reports_to",
 			}.get(item.reference_doctype)
@@ -66,7 +66,7 @@ class LeaveHandover(Document):
 				values_to_update = {field_to_update: employee}
 				name_field_to_update = {
 					"Project": "manager_name",
-					"Operations Site": "account_supervisor_name",
+					"Operations Site": "site_supervisor_name",
 					"Process Task": "employee_name",
 				}.get(item.reference_doctype)
 
@@ -189,7 +189,7 @@ def get_handover_data(leave_application):
 	# Fetch operations sites
 	sites = frappe.get_all(
 		"Operations Site",
-		filters={"status": "Active", "account_supervisor": employee},
+		filters={"status": "Active", "site_supervisor": employee},
 		fields=["name"],
 	)
 	for site in sites:

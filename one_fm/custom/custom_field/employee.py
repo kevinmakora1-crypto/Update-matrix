@@ -8,7 +8,7 @@ def get_employee_custom_fields():
                 "fieldtype": "Data",
                 "label": "Site Supervisor Name",
                 "insert_after": "site",
-                "fetch_from":"site.account_supervisor_name",
+                "fetch_from":"site.site_supervisor_name",
                 "read_only": 1,
                 },
             {

@@ -11,9 +11,8 @@ from frappe.utils import add_days, today, now, get_url_to_form, getdate
 from one_fm.utils import (
     production_domain,
     fetch_attendance_manager_user,
-    get_approver
+    get_approver_user
 )
-from one_fm.operations.doctype.operations_shift.operations_shift import get_shift_supervisor
 
 class AttendanceCheck(Document):
     def before_insert(self):
@@ -120,18 +119,7 @@ class AttendanceCheck(Document):
         )
 
     def set_attedance_check_approver(self):
-        employee = frappe.db.get_value(
-            "Employee",
-            {"name": self.employee},
-            ["reports_to", "shift", "site"],
-            as_dict=1
-        )
-        if employee.reports_to:
-            self.reports_to = employee.reports_to
-        if employee.shift:
-            self.shift_supervisor = get_shift_supervisor(employee.shift)
-        if employee.site:
-            self.site_supervisor = frappe.db.get_value('Operations Site', employee.site, 'account_supervisor')
+        self.approver = get_approver_user(self.employee)
 
     def after_insert(self):
         """

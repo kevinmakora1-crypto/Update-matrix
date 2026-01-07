@@ -42,9 +42,12 @@ class Bed(Document):
 				update
 					`tabAccommodation Space Bed`
 				set
-					disabled=%(disabled)s, bed_type=%(bed_type)s, gender=%(gender)s
+					disabled = %(disabled)s,
+					bed_type = %(bed_type)s,
+					gender = %(gender)s,
+					status = %(status)s
 				where
-					bed=%(bed)s and name=%(bed_in_space)s
+					bed = %(bed)s and name = %(bed_in_space)s
 			"""
 			filters = {
 				'disabled': self.disabled, 'gender': self.gender, 'status': self.status,

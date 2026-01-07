@@ -3118,7 +3118,7 @@ def get_employee_site_supervisor(employee):
     employee_field_list = ["user_id", "reports_to", "shift", "site", "shift_working", "employee_name"]
     employee_data = frappe.db.get_value('Employee', employee, employee_field_list, as_dict=1)
     if employee_data.site:
-        site_supervisor = frappe.db.get_value('Operations Site', employee_data.site, 'account_supervisor')
+        site_supervisor = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
         return site_supervisor
     return None
 
@@ -3158,14 +3158,14 @@ def get_approver(employee, date=False):
                 if line_manager:
                     return line_manager
             if not line_manager and employee_data.site:
-                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'account_supervisor')
+                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
                 if not line_manager:
                     project = frappe.db.get_value('Operations Site', employee_data.site, 'project')
                     if project:
                         line_manager = frappe.db.get_value('Project', project, 'account_manager')
         else:
             if employee_data.site:
-                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'account_supervisor')
+                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
 
             if not line_manager and employee_data.shift:
                 line_manager = get_shift_supervisor(employee_data.shift, date)
@@ -3222,7 +3222,7 @@ def get_approver_for_many_employees(supervisor=None):
     if has_roles:
         return [i.name for i in frappe.db.get_list("Employee", ignore_permissions=True)]
     employees = [i.name for i in frappe.db.get_list('Employee', {'reports_to':supervisor}, "name", ignore_permissions=True)]
-    operations_site = [i.name for i in frappe.db.get_list('Operations Site', {'account_supervisor':supervisor}, "name", ignore_permissions=True)]
+    operations_site = [i.name for i in frappe.db.get_list('Operations Site', {'site_supervisor':supervisor}, "name", ignore_permissions=True)]
     if operations_site:
         employees += [i.name for i in frappe.db.get_list('Employee', {'site':['IN', operations_site]}, "name", ignore_permissions=True) if not i.name in employees]
     operations_shift = [i.name for i in frappe.db.get_list('Operations Shift', {'supervisor':supervisor}, "name", ignore_permissions=True)]
@@ -3259,13 +3259,13 @@ def get_other_managers(employee):
 
                     UNION
 
-                    SELECT account_supervisor  as manager FROM `tabOperations Site`
+                    SELECT site_supervisor  as manager FROM `tabOperations Site`
                     WHERE name = '{emp_data.get('site')}' AND status = 'Active'
 
                     """
             else:
                 query = f"""
-                    SELECT account_supervisor as manager FROM `tabOperations Site`
+                    SELECT site_supervisor as manager FROM `tabOperations Site`
                 WHERE name = '{emp_data.get('site')}' AND status = 'Active'
 
                 """
@@ -4437,15 +4437,15 @@ def send_enrollment_status():
 		site_details = frappe.get_value(
 			"Operations Site",
 			emp.site,
-			["account_supervisor", "account_supervisor_name"],
+			["site_supervisor", "site_supervisor_name"],
 			as_dict=True
 		)
 
-		if not site_details or not site_details.account_supervisor:
+		if not site_details or not site_details.site_supervisor:
 			continue
 
-		supervisor_id = site_details.account_supervisor
-		supervisor_name = site_details.account_supervisor_name
+		supervisor_id = site_details.site_supervisor
+		supervisor_name = site_details.site_supervisor_name
 
 		supervisor_email = frappe.get_value("Employee", supervisor_id, "user_id")
 
@@ -4549,20 +4549,25 @@ def get_field_with_label(doctype, field_name, value):
         "value": value
     }
 
-def create_process_task(process_name, erp_document, task_description, employee, process_owner=None, business_analyst=None, task_type="Repetitive", is_routine_task=0):
+def create_process_task(process_name, erp_document, task_description, employee=None, process_owner=None, business_analyst=None, task_type="Repetitive", is_routine_task=0, frequency="", cron_format="", is_automated=0, method=""):
     create_process_if_not_exists(process_name, process_owner, business_analyst)
+    create_method_if_not_exists(method, erp_document)
     task_type = get_task_type(task_type, is_routine_task)
+
+    if frequency == "Cron" and not cron_format:
+        frappe.throw("Please provide a valid cron format for the task frequency.")
 
     return frappe.get_doc({
         "naming_series": "P-TASK-.YYYY.-",
         "process_name": process_name,
         "is_erp_task": 1,
-        "is_automated": 0,
+        "is_automated": is_automated,
         "is_active": 1,
         "erp_document": erp_document,
         "task": task_description,
         "task_type": task_type,
-        "frequency": "",
+        "frequency": frequency,
+        "cron_format": cron_format,
         "repeat_on_day": 0,
         "repeat_on_last_day": 0,
         "hours_per_frequency": 0.0,
@@ -4572,7 +4577,8 @@ def create_process_task(process_name, erp_document, task_description, employee, 
         "report_frequency": "",
         "doctype": "Process Task",
         "coordination_method": [],
-        "repeat_on_days": []
+        "repeat_on_days": [],
+        "method": method
     }).insert(ignore_permissions=True)
 
 def create_process_if_not_exists(process_name, process_owner="Administrator", business_analyst="Administrator"):
@@ -4593,6 +4599,15 @@ def create_process_if_not_exists(process_name, process_owner="Administrator", bu
             "business_analyst_name": business_analyst_name
         }).insert(ignore_permissions=True)
 
+def create_method_if_not_exists(method, document_type):
+    if method and not frappe.db.exists("Method", method):
+        frappe.get_doc({
+            "method": method,
+            "description": method,
+            "document_type": document_type,
+            "doctype": "Method"
+        }).insert(ignore_permissions=True)
+
 def get_task_type(task_type="Repetitive", is_routine_task=0):
     if not frappe.db.exists("Task Type", task_type):
         task_type = frappe.get_doc({
@@ -4602,3 +4617,69 @@ def get_task_type(task_type="Repetitive", is_routine_task=0):
         }).insert(ignore_permissions=True)
         return task_type.name
     return task_type
+
+
+@frappe.whitelist()
+def get_next(doctype, value, prev, filters=None, sort_order="desc", sort_field="modified"):
+	prev = int(prev)
+	if not filters:
+		filters = []
+	if isinstance(filters, str):
+		filters = json.loads(filters)
+	condition = ">" if sort_order.lower() == "asc" else "<"
+
+	if prev:
+		sort_order = "asc" if sort_order.lower() == "desc" else "desc"
+		condition = "<" if condition == ">" else ">"
+
+
+	if sort_field == "status":
+		current_status = frappe.db.get_value(doctype, value, "status")
+		current_modified = frappe.db.get_value(doctype, value, "modified")
+		
+		same_status_filters = filters + [
+			[doctype, "status", "=", current_status],
+			[doctype, "modified", condition, current_modified]
+		]
+		
+		res = frappe.get_list(
+			doctype,
+			fields=["name"],
+			filters=same_status_filters,
+			order_by=f"`tab{doctype}`.modified {sort_order}",
+			limit_page_length=1,
+			as_list=True,
+		)
+		
+		if not res:
+			different_status_filters = filters + [
+				[doctype, "status", condition, current_status]
+			]
+			
+			res = frappe.get_list(
+				doctype,
+				fields=["name"],
+				filters=different_status_filters,
+				order_by=f"`tab{doctype}`.status {sort_order}, `tab{doctype}`.modified {sort_order}",
+				limit_page_length=1,
+				as_list=True,
+			)
+	
+	else:
+		filters.append([doctype, sort_field, condition, frappe.get_value(doctype, value, sort_field)])
+		
+		res = frappe.get_list(
+			doctype,
+			fields=["name"],
+			filters=filters,
+			order_by=f"`tab{doctype}`.{sort_field} {sort_order}",
+			limit_start=0,
+			limit_page_length=1,
+			as_list=True,
+		)
+
+	if not res:
+		frappe.msgprint(_("No further records"))
+		return None
+	else:
+		return res[0][0]

@@ -3,8 +3,8 @@
 
 frappe.ui.form.on('Agency', {
 	refresh: function(frm) {
-    set_address_and_contact_html(frm);
-    frm.set_df_property('attachments_required_section', 'hidden', frm.doc.__islocal);
+		set_address_and_contact_html(frm);
+		frm.set_df_property('attachments_required_section', 'hidden', frm.doc.__islocal);
 	},
 	agency_website: function(frm) {
 		validate_website_adress(frm);

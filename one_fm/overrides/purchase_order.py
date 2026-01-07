@@ -530,7 +530,7 @@ def get_incorrect_purchase_orders(start_date, end_date,fix=False):
         AND po.transaction_date BETWEEN %(start_date)s AND %(end_date)s
         AND poi.qty > 0
         AND poi.amount > 0
-        AND (poi.amount / poi.qty) != poi.rate
+        AND ROUND((poi.amount / poi.qty), 3) != ROUND(poi.rate, 3)
     """
     
     result = frappe.db.sql(query, {

@@ -12,7 +12,7 @@ from erpnext.projects.doctype.project.project import Project
 def notify_project_team(doc):
     template = "one_fm/templates/emails/notify_project_manager.html"
     
-    project_manager = frappe.get_doc("Employee", doc.account_manager)
+    project_manager = frappe.get_doc("Employee", doc.project_manager)
     project_manager_name = project_manager.employee_name
     project_manager_email = project_manager.user_id
     project_team = []
@@ -71,7 +71,7 @@ def update_project_user_assignment(doc, method):
 def assign_users_to_project(doc):
     for user in doc.users:
         add_assignment(user.user, doc.name)
-    project_manager_id = frappe.get_value("Employee", doc.account_manager, "user_id")
+    project_manager_id = frappe.get_value("Employee", doc.project_manager, "user_id")
     add_assignment(project_manager_id, doc.name)
 
 def add_assignment(user, project):

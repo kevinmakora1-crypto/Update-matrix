@@ -55,7 +55,7 @@ class LeaveHandover(Document):
 	def update_doc_assignment(self, revert=False):
 		for item in self.handover_items:
 			field_to_update = {
-				"Project": "account_manager",
+				"Project": "project_manager",
 				"Operations Site": "site_supervisor",
 				"Process Task": "employee",
 				"Employee": "reports_to",
@@ -65,7 +65,7 @@ class LeaveHandover(Document):
 				employee = item.reliever if not revert else self.employee
 				values_to_update = {field_to_update: employee}
 				name_field_to_update = {
-					"Project": "manager_name",
+					"Project": "project_manager_name",
 					"Operations Site": "site_supervisor_name",
 					"Process Task": "employee_name",
 				}.get(item.reference_doctype)
@@ -175,7 +175,7 @@ def get_handover_data(leave_application):
 	employee = leave_application_doc.employee
 
 	# Fetch projects
-	add_to_handover_items(handover_items, "Project", {"status": "Open", "account_manager": employee}, "Project Manager")
+	add_to_handover_items(handover_items, "Project", {"status": "Open", "project_manager": employee}, "Project Manager")
 
 	# Fetch operations sites
 	add_to_handover_items(handover_items, "Operations Site", {"status": "Active", "site_supervisor": employee}, "Site Supervisor")

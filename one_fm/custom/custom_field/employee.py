@@ -10,16 +10,16 @@ def get_employee_custom_fields():
                 "insert_after": "site",
                 "fetch_from":"site.site_supervisor_name",
                 "read_only": 1,
-                },
+            },
             {
                 "fieldname": "project_manager_name",
                 "owner":"Administrator",
                 "fieldtype": "Data",
                 "label": "Project Manager Name",
                 "insert_after": "project",
-                "fetch_from":"project.manager_name",
+                "fetch_from":"project.project_manager_name",
                 "read_only": 1,
-                }
+            }
         ]
     }
 

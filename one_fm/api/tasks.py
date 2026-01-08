@@ -424,8 +424,8 @@ def get_action_user(employee, shift):
 				Role = "Shift Supervisor"
 
 		elif operations_site.project:
-			if project.account_manager:
-				project_manager = get_employee_user_id(project.account_manager)
+			if project.project_manager:
+				project_manager = get_employee_user_id(project.project_manager)
 				if project_manager != operations_shift.owner and project_manager != current_user:
 					action_user = project_manager
 					Role = "Project Manager"
@@ -486,8 +486,8 @@ def get_notification_user(employee, shift, Role):
 
 	reports_to = frappe.get_value("Employee", {"name":employee},["reports_to"])
 
-	if operations_site.project and project.account_manager and get_employee_user_id(project.account_manager) != operations_shift.owner:
-		project_manager = get_employee_user_id(project.account_manager)
+	if operations_site.project and project.project_manager and get_employee_user_id(project.project_manager) != operations_shift.owner:
+		project_manager = get_employee_user_id(project.project_manager)
 	if operations_site.site_supervisor and get_employee_user_id(operations_site.site_supervisor) != operations_shift.owner:
 		site_supervisor = get_employee_user_id(operations_site.site_supervisor)
 	elif operations_shift.supervisor and get_employee_user_id(operations_shift.supervisor) != operations_shift.owner:

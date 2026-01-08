@@ -3162,7 +3162,7 @@ def get_approver(employee, date=False):
                 if not line_manager:
                     project = frappe.db.get_value('Operations Site', employee_data.site, 'project')
                     if project:
-                        line_manager = frappe.db.get_value('Project', project, 'account_manager')
+                        line_manager = frappe.db.get_value('Project', project, 'project_manager')
         else:
             if employee_data.site:
                 line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
@@ -3245,13 +3245,13 @@ def get_other_managers(employee):
                 query +=f"""
 
                     UNION
-                    SELECT account_manager as manager FROM `tabProject`
+                    SELECT project_manager as manager FROM `tabProject`
                     WHERE name = '{emp_data.get('project')}'
 
                     """
             else:
                 query = f"""
-                    SELECT account_manager  as manager  FROM `tabProject`
+                    SELECT project_manager  as manager  FROM `tabProject`
                     WHERE name = '{emp_data.get('project')}'  """
         if emp_data.get("site"):
             if query:

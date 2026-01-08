@@ -167,7 +167,8 @@ def get_project_custom_fields():
                 "fieldname": "has_overtime_rate",
                 "label": "Has Overtime Rate",
                 "fieldtype": "Check",
-                "insert_after": "number_of_posts"
+                "insert_after": "number_of_posts",
+                "depends_on": "eval:doc.project_type == \"External\""
             },
             {
                 "fieldname": "overtime_rate",
@@ -209,11 +210,11 @@ def get_project_custom_fields():
                 "hidden": 1
             },
             {
-                "fieldname": "manager_name",
-                "label": "Manager Name",
+                "fieldname": "project_manager_name",
+                "label": "Project Manager Name",
                 "fieldtype": "Data",
-                "fetch_from": "account_manager.employee_name",
-                "insert_after": "account_manager",
+                "fetch_from": "project_manager.employee_name",
+                "insert_after": "project_manager",
                 "read_only": 1,
                 "translatable": 1
             },
@@ -261,11 +262,12 @@ def get_project_custom_fields():
                 "insert_after": "manager_name"
             },
             {
-                "fieldname": "account_manager",
+                "fieldname": "project_manager",
                 "label": "Project Manager",
                 "fieldtype": "Link",
                 "insert_after": "no_of_posts_as_per_contract",
                 "options": "Employee",
+                "ignore_user_permissions": 1,
                 "mandatory_depends_on": "eval:doc.project_type==\"External\""
             },
             {

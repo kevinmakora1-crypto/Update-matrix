@@ -346,7 +346,6 @@ class TestLeaveApplicationOverride(FrappeTestCase):
         })
         checkin.flags.ignore_validate = True
         checkin.insert(ignore_permissions=True)
-        checkin.submit()
         
         frappe.db.commit()
 

@@ -1006,7 +1006,6 @@ def update_employee_status_after_leave():
                 except Exception:
                     pass
                 
-                
                 frappe.db.commit()
                 
         except Exception as e:

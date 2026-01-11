@@ -173,7 +173,7 @@ class TestLeaveResumption(unittest.TestCase):
 
     def test_shift_worker_with_accommodation_no_checkin_not_returned(self):
         today_date = getdate(today())
-        leave_app = self.create_leave_application(self.shift_with_accommodation_employee.name, today_date)
+        self.create_leave_application(self.shift_with_accommodation_employee.name, today_date)
 
         frappe.db.commit()
 

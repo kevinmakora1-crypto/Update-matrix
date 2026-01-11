@@ -990,7 +990,6 @@ def update_employee_status_after_leave():
                 )
                 new_status = "Active" if has_checkin else "Not Returned from Leave"
             
-        
             if new_status and employee_doc.status != new_status:
                 old_status = employee_doc.status
                 frappe.db.set_value("Employee", employee_doc.name, "status", new_status)

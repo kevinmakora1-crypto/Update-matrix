@@ -112,9 +112,28 @@ class TestLeaveResumption(unittest.TestCase):
         return leave_app
 
     def create_accommodation_checkin(self, employee, check_in_date):
+        # Fetch employee to derive full_name
+        employee_doc = frappe.get_doc("Employee", employee)
+
+        # Ensure there is a Bed record to link
+        bed_name = None
+        existing_beds = frappe.get_all("Bed", fields=["name"], limit=1)
+        if existing_beds:
+            bed_name = existing_beds[0]["name"]
+        else:
+            bed_doc = frappe.get_doc({
+                "doctype": "Bed",
+                "bed_number": "Test Bed"
+            }).insert(ignore_permissions=True)
+            bed_name = bed_doc.name
+
         checkin = frappe.get_doc({
             "doctype": "Accommodation Checkin Checkout",
             "employee": employee,
+            "full_name": employee_doc.employee_name,
+            "type": "IN",
+            "tenant_category": "Granted Service",
+            "bed": bed_name,
             "checkin_checkout_date_time": check_in_date,
             "accommodation": "Test Accommodation"
         }).insert(ignore_permissions=True)

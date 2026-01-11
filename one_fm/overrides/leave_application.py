@@ -1017,11 +1017,10 @@ def update_employee_status_after_leave():
                         message=frappe.get_traceback(),
                         title=f"Error creating status update comment for employee {employee_doc.name}"
                     )
-                
-                frappe.db.commit()
-                
-        except Exception:
+        except Exception as e:
             frappe.log_error(
                 message=frappe.get_traceback(),
                 title=f"Error updating status for employee {leave_app.employee}"
             )
+    
+    frappe.db.commit()

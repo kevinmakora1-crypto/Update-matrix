@@ -1000,8 +1000,11 @@ def update_employee_status_after_leave():
                         "reference_name": employee_doc.name,
                         "content": f"Status changed from {old_status} to {new_status} after leave resumption. Leave Application: {leave_app.name}"
                     }).insert(ignore_permissions=True)
-                except Exception:
-                    pass
+                except Exception as e:
+                    frappe.log_error(
+                        message=frappe.get_traceback(),
+                        title=f"Error creating status update comment for employee {employee_doc.name}"
+                    )
                 
                 frappe.db.commit()
                 

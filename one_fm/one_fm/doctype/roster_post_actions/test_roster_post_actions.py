@@ -1,8 +1,588 @@
-# Copyright (c) 2021, ONE FM and Contributors
+# -*- coding: utf-8 -*-
+# Copyright (c) 2025, ONE-F-M and Contributors
 # See license.txt
-
-# import frappe
+from __future__ import unicode_literals
+import frappe
 import unittest
+from unittest.mock import patch
+from frappe.utils import nowdate, add_days, get_last_day, get_first_day, add_months, getdate
+from one_fm.one_fm.doctype.roster_post_actions.roster_post_actions import create_roster_post_actions
+
 
 class TestRosterPostActions(unittest.TestCase):
-	pass
+	def setUp(self):
+		frappe.flags.in_test = 1
+		frappe.set_user("Administrator")
+		frappe.flags.in_import = True
+		frappe.flags.ignore_permissions = True
+
+		self.cleanup_test_data()
+
+		if not frappe.db.exists("Item Group", "Services"):
+			self.item_group = frappe.get_doc({
+				"doctype": "Item Group",
+				"item_group_name": "Services",
+				"is_group": 0,
+				"parent_item_group": "All Item Groups"
+			}).insert(ignore_permissions=True)
+		else:
+			self.item_group = frappe.get_doc("Item Group", "Services")
+
+		if not frappe.db.exists("Item Type", "Service"):
+			self.item_type = frappe.get_doc({
+				"doctype": "Item Type",
+				"item_type": "Service"
+			}).insert(ignore_permissions=True)
+		else:
+			self.item_type = frappe.get_doc("Item Type", "Service")
+
+		if not frappe.db.exists("Item", "Test Security Service"):
+			self.item = frappe.get_doc({
+				"doctype": "Item",
+				"item_code": "Test Security Service",
+				"item_name": "Test Security Service",
+				"stock_uom": "Nos",
+				"item_group": "Services",
+				"subitem_group": "Services",
+				"item_type": "Service"
+			}).insert(ignore_permissions=True)
+		else:
+			self.item = frappe.get_doc("Item", "Test Security Service")
+
+		self.account_manager = self.create_employee_with_user(
+			"Account",
+			"Manager",
+			"account.manager@test.com",
+			"Active"
+		)
+
+		if not frappe.db.exists("Project", "Test Security Project"):
+			self.project = frappe.get_doc({
+				"doctype": "Project",
+				"project_name": "Test Security Project",
+				"is_active": "Yes",
+				"naming_series": "PROJ-.####",
+				"company": frappe.db.get_value("Company", {"is_group": 0}, "name") or "Test Company",
+				"account_manager": self.account_manager.name
+			}).insert(ignore_permissions=True)
+		else:
+			self.project = frappe.get_doc("Project", "Test Security Project")
+
+		if not frappe.db.exists("Customer", "Test Customer"):
+			self.customer = frappe.get_doc({
+				"doctype": "Customer",
+				"customer_name": "Test Customer",
+				"customer_type": "Company",
+				"customer_group": frappe.db.get_value("Customer Group", {"is_group": 0}, "name") or "Commercial",
+				"territory": frappe.db.get_value("Territory", {"is_group": 0}, "name") or "All Territories"
+			}).insert(ignore_permissions=True)
+		else:
+			self.customer = frappe.get_doc("Customer", "Test Customer")
+
+		if not frappe.db.exists("Price List", "Test Price List"):
+			self.price_list = frappe.get_doc({
+				"doctype": "Price List",
+				"price_list_name": "Test Price List",
+				"enabled": 1,
+				"currency": "KWD",
+				"selling": 1
+			}).insert(ignore_permissions=True)
+		else:
+			self.price_list = frappe.get_doc("Price List", "Test Price List")
+
+		self.contract = frappe.get_doc({
+			"doctype": "Contracts",
+			"project": self.project.name,
+			"party_type": "Customer",
+			"party_name": self.customer.name,
+			"client": self.customer.name,
+			"start_date": add_days(nowdate(), -30),
+			"end_date": add_days(nowdate(), 365),
+			"price_list": self.price_list.name,
+			"items": [{
+				"item_code": self.item.name,
+				"service_type": "Post Schedule",
+				"qty": 10,
+				"rate": 100,
+				"rate_type": "Daily",
+				"off_type": "Full Month"
+			}]
+		}).insert(ignore_permissions=True)
+
+		self.active_employee = self.create_employee("Active Employee", "Active")
+		self.inactive_employee = self.create_employee("Inactive Employee", "Left")
+		self.on_leave_employee = self.create_employee("OnLeave Employee", "Active")
+
+		self.site_supervisor = self.create_employee("Site Supervisor", "Active")
+		self.operations_site = frappe.get_doc({
+			"doctype": "Operations Site",
+			"site_name": "Test Site",
+			"status": "Active",
+			"site_supervisor": self.site_supervisor.name,
+			"project": self.project.name,
+			"poc": [{
+				"poc": "Test Contact Person",
+				"designation": "Site Manager"
+			}]
+		}).insert(ignore_permissions=True)
+
+		if not frappe.db.exists("Service Type", "Patrolling"):
+			self.service_type = frappe.get_doc({
+				"doctype": "Service Type",
+				"service_type": "Patrolling"
+			}).insert(ignore_permissions=True)
+		else:
+			self.service_type = frappe.get_doc("Service Type", "Patrolling")
+
+		self.shift_supervisor = self.create_employee("Shift Supervisor", "Active")
+		self.operations_shift = frappe.get_doc({
+			"doctype": "Operations Shift",
+			"status": "Active",
+			"site": self.operations_site.name,
+			"project": self.project.name,
+			"start_time": "08:00:00",
+			"end_time": "16:00:00",
+			"shift_number": 1,
+			"service_type": self.service_type.name
+		}).insert(ignore_permissions=True)
+
+		self.operations_shift.append("shift_supervisor", {
+			"supervisor": self.shift_supervisor.name
+		})
+		self.operations_shift.save(ignore_permissions=True)
+
+		self.operations_role = frappe.get_doc({
+			"doctype": "Operations Role",
+			"operation_role": "Security Guard",
+			"status": "Active",
+			"project": self.project.name,
+			"sale_item": self.item.name,
+			"post_name": "Security Guard",
+			"shift": self.operations_shift.name,
+			"post_abbrv": "SG"
+		}).insert(ignore_permissions=True)
+
+		self.operations_post = frappe.get_doc({
+			"doctype": "Operations Post",
+			"post_name": "Gate 1",
+			"status": "Active",
+			"site": self.operations_site.name,
+			"gender": "Both",
+			"site_shift": self.operations_shift.name,
+			"post_template": self.operations_role.name,
+			"priority_level": 1
+		}).insert(ignore_permissions=True)
+
+		frappe.db.commit()
+
+	def cleanup_test_data(self):
+		frappe.db.sql("""
+			DELETE FROM `tabToDo` 
+			WHERE reference_type IN ('Operations Site', 'Operations Shift', 'Operations Role', 'Employee')
+			OR description LIKE '%Test%'
+		""")
+
+		if frappe.db.exists("Operations Site", "Test Site"):
+			frappe.db.sql("DELETE FROM `tabEmployee Schedule` WHERE site = 'Test Site'")
+			frappe.db.sql("DELETE FROM `tabPost Schedule` WHERE site = 'Test Site'")
+			frappe.db.sql("DELETE FROM `tabRoster Post Actions` WHERE operations_site = 'Test Site'")
+			frappe.delete_doc("Operations Site", "Test Site", force=1, ignore_permissions=True)
+
+		test_posts = frappe.get_all("Operations Post", filters={"post_name": "Gate 1"}, pluck="name")
+		for post in test_posts:
+			frappe.delete_doc("Operations Post", post, force=1, ignore_permissions=True)
+
+		test_employees = frappe.get_all("Employee",
+			filters={"employee_name": ["in", ["Active Employee", "Inactive Employee", "OnLeave Employee",
+											"Site Supervisor", "Shift Supervisor", "Account Manager",
+											"Active Employee 2", "Active Employee 3"]]},
+			pluck="name")
+		for emp in test_employees:
+			frappe.delete_doc("Employee", emp, force=1, ignore_permissions=True)
+
+		test_users = ["account.manager@test.com"]
+		for user_email in test_users:
+			if frappe.db.exists("User", user_email):
+				frappe.delete_doc("User", user_email, force=1, ignore_permissions=True)
+
+		if frappe.db.exists("Department", "Test Department"):
+			frappe.delete_doc("Department", "Test Department", force=1, ignore_permissions=True)
+
+		existing_contracts = frappe.get_all("Contracts",
+			filters={"project": "Test Security Project"},
+			pluck="name")
+		for contract in existing_contracts:
+			frappe.delete_doc("Contracts", contract, force=1, ignore_permissions=True)
+
+		if frappe.db.exists("Project", "Test Security Project"):
+			frappe.delete_doc("Project", "Test Security Project", force=1, ignore_permissions=True)
+		if frappe.db.exists("Item", "Test Security Service"):
+			frappe.delete_doc("Item", "Test Security Service", force=1, ignore_permissions=True)
+		if frappe.db.exists("Customer", "Test Customer"):
+			frappe.delete_doc("Customer", "Test Customer", force=1, ignore_permissions=True)
+		if frappe.db.exists("Price List", "Test Price List"):
+			frappe.delete_doc("Price List", "Test Price List", force=1, ignore_permissions=True)
+		if frappe.db.exists("Item Type", "Service"):
+			frappe.delete_doc("Item Type", "Service", force=1, ignore_permissions=True)
+		if frappe.db.exists("Item Group", "Services"):
+			frappe.delete_doc("Item Group", "Services", force=1, ignore_permissions=True)
+		if frappe.db.exists("Service Type", "Patrolling"):
+			frappe.delete_doc("Service Type", "Patrolling", force=1, ignore_permissions=True)
+
+		frappe.db.commit()
+
+	def create_employee_with_user(self, first_name, last_name, email, status="Active"):
+		if not frappe.db.exists("User", email):
+			user = frappe.get_doc({
+				"doctype": "User",
+				"email": email,
+				"first_name": first_name,
+				"last_name": last_name,
+				"enabled": 1,
+				"send_welcome_email": 0
+			}).insert(ignore_permissions=True)
+		else:
+			user = frappe.get_doc("User", email)
+
+		company = frappe.db.get_value("Company", {"is_group": 0}, "name") or "Test Company"
+		department = frappe.db.get_value("Department", {"company": company}, "name")
+		if not department:
+			dept = frappe.get_doc({
+				"doctype": "Department",
+				"department_name": "Test Department",
+				"company": company
+			}).insert(ignore_permissions=True)
+			department = dept.name
+
+		if frappe.db.exists("Employee", {"user_id": email}):
+			return frappe.get_doc("Employee", {"user_id": email})
+
+		employee = frappe.get_doc({
+			"doctype": "Employee",
+			"first_name": first_name,
+			"last_name": last_name,
+			"employee_name": f"{first_name} {last_name}",
+			"one_fm_first_name_in_arabic": "اسم",
+			"one_fm_last_name_in_arabic": "عائلة",
+			"status": status,
+			"date_of_birth": "1990-01-01",
+			"date_of_joining": add_days(nowdate(), -365),
+			"gender": "Male",
+			"company": company,
+			"department": department,
+			"annual_leave_balance": 0,
+			"day_off_category": "Weekly",
+			"number_of_days_off": 1,
+			"one_fm_basic_salary": 100,
+			"user_id": email,
+			"create_user_permission": 0
+		}).insert(ignore_permissions=True)
+
+		return employee
+
+	def create_employee(self, name, status):
+		if frappe.db.exists("Employee", {"employee_name": name}):
+			return frappe.get_doc("Employee", {"employee_name": name})
+
+		company = frappe.db.get_value("Company", {"is_group": 0}, "name") or "Test Company"
+		department = frappe.db.get_value("Department", {"company": company}, "name")
+		if not department:
+			dept = frappe.get_doc({
+				"doctype": "Department",
+				"department_name": "Test Department",
+				"company": company
+			}).insert(ignore_permissions=True)
+			department = dept.name
+
+		employee = frappe.get_doc({
+			"doctype": "Employee",
+			"first_name": name,
+			"last_name": "Test",
+			"employee_name": name,
+			"one_fm_first_name_in_arabic": "اسم",
+			"one_fm_last_name_in_arabic": "عائلة",
+			"status": status,
+			"date_of_birth": "1990-01-01",
+			"date_of_joining": add_days(nowdate(), -365),
+			"relieving_date": add_days(nowdate(), -30) if status == "Left" else None,
+			"gender": "Male",
+			"company": company,
+			"department": department,
+			"annual_leave_balance": 0,
+			"day_off_category": "Weekly",
+			"number_of_days_off": 1,
+			"one_fm_basic_salary": 100,
+			"create_user_permission": 0
+		}).insert(ignore_permissions=True)
+
+		return employee
+
+	def create_post_schedule(self, date, quantity=1):
+		for i in range(quantity):
+			frappe.get_doc({
+				"doctype": "Post Schedule",
+				"date": date,
+				"shift": self.operations_shift.name,
+				"operations_role": self.operations_role.name,
+				"post": self.operations_post.name,
+				"site": self.operations_site.name,
+				"post_status": "Planned"
+			}).insert(ignore_permissions=True)
+
+	def create_employee_schedule(self, employee, date):
+		frappe.get_doc({
+			"doctype": "Employee Schedule",
+			"employee": employee,
+			"date": date,
+			"shift": self.operations_shift.name,
+			"operations_role": self.operations_role.name,
+			"employee_availability": "Working",
+			"site": self.operations_site.name
+		}).insert(ignore_permissions=True)
+
+	def create_attendance(self, employee, date, status="On Leave"):
+		attendance = frappe.get_doc({
+			"doctype": "Attendance",
+			"employee": employee,
+			"attendance_date": date,
+			"status": status,
+			"company": frappe.db.get_value("Company", {"is_group": 0}, "name") or "Test Company"
+		}).insert(ignore_permissions=True)
+		attendance.submit()
+		return attendance
+
+	def test_inactive_employee_excluded_from_count(self):
+		tomorrow = add_days(getdate(), 1)
+
+		self.create_post_schedule(tomorrow, quantity=2)
+		self.create_employee_schedule(self.active_employee.name, tomorrow)
+		self.create_employee_schedule(self.inactive_employee.name, tomorrow)
+
+		frappe.db.commit()
+
+		create_roster_post_actions()
+
+		roster_actions = frappe.get_all(
+			"Roster Post Actions",
+			filters={
+				"operations_role": self.operations_role.name,
+				"operations_shift": self.operations_shift.name,
+				"start_date": tomorrow
+			},
+			fields=["name"]
+		)
+
+		self.assertTrue(roster_actions, "Roster Post Actions not created")
+
+		roster_doc = frappe.get_doc("Roster Post Actions", roster_actions[0].name)
+		not_filled = roster_doc.operations_roles_not_filled
+
+		self.assertEqual(len(not_filled), 1, "Should have 1 not_filled entry")
+		self.assertEqual(not_filled[0].quantity, 1, "Not filled quantity should be 1")
+
+	def test_on_leave_employee_excluded_from_count(self):
+		tomorrow = add_days(getdate(), 1)
+
+		self.create_post_schedule(tomorrow, quantity=2)
+		self.create_employee_schedule(self.active_employee.name, tomorrow)
+		self.create_employee_schedule(self.on_leave_employee.name, tomorrow)
+		self.create_attendance(self.on_leave_employee.name, tomorrow, "On Leave")
+
+		frappe.db.commit()
+
+		create_roster_post_actions()
+
+		roster_actions = frappe.get_all(
+			"Roster Post Actions",
+			filters={
+				"operations_role": self.operations_role.name,
+				"operations_shift": self.operations_shift.name,
+				"start_date": tomorrow
+			},
+			fields=["name"]
+		)
+
+		self.assertTrue(roster_actions, "Roster Post Actions not created")
+
+		roster_doc = frappe.get_doc("Roster Post Actions", roster_actions[0].name)
+		not_filled = roster_doc.operations_roles_not_filled
+
+		self.assertEqual(len(not_filled), 1, "Should have 1 not_filled entry")
+		self.assertEqual(not_filled[0].quantity, 1, "Not filled quantity should be 1 (excluding on-leave employee)")
+
+	def test_not_filled_scenario(self):
+		tomorrow = add_days(getdate(), 1)
+
+		self.create_post_schedule(tomorrow, quantity=3)
+		self.create_employee_schedule(self.active_employee.name, tomorrow)
+
+		frappe.db.commit()
+
+		create_roster_post_actions()
+
+		roster_actions = frappe.get_all(
+			"Roster Post Actions",
+			filters={
+				"operations_role": self.operations_role.name,
+				"operations_shift": self.operations_shift.name,
+				"start_date": tomorrow
+			},
+			fields=["name"]
+		)
+
+		self.assertTrue(roster_actions, "Roster Post Actions not created")
+
+		roster_doc = frappe.get_doc("Roster Post Actions", roster_actions[0].name)
+		not_filled = roster_doc.operations_roles_not_filled
+
+		self.assertEqual(len(not_filled), 1, "Should have 1 not_filled entry")
+		self.assertEqual(not_filled[0].quantity, 2, "Not filled quantity should be 2")
+		self.assertEqual(roster_doc.supervisor, self.shift_supervisor.name)
+		self.assertEqual(roster_doc.site_supervisor, self.site_supervisor.name)
+
+	def test_over_filled_scenario(self):
+		tomorrow = add_days(getdate(), 1)
+
+		self.create_post_schedule(tomorrow, quantity=1)
+
+		active_emp2 = self.create_employee("Active Employee 2", "Active")
+		active_emp3 = self.create_employee("Active Employee 3", "Active")
+
+		self.create_employee_schedule(self.active_employee.name, tomorrow)
+		self.create_employee_schedule(active_emp2.name, tomorrow)
+		self.create_employee_schedule(active_emp3.name, tomorrow)
+
+		frappe.db.commit()
+
+		create_roster_post_actions()
+
+		roster_actions = frappe.get_all(
+			"Roster Post Actions",
+			filters={
+				"operations_role": self.operations_role.name,
+				"operations_shift": self.operations_shift.name,
+				"start_date": tomorrow
+			},
+			fields=["name"]
+		)
+
+		self.assertTrue(roster_actions, "Roster Post Actions not created")
+
+		roster_doc = frappe.get_doc("Roster Post Actions", roster_actions[0].name)
+		over_filled = roster_doc.operations_roles_over_filled
+
+		self.assertEqual(len(over_filled), 1, "Should have 1 over_filled entry")
+		self.assertEqual(over_filled[0].quantity, 2, "Over filled quantity should be 2")
+
+	def test_repeat_count_calculation(self):
+		tomorrow = add_days(getdate(), 1)
+
+		first_action = frappe.get_doc({
+			"doctype": "Roster Post Actions",
+			"start_date": add_days(tomorrow, -1),
+			"end_date": get_last_day(tomorrow),
+			"operations_role": self.operations_role.name,
+			"operations_shift": self.operations_shift.name,
+			"operations_site": self.operations_site.name,
+			"project": self.project.name,
+			"repeat_count": 1,
+			"status": "Pending"
+		}).insert(ignore_permissions=True)
+
+		self.create_post_schedule(tomorrow, quantity=2)
+		self.create_employee_schedule(self.active_employee.name, tomorrow)
+
+		frappe.db.commit()
+
+		create_roster_post_actions()
+
+		new_actions = frappe.get_all(
+			"Roster Post Actions",
+			filters={
+				"operations_role": self.operations_role.name,
+				"operations_shift": self.operations_shift.name,
+				"start_date": tomorrow,
+				"name": ["!=", first_action.name]
+			},
+			fields=["name", "repeat_count"]
+		)
+
+		if new_actions:
+			self.assertEqual(new_actions[0].repeat_count, 2, "Repeat count should be incremented to 2")
+
+	def test_no_action_when_balanced(self):
+		tomorrow = add_days(getdate(), 1)
+
+		self.create_post_schedule(tomorrow, quantity=2)
+
+		active_emp2 = self.create_employee("Active Employee 2", "Active")
+		self.create_employee_schedule(self.active_employee.name, tomorrow)
+		self.create_employee_schedule(active_emp2.name, tomorrow)
+
+		frappe.db.commit()
+
+		create_roster_post_actions()
+
+		roster_actions = frappe.get_all(
+			"Roster Post Actions",
+			filters={
+				"operations_role": self.operations_role.name,
+				"operations_shift": self.operations_shift.name,
+				"start_date": tomorrow
+			}
+		)
+
+		self.assertEqual(len(roster_actions), 0, "No Roster Post Actions should be created when balanced")
+
+	def tearDown(self):
+		frappe.db.sql("DELETE FROM `tabRoster Post Actions` WHERE operations_site = %s", self.operations_site.name)
+		frappe.db.sql("DELETE FROM `tabEmployee Schedule` WHERE site = %s", self.operations_site.name)
+		frappe.db.sql("DELETE FROM `tabPost Schedule` WHERE site = %s", self.operations_site.name)
+
+		attendance_records = frappe.get_all("Attendance",
+			filters={"company": frappe.db.get_value("Company", {"is_group": 0}, "name") or "Test Company"},
+			pluck="name")
+		for att in attendance_records:
+			att_doc = frappe.get_doc("Attendance", att)
+			if att_doc.docstatus == 1:
+				att_doc.cancel()
+			att_doc.delete()
+
+		if frappe.db.exists("Operations Post", self.operations_post.name):
+			frappe.delete_doc("Operations Post", self.operations_post.name, force=1)
+		if frappe.db.exists("Operations Shift", self.operations_shift.name):
+			frappe.delete_doc("Operations Shift", self.operations_shift.name, force=1)
+		if frappe.db.exists("Operations Role", self.operations_role.name):
+			frappe.delete_doc("Operations Role", self.operations_role.name, force=1)
+		if frappe.db.exists("Operations Site", self.operations_site.name):
+			frappe.delete_doc("Operations Site", self.operations_site.name, force=1)
+
+		for emp in [self.active_employee, self.inactive_employee, self.on_leave_employee,
+					self.site_supervisor, self.shift_supervisor, self.account_manager]:
+			if frappe.db.exists("Employee", emp.name):
+				frappe.delete_doc("Employee", emp.name, force=1)
+
+		for email in ["account.manager@test.com"]:
+			if frappe.db.exists("User", email):
+				frappe.delete_doc("User", email, force=1)
+
+		if frappe.db.exists("Contracts", self.contract.name):
+			frappe.delete_doc("Contracts", self.contract.name, force=1)
+		if frappe.db.exists("Project", self.project.name):
+			frappe.delete_doc("Project", self.project.name, force=1)
+		if frappe.db.exists("Item", self.item.name):
+			frappe.delete_doc("Item", self.item.name, force=1)
+		if frappe.db.exists("Customer", "Test Customer"):
+			frappe.delete_doc("Customer", "Test Customer", force=1)
+		if frappe.db.exists("Price List", "Test Price List"):
+			frappe.delete_doc("Price List", "Test Price List", force=1)
+		if frappe.db.exists("Item Type", "Service"):
+			frappe.delete_doc("Item Type", "Service", force=1)
+		if frappe.db.exists("Item Group", "Services"):
+			frappe.delete_doc("Item Group", "Services", force=1)
+		if frappe.db.exists("Department", "Test Department"):
+			frappe.delete_doc("Department", "Test Department", force=1)
+		if frappe.db.exists("Service Type", "Patrolling"):
+			frappe.delete_doc("Service Type", "Patrolling", force=1)
+
+		frappe.db.commit()

@@ -5,7 +5,7 @@ from datetime import date
 
 from frappe import _
 from frappe.desk.form.assign_to import add as add_assignment
-from frappe.utils import get_fullname, nowdate, add_to_date, getdate, date_diff, get_url_to_form, get_date_str
+from frappe.utils import get_fullname, nowdate, add_to_date, getdate, date_diff, get_url_to_form, get_date_str, today
 
 from hrms.hr.doctype.leave_application.leave_application import *
 from one_fm.processor import sendemail
@@ -945,3 +945,72 @@ def validate_leave_overlap(employee, from_date, to_date, name=None):
     if overlapping_leave:
         frappe.throw("Employee {0} has already applied between {1} and {2}".format(name,from_date,to_date))
     return "valid"
+
+
+
+def update_employee_status_after_leave():
+    today_date = getdate(today())
+    
+    leave_applications = frappe.get_all(
+        "Leave Application",
+        filters={
+            "resumption_date": today_date,
+            "status": "Approved",
+            "docstatus": 1,
+            "leave_type": "Annual Leave"
+        },
+        fields=["name", "employee", "from_date", "leave_type"]
+    )
+    
+    if not leave_applications:
+        return
+    
+    for leave_app in leave_applications:
+        try:
+            employee_doc = frappe.db.get_value("Employee", leave_app.employee, ["name", "shift_working", "one_fm_provide_accommodation_by_company", "status"], as_dict=True)
+            
+            new_status = None
+            shift_working = employee_doc.shift_working
+            provide_accommodation = employee_doc.one_fm_provide_accommodation_by_company
+            
+            if not shift_working:
+                new_status = "Active"
+
+            elif shift_working and not provide_accommodation:
+                new_status = "Not Returned from Leave"
+
+            elif shift_working and provide_accommodation:
+                has_checkin = frappe.db.exists(
+                    "Accommodation Checkin Checkout",
+                    {
+                        "type": "IN",
+                        "employee": employee_doc.name,
+                        "checkin_checkout_date_time": [">", leave_app.from_date],
+                    }
+                )
+                new_status = "Active" if has_checkin else "Not Returned from Leave"
+            
+        
+            if new_status and employee_doc.status != new_status:
+                old_status = employee_doc.status
+                frappe.db.set_value("Employee", employee_doc.name, "status", new_status)
+
+                try:
+                    frappe.get_doc({
+                        "doctype": "Comment",
+                        "comment_type": "Info",
+                        "reference_doctype": "Employee",
+                        "reference_name": employee_doc.name,
+                        "content": f"Status changed from {old_status} to {new_status} after leave resumption. Leave Application: {leave_app.name}"
+                    }).insert(ignore_permissions=True)
+                except Exception:
+                    pass
+                
+                
+                frappe.db.commit()
+                
+        except Exception as e:
+            frappe.log_error(
+                message=frappe.get_traceback(),
+                title=f"Error updating status for employee {leave_app.employee}"
+            )

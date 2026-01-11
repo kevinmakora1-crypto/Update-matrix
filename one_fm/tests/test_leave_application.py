@@ -8,6 +8,7 @@ from one_fm.tests.utils import (
     create_test_company, make_leave_application
 )
 from one_fm.one_fm.doctype.attendance_check.test_attendance_check import create_attendance_check_record
+from one_fm.utils import update_employee_status_after_leave
 from frappe.workflow.doctype.workflow_action.workflow_action import apply_workflow
 from unittest.mock import patch
 
@@ -44,6 +45,15 @@ class TestLeaveApplicationOverride(FrappeTestCase):
     
     def tearDown(self):
         """Clean up after each test"""
+        # Clean up accommodation check-ins
+        frappe.db.delete("Accommodation Checkin", {"employee": self.employee.name})
+        
+        # Clean up comments
+        frappe.db.delete("Comment", {
+            "reference_doctype": "Employee",
+            "reference_name": self.employee.name
+        })
+        
         frappe.db.rollback()
         frappe.set_user("Administrator")
     
@@ -161,3 +171,227 @@ class TestLeaveApplicationOverride(FrappeTestCase):
         """Helper to apply approve workflow steps"""
         apply_workflow(doc, "Submit for Review")
         apply_workflow(doc, "Approve")
+
+    @patch("frappe.sendmail")
+    def test_leave_resumption_non_shift_worker_set_to_active(self, mock_sendmail):
+        """Test 4: Non-shift worker status set to Active on resumption date"""
+        mock_sendmail.return_value = None
+        
+        # Set employee as non-shift worker
+        frappe.db.set_value("Employee", self.employee.name, {
+            "shift_working": 0,
+            "status": "Vacation"
+        })
+        
+        # Create leave application with today as resumption date
+        leave_application = make_leave_application(
+            self.employee.name,
+            add_days(nowdate(), -5),
+            add_days(nowdate(), -1),
+            self.leave_type.name
+        )
+        leave_application.resumption_date = nowdate()
+        leave_application.save()
+        self.apply_approve_workflow(leave_application)
+        
+        frappe.db.commit()
+        
+        update_employee_status_after_leave()
+        
+        # Verify employee status changed to Active
+        employee_status = frappe.db.get_value("Employee", self.employee.name, "status")
+        self.assertEqual(employee_status, "Active", 
+                        "Non-shift worker should be set to Active on resumption date")
+        
+        # Verify comment was created
+        comment = frappe.db.exists("Comment", {
+            "reference_doctype": "Employee",
+            "reference_name": self.employee.name,
+            "content": ["like", "%Status changed from Vacation to Active%"]
+        })
+        self.assertTrue(comment, "Status change comment should be created")
+
+    @patch("frappe.sendmail")
+    def test_leave_resumption_shift_worker_no_accommodation_not_returned(self, mock_sendmail):
+        """Test 5: Shift worker without accommodation set to Not Returned From Leave"""
+        mock_sendmail.return_value = None
+        
+        # Set employee as shift worker without accommodation
+        frappe.db.set_value("Employee", self.employee.name, {
+            "shift_working": 1,
+            "one_fm_provide_accommodation_by_company": 0,
+            "status": "Vacation"
+        })
+        
+        # Create leave application with today as resumption date
+        leave_application = make_leave_application(
+            self.employee.name,
+            add_days(nowdate(), -5),
+            add_days(nowdate(), -1),
+            self.leave_type.name
+        )
+        leave_application.resumption_date = nowdate()
+        leave_application.save()
+        self.apply_approve_workflow(leave_application)
+        
+        frappe.db.commit()
+        
+        update_employee_status_after_leave()
+        
+        # Verify employee status changed to Not Returned From Leave
+        employee_status = frappe.db.get_value("Employee", self.employee.name, "status")
+        self.assertEqual(employee_status, "Not Returned From Leave",
+                        "Shift worker without accommodation should be Not Returned From Leave")
+
+    @patch("frappe.sendmail")
+    def test_leave_resumption_shift_worker_with_accommodation_no_checkin(self, mock_sendmail):
+        """Test 6: Shift worker with accommodation but no check-in set to Not Returned From Leave"""
+        mock_sendmail.return_value = None
+        
+        # Set employee as shift worker with accommodation
+        frappe.db.set_value("Employee", self.employee.name, {
+            "shift_working": 1,
+            "one_fm_provide_accommodation_by_company": 1,
+            "status": "Vacation"
+        })
+        
+        # Create leave application with today as resumption date
+        from_date = add_days(nowdate(), -5)
+        leave_application = make_leave_application(
+            self.employee.name,
+            from_date,
+            add_days(nowdate(), -1),
+            self.leave_type.name
+        )
+        leave_application.resumption_date = nowdate()
+        leave_application.save()
+        self.apply_approve_workflow(leave_application)
+        
+        frappe.db.commit()
+        
+        update_employee_status_after_leave()
+        
+        # Verify employee status changed to Not Returned From Leave
+        employee_status = frappe.db.get_value("Employee", self.employee.name, "status")
+        self.assertEqual(employee_status, "Not Returned From Leave",
+                        "Shift worker with accommodation but no check-in should be Not Returned From Leave")
+
+    @patch("frappe.sendmail")
+    def test_leave_resumption_shift_worker_with_accommodation_and_checkin(self, mock_sendmail):
+        """Test 7: Shift worker with accommodation and check-in set to Active"""
+        mock_sendmail.return_value = None
+        
+        # Set employee as shift worker with accommodation
+        frappe.db.set_value("Employee", self.employee.name, {
+            "shift_working": 1,
+            "one_fm_provide_accommodation_by_company": 1,
+            "status": "Vacation"
+        })
+        
+        # Create leave application with today as resumption date
+        from_date = add_days(nowdate(), -5)
+        leave_application = make_leave_application(
+            self.employee.name,
+            from_date,
+            add_days(nowdate(), -1),
+            self.leave_type.name
+        )
+        leave_application.resumption_date = nowdate()
+        leave_application.save()
+        self.apply_approve_workflow(leave_application)
+        
+        # Create accommodation check-in after leave start date
+        checkin = frappe.get_doc({
+            "doctype": "Accommodation Checkin",
+            "employee": self.employee.name,
+            "check_in_date": add_days(from_date, 1),
+            "accommodation": "Test Accommodation"
+        })
+        checkin.insert(ignore_permissions=True)
+        checkin.submit()
+        
+        frappe.db.commit()
+
+        update_employee_status_after_leave()
+        
+        # Verify employee status changed to Active
+        employee_status = frappe.db.get_value("Employee", self.employee.name, "status")
+        self.assertEqual(employee_status, "Active",
+                        "Shift worker with accommodation and check-in should be Active")
+        
+        # Clean up
+        frappe.db.delete("Accommodation Checkin", {"employee": self.employee.name})
+
+    @patch("frappe.sendmail")
+    def test_leave_resumption_only_processes_today(self, mock_sendmail):
+        """Test 8: Only processes leave applications with resumption date = today"""
+        mock_sendmail.return_value = None
+        
+        # Set employee as non-shift worker
+        frappe.db.set_value("Employee", self.employee.name, {
+            "shift_working": 0,
+            "status": "Vacation"
+        })
+        
+        # Create leave application with tomorrow as resumption date
+        leave_application = make_leave_application(
+            self.employee.name,
+            add_days(nowdate(), -5),
+            add_days(nowdate(), -1),
+            self.leave_type.name
+        )
+        leave_application.resumption_date = add_days(nowdate(), 1)
+        leave_application.save()
+        self.apply_approve_workflow(leave_application)
+        
+        frappe.db.commit()
+        
+        update_employee_status_after_leave()
+        
+        # Verify employee status NOT changed (still Vacation)
+        employee_status = frappe.db.get_value("Employee", self.employee.name, "status")
+        self.assertEqual(employee_status, "Vacation",
+                        "Employee with future resumption date should not be processed")
+
+    @patch("frappe.sendmail")
+    def test_leave_resumption_no_change_if_already_correct_status(self, mock_sendmail):
+        """Test 9: No comment created if status already correct"""
+        mock_sendmail.return_value = None
+        
+        # Set employee as non-shift worker already Active
+        frappe.db.set_value("Employee", self.employee.name, {
+            "shift_working": 0,
+            "status": "Active"
+        })
+        
+        # Create leave application with today as resumption date
+        leave_application = make_leave_application(
+            self.employee.name,
+            add_days(nowdate(), -5),
+            add_days(nowdate(), -1),
+            self.leave_type.name
+        )
+        leave_application.resumption_date = nowdate()
+        leave_application.save()
+        self.apply_approve_workflow(leave_application)
+        
+        frappe.db.commit()
+        
+        # Count comments before
+        comments_before = frappe.db.count("Comment", {
+            "reference_doctype": "Employee",
+            "reference_name": self.employee.name
+        })
+        
+        # Run the leave resumption process
+        update_employee_status_after_leave()
+        
+        # Count comments after
+        comments_after = frappe.db.count("Comment", {
+            "reference_doctype": "Employee",
+            "reference_name": self.employee.name
+        })
+        
+        # Verify no new comment created
+        self.assertEqual(comments_before, comments_after,
+                        "No comment should be created if status unchanged")

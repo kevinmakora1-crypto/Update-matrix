@@ -137,9 +137,7 @@ class TestLeaveResumption(unittest.TestCase):
             "checkin_checkout_date_time": check_in_date,
             "accommodation": "Test Accommodation"
         }).insert(ignore_permissions=True)
-        checkin.submit()
         return checkin
-
     def test_non_shift_worker_set_to_active(self):
         today_date = getdate(today())
         self.create_leave_application(self.non_shift_employee.name, today_date)

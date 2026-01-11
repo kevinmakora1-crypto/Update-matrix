@@ -963,9 +963,21 @@ def update_employee_status_after_leave():
     if not leave_applications:
         return
     
+    employee_ids = [la.employee for la in leave_applications if la.get("employee")]
+    employee_map = {}
+    if employee_ids:
+        employees = frappe.get_all(
+            "Employee",
+            filters={"name": ["in", employee_ids]},
+            fields=["name", "shift_working", "one_fm_provide_accommodation_by_company", "status"]
+        )
+        employee_map = {emp.name: emp for emp in employees}
+    
     for leave_app in leave_applications:
         try:
-            employee_doc = frappe.db.get_value("Employee", leave_app.employee, ["name", "shift_working", "one_fm_provide_accommodation_by_company", "status"], as_dict=True)
+            employee_doc = employee_map.get(leave_app.employee)
+            if not employee_doc:
+                continue
             
             new_status = None
             shift_working = employee_doc.shift_working

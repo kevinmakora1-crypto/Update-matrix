@@ -30,9 +30,14 @@ class TestLeaveApplicationOverride(FrappeTestCase):
         self.employee = get_test_employee()
 
         # Clean up existing test data
+        frappe.db.delete("Accommodation Checkin Checkout", {"employee": self.employee.name})
         frappe.db.delete("Attendance Check", {"employee": self.employee.name})
         frappe.db.delete("Leave Application", {"employee": self.employee.name})
         frappe.db.delete("Leave Allocation", {"employee": self.employee.name})
+        frappe.db.delete("Comment", {
+            "reference_doctype": "Employee",
+            "reference_name": self.employee.name
+        })
 
         self.leave_type = get_test_leave_type()
         create_test_leave_allocation(
@@ -40,13 +45,16 @@ class TestLeaveApplicationOverride(FrappeTestCase):
             leave_type=self.leave_type,
             from_date=add_days(nowdate(), -30),
             to_date=add_days(nowdate(), 30),
-            new_leaves_allocated=80
+            new_leaves_allocated=25
         )
     
     def tearDown(self):
         """Clean up after each test"""
-        # Clean up accommodation check-ins
+        # Clean up accommodation checkin checkout records
         frappe.db.delete("Accommodation Checkin Checkout", {"employee": self.employee.name})
+        
+        # Clean up test accommodation
+        frappe.db.delete("Accommodation", {"accommodation": "Test Accommodation"})
         
         # Clean up comments
         frappe.db.delete("Comment", {
@@ -54,8 +62,30 @@ class TestLeaveApplicationOverride(FrappeTestCase):
             "reference_name": self.employee.name
         })
         
+        # Reset employee status to Active
+        if frappe.db.exists("Employee", self.employee.name):
+            frappe.db.set_value("Employee", self.employee.name, {
+                "status": "Active",
+                "shift_working": 0,
+                "one_fm_provide_accommodation_by_company": 0
+            })
+        
         frappe.db.rollback()
         frappe.set_user("Administrator")
+
+    def _get_or_create_test_accommodation(self):
+        """Helper to get or create test accommodation"""
+        if not frappe.db.exists("Accommodation", "Test Accommodation"):
+            test_accommodation = frappe.get_doc({
+                "doctype": "Accommodation",
+                "accommodation": "Test Accommodation",
+                "company": "_Test Company",
+                "capacity": 1,
+                "type": "Building",
+            }).insert(ignore_permissions=True)
+            return test_accommodation
+        else:
+            return frappe.get_doc("Accommodation", "Test Accommodation")
     
     def _create_draft_attendance_check(self, date, attendance_status="Absent"):
         """Helper to create a draft attendance check"""
@@ -285,14 +315,12 @@ class TestLeaveApplicationOverride(FrappeTestCase):
         """Test 7: Shift worker with accommodation and check-in set to Active"""
         mock_sendmail.return_value = None
         
-        # Set employee as shift worker with accommodation
         frappe.db.set_value("Employee", self.employee.name, {
             "shift_working": 1,
             "one_fm_provide_accommodation_by_company": 1,
             "status": "Vacation"
         })
         
-        # Create leave application with today as resumption date
         from_date = add_days(nowdate(), -5)
         leave_application = make_leave_application(
             self.employee.name,
@@ -304,17 +332,9 @@ class TestLeaveApplicationOverride(FrappeTestCase):
         leave_application.save()
         self.apply_approve_workflow(leave_application)
         
-        # Create accommodation check-in after leave start date
-
-        test_accommodation = frappe.get_doc({
-            "doctype": "Accommodation",
-            "accommodation": "Test Accommodation",
-            "company": "_Test Company",
-            "capacity": 1,
-            "type": "Building",
-        }).insert(ignore_permissions=True)
+        # Get or create test accommodation
+        test_accommodation = self._get_or_create_test_accommodation()
         
-
         checkin = frappe.get_doc({
             "doctype": "Accommodation Checkin Checkout",
             "employee": self.employee.name,
@@ -332,13 +352,9 @@ class TestLeaveApplicationOverride(FrappeTestCase):
 
         update_employee_status_after_leave()
         
-        # Verify employee status changed to Active
         employee_status = frappe.db.get_value("Employee", self.employee.name, "status")
         self.assertEqual(employee_status, "Active",
                         "Shift worker with accommodation and check-in should be Active")
-        
-        # Clean up
-        frappe.db.delete("Accommodation Checkin Checkout", {"employee": self.employee.name})
 
     @patch("frappe.sendmail")
     def test_leave_resumption_only_processes_today(self, mock_sendmail):

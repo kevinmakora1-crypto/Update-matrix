@@ -365,6 +365,25 @@ class EmployeeOverride(EmployeeMaster):
                 """)
 
     def notify_supervisor_of_status_change(self):
+        """
+        Notify the operations site supervisor when an employee's status changes to Active.
+
+        This method is intended to be called during the employee document lifecycle
+        (e.g. on validate/before save). It compares the previous stored version of
+        the document with the current one, and proceeds only when:
+
+        - A previous document exists (`get_doc_before_save` returns a value).
+        - The employee's status has changed from any non-"Active" value to "Active".
+        - The employee is marked as shift working (`self.shift_working` is truthy).
+        - The employee has an associated Operations Site with a valid site supervisor
+          and that supervisor has a linked user account.
+
+        When these conditions are met, the method sends both a push notification
+        (via `send_push_notification`) and an email (via `sendemail`) to the site
+        supervisor, informing them that the employee is now Active and should be
+        rostered appropriately. Failures to send notifications are logged using
+        Frappe's error log.
+        """
         last_doc = self.get_doc_before_save()
         
         if not last_doc:

@@ -946,8 +946,6 @@ def validate_leave_overlap(employee, from_date, to_date, name=None):
         frappe.throw("Employee {0} has already applied between {1} and {2}".format(name,from_date,to_date))
     return "valid"
 
-
-
 def update_employee_status_after_leave():
     today_date = getdate(today())
     

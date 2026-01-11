@@ -8,7 +8,7 @@ from one_fm.tests.utils import (
     create_test_company, make_leave_application
 )
 from one_fm.one_fm.doctype.attendance_check.test_attendance_check import create_attendance_check_record
-from one_fm.utils import update_employee_status_after_leave
+from one_fm.overrides.leave_application import update_employee_status_after_leave
 from frappe.workflow.doctype.workflow_action.workflow_action import apply_workflow
 from unittest.mock import patch
 
@@ -40,13 +40,13 @@ class TestLeaveApplicationOverride(FrappeTestCase):
             leave_type=self.leave_type,
             from_date=add_days(nowdate(), -30),
             to_date=add_days(nowdate(), 30),
-            new_leaves_allocated=10
+            new_leaves_allocated=80
         )
     
     def tearDown(self):
         """Clean up after each test"""
         # Clean up accommodation check-ins
-        frappe.db.delete("Accommodation Checkin", {"employee": self.employee.name})
+        frappe.db.delete("Accommodation Checkin Checkout", {"employee": self.employee.name})
         
         # Clean up comments
         frappe.db.delete("Comment", {
@@ -213,7 +213,7 @@ class TestLeaveApplicationOverride(FrappeTestCase):
 
     @patch("frappe.sendmail")
     def test_leave_resumption_shift_worker_no_accommodation_not_returned(self, mock_sendmail):
-        """Test 5: Shift worker without accommodation set to Not Returned From Leave"""
+        """Test 5: Shift worker without accommodation set to Not Returned from Leave"""
         mock_sendmail.return_value = None
         
         # Set employee as shift worker without accommodation
@@ -238,14 +238,14 @@ class TestLeaveApplicationOverride(FrappeTestCase):
         
         update_employee_status_after_leave()
         
-        # Verify employee status changed to Not Returned From Leave
+        # Verify employee status changed to Not Returned from Leave
         employee_status = frappe.db.get_value("Employee", self.employee.name, "status")
-        self.assertEqual(employee_status, "Not Returned From Leave",
-                        "Shift worker without accommodation should be Not Returned From Leave")
+        self.assertEqual(employee_status, "Not Returned from Leave",
+                        "Shift worker without accommodation should be Not Returned from Leave")
 
     @patch("frappe.sendmail")
     def test_leave_resumption_shift_worker_with_accommodation_no_checkin(self, mock_sendmail):
-        """Test 6: Shift worker with accommodation but no check-in set to Not Returned From Leave"""
+        """Test 6: Shift worker with accommodation but no check-in set to Not Returned from Leave"""
         mock_sendmail.return_value = None
         
         # Set employee as shift worker with accommodation
@@ -263,18 +263,22 @@ class TestLeaveApplicationOverride(FrappeTestCase):
             add_days(nowdate(), -1),
             self.leave_type.name
         )
+        
         leave_application.resumption_date = nowdate()
         leave_application.save()
         self.apply_approve_workflow(leave_application)
+        
+        # Delete any existing accommodation checkin checkout records
+        frappe.db.delete("Accommodation Checkin Checkout", {"employee": self.employee.name})
         
         frappe.db.commit()
         
         update_employee_status_after_leave()
         
-        # Verify employee status changed to Not Returned From Leave
+        # Verify employee status changed to Not Returned from Leave
         employee_status = frappe.db.get_value("Employee", self.employee.name, "status")
-        self.assertEqual(employee_status, "Not Returned From Leave",
-                        "Shift worker with accommodation but no check-in should be Not Returned From Leave")
+        self.assertEqual(employee_status, "Not Returned from Leave",
+                        "Shift worker with accommodation but no check-in should be Not Returned from Leave")
 
     @patch("frappe.sendmail")
     def test_leave_resumption_shift_worker_with_accommodation_and_checkin(self, mock_sendmail):
@@ -301,12 +305,26 @@ class TestLeaveApplicationOverride(FrappeTestCase):
         self.apply_approve_workflow(leave_application)
         
         # Create accommodation check-in after leave start date
+
+        test_accommodation = frappe.get_doc({
+            "doctype": "Accommodation",
+            "accommodation": "Test Accommodation",
+            "company": "_Test Company",
+            "capacity": 1,
+            "type": "Building",
+        }).insert(ignore_permissions=True)
+        
+
         checkin = frappe.get_doc({
-            "doctype": "Accommodation Checkin",
+            "doctype": "Accommodation Checkin Checkout",
             "employee": self.employee.name,
-            "check_in_date": add_days(from_date, 1),
-            "accommodation": "Test Accommodation"
+            "checkin_checkout_date_time": add_days(from_date, 1),
+            "accommodation": test_accommodation.name,
+            "type": "IN",
+            "tenant_category": "Granted Service",
+            "bed": "010202302333"
         })
+        checkin.flags.ignore_validate = True
         checkin.insert(ignore_permissions=True)
         checkin.submit()
         
@@ -320,7 +338,7 @@ class TestLeaveApplicationOverride(FrappeTestCase):
                         "Shift worker with accommodation and check-in should be Active")
         
         # Clean up
-        frappe.db.delete("Accommodation Checkin", {"employee": self.employee.name})
+        frappe.db.delete("Accommodation Checkin Checkout", {"employee": self.employee.name})
 
     @patch("frappe.sendmail")
     def test_leave_resumption_only_processes_today(self, mock_sendmail):

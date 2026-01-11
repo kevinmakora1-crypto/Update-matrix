@@ -238,7 +238,7 @@ class TestLeaveResumption(unittest.TestCase):
 
     def test_only_approved_leave_processed(self):
         today_date = getdate(today())
-        leave_app = frappe.get_doc({
+        frappe.get_doc({
             "doctype": "Leave Application",
             "employee": self.non_shift_employee.name,
             "leave_type": self.leave_type.name,

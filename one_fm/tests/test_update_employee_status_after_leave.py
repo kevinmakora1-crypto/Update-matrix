@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import frappe
 import unittest
 from frappe.utils import today, add_days, getdate
-from one_fm.utils import update_employee_status_after_leave
+from one_fm.overrides.leave_application import update_employee_status_after_leave
 
 
 class TestLeaveResumption(unittest.TestCase):

@@ -432,8 +432,6 @@ class EmployeeOverride(EmployeeMaster):
             frappe.log_error(f"Failed to send notification: {str(e)}", "Employee Status Change Notification")
 
 
-
-
 def validate_leaves(self):
     if self.status=='Vacation':
         if not frappe.db.sql(f"""

@@ -140,6 +140,31 @@ def get_leave_application_custom_fields():
                 "label": "Google Event ID",
                 "read_only": 1,
                 "translatable": 1
+            },
+            {
+                "fieldname": "custom_shift_working",
+                "fieldtype": "Check",
+                "insert_after": "employee_name",
+                "label": "Shift Working",
+                "read_only": 1,
+                "fetch_from": "employee.shift_working"
+            },
+            {
+                "fieldname": "custom_in_accommodation",
+                "fieldtype": "Check",
+                "insert_after": "custom_shift_working",
+                "label": "In Accommodation",
+                "read_only": 1,
+                "fetch_from": "employee.one_fm_provide_accommodation_by_company"
+            },
+            {
+                "fieldname": "custom_project_allocation",
+                "fieldtype": "Link",
+                "insert_after": "department",
+                "label": "Project Allocation",
+                "options": "Project",
+                "read_only": 1,
+                "fetch_from": "employee.project"
             }
         ]
     }

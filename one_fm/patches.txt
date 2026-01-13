@@ -271,3 +271,4 @@ one_fm.patches.v15_0.add_quality_feedback_property_setter #2025-12-04
 one_fm.patches.v15_0.add_quality_feedback_workflow #2025-12-04
 one_fm.patches.v15_0.rename_warehouse_fields_in_rfm
 one_fm.patches.v15_0.rename_job_applicant_forth_name #3
+one_fm.patches.v15_0.check_po_kwd_rates

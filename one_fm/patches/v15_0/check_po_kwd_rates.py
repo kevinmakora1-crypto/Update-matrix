@@ -37,7 +37,7 @@ def execute():
 	""", as_dict=True)
 
 	if results:
-		logger.info(f"Found {len(results)} Purchase Order Items with rate discrepancies but equal net amounts:")
+		logger.info("Found %s Purchase Order Items with rate discrepancies but equal net amounts:", len(results))
 		for row in results:
 			try:
 				row_doc = frappe.get_doc("Purchase Order Item", row.item_name)

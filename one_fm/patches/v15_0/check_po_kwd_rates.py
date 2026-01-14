@@ -34,7 +34,7 @@ def execute():
 	""", as_dict=True)
 
 	if results:
-		frappe.logger().info("Found %d Purchase Order Items with rate discrepancies but equal net amounts", len(results))
+		frappe.logger().info(f"Found {len(results)} Purchase Order Items with rate discrepancies but equal net amounts")
 		for row in results:
 			try:
 				row_doc = frappe.get_doc("Purchase Order Item", row.item_name)
@@ -54,4 +54,4 @@ def execute():
 				raise
 
 	else:
-		frappe.logger().info("No Purchase Order Items found matching the criteria.")
+		frappe.logger().info(f"No Purchase Order Items found matching the criteria")

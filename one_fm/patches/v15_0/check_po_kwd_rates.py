@@ -36,13 +36,22 @@ def execute():
 	if results:
 		print(f"Found {len(results)} Purchase Order Items with rate discrepancies but equal net amounts:")
 		for row in results:
-			row_doc = frappe.get_doc("Purchase Order Item",row.item_name)
-			row_doc.db_set('base_rate',row.rate)
-			row_doc.db_set('net_rate',row.rate)
-			row_doc.db_set('base_net_rate',row.rate)
-			if row_doc.amount !=row_doc.net_amount:
-				row_doc.db_set('net_amount',row.amount)
-				row_doc.db_set('base_net_amount',row.amount)
+			try:
+				row_doc = frappe.get_doc("Purchase Order Item", row.item_name)
+				row_doc.db_set('base_rate', row.rate)
+				row_doc.db_set('net_rate', row.rate)
+				row_doc.db_set('base_net_rate', row.rate)
+				if row_doc.amount != row_doc.net_amount:
+					row_doc.db_set('net_amount', row.amount)
+					row_doc.db_set('base_net_amount', row.amount)
+				frappe.db.commit()
+			except Exception:
+				frappe.db.rollback()
+				frappe.log_error(
+					title="Failed to update Purchase Order Item in check_po_kwd_rates patch",
+					message=f"Error while updating Purchase Order Item {row.item_name}"
+				)
+				raise
 
 	else:
 		print("No Purchase Order Items found matching the criteria.")

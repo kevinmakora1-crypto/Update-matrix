@@ -1,7 +1,4 @@
 import frappe
-import logging
-
-logger = logging.getLogger(__name__)
 
 def execute():
 	"""
@@ -37,7 +34,7 @@ def execute():
 	""", as_dict=True)
 
 	if results:
-		logger.info("Found %d Purchase Order Items with rate discrepancies but equal net amounts", len(results))
+		frappe.logger().info("Found %d Purchase Order Items with rate discrepancies but equal net amounts", len(results))
 		for row in results:
 			try:
 				row_doc = frappe.get_doc("Purchase Order Item", row.item_name)
@@ -57,4 +54,4 @@ def execute():
 				raise
 
 	else:
-		logger.info("No Purchase Order Items found matching the criteria.")
+		frappe.logger().info("No Purchase Order Items found matching the criteria.")

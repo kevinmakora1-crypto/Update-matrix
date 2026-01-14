@@ -54,4 +54,4 @@ def execute():
 				raise
 
 	else:
-		frappe.logger().info(f"No Purchase Order Items found matching the criteria")
+		frappe.logger().info("No Purchase Order Items found matching the criteria")

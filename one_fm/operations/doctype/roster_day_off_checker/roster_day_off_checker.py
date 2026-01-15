@@ -214,7 +214,9 @@ def check_roster_day_off():
 		today = getdate()
 
 		Employee = frappe.qb.DocType("Employee")
-		employees = frappe.db.sql(frappe.qb.from_(Employee).select("*").where((Employee.status.isin(["Active", "Vacation"])) & (Employee.shift_working == 1) & ((Employee.relieving_date.isnull()) | (Employee.relieving_date > today))), as_dict=1)
+		# employees = frappe.db.sql(frappe.qb.from_(Employee).select("*").where((Employee.status.isin(["Active", "Vacation"])) & (Employee.shift_working == 1) & ((Employee.relieving_date.isnull()) | (Employee.relieving_date > today))), as_dict=1)
+
+		employees = frappe.db.sql(frappe.qb.from_(Employee).select("*").where((Employee.status.isin(["Active", "Vacation"])) & (Employee.shift_working == 1) & (Employee.name == "HR-EMP-03850") & ((Employee.relieving_date.isnull()) | (Employee.relieving_date > today))), as_dict=1)
 
 		leave_dates_by_employee = get_leave_dates_by_employee()
 
@@ -295,9 +297,6 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 			(Attendance.attendance_date.between(attendance_start_date, attendance_end_date))
 		)
 
-		if working_dates:
-			conditions &= Attendance.attendance_date.isin(working_dates)
-
 		# Calculate no of off days
 		od = (
 			frappe.qb.from_(Attendance)
@@ -309,6 +308,10 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 		attendance_off_days = od[0].off_days if od else 0
 		off_days += attendance_off_days
 		availed_off_days = attendance_off_days
+
+		if working_dates:
+			conditions &= Attendance.attendance_date.isin(working_dates)
+
 
 		# Calculate no of ot days
 		ot = (
@@ -337,8 +340,6 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 			(EmployeeSchedule.date[schedule_start_date:schedule_end_date])
 		)
 
-		if working_dates:
-			conditions &= EmployeeSchedule.date.isin(working_dates)
 
 		# Calculate no of off days
 		od = (
@@ -351,6 +352,10 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 		schedule_off_days = od[0].off_days if od else 0
 		off_days += schedule_off_days
 		rostered_off_days = schedule_off_days
+
+
+		if working_dates:
+			conditions &= EmployeeSchedule.date.isin(working_dates)
 
 		# Calculate no of ot days
 		ot = (
@@ -366,6 +371,7 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 
 	day_off_diff = ""
 	employee_number_of_days_off = calculated_day_offs
+
 
 	if employee_number_of_days_off != (off_days + ot_days): # If has any discrepency
 		if off_days > employee_number_of_days_off and not ot_days:

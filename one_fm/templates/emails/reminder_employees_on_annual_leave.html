@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Employees on Annual Leave Ending Soon</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <p>Dear Helpdesk User,</p>
+    <p>This is a reminder that the following employees' annual leave will end in 7 days:</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Employee ID</th>
+                <th>Employee Name</th>
+                <th>From Date</th>
+                <th>To Date</th>
+                <th>Leave Type</th>
+                <th>Designation</th>
+                <th>Department</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for emp in employees %}
+            <tr>
+                <td>{{ emp.employee }}</td>
+                <td>{{ emp.employee_name }}</td>
+                <td>{{ emp.from_date }}</td>
+                <td>{{ emp.to_date }}</td>
+                <td>{{ emp.leave_type }}</td>
+                <td>{{ emp.designation }}</td>
+                <td>{{ emp.department }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p>Please take any necessary action as required.</p>
+    <p>Best regards,<br>JARVIS</p>
+</body>
+</html>

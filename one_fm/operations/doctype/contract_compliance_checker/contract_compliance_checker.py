@@ -22,12 +22,15 @@ class GenerateContractComplianceChecker:
 
 	def get_contract_items_list(self):
 		return frappe.db.sql("""
-			SELECT ci.idx, ci.parent, ci.count, ci.item_code, ci.days_off_category, ci.no_of_days_off, ci.off_type, ci.service_type, c.project
+			SELECT ci.idx, ci.parent, ci.count, ci.item_code, ci.days_off_category, 
+				ci.no_of_days_off, ci.off_type, ci.service_type, c.project
 			FROM `tabContract Item` ci
 			INNER JOIN `tabContracts` c ON ci.parent = c.name
-			AND c.workflow_state = %s
-			AND ci.item_code IS NOT NULL
+			WHERE c.workflow_state = %s
+				AND ci.item_code IS NOT NULL
+				AND (ci.item_type IS NULL OR ci.item_type != 'Items')
 		""", ("Active"), as_dict=1)
+
 	
 	def get_operation_roles(self, sale_item, project):
 		return frappe.db.get_list('Operations Role', {'sale_item': sale_item, 'status': 'Active', "project": project}, pluck='name')

@@ -1601,7 +1601,8 @@ function get_post_data(page) {
 						let schedule = ``;
 						let classmap = {
 							"Planned": "bluebox",
-							"Post Off": "greyboxcolor",
+							"Post Off": "post-off-color",
+							"Client Post Off": "client-post-off-color",
 							"Suspended": "yellowboxcolor",
 							"Cancelled": "redboxcolor"
 						};

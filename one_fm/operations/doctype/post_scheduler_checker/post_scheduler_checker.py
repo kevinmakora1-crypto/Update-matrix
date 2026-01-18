@@ -47,6 +47,7 @@ def get_post_scheduler_items(contract, project):
 	items = []
 
 	for item in contract.items:
+		# Skip items of type "Items" as they don't require post scheduling validation
 		if item.item_type == "Items":
 			continue
 

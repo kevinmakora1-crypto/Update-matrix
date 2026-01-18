@@ -33,7 +33,19 @@ def create_new_schedule_for_project(proj):
     try:
         existing_proj = frappe.db.exists("Project",proj)
         if existing_proj:
-            all_operations_post = frappe.get_all("Operations Post",{'project':existing_proj})
+            contract_items = frappe.db.sql("""
+                SELECT ci.item_code
+                FROM `tabContract Item` ci
+                INNER JOIN `tabContracts` c ON ci.parent = c.name
+                WHERE c.project = %s
+                    AND c.workflow_state = 'Active'
+                    AND (ci.item_type IS NULL OR ci.item_type != 'Items')
+            """, (existing_proj,), as_dict=1)
+
+
+            operations_role = frappe.db.get_list("Operations Role", filters={"project": existing_proj, "status": "Active", "sale_item":["IN", [obj.item_code for obj in contract_items]]}, pluck="name")
+
+            all_operations_post = frappe.get_all("Operations Post",{'project':existing_proj, 'post_template':["IN", operations_role], 'status':'Active'})
             all_operations_post_ = [frappe.get_doc("Operations Post",i.name) for i in all_operations_post]
 
             frappe.enqueue(create_post_schedules, operations_posts=all_operations_post_, queue="long",job_name = 'Create Post Schedules')
@@ -180,7 +192,7 @@ def queue_create_post_schedule_for_operations_post(operations_post, contracts, e
             doc_id_template = f"{operations_post.name}_{date_string}"
             schedule_exists = False
             if exists_schedule_in_between:
-                if  frappe.db.exists("Post Schedule", {"date": cstr(date.date()),'operations_role': operations_post.post_template, "post": operations_post.name}):
+                if frappe.db.exists("Post Schedule", {"date": cstr(date.date()),'operations_role': operations_post.post_template, "post": operations_post.name}):
                     schedule_exists = True
             if not schedule_exists:
                 ps_name_idx += 1

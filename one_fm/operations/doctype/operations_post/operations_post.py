@@ -42,11 +42,25 @@ def create_new_schedule_for_project(proj):
                     AND (ci.item_type IS NULL OR ci.item_type != 'Items')
             """, (existing_proj,), as_dict=1)
 
+            item_codes = [obj.item_code for obj in contract_items]
+            if not item_codes:
+                return response("No active contract items found for the specified project", {}, True, 200)
 
-            operations_role = frappe.db.get_list("Operations Role", filters={"project": existing_proj, "status": "Active", "sale_item":["IN", [obj.item_code for obj in contract_items]]}, pluck="name")
+            operations_role = frappe.db.get_list(
+                "Operations Role",
+                filters={
+                    "project": existing_proj,
+                    "status": "Active",
+                    "sale_item": ["IN", item_codes],
+                },
+                pluck="name",
+            )
 
-            all_operations_post = frappe.get_all("Operations Post",{'project':existing_proj, 'post_template':["IN", operations_role], 'status':'Active'})
-            all_operations_post_ = [frappe.get_doc("Operations Post",i.name) for i in all_operations_post]
+            all_operations_post = frappe.get_all(
+                "Operations Post",
+                {"project": existing_proj, "post_template": ["IN", operations_role], "status": "Active"},
+            )
+            all_operations_post_ = [frappe.get_doc("Operations Post", i.name) for i in all_operations_post]
 
             frappe.enqueue(create_post_schedules, operations_posts=all_operations_post_, queue="long",job_name = 'Create Post Schedules')
             return response("Post Creation Scheduled Sucessfully",{}, True, 200)

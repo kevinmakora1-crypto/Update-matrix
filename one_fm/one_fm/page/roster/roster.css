@@ -291,3 +291,11 @@ body[data-route="roster"] .switch-container {
 .tealboxcolor {
     background-color: #00897B;
 }
+
+.post-off-color {
+    background-color: #9E9E9E !important;
+}
+
+.client-post-off-color {
+    background-color: #34495E !important;
+}

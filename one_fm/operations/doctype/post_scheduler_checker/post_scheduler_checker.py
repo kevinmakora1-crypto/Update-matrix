@@ -47,6 +47,9 @@ def get_post_scheduler_items(contract, project):
 	items = []
 
 	for item in contract.items:
+		# Skip items of type "Items" as they don't require post scheduling validation
+		if item.item_type == "Items":
+			continue
 
 		item_message = ""
 
@@ -234,4 +237,5 @@ def create_post_schedule_checker_from_contracts(page_size, offset):
 			doc = frappe.get_doc({"doctype":"Post Scheduler Checker", 'contract': row}).insert(ignore_permissions=True)
 		except Exception as e:
 			print(e)
+
 	frappe.db.commit()

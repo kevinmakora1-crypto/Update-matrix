@@ -109,12 +109,27 @@ class PostMap():
 		list(map(self.create_second_section,summary_schedule))
 		self.post_schedule_summary.append(summary_schedule)
 
+	def switch_template_keys(self):
+		final_list = []
+		for key, value in self.template.items():
+			abbr = self.abbrvs.get(key)
+			value['full_name'] = key
+			if abbr:
+				value['name'] = abbr
+			else:
+				value['name'] = key
+			final_list.append(value)
+		self.template = final_list
+
+
+
 	def start_mapping(self):
 		list(map(self.sort_post_schedule,self.post_schedule_count))
 		list(map(self.sort_post_filled,self.post_filled_count))
 		list(map(self.create_template,self.operations))
 		list(map(self.create_date_post_summary,self.date_range))
 		list(map(self.create_date_schedule_summary,self.date_range))
+		self.switch_template_keys()
 
 
 

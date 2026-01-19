@@ -91,9 +91,6 @@ class LeaveApplicationOverride(LeaveApplication):
             attendance_not_created = True
         self.set_onload("attendance_not_created", attendance_not_created)
 
-    def validate(self):
-        self.validate_applicable_after()
-
     def close_todo(self):
         """Close the Todo document linked with a leave application
         """
@@ -284,6 +281,34 @@ class LeaveApplicationOverride(LeaveApplication):
         self.validate_applicable_after()
         self.validate_leave_application_operator()
         self.reset_status_on_amend()
+        self.validate_loan_repayment()
+
+    def validate_loan_repayment(self):
+        if self.leave_type != "Annual Leave":
+            return
+        # Check if employee has unpaid loan >50%
+        unpaid_loans = frappe.get_all("Loan",
+            filters={
+                "applicant": self.employee,
+                "applicant_type": "Employee",
+                "docstatus": 1,
+                "status": ["!=", "Closed"]
+            },
+            fields=["name", "loan_amount", "total_payment"]
+        )
+
+        # Filter loans where less than 50% has been repaid
+        loans_under_50_percent = [
+            loan for loan in unpaid_loans
+            if loan.total_payment < (loan.loan_amount * 0.5)
+        ]
+
+        if loans_under_50_percent:
+            loan_names = [d.name for d in loans_under_50_percent]
+            frappe.throw(
+                f"Employee has not repaid at least 50% of the following loans: {', '.join(loan_names)}",
+                title="Unpaid Loans"
+            )
 
     @frappe.whitelist()
     def update_attendance(self):

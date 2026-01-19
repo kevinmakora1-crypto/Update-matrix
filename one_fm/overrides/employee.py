@@ -350,7 +350,18 @@ class EmployeeOverride(EmployeeMaster):
                 message = status_validate.message()
                 if message:
                     frappe.throw(message)
+        if last_doc and last_doc.get('status') != "Active":
+            if self.status == "Not Returned from Leave":
+                inform_employee_status_update(self)
 
+    def inform_employee_status_update(self):
+        subject = f"Your Employee Status changed to {self.status}"
+        message = f"Dear {self.employee_name}, your status has been changed to {self.status}, please contact your supervisor"
+        send_push_notification(
+            employee_id=self.employee_id,
+            title=subject,
+            body=message
+        )
 
     def clear_schedules(self):
         # clear future employee schedules

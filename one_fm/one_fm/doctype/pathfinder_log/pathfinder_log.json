@@ -5,6 +5,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "guideline_section",
+  "checklist",
+  "column_break_ihrb",
   "section_break_wx0s",
   "process_name",
   "goal_description",
@@ -25,7 +28,8 @@
  "fields": [
   {
    "fieldname": "section_break_wx0s",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Increment Details"
   },
   {
    "description": "Only the processes that have gone through Pathfinder are listed. If your process is not listed in the options, select \"Others\".",
@@ -135,12 +139,30 @@
    "label": "Time Log",
    "options": "Pathfinder Log Time",
    "read_only": 1
+  },
+  {
+   "fieldname": "guideline_section",
+   "fieldtype": "Section Break",
+   "label": "Guideline"
+  },
+  {
+   "bold": 1,
+   "description": "Click to navigate to the checklist that must be followed for the current task.",
+   "fieldname": "checklist",
+   "fieldtype": "Link",
+   "label": "Checklist",
+   "options": "Process Artefact Checklist",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ihrb",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-17 19:58:41.197164",
+ "modified": "2026-01-19 09:42:30.798667",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Pathfinder Log",

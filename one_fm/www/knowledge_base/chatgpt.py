@@ -12,7 +12,11 @@ def get_completion(prompt):
 
         chatgpt = frappe.get_doc("API Integration",
             [i for i in default_api_integration.integration_setting
-                if (i.app_name=='ChatGPT' and i.active == 1)][0].app_name)
+                if i.app_name=='ChatGPT'][0].app_name)
+
+        if not chatgpt.active:
+            return
+
         openai.api_key = chatgpt.get_password('api_key')
 
         completion = openai.ChatCompletion.create(

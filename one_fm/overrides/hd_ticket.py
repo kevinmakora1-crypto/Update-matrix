@@ -71,7 +71,7 @@ class HDTicketOverride(HDTicket):
 
             google_chat = frappe.get_doc("API Integration",
                 [i for i in default_api_integration.integration_setting
-                    if (i.app_name=='Google Chat' and i.active == 1)][0].app_name)
+                    if i.app_name=='Google Chat'][0].app_name)
 
             if google_chat.active:
                 # Construct the request URL

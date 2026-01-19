@@ -16,7 +16,7 @@ def log_pivotal_tracker(**kwargs):
 
         pivotal_tracker = frappe.get_doc("API Integration",
             [i for i in default_api_integration.integration_setting
-                if (i.app_name=='Pivotal Tracker' and i.active == 1)][0].app_name)
+                if i.app_name=='Pivotal Tracker'][0].app_name)
         if pivotal_tracker.active:
             headers={"X-TrackerToken":pivotal_tracker.get_password('api_token').replace(' ', ''),
                 "Content-Type": "application/json"}

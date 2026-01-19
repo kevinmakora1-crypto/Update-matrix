@@ -1306,8 +1306,10 @@ def get_existing_post_schedules_for_plan_post(args, end_date, posts_list):
     # Extract unique posts
     unique_posts_list = list(set(post["post"] for post in posts_list))
     
-    # Determine the from_date field based on the operation
-    from_date = args.get("plan_from_date") or args.get("client_post_off_from_date")
+    # Determine the from_date field based on the operation, with explicit fallback
+    from_date = args.get("plan_from_date")
+    if from_date in (None, ""):
+        from_date = args.get("client_post_off_from_date")
     
     # Validate that a from_date value is provided
     if not from_date:

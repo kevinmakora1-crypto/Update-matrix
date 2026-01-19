@@ -26,6 +26,7 @@
   "shift_hours",
   "gender",
   "service_type",
+  "is_daily_operation_handled_by_us",
   "rate_type",
   "off_type",
   "is_yearly_month",
@@ -35,7 +36,6 @@
   "overtime_rate",
   "site",
   "operational_requirements_section",
-  "operational_frequency",
   "select_specific_days",
   "sunday",
   "monday",
@@ -44,8 +44,7 @@
   "thursday",
   "friday",
   "saturday",
-  "column_break_ilmm",
-  "monthly_count"
+  "column_break_ilmm"
  ],
  "fields": [
   {
@@ -179,6 +178,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.item_type != 'Items'",
    "fieldname": "overtime_rate",
    "fieldtype": "Currency",
    "label": "Overtime Rate"
@@ -208,28 +208,30 @@
    "mandatory_depends_on": "eval:doc.item_type != \"Items\""
   },
   {
+   "depends_on": "eval:doc.item_type != \"Items\"",
    "fieldname": "rate_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Rate Type",
-   "options": "Monthly\nHourly\nDaily",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.item_type != \"Items\"",
+   "options": "Monthly\nHourly\nDaily"
   },
   {
    "default": "Full Month",
-   "depends_on": "eval:doc.rate_type=='Monthly'",
+   "depends_on": "eval:doc.rate_type == 'Monthly' && doc.item_type != 'Items'",
    "fieldname": "off_type",
    "fieldtype": "Select",
    "label": "Off Type",
-   "options": "Full Month\nDays Off",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.rate_type == 'Monthly' && doc.item_type != 'Items'",
+   "options": "Full Month\nDays Off"
   },
   {
+   "depends_on": "eval:doc.item_type != \"Items\"",
    "fieldname": "service_type",
    "fieldtype": "Select",
    "label": "Service Type",
-   "options": "\nManpower\nPost Schedule",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.item_type != \"Items\"",
+   "options": "\nManpower\nPost Schedule"
   },
   {
    "depends_on": "eval:doc.off_type=='Days Off' && doc.rate_type=='Monthly'",
@@ -254,7 +256,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.off_type == 'Full Month'",
+   "depends_on": "eval:doc.off_type == 'Full Month' && doc.item_type!='Items'",
    "description": "If Yearly Month is checked then the invoice will calculate based on the factor 30.4166.",
    "fieldname": "is_yearly_month",
    "fieldtype": "Check",
@@ -264,7 +266,7 @@
    "fieldname": "item_type",
    "fieldtype": "Select",
    "label": "Item Type",
-   "options": "Manpower\nItems"
+   "options": "Service\nItems"
   },
   {
    "depends_on": "eval:doc.item_type == \"Items\"",
@@ -280,14 +282,7 @@
    "label": "Operational Requirements"
   },
   {
-   "fieldname": "operational_frequency",
-   "fieldtype": "Select",
-   "label": "Operational Frequency",
-   "options": "Weekly\nMonthly"
-  },
-  {
    "default": "0",
-   "depends_on": "eval:doc.operational_frequency == 'Weekly'",
    "description": "Check to specify days manually. Leave unchecked to use system defaults.",
    "fieldname": "select_specific_days",
    "fieldtype": "Check",
@@ -295,7 +290,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "depends_on": "eval:doc.select_specific_days == 1",
    "fieldname": "sunday",
    "fieldtype": "Check",
    "label": "Sunday"
@@ -306,56 +301,58 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "depends_on": "eval:doc.select_specific_days == 1",
    "fieldname": "monday",
    "fieldtype": "Check",
    "label": "Monday"
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "depends_on": "eval:doc.select_specific_days == 1",
    "fieldname": "tuesday",
    "fieldtype": "Check",
    "label": "Tuesday"
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "depends_on": "eval:doc.select_specific_days == 1",
    "fieldname": "wednesday",
    "fieldtype": "Check",
    "label": "Wednesday"
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "depends_on": "eval:doc.select_specific_days == 1",
    "fieldname": "thursday",
    "fieldtype": "Check",
    "label": "Thursday"
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "depends_on": "eval:doc.select_specific_days == 1",
    "fieldname": "friday",
    "fieldtype": "Check",
    "label": "Friday"
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.operational_frequency == 'Weekly' && doc.select_specific_days == 1",
+   "depends_on": "eval:doc.select_specific_days == 1",
    "fieldname": "saturday",
    "fieldtype": "Check",
    "label": "Saturday"
   },
   {
-   "depends_on": "eval:doc.operational_frequency == 'Monthly'",
-   "fieldname": "monthly_count",
-   "fieldtype": "Int",
-   "label": "Monthly Count"
+   "depends_on": "eval:doc.service_type == 'Manpower'",
+   "fieldname": "is_daily_operation_handled_by_us",
+   "fieldtype": "Select",
+   "label": "Is Daily Operation Handled by Us?",
+   "mandatory_depends_on": "eval:doc.service_type == 'Manpower'",
+   "options": "\nYes\nNo"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2025-12-24 21:52:53.980361",
+ "modified": "2026-01-19 08:55:02.600728",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Contract Item",

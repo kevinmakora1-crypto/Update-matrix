@@ -221,7 +221,7 @@ function load_js(page) {
 							label: "Post Status",
 							fieldname: "post_status",
 							fieldtype: "Select",
-							options: "\nPlan Post\nPost Off\nSuspend Post\nCancel Post",
+							options: "\nPlan Post\nPost Off\nClient Post Off\nSuspend Post\nCancel Post",
 							reqd: 1
 						},
 						{
@@ -286,7 +286,7 @@ function load_js(page) {
 						{
 							fieldname: "sb3",
 							fieldtype: "Section Break",
-							depends_on: "eval:doc.post_status == 'Post Off'",
+							depends_on: "eval:doc.post_status == 'Post Off' || doc.post_status == 'Client Post Off'",
 						},
 						{
 							label: "Paid",
@@ -306,7 +306,7 @@ function load_js(page) {
 						{
 							fieldname: "sb5",
 							fieldtype: "Section Break",
-							depends_on: "eval:doc.post_status == 'Post Off'",
+							depends_on: "eval:doc.post_status == 'Post Off' || doc.post_status == 'Client Post Off'",
 						},
 						{
 							label: "Post Off From Date",
@@ -315,7 +315,7 @@ function load_js(page) {
 							default: date
 						},
 						{ label: "Repeat", fieldname: "repeat", fieldtype: "Select", options: "Does not repeat\nSelected Days Only\nDaily\nWeekly\nMonthly\nYearly" },
-						{ "fieldtype": "Section Break", "fieldname": "sb1", "depends_on": "eval:doc.post_status=='Post Off' && doc.repeat=='Weekly'" },
+						{ "fieldtype": "Section Break", "fieldname": "sb1", "depends_on": "eval:(doc.post_status=='Post Off' || doc.post_status=='Client Post Off') && doc.repeat=='Weekly'" },
 						{ "label": "Sunday", "fieldname": "sunday", "fieldtype": "Check" },
 						{ "label": "Wednesday", "fieldname": "wednesday", "fieldtype": "Check" },
 						{ "label": "Saturday", "fieldname": "saturday", "fieldtype": "Check" },
@@ -325,7 +325,7 @@ function load_js(page) {
 						{ "fieldtype": "Column Break", "fieldname": "cb2" },
 						{ "label": "Tuesday", "fieldname": "tuesday", "fieldtype": "Check" },
 						{ "label": "Friday", "fieldname": "friday", "fieldtype": "Check" },
-						{ "fieldtype": "Section Break", "fieldname": "sb2", "depends_on": "eval:doc.post_status=='Post Off' && doc.repeat!= 'Does not repeat' && doc.repeat!= 'Selected Days Only'" },
+						{ "fieldtype": "Section Break", "fieldname": "sb2", "depends_on": "eval:(doc.post_status=='Post Off' || doc.post_status=='Client Post Off') && doc.repeat!= 'Does not repeat' && doc.repeat!= 'Selected Days Only'" },
 						{ "label": "Repeat Till", "fieldtype": "Date", "fieldname": "repeat_till", "depends_on": "eval:doc.project_end_date==0" },
 						{
 							fieldname: "sb2",

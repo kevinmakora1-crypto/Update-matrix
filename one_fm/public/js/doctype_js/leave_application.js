@@ -130,6 +130,7 @@ frappe.ui.form.on("Leave Application", {
 										var child = frappe.model.add_child(doc, 'Handover Item', 'handover_items');
 										child.reference_doctype = item.reference_doctype;
 										child.reference_docname = item.reference_docname;
+										child.role = item.role;
 									});
 								}
 								frappe.set_route('Form', 'Leave Handover', doc.name);

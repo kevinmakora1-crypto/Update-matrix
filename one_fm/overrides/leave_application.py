@@ -6,7 +6,7 @@ from datetime import date
 from frappe import _
 from frappe.desk.form.assign_to import add as add_assignment
 from frappe.utils import (
-    get_fullname, nowdate, add_to_date, getdate, date_diff,
+    get_fullname, nowdate, getdate, date_diff, add_days,
     get_url_to_form, get_date_str, today, cint, flt
 )
 
@@ -1029,7 +1029,7 @@ def update_employee_status_after_leave():
     
     frappe.db.commit()
 
-def remind_anual_leave_employees_to_helpdesk_user():
+def remind_annual_leave_employees_to_helpdesk_user():
     """
         Send a reminder email to helpdesk user with the list of employees whose leave ends soon.
     """
@@ -1045,7 +1045,7 @@ def remind_anual_leave_employees_to_helpdesk_user():
     message = frappe.render_template("one_fm/templates/emails/reminder_employees_on_annual_leave.html", {"employees": employees_on_annual_leave})
     sendemail(
         recipients=[helpdesk_email],
-        subject="Reminder: Employees on Annual Leave Today",
+        subject="Reminder: Employees' Annual Leave Ending in 7 Days",
         message=message,
         is_external_mail=True
     )

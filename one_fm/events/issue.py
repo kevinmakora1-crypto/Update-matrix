@@ -151,7 +151,6 @@ def send_open_hd_ticket_count_to_helpdesk_team(message):
     if not helpdesk_email:
         return
     if helpdesk_email:
-        frappe.throw("Helpdesk Email is not set in HR Settings")
         sendemail(
             recipients=[helpdesk_email],
             subject="Open HD Ticket Count Notification",

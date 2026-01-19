@@ -4583,12 +4583,12 @@ def create_process_task(process_name, erp_document, task_description, employee=N
 
 def create_process_if_not_exists(process_name, process_owner="Administrator", business_analyst="Administrator"):
     if not frappe.db.exists("Process", process_name):
-        process_owner_name = "Administrator"
-        business_analyst_name = "Administrator"
-        if process_owner:
-            process_owner_name = frappe.db.get_value("User", process_owner, "full_name")
-        if business_analyst:
-            business_analyst_name = frappe.db.get_value("User", business_analyst, "full_name")
+        process_owner = process_owner or "Administrator"
+        business_analyst = business_analyst or "Administrator"
+
+        process_owner_name = "Administrator" if process_owner == "Administrator" else frappe.db.get_value("User", process_owner, "full_name")
+        business_analyst_name = "Administrator" if business_analyst == "Administrator" else frappe.db.get_value("User", business_analyst, "full_name")
+
         frappe.get_doc({
             "process_name": process_name,
             "description": process_name,

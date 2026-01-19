@@ -2,6 +2,7 @@ import frappe
 from json import dumps
 import re
 from httplib2 import Http
+from one_fm.processor import sendemail
 
 def validate(doc, event):
     doc.issue_type = "Technical Issue"
@@ -93,7 +94,6 @@ def send_open_hd_ticket_count_to_google_chat_notification():
 		SELECT COUNT(status) as status_count FROM `tabHD Ticket` WHERE status='Open' AND DATEDIFF(NOW(), modified)>0;
 	""", as_dict=1)
 
-
 	if query[0].status_count:
 		# Fetch the Key and Token for the API
 		default_api_integration = frappe.get_doc("Default API Integration")
@@ -105,8 +105,11 @@ def send_open_hd_ticket_count_to_google_chat_notification():
 		# Construct the request URL
 		url = f"""{google_chat.url}/spaces/{google_chat.api_parameter[0].get_password('value')}/messages?key={google_chat.get_password('api_key')}&token={google_chat.get_password('api_token')}"""
 
+		doc_list_url = f"""{frappe.utils.get_url()}/app/hd-ticket/view/list?status=Open"""
 		# Construct Message Body
-		message = f"""<b>There are {query[0].status_count} open hd ticket(s) that have not been replied to in the last 24 hour</b><br>"""
+		message = f"""<b>There are {query[0].status_count} open <a href='{doc_list_url}'>hd ticket(s)</a> that have not been replied to in the last 24 hour</b><br>"""
+		if message:
+			send_open_hd_ticket_count_to_helpdesk_team(message)
 
 		# Construct Card the allows Button action
 		bot_message = {
@@ -142,3 +145,15 @@ def send_open_hd_ticket_count_to_google_chat_notification():
 			)
 		except Exception as e:
 			frappe.log_error(message=str(e), title='Google Chat Notification - Send Open HD Ticket Count')
+
+def send_open_hd_ticket_count_to_helpdesk_team(message):
+    helpdesk_email = frappe.db.get_single_value("HR Settings", "helpdesk_email")
+    if not helpdesk_email:
+        return
+    if helpdesk_email:
+        sendemail(
+            recipients=[helpdesk_email],
+            subject="Open HD Ticket Count Notification",
+            message=message,
+            is_external_mail=True
+        )

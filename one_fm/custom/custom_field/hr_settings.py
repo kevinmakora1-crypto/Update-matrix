@@ -123,6 +123,14 @@ def get_hr_settings_custom_fields():
                 "label": "Costing Print Format",
                 "options": "Print Format",
                 "description": "The print format to attach in the notification to the finance team about the preparation cost. If leave this field blank the will consider Standard print format for attachment."
+            },
+            {
+                "fieldname": "helpdesk_email",
+                "fieldtype": "Data",
+                "options": "Email",
+                "insert_after": "sender",
+                "label": "Helpdesk Email",
+                "description": "Email ID of helpdesk user to send reminders or notifications"
             }
         ]
     }

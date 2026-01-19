@@ -5,7 +5,10 @@ from datetime import date
 
 from frappe import _
 from frappe.desk.form.assign_to import add as add_assignment
-from frappe.utils import get_fullname, nowdate, getdate, date_diff, get_url_to_form, get_date_str, today
+from frappe.utils import (
+    get_fullname, nowdate, getdate, date_diff, add_days,
+    get_url_to_form, get_date_str, today, cint, flt
+)
 
 from hrms.hr.doctype.leave_application.leave_application import *
 from one_fm.processor import sendemail
@@ -17,6 +20,7 @@ from one_fm.utils import get_approver_user, leave_application_on_cancel, fetch_l
 from hrms.hr.utils import get_holidays_for_employee
 from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import ReassignRelieverAssignment, reassign_responsibilities
 from frappe.workflow.doctype.workflow_action.workflow_action import apply_workflow
+from frappe.query_builder import DocType
 
 
 def validate_active_staff(doc,event):
@@ -1024,3 +1028,54 @@ def update_employee_status_after_leave():
             )
     
     frappe.db.commit()
+
+def remind_annual_leave_employees_to_helpdesk_user():
+    """
+        Send a reminder email to helpdesk user with the list of employees whose leave ends soon.
+    """
+    helpdesk_email = frappe.db.get_single_value("HR Settings", "helpdesk_email")
+    if not helpdesk_email:
+        return
+
+    employees_on_annual_leave = get_employees_whose_leave_ends_in(leave_ends_in=6)
+
+    if not employees_on_annual_leave:
+        return
+
+    message = frappe.render_template("one_fm/templates/emails/reminder_employees_on_annual_leave.html", {"employees": employees_on_annual_leave})
+    sendemail(
+        recipients=[helpdesk_email],
+        subject="Reminder: Employees' Annual Leave Ending in 7 Days",
+        message=message,
+        is_external_mail=True
+    )
+
+def get_employees_whose_leave_ends_in(leave_ends_in=0, leave_type="Annual Leave", shift_working=1):
+    to_date = add_days(getdate(today()), leave_ends_in)
+
+    LeaveApplication = DocType("Leave Application")
+    Employee = DocType("Employee")
+
+    employees_on_leave = (
+        frappe.qb.from_(LeaveApplication)
+        .join(Employee)
+        .on(LeaveApplication.employee == Employee.name)
+        .select(
+            LeaveApplication.employee,
+            LeaveApplication.employee_name,
+            LeaveApplication.from_date,
+            LeaveApplication.to_date,
+            LeaveApplication.leave_type,
+            Employee.designation,
+            Employee.department
+        )
+        .where(
+            (LeaveApplication.docstatus == 1) &
+            (LeaveApplication.status == "Approved") &
+            (LeaveApplication.leave_type == leave_type) &
+            (LeaveApplication.to_date == to_date) &
+            (Employee.shift_working == shift_working)
+        )
+    ).run(as_dict=True)
+
+    return employees_on_leave

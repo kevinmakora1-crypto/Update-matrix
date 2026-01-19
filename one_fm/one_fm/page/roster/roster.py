@@ -925,7 +925,6 @@ def edit_post(posts, values):
 		frappe.throw(_("Insufficient permissions to Edit Post."))
 
 	args = frappe._dict(json.loads(values))
-	print(args.post_status, "\n\n\n\n")
 
 	if args.post_status == "Plan Post":
 		if args.plan_end_date and cint(args.project_end_date):
@@ -1089,7 +1088,7 @@ def client_post_off(posts, args):
         frappe.db.sql(insert_query)
         frappe.db.commit()
 
-		
+
 
 def plan_post(posts, args):
 	""" This function sets the post status to planned provided a post, start date and an end date """

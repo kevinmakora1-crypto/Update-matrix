@@ -102,7 +102,7 @@ def create_roster_post_actions():
             AND opr.status = 'Active'
             AND pr.is_active = 'Yes'
             AND ci.item_code = opr.sale_item
-            AND ci.service_type = 'Post Schedule'
+            AND (ci.service_type = 'Post Schedule' OR (ci.is_daily_operation_handled_by_us = 'Yes' AND ci.service_type = 'Manpower'))
             AND ps.date BETWEEN '{start_date}' AND '{end_date}'
             ORDER BY ps.date ASC
         """, as_dict=1)
@@ -119,7 +119,7 @@ def create_roster_post_actions():
             WHERE es.employee_availability = 'Working'
             AND e.status = 'Active'
             AND ci.item_code = opr.sale_item
-            AND ci.service_type = 'Post Schedule'
+            AND (ci.service_type = 'Post Schedule' OR (ci.is_daily_operation_handled_by_us = 'Yes' AND ci.service_type = 'Manpower'))
             AND es.date BETWEEN '{start_date}' AND '{end_date}'
             ORDER BY es.date ASC
         """, as_dict=1)

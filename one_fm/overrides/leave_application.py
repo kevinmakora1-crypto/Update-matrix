@@ -294,13 +294,13 @@ class LeaveApplicationOverride(LeaveApplication):
                 "docstatus": 1,
                 "status": ["!=", "Closed"]
             },
-            fields=["name", "loan_amount", "total_payment"]
+            fields=["name", "loan_amount", "total_amount_paid"]
         )
 
         # Filter loans where less than 50% has been repaid
         loans_under_50_percent = [
             loan for loan in unpaid_loans
-            if loan.total_payment < (loan.loan_amount * 0.5)
+            if flt(loan.total_amount_paid) < (loan.loan_amount * 0.5)
         ]
 
         if loans_under_50_percent:

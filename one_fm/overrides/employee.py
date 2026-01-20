@@ -196,6 +196,8 @@ class EmployeeOverride(EmployeeMaster):
         self.notify_employee_id_update()
         self.remove_user_on_employee_left()
         self.notify_supervisor_of_status_change()
+        if self.has_value_changed("status") and self.status == "Not Returned from Leave":
+            self.inform_employee_status_update()
 
     def inform_employee_id_update(self):
         """
@@ -351,6 +353,17 @@ class EmployeeOverride(EmployeeMaster):
                 if message:
                     frappe.throw(message)
 
+    def inform_employee_status_update(self):
+        try:
+            subject = f"Your Employee Status changed to {self.status}"
+            message = f"Dear {self.employee_name}, your status has been changed to {self.status}, please contact your supervisor"
+            send_push_notification(
+                employee_id=self.employee_id,
+                title=subject,
+                body=message
+            )
+        except Exception as e:
+            frappe.log_error(message=f"Failed to send status update notification: {str(e)}", title="Employee Status Update Notification")
 
     def clear_schedules(self):
         # clear future employee schedules

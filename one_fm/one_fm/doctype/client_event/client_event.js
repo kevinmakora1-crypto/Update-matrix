@@ -6,7 +6,7 @@ frappe.ui.form.on("Client Event", {
         frm.events.add_event_staff(frm);
     },
     add_event_staff(frm) {
-        if (frm.doc.workflow_state == "Approved") {
+        if (["Approved", "Pending Approval"].includes(frm.doc.workflow_state)) {
             frm.add_custom_button(__("Add Staff to Event"), function() {
                 let d = new frappe.ui.Dialog({
                     title: __("Add Staff to Event"),

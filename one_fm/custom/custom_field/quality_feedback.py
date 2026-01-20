@@ -129,6 +129,15 @@ def get_quality_feedback_custom_fields():
 				"insert_after": "custom_item_name"
 			},
 			{
+				"label": "Employee Uniform",
+				"fieldname": "employee_uniform",
+				"insert_after": "custom_quantity",
+				"fieldtype": "Link",
+				"options": "Employee Uniform",
+				"read_only": 1,
+				"in_standard_filter": 1
+			},
+			{
 				"fieldname": "custom_item_name",
 				"fieldtype": "Data",
 				"label": "Item Name",

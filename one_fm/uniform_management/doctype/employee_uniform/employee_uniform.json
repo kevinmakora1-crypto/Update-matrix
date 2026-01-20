@@ -193,8 +193,13 @@
  ],
  "grid_page_length": 50,
  "is_submittable": 1,
- "links": [],
- "modified": "2025-10-19 09:50:56.418874",
+ "links": [
+  {
+   "link_doctype": "Quality Feedback",
+   "link_fieldname": "employee_uniform"
+  }
+ ],
+ "modified": "2026-01-20 11:22:04.331989",
  "modified_by": "Administrator",
  "module": "Uniform Management",
  "name": "Employee Uniform",

@@ -177,6 +177,6 @@ def fetch_designation_of_users(list_of_users: list = []):
 def get_project_users(project):
 	doc = frappe.get_doc("Project", project)
 	users = []
-	users.append(doc.manager_name) if all((doc.manager_name, doc.account_manager, doc.project_type == "Internal")) else None
+	users.append(doc.project_manager_name) if all((doc.project_manager_name, doc.project_manager, doc.project_type == "Internal")) else None
 	users.extend([user.full_name for user in doc.users])
 	return users

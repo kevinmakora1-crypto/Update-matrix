@@ -224,7 +224,7 @@ def check_roster_day_off():
 
 			site_supervisor = frappe.db.get_value("Operations Site", employee.site, "site_supervisor")
 			shift_supervisor = get_shift_supervisor(employee.shift)
-			project_manager = frappe.db.get_value("Project", employee.project, "account_manager")
+			project_manager = frappe.db.get_value("Project", employee.project, "project_manager")
 
 			for period in comparison_dates:	# Always 2 iterations only because we have just two period for comparison
 				day_off_data = get_employee_day_off_comparison(employee, period["start_date"], period["end_date"], period["calculated_number_of_days_off"], period["working_dates"])
@@ -515,7 +515,7 @@ def get_project_manager_employees(user_employee):
 			JOIN `tabOperations Site` site ON os.site = site.name
 			JOIN `tabProject` p ON site.project = p.name
 		""",
-		where_clause="p.account_manager = %(user_employee)s",
+		where_clause="p.project_manager = %(user_employee)s",
 		user_employee=user_employee
 	)
 

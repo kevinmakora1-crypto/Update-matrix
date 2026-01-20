@@ -31,13 +31,13 @@ def execute():
     update_request_for_material_doctype(user_map)
 
 def update_project_doctype(employee_map):
-    project_filters = {"account_manager": ("IN", list(employee_map.keys()))}
+    project_filters = {"project_manager": ("IN", list(employee_map.keys()))}
     projects = frappe.get_all("Project", filters=project_filters, fields=["name"])
 
     for project in projects:
         try:
             doc = frappe.get_doc("Project", project.name)
-            doc.account_manager = employee_map.get(doc.account_manager)
+            doc.project_manager = employee_map.get(doc.project_manager)
             doc.save(ignore_permissions=True)
         except Exception as e:
             frappe.log_error(message=f"Failed to update Project {project.name}: {e}", title="Patch Update Error")

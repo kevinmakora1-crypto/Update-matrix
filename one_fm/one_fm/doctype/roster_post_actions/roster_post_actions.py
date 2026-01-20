@@ -370,7 +370,7 @@ def get_all_shifts():
 
 
 def get_project_shifts(employee):
-    active_projects = frappe.get_all("Project",{'status':"Open",'account_manager':employee},pluck ="name")
+    active_projects = frappe.get_all("Project",{'status':"Open",'project_manager':employee},pluck ="name")
     if active_projects:
         all_shifts = frappe.get_all("Operations Shift",{'status':'Active','project':['in',active_projects]},pluck ="name")
         return all_shifts

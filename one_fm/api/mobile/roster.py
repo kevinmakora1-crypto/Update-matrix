@@ -298,7 +298,7 @@ def get_assigned_projects(employee_id=None):
 			return []
 
 		if "Projects Manager" in user_roles:
-			return frappe.get_list("Project", {"account_manager": employee_id, "project_type": "External", "is_active": "Yes"}, "name as project", limit_page_length=9999, order_by="name asc")
+			return frappe.get_list("Project", {"project_manager": employee_id, "project_type": "External", "is_active": "Yes"}, "name as project", limit_page_length=9999, order_by="name asc")
 
 		return []
 	except Exception as e:
@@ -405,7 +405,7 @@ def get_employees():
 		if "Operations Manager" in user_roles:
 			pass			
 		elif "Projects Manager" in user_roles:
-			projects = frappe.get_all("Project", {"account_manager": user_employee.name}, ["name as project"], limit_page_length=9999, order_by="name asc")
+			projects = frappe.get_all("Project", {"project_manager": user_employee.name}, ["name as project"], limit_page_length=9999, order_by="name asc")
 			filters["project"] = ["IN", [project.project for project in projects]]
 		elif "Site Supervisor" in user_roles:
 			sites = frappe.get_all("Operations Site", {"site_supervisor": user_employee.name}, ["name as site"], limit_page_length=9999, order_by="name asc")

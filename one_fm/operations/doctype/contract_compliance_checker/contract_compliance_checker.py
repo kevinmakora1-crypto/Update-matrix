@@ -342,7 +342,7 @@ class GenerateContractComplianceChecker:
 	
 	def create_compliance_checker(self, contract, compliance_details):
 		contract_details = frappe.db.get_value("Contracts", contract, 
-			["client", "project", "project.account_manager"], as_dict=1)
+			["client", "project", "project.project_manager"], as_dict=1)
 		
 		yesterday_repeat_count = frappe.db.get_value("Contract Compliance Checker", {
 				"project": contract_details.project,
@@ -361,7 +361,7 @@ class GenerateContractComplianceChecker:
 			"doctype": "Contract Compliance Checker",
 			"project": contract_details.project,
 			"contract": contract,
-			"project_manager": contract_details.account_manager,
+			"project_manager": contract_details.project_manager,
 			"repeat_count": (yesterday_repeat_count or 0) + 1,
 			"check_date": self.today,
 			"client": contract_details.client,

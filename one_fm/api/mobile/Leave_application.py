@@ -247,7 +247,7 @@ def fetch_leave_approver(employee):
     elif not approver:
         project = frappe.db.get_value('Employee', employee, 'project')
         if project:
-            project_manager = frappe.db.get_value('Project', project, 'account_manager')
+            project_manager = frappe.db.get_value('Project', project, 'project_manager')
             if project_manager:
                 approver = frappe.db.get_value('Employee', project_manager, 'leave_approver')
 

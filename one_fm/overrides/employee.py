@@ -536,7 +536,7 @@ class NotifyAttendanceManagerOnStatusChange:
 
     @property
     def _projects_manager(self) -> list:
-        projects = frappe.db.sql(""" SELECT name from `tabProject` WHERE account_manager = %s AND is_active = 'Yes' """, (self.employee_object.name), as_list=1)
+        projects = frappe.db.sql(""" SELECT name from `tabProject` WHERE project_manager = %s AND is_active = 'Yes' """, (self.employee_object.name), as_list=1)
         return list(chain.from_iterable(projects)) if projects else list()
 
     @property

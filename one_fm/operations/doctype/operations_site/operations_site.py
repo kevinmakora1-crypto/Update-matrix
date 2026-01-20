@@ -169,7 +169,7 @@ class OperationsSite(Document):
 		return frappe.get_value("Employee", {"name": employee}, "user_id")
 
 	def get_project_manager(self):
-		project_manager = frappe.get_value("Project", { "name": self.project}, "account_manager")
+		project_manager = frappe.get_value("Project", { "name": self.project}, "project_manager")
 		project_manager_user = self.get_employee_user_id(project_manager)
 		return project_manager_user
 

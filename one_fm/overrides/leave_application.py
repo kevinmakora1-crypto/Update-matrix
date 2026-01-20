@@ -859,7 +859,7 @@ class ReassignDutiesToReliever(NotifyAttendanceManagerOnStatusChange):
         projects_manager = self._projects_manager
         if projects_manager:
             for obj in projects_manager:
-                frappe.db.set_value("Project", obj, "account_manager", self._reliever.name)
+                frappe.db.set_value("Project", obj, "project_manager", self._reliever.name)
             self._reassigned_documents.update({"Project": projects_manager})
 
     def reassign_reports_to(self):
@@ -917,7 +917,7 @@ class ReassignDocumentToLeaveApplicant:
 
     def reassign_projects(self, projects: list):
         for obj in projects:
-            frappe.db.set_value("Project", obj, "account_manager", self._employee.name)
+            frappe.db.set_value("Project", obj, "project_manager", self._employee.name)
 
     def reassign_reports_to(self, reports_to: list):
         for obj in reports_to:

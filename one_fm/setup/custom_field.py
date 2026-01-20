@@ -97,6 +97,7 @@ from one_fm.custom.custom_field.quality_feedback_template import get_quality_fee
 from one_fm.custom.custom_field.currency_exchange_settings import get_currency_exchange_settings_custom_fields
 from one_fm.custom.custom_field.workflow_document_state import get_workflow_document_state_custom_fields
 from one_fm.custom.custom_field.buying_settings import get_buying_settings_custom_fields
+from one_fm.custom.custom_field.quality_feedback import get_quality_feedback_custom_fields
 
 def get_custom_fields():
 	"""ONEFM specific custom fields that need to be added to the masters in ERPNext"""
@@ -158,6 +159,7 @@ def get_custom_fields():
 	custom_fields.update(get_item_custom_fields())
 	custom_fields.update(get_timesheet_custom_fields())
 	custom_fields.update(get_help_category_custom_fields())
+	custom_fields.update(get_quality_feedback_custom_fields())
 	custom_fields.update(get_project_type_custom_fields())
 	custom_fields.update(get_purchase_receipt_custom_fields())
 	custom_fields.update(get_employee_checkin_custom_fields())

@@ -1122,7 +1122,7 @@ def validate_am_shift_assignment(is_scheduled_event=True):
 				AND E.status IN ("Left", "Vacation", "Court Case"))
 	""".format(date=cstr(date)), as_dict=1)
 
-	non_shift = fetch_non_shift(date, "PM")
+	non_shift = fetch_non_shift(date, "AM")
 	if non_shift:
 		roster.extend(non_shift)
 

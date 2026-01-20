@@ -243,9 +243,10 @@ def mark_single_attendance(emp, att_date, roster_type="Basic"):
                 )
                 return
             elif employee_schedule:
-                if employee_schedule.employee_availability == 'Working':
+                if employee_schedule.employee_availability in ['Working','Client Event']:
                     # continue to mark attendance if checkin exists
                     mark_for_shift_assignment(employee.name, att_date)
+                
 
             # # check for shift assignment
             else:

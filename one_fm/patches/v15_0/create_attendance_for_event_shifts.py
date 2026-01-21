@@ -26,6 +26,7 @@ def execute():
     created_count = 0
     skipped_count = 0
     error_count = 0
+    checkin_linked_count = 0
     
     for shift_assignment in shift_assignments:
         try:
@@ -67,7 +68,7 @@ def execute():
                 "custom_employment_type": shift_assignment.custom_employment_type,
                 "roster_type": shift_assignment.roster_type,
                 "working_hours": working_hours,
-                "comment": "Created via attendance patch for client based shift",
+                "comment": "Checkin but no checkout record found",
                 "is_unscheduled": 0,
                 "late_entry": 0,
                 "early_exit": 0,
@@ -81,6 +82,29 @@ def execute():
             attendance.submit()
             
             created_count += 1
+            
+            # Link attendance to Employee Checkin records
+            try:
+                checkins = frappe.get_all(
+                    "Employee Checkin",
+                    filters={"shift_assignment": shift_assignment.name},
+                    fields=["name"]
+                )
+                
+                if checkins:
+                    for checkin in checkins:
+                        frappe.db.set_value(
+                            "Employee Checkin",
+                            checkin.name,
+                            "attendance_marked",
+                            attendance.name,
+                            update_modified=False
+                        )
+                    checkin_linked_count += len(checkins)
+                    frappe.logger().info(f"Linked {len(checkins)} checkin(s) to attendance {attendance.name}")
+                    
+            except Exception as checkin_error:
+                frappe.logger().error(f"Error linking checkins for {shift_assignment.name}: {str(checkin_error)}")
             
             if created_count % 100 == 0:
                 frappe.db.commit()
@@ -102,10 +126,12 @@ def execute():
     - Total Event-Based Shifts: {len(shift_assignments)}
     - Created: {created_count}
     - Skipped (Already have attendance): {skipped_count}
+    - Employee Checkins Linked: {checkin_linked_count}
     - Errors: {error_count}
     """)
     
     print(f"Successfully created {created_count} attendance records")
+    print(f"Linked {checkin_linked_count} employee checkin records")
     print(f"Skipped {skipped_count} shifts (already have attendance)")
     if error_count > 0:
         print(f"Failed to create {error_count} attendance records - check error logs")

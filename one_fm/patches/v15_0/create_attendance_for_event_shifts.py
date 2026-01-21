@@ -96,7 +96,7 @@ def execute():
                         frappe.db.set_value(
                             "Employee Checkin",
                             checkin.name,
-                            "attendance_marked",
+                            "attendance",
                             attendance.name,
                             update_modified=False
                         )

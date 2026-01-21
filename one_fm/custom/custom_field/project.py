@@ -30,12 +30,6 @@ def get_project_custom_fields():
                 "fieldtype": "Small Text",
             },
             {
-                "label": "",
-                "fieldname": "custom_column_break_hzhov",
-                "insert_after":"users_section",
-                "fieldtype": "Column Break",
-            },
-            {
                 "label": "Success and Completion Criteria",
                 "fieldname": "custom_success_and_completion_criteria",
                 "insert_after": "custom_column_break_acgz2",
@@ -259,13 +253,13 @@ def get_project_custom_fields():
             {
                 "fieldname": "column_break_64",
                 "fieldtype": "Column Break",
-                "insert_after": "manager_name"
+                "insert_after": "no_of_posts_as_per_contract"
             },
             {
                 "fieldname": "project_manager",
                 "label": "Project Manager",
                 "fieldtype": "Link",
-                "insert_after": "no_of_posts_as_per_contract",
+                "insert_after": "users_section",
                 "options": "Employee",
                 "ignore_user_permissions": 1,
                 "mandatory_depends_on": "eval:doc.project_type==\"External\""

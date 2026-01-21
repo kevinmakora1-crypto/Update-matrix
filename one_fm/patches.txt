@@ -243,7 +243,7 @@ one_fm.patches.v15_0.update_leave_application_custom_field
 one_fm.patches.v15_0.process_task_for_remind_annual_leave_employees_to_helpdesk_user
 one_fm.patches.v15_0.process_task_for_send_open_hd_ticket_count
 one_fm.patches.v15_0.add_employee_uniform_field_to_quality_feedback
-one_fm.patches.v15_0.rename_account_manager_to_project_manager
+one_fm.patches.v15_0.rename_account_manager_to_project_manager #1-5
 one_fm.patches.v15_0.add_shift_request_custom_fields
 one_fm.patches.v15_0.add_employee_project_manager_name_custom_field
 

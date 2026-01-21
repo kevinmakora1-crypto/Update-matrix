@@ -66,7 +66,7 @@
    "read_only": 1
   },
   {
-   "fetch_from": "project.manager_name",
+   "fetch_from": "project.project_manager_name",
    "fieldname": "project_manager_name",
    "fieldtype": "Data",
    "label": "Project Manager Name",

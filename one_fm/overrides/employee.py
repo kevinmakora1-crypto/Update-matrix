@@ -198,6 +198,7 @@ class EmployeeOverride(EmployeeMaster):
         self.notify_supervisor_of_status_change()
         if self.has_value_changed("status") and self.status == "Not Returned from Leave":
             self.inform_employee_status_update()
+        self.setup_wiki_intorduction_for_new_employee()
 
     def inform_employee_id_update(self):
         """
@@ -444,6 +445,63 @@ class EmployeeOverride(EmployeeMaster):
         except Exception as e:
             frappe.log_error(f"Failed to send notification: {str(e)}", "Employee Status Change Notification")
 
+    def setup_wiki_intorduction_for_new_employee(self):
+        if not (self.status == 'Active' and
+                self.shift_working != 1 and
+                self.attendance_by_timesheet != 1 and
+                self.auto_attendance != 1):
+            return
+        if not self.user_id:
+            return
+        if not self.has_value_changed('user_id'):
+            return
+
+        self.set_default_workspace_for_new_user()
+        self.create_wiki_introduction_todo()
+
+    def set_default_workspace_for_new_user(self):
+        default_workspace = frappe.db.get_value("User", self.user_id, "default_workspace")
+        if not default_workspace:
+            onboarding_workspace = frappe.db.get_single_value("HR Settings", "onboarding_workspace") or "Wiki"
+            frappe.db.set_value("User", self.user_id, "default_workspace", onboarding_workspace, update_modified=False)
+
+    def create_wiki_introduction_todo(self):
+        wiki_introduction_doc_link = frappe.db.get_single_value("HR Settings", "wiki_introduction_doc_link")
+        if not wiki_introduction_doc_link:
+            return
+        description = 'Review the "Wiki Introduction" document. Then, review the 14 linked wikis and complete all associated quizzes and feedback forms within one day.'
+        # Check if a "Todo" with the same description and for the same user already exists
+        if not frappe.db.exists("ToDo", {"allocated_to": self.user_id, "description": ["like", f"%{description}%"]}):
+            frappe.get_doc({
+                "doctype": "ToDo",
+                "allocated_to": self.user_id,
+                "description": f'{description} <br> Please review the following document: <a href="{wiki_introduction_doc_link}">Wiki Introduction</a>',
+                "date": getdate(),
+                "due_date": add_days(getdate(), 30)
+            }).insert(ignore_permissions=True)
+
+def create_wiki_assessment_todo_for_employees():
+    wiki_assessment_form_link = frappe.db.get_single_value("HR Settings", "wiki_assessment_form_link")
+    if not wiki_assessment_form_link:
+        return
+    description = f'Complete the wiki assessments:'
+    employees = frappe.get_all("Employee", filters={
+        "status": "Active",
+        "shift_working": 0,
+        "attendance_by_timesheet": 0,
+        "auto_attendance": 0,
+        "user_id": ["is", "set"],
+        "creation": ["<=", add_days(getdate(), -30)]
+    }, fields=["name", "employee_name", "user_id"])
+    for employee in employees:
+        if not frappe.db.exists("ToDo", {"allocated_to": employee.user_id, "description": ["like", f"%{description}%"]}):
+            frappe.get_doc({
+                "doctype": "ToDo",
+                "allocated_to": employee.user_id,
+                "description": f'{description} <a href="{wiki_assessment_form_link}">Wiki Assessments</a>',
+                "date": getdate(),
+                "due_date": getdate()
+            }).insert(ignore_permissions=True)
 
 def validate_leaves(self):
     if self.status=='Vacation':

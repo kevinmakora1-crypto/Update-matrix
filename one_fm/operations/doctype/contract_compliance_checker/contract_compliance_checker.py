@@ -66,7 +66,7 @@ class GenerateContractComplianceChecker:
 		if self.day_before_yesterday >= start_date:
 			attendance_end_date = min(self.day_before_yesterday, end_date)
 			attendance_count = frappe.db.count('Attendance', {
-				'roster_type': "Basic",
+				'roster_type':["in", ['Basic','Over-Time']],
 				"status": "Present",
 				"attendance_date": ["between", [start_date, attendance_end_date]],
 				"operations_role": ["in", operations_roles]
@@ -77,7 +77,7 @@ class GenerateContractComplianceChecker:
 		if self.yesterday <= end_date:
 			schedule_start_date = max(self.yesterday, start_date)
 			schedule_count = frappe.db.count('Employee Schedule', {
-				'roster_type': "Basic",
+				'roster_type': ["in", ['Basic','Over-Time']],
 				"employee_availability": "Working",
 				"date": ["between", [schedule_start_date, end_date]],
 				"operations_role": ["in", operations_roles]
@@ -387,12 +387,15 @@ class GenerateContractComplianceChecker:
 				is_off_type_full_month = contract_item.off_type == "Full Month"
 				has_days_off = contract_item.off_type == "Days Off"
 				has_weekly_days_off = contract_item.days_off_category == "Weekly"
-
+				is_daily_operations_handled_by_us = contract_item.is_daily_operation_handled_by_us  == "Yes"
 				duration_periods = self.get_duration_periods(is_weekly=has_days_off and has_weekly_days_off)
 
 				for period_start, period_end in duration_periods:
 					if contract_item.service_type == "Manpower":
-						status, data = self.calculate_manpower_full_month_compliance(contract_item, period_start, period_end) if is_off_type_full_month else self.calculate_manpower_day_off_compliance(contract_item, period_start, period_end)
+						if is_daily_operations_handled_by_us:
+							if not is_off_type_full_month:
+								status, data = self.calculate_manpower_day_off_compliance(contract_item, period_start, period_end)
+						
 					elif contract_item.service_type == "Post Schedule":
 						status, data = self.calculate_post_schedule_full_month_compliance(contract_item, period_start, period_end) if is_off_type_full_month else self.calculate_post_schedule_day_off_compliance(contract_item, period_start, period_end)
 					else:

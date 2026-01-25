@@ -40,7 +40,7 @@ function load_js(page) {
 		setup_filters(page);
 
 		// Dropdown option click
-		$(document).on("click", ".dropdown-option", function() {
+		$(document).on("click", ".dropdown-option", function () {
 			let filter_type = $(this).attr("data-filter");
 			let value = $(this).attr("data-" + filter_type);
 
@@ -90,12 +90,12 @@ function load_js(page) {
 		});
 
 		// Search bar input
-		$("#search-bar").on("input", function() {
+		$("#search-bar").on("input", function () {
 			populate_dropdown_options(page, $(this).val());
 		});
 
 		// Clear all filters
-		$("#clear-filters").on("click", function() {
+		$("#clear-filters").on("click", function () {
 			page.filters = {};
 			$("#search-bar").val("");
 			populate_dropdown_options(page, "");
@@ -105,24 +105,24 @@ function load_js(page) {
 		});
 
 		// Show dropdown on focus
-		$("#search-bar").on("focus", function() {
+		$("#search-bar").on("focus", function () {
 			$("#dropdownContent").removeClass("d-none");
 		});
 
 		// Hide dropdown when clicking outside
-		$(document).on("mousedown", function(e) {
+		$(document).on("mousedown", function (e) {
 			if (!$(".input-search").is(e.target) && $(".input-search").has(e.target).length === 0) {
 				$("#dropdownContent").addClass("d-none");
 			}
 		});
 
 		// Focus input on container click
-		$("#search-bar-container").on("click", function() {
+		$("#search-bar-container").on("click", function () {
 			$("#search-bar").focus();
 		});
 
 		// Initial render
-		$(function() {
+		$(function () {
 			render_selected_tags(page);
 			update_clear_button(page);
 		});
@@ -478,99 +478,99 @@ function load_js(page) {
 }
 
 function populate_dropdown_options(page, filter = "") {
-    let selected = page.filters || {};
-    let reliever_selected = selected.reliever;
-    const filter_order = ["project", "site", "shift", "operations_role", "employee_search_name", "reliever"];
-    let last_selected_idx = -1;
-    filter_order.forEach((k, i) => { if (selected[k]) last_selected_idx = i; });
+	let selected = page.filters || {};
+	let reliever_selected = selected.reliever;
+	const filter_order = ["project", "site", "shift", "operations_role", "employee_search_name", "reliever"];
+	let last_selected_idx = -1;
+	filter_order.forEach((k, i) => { if (selected[k]) last_selected_idx = i; });
 
-    // If filter is present and no filter is selected, filter all main filters
-    let filterAll = filter && last_selected_idx === -1;
+	// If filter is present and no filter is selected, filter all main filters
+	let filterAll = filter && last_selected_idx === -1;
 
-    // Helper: Should this filter be filtered by search text?
-    function shouldFilter(idx) {
-        if (!filter) return false;
-        if (last_selected_idx === -1) return true; // No filter selected: filter all
-        return idx > last_selected_idx; // Only filter unselected filters after last selected
-    }
+	// Helper: Should this filter be filtered by search text?
+	function shouldFilter(idx) {
+		if (!filter) return false;
+		if (last_selected_idx === -1) return true; // No filter selected: filter all
+		return idx > last_selected_idx; // Only filter unselected filters after last selected
+	}
 
-    // PROJECTS
-    let $projectList = $("#rosteringprojectselect").empty();
-    (page.search_bar_data["rosteringprojectselect"] || []).forEach(project_obj => {
-        const project_name = project_obj.project;
-        let show = (!selected.project || selected.project === project_name);
-        if (shouldFilter(0)) show = show && project_name.toLowerCase().includes(filter.toLowerCase());
-        if (show) {
-            $projectList.append(
-                $("<div class='dropdown-option'></div>")
-                    .text(project_name)
-                    .attr("data-filter", "project")
-                    .attr("data-project", project_name)
-            );
-        }
-    });
+	// PROJECTS
+	let $projectList = $("#rosteringprojectselect").empty();
+	(page.search_bar_data["rosteringprojectselect"] || []).forEach(project_obj => {
+		const project_name = project_obj.project;
+		let show = (!selected.project || selected.project === project_name);
+		if (shouldFilter(0)) show = show && project_name.toLowerCase().includes(filter.toLowerCase());
+		if (show) {
+			$projectList.append(
+				$("<div class='dropdown-option'></div>")
+					.text(project_name)
+					.attr("data-filter", "project")
+					.attr("data-project", project_name)
+			);
+		}
+	});
 
-    // SITES
-    let $siteList = $("#rosteringsiteselect").empty();
-    (page.search_bar_data["rosteringsiteselect"] || []).forEach(site_obj => {
-        let {site, project} = site_obj;
-        let show = (!selected.project || selected.project === project) &&
-                   (!selected.site || selected.site === site);
-        if (shouldFilter(1)) show = show && site.toLowerCase().includes(filter.toLowerCase());
-        if (show) {
-            $siteList.append(
-                $("<div class='dropdown-option'></div>")
-                    .text(site)
-                    .attr("data-filter", "site")
-                    .attr("data-site", site)
-                    .attr("data-project", project)
-            );
-        }
-    });
+	// SITES
+	let $siteList = $("#rosteringsiteselect").empty();
+	(page.search_bar_data["rosteringsiteselect"] || []).forEach(site_obj => {
+		let { site, project } = site_obj;
+		let show = (!selected.project || selected.project === project) &&
+			(!selected.site || selected.site === site);
+		if (shouldFilter(1)) show = show && site.toLowerCase().includes(filter.toLowerCase());
+		if (show) {
+			$siteList.append(
+				$("<div class='dropdown-option'></div>")
+					.text(site)
+					.attr("data-filter", "site")
+					.attr("data-site", site)
+					.attr("data-project", project)
+			);
+		}
+	});
 
-    // SHIFTS
-    let $shiftList = $("#rosteringshiftselect").empty();
-    (page.search_bar_data["rosteringshiftselect"] || []).forEach(shift_obj => {
-        let {shift, site, project} = shift_obj;
-        let show = (!selected.project || selected.project === project) &&
-                   (!selected.site || selected.site === site) &&
-                   (!selected.shift || selected.shift === shift);
-        if (shouldFilter(2)) show = show && shift.toLowerCase().includes(filter.toLowerCase());
-        if (show) {
-            $shiftList.append(
-                $("<div class='dropdown-option'></div>")
-                    .text(shift)
-                    .attr("data-filter", "shift")
-                    .attr("data-shift", shift)
-                    .attr("data-site", site)
-                    .attr("data-project", project)
-            );
-        }
-    });
+	// SHIFTS
+	let $shiftList = $("#rosteringshiftselect").empty();
+	(page.search_bar_data["rosteringshiftselect"] || []).forEach(shift_obj => {
+		let { shift, site, project } = shift_obj;
+		let show = (!selected.project || selected.project === project) &&
+			(!selected.site || selected.site === site) &&
+			(!selected.shift || selected.shift === shift);
+		if (shouldFilter(2)) show = show && shift.toLowerCase().includes(filter.toLowerCase());
+		if (show) {
+			$shiftList.append(
+				$("<div class='dropdown-option'></div>")
+					.text(shift)
+					.attr("data-filter", "shift")
+					.attr("data-shift", shift)
+					.attr("data-site", site)
+					.attr("data-project", project)
+			);
+		}
+	});
 
-    // ROLES
-    let $roleList = $("#rosteringroleselect").empty();
-    (page.search_bar_data["rosteringroleselect"] || []).forEach(role_obj => {
-        let {operations_role, shift, site, project} = role_obj;
-        let show = (!selected.project || selected.project === project) &&
-                   (!selected.site || selected.site === site) &&
-                   (!selected.shift || selected.shift === shift) &&
-                   (!selected.operations_role || selected.operations_role === operations_role);
-        if (shouldFilter(3)) show = show && operations_role.toLowerCase().includes(filter.toLowerCase());
-        if (show) {
-            $roleList.append(
-                $("<div class='dropdown-option'></div>")
-                    .text(operations_role)
-                    .attr("data-filter", "operations_role")
-                    .attr("data-operations_role", operations_role)
-                    .attr("data-shift", shift)
-                    .attr("data-site", site)
-                    .attr("data-project", project)
-            );
-        }
-    });
+	// ROLES
+	let $roleList = $("#rosteringroleselect").empty();
+	(page.search_bar_data["rosteringroleselect"] || []).forEach(role_obj => {
+		let { operations_role, shift, site, project } = role_obj;
+		let show = (!selected.project || selected.project === project) &&
+			(!selected.site || selected.site === site) &&
+			(!selected.shift || selected.shift === shift) &&
+			(!selected.operations_role || selected.operations_role === operations_role);
+		if (shouldFilter(3)) show = show && operations_role.toLowerCase().includes(filter.toLowerCase());
+		if (show) {
+			$roleList.append(
+				$("<div class='dropdown-option'></div>")
+					.text(operations_role)
+					.attr("data-filter", "operations_role")
+					.attr("data-operations_role", operations_role)
+					.attr("data-shift", shift)
+					.attr("data-site", site)
+					.attr("data-project", project)
+			);
+		}
+	});
 
-    // EMPLOYEES
+	// EMPLOYEES
 	let $employeeList = $("#rosteringemployeeselect").empty();
 	(page.search_bar_data["rosteringemployeeselect"] || []).forEach(emp => {
 		let empName = emp.name || emp.employee_name || emp;
@@ -614,71 +614,71 @@ function populate_dropdown_options(page, filter = "") {
 		}
 	});
 
-    // RELIEVERS (no hierarchy, just render)
-    let $relieverList = $("#rosteringrelieverselect").empty();
-    (page.search_bar_data["rosteringrelieverselect"] || []).forEach(rel => {
-        let relText = rel.text || rel;
-        $relieverList.append(
-            $("<div class='dropdown-option'></div>")
-                .text(relText)
-                .attr("data-filter", "reliever")
+	// RELIEVERS (no hierarchy, just render)
+	let $relieverList = $("#rosteringrelieverselect").empty();
+	(page.search_bar_data["rosteringrelieverselect"] || []).forEach(rel => {
+		let relText = rel.text || rel;
+		$relieverList.append(
+			$("<div class='dropdown-option'></div>")
+				.text(relText)
+				.attr("data-filter", "reliever")
 				.attr("data-filter_name", rel.text)
-                .attr("data-reliever", rel.id)
-        );
-    });
+				.attr("data-reliever", rel.id)
+		);
+	});
 }
 
 
 // Show/hide clear button
 function update_clear_button(page) {
-    if (Object.keys(page.filters).some(k => page.filters[k])) {
-        $("#clear-filters").show();
-    } else {
-        $("#clear-filters").hide();
-    }
+	if (Object.keys(page.filters).some(k => page.filters[k])) {
+		$("#clear-filters").show();
+	} else {
+		$("#clear-filters").hide();
+	}
 }
 
 const filter_order = ["project", "site", "shift", "operations_role", "employee_search_name", "employee_search_id", "reliever"];
 
 function render_selected_tags(page) {
-    let $container = $("#search-bar-container");
-    $container.find(".selected-tag").remove();
+	let $container = $("#search-bar-container");
+	$container.find(".selected-tag").remove();
 
-    filter_order.forEach(filterKey => {
+	filter_order.forEach(filterKey => {
 		if (page.filters[filterKey]) {
 			let tag_text = "";
 			if (filterKey == "reliever") { page.filters[filterKey] == "1" ? tag_text = "Relievers Only" : tag_text = "Non-Relievers Only"; }
 			else { tag_text = page.filters[filterKey] }
-            let $tag = $("<span class='selected-tag'></span>").html(`<span class="selected-tag-text" title="${tag_text}">${tag_text}</span>`);
-            let $close = $("<span class='remove-tag'>&times;</span>");
-            $close.on("click", function(e) {
-                e.stopPropagation();
-                // Remove this and all child filters
-                let idx = filter_order.indexOf(filterKey);
-                filter_order.slice(idx).forEach(k => {
+			let $tag = $("<span class='selected-tag'></span>").html(`<span class="selected-tag-text" title="${tag_text}">${tag_text}</span>`);
+			let $close = $("<span class='remove-tag'>&times;</span>");
+			$close.on("click", function (e) {
+				e.stopPropagation();
+				// Remove this and all child filters
+				let idx = filter_order.indexOf(filterKey);
+				filter_order.slice(idx).forEach(k => {
 					if (k === "reliever" && filterKey !== "reliever") {
 						return;
 					}
 					delete page.filters[k];
 				});
-                render_selected_tags(page);
-                $("#search-bar").val("");
-                populate_dropdown_options(page, "");
-                update_clear_button(page);
+				render_selected_tags(page);
+				$("#search-bar").val("");
+				populate_dropdown_options(page, "");
+				update_clear_button(page);
 				let element = get_wrapper_element().slice(1);
-				if (Object.values(page.filters).filter(Boolean).length === 1){
+				if (Object.values(page.filters).filter(Boolean).length === 1) {
 					$(".rosterMonth #calenderviewtable tbody").empty();
 					$(".postMonth #calenderviewtable tbody").empty();
 					$("#myPager").empty();
 				} else {
 					page[element](page);
 				}
-            });
-            $tag.append($close);
-            $tag.insertBefore($("#search-bar"));
-        }
-    });
-    update_clear_button(page);
+			});
+			$tag.append($close);
+			$tag.insertBefore($("#search-bar"));
+		}
+	});
+	update_clear_button(page);
 }
 
 function get_preset_filters() {
@@ -1212,27 +1212,29 @@ function render_roster(res, page) {
 	$rosterMonthbody.empty();
 
 
-	for (operations_role_name in operations_roles_data) {
-		let full_name = operations_roles_data[operations_role_name].name;
-		
+	for (const operations_role_item of operations_roles_data) {
+		let abbr_name = operations_role_item.name;
+		let full_name = operations_role_item.full_name || operations_role_item.name;
+
 		let pt_row_html = `
-		<tr class="colorclass scheduledStaff" data-name="${operations_role_name}">
+		<tr class="colorclass scheduledStaff" data-name="${abbr_name}">
 			<td class="sticky">
 				<div class="d-flex">
 					<div class="font16 paddingdiv cursorpointer orangecolor">
 						<i class="fa fa-plus" aria-hidden="true"></i>
 					</div>
 					<div class="paddingdiv borderleft cursorpointer">
-						<div class="font16 font-weight-bold">${operations_role_name}</div>
+						<div class="font16 font-weight-bold">${abbr_name}</div>
 						<div class="text-muted" style="font-size: 12px;">${full_name}</div>
 					</div>
 				</div>
 			</td>
 		</tr>
 		`;
-		
+
 		$rosterMonthbody.append(pt_row_html);
-		let $roleRow = $rosterMonthbody.find(`tr[data-name="${escape_values(operations_role_name)}"]`);
+		let $roleRow = $rosterMonthbody.find(`tr[data-name="${escape_values(abbr_name)}"]`);
+
 
 		let { start_date, end_date } = page;
 		let current_day = moment(start_date);
@@ -1240,8 +1242,8 @@ function render_roster(res, page) {
 		let i = 0;
 
 		while (current_day <= end_moment) {
-			if (operations_roles_data[operations_role_name] && operations_roles_data[operations_role_name].data[i]) {
-				let { date, operations_role, count, highlight } = operations_roles_data[operations_role_name].data[i];
+			if (operations_role_item && operations_role_item.data[i]) {
+				let { date, operations_role, count, highlight } = operations_role_item.data[i];
 				let pt_count_html = `
 				<td class="${highlight}">
 					<div class="text-center" data-selectid="${operations_role + "|" + date}">${count}</div>
@@ -1293,8 +1295,8 @@ function render_roster(res, page) {
 		let actual_filter = "actual_";
 		let applied_filter =
 			page.filters.shift ? "shift" :
-			page.filters.site ? "site" :
-			page.filters.project ? "project" : "";
+				page.filters.site ? "site" :
+					page.filters.project ? "project" : "";
 
 		if (applied_filter) actual_filter += applied_filter;
 
@@ -1349,35 +1351,35 @@ function render_roster(res, page) {
 				for (let k = 0; k < employees_data[employee_key][date_key].length; k++) {
 					let record = employees_data[employee_key][date_key][k];
 					let { employee, date, operations_role, post_abbrv, employee_availability, shift, start_datetime, end_datetime, start_time, end_time, roster_type, attendance, day_off_ot, leave_type, leave_application, event_location } = record;
-					let shift_start = start_time ? moment(start_time, "HH:mm").format("LT") : moment(start_datetime, "YYYY-MM-DD HH:mm:ss").format("LT") ;
+					let shift_start = start_time ? moment(start_time, "HH:mm").format("LT") : moment(start_datetime, "YYYY-MM-DD HH:mm:ss").format("LT");
 					let shift_end = end_time ? moment(end_time, "HH:mm").format("LT") : moment(end_datetime, "YYYY-MM-DD HH:mm:ss").format("LT");
 
-					if (!attendance && roster_type == "Basic" && page.filters[applied_filter] == record[applied_filter] && day_off_ot == 0 ) {
-						if(employee_availability == "Working") {
+					if (!attendance && roster_type == "Basic" && page.filters[applied_filter] == record[applied_filter] && day_off_ot == 0) {
+						if (employee_availability == "Working") {
 							basic_count++;
 							bgclass = "samebasic";
 							data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
-						} else if (employee_availability && !post_abbrv){
+						} else if (employee_availability && !post_abbrv) {
 							bgclass = classmap[employee_availability];
 							data_selectid = `${employee}|${date}|${employee_availability}`;
 							if (employee_availability == "Client Event") {
 								bgclass = "cyanboxcolor";
 							}
-						}else if(employee_availability == "On-the-job Training") {
+						} else if (employee_availability == "On-the-job Training") {
 							basic_count++;
 							bgclass = "tealboxcolor";
 							data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
 						}
 					}
-					else if (!attendance && roster_type == "Basic" && page.filters[applied_filter] != record[applied_filter] && day_off_ot == 0 ){
-						if(employee_availability == "Working") {
+					else if (!attendance && roster_type == "Basic" && page.filters[applied_filter] != record[applied_filter] && day_off_ot == 0) {
+						if (employee_availability == "Working") {
 							basic_count++;
 							bgclass = "diffbasic";
 							data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
-						} else if (employee_availability && !post_abbrv){
+						} else if (employee_availability && !post_abbrv) {
 							bgclass = classmap[employee_availability];
 							data_selectid = `${employee}|${date}|${employee_availability}`;
-						} else if(employee_availability == "On-the-job Training") {
+						} else if (employee_availability == "On-the-job Training") {
 							basic_count++;
 							bgclass = "tealboxcolor";
 							data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
@@ -1393,13 +1395,13 @@ function render_roster(res, page) {
 						bgclass = bgclass ? `${bgclass}-diffot` : "diffot";
 						data_ot = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
 					}
-					else if (!attendance && roster_type == "Basic" && page.filters[applied_filter] == record[applied_filter] && day_off_ot == 1 ){
-						if(employee_availability == "Working") basic_count++;
+					else if (!attendance && roster_type == "Basic" && page.filters[applied_filter] == record[applied_filter] && day_off_ot == 1) {
+						if (employee_availability == "Working") basic_count++;
 						bgclass = "samedayoffot";
 						data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
 					}
-					else if (!attendance && roster_type == "Basic" && page.filters[applied_filter] != record[applied_filter] && day_off_ot == 1 ){
-						if(employee_availability == "Working") basic_count++;
+					else if (!attendance && roster_type == "Basic" && page.filters[applied_filter] != record[applied_filter] && day_off_ot == 1) {
+						if (employee_availability == "Working") basic_count++;
 						bgclass = "diffdayoffot";
 						data_selectid = `${employee}|${date}|${operations_role}|${shift}|${employee_availability}`;
 					}
@@ -1449,7 +1451,7 @@ function render_roster(res, page) {
 						} else if (attendance && attendance == "On Leave" && !employee_availability) {
 							tooltiptext += `${leave_application}<br>${leave_type}`;
 							abbrv += `${abbr_map[attendance]}<br>`;
-						} else if (attendance && !employee_availability){
+						} else if (attendance && !employee_availability) {
 							tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}`;
 							abbrv += `${abbr_map[attendance]}<br>`;
 						} else if (employee_availability && !post_abbrv) {
@@ -1459,13 +1461,13 @@ function render_roster(res, page) {
 								tooltiptext += `Client Event<br>Event Location: ${event_location}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
 							}
 						} else {
-							tooltiptext += `${roster_type}:<br>${shift }<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
+							tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
 							abbrv += `${post_abbrv}<br>`;
 						}
 					} else {
 						if (attendance && !employee_availability) {
 							abbrv += `${abbr_map[attendance]}<br>`;
-						} else if (employee_availability && !post_abbrv){
+						} else if (employee_availability && !post_abbrv) {
 							abbrv += `${abbr_map[employee_availability]}<br>`;
 						} else {
 							abbrv += `${post_abbrv}<br>`;
@@ -1543,12 +1545,12 @@ function render_roster(res, page) {
 	paginationControlsHTML += `</div>`;
 
 	$('#myPager').html(paginationControlsHTML);
-	$('#myPager').off('click', '.next-page').on('click', '.next-page', function() {
+	$('#myPager').off('click', '.next-page').on('click', '.next-page', function () {
 		page.pagination.limit_start += page.pagination.limit_page_length;
 		get_roster_data(page);
 	});
 
-	$('#myPager').off('click', '.prev-page').on('click', '.prev-page', function() {
+	$('#myPager').off('click', '.prev-page').on('click', '.prev-page', function () {
 		page.pagination.limit_start -= page.pagination.limit_page_length;
 		get_roster_data(page);
 	});
@@ -2184,16 +2186,16 @@ function setup_staff_filters(page) {
 
 	let filters = {
 		assigned: pageFilters.assigned === "0" ? 0 : 1,
-		company: pageFilters.company ,
-		project: pageFilters.project ,
-		site: pageFilters.site ,
-		shift: pageFilters.shift ,
-		department: pageFilters.department ,
-		designation: pageFilters.designation ,
-		operations_role: pageFilters.operations_role ,
-		employee_search_name: employeeFilters.employee_name ,
-		employee_search_id: employeeFilters.employee_id ,
-		reliever: pageFilters.reliever ,
+		company: pageFilters.company,
+		project: pageFilters.project,
+		site: pageFilters.site,
+		shift: pageFilters.shift,
+		department: pageFilters.department,
+		designation: pageFilters.designation,
+		operations_role: pageFilters.operations_role,
+		employee_search_name: employeeFilters.employee_name,
+		employee_search_id: employeeFilters.employee_id,
+		reliever: pageFilters.reliever,
 	};
 	let pagination = {
 		limit_start: 0,
@@ -2342,7 +2344,7 @@ function staff_edit_dialog() {
 			{
 				"label": "Is Day Off Reliever", "fieldname": "custom_is_reliever", "fieldtype": "Check", onchange: function () {
 					let is_reliever = d.get_value("custom_is_reliever");
-					if(is_reliever){
+					if (is_reliever) {
 						d.set_value("custom_is_weekend_reliever", 0)
 					}
 				}
@@ -2350,7 +2352,7 @@ function staff_edit_dialog() {
 			{
 				"label": "Is Weekend Reliever", "fieldname": "custom_is_weekend_reliever", "fieldtype": "Check", onchange: function () {
 					let is_weekend_reliever = d.get_value("custom_is_weekend_reliever");
-					if(is_weekend_reliever){
+					if (is_weekend_reliever) {
 						d.set_value("custom_is_reliever", 0)
 					}
 				}
@@ -2502,7 +2504,7 @@ function unschedule_staff(page) {
 				method: "one_fm.one_fm.page.roster.roster.unschedule_staff",
 				type: "POST",
 				args: { employees, roster_type, start_date, end_date, never_end, selected_days_only },
-				callback: function(res) {
+				callback: function (res) {
 					d.hide();
 					error_handler(res);
 					let element = get_wrapper_element().slice(1);
@@ -2565,11 +2567,11 @@ function schedule_change_post(page) {
 				"label": "Selected Days Only", "fieldname": "selected_days_only", "fieldtype": "Check", "default": 0, onchange: function () {
 					if (d.get_value("selected_days_only") == 1) {
 						// Set the date to null and refresh the field
-						d.fields_dict.end_date.df.read_only  = 1;
-						d.fields_dict.start_date.df.read_only  = 1;
-						d.fields_dict.project_end_date.df.read_only  = 1;
-						d.fields_dict.project_end_date.df.hidden  = 1;
-						d.fields_dict.project_end_date.value  = '';
+						d.fields_dict.end_date.df.read_only = 1;
+						d.fields_dict.start_date.df.read_only = 1;
+						d.fields_dict.project_end_date.df.read_only = 1;
+						d.fields_dict.project_end_date.df.hidden = 1;
+						d.fields_dict.project_end_date.value = '';
 						// d.fields_dict.end_date.refresh()
 						// d.fields_dict.start_date.refresh()
 						// d.fields_dict.project_end_date.refresh()
@@ -2614,17 +2616,23 @@ function schedule_change_post(page) {
 					}
 				}
 			},
-			{ "fieldtype": "Section Break"},
-			{ "label": "Keep Days Off", "fieldname": "keep_days_off", "fieldtype": "Check", default: 0, onchange: function () {
-				if (d.get_value("keep_days_off") == 1) d.set_value("day_off_ot", 0);
-			} },
-			{ "label": "Keep Days Off OT", "fieldname": "keep_days_off_ot", "fieldtype": "Check", default: 0, onchange: function () {
-				if (d.get_value("keep_days_off_ot") == 1) d.set_value("day_off_ot", 0);
-			} },
-			{ "label": "Day Off OT", "fieldname": "day_off_ot", "fieldtype": "Check", onchange: function () {
-				if (d.get_value("day_off_ot") == 1) d.set_value("keep_days_off", 0);
-				if (d.get_value("day_off_ot") == 1) d.set_value("keep_days_off_ot", 0);
-			}},
+			{ "fieldtype": "Section Break" },
+			{
+				"label": "Keep Days Off", "fieldname": "keep_days_off", "fieldtype": "Check", default: 0, onchange: function () {
+					if (d.get_value("keep_days_off") == 1) d.set_value("day_off_ot", 0);
+				}
+			},
+			{
+				"label": "Keep Days Off OT", "fieldname": "keep_days_off_ot", "fieldtype": "Check", default: 0, onchange: function () {
+					if (d.get_value("keep_days_off_ot") == 1) d.set_value("day_off_ot", 0);
+				}
+			},
+			{
+				"label": "Day Off OT", "fieldname": "day_off_ot", "fieldtype": "Check", onchange: function () {
+					if (d.get_value("day_off_ot") == 1) d.set_value("keep_days_off", 0);
+					if (d.get_value("day_off_ot") == 1) d.set_value("keep_days_off_ot", 0);
+				}
+			},
 		],
 		primary_action: function () {
 			let values = d.get_values();
@@ -2654,8 +2662,8 @@ function schedule_change_post(page) {
 					update_roster_view(element_name, page);
 					$(".filterhideshow").addClass("d-none");
 
-					
-						updateEmployeeDefaults(employees, values);
+
+					updateEmployeeDefaults(employees, values);
 
 				}
 			});
@@ -2707,21 +2715,21 @@ function change_ot_schedule(page) {
 					};
 				}
 			},
-			{ "fieldtype": "Section Break"},
+			{ "fieldtype": "Section Break" },
 			{
 				label: "Selected Days Only",
 				fieldname: "selected_days_only",
 				fieldtype: "Check",
 				onchange: function () {
-				  let val = d.get_value("selected_days_only");
-				  d.fields_dict.end_date.df.hidden = val;
-				  d.fields_dict.end_date.refresh();
-				  if (val) {
-					d.set_value("end_date", "");
-				  }
+					let val = d.get_value("selected_days_only");
+					d.fields_dict.end_date.df.hidden = val;
+					d.fields_dict.end_date.refresh();
+					if (val) {
+						d.set_value("end_date", "");
+					}
 				}
-			  },
-			  { "fieldtype": "Section Break" },
+			},
+			{ "fieldtype": "Section Break" },
 			{
 				"label": "From Date",
 				"fieldname": "start_date",
@@ -2734,16 +2742,17 @@ function change_ot_schedule(page) {
 					}
 				}
 			},
-			{ "label": "Project End Date", "fieldname": "project_end_date", "fieldtype": "Check",
+			{
+				"label": "Project End Date", "fieldname": "project_end_date", "fieldtype": "Check",
 				onchange: function () {
 					let val = d.get_value("project_end_date");
 					d.fields_dict.end_date.df.hidden = val;
 					d.fields_dict.end_date.refresh();
 					if (val) {
-					  d.set_value("end_date", "");
+						d.set_value("end_date", "");
 					}
-				  }
-			 },
+				}
+			},
 			{ "fieldtype": "Column Break" },
 			{
 				label: "To Date",
@@ -2751,16 +2760,16 @@ function change_ot_schedule(page) {
 				fieldtype: "Date",
 				hidden: 0,  // start as visible; will be hidden dynamically
 				onchange: function () {
-				  let end_date = d.get_value("end_date");
-				  let start_date = d.get_value("start_date");
-				  if (end_date && moment(end_date).isSameOrBefore(moment(frappe.datetime.nowdate()))) {
-					frappe.throw(__("End Date cannot be before today."));
-				  }
-				  if (start_date && end_date && moment(end_date).isBefore(moment(start_date))) {
-					frappe.throw(__("End Date cannot be before Start Date."));
-				  }
+					let end_date = d.get_value("end_date");
+					let start_date = d.get_value("start_date");
+					if (end_date && moment(end_date).isSameOrBefore(moment(frappe.datetime.nowdate()))) {
+						frappe.throw(__("End Date cannot be before today."));
+					}
+					if (start_date && end_date && moment(end_date).isBefore(moment(start_date))) {
+						frappe.throw(__("End Date cannot be before Start Date."));
+					}
 				}
-			  },
+			},
 
 		],
 		primary_action: function () {
@@ -2961,19 +2970,21 @@ function dayoff(page) {
 		"title": "Day Off",
 		"fields": [
 			{ "label": "Selected days only", "fieldname": "selected_dates", "fieldtype": "Check", "default": 0 },
-			{ "label": "Set Reliever", "fieldname": "set_reliever", "fieldtype": "Check", "default": 0, onchange: function () {
-				let set_reliever = d.get_value("set_reliever");
-				if (set_reliever) { d.set_value("client_day_off", 0); }
-			}},
-			{ "label": "Client Day Off", "fieldname": "client_day_off", "fieldtype": "Check", "default": 0 , "depends_on": "eval:doc.set_reliever==0"},
-			{ "fieldtype": "Section Break", "fieldname": "sb4", "depends_on": "eval:doc.set_reliever==1"},
+			{
+				"label": "Set Reliever", "fieldname": "set_reliever", "fieldtype": "Check", "default": 0, onchange: function () {
+					let set_reliever = d.get_value("set_reliever");
+					if (set_reliever) { d.set_value("client_day_off", 0); }
+				}
+			},
+			{ "label": "Client Day Off", "fieldname": "client_day_off", "fieldtype": "Check", "default": 0, "depends_on": "eval:doc.set_reliever==0" },
+			{ "fieldtype": "Section Break", "fieldname": "sb4", "depends_on": "eval:doc.set_reliever==1" },
 			{
 				"label": "Reliever", "fieldname": "reliever", "fieldtype": "Link", "options": "Employee",
 				get_query: function () {
 					return {
 						"filters": {
 							"custom_is_reliever": 1,
-							"status": [ "in", ["Active"]]
+							"status": ["in", ["Active"]]
 						},
 						"page_length": 9999
 					};
@@ -2999,9 +3010,9 @@ function dayoff(page) {
 				}
 			},
 			{ "fieldtype": "Column Break", "fieldname": "cb3" },
-			{ "label": "Reliever Name", "fieldname": "reliever_name", "fieldtype": "Data", "read_only": 1},
+			{ "label": "Reliever Name", "fieldname": "reliever_name", "fieldtype": "Data", "read_only": 1 },
 			{ "fieldtype": "Column Break", "fieldname": "cb4" },
-			{ "label": "Reliever ID", "fieldname": "reliever_id", "fieldtype": "Data", "read_only": 1},
+			{ "label": "Reliever ID", "fieldname": "reliever_id", "fieldtype": "Data", "read_only": 1 },
 			{ "fieldtype": "Section Break", "fieldname": "sb5" },
 
 			{ "label": "Repeat", "fieldname": "repeat", "fieldtype": "Select", "depends_on": "eval:doc.selected_dates==0", "options": "Does not repeat\nWeekly\nMonthly" },
@@ -3049,13 +3060,13 @@ function dayoff(page) {
 				args["repeat_freq"] = values.repeat;
 
 				if (values.repeat == "Weekly") {
-					if(values.sunday) week_days.push("Sunday");
-					if(values.monday) week_days.push("Monday");
-					if(values.tuesday) week_days.push("Tuesday");
-					if(values.wednesday) week_days.push("Wednesday");
-					if(values.thursday) week_days.push("Thursday");
-					if(values.friday) week_days.push("Friday");
-					if(values.saturday) week_days.push("Saturday");
+					if (values.sunday) week_days.push("Sunday");
+					if (values.monday) week_days.push("Monday");
+					if (values.tuesday) week_days.push("Tuesday");
+					if (values.wednesday) week_days.push("Wednesday");
+					if (values.thursday) week_days.push("Thursday");
+					if (values.friday) week_days.push("Friday");
+					if (values.saturday) week_days.push("Saturday");
 					args["week_days"] = week_days;
 				} else {
 					args["week_days"] = [];
@@ -3083,7 +3094,7 @@ function dayoff(page) {
 
 
 // Edit mobile number
-function editMobileNumber(){
+function editMobileNumber() {
 	employees_pk = $(".datatablecjeckbox:checked").map(function () {
 		return $(this).attr("data-employee-id");
 	}).get();
@@ -3095,13 +3106,13 @@ function editMobileNumber(){
 		},
 		{
 			fieldname: "employee_id", fieldtype: "Data",
-			in_list_view: 1, label: "Employee ID", reqd:1,
+			in_list_view: 1, label: "Employee ID", reqd: 1,
 			read_only: 1, depends_on: "employee",
 			fetch_from: "employee.employee_id"
 		},
 		{
 			fieldname: "employee_name", fieldtype: "Data",
-			in_list_view: 1, label: "Name", reqd:1,
+			in_list_view: 1, label: "Name", reqd: 1,
 			read_only: 1, depends_on: "employee",
 			fetch_from: "employee.employee_name"
 		}
@@ -3142,14 +3153,14 @@ function editMobileNumber(){
 
 	employees_pk.forEach((item, i) => {
 		d.fields_dict.employees.df.data.push(
-			{ employee: item}
+			{ employee: item }
 		);
 	});
 	d.fields_dict.employees.grid.refresh();
 }
 
 
-function editSingleEmployeeData(){
+function editSingleEmployeeData() {
 	let d = new frappe.ui.Dialog({
 		title: 'Update Employee Record',
 		fields: [
@@ -3158,22 +3169,22 @@ function editSingleEmployeeData(){
 				fieldname: 'employee',
 				fieldtype: 'Link',
 				options: "Employee",
-				reqd:1,
+				reqd: 1,
 				ignore_user_permissions: 1,
 				change: function (x) {
 					employee_pk = d.fields_dict.employee.value;
-					if(employee_pk){
-					frappe.xcall('one_fm.one_fm.page.roster.roster.get_employee_detail', { employee_pk })
-						.then(res => {
-							d.fields_dict.employee_id.value = res.employee_id;
-							d.fields_dict.employee_name.value = res.employee_name;
-							d.fields_dict.enrolled.value = res.enrolled;
-							d.fields_dict.cell_number.value = res.cell_number;
-							d.fields_dict.employee_id.refresh();
-							d.fields_dict.employee_name.refresh();
-							d.fields_dict.enrolled.refresh();
-							d.fields_dict.cell_number.refresh();
-						});
+					if (employee_pk) {
+						frappe.xcall('one_fm.one_fm.page.roster.roster.get_employee_detail', { employee_pk })
+							.then(res => {
+								d.fields_dict.employee_id.value = res.employee_id;
+								d.fields_dict.employee_name.value = res.employee_name;
+								d.fields_dict.enrolled.value = res.enrolled;
+								d.fields_dict.cell_number.value = res.cell_number;
+								d.fields_dict.employee_id.refresh();
+								d.fields_dict.employee_name.refresh();
+								d.fields_dict.enrolled.refresh();
+								d.fields_dict.cell_number.refresh();
+							});
 
 					}
 				}
@@ -3194,8 +3205,8 @@ function editSingleEmployeeData(){
 			},
 
 			{
-			   fieldname: "column_break0",
-			   fieldtype: "Column Break"
+				fieldname: "column_break0",
+				fieldtype: "Column Break"
 			},
 			{
 				label: 'Phone Number',
@@ -3239,10 +3250,10 @@ function editSingleEmployeeData(){
 	d.show();
 }
 
-function makeCall(argsObject){
+function makeCall(argsObject) {
 	frappe.confirm('Are you sure you want to proceed?',
 		() => {
-			let postvalue = {employee_id: argsObject.employee_id};
+			let postvalue = { employee_id: argsObject.employee_id };
 			if (argsObject.action_type === 'Update Phone Number') {
 				postvalue.field = 'cell_number';
 				postvalue.value = argsObject.new_phone_number;
@@ -3253,14 +3264,14 @@ function makeCall(argsObject){
 			frappe.call({
 				method: "one_fm.api.v1.utils.update_employee", //dotted path to server method
 				args: postvalue,
-				callback: function(r) {
+				callback: function (r) {
 					// code snippet
 					frappe.msgprint(r.message);
 				}
 			});
 		}, () => {
 			// action to perform if No is selected
-	})
+		})
 }
 
 

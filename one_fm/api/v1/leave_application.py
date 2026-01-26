@@ -6,13 +6,12 @@ from datetime import date
 import datetime
 import collections
 
-from frappe.utils import cint, cstr, getdate, add_months
+from frappe.utils import cint, cstr, getdate, add_months, add_days
 from hrms.hr.doctype.leave_application.leave_application import get_leave_balance_on, get_leave_allocation_records, get_leave_details
 
 from one_fm.api.api import upload_file
 from one_fm.api.tasks import get_action_user,get_notification_user
 from one_fm.api.v1.utils import response, validate_date
-from frappe.utils import cint, cstr, getdate
 from one_fm.utils import check_if_backdate_allowed, get_approver, get_approver_user
 from one_fm.api.utils import validate_sick_leave_attachment
 
@@ -281,6 +280,13 @@ def create_new_leave_application(employee_id: str = None, from_date: str = None,
 
         if not isinstance(to_date, str):
             return response("Bad Request", 400, None, "Invalid To date. Please enter a valid value.")
+
+        if not resumption_date:
+            resumption_date = cstr(add_days(getdate(to_date), 1))
+        elif not isinstance(resumption_date, str):
+            return response("Bad Request", 400, None, "Invalid Resumption date. Please enter a valid value.")
+        if not validate_date(resumption_date):
+            return response("Bad Request", 400, None, "Resumption date must be of the format yyyy-mm-dd.")
 
         if not isinstance(leave_type, str):
             return response("Bad Request", 400, None, "Invalid leave type. Please enter a valid value.")

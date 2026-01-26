@@ -394,7 +394,7 @@ class GenerateContractComplianceChecker:
 
 				for period_start, period_end in duration_periods:
 					if contract_item.service_type == "Manpower":
-						# if is_daily_operations_handled_by_us:
+						
 						if not is_off_type_full_month:
 							status, data = self.calculate_manpower_day_off_compliance(contract_item, period_start, period_end)
 						

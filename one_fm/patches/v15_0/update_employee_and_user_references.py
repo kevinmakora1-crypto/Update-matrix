@@ -43,13 +43,13 @@ def update_project_doctype(employee_map):
             frappe.log_error(message=f"Failed to update Project {project.name}: {e}", title="Patch Update Error")
 
 def update_operations_site_doctype(employee_map):
-    site_filters = {"account_supervisor": ("IN", list(employee_map.keys()))}
+    site_filters = {"site_supervisor": ("IN", list(employee_map.keys()))}
     sites = frappe.get_all("Operations Site", filters=site_filters, fields=["name"])
 
     for site in sites:
         try:
             doc = frappe.get_doc("Operations Site", site.name)
-            doc.account_supervisor = employee_map.get(doc.account_supervisor)
+            doc.site_supervisor = employee_map.get(doc.site_supervisor)
             doc.save(ignore_permissions=True)
         except Exception as e:
             frappe.log_error(message=f"Failed to update Operations Site {site.name}: {e}", title="Patch Update Error")

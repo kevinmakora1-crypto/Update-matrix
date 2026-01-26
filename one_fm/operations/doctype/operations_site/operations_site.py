@@ -75,7 +75,7 @@ class OperationsSite(Document):
 
 		
 	def validate_user_role(self):
-		site_supervisor = self.get_employee_user_id(self.account_supervisor)
+		site_supervisor = self.get_employee_user_id(self.site_supervisor)
 		# project_manager = self.get_project_manager()
 		# roles = frappe.get_roles(frappe.session.user)
 
@@ -83,7 +83,7 @@ class OperationsSite(Document):
 		# 	frappe.throw(_("You don't have sufficient previliges to update this document."))
   
 	def clear_cache(self):
-		if self.has_value_changed('account_supervisor'):
+		if self.has_value_changed('site_supervisor'):
 			frappe.cache.delete_key('user_permissions')
 	
 
@@ -92,8 +92,8 @@ class OperationsSite(Document):
 			Run when the site is updated. Set the site manager name in the employee doctype for
 			applicable employees.
 		"""
-		if self.has_value_changed('account_supervisor'):
-			frappe.db.set_value("Employee", {"site": self.name}, "site_supervisor_name", self.account_supervisor_name)
+		if self.has_value_changed('site_supervisor'):
+			frappe.db.set_value("Employee", {"site": self.name}, "site_supervisor_name", self.site_supervisor_name)
 			
 
    
@@ -149,8 +149,8 @@ class OperationsSite(Document):
 		"""
 			Add permissions for Site Supervisor and remove permission to any other person on assignment
 		"""
-		if doc_before_save.account_supervisor != self.account_supervisor:
-			supervisor_user = self.get_employee_user_id(self.account_supervisor)
+		if doc_before_save.site_supervisor != self.site_supervisor:
+			supervisor_user = self.get_employee_user_id(self.site_supervisor)
 			permission = frappe.db.exists("User Permission", {"allow": self.doctype, "for_value": self.name})
 			if permission:
 				perm_doc = frappe.get_doc("User Permission", permission)

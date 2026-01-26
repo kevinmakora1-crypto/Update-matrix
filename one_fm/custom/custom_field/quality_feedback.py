@@ -76,6 +76,14 @@ def get_quality_feedback_custom_fields():
 				"insert_after": "custom_employee_name"
 			},
 			{
+				"fieldname": "custom_item_code",
+				"fieldtype": "Link",
+				"label": "Item Code",
+				"options": "Item",
+				"read_only": 1,
+				"insert_after": "custom_operations_site"
+			},
+			{
 				"fieldname": "custom_noticed_damage",
 				"fieldtype": "Select",
 				"label": "Noticed Damage?",
@@ -112,6 +120,22 @@ def get_quality_feedback_custom_fields():
 				"label": "Quality Score Percentage",
 				"read_only": 1,
 				"insert_after": "custom_feedback"
+			},
+			{
+				"fieldname": "custom_quantity",
+				"fieldtype": "Float",
+				"label": "Quantity",
+				"read_only": 1,
+				"insert_after": "custom_item_name"
+			},
+			{
+				"fieldname": "custom_item_name",
+				"fieldtype": "Data",
+				"label": "Item Name",
+				"read_only": 1,
+				"translatable": 1,
+				"insert_after": "custom_item_code",
+				"fetch_from": "custom_item_code.item_name"
 			}
 		]
 	}

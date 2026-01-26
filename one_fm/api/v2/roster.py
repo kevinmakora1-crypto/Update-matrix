@@ -343,7 +343,7 @@ def get_assigned_sites(employee_id, project=None):
             return frappe.get_list("Operations Site", filters, limit_page_length=9999, order_by="name asc")
 
         elif "Site Supervisor" in user_roles:
-            filters.update({"account_supervisor": employee_id})
+            filters.update({"site_supervisor": employee_id})
             return frappe.get_list("Operations Site", filters, limit_page_length=9999, order_by="name asc")
         return []
 

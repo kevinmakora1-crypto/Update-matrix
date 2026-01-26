@@ -24,7 +24,7 @@ def get_context(context):
         context.docname = frappe.db.get_value('Magic Link', magic_link, 'reference_docname')
 
 @frappe.whitelist(allow_guest=True)
-def get_feedback_data(docname):
+def get_feedback_data(docname, target_language='en'):
     """
     Get feedback data for rendering the form.
     Returns employee details, questions, and related information.
@@ -38,6 +38,11 @@ def get_feedback_data(docname):
         operation_site = doc.get('custom_operations_site') or ''
         issued_on = formatdate(doc.get('custom_issued_on')) if doc.get('custom_issued_on') else ''
         feedback_schedule = doc.get('custom_feedback_schedule') or ''
+
+        # Get item details
+        item_code = doc.get('custom_item_code') or ''
+        item_name = doc.get('custom_item_name') or ''
+        item_quantity = doc.get('custom_quantity') or ''
 
         item_type = frappe.db.get_value('Quality Feedback Template', doc.template, 'custom_item_type') or ''
         
@@ -62,7 +67,19 @@ def get_feedback_data(docname):
                             'question': question_text,
                             'options': options
                         })
-        
+
+        # Translate dynamic data if a target language is provided
+        if target_language and target_language != 'en':
+            def _translate(text):
+                return translate_words(text, target_language) if text else ''
+
+            employee_name = _translate(employee_name)
+            operation_site = _translate(operation_site)
+            feedback_schedule = _translate(feedback_schedule)
+            item_type = _translate(item_type)
+            item_name = _translate(item_name)
+            # item_code and item_quantity are usually not translated (codes/quantities)
+
         return {
             'employee_name': employee_name,
             'employee_id': employee_id,
@@ -70,6 +87,9 @@ def get_feedback_data(docname):
             'issued_on': issued_on,
             'current_feedback_schedule': feedback_schedule,
             'item_type': item_type,
+            'item_code': item_code,
+            'item_name': item_name,
+            'item_quantity': item_quantity,
             'questions': questions
         }
     except Exception as e:

@@ -411,8 +411,8 @@ def get_action_user(employee, shift):
 		action_user = get_employee_user_id(report_to)
 		Role = "Report To"
 	else:
-		if operations_site.account_supervisor:
-			site_supervisor = get_employee_user_id(operations_site.account_supervisor)
+		if operations_site.site_supervisor:
+			site_supervisor = get_employee_user_id(operations_site.site_supervisor)
 			if site_supervisor != operations_shift.owner and site_supervisor != current_user:
 				action_user = site_supervisor
 				Role = "Site Supervisor"
@@ -488,8 +488,8 @@ def get_notification_user(employee, shift, Role):
 
 	if operations_site.project and project.account_manager and get_employee_user_id(project.account_manager) != operations_shift.owner:
 		project_manager = get_employee_user_id(project.account_manager)
-	if operations_site.account_supervisor and get_employee_user_id(operations_site.account_supervisor) != operations_shift.owner:
-		site_supervisor = get_employee_user_id(operations_site.account_supervisor)
+	if operations_site.site_supervisor and get_employee_user_id(operations_site.site_supervisor) != operations_shift.owner:
+		site_supervisor = get_employee_user_id(operations_site.site_supervisor)
 	elif operations_shift.supervisor and get_employee_user_id(operations_shift.supervisor) != operations_shift.owner:
 		shift_supervisor = get_employee_user_id(operations_shift.supervisor)
 
@@ -1810,7 +1810,7 @@ def fetch_employees_not_in_checkin():
 			sa.shift as operations_shift, st.notification_reminder_after_shift_start,
 			st.notification_reminder_after_shift_end, st.late_entry_grace_period, 
 			st.supervisor_reminder_shift_start, st.supervisor_reminder_start_ends, 
-			os.supervisor as shift_supervisor, osi.account_supervisor as site_supervisor,
+			os.supervisor as shift_supervisor, osi.site_supervisor as site_supervisor,
 			sa.name as shift_assignment_id
 			FROM `tabShift Assignment` sa
 			INNER JOIN `tabEmployee` emp ON sa.employee = emp.name

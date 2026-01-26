@@ -23,8 +23,12 @@ frappe.ready(() => {
         currentLoaderTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
         currentLoaderTimeouts = [];
         
+        // Determine text direction based on selected language
+        const textDirection = rtlLanguages.includes(selectedLanguage) ? 'rtl' : 'ltr';
+        const textAlign = rtlLanguages.includes(selectedLanguage) ? 'right' : 'left';
+
         container.innerHTML = `
-            <div class="loader-container">
+            <div class="loader-container" dir="${textDirection}" style="text-align: ${textAlign};">
                 <div class="loader-wrapper">
                     <div class="progress-spinner">
                         <div class="spinner-ring"></div>
@@ -139,6 +143,29 @@ frappe.ready(() => {
         });
     }
 
+    // New function to translate loader text and show loader
+    function translate_and_show_loader(message_key, default_message) {
+        if (selectedLanguage === 'en') {
+            showLoader(default_message);
+            return;
+        }
+
+        frappe.call({
+            method: 'one_fm.templates.pages.quality_feedback.translate_multiple',
+            args: {
+                texts: [message_key],
+                target_language: selectedLanguage
+            },
+            callback: (r) => {
+                const translated_message = r.message && r.message.length > 0 ? r.message[0] : default_message;
+                showLoader(translated_message);
+            },
+            error: () => {
+                showLoader(default_message); // Fallback to default message
+            }
+        });
+    }
+
     function showLanguageSelector() {
         // Don't show language selector if form was already submitted
         if (formSubmitted) {
@@ -182,7 +209,10 @@ frappe.ready(() => {
     function fetchFeedbackData(stopLoaderCallback) {
         frappe.call({
             method: 'one_fm.templates.pages.quality_feedback.get_feedback_data',
-            args: { docname: docname },
+            args: {
+                docname: docname,
+                target_language: selectedLanguage
+            },
             callback: (r) => {
                 if (r.message) {
                     // Don't stop loader yet - keep it running until form is rendered
@@ -208,9 +238,13 @@ frappe.ready(() => {
                 ', tell us about your Feedback about',
                 'Quality Feedback Details',
                 'Employee ID:',
+                'Employee Name:',
                 'Operation Site:',
                 'Issued On:',
                 'Current Feedback Schedule:',
+                'Item Code:',
+                'Item Name:',
+                'Quantity:',
                 'Quality Feedback Questions',
                 'Survey Question',
                 'Rating Option:',
@@ -222,38 +256,51 @@ frappe.ready(() => {
                 'Damage Description:',
                 'Describe any damage noticed...',
                 'Damage Attachment:',
-                'Attach',
                 'Feedback:',
                 'Share your feedback...',
                 'Submit Feedback',
-                'Submitting...',
-                'Very Poor',
-                'Poor',
-                'Average',
-                'Good',
-                'Excellent'
+                'Camera',
+                'Choose File',
             ];
 
-            // Add question texts
-            const questionTexts = (data.questions || []).map(q => q.question || '');
+            // Add question texts and their rating options
+            const questionTexts = [];
+            const optionTexts = [];
+            (data.questions || []).forEach(q => {
+                questionTexts.push(q.question || '');
+                if (q.options && q.options.length) {
+                    q.options.forEach(opt => optionTexts.push(opt.option || ''));
+                }
+            });
             
+            const allTextsForTranslation = textsToTranslate.concat(questionTexts).concat(optionTexts);
+
             // Batch translate all texts
             frappe.call({
                 method: 'one_fm.templates.pages.quality_feedback.translate_multiple',
                 args: {
-                    texts: textsToTranslate.concat(questionTexts),
+                    texts: allTextsForTranslation,
                     target_language: selectedLanguage
                 },
                 callback: (r) => {
-                    const translated = r.message || textsToTranslate.concat(questionTexts);
+                    const translated = r.message || allTextsForTranslation;
                     const translations = translated.slice(0, textsToTranslate.length);
-                    const translatedQuestions = translated.slice(textsToTranslate.length);
-                    
-                    // Map translated questions back to question objects
-                    const questions = (data.questions || []).map((q, idx) => ({
-                        ...q,
-                        question: translatedQuestions[idx] || q.question
-                    }));
+                    const translatedQuestions = translated.slice(textsToTranslate.length, textsToTranslate.length + questionTexts.length);
+                    const translatedOptions = translated.slice(textsToTranslate.length + questionTexts.length);
+
+                    let optionIdx = 0;
+                    const questions = (data.questions || []).map((q, idx) => {
+                        const newOptions = (q.options || []).map(opt => {
+                            const translatedOption = { ...opt, option: translatedOptions[optionIdx] || opt.option };
+                            optionIdx++;
+                            return translatedOption;
+                        });
+                        return {
+                            ...q,
+                            question: translatedQuestions[idx] || q.question,
+                            options: newOptions
+                        };
+                    });
 
                     resolve({
                         translations,
@@ -280,8 +327,7 @@ frappe.ready(() => {
             }
             
             // Show static loader with same style as animated loader to prevent blank screen during translation
-            const staticMessage = selectedLanguage !== 'en' ? 'Translating and preparing form...' : 'Preparing form...';
-            showLoader(staticMessage);
+            translate_and_show_loader('Preparing form...', 'Preparing form...');
             
             const employeeName = data.employee_name || '';
             const itemType = data.item_type || '';
@@ -289,20 +335,22 @@ frappe.ready(() => {
             const operationSite = data.operation_site || '';
             const issuedOn = data.issued_on || '';
             const feedbackSchedule = data.current_feedback_schedule || '';
+            const itemCode = data.item_code || '';
+            const itemName = data.item_name || '';
+            const itemQuantity = data.item_quantity || '';
 
             // Translate all content (or skip translation if English)
             let translations, questions;
-            
             if (selectedLanguage === 'en') {
                 // For English, use original texts without translation
                 translations = [
                     'Hello', ', tell us about your Feedback about', 'Quality Feedback Details',
                     'Employee ID:', 'Employee Name:', 'Operation Site:', 'Issued On:', 'Current Feedback Schedule:',
+                    'Item Code:', 'Item Name:', 'Quantity:',
                     'Quality Feedback Questions', 'Survey Question', 'Rating Option:', 'Select Rating',
                     'Additional Details', 'Noticed Damage?:', 'No', 'Yes', 'Damage Description:',
-                    'Describe any damage noticed...', 'Damage Attachment:', 'Attach', 'Feedback:',
-                    'Share your feedback...', 'Submit Feedback', 'Submitting...',
-                    'Very Poor', 'Poor', 'Average', 'Good', 'Excellent'
+                    'Describe any damage noticed...', 'Damage Attachment:', 'Feedback:',
+                    'Share your feedback...', 'Submit Feedback', 'Camera', 'Choose File',
                 ];
                 questions = data.questions || [];
             } else {
@@ -313,10 +361,11 @@ frappe.ready(() => {
 
             const [
                 helloText, tellAboutText, detailsTitle, employeeIdLabel, employeeNameLabel, operationSiteLabel,
-                issuedOnLabel, scheduleLabel, questionsTitle, surveyQuestionText, ratingLabel,
+                issuedOnLabel, scheduleLabel, itemCodeLabel, itemNameLabel, itemQuantityLabel,
+                questionsTitle, surveyQuestionText, ratingLabel,
                 selectRatingText, additionalDetailsTitle, damageLabel, noText, yesText,
-                damageDescLabel, damagePlaceholder, damageAttachmentLabel, attachText,
-                feedbackLabel, feedbackPlaceholder, submitText
+                damageDescLabel, damagePlaceholder, damageAttachmentLabel,
+                feedbackLabel, feedbackPlaceholder, submitText, cameraText, chooseFileText
             ] = translations;
 
             // Escape selectedLanguage before including it in HTML attributes
@@ -372,6 +421,18 @@ frappe.ready(() => {
                         <div class="detail-row">
                             <div class="detail-label">${employeeNameLabel}</div>
                             <div class="detail-value auto-fill">${employeeName}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">${itemCodeLabel}</div>
+                            <div class="detail-value auto-fill">${itemCode}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">${itemNameLabel}</div>
+                            <div class="detail-value auto-fill">${itemName}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">${itemQuantityLabel}</div>
+                            <div class="detail-value auto-fill">${itemQuantity}</div>
                         </div>
                         <div class="detail-row">
                             <div class="detail-label">${operationSiteLabel}</div>
@@ -437,10 +498,10 @@ frappe.ready(() => {
                             <label class="form-label">${damageAttachmentLabel} <span class="required-asterisk">*</span></label>
                             <div class="attachment-wrapper">
                                <button type="button" class="btn btn-sm btn-default" id="camera-btn">
-                                📷 Camera
+                                📷 ${cameraText}
                             </button>
                             <button type="button" class="btn btn-sm btn-default" id="file-btn">
-                                📁 Choose File
+                                📁 ${chooseFileText}
                             </button>
                                 <span class="attachment-file-name" id="attachment-file-name"></span>
                             </div>

@@ -20,11 +20,12 @@ from one_fm.utils import call_to_get_assurance_level, get_domain, get_standard_n
 from six import string_types
 from frappe import _
 from one_fm.operations.doctype.operations_shift.operations_shift import get_supervisor_operations_shifts
+from one_fm.one_fm.doctype.demand_letter.demand_letter import get_demand_letter, get_demand_letter_quota
 
 class EmployeeOverride(EmployeeMaster):
     def validate(self):
         from erpnext.controllers.status_updater import validate_status
-        validate_status(self.status, ["Active", "Court Case", "Absconding", "Left","Vacation"])
+        validate_status(self.status, ["Active", "Court Case", "Absconding", "Left", "Vacation", "Not Returned from Leave"])
 
         if self.pam_type == "Kuwaiti":
             self.residency_expiry_date = None
@@ -116,6 +117,7 @@ class EmployeeOverride(EmployeeMaster):
     def after_insert(self):
         employee_after_insert(self, method=None)
         self.assign_role_profile_based_on_designation()
+        self.update_agency_employee_count()
 
     @frappe.whitelist()
     def run_employee_id_generation(self):
@@ -137,6 +139,41 @@ class EmployeeOverride(EmployeeMaster):
                 user.save()
             else:
                 frappe.msgprint("Role profile not set in Designation, please set default.")
+
+    def update_agency_employee_count(self):
+        if not self.job_applicant:
+            return
+        agency = frappe.db.get_value("Job Applicant", self.job_applicant, "one_fm_agency")
+        if not agency:
+            return
+
+        if not get_demand_letter(agency, self.designation, self.gender):
+            return
+        demand_letter = get_demand_letter_quota(agency, self.designation, self.gender)
+        available_quota = 0
+        if demand_letter:
+            available_quota = demand_letter.quantity - demand_letter.used_quantity
+        if available_quota <= 0:
+            inform_demand_letter_quota_completion = frappe.db.get_single_value("Hiring Settings", "inform_demand_letter_quota_completion")
+            if not inform_demand_letter_quota_completion:
+                return
+
+            if inform_demand_letter_quota_completion:
+                frappe.msgprint(f"Demand letter quota for agency {agency} has been exhausted.")
+                completion_notification_email = frappe.db.get_single_value("Hiring Settings", "demand_letter_quota_completion_notification_email")
+
+                if not completion_notification_email:
+                    return
+
+                sendemail(
+                    recipients=[completion_notification_email],
+                    subject="Demand Letter Quota Exhausted",
+                    message=f"The demand letter quota for agency {agency} has been exhausted."
+                )
+        elif demand_letter:
+            # Update used quantity
+            new_used_quantity = demand_letter.used_quantity + 1
+            frappe.db.set_value("Demand Letter Demand", demand_letter.name, "used_quantity", new_used_quantity)
 
     def on_update(self):
         super(EmployeeOverride, self).on_update()
@@ -371,7 +408,7 @@ def get_employee_id_based_on_residency(employee_id, residency, employee=False, e
 def update_user_doc(doc):
     if not doc.is_new():
         old_self = doc.get_doc_before_save().status
-        if doc.status in ['Left','Absconding','Court Case'] and doc.status not in [old_self] and doc.user_id:
+        if doc.status in ['Left','Absconding','Court Case', 'Not Returned from Leave'] and doc.status not in [old_self] and doc.user_id:
             user_doc = frappe.get_doc('User',doc.user_id)
             if user_doc.enabled == 1:
                 user_doc.enabled = 0
@@ -412,7 +449,7 @@ class NotifyAttendanceManagerOnStatusChange:
 
     @property
     def _operations_site_supervisor(self) -> list:
-        operation_sites = frappe.db.sql(""" SELECT name from `tabOperations Site` WHERE account_supervisor = %s AND status = 'Active' """, (self.employee_object.name), as_list=1)
+        operation_sites = frappe.db.sql(""" SELECT name from `tabOperations Site` WHERE site_supervisor = %s AND status = 'Active' """, (self.employee_object.name), as_list=1)
         return list(chain.from_iterable(operation_sites)) if operation_sites else list()
 
     @property

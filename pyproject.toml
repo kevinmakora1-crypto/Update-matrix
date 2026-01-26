@@ -1,0 +1,77 @@
+[project]
+name = "one_fm"
+authors = [
+    { name = "ONE FM", email = "dev@one-fm.com"}
+]
+description = "One Facility Management is a leader in the fields of commercial automation and integrated security management systems providing the latest in products and services in these fields"
+requires-python = ">=3.10,<3.14"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = [
+    "bleach==6.0.0",
+    "bleach-allowlist==1.0.3",
+    "gspread",
+    "mindee==4.28.2",
+    "twilio==9.0.5",
+    "pandas>=2.2.2",
+    "deep-translator==1.11.4",
+    "firebase-admin==6.5.0",
+    "google-cloud-core==2.3.3",
+    "google-cloud-firestore==2.13.0",
+    "google-auth==2.34.0",
+    "google-cloud-storage==2.11.0",
+    "google-cloud-vision==3.4.5",
+    "datefinder==0.7.3",
+    "html2text==2020.1.16",
+    "qrcode==7.4.2",
+    "paramiko==3.4.0",
+    "llama_index==0.10.45",
+    "openai==1.45.0",
+]
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+# These dependencies are only installed when developer mode is enabled
+[tool.bench.dev-dependencies]
+# package_name = "~=1.1.0"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "F",
+    "E",
+    "W",
+    "I",
+    "UP",
+    "B",
+    "RUF",
+]
+ignore = [
+    "B017", # assertRaises(Exception) - should be more specific
+    "B018", # useless expression, not assigned to anything
+    "B023", # function doesn't bind loop variable - will have last iteration's value
+    "B904", # raise inside except without from
+    "E101", # indentation contains mixed spaces and tabs
+    "E402", # module level import not at top of file
+    "E501", # line too long
+    "E741", # ambiguous variable name
+    "F401", # "unused" imports
+    "F403", # can't detect undefined names from * import
+    "F405", # can't detect undefined names from * import
+    "F722", # syntax error in forward type annotation
+    "W191", # indentation contains tabs
+]
+typing-modules = ["frappe.types.DF"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "tab"
+docstring-code-format = true
+
+[tool.bench.frappe-dependencies]
+one_fm = ">=15.0.0,<16.0.0"

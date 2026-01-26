@@ -566,11 +566,11 @@ frappe.ui.form.on('Request for Material', {
 	
 });
 
+
 function sync_child_table(frm, fieldname) {
-	if (!frm.doc.items || frm.doc.items.length === 0) return;
-	
-	frm.doc.items.forEach(function(item) {
-		frappe.model.set_value(item.doctype, item.name, fieldname, frm.doc[fieldname]);
+	if (!frm.doc.items || frm.doc.items.length === 0) return;	
+	frm.doc.items.forEach(function(item, idx) {
+		item[fieldname] = frm.doc[fieldname];
 	});
 	
 	frm.refresh_field('items');
@@ -1164,8 +1164,6 @@ frappe.ui.form.on("Request for Material Item", {
 	margin_type: function(frm, cdt, cdn) {
 		frm.refresh_field('items');
 	},
-	margin_rate_or_amount: function(frm, cdt, cdn) {
-	}
 });
 
 

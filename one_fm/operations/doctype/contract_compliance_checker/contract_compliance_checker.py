@@ -22,7 +22,7 @@ class GenerateContractComplianceChecker:
 
 	def get_contract_items_list(self):
 		return frappe.db.sql("""
-			SELECT ci.idx, ci.parent, ci.count, ci.item_code, ci.days_off_category, 
+			SELECT ci.idx, ci.parent,ci.is_daily_operation_handled_by_us, ci.count, ci.item_code, ci.days_off_category, 
 				ci.no_of_days_off, ci.off_type, ci.service_type, c.project
 			FROM `tabContract Item` ci
 			INNER JOIN `tabContracts` c ON ci.parent = c.name
@@ -377,6 +377,8 @@ class GenerateContractComplianceChecker:
 		
 		doc.insert(ignore_permissions=True)
 	
+	
+	
 	def execute(self):
 		contract_items_list = self.get_contract_items_list()
 
@@ -392,9 +394,9 @@ class GenerateContractComplianceChecker:
 
 				for period_start, period_end in duration_periods:
 					if contract_item.service_type == "Manpower":
-						if is_daily_operations_handled_by_us:
-							if not is_off_type_full_month:
-								status, data = self.calculate_manpower_day_off_compliance(contract_item, period_start, period_end)
+						# if is_daily_operations_handled_by_us:
+						if not is_off_type_full_month:
+							status, data = self.calculate_manpower_day_off_compliance(contract_item, period_start, period_end)
 						
 					elif contract_item.service_type == "Post Schedule":
 						status, data = self.calculate_post_schedule_full_month_compliance(contract_item, period_start, period_end) if is_off_type_full_month else self.calculate_post_schedule_day_off_compliance(contract_item, period_start, period_end)
@@ -418,8 +420,9 @@ class GenerateContractComplianceChecker:
 		for contract, compliance_details in contract_groups.items():
 			self.create_compliance_checker(contract, compliance_details)
 
-
+@frappe.whitelist(allow_guest=True)
 def generate_contract_compliance_checker():
+	frappe.set_user("Administrator")
 	try:
 		generator = GenerateContractComplianceChecker()
 		generator.execute()

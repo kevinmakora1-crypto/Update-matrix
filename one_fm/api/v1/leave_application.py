@@ -6,7 +6,7 @@ from datetime import date
 import datetime
 import collections
 
-from frappe.utils import cint, cstr, getdate, add_months, add_days
+from frappe.utils import cstr, getdate, add_months, add_days
 from hrms.hr.doctype.leave_application.leave_application import get_leave_balance_on, get_leave_allocation_records, get_leave_details
 
 from one_fm.api.api import upload_file

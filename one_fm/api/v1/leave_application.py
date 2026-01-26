@@ -284,7 +284,8 @@ def create_new_leave_application(employee_id: str = None, from_date: str = None,
 
         if not resumption_date:
             resumption_date = cstr(add_days(to_date, 1))
-        
+        elif not isinstance(resumption_date, str):
+            return response("Bad Request", 400, None, "Invalid Resumption date. Please enter a valid value.")
         if not validate_date(resumption_date):
             return response("Bad Request", 400, None, "Resumption date must be of the format yyyy-mm-dd.")
 

@@ -235,7 +235,7 @@ def get_employees_list():
 
 @frappe.whitelist()
 def create_new_leave_application(employee_id: str = None, from_date: str = None, 
-    to_date: str = None, leave_type: str = None, reason: str = None, proof_document = {},reliever:str=None) -> dict:
+    to_date: str = None, leave_type: str = None, reason: str = None, proof_document = {},reliever:str=None, resumption_date: str = None) -> dict:
     """[summary]
     Args:
         employee (str): Employee record name.
@@ -332,15 +332,15 @@ def create_new_leave_application(employee_id: str = None, from_date: str = None,
                 'attachment_name':attachment_name,
                 'attachment_hashed_name':filename,
                 'attachment_file':content
-            })
+            }, resumption_date=resumption_date)
         else:
-            doc = new_leave_application(employee, from_date, to_date, leave_type, "Open", reason, leave_approver,reliever)
+            doc = new_leave_application(employee, from_date, to_date, leave_type, "Open", reason, leave_approver,reliever, resumption_date=resumption_date)
         return response("Success", 201, doc)
     except Exception as error:
         frappe.log_error(message=frappe.get_traceback(), title='Leave API')
         return response("Internal Server Error", 500, None, error)
     
-def new_leave_application(employee: str, from_date: str,to_date: str,leave_type: str,status:str, reason: str,leave_approver: str,reliever:str, attachments = {}) -> dict:
+def new_leave_application(employee: str, from_date: str,to_date: str,leave_type: str,status:str, reason: str,leave_approver: str,reliever:str, attachments = {}, resumption_date: str = None) -> dict:
     leave = frappe.new_doc("Leave Application")
     leave.employee=employee
     leave.leave_type=leave_type
@@ -352,6 +352,7 @@ def new_leave_application(employee: str, from_date: str,to_date: str,leave_type:
     leave.status=status
     leave.leave_approver = leave_approver
     leave.custom_reliever_ = reliever
+    leave.resumption_date = resumption_date
     leave.leave_approver_name = frappe.db.get_value("User", leave_approver, 'full_name')
     leave.save(ignore_permissions=True)
     if reliever:

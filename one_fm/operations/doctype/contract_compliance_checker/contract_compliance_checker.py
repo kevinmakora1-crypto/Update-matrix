@@ -22,7 +22,7 @@ class GenerateContractComplianceChecker:
 
 	def get_contract_items_list(self):
 		return frappe.db.sql("""
-																																																																																																						SELECT 
+			SELECT 
 				ci.idx,
 				ci.parent,
 				ci.is_daily_operation_handled_by_us,

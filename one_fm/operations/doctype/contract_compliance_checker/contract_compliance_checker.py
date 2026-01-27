@@ -397,6 +397,8 @@ class GenerateContractComplianceChecker:
 						
 						if not is_off_type_full_month:
 							status, data = self.calculate_manpower_day_off_compliance(contract_item, period_start, period_end)
+						else:
+							continue
 						
 					elif contract_item.service_type == "Post Schedule":
 						status, data = self.calculate_post_schedule_full_month_compliance(contract_item, period_start, period_end) if is_off_type_full_month else self.calculate_post_schedule_day_off_compliance(contract_item, period_start, period_end)

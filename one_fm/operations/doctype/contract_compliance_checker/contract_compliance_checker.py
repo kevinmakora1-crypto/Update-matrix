@@ -420,9 +420,8 @@ class GenerateContractComplianceChecker:
 		for contract, compliance_details in contract_groups.items():
 			self.create_compliance_checker(contract, compliance_details)
 
-@frappe.whitelist(allow_guest=True)
+
 def generate_contract_compliance_checker():
-	frappe.set_user("Administrator")
 	try:
 		generator = GenerateContractComplianceChecker()
 		generator.execute()

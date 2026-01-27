@@ -90,6 +90,8 @@ class ClientEvent(Document):
 			filters={"client_event": self.name, "docstatus": 1},
 			fields=["name"]
 		)
+		if not event_staffs:
+			return
 		for event_staff in event_staffs:
 			event_staff_doc = frappe.get_doc("Event Staff", event_staff.name)
 			if not event_started:
@@ -97,7 +99,7 @@ class ClientEvent(Document):
 			else:
 				event_staff_doc.end_date = getdate(today())
 				event_staff_doc.save(ignore_permissions=True)
-		frappe.msgprint("All related Event Staff records have been updated due to event cancellation.", alert=True)
+		frappe.msgprint("All related Event Staff records have been updated due to changes in the status of this client event.", alert=True)
 
 	def on_cancel(self):
 		self.validate_workflow_transition()

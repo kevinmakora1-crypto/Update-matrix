@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import get_datetime, now_datetime
+from frappe.utils import get_datetime, now_datetime, today, getdate
 import json
 
 class ClientEvent(Document):
@@ -27,6 +27,79 @@ class ClientEvent(Document):
 			frappe.throw("The scheduled end date/time must be later than Start Date or Start Datetime. Please adjust the event details.")
 		if self.event_start_datetime and self.event_end_datetime and get_datetime(self.event_end_datetime) < get_datetime(self.event_start_datetime):
 			frappe.throw("The scheduled end date/time must be later than Start Date or Start Datetime. Please adjust the event details.")
+		self.validate_workflow_transition()
+
+	def validate_workflow_transition(self):
+		if self.is_new():
+			return
+		if not self.has_value_changed("workflow_state"):
+			return
+
+		event_staff_exists = self.has_submitted_event_staff()
+		if not event_staff_exists:
+			return
+
+		today_date = getdate(today())
+		start_date = getdate(self.start_date)
+		end_date = getdate(self.end_date)
+
+		event_started = today_date >= start_date
+		event_finished = today_date > end_date
+
+		if not event_started:
+			if event_staff_exists:
+				self.handle_ongoing_event_cancellation(event_started=False)
+			return
+
+		if self.workflow_state == "Draft":
+			if event_finished:
+				frappe.throw(
+					"You are unable to return this client event to draft as the event has already taken place. Please approve."
+				)
+			elif event_started:
+				frappe.throw(
+					"You are unable to return this client event to draft as the event has already started. Please approve."
+				)
+
+		if self.workflow_state == "Rejected":
+			if event_finished:
+				frappe.throw(
+					"You are unable to reject this client event as the event has already taken place. Please approve."
+				)
+			elif event_started:
+				self.handle_ongoing_event_cancellation()
+
+		if self.workflow_state == "Cancelled":
+			if event_finished:
+				frappe.throw(
+					"You are unable to cancel this client event as the event has already taken place."
+				)
+			elif event_started:
+				self.handle_ongoing_event_cancellation()
+
+	def has_submitted_event_staff(self):
+		return frappe.db.exists(
+			"Event Staff",
+			{
+				"client_event": self.name,
+				"docstatus": 1,
+			},
+		)
+
+	def handle_ongoing_event_cancellation(self, event_started=True):
+		# Update end_date for all related Event Staff records
+		event_staffs = frappe.get_all(
+			"Event Staff",
+			filters={"client_event": self.name, "docstatus": 1},
+			fields=["name"]
+		)
+		for event_staff in event_staffs:
+			event_staff_doc = frappe.get_doc("Event Staff", event_staff.name)
+			if not event_started:
+				event_staff_doc.cancel()
+			else:
+				event_staff_doc.end_date = getdate(today())
+				event_staff_doc.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def add_event_staff(self, staff):

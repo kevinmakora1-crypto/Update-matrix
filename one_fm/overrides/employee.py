@@ -198,7 +198,7 @@ class EmployeeOverride(EmployeeMaster):
         self.notify_supervisor_of_status_change()
         if self.has_value_changed("status") and self.status == "Not Returned from Leave":
             self.inform_employee_status_update()
-        self.setup_wiki_intorduction_for_new_employee()
+        self.setup_wiki_introduction_for_new_employee()
 
     def inform_employee_id_update(self):
         """
@@ -445,11 +445,14 @@ class EmployeeOverride(EmployeeMaster):
         except Exception as e:
             frappe.log_error(f"Failed to send notification: {str(e)}", "Employee Status Change Notification")
 
-    def setup_wiki_intorduction_for_new_employee(self):
-        if not (self.status == 'Active' and
-                self.shift_working != 1 and
-                self.attendance_by_timesheet != 1 and
-                self.auto_attendance != 1):
+    def setup_wiki_introduction_for_new_employee(self):
+        if self.status == 'Active':
+            return
+        if self.shift_working == 1:
+            return
+        if self.attendance_by_timesheet == 1:
+            return
+        if self.auto_attendance == 1:
             return
         if not self.user_id:
             return

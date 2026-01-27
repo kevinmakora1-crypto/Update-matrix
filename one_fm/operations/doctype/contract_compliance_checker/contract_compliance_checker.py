@@ -166,11 +166,7 @@ class GenerateContractComplianceChecker:
 			if post.end_date and getdate(post.end_date) < post_end_date:
 				post_end_date = getdate(post.end_date)
 
-			# Expected schedules: use selected weekdays when enabled, else all days
-			if self._is_checked(getattr(contract_data, "select_specific_days", 0)):
-				expected_post_schedules = self.count_selected_weekdays_in_period(contract_data, post_start_date, post_end_date)
-			else:
-				expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
+			expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
 					post=post,
@@ -234,7 +230,11 @@ class GenerateContractComplianceChecker:
 			if post.end_date and post.end_date < post_end_date:
 				post_end_date = getdate(post.end_date)
 
-			expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
+			# Expected schedules: use selected weekdays when enabled, else all days
+			if self._is_checked(getattr(contract_data, "select_specific_days", 0)):
+				expected_post_schedules = self.count_selected_weekdays_in_period(contract_data, post_start_date, post_end_date)
+			else:
+				expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
 					post=post,

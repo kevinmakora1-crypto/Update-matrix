@@ -119,6 +119,7 @@ def create_roster_post_actions():
             AND ci.item_code = opr.sale_item
             AND ci.service_type = 'Post Schedule'
             AND es.date BETWEEN '{start_date}' AND '{end_date}'
+            AND (on_the_job_training IS NULL OR on_the_job_training = '')
             ORDER BY es.date ASC
         """, as_dict=1)
 

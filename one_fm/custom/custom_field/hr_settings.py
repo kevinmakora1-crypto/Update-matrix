@@ -131,6 +131,36 @@ def get_hr_settings_custom_fields():
                 "insert_after": "sender",
                 "label": "Helpdesk Email",
                 "description": "Email ID of helpdesk user to send reminders or notifications"
-            }
+            },
+            {
+                "fieldname": "onboarding_settings_tab",
+                "fieldtype": "Tab Break",
+                "insert_after": "costing_print_format",
+                "label": "Onboarding Settings"
+            },
+            {
+                "fieldname": "onboarding_workspace",
+                "fieldtype": "Link",
+                "insert_after": "onboarding_settings_tab",
+                "label": "Onboarding Workspace",
+                "options": "Workspace",
+                "description": "The workspace to set as default for onboarding users. If left blank, the default will be 'Wiki'.",
+            },
+            {
+                "fieldname": "wiki_introduction_doc_link",
+                "fieldtype": "Data",
+                "insert_after": "onboarding_workspace",
+                "label": "Wiki Introduction Doc Link",
+                "options": "URL",
+                "description": "The google doc link for onboarding wiki introduction document.",
+            },
+            {
+                "fieldname": "wiki_assessment_form_link",
+                "fieldtype": "Data",
+                "insert_after": "wiki_introduction_doc_link",
+                "label": "Wiki Assessment Form Link",
+                "options": "URL",
+                "description": "The google form link for onboarding wiki assessment form.",
+            },
         ]
     }

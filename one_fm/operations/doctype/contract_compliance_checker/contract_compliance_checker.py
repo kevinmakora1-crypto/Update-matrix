@@ -22,14 +22,57 @@ class GenerateContractComplianceChecker:
 
 	def get_contract_items_list(self):
 		return frappe.db.sql("""
-			SELECT ci.idx, ci.parent,ci.is_daily_operation_handled_by_us, ci.count, ci.item_code, ci.days_off_category, 
-				ci.no_of_days_off, ci.off_type, ci.service_type, c.project
+																																																																																																						SELECT 
+				ci.idx,
+				ci.parent,
+				ci.is_daily_operation_handled_by_us,
+				ci.count,
+				ci.item_code,
+				ci.days_off_category,
+				ci.no_of_days_off,
+				ci.off_type,
+				ci.service_type,
+				ci.select_specific_days,
+				ci.sunday,
+				ci.monday,
+				ci.tuesday,
+				ci.wednesday,
+				ci.thursday,
+				ci.friday,
+				ci.saturday,
+				c.project
 			FROM `tabContract Item` ci
 			INNER JOIN `tabContracts` c ON ci.parent = c.name
 			WHERE c.workflow_state = %s
 				AND ci.item_code IS NOT NULL
 				AND (ci.item_type IS NULL OR ci.item_type != 'Items')
 		""", ("Active"), as_dict=1)
+
+	def _is_checked(self, val):
+		return True if val in (1, "1", True) else False
+
+	def count_selected_weekdays_in_period(self, contract_data, start_date, end_date):
+		start_date = getdate(start_date)
+		end_date = getdate(end_date)
+
+		# Map Python weekday (Mon=0..Sun=6) to Contract Item flags
+		weekday_flags = {
+			0: self._is_checked(getattr(contract_data, "monday", 0)),
+			1: self._is_checked(getattr(contract_data, "tuesday", 0)),
+			2: self._is_checked(getattr(contract_data, "wednesday", 0)),
+			3: self._is_checked(getattr(contract_data, "thursday", 0)),
+			4: self._is_checked(getattr(contract_data, "friday", 0)),
+			5: self._is_checked(getattr(contract_data, "saturday", 0)),
+			6: self._is_checked(getattr(contract_data, "sunday", 0)),
+		}
+
+		count = 0
+		current = start_date
+		while current <= end_date:
+			if weekday_flags.get(current.weekday(), False):
+				count += 1
+			current = getdate(add_days(current, 1))
+		return count
 
 	
 	def get_operation_roles(self, sale_item, project):
@@ -123,7 +166,11 @@ class GenerateContractComplianceChecker:
 			if post.end_date and getdate(post.end_date) < post_end_date:
 				post_end_date = getdate(post.end_date)
 
-			expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
+			# Expected schedules: use selected weekdays when enabled, else all days
+			if self._is_checked(getattr(contract_data, "select_specific_days", 0)):
+				expected_post_schedules = self.count_selected_weekdays_in_period(contract_data, post_start_date, post_end_date)
+			else:
+				expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
 					post=post,
@@ -283,8 +330,14 @@ class GenerateContractComplianceChecker:
 			if post.end_date and getdate(post.end_date) < post_end_date:
 				post_end_date = getdate(post.end_date)
 
-			working_days_in_period = (date_diff(post_end_date, post_start_date) + 1)
-			expected_post_schedules = working_days_in_period - contract_data.no_of_days_off
+			# Expected schedules for Days Off contracts:
+			# When specific days are selected, use only those days within period.
+			# Otherwise, default to working days less monthly off.
+			if self._is_checked(getattr(contract_data, "select_specific_days", 0)):
+				expected_post_schedules = self.count_selected_weekdays_in_period(contract_data, post_start_date, post_end_date)
+			else:
+				working_days_in_period = (date_diff(post_end_date, post_start_date) + 1)
+				expected_post_schedules = working_days_in_period - contract_data.no_of_days_off
 
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,

@@ -1,5 +1,4 @@
 import frappe
-from frappe.utils import now
 
 def execute():
     frappe.db.auto_commit_on_many_writes = True

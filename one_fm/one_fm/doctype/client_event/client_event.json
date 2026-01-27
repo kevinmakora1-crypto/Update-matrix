@@ -42,12 +42,14 @@
    "fieldname": "start_date",
    "fieldtype": "Date",
    "label": "Start Date",
+   "read_only_depends_on": "eval: doc.workflow_state != \"Draft\"",
    "reqd": 1
   },
   {
    "fieldname": "end_date",
    "fieldtype": "Date",
    "label": "End Date",
+   "read_only_depends_on": "eval: doc.workflow_state != \"Draft\"",
    "reqd": 1
   },
   {
@@ -55,6 +57,7 @@
    "fieldtype": "Datetime",
    "in_list_view": 1,
    "label": "Event Start Datetime",
+   "read_only_depends_on": "eval: doc.workflow_state != \"Draft\"",
    "reqd": 1
   },
   {
@@ -62,6 +65,7 @@
    "fieldtype": "Datetime",
    "in_list_view": 1,
    "label": "Event End Datetime",
+   "read_only_depends_on": "eval: doc.workflow_state != \"Draft\"",
    "reqd": 1
   },
   {
@@ -158,7 +162,7 @@
    "link_fieldname": "client_event"
   }
  ],
- "modified": "2026-01-05 15:41:48.248806",
+ "modified": "2026-01-27 18:35:34.388248",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Client Event",

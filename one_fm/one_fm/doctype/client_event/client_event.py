@@ -8,6 +8,12 @@ import json
 
 class ClientEvent(Document):
 	def validate(self):
+		self.validate_date_time()
+		self.validate_workflow_transition()
+
+	def validate_date_time(self):
+		if self.workflow_state != "Draft":
+			return
 		now = now_datetime()
 
 		# Rule 1: Start Date or Start Datetime must be in the future
@@ -27,7 +33,6 @@ class ClientEvent(Document):
 			frappe.throw("The scheduled end date/time must be later than Start Date or Start Datetime. Please adjust the event details.")
 		if self.event_start_datetime and self.event_end_datetime and get_datetime(self.event_end_datetime) < get_datetime(self.event_start_datetime):
 			frappe.throw("The scheduled end date/time must be later than Start Date or Start Datetime. Please adjust the event details.")
-		self.validate_workflow_transition()
 
 	def validate_workflow_transition(self):
 		if self.is_new():

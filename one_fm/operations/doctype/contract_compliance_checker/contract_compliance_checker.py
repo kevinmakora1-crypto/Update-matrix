@@ -406,16 +406,6 @@ class GenerateContractComplianceChecker:
 		
 		for contract_item in contract_items_list:
 			try:
-				# Apply acceptance criteria gating before processing
-				if not (
-					(contract_item.get("item_type") == "Service")
-					and (contract_item.get("service_type") == "Manpower")
-					and (contract_item.get("is_daily_operation_handled_by_us") == "Yes")
-					and (contract_item.get("off_type") == "Days Off")
-					and (contract_item.get("days_off_category") in ["Weekly", "Monthly"]) 
-				):
-					continue
-
 				is_off_type_full_month = contract_item.off_type == "Full Month"
 				has_days_off = contract_item.off_type == "Days Off"
 				has_weekly_days_off = contract_item.days_off_category == "Weekly"
@@ -424,7 +414,6 @@ class GenerateContractComplianceChecker:
 
 				for period_start, period_end in duration_periods:
 					if contract_item.service_type == "Manpower":
-						
 						if not is_off_type_full_month:
 							status, data = self.calculate_manpower_day_off_compliance(contract_item, period_start, period_end)
 						else:

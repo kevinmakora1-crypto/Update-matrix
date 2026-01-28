@@ -59,7 +59,7 @@
     },
     {
       "state": "Cancelled",
-      "doc_status": "2",
+      "doc_status": "1",
       "style": "Danger",
       "is_optional_state": 0,
       "avoid_status_override": 0,

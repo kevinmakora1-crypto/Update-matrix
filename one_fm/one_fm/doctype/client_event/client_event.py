@@ -8,6 +8,12 @@ import json
 
 class ClientEvent(Document):
 	def validate(self):
+		self.validate_date_time()
+		self.validate_workflow_transition()
+
+	def validate_date_time(self):
+		if not self.is_new() and self.workflow_state != "Pending Approval":
+			return
 		now = now_datetime()
 
 		# Rule 1: Start Date or Start Datetime must be in the future
@@ -27,12 +33,13 @@ class ClientEvent(Document):
 			frappe.throw("The scheduled end date/time must be later than Start Date or Start Datetime. Please adjust the event details.")
 		if self.event_start_datetime and self.event_end_datetime and get_datetime(self.event_end_datetime) < get_datetime(self.event_start_datetime):
 			frappe.throw("The scheduled end date/time must be later than Start Date or Start Datetime. Please adjust the event details.")
-		self.validate_workflow_transition()
 
 	def validate_workflow_transition(self):
 		if self.is_new():
 			return
 		if not self.has_value_changed("workflow_state"):
+			return
+		if self.workflow_state == "Approved":
 			return
 
 		event_staff_exists = self.has_submitted_event_staff()
@@ -47,34 +54,24 @@ class ClientEvent(Document):
 		event_finished = today_date > end_date
 
 		if not event_started:
-			if event_staff_exists:
-				self.handle_ongoing_event_cancellation(event_started=False)
+			self.handle_ongoing_event_cancellation(event_started=False)
 			return
 
-		if self.workflow_state == "Draft":
-			if event_finished:
+		if event_finished:
+			if self.workflow_state in ("Draft", "Rejected"):
 				frappe.throw(
-					"You are unable to return this client event to draft as the event has already taken place. Please approve."
+					f"You are unable to {self.workflow_state.lower()} this client event as the event has already taken place. Please approve."
 				)
-			elif event_started:
-				frappe.throw(
-					"You are unable to return this client event to draft as the event has already started. Please approve."
-				)
-
-		if self.workflow_state == "Rejected":
-			if event_finished:
-				frappe.throw(
-					"You are unable to reject this client event as the event has already taken place. Please approve."
-				)
-			elif event_started:
-				self.handle_ongoing_event_cancellation()
-
-		if self.workflow_state == "Cancelled":
-			if event_finished:
+			elif self.workflow_state == "Cancelled":
 				frappe.throw(
 					"You are unable to cancel this client event as the event has already taken place."
 				)
-			elif event_started:
+		elif event_started:
+			if self.workflow_state == "Draft":
+				frappe.throw(
+					"You are unable to return this client event to draft as the event has already started. Please approve."
+				)
+			elif self.workflow_state in ("Rejected", "Cancelled"):
 				self.handle_ongoing_event_cancellation()
 
 	def has_submitted_event_staff(self):
@@ -93,6 +90,8 @@ class ClientEvent(Document):
 			filters={"client_event": self.name, "docstatus": 1},
 			fields=["name"]
 		)
+		if not event_staffs:
+			return
 		for event_staff in event_staffs:
 			event_staff_doc = frappe.get_doc("Event Staff", event_staff.name)
 			if not event_started:
@@ -100,6 +99,13 @@ class ClientEvent(Document):
 			else:
 				event_staff_doc.end_date = getdate(today())
 				event_staff_doc.save(ignore_permissions=True)
+		frappe.msgprint("All related Event Staff records have been updated due to changes in the status of this client event.", alert=True)
+
+	def on_cancel(self):
+		self.validate_workflow_transition()
+
+	def on_update_after_submit(self):
+		self.validate_workflow_transition()
 
 	@frappe.whitelist()
 	def add_event_staff(self, staff):

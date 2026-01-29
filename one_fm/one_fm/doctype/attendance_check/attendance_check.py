@@ -173,10 +173,9 @@ class AttendanceCheck(Document):
         return line_manager
 
     def set_attedance_check_approver(self):
-        if self.attendance_status == "Absent":
-            approver = self.get_approver(self.employee)
-            if approver:
-                self.approver = frappe.db.get_value("Employee", approver, "user_id")
+        approver = self.get_approver(self.employee)
+        if approver:
+            self.approver = frappe.db.get_value("Employee", approver, "user_id")
 
 
     def after_insert(self):

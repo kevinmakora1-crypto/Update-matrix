@@ -148,7 +148,7 @@ class AttendanceCheck(Document):
                 if employee_data.site:
                     line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
                 if not line_manager and employee_data.shift:
-                    line_manager = get_shift_supervisor(employee_data.shift)
+                    line_manager = get_shift_supervisor(employee_data.shift,date=self.date)
                 if not line_manager:
                     project = frappe.db.get_value('Operations Site', employee_data.site, 'project')
                     if project:
@@ -161,7 +161,7 @@ class AttendanceCheck(Document):
                     line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
 
                 if not line_manager and employee_data.shift:
-                    line_manager = get_shift_supervisor(employee_data.shift)
+                    line_manager = get_shift_supervisor(employee_data.shift,date=self.date)
 
                 if not line_manager:
                     frappe.log_error(title="Missing Data", message=f"Please ensure that the Reports To or Operations Site Supervisor is set for {employee_data.employee_name}, Since the employee is not shift working")

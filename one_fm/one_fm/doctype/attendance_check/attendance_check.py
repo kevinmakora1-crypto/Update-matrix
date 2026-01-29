@@ -11,7 +11,8 @@ from frappe.utils import add_days, today, now, get_url_to_form, getdate
 from one_fm.utils import (
     production_domain,
     fetch_attendance_manager_user,
-    get_approver_user
+    has_super_user_role,
+    get_shift_supervisor,
 )
 
 class AttendanceCheck(Document):
@@ -118,8 +119,60 @@ class AttendanceCheck(Document):
             as_dict=1
         )
 
+
+
+    
+    def get_approver(self,employee):
+        '''
+            Method to get the line manager employee of an employee with the priority
+            args:
+                employee: name of Employee object
+            return: employee reference of the line manager or None
+        '''
+
+        if not frappe.db.exists("Employee", {'name':employee}):
+            frappe.log_error(title="Employee does not exists", message=f"Employee {employee} does not exists")
+            return None
+
+        employee_field_list = ["user_id", "reports_to", "shift", "site", "shift_working", "employee_name"]
+        employee_data = frappe.db.get_value('Employee', employee, employee_field_list, as_dict=1)
+
+        line_manager = employee_data.reports_to if employee_data.reports_to else None
+
+        if not line_manager:
+            if employee_data.user_id and has_super_user_role(employee_data.user_id):
+                line_manager = employee
+
+        if not line_manager:
+            if employee_data.shift_working:
+                if employee_data.site:
+                    line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
+                if not line_manager and employee_data.shift:
+                    line_manager = get_shift_supervisor(employee_data.shift,date=self.date)
+                if not line_manager:
+                    project = frappe.db.get_value('Operations Site', employee_data.site, 'project')
+                    if project:
+                        line_manager = frappe.db.get_value('Project', project, 'account_manager')
+                if line_manager:
+                    return line_manager
+                
+            else:
+                if employee_data.site:
+                    line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
+
+                if not line_manager and employee_data.shift:
+                    line_manager = get_shift_supervisor(employee_data.shift,date=self.date)
+
+                if not line_manager:
+                    frappe.log_error(title="Missing Data", message=f"Please ensure that the Reports To or Operations Site Supervisor is set for {employee_data.employee_name}, Since the employee is not shift working")
+
+        return line_manager
+
     def set_attedance_check_approver(self):
-        self.approver = get_approver_user(self.employee)
+        approver = self.get_approver(self.employee)
+        if approver:
+            self.approver = frappe.db.get_value("Employee", approver, "user_id")
+
 
     def after_insert(self):
         """

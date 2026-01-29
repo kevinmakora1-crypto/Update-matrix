@@ -316,6 +316,8 @@ def notify_supervisor_about_late_entry(checkin):
 	This method notify the supervisor about the late entry of an employee
 	"""
 	try:
+		if checkin.get('shift_permission'):
+			return # return if employee checkin is created from shift permission
 		auto_attendance_employee = frappe.get_value("Employee", {'name':checkin.employee}, ['auto_attendance'])
 		if auto_attendance_employee == 0:
 			shift_permission = frappe.db.sql(f""" select name from `tabShift Permission` where employee = '{checkin.employee}' and date = '{now_datetime().date()}' and log_type = 'IN' and workflow_state IN ('Pending','Approved') ;  """)

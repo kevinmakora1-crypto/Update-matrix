@@ -131,7 +131,8 @@ class AttendanceCheck(Document):
         '''
 
         if not frappe.db.exists("Employee", {'name':employee}):
-            frappe.throw(f"Employee {employee} does not exists")
+            frappe.log_error(title="Employee does not exists", message=f"Employee {employee} does not exists")
+            return None
 
         employee_field_list = ["user_id", "reports_to", "shift", "site", "shift_working", "employee_name"]
         employee_data = frappe.db.get_value('Employee', employee, employee_field_list, as_dict=1)
@@ -163,12 +164,7 @@ class AttendanceCheck(Document):
                     line_manager = get_shift_supervisor(employee_data.shift)
 
                 if not line_manager:
-                    frappe.msgprint(
-                        _("Please ensure that the Reports To or Operations Site Supervisor is set for {0}, Since the employee is not shift working".format(employee_data.employee_name)),
-                        title= "Missing Data",
-                        indicator="orange",
-                        alert=True
-                    )
+                    frappe.log_error(title="Missing Data", message=f"Please ensure that the Reports To or Operations Site Supervisor is set for {employee_data.employee_name}, Since the employee is not shift working")
 
         return line_manager
 

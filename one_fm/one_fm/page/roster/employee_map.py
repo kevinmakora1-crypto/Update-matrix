@@ -278,7 +278,7 @@ class CreateMap:
 				# Add attendance records for the day
 				for attendance in day_row['attendance_records']:
 					attendance_entry = {
-						'employee': attendance['employee'],
+						'employee': employee_id,
 						'employee_name': attendance['employee_name'],
 						'leave_application': attendance['leave_application'],
 						'leave_type': attendance['leave_type'],

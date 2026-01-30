@@ -36,8 +36,7 @@ frappe.ui.form.on('Employee', {
 	},
 	setup: function(frm) {
 		frm._original_status = frm.doc.status;
-	}
-	,
+	},
 	pam_type: function(frm) {
 		if (frm.doc.pam_type === 'Kuwaiti') {
 			frm.set_value('residency_expiry_date', null);

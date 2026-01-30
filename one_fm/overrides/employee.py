@@ -902,4 +902,4 @@ def delete_employee_schedules_for_next_7_days(employee_id):
                 message=f"Error deleting schedules: {str(e)}",
                 title=f"Employee Schedule Deletion Error - {employee_id}"
             )
-            frappe.throw(f"Failed to delete schedules: {str(e)}")
+            raise

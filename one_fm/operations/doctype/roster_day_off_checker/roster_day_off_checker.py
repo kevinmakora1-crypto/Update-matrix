@@ -5,7 +5,7 @@ from collections import OrderedDict
 import frappe
 from datetime import date, timedelta, datetime
 from frappe.utils import (
-    get_first_day, get_last_day, getdate, add_days, add_months, nowdate, date_diff
+    get_first_day, get_last_day, getdate, add_days, add_months, nowdate, date_diff, today
 )
 from frappe.model.document import Document
 from frappe.query_builder.functions import Count
@@ -560,3 +560,74 @@ def _get_employees_with_join(join_clause, where_clause, user_employee):
 			AND e.shift_working = 1
 			AND {where_clause}
 	""", {"user_employee": user_employee}, as_dict=True)
+
+
+
+@frappe.whitelist()
+def update_attendance_to_cdo(employee, attendance_date):
+    selected_date = getdate(attendance_date)
+    current_date = getdate(today())
+    
+    if selected_date >= current_date:
+        return {
+            'success': False,
+            'error': True,
+            'message': 'Cannot update attendance for current or future dates. Please select a past date.'
+        }
+    
+    try:
+        attendance_list = frappe.get_all(
+            'Attendance',
+            filters={
+                'employee': employee,
+                'attendance_date': attendance_date,
+                'docstatus': ['!=', 2]
+            },
+            fields=['name', 'status', 'roster_type']
+        )
+        
+        if not attendance_list:
+            return {
+                'success': False,
+                'error': True,
+                'message': f'No Attendance record found for employee {employee} on {attendance_date}'
+            }
+        
+        attendance = attendance_list[0]
+        
+        if attendance.get('roster_type') and attendance.get('roster_type') != 'Basic':
+            return {
+                'success': False,
+                'error': True,
+                'message': f'Can only update Basic attendance. Current attendance type is {attendance.get("roster_type")}'
+            }
+        
+
+        attendance_doc = frappe.get_doc('Attendance', attendance['name'])
+        old_status = attendance_doc.status
+        attendance_doc.status = 'Client Day Off'
+        attendance_doc.flags.ignore_validate_update_after_submit = True
+        attendance_doc.save(ignore_permissions=True)
+        
+        attendance_doc.add_comment(
+            'Info',
+            f'Attendance status changed from "{old_status}" to "Client Day Off"'
+        )
+        
+        frappe.db.commit()
+        
+        return {
+            'success': True,
+            'message': f'Attendance status updated to Client Day Off for {employee} on {attendance_date}'
+        }
+    
+    except Exception as e:
+        frappe.log_error(
+            message=f"Error updating attendance to CDO: {str(e)}",
+            title=f"Make CDO Error - {employee}"
+        )
+        return {
+            'success': False,
+            'error': True,
+            'message': f'Failed to update attendance: {str(e)}'
+        }

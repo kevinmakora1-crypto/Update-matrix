@@ -234,9 +234,19 @@ class CreateMap:
 		# Create an empty DataFrame with the expected columns for downstream merging
 		grouped_schedules = pd.DataFrame(columns=['employee', 'date', 'schedule_records'])
 		if not df_schedules.empty and all(col in df_schedules.columns for col in ['employee', 'date']):
+			# Note: pandas 3.0.0 excludes grouping columns from apply by default
+			# We explicitly add them back using group.name
+			def collect_schedule_records(group):
+				records = group.to_dict('records')
+				employee, date = group.name
+				for rec in records:
+					rec['employee'] = employee
+					rec['date'] = date
+				return records
+			
 			grouped_schedules = (
 				df_schedules.groupby(['employee', 'date'])
-				.apply(lambda group: group.to_dict('records'))
+				.apply(collect_schedule_records, include_groups=False)
 				.reset_index()
 				.rename(columns={0: 'schedule_records'})
 			)
@@ -245,9 +255,19 @@ class CreateMap:
 		grouped_attendance = pd.DataFrame(columns=['employee', 'date', 'attendance_records'])
 		if not df_attendance.empty and all(col in df_attendance.columns for col in ['employee', 'attendance_date']):
 			# Group attendance records by employee and date, collect as lists
+			# Note: pandas 3.0.0 excludes grouping columns from apply by default
+			# We explicitly add them back using group.name
+			def collect_attendance_records(group):
+				records = group.to_dict('records')
+				employee, attendance_date = group.name
+				for rec in records:
+					rec['employee'] = employee
+					rec['attendance_date'] = attendance_date
+				return records
+			
 			grouped_attendance = (
 				df_attendance.groupby(['employee', 'attendance_date'])
-				.apply(lambda group: group.to_dict('records'))
+				.apply(collect_attendance_records, include_groups=False)
 				.reset_index()
 				.rename(columns={'attendance_date': 'date', 0: 'attendance_records'})
 			)
@@ -278,7 +298,7 @@ class CreateMap:
 				# Add attendance records for the day
 				for attendance in day_row['attendance_records']:
 					attendance_entry = {
-						'employee': employee_id,
+						'employee': attendance['employee'],
 						'employee_name': attendance['employee_name'],
 						'leave_application': attendance['leave_application'],
 						'leave_type': attendance['leave_type'],

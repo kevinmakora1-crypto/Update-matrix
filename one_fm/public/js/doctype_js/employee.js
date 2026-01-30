@@ -2,7 +2,7 @@ frappe.ui.form.on('Employee', {
 	refresh: function(frm) {
 		hideFields(frm);
 		setAutoAttendanceReadOnly(frm);
-
+		frm._original_status = frm.doc.status;
 		set_grd_fields(frm)
 		frm.trigger('set_queries');
 		set_mandatory(frm);
@@ -34,6 +34,10 @@ frappe.ui.form.on('Employee', {
             };
         });
 	},
+	setup: function(frm) {
+		frm._original_status = frm.doc.status;
+	}
+	,
 	pam_type: function(frm) {
 		if (frm.doc.pam_type === 'Kuwaiti') {
 			frm.set_value('residency_expiry_date', null);
@@ -106,8 +110,16 @@ frappe.ui.form.on('Employee', {
         }
         frm.refresh_field('custom_operations_role_allocation');
 
-    }
+    },
+	after_save: function(frm) {
+		delete frm.doc.__confirmed_status_change;
+        frm._original_status = frm.doc.status;
+	},
+	validate: function(frm) {
+        handle_not_returned_from_leave_status_change(frm);
+    },
 });
+
 
 
 frappe.ui.form.on('Employee Incentive', {
@@ -144,6 +156,27 @@ const set_current_address = (frm) => {
         frm.set_value("current_address", "");
     }
 };
+
+function handle_not_returned_from_leave_status_change(frm) {
+    if (frm.doc.status === "Not Returned from Leave" 
+        && frm._original_status !== "Not Returned from Leave"
+        && !frm.doc.__confirmed_status_change) {
+        
+        frappe.confirm(
+            'Changing this status will delete the Employee\'s schedule for the next 7 days (including today). Do you wish to proceed?',
+            function() {
+                frm.doc.__confirmed_status_change = true;
+                frm.save();
+            },
+            function() {
+                frappe.validated = false;
+            }
+        );
+        
+        frappe.validated = false;
+        return false;
+    }
+}
 
 
 // SET MANDATORY FIELDS

@@ -3,7 +3,7 @@ from json import loads
 import requests
 
 import frappe
-from frappe.utils import getdate, add_days, get_url_to_form, get_url
+from frappe.utils import getdate, add_days, get_url_to_form, get_url, today
 from frappe.utils.user import get_users_with_role
 from frappe.permissions import remove_user_permission
 from one_fm.api.api import  push_notification_rest_api_for_checkin
@@ -198,7 +198,10 @@ class EmployeeOverride(EmployeeMaster):
         self.notify_supervisor_of_status_change()
         if self.has_value_changed("status") and self.status == "Not Returned from Leave":
             self.inform_employee_status_update()
+            frappe.enqueue(delete_employee_schedules_for_next_7_days, queue='default', timeout=300, employee_id=self.name)
+
         self.setup_wiki_introduction_for_new_employee()
+
 
     def inform_employee_id_update(self):
         """
@@ -875,3 +878,28 @@ def get_assurance_level_of_employee(doc, method):
             return True
     except Exception as e:
             frappe.log_error(message=frappe.get_traceback(), title=f"DSS returned NONE values,No API key")
+
+
+def delete_employee_schedules_for_next_7_days(employee_id):
+        start_date = today()
+        end_date = add_days(start_date, 6)
+
+        try:
+            frappe.db.sql("""
+                DELETE FROM `tabEmployee Schedule`
+                WHERE employee = %(employee)s
+                AND date BETWEEN %(start_date)s AND %(end_date)s
+            """, {
+                'employee': employee_id,
+                'start_date': start_date,
+                'end_date': end_date
+            })
+            
+            frappe.db.commit()
+
+        except Exception as e:
+            frappe.log_error(
+                message=f"Error deleting schedules: {str(e)}",
+                title=f"Employee Schedule Deletion Error - {employee_id}"
+            )
+            frappe.throw(f"Failed to delete schedules: {str(e)}")

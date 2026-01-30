@@ -2,6 +2,30 @@ import frappe
 import pandas as pd
 from frappe.utils import nowdate, add_to_date, cstr, cint, getdate
 import datetime
+import math
+
+
+def safe_value(val):
+	"""Convert pandas NaN/NaT and other non-JSON-serializable values to None."""
+	if val is None:
+		return None
+	if pd.isna(val):
+		return None
+	# Handle float NaN explicitly
+	if isinstance(val, float) and math.isnan(val):
+		return None
+	# Handle timedelta objects
+	if isinstance(val, pd.Timedelta):
+		return str(val) if not pd.isna(val) else None
+	# Handle datetime/date objects
+	if isinstance(val, (datetime.datetime, datetime.date)):
+		return str(val)
+	return val
+
+
+def sanitize_record(record):
+	"""Apply safe_value to all values in a record dictionary."""
+	return {k: safe_value(v) for k, v in record.items()}
 
 
 class PostMap():
@@ -297,7 +321,7 @@ class CreateMap:
 				daily_records = []
 				# Add attendance records for the day
 				for attendance in day_row['attendance_records']:
-					attendance_entry = {
+					attendance_entry = sanitize_record({
 						'employee': attendance['employee'],
 						'employee_name': attendance['employee_name'],
 						'leave_application': attendance['leave_application'],
@@ -314,7 +338,7 @@ class CreateMap:
 						'start_time': attendance['start_time'],
 						'end_time': attendance['end_time'],
 						'day_off_ot': attendance['day_off_ot']
-					}
+					})
 					daily_records.append(attendance_entry)
 					
 				if len(daily_records) == 0:
@@ -322,11 +346,11 @@ class CreateMap:
 					for schedule in day_row['schedule_records']:
 						schedule_entry = schedule.copy()
 						schedule_entry.update(self.employee_period_details[employee_id])
-						daily_records.append(schedule_entry)
+						daily_records.append(sanitize_record(schedule_entry))
 
 				# If no records for the day, add a blank/default entry
 				if not daily_records:
-					blank_record = {
+					blank_record = sanitize_record({
 						'employee': self.employee_period_details[employee_id]['name'],
 						'employee_id': self.employee_period_details[employee_id]['employee_id'],
 						'employee_name': self.employee_period_details[employee_id]['employee_name'],
@@ -334,7 +358,7 @@ class CreateMap:
 						'relieving_date': self.employee_period_details[employee_id]['relieving_date'],
 						'day_off_category': self.employee_period_details[employee_id]['day_off_category'],
 						'number_of_days_off': self.employee_period_details[employee_id]['number_of_days_off']
-					}
+					})
 					self.formated_rs[employee_name][day_row['date']] = [blank_record]
 				else:
 					self.formated_rs[employee_name][day_row['date']] = daily_records

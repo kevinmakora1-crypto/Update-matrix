@@ -260,6 +260,8 @@ def check_roster_day_off():
 					day_off_checker.day_off_taken = day_off_data["availed_off_days"]
 					day_off_checker.worked_day_off_ot = day_off_data["availed_ot_days"]
 					day_off_checker.day_off_difference = day_off_data["day_off_difference"]
+					day_off_checker.rostered_client_day_off = day_off_data["rostered_client_day_off"]
+					day_off_checker.client_day_off_taken = day_off_data["client_day_off_taken"]
 					day_off_checker.insert(ignore_permissions=1)
 
 		frappe.db.commit()
@@ -273,8 +275,10 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 
 	off_days = 0
 	ot_days = 0
+	taken_client_off_days = 0
 
 	rostered_off_days = 0
+	rostered_client_off_days = 0
 	rostered_ot_days = 0
 
 	availed_off_days = 0
@@ -310,6 +314,19 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 		if working_dates:
 			conditions &= Attendance.attendance_date.isin(working_dates)
 
+		rostered_client_off_days = frappe.db.count("Employee Schedule", {
+			"employee": employee.name,
+			"date": ["between", [attendance_start_date, attendance_end_date]],
+			"employee_availability": "Client Day Off",
+			"day_off_ot": 0
+		})
+
+		taken_client_off_days = frappe.db.count("Attendance", {
+			"employee": employee.name,
+			"attendance_date": ["between", [attendance_start_date, attendance_end_date]],
+			"status": "Client Day Off",
+			"docstatus": 1
+		})
 
 		# Calculate no of ot days
 		ot = (
@@ -355,6 +372,13 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 		if working_dates:
 			conditions &= EmployeeSchedule.date.isin(working_dates)
 
+		rostered_client_off_days = frappe.db.count("Employee Schedule", {
+			"employee": employee.name,
+			"date": ["between", [schedule_start_date, schedule_end_date]],
+			"employee_availability": "Client Day Off",
+			"day_off_ot": 0
+		})
+
 		# Calculate no of ot days
 		ot = (
 			frappe.qb.from_(EmployeeSchedule)
@@ -396,7 +420,9 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 		"rostered_ot_days": rostered_ot_days,
 		"availed_off_days": availed_off_days,
 		"availed_ot_days": availed_ot_days,
-		"day_off_difference": day_off_diff
+		"day_off_difference": day_off_diff,
+		"rostered_client_day_off": rostered_client_off_days,
+		"client_day_off_taken": taken_client_off_days
 	}
 
 

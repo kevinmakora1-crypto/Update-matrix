@@ -397,10 +397,15 @@ class Contracts(Document):
              for old_row in doc_before_save.client_requested_days:
                   should_cancel = False
                   if old_row.name not in current_rows_map:
+                       # Row was deleted: cancel previously planned schedules for this date/item
                        should_cancel = True
                   else:
                        new_row = current_rows_map[old_row.name]
-                       if getdate(new_row.client_requested_date) != getdate(old_row.client_requested_date):
+                       # Cancel if either the date or the contract_item changed
+                       if (
+                            getdate(new_row.client_requested_date) != getdate(old_row.client_requested_date)
+                            or new_row.contract_item != old_row.contract_item
+                       ):
                             should_cancel = True
                   
                   if should_cancel:

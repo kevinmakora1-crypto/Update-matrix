@@ -1,6 +1,7 @@
 # Copyright (c) 2025, ONE FM and contributors
 # For license information, please see license.txt
 import calendar
+from datetime import timedelta
 
 import frappe
 from frappe.model.document import Document
@@ -23,13 +24,35 @@ class GenerateContractComplianceChecker:
 	def get_contract_items_list(self):
 		return frappe.db.sql("""
 			SELECT ci.idx, ci.parent,ci.is_daily_operation_handled_by_us, ci.count, ci.item_code, ci.days_off_category, 
-				ci.no_of_days_off, ci.off_type, ci.service_type, c.project
+				ci.no_of_days_off, ci.off_type, ci.service_type, c.project, ci.select_specific_days, ci.monday, ci.tuesday, 
+				ci.wednesday, ci.thursday, ci.friday, ci.saturday, ci.sunday
 			FROM `tabContract Item` ci
 			INNER JOIN `tabContracts` c ON ci.parent = c.name
 			WHERE c.workflow_state = %s
 				AND ci.item_code IS NOT NULL
 				AND (ci.item_type IS NULL OR ci.item_type != 'Items')
 		""", ("Active"), as_dict=1)
+	
+	def count_selected_days_in_range(self, contract_data, start_date, end_date):
+		weekday_fields = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+		selected = {i for i, f in enumerate(weekday_fields) if contract_data.get(f)}
+
+		count = 0
+		current = getdate(start_date)
+		end = getdate(end_date)
+		while current <= end:
+			if current.weekday() in selected:
+				count += 1
+			current += timedelta(days=1)
+		return count
+	
+	def get_client_post_off_count(self, project, post_name, start_date, end_date):
+		return frappe.db.count("Post Schedule", {
+			"project": project,
+			"post": post_name,
+			"date": ["between", [start_date, end_date]],
+			"post_status": "Client Post Off"
+		})
 
 	
 	def get_operation_roles(self, sale_item, project):
@@ -46,7 +69,7 @@ class GenerateContractComplianceChecker:
 				fields=["name", "start_date", "end_date"]
 			)
 	
-	def get_post_schedules(self, project, post, start_date, end_date, include_client_post_off=False):
+	def get_post_schedules(self, project, post, start_date, end_date, include_client_post_off=False,):
 		filters = {
 			"date": ['BETWEEN', [start_date, end_date]],
 			"project": project,
@@ -191,7 +214,12 @@ class GenerateContractComplianceChecker:
 			if post.end_date and post.end_date < post_end_date:
 				post_end_date = getdate(post.end_date)
 
-			expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
+			if contract_data.select_specific_days:
+				expected_post_schedules = self.count_selected_days_in_range(contract_data, post_start_date, post_end_date)
+			else:
+				expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
+
+
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
 					post=post,
@@ -230,8 +258,8 @@ class GenerateContractComplianceChecker:
 		if not operations_roles:
 			comment += f"No operations roles created with sale item {contract_data.item_code} in project {contract_data.project}, for contract {contract_data.parent} in items row {contract_data.idx}\n\n"
 
-		working_days_in_period = (date_diff(end_date, start_date) + 1) - contract_data.no_of_days_off
-		expected_schedule_count = working_days_in_period * contract_data.count
+		total_days = self.count_selected_days_in_range(contract_data, start_date, end_date) if contract_data.select_specific_days else (date_diff(end_date, start_date) + 1)
+		expected_schedule_count = (total_days - contract_data.no_of_days_off) * contract_data.count
 
 		actual_schedule_count = self.get_total_employee_schedule_count(operations_roles, start_date, end_date)
 
@@ -288,8 +316,8 @@ class GenerateContractComplianceChecker:
 			if post.end_date and getdate(post.end_date) < post_end_date:
 				post_end_date = getdate(post.end_date)
 
-			working_days_in_period = (date_diff(post_end_date, post_start_date) + 1)
-			expected_post_schedules = working_days_in_period - contract_data.no_of_days_off
+			total_days = self.count_selected_days_in_range(contract_data, post_start_date, post_end_date) if contract_data.select_specific_days else (date_diff(post_end_date, post_start_date) + 1)
+			expected_post_schedules = total_days - contract_data.no_of_days_off
 
 			# For monthly and weekly contracts, include "Client Post Off" in the count
 			include_client_post_off = contract_data.days_off_category in ["Monthly", "Weekly"]

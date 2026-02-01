@@ -606,6 +606,9 @@ def update_attendance_to_cdo(employee, attendance_date):
         attendance_doc = frappe.get_doc('Attendance', attendance['name'])
         old_status = attendance_doc.status
         attendance_doc.status = 'Client Day Off'
+        # Reset working hours for non-working status to avoid stale values from previous status
+        if hasattr(attendance_doc, "working_hours"):
+            attendance_doc.working_hours = 0
         attendance_doc.flags.ignore_validate_update_after_submit = True
         attendance_doc.save(ignore_permissions=True)
         

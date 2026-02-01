@@ -46,16 +46,20 @@ class GenerateContractComplianceChecker:
 				fields=["name", "start_date", "end_date"]
 			)
 	
-	def get_post_schedules(self, project, post, start_date, end_date):
-		return frappe.db.count(
-			"Post Schedule",
-			filters={
-				"date": ['BETWEEN', [start_date, end_date]],
-				"project": project,
-				"post": post.name,
-				"post_status": 'Planned'
-			}
-		)
+	def get_post_schedules(self, project, post, start_date, end_date, include_client_post_off=False):
+		filters = {
+			"date": ['BETWEEN', [start_date, end_date]],
+			"project": project,
+			"post": post.name
+		}
+		
+		# For monthly contracts, count both "Planned" and "Client Post Off" statuses
+		if include_client_post_off:
+			filters["post_status"] = ['in', ['Planned', 'Client Post Off']]
+		else:
+			filters["post_status"] = 'Planned'
+		
+		return frappe.db.count("Post Schedule", filters=filters)
 	
 	def get_client_requested_days_count(self, contract_name, contract_item_name, start_date, end_date):
 		return frappe.db.count("Client Requested Days Item", {
@@ -201,7 +205,8 @@ class GenerateContractComplianceChecker:
 					project=contract_data.project,
 					post=post,
 					start_date=post_start_date,
-					end_date=post_end_date
+					end_date=post_end_date,
+					include_client_post_off=True
 				)
 				
 			if not post_schedules_count:
@@ -295,11 +300,15 @@ class GenerateContractComplianceChecker:
 			working_days_in_period = (date_diff(post_end_date, post_start_date) + 1)
 			expected_post_schedules = (working_days_in_period - contract_data.no_of_days_off) + self.get_client_requested_days_count(contract_data.parent, contract_data.item_code, post_start_date, post_end_date)
 
+			# For monthly and weekly contracts, include "Client Post Off" in the count
+			include_client_post_off = contract_data.days_off_category in ["Monthly", "Weekly"]
+			
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
 					post=post,
 					start_date=post_start_date,
-					end_date=post_end_date
+					end_date=post_end_date,
+					include_client_post_off=include_client_post_off
 				)
 				
 			if not post_schedules_count:

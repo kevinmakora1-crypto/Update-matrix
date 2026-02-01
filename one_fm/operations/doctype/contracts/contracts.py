@@ -11,7 +11,7 @@ from frappe.model.document import Document
 
 from frappe.utils import (
     cstr,month_diff,today,getdate,date_diff,add_years, cint, add_to_date, get_first_day,
-    get_last_day, get_datetime, flt, add_days,add_months,get_date_str
+    get_last_day, get_datetime, flt, add_days,add_months,get_date_str, now
 )
 from frappe import _
 from one_fm.processor import sendemail
@@ -29,6 +29,9 @@ class Contracts(Document):
 
     def on_update(self):
         self.update_project_start_end_date()
+
+    def after_save(self):
+        cancel_unselected_day_schedules(self)
 
 
     
@@ -1249,3 +1252,62 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
         quantity = quantity / len(post_schedules) * count
 
     return quantity
+
+
+
+def cancel_unselected_day_schedules(contract_doc):
+    day_fields = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    today = getdate()
+
+    for item in contract_doc.contract_items or []:
+        if not item.select_specific_days:
+            continue
+
+        old_item = contract_doc.get_old_value_for_child(item) or {}
+        # Only run if specific days were previously selected too
+        if not old_item.get("select_specific_days"):
+            continue
+
+        unchecked = {i for i, f in enumerate(day_fields) if old_item.get(f) and not item.get(f)}
+        if not unchecked:
+            continue
+
+        operations_roles = frappe.db.get_list("Operations Role", {
+            "project": contract_doc.project,
+            "sale_item": item.item_code,
+            "status": "Active"
+        }, pluck="name")
+
+        if not operations_roles:
+            continue
+
+        operations_posts = frappe.db.get_list("Operations Post", {
+            "project": contract_doc.project,
+            "post_template": ["in", operations_roles],
+            "status": "Active"
+        }, pluck="name")
+
+        if not operations_posts:
+            continue
+
+        # Fetch all future Planned schedules for these posts in one go
+        future_schedules = frappe.db.get_list("Post Schedule", {
+            "post": ["in", operations_posts],
+            "date": [">=", today],
+            "post_status": "Planned"
+        }, fields=["name", "date"])
+
+        names_to_cancel = [
+            s.name for s in future_schedules
+            if getdate(s.date).weekday() in unchecked
+        ]
+
+        if names_to_cancel:
+            frappe.db.sql("""
+                UPDATE `tabPost Schedule`
+                SET post_status = 'Cancelled', modified = %s, modified_by = %s
+                WHERE name IN ({})
+            """.format(",".join(["%s"] * len(names_to_cancel))),
+                [now(), frappe.session.user] + names_to_cancel
+            )
+            frappe.db.commit()

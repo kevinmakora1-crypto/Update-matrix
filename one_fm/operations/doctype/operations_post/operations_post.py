@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from frappe.model.rename_doc import rename_doc
 from frappe.utils import cstr, getdate, add_to_date, date_diff, now
 import pandas as pd
+from one_fm.operations.doctype.contracts import contracts
 from one_fm.operations.doctype.contracts.contracts import get_active_contracts_for_project
 from frappe.model.naming import NamingSeries
 from one_fm.api.v1.utils import response
@@ -169,19 +170,29 @@ def create_post_schedule_for_operations_post(operations_post):
         if contracts.end_date >= getdate():
             today = getdate()
             start_date = today if contracts.start_date < today else contracts.start_date
+            sale_item = frappe.db.get_value("Operations Role", operations_post.post_template, "sale_item")
+            contract_item = frappe.db.get_value("Contract Item", {
+                "parent": contracts.name,
+                "item_code": sale_item
+            }, ["select_specific_days", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], as_dict=1)
+
+            selected_days = None
+            if contract_item and contract_item.select_specific_days:
+                day_fields = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+                selected_days = {i for i, f in enumerate(day_fields) if contract_item.get(f)}
             exists_schedule_in_between = False
             if frappe.db.exists("Post Schedule", {"date": ['between', (start_date, contracts.end_date)], "post": operations_post.name}):
                 exists_schedule_in_between = True
 
-                frappe.enqueue(queue_create_post_schedule_for_operations_post, operations_post=operations_post, contracts=contracts, exists_schedule_in_between=exists_schedule_in_between, start_date=start_date, is_async=True, queue="long")
+                frappe.enqueue(queue_create_post_schedule_for_operations_post, operations_post=operations_post, contracts=contracts, exists_schedule_in_between=exists_schedule_in_between, start_date=start_date, selected_days=selected_days, is_async=True, queue="long")
             else:
-                queue_create_post_schedule_for_operations_post(operations_post, contracts, exists_schedule_in_between, start_date)
+                queue_create_post_schedule_for_operations_post(operations_post, contracts, exists_schedule_in_between, start_date, selected_days)
         else:
             frappe.msgprint(_("End date of the contract referenced in by the project is less than today."))
     else:
         frappe.msgprint(_("No active contract found for the project referenced."))
 
-def queue_create_post_schedule_for_operations_post(operations_post, contracts, exists_schedule_in_between, start_date):
+def queue_create_post_schedule_for_operations_post(operations_post, contracts, exists_schedule_in_between, start_date, selected_days=None):
     try:
         owner = frappe.session.user
         creation = now()
@@ -201,6 +212,8 @@ def queue_create_post_schedule_for_operations_post(operations_post, contracts, e
         #The previous series value from frappe is wrong in some cases
 
         for date in	pd.date_range(start=start_date, end=contracts.end_date):
+            if selected_days is not None and date.weekday() not in selected_days:
+                continue
 
             date_string = frappe.utils.get_date_str(date.date())
             doc_id_template = f"{operations_post.name}_{date_string}"

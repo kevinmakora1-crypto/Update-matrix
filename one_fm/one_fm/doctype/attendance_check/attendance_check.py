@@ -176,7 +176,7 @@ class AttendanceCheck(Document):
         shift_working = frappe.db.get_value("Employee", self.employee, "shift_working")
         if self.attendance_status == "On Leave":
             self.check_on_leave_record()
-        if self.attendance_status == "Day Off" and shift_working:
+        if self.attendance_status in {"Day Off", "Client Day Off"} and shift_working:
             self.validate_day_off()
         if self.attendance_status != "On Leave":
             self.mark_attendance()
@@ -292,7 +292,7 @@ class AttendanceCheck(Document):
         )
 
     def validate_day_off(self):
-        if self.attendance_status == "Day Off":
+        if self.attendance_status in {"Day Off", "Client Day Off"}:
             # Check if shift request for that day exists
             shift_request = self.get_shift_request()
             if shift_request:
@@ -427,7 +427,8 @@ class AttendanceCheck(Document):
         return working_hours
 
 def create_attendance_check(attendance_date=None):
-    if production_domain():
+    # if production_domain():
+    if True:
         if not attendance_date:
             attendance_date = add_days(today(), -1)
         attendance_date = getdate(attendance_date)

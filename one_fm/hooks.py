@@ -40,6 +40,13 @@ app_include_js = [
 # web_include_css = "/assets/one_fm/css/one_fm.css"
 web_include_js = "/assets/one_fm/js/web/one_fm.js"
 
+# Server-side website redirects
+website_redirects = [
+	# Host-based site
+	{"source": "/jobs", "target": "/careers"},
+	{"source": "/jobs/", "target": "/careers"},
+]
+
 # include js in page
 page_js = {
 	"roster" : [

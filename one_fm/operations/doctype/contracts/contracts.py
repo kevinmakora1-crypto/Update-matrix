@@ -21,6 +21,7 @@ class Contracts(Document):
     def validate(self):
         self.calculate_contract_duration()
         self.validate_no_of_days_off()
+        self.validate_off_type_with_daily_operations()
         self.update_contract_dates()
         # if self.overtime_rate == 0:
         # 	frappe.msgprint(_("Overtime rate not set."), alert=True, indicator='orange')
@@ -81,6 +82,12 @@ class Contracts(Document):
                     if item.no_of_days_off > 29:
                         frappe.throw(_('Row {0} - Monthly, not able to set No of Days off greater than 29!'.format(item.idx)))
 
+    def validate_off_type_with_daily_operations(self):
+        """Validate that Off Type is not set to 'Full Month' when Daily Operations are not handled by us"""
+        if self.items:
+            for item in self.items:
+                if item.is_daily_operation_handled_by_us == "No" and item.off_type == "Full Month":
+                    frappe.throw(_('Row {0} - Error: If Daily Operations are not handled by us, the Off Type must be set to \'Days Off\'.'.format(item.idx)))
 
     def before_submit(self):
         # check if items and poc exists

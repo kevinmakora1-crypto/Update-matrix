@@ -6,6 +6,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import (getdate, get_first_day, get_last_day, add_days, add_months, date_diff, get_datetime)
 from one_fm.utils import get_week_start_end
+from frappe.query_builder.functions import Count
 
 
 class ContractComplianceChecker(Document):
@@ -22,8 +23,11 @@ class GenerateContractComplianceChecker:
 
 	def get_contract_items_list(self):
 		return frappe.db.sql("""
-			SELECT ci.idx, ci.parent,ci.is_daily_operation_handled_by_us, ci.count, ci.item_code, ci.days_off_category, 
-				ci.no_of_days_off, ci.off_type, ci.service_type, c.project
+			SELECT 
+				ci.idx, ci.parent, ci.count, ci.item_code, 
+				ci.days_off_category, ci.no_of_days_off, ci.off_type, 
+				ci.service_type, ci.item_type, ci.is_daily_operation_handled_by_us, 
+				c.project
 			FROM `tabContract Item` ci
 			INNER JOIN `tabContracts` c ON ci.parent = c.name
 			WHERE c.workflow_state = %s
@@ -69,23 +73,39 @@ class GenerateContractComplianceChecker:
 		attendance_count = 0
 		if self.day_before_yesterday >= start_date:
 			attendance_end_date = min(self.day_before_yesterday, end_date)
-			attendance_count = frappe.db.count('Attendance', {
-				'roster_type':["in", ['Basic','Over-Time']],
-				"status": "Present",
-				"attendance_date": ["between", [start_date, attendance_end_date]],
-				"operations_role": ["in", operations_roles]
-			})
+			Attendance = frappe.qb.DocType('Attendance')
+			attendance_conditions = (
+				(Attendance.attendance_date.between(start_date, attendance_end_date))
+				& (Attendance.operations_role.isin(operations_roles))
+				& (
+					((Attendance.status == "Present") & (Attendance.roster_type.isin(["Basic", "Over-Time"])))
+					| ((Attendance.roster_type == "Basic") & (Attendance.day_off_ot == 1))
+				)
+			)
+			attendance_count = (
+				frappe.qb.from_(Attendance)
+				.select(Count(Attendance.name))
+				.where(attendance_conditions)
+			).run()[0][0] or 0
 			
 		# Employee Schedule: count days from yesterday and above, within start_date and end_date
 		schedule_count = 0
 		if self.yesterday <= end_date:
 			schedule_start_date = max(self.yesterday, start_date)
-			schedule_count = frappe.db.count('Employee Schedule', {
-				'roster_type': ["in", ['Basic','Over-Time']],
-				"employee_availability": "Working",
-				"date": ["between", [schedule_start_date, end_date]],
-				"operations_role": ["in", operations_roles]
-			})
+			EmployeeSchedule = frappe.qb.DocType('Employee Schedule')
+			schedule_conditions = (
+				(EmployeeSchedule.date.between(schedule_start_date, end_date))
+				& (EmployeeSchedule.operations_role.isin(operations_roles))
+				& (
+					((EmployeeSchedule.employee_availability == "Working") & (EmployeeSchedule.roster_type.isin(["Basic", "Over-Time"])))
+					| ((EmployeeSchedule.roster_type == "Basic") & (EmployeeSchedule.day_off_ot == 1))
+				)
+			)
+			schedule_count = (
+				frappe.qb.from_(EmployeeSchedule)
+				.select(Count(EmployeeSchedule.name))
+				.where(schedule_conditions)
+			).run()[0][0] or 0
 
 		return attendance_count + schedule_count
 	
@@ -403,7 +423,6 @@ class GenerateContractComplianceChecker:
 
 				for period_start, period_end in duration_periods:
 					if contract_item.service_type == "Manpower":
-						
 						if not is_off_type_full_month:
 							status, data = self.calculate_manpower_day_off_compliance(contract_item, period_start, period_end)
 						else:

@@ -46,14 +46,6 @@ class GenerateContractComplianceChecker:
 			current += timedelta(days=1)
 		return count
 	
-	def get_client_post_off_count(self, project, post_name, start_date, end_date):
-		return frappe.db.count("Post Schedule", {
-			"project": project,
-			"post": post_name,
-			"date": ["between", [start_date, end_date]],
-			"post_status": "Client Post Off"
-		})
-
 	
 	def get_operation_roles(self, sale_item, project):
 		return frappe.db.get_list('Operations Role', {'sale_item': sale_item, 'status': 'Active', "project": project}, pluck='name')
@@ -214,11 +206,8 @@ class GenerateContractComplianceChecker:
 			if post.end_date and post.end_date < post_end_date:
 				post_end_date = getdate(post.end_date)
 
-			if contract_data.select_specific_days:
-				expected_post_schedules = self.count_selected_days_in_range(contract_data, post_start_date, post_end_date)
-			else:
-				expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
-
+			
+			expected_post_schedules = self.count_selected_days_in_range(contract_data, post_start_date, post_end_date) if contract_data.select_specific_days else (date_diff(post_end_date, post_start_date) + 1)
 
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,

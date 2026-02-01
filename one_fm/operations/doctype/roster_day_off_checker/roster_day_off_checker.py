@@ -581,7 +581,7 @@ def update_attendance_to_cdo(employee, attendance_date):
             filters={
                 'employee': employee,
                 'attendance_date': attendance_date,
-                'docstatus': ['!=', 2]
+                'docstatus': 1
             },
             fields=['name', 'status', 'roster_type']
         )

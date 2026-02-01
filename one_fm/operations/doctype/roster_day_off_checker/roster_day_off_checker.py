@@ -592,7 +592,16 @@ def update_attendance_to_cdo(employee, attendance_date):
                 'error': True,
                 'message': f'No Attendance record found for employee {employee} on {attendance_date}'
             }
-        
+
+        if len(attendance_list) > 1:
+            return {
+                'success': False,
+                'error': True,
+                'message': (
+                    f'Multiple Attendance records found for employee {employee} on {attendance_date}. '
+                    'Please resolve duplicate records before updating.'
+                )
+            }
         attendance = attendance_list[0]
         
         if attendance.get('roster_type') and attendance.get('roster_type') != 'Basic':

@@ -614,8 +614,6 @@ def update_attendance_to_cdo(employee, attendance_date):
             f'Attendance status changed from "{old_status}" to "Client Day Off"'
         )
         
-        frappe.db.commit()
-        
         return {
             'success': True,
             'message': f'Attendance status updated to Client Day Off for {employee} on {attendance_date}'

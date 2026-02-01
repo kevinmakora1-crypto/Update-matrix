@@ -16,13 +16,15 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Contract Item",
-   "options": "Item"
+   "options": "Item",
+   "reqd": 1
   },
   {
    "fieldname": "client_requested_date",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Client Requested Date"
+   "label": "Client Requested Date",
+   "reqd": 1
   },
   {
    "fieldname": "description",
@@ -34,7 +36,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-02-01 10:28:43.542753",
+ "modified": "2026-02-01 20:11:49.217879",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Client Requested Days Item",

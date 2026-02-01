@@ -214,7 +214,7 @@ def check_roster_day_off():
 		today = getdate()
 
 		Employee = frappe.qb.DocType("Employee")
-		employees = frappe.db.sql(frappe.qb.from_(Employee).select("*").where((Employee.status.isin(["Active", "Vacation"])) & (Employee.shift_working == 1) & ((Employee.relieving_date.isnull()) | (Employee.relieving_date > today)) & (Employee.name == "HR-EMP-04093")), as_dict=1)
+		employees = frappe.db.sql(frappe.qb.from_(Employee).select("*").where((Employee.status.isin(["Active", "Vacation"])) & (Employee.shift_working == 1) & ((Employee.relieving_date.isnull()) | (Employee.relieving_date > today))), as_dict=1)
 
 		leave_dates_by_employee = get_leave_dates_by_employee()
 
@@ -272,7 +272,6 @@ def check_roster_day_off():
 
 def get_employee_day_off_comparison(employee, start_date, end_date, calculated_day_offs = 0, working_dates = []):
 	date_ranges = split_date_range_for_past_and_future(start_date, end_date)
-	print(date_ranges)
 
 	off_days = 0
 	ot_days = 0
@@ -321,7 +320,7 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 			"employee_availability": "Client Day Off",
 			"day_off_ot": 0
 		})
-		
+
 		taken_client_off_days = frappe.db.count("Attendance", {
 			"employee": employee.name,
 			"attendance_date": ["between", [attendance_start_date, attendance_end_date]],

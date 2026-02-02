@@ -21,7 +21,7 @@ def execute():
         ]
     )
     
-    frappe.logger().info(f"Found {len(shift_assignments)} event-based shift assignments")
+    print(f"Found {len(shift_assignments)} event-based shift assignments")
     
     created_count = 0
     skipped_count = 0
@@ -49,7 +49,7 @@ def execute():
                     end = get_datetime(shift_assignment.end_datetime)
                     working_hours = time_diff_in_hours(end, start)
                 except Exception as e:
-                    frappe.logger().error(f"Error calculating working hours for {shift_assignment.name}: {str(e)}")
+                    print(f"Error calculating working hours for {shift_assignment.name}: {str(e)}")
             
             attendance = frappe.get_doc({
                 "doctype": "Attendance",
@@ -101,18 +101,18 @@ def execute():
                             update_modified=False
                         )
                     checkin_linked_count += len(checkins)
-                    frappe.logger().info(f"Linked {len(checkins)} checkin(s) to attendance {attendance.name}")
+                    print(f"Linked {len(checkins)} checkin(s) to attendance {attendance.name}")
                     
             except Exception as checkin_error:
-                frappe.logger().error(f"Error linking checkins for {shift_assignment.name}: {str(checkin_error)}")
+                print(f"Error linking checkins for {shift_assignment.name}: {str(checkin_error)}")
             
             if created_count % 100 == 0:
                 frappe.db.commit()
-                frappe.logger().info(f"Progress: Created {created_count} attendance records")
+                print(f"Progress: Created {created_count} attendance records")
                 
         except Exception as e:
             error_count += 1
-            frappe.logger().error(f"Error creating attendance for {shift_assignment.name}: {str(e)}")
+            print(f"Error creating attendance for {shift_assignment.name}: {str(e)}")
             frappe.log_error(
                 title=f"Attendance Creation Failed - {shift_assignment.name}",
                 message=frappe.get_traceback()
@@ -121,7 +121,7 @@ def execute():
     
     frappe.db.commit()
     
-    frappe.logger().info(f"""
+    print(f"""
     Attendance Creation Summary:
     - Total Event-Based Shifts: {len(shift_assignments)}
     - Created: {created_count}

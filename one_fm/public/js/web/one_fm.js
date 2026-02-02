@@ -1,3 +1,2 @@
-if (['/jobs/', '/jobs'].includes(window.location.pathname)){
-    window.location.href = '/careers';
-}
+// Moved to server-side via hooks.website_redirects
+// Intentionally left empty to avoid client-side redirect flash.

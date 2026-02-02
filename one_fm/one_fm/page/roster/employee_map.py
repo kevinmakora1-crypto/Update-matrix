@@ -31,7 +31,7 @@ class PostMap():
 		self.start_mapping()
 
 	def create_template(self,row):
-		self.template[row.post_abbrv] = {"name":row.operations_role, "data":[]} 
+		self.template[row.operations_role] = {"name":row.operations_role, "data":[]} 
 		return
 
 	def sort_post_schedule(self,each):
@@ -62,22 +62,23 @@ class PostMap():
 
 	def create_part_result(self,row):
 
-		if not self.preformated_data.get(self.abbrvs.get(row.get('operations_role'))):
-			self.preformated_data[self.abbrvs.get(row.get('operations_role'))] = [row]
+		if not self.preformated_data.get(row.get('operations_role')):
+			self.preformated_data[row.get('operations_role')] = [row]
 		else: 
-			self.preformated_data[self.abbrvs.get(row.get('operations_role'))].append(row)
+			self.preformated_data[row.get('operations_role')].append(row)
 
 
 	def create_second_section(self,row):
 		highlight = "bggreen"
+		role_name = row.get('operations_role')
 
-		daily_values = self.preformated_data.get(self.abbrvs.get(row.get('operations_role')))  if self.preformated_data.get(self.abbrvs.get(row.get('operations_role'))) else []
+		daily_values = self.preformated_data.get(role_name)  if self.preformated_data.get(role_name) else []
 		cur_date_values = [i for i in daily_values if self.cur_date == i['date']]
 		if not cur_date_values:
 			row.update({'post_count':0})
 		else:
 			row.update(cur_date_values[0])
-		row['abbr'] = self.abbrvs.get(row.get('operations_role'))
+		row['abbr'] = self.abbrvs.get(role_name)
 		if not row['abbr']:
 			return
 		row['count'] = cstr(row['sche_count'])+'/'+cstr(row['post_count'])
@@ -88,10 +89,10 @@ class PostMap():
 		row['highlight'] = highlight
 		row['operations_role'] = row['abbr']
 
-		if not self.template.get(row['abbr']):
-			self.template[row['abbr']]["data"] = [row]
+		if not self.template.get(role_name):
+			self.template[role_name]["data"] = [row]
 		else:
-			self.template[row['abbr']]["data"].append(row)
+			self.template[role_name]["data"].append(row)
 
 
 		return self.template
@@ -108,12 +109,27 @@ class PostMap():
 		list(map(self.create_second_section,summary_schedule))
 		self.post_schedule_summary.append(summary_schedule)
 
+	def switch_template_keys(self):
+		final_list = []
+		for key, value in self.template.items():
+			abbr = self.abbrvs.get(key)
+			value['full_name'] = key
+			if abbr:
+				value['name'] = abbr
+			else:
+				value['name'] = key
+			final_list.append(value)
+		self.template = final_list
+
+
+
 	def start_mapping(self):
 		list(map(self.sort_post_schedule,self.post_schedule_count))
 		list(map(self.sort_post_filled,self.post_filled_count))
 		list(map(self.create_template,self.operations))
 		list(map(self.create_date_post_summary,self.date_range))
 		list(map(self.create_date_schedule_summary,self.date_range))
+		self.switch_template_keys()
 
 
 

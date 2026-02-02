@@ -60,7 +60,7 @@ def make_employee(user, company=None, **kwargs):
 
 def get_test_leave_type(**kwargs):
     """Create test leave type"""
-    leave_type_name = kwargs.get("leave_type_name", "_Test Leave Type")
+    leave_type_name = kwargs.get("leave_type_name", "Annual Leave")
     if frappe.db.exists("Leave Type", leave_type_name):
         frappe.delete_doc("Leave Type", leave_type_name, force=True)
     

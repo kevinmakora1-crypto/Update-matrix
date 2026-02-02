@@ -5,7 +5,10 @@ from datetime import date
 
 from frappe import _
 from frappe.desk.form.assign_to import add as add_assignment
-from frappe.utils import get_fullname, nowdate, add_to_date, getdate, date_diff, get_url_to_form, get_date_str
+from frappe.utils import (
+    get_fullname, nowdate, getdate, date_diff, add_days,
+    get_url_to_form, get_date_str, today, cint, flt
+)
 
 from hrms.hr.doctype.leave_application.leave_application import *
 from one_fm.processor import sendemail
@@ -17,6 +20,7 @@ from one_fm.utils import get_approver_user, leave_application_on_cancel, fetch_l
 from hrms.hr.utils import get_holidays_for_employee
 from one_fm.one_fm.doctype.reliever_assignment.reliever_assignment import ReassignRelieverAssignment, reassign_responsibilities
 from frappe.workflow.doctype.workflow_action.workflow_action import apply_workflow
+from frappe.query_builder import DocType
 
 
 def validate_active_staff(doc,event):
@@ -86,9 +90,6 @@ class LeaveApplicationOverride(LeaveApplication):
         if self.total_leave_days > len(leave_attendances):
             attendance_not_created = True
         self.set_onload("attendance_not_created", attendance_not_created)
-
-    def validate(self):
-        self.validate_applicable_after()
 
     def close_todo(self):
         """Close the Todo document linked with a leave application
@@ -280,6 +281,34 @@ class LeaveApplicationOverride(LeaveApplication):
         self.validate_applicable_after()
         self.validate_leave_application_operator()
         self.reset_status_on_amend()
+        self.validate_loan_repayment()
+
+    def validate_loan_repayment(self):
+        if self.leave_type != "Annual Leave":
+            return
+        # Check if employee has unpaid loan >50%
+        unpaid_loans = frappe.get_all("Loan",
+            filters={
+                "applicant": self.employee,
+                "applicant_type": "Employee",
+                "docstatus": 1,
+                "status": ["!=", "Closed"]
+            },
+            fields=["name", "loan_amount", "total_amount_paid"]
+        )
+
+        # Filter loans where less than 50% has been repaid
+        loans_under_50_percent = [
+            loan for loan in unpaid_loans
+            if flt(loan.total_amount_paid) < (flt(loan.loan_amount) * 0.5)
+        ]
+
+        if loans_under_50_percent:
+            loan_names = [d.name for d in loans_under_50_percent]
+            frappe.throw(
+                f"Employee has not repaid at least 50% of the following loans: {', '.join(loan_names)}",
+                title="Unpaid Loans"
+            )
 
     @frappe.whitelist()
     def update_attendance(self):
@@ -830,7 +859,7 @@ class ReassignDutiesToReliever(NotifyAttendanceManagerOnStatusChange):
         projects_manager = self._projects_manager
         if projects_manager:
             for obj in projects_manager:
-                frappe.db.set_value("Project", obj, "account_manager", self._reliever.name)
+                frappe.db.set_value("Project", obj, "project_manager", self._reliever.name)
             self._reassigned_documents.update({"Project": projects_manager})
 
     def reassign_reports_to(self):
@@ -888,7 +917,7 @@ class ReassignDocumentToLeaveApplicant:
 
     def reassign_projects(self, projects: list):
         for obj in projects:
-            frappe.db.set_value("Project", obj, "account_manager", self._employee.name)
+            frappe.db.set_value("Project", obj, "project_manager", self._employee.name)
 
     def reassign_reports_to(self, reports_to: list):
         for obj in reports_to:
@@ -945,3 +974,133 @@ def validate_leave_overlap(employee, from_date, to_date, name=None):
     if overlapping_leave:
         frappe.throw("Employee {0} has already applied between {1} and {2}".format(name,from_date,to_date))
     return "valid"
+
+def update_employee_status_after_leave():
+    today_date = getdate(today())
+    
+    leave_applications = frappe.get_all(
+        "Leave Application",
+        filters={
+            "resumption_date": today_date,
+            "status": "Approved",
+            "docstatus": 1,
+            "leave_type": "Annual Leave"
+        },
+        fields=["name", "employee", "from_date", "leave_type"]
+    )
+    
+    if not leave_applications:
+        return
+    
+    employee_ids = [la.employee for la in leave_applications if la.get("employee")]
+    employee_map = {}
+    if employee_ids:
+        employees = frappe.get_all(
+            "Employee",
+            filters={"name": ["in", employee_ids]},
+            fields=["name", "shift_working", "one_fm_provide_accommodation_by_company", "status"]
+        )
+        employee_map = {emp.name: emp for emp in employees}
+    
+    for leave_app in leave_applications:
+        try:
+            employee_doc = employee_map.get(leave_app.employee)
+            if not employee_doc:
+                continue
+            
+            new_status = None
+            shift_working = employee_doc.shift_working
+            provide_accommodation = employee_doc.one_fm_provide_accommodation_by_company
+            
+            if not shift_working:
+                new_status = "Active"
+
+            elif shift_working and not provide_accommodation:
+                new_status = "Not Returned from Leave"
+
+            elif shift_working and provide_accommodation:
+                has_checkin = frappe.db.exists(
+                    "Accommodation Checkin Checkout",
+                    {
+                        "type": "IN",
+                        "employee": employee_doc.name,
+                        "checkin_checkout_date_time": [">", leave_app.from_date],
+                    }
+                )
+                new_status = "Active" if has_checkin else "Not Returned from Leave"
+            
+            if new_status and employee_doc.status != new_status:
+                old_status = employee_doc.status
+                frappe.db.set_value("Employee", employee_doc.name, "status", new_status)
+
+                try:
+                    frappe.get_doc({
+                        "doctype": "Comment",
+                        "comment_type": "Info",
+                        "reference_doctype": "Employee",
+                        "reference_name": employee_doc.name,
+                        "content": f"Status changed from {old_status} to {new_status} after leave resumption. Leave Application: {leave_app.name}"
+                    }).insert(ignore_permissions=True)
+                except Exception as e:
+                    frappe.log_error(
+                        message=frappe.get_traceback(),
+                        title=f"Error creating status update comment for employee {employee_doc.name}"
+                    )
+        except Exception as e:
+            frappe.log_error(
+                message=frappe.get_traceback(),
+                title=f"Error updating status for employee {leave_app.employee}"
+            )
+    
+    frappe.db.commit()
+
+def remind_annual_leave_employees_to_helpdesk_user():
+    """
+        Send a reminder email to helpdesk user with the list of employees whose leave ends soon.
+    """
+    helpdesk_email = frappe.db.get_single_value("HR Settings", "helpdesk_email")
+    if not helpdesk_email:
+        return
+
+    employees_on_annual_leave = get_employees_whose_leave_ends_in(leave_ends_in=6)
+
+    if not employees_on_annual_leave:
+        return
+
+    message = frappe.render_template("one_fm/templates/emails/reminder_employees_on_annual_leave.html", {"employees": employees_on_annual_leave})
+    sendemail(
+        recipients=[helpdesk_email],
+        subject="Reminder: Employees' Annual Leave Ending in 7 Days",
+        message=message,
+        is_external_mail=True
+    )
+
+def get_employees_whose_leave_ends_in(leave_ends_in=0, leave_type="Annual Leave", shift_working=1):
+    to_date = add_days(getdate(today()), leave_ends_in)
+
+    LeaveApplication = DocType("Leave Application")
+    Employee = DocType("Employee")
+
+    employees_on_leave = (
+        frappe.qb.from_(LeaveApplication)
+        .join(Employee)
+        .on(LeaveApplication.employee == Employee.name)
+        .select(
+            LeaveApplication.employee,
+            LeaveApplication.employee_name,
+            LeaveApplication.from_date,
+            LeaveApplication.to_date,
+            LeaveApplication.leave_type,
+            Employee.designation,
+            Employee.department
+        )
+        .where(
+            (LeaveApplication.docstatus == 1) &
+            (LeaveApplication.status == "Approved") &
+            (LeaveApplication.leave_type == leave_type) &
+            (LeaveApplication.to_date == to_date) &
+            (Employee.shift_working == shift_working)
+        )
+    ).run(as_dict=True)
+
+    return employees_on_leave

@@ -30,6 +30,8 @@
   "tugs",
   "about_the_opportunity_section",
   "column_break_clfa",
+  "have_you_received_any_awards_or_recognition",
+  "awards_or_recognition_details",
   "about_the_opportunity",
   "what_are_the_factors_you_are_looking_for_in_a_new_job",
   "amended_from",
@@ -208,12 +210,25 @@
    "ignore_user_permissions": 1,
    "label": "Learning and Development Journey",
    "options": "Career History Freshers Experience"
+  },
+  {
+   "depends_on": "eval:doc.candidate_type == \"Experienced\"",
+   "fieldname": "have_you_received_any_awards_or_recognition",
+   "fieldtype": "Select",
+   "label": "Have you received any awards or recognition?",
+   "options": "\nYes\nNo"
+  },
+  {
+   "depends_on": "eval:doc.have_you_received_any_awards_or_recognition == \"Yes\"",
+   "fieldname": "awards_or_recognition_details",
+   "fieldtype": "Small Text",
+   "label": "Awards or Recognition Details"
   }
  ],
  "grid_page_length": 50,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-09-24 03:23:53.358563",
+ "modified": "2026-02-01 18:50:11.176062",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Career History",

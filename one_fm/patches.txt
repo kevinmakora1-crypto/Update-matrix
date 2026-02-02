@@ -237,10 +237,19 @@ one_fm.patches.v15_0.add_assignment_rule_action_attendance_check_approver
 one_fm.patches.v15_0.update_existing_attendance_checks
 one_fm.patches.v15_0.add_process_task_agency_expiry_actions
 one_fm.patches.v15_0.add_process_task_demand_letter_expiry
+one_fm.patches.v15_0.process_task_for_update_of_shift_worker_employee_status
+one_fm.patches.v15_0.update_leave_application_custom_field
+one_fm.patches.v15_0.process_task_for_remind_annual_leave_employees_to_helpdesk_user
+one_fm.patches.v15_0.process_task_for_send_open_hd_ticket_count
+one_fm.patches.v15_0.add_employee_uniform_field_to_quality_feedback
+one_fm.patches.v15_0.rename_account_manager_to_project_manager #1-5
+one_fm.patches.v15_0.add_shift_request_custom_fields
+one_fm.patches.v15_0.add_employee_project_manager_name_custom_field
 one_fm.patches.v15_0.create_attendance_for_event_shifts
 one_fm.patches.v15_0.backfill_refundable_from_rfm_to_chain
 
 [post_model_sync]
+one_fm.patches.v15_0.process_task_for_wiki_employee_task
 one_fm.patches.v15_0.add_assignment_rule_returning_to_operations_supervisor_of_client_event
 one_fm.patches.v15_0.add_assignment_rule_assigning_operations_manager_for_approval_client_event
 one_fm.patches.v15_0.add_attendance_amendment_assignment_workflow #1
@@ -269,7 +278,7 @@ one_fm.patches.v15_0.clear_residency_expiry_date
 one_fm.patches.v15_0.update_residency_expiry_date_depends_on
 one_fm.patches.v15_0.add_assignment_rule_and_wf_fingerprint_appointment
 one_fm.patches.v15_0.update_finger_print_appointment_workflow_state
-one_fm.patches.v15_0.add_workflow_client_event
+one_fm.patches.v15_0.add_workflow_client_event #2
 one_fm.patches.v15_0.add_shift_assignment_event_based_fields
 one_fm.patches.v15_0.add_shift_assignment_shift_type_mandatory_depends_on # re-run
 one_fm.patches.v15_0.add_quality_feedback_template_custom_field #2025-12-11
@@ -283,3 +292,4 @@ one_fm.patches.v15_0.add_quality_feedback_workflow #2025-12-04
 one_fm.patches.v15_0.rename_warehouse_fields_in_rfm
 one_fm.patches.v15_0.rename_job_applicant_forth_name #3
 one_fm.patches.v15_0.check_po_kwd_rates
+one_fm.patches.v15_0.add_hr_settings_custom_fields #1-2

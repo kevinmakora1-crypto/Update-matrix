@@ -329,8 +329,8 @@ class ReassignRelieverAssignment(Document):
 		doclist_to_reassign = [name.get('name')for name in json.loads(data.doclist)]
 		if doclist_to_reassign:
 			frappe.qb.update(Project).set(
-					Project.account_manager, self.on_leave_employee).set(
-					Project.manager_name, self.on_leave_employee_name).set(
+					Project.project_manager, self.on_leave_employee).set(
+					Project.project_manager_name, self.on_leave_employee_name).set(
 					Project.modified, now()).where(
 						(Project.name.isin(doclist_to_reassign)) &
 						(Project.status == "Open")

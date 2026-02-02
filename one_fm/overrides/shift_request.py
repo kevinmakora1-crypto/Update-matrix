@@ -733,7 +733,7 @@ def validate_from_date(doc, method):
         if frappe.session.user == attendance_manager:
             return
 
-        if doc.purpose != 'Assign Day Off':
+        if doc.purpose not in {'Assign Day Off', "Assign Client Day Off"}:
             message = "Please note that Shift Requests cannot be created for a past date." if doc.is_new() else "Please note that Shift Requests cannot be updated to a past date."
             frappe.throw(
                 _(message),
@@ -779,7 +779,7 @@ def get_manager(doctype, employee):
         return get_supervisor_operations_shifts(employee)
 
     else:
-        field_map = {"Project": "account_manager", "Operations Site": "site_supervisor"}
+        field_map = {"Project": "project_manager", "Operations Site": "site_supervisor"}
         if doctype in field_map:
             values = frappe.get_all(doctype, {field_map[doctype]:employee},['name'])
             if values:

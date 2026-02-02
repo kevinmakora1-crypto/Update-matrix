@@ -3162,7 +3162,7 @@ def get_approver(employee, date=False):
                 if not line_manager:
                     project = frappe.db.get_value('Operations Site', employee_data.site, 'project')
                     if project:
-                        line_manager = frappe.db.get_value('Project', project, 'account_manager')
+                        line_manager = frappe.db.get_value('Project', project, 'project_manager')
         else:
             if employee_data.site:
                 line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
@@ -3245,13 +3245,13 @@ def get_other_managers(employee):
                 query +=f"""
 
                     UNION
-                    SELECT account_manager as manager FROM `tabProject`
+                    SELECT project_manager as manager FROM `tabProject`
                     WHERE name = '{emp_data.get('project')}'
 
                     """
             else:
                 query = f"""
-                    SELECT account_manager  as manager  FROM `tabProject`
+                    SELECT project_manager  as manager  FROM `tabProject`
                     WHERE name = '{emp_data.get('project')}'  """
         if emp_data.get("site"):
             if query:
@@ -4583,12 +4583,12 @@ def create_process_task(process_name, erp_document, task_description, employee=N
 
 def create_process_if_not_exists(process_name, process_owner="Administrator", business_analyst="Administrator"):
     if not frappe.db.exists("Process", process_name):
-        process_owner_name = "Administrator"
-        business_analyst_name = "Administrator"
-        if process_owner:
-            process_owner_name = frappe.db.get_value("User", process_owner, "full_name")
-        if business_analyst:
-            business_analyst_name = frappe.db.get_value("User", business_analyst, "full_name")
+        process_owner = process_owner or "Administrator"
+        business_analyst = business_analyst or "Administrator"
+
+        process_owner_name = "Administrator" if process_owner == "Administrator" else frappe.db.get_value("User", process_owner, "full_name")
+        business_analyst_name = "Administrator" if business_analyst == "Administrator" else frappe.db.get_value("User", business_analyst, "full_name")
+
         frappe.get_doc({
             "process_name": process_name,
             "description": process_name,

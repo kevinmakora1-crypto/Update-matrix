@@ -301,6 +301,15 @@ frappe.ui.form.on('Contracts', {
         frm.refresh_field("assets");
 		set_hide_management_fee_fields(frm);
 		frm.events.open_sections_onload(frm);
+		
+		frm.fields_dict['client_requested_days'].grid.get_field('contract_item').get_query = function(doc, cdt, cdn) {
+			let valid_items = frm.doc.items.map(item => item.item_code);
+			return {
+				filters: [
+					['Item', 'item_code', 'in', valid_items]
+				]
+			};
+		};
 	},
 	customer_address:function(frm){
 		if(frm.doc.customer_address){

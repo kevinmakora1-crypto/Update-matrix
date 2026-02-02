@@ -850,7 +850,7 @@ career_history = Class.extend({
           ></textarea>
         </div>
         <div class="mb-3 col-lg-12 col-md-12 scope_changes_block_${company_no}">
-          <label class="form-label">Were they any additional responsibilities given or scope changes?</label>
+          <label class="form-label">Were there any additional responsibilities given or scope changes?</label>
           <select class="custom-select scope_changes_select_${company_no}">
             <option value="">Blank</option>
             <option value="Yes">Yes</option>

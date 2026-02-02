@@ -10,7 +10,6 @@ from frappe.model.document import Document
 from frappe.model.rename_doc import rename_doc
 from frappe.utils import cstr, getdate, add_to_date, date_diff, now
 import pandas as pd
-from one_fm.operations.doctype.contracts import contracts
 from one_fm.operations.doctype.contracts.contracts import get_active_contracts_for_project
 from frappe.model.naming import NamingSeries
 from one_fm.api.v1.utils import response

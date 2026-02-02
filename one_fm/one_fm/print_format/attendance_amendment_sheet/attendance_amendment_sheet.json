@@ -20,7 +20,7 @@
  "modified": "2026-02-01 14:47:14.324200",
  "modified_by": "Administrator",
  "module": "One Fm",
- "name": "Attendance Amendment Sheet",
+ "name": "Attendance Amendment Sheet (Basic)",
  "owner": "Administrator",
  "page_number": "Hide",
  "pdf_generator": "wkhtmltopdf",

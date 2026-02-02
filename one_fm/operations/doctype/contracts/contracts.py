@@ -31,10 +31,8 @@ class Contracts(Document):
     def on_update(self):
         self.update_project_start_end_date()
         self.process_client_requested_days()
-
-    def after_save(self):
+        print("\n\n\n\n\n\n")
         cancel_unselected_day_schedules(self)
-
 
     
     def update_project_start_end_date(self):
@@ -1385,43 +1383,63 @@ def cancel_unselected_day_schedules(contract_doc):
     day_fields = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
     today = getdate()
 
-    for item in contract_doc.contract_items or []:
+    old_doc = contract_doc.get_doc_before_save()
+    if not old_doc:
+        return 
+    
+    old_items_map = {item.name: item for item in (old_doc.items or [])}
+
+    for item in contract_doc.items or []:
         if not item.select_specific_days:
             continue
 
-        old_item = contract_doc.get_old_value_for_child(item) or {}
-        # Only run if specific days were previously selected too
-        if not old_item.get("select_specific_days"):
+        old_item = old_items_map.get(item.name)
+        if not old_item:
+            continue  
+
+        if not old_item.select_specific_days:
             continue
 
-        unchecked = {i for i, f in enumerate(day_fields) if old_item.get(f) and not item.get(f)}
+        unchecked = {
+            i for i, f in enumerate(day_fields) 
+            if old_item.get(f) and not item.get(f)
+        }
+        
         if not unchecked:
             continue
 
-        operations_roles = frappe.db.get_list("Operations Role", {
-            "project": contract_doc.project,
-            "sale_item": item.item_code,
-            "status": "Active"
-        }, pluck="name")
+        operations_roles = frappe.db.get_list("Operations Role", 
+            filters={
+                "project": contract_doc.project,
+                "sale_item": item.item_code,
+                "status": "Active"
+            }, 
+            pluck="name"
+        )
 
         if not operations_roles:
             continue
 
-        operations_posts = frappe.db.get_list("Operations Post", {
-            "project": contract_doc.project,
-            "post_template": ["in", operations_roles],
-            "status": "Active"
-        }, pluck="name")
+        operations_posts = frappe.db.get_list("Operations Post", 
+            filters={
+                "project": contract_doc.project,
+                "post_template": ["in", operations_roles],
+                "status": "Active"
+            }, 
+            pluck="name"
+        )
 
         if not operations_posts:
             continue
 
-        # Fetch all future Planned schedules for these posts in one go
-        future_schedules = frappe.db.get_list("Post Schedule", {
-            "post": ["in", operations_posts],
-            "date": [">=", today],
-            "post_status": "Planned"
-        }, fields=["name", "date"])
+        future_schedules = frappe.db.get_list("Post Schedule", 
+            filters={
+                "post": ["in", operations_posts],
+                "date": [">=", today],
+                "post_status": "Planned"
+            }, 
+            fields=["name", "date"]
+        )
 
         names_to_cancel = [
             s.name for s in future_schedules

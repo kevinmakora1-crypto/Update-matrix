@@ -181,6 +181,7 @@ def create_post_schedule_for_operations_post(operations_post):
                 day_fields = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
                 selected_days = {i for i, f in enumerate(day_fields) if contract_item.get(f)}
             exists_schedule_in_between = False
+
             if frappe.db.exists("Post Schedule", {"date": ['between', (start_date, contracts.end_date)], "post": operations_post.name}):
                 exists_schedule_in_between = True
 

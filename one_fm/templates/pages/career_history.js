@@ -52,9 +52,17 @@ career_history = Class.extend({
           <label class="form-label">So, tell us what position you got promoted to first.</label>
           <input type="text" class="form-control position_${company_no}${promotion_no}" placeholder="Enter Your New Job Title"/>
         </div>`;
+      var promotion_details_reason_promotion_html = `<div class="my-3 col-lg-12 col-md-12">
+          <label class="form-label">Reason for Promotion<span style="color: red">*</span></label>
+          <textarea class="form-control reason_for_promotion_${company_no}${promotion_no}" rows="3" placeholder="Briefly explain the reason for promotion"></textarea>
+        </div>`;
       var promotion_details_salary_html = `<div class="my-5 col-lg-12 col-md-12">
           <label class="form-label">How much was your incremented salary in KWD?</label>
           <input type="text" class="form-control salary_${company_no}${promotion_no}" placeholder="Enter your increased Salary in KWD"/>
+        </div>`;
+      var promotion_details_reason_increment_html = `<div class="my-3 col-lg-12 col-md-12">
+          <label class="form-label">Reason for Increment<span style="color: red">*</span></label>
+          <textarea class="form-control reason_for_increment_${company_no}${promotion_no}" rows="3" placeholder="Briefly explain the reason for salary increase"></textarea>
         </div>`;
       var promotion_details_promotion_date_html = `<div class="my-5 col-lg-12 col-md-12">
           <label class="form-label">When did you get promoted?</label>
@@ -69,13 +77,24 @@ career_history = Class.extend({
         value="3" if selected 'Yes, Only Got a Salary Increase'
       */
       if(promotion_select == 1){
-        promotion_details_html = promotion_details_next_job_title_html+promotion_details_salary_html+promotion_details_promotion_date_html;
+        // Promotion with salary increase: show both reasons below job title
+        promotion_details_html = promotion_details_next_job_title_html +
+                                 promotion_details_reason_promotion_html +
+                                 promotion_details_reason_increment_html +
+                                 promotion_details_salary_html +
+                                 promotion_details_promotion_date_html;
       }
       else if(promotion_select == 2){
-        promotion_details_html = promotion_details_next_job_title_html+promotion_details_promotion_date_html;
+        // Promotion only: show reason for promotion below job title
+        promotion_details_html = promotion_details_next_job_title_html +
+                                 promotion_details_reason_promotion_html +
+                                 promotion_details_promotion_date_html;
       }
       else if(promotion_select == 3){
-        promotion_details_html = promotion_details_salary_html+promotion_details_promotion_date_html;
+        // Salary increase only: show reason for increment below salary field
+        promotion_details_html = promotion_details_salary_html +
+                                 promotion_details_reason_increment_html +
+                                 promotion_details_promotion_date_html;
       }
       $(`.promotion_details_section_${company_no}${promotion_no}`).empty();
       $(`.promotion_details_section_${company_no}${promotion_no}`).append(promotion_details_html);
@@ -120,6 +139,7 @@ career_history = Class.extend({
       $(".factors_in_new_job_"+(company_no.toString())).remove();
       $(".are_you_still_working_"+(company_no.toString())).remove();
       $(".when_did_you_left_"+(company_no.toString())).remove();
+      $(`.main_awards_section_${company_no}`).remove();
       if (still_working == 1){
         var reason_why_leave_job_html = `<div class="mx-auto col-lg-12 col-md-12 mb-3 reason_why_leave_job_${company_no}">
           <label class="form-label">Why do you plan to leave the job?</label>
@@ -130,6 +150,8 @@ career_history = Class.extend({
           <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text"></textarea>
         </div>`;
         $(".company_details_"+(company_no.toString())).append(reason_why_leave_job_html);
+        $(".company_details_"+(company_no.toString())).append(me.main_awards_section_html(company_no));
+        me.bind_main_awards_recognition(company_no);
         $(".company_details_"+(company_no.toString())).append(factors_in_new_job);
         me.show_final_interest_step(company_no.toString());
         $('.submit-btn').fadeIn();
@@ -171,6 +193,7 @@ career_history = Class.extend({
       var are_you_still_working = $(`.are_you_still_working_${company_no}_select`).val();
       $(".factors_in_new_job_"+(company_no.toString())).remove();
       $(".shoves-tugs-block").remove();
+      $(`.main_awards_section_${company_no}`).remove();
       if(are_you_still_working == 2){
         $('.final-interest-section').remove();
         $('.submit-btn').fadeOut();
@@ -188,6 +211,8 @@ career_history = Class.extend({
           <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text"></textarea>
         </div>`;
         $('.next-btn').fadeOut();
+        $(".company_details_"+(company_no.toString())).append(me.main_awards_section_html(company_no));
+        me.bind_main_awards_recognition(company_no);
         $(".company_details_"+(company_no.toString())).append(factors_in_new_job);
         $(".company_details_"+(company_no.toString())).append(get_shoves_tugs_html(company_no));
         $('.submit-btn').fadeIn();
@@ -646,16 +671,64 @@ career_history = Class.extend({
         if(got_promoted == 1){
           promotion['job_title'] = $(`.position_${company_no}${promotion_no}`).val();
           promotion['monthly_salary_in_kwd'] = $(`.salary_${company_no}${promotion_no}`).val();
+          promotion['reason_for_promotion'] = $(`.reason_for_promotion_${company_no}${promotion_no}`).val();
+          promotion['reason_for_increment'] = $(`.reason_for_increment_${company_no}${promotion_no}`).val();
+          if(!promotion['reason_for_promotion'] || !promotion['reason_for_increment']){
+            frappe.msgprint(frappe._("Please provide both Reason for Promotion and Reason for Increment for your promotion with salary increase."));
+            return {};
+          }
         }
         else if(got_promoted == 2){
           promotion['job_title'] = $(`.position_${company_no}${promotion_no}`).val();
+          promotion['reason_for_promotion'] = $(`.reason_for_promotion_${company_no}${promotion_no}`).val();
+          if(!promotion['reason_for_promotion']){
+            frappe.msgprint(frappe._("Please provide the Reason for Promotion."));
+            return {};
+          }
         }
         else if(got_promoted == 3){
           promotion['monthly_salary_in_kwd'] = $(`.salary_${company_no}${promotion_no}`).val();
+          promotion['reason_for_increment'] = $(`.reason_for_increment_${company_no}${promotion_no}`).val();
+          if(!promotion['reason_for_increment']){
+            frappe.msgprint(frappe._("Please provide the Reason for Increment."));
+            return {};
+          }
         }
         promotions.push(promotion);
       }
       career_history['promotions'] = promotions;
+      // Additional Responsibilities mapping when Experienced and scope changes selected
+      var scope_change_val = $(`.scope_changes_select_${company_no}`).val();
+      if(scope_change_val === 'Yes'){
+        var scope_details = $(`.scope_changes_details_${company_no}`).val();
+        if(!scope_details){
+          frappe.msgprint(frappe._("Please describe the scope changes or additional responsibilities."));
+          return {};
+        }
+        career_history['additional_responsibilities'] = scope_details;
+      }
+      // Awards/Recognition in Work Experience Details
+      var awards_sel = $(`.awards_recognition_select_${company_no}`).val();
+      var awards_details = $(`.award_recognition_details_${company_no}`).val();
+      if(awards_sel === 'Yes' && !awards_details){
+        frappe.msgprint(frappe._("Please provide Award/Recognition Details."));
+        return {};
+      }
+      if(awards_sel){
+        career_history['have_you_received_any_awards_or_recognition'] = awards_sel;
+        career_history['awards_or_recognition_details'] = awards_details;
+      }
+      // Main Form Awards/Recognition (conditional placement)
+      var main_awards_sel = $(`.main_awards_recognition_select_${company_no}`).val();
+      var main_awards_details = $(`.main_award_recognition_details_${company_no}`).val();
+      if(main_awards_sel === 'Yes' && !main_awards_details){
+        frappe.msgprint(frappe._("Please provide Award/Recognition Details in the main section."));
+        return {};
+      }
+      if(main_awards_sel){
+        career_history['have_you_received_any_awards_or_recognition_main'] = main_awards_sel;
+        career_history['awards_or_recognition_details_main'] = main_awards_details;
+      }
       career_histories.push(career_history);
     }
     let interest_reason = $('[name="interest_reason"]').val();
@@ -776,6 +849,30 @@ career_history = Class.extend({
             placeholder="E.g. Managed a team of 5, handled client reports, etc."
           ></textarea>
         </div>
+        <div class="mb-3 col-lg-12 col-md-12 scope_changes_block_${company_no}">
+          <label class="form-label">Were they any additional responsibilities given or scope changes?</label>
+          <select class="custom-select scope_changes_select_${company_no}">
+            <option value="">Blank</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12 scope_changes_details_block_${company_no}" style="display:none;">
+          <label class="form-label">Briefly describe any scope changes or additional responsibilities<span style="color: red">*</span></label>
+          <textarea class="form-control scope_changes_details_${company_no}" rows="3" placeholder="e.g., Assigned to larger/critical projects, increased team size, or regional expansion."></textarea>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12 awards_block_${company_no}">
+          <label class="form-label">Have you received any awards or recognition?</label>
+          <select class="custom-select awards_recognition_select_${company_no}">
+            <option value="">Select</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12 awards_details_block_${company_no}" style="display:none;">
+          <label class="form-label">Award/Recognition Details<span style="color: red">*</span></label>
+          <textarea class="form-control award_recognition_details_${company_no}" rows="3" placeholder="Describe the award or recognition..."></textarea>
+        </div>
         <div class="mt-5 promotion_section_${company_no}" style="width: 100%"></div>
         <div class="col-lg-12 col-md-12 mb-3">
           <label>Tell us about contact person details from ${stringifyNumber(company_no)} company you worked!</label>
@@ -850,8 +947,57 @@ career_history = Class.extend({
         me.set_promotion_section_html(company_no, 1);
         me.on_change_still_working_on_same_company(company_no);
         me.on_click_add_more_contact_person(company_no);
+        me.bind_scope_changes(company_no);
+        me.bind_awards_recognition(company_no);
       }
     })
+  },
+  bind_scope_changes: function(company_no) {
+    $(`.scope_changes_select_${company_no}`).on('change', function(){
+      var val = $(this).val();
+      if(val === 'Yes'){
+        $(`.scope_changes_details_block_${company_no}`).show();
+      } else {
+        $(`.scope_changes_details_block_${company_no}`).hide();
+        $(`.scope_changes_details_${company_no}`).val("");
+      }
+    });
+  },
+  bind_awards_recognition: function(company_no) {
+    $(`.awards_recognition_select_${company_no}`).on('change', function(){
+      var val = $(this).val();
+      if(val === 'Yes'){
+        $(`.awards_details_block_${company_no}`).show();
+      } else {
+        $(`.awards_details_block_${company_no}`).hide();
+        $(`.award_recognition_details_${company_no}`).val("");
+      }
+    });
+  },
+  main_awards_section_html: function(company_no){
+    return `<div class="mx-auto col-lg-12 col-md-12 mb-3 main_awards_section_${company_no}">
+      <label class="form-label">Have you received any awards or recognition?</label>
+      <select class="custom-select main_awards_recognition_select_${company_no}">
+        <option value="">Select</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+      <div class="mb-3 col-lg-12 col-md-12 main_awards_details_block_${company_no}" style="display:none; margin-top:10px;">
+        <label class="form-label">Award/Recognition Details<span style="color: red">*</span></label>
+        <textarea class="form-control main_award_recognition_details_${company_no}" rows="3" placeholder="Describe the award or recognition..."></textarea>
+      </div>
+    </div>`;
+  },
+  bind_main_awards_recognition: function(company_no){
+    $(`.main_awards_recognition_select_${company_no}`).on('change', function(){
+      var val = $(this).val();
+      if(val === 'Yes'){
+        $(`.main_awards_details_block_${company_no}`).show();
+      } else {
+        $(`.main_awards_details_block_${company_no}`).hide();
+        $(`.main_award_recognition_details_${company_no}`).val("");
+      }
+    });
   },
   on_click_add_learning_and_development_journey: function(company_no) {
     const me = this;

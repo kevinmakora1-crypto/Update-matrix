@@ -19,6 +19,7 @@ class CareerHistory(Document):
 		if self.career_history_company and self.calculate_promotions_and_experience_automatically:
 			self.calculate_promotions_and_experience()
 		self.calculate_career_history_score()
+		self.validate_awards_details()
 
 	def career_history_score_action(self):
 		if self.career_history_score and self.career_history_score > 0 and self.career_history_score < 2.99:
@@ -42,6 +43,19 @@ class CareerHistory(Document):
 		self.career_history_score = career_history_score
 		if career_history_score <= 0 and self.pass_to_next_interview:
 			self.pass_to_next_interview = ''
+
+	def validate_awards_details(self):
+		"""Ensure award/recognition details are provided when marked Yes.
+		Applies to main form and each row in Career History Company when candidate is Experienced.
+		"""
+		if getattr(self, 'candidate_type', None) == 'Experienced':
+			# Main form check
+			if getattr(self, 'have_you_received_any_awards_or_recognition', None) == 'Yes' and not getattr(self, 'awards_or_recognition_details', None):
+				frappe.throw(_("Please provide Award/Recognition Details on the main form."))
+			# Child rows check
+			for row in (self.career_history_company or []):
+				if getattr(row, 'have_you_received_any_awards_or_recognition', None) == 'Yes' and not getattr(row, 'awards_or_recognition_details', None):
+					frappe.throw(_("Row {0}: Please provide Award/Recognition Details for company: {1}").format(row.idx, row.company_name or row.job_title or row.name))
 
 	def validate_with_applicant(self):
 		if self.job_applicant:

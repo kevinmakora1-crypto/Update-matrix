@@ -159,8 +159,9 @@ def create_career_history_from_portal(job_applicant, career_history_details, int
 
     factors_expected_in_new_job = career_histories[-1] if career_histories else {}
     career_history.what_are_the_factors_you_are_looking_for_in_a_new_job = factors_expected_in_new_job.get("factors_in_new_job")
-    career_history.have_you_received_any_awards_or_recognition = factors_expected_in_new_job.get("have_you_received_any_awards_or_recognition_main") if factors_expected_in_new_job.get("have_you_received_any_awards_or_recognition_main") == "Yes" else "No"
-    career_history.awards_or_recognition_details = factors_expected_in_new_job.get("awards_or_recognition_details_main") if factors_expected_in_new_job.get("have_you_received_any_awards_or_recognition_main") == "Yes" else ""
+    awards_received_main = factors_expected_in_new_job.get("have_you_received_any_awards_or_recognition_main")
+    career_history.have_you_received_any_awards_or_recognition = awards_received_main if awards_received_main == "Yes" else "No"
+    career_history.awards_or_recognition_details = factors_expected_in_new_job.get("awards_or_recognition_details_main") if awards_received_main == "Yes" else ""
 
     if career_histories[0].get('expType') == "Experienced":
         for history in career_histories:

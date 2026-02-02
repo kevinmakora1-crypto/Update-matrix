@@ -2,7 +2,7 @@
  "actions": [],
  "allow_import": 1,
  "autoname": "format:{client}-{project}-{start_date}",
- "creation": "2020-04-28 11:07:30.373279",
+ "creation": "2026-01-30 14:30:47.299933",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -50,6 +50,7 @@
   "price_list",
   "section_break_35",
   "items",
+  "client_requested_days",
   "section_break_28",
   "frequency",
   "section_break_30",
@@ -471,10 +472,16 @@
    "fieldtype": "Date",
    "label": "Contract End Internal Notification Date",
    "read_only": 1
+  },
+  {
+   "fieldname": "client_requested_days",
+   "fieldtype": "Table",
+   "label": "Client Requested Days",
+   "options": "Client Requested Days Item"
   }
  ],
  "links": [],
- "modified": "2025-12-24 21:51:13.198201",
+ "modified": "2026-01-30 22:19:24.439728",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Contracts",

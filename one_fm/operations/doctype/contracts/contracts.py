@@ -31,7 +31,6 @@ class Contracts(Document):
     def on_update(self):
         self.update_project_start_end_date()
         self.process_client_requested_days()
-        print("\n\n\n\n\n\n")
         cancel_unselected_day_schedules(self)
 
     

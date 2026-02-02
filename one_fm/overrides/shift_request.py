@@ -733,7 +733,7 @@ def validate_from_date(doc, method):
         if frappe.session.user == attendance_manager:
             return
 
-        if doc.purpose != 'Assign Day Off':
+        if doc.purpose not in {'Assign Day Off', "Assign Client Day Off"}:
             message = "Please note that Shift Requests cannot be created for a past date." if doc.is_new() else "Please note that Shift Requests cannot be updated to a past date."
             frappe.throw(
                 _(message),

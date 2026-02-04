@@ -102,7 +102,7 @@ def create_roster_post_actions():
             AND opr.status = 'Active'
             AND pr.is_active = 'Yes'
             AND ci.item_code = opr.sale_item
-            AND ci.service_type = 'Post Schedule'
+            AND (ci.service_type = 'Post Schedule' OR (ci.is_daily_operation_handled_by_us = 'Yes' AND ci.service_type = 'Manpower'))
             AND ps.date BETWEEN '{start_date}' AND '{end_date}'
             ORDER BY ps.date ASC
         """, as_dict=1)
@@ -115,9 +115,11 @@ def create_roster_post_actions():
             JOIN `tabProject` pr ON opr.project = pr.name
             JOIN `tabContracts` c ON c.project = pr.name
             JOIN `tabContract Item` ci ON ci.parent = c.name
+            JOIN `tabEmployee` e ON es.employee = e.name
             WHERE es.employee_availability = 'Working'
+            AND e.status = 'Active'
             AND ci.item_code = opr.sale_item
-            AND ci.service_type = 'Post Schedule'
+            AND (ci.service_type = 'Post Schedule' OR (ci.is_daily_operation_handled_by_us = 'Yes' AND ci.service_type = 'Manpower'))
             AND es.date BETWEEN '{start_date}' AND '{end_date}'
             AND (es.on_the_job_training IS NULL OR es.on_the_job_training = '')
             ORDER BY es.date ASC
@@ -369,7 +371,7 @@ def get_all_shifts():
 
 
 def get_project_shifts(employee):
-    active_projects = frappe.get_all("Project",{'status':"Open",'account_manager':employee},pluck ="name")
+    active_projects = frappe.get_all("Project",{'status':"Open",'project_manager':employee},pluck ="name")
     if active_projects:
         all_shifts = frappe.get_all("Operations Shift",{'status':'Active','project':['in',active_projects]},pluck ="name")
         return all_shifts

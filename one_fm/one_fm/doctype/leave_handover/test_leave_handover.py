@@ -27,7 +27,7 @@ class TestLeaveHandover(FrappeTestCase):
 			{
 				"doctype": "Project",
 				"project_name": "Test Handover Project "+ frappe.generate_hash(length=5),
-				"account_manager": self.employee_on_leave.name,
+				"project_manager": self.employee_on_leave.name,
 				"status": "Open",
 			}
 		).insert()

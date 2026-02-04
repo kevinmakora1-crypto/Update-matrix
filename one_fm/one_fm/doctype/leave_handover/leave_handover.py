@@ -55,7 +55,7 @@ class LeaveHandover(Document):
 	def update_doc_assignment(self, revert=False):
 		for item in self.handover_items:
 			field_to_update = {
-				"Project": "account_manager",
+				"Project": "project_manager",
 				"Operations Site": "site_supervisor",
 				"Process Task": "employee",
 				"Employee": "reports_to",
@@ -65,7 +65,7 @@ class LeaveHandover(Document):
 				employee = item.reliever if not revert else self.employee
 				values_to_update = {field_to_update: employee}
 				name_field_to_update = {
-					"Project": "manager_name",
+					"Project": "project_manager_name",
 					"Operations Site": "site_supervisor_name",
 					"Process Task": "employee_name",
 				}.get(item.reference_doctype)
@@ -175,52 +175,22 @@ def get_handover_data(leave_application):
 	employee = leave_application_doc.employee
 
 	# Fetch projects
-	projects = frappe.get_all(
-		"Project",
-		filters={"status": "Open", "account_manager": employee},
-		fields=["name"],
-	)
-	for project in projects:
-		handover_items.append({
-			"reference_doctype": "Project",
-			"reference_docname": project.name,
-		})
+	add_to_handover_items(handover_items, "Project", {"status": "Open", "project_manager": employee}, "Project Manager")
 
 	# Fetch operations sites
-	sites = frappe.get_all(
-		"Operations Site",
-		filters={"status": "Active", "site_supervisor": employee},
-		fields=["name"],
-	)
-	for site in sites:
-		handover_items.append({
-			"reference_doctype": "Operations Site",
-			"reference_docname": site.name,
-		})
+	add_to_handover_items(handover_items, "Operations Site", {"status": "Active", "site_supervisor": employee}, "Site Supervisor")
 
 	# Fetch process tasks
-	tasks = frappe.get_all(
-		"Process Task",
-		filters={"is_active": 1, "employee": employee},
-		fields=["name"],
-	)
-	for task in tasks:
-		handover_items.append({
-			"reference_doctype": "Process Task",
-			"reference_docname": task.name,
-		})
+	add_to_handover_items(handover_items, "Process Task", {"is_active": 1, "employee": employee}, "Process Task Actor")
 
 	# Fetch employees reporting to the leave applicant
-	employees = frappe.get_all(
-		"Employee",
-		filters={"status": ("in", ["Active", "Vacation"]), "reports_to": employee},
-		fields=["name"],
-	)
-	for emp in employees:
-		handover_items.append({
-			"reference_doctype": "Employee",
-			"reference_docname": emp.name,
-		})
+	add_to_handover_items(handover_items, "Employee", {"status": ("in", ["Active", "Vacation"]), "reports_to": employee}, "Reporting To")
+
+	# Fetch processes to handover
+	employee_user_id = frappe.db.get_value("Employee", employee, "user_id")
+	if employee_user_id:
+		add_to_handover_items(handover_items, "Process", {"process_owner": employee_user_id}, "Process Owner")
+		add_to_handover_items(handover_items, "Process", {"business_analyst": employee_user_id}, "Business Analyst")
 
 	return {
 		"employee": leave_application_doc.employee,
@@ -230,6 +200,16 @@ def get_handover_data(leave_application):
 		"resumption_date": leave_application_doc.resumption_date,
 		"handover_items": handover_items,
 	}
+
+def add_to_handover_items(handover_items, doctype, filters, role=None):
+	items = frappe.get_all(doctype, filters=filters, pluck="name")
+
+	for item in items:
+		handover_items.append({
+			"reference_doctype": doctype,
+			"reference_docname": item,
+			"role": role
+		})
 
 @frappe.whitelist()
 def reliever_assignment_on_leave_start(date=None):

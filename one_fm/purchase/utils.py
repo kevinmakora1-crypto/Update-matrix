@@ -237,7 +237,7 @@ def validate_store_keeper_project_supervisor(doc, method):
                 return
 
     if doc.project:
-        project_manager = frappe.db.get_value("Project", doc.project, "account_manager")
+        project_manager = frappe.db.get_value("Project", doc.project, "project_manager")
         if project_manager:
             if not project_manager == user_emp:
                 frappe.throw("You are not authorized to generate this receipt !")

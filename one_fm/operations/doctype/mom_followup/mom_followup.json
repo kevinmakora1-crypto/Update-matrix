@@ -59,14 +59,14 @@
    "read_only": 1
   },
   {
-   "fetch_from": "project.account_manager",
+   "fetch_from": "project.project_manager",
    "fieldname": "project_manager",
    "fieldtype": "Data",
    "label": "Project Manager",
    "read_only": 1
   },
   {
-   "fetch_from": "project.manager_name",
+   "fetch_from": "project.project_manager_name",
    "fieldname": "project_manager_name",
    "fieldtype": "Data",
    "label": "Project Manager Name",
@@ -124,7 +124,7 @@
   }
  ],
  "is_submittable": 1,
- "modified": "2020-12-11 17:25:06.683680",
+ "modified": "2026-01-08 17:25:06.683680",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "MOM Followup",

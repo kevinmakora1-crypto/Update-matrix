@@ -3,7 +3,7 @@ from json import loads
 import requests
 
 import frappe
-from frappe.utils import getdate, add_days, get_url_to_form, get_url
+from frappe.utils import getdate, add_days, get_url_to_form, get_url, today
 from frappe.utils.user import get_users_with_role
 from frappe.permissions import remove_user_permission
 from one_fm.api.api import  push_notification_rest_api_for_checkin
@@ -16,7 +16,7 @@ from one_fm.hiring.utils import (
     is_subcontract_employee
 )
 from one_fm.processor import sendemail,send_whatsapp
-from one_fm.utils import call_to_get_assurance_level, get_domain, get_standard_notification_template, get_approver_user, update_active_employees_assurance_level
+from one_fm.utils import call_to_get_assurance_level, get_domain, get_standard_notification_template, get_approver_user, update_active_employees_assurance_level, send_push_notification
 from six import string_types
 from frappe import _
 from one_fm.operations.doctype.operations_shift.operations_shift import get_supervisor_operations_shifts
@@ -195,6 +195,13 @@ class EmployeeOverride(EmployeeMaster):
         self.inform_employee_id_update()
         self.notify_employee_id_update()
         self.remove_user_on_employee_left()
+        self.notify_supervisor_of_status_change()
+        if self.has_value_changed("status") and self.status == "Not Returned from Leave":
+            self.inform_employee_status_update()
+            frappe.enqueue(delete_employee_schedules_for_next_7_days, queue='default', timeout=300, employee_id=self.name)
+
+        self.setup_wiki_introduction_for_new_employee()
+
 
     def inform_employee_id_update(self):
         """
@@ -350,6 +357,17 @@ class EmployeeOverride(EmployeeMaster):
                 if message:
                     frappe.throw(message)
 
+    def inform_employee_status_update(self):
+        try:
+            subject = f"Your Employee Status changed to {self.status}"
+            message = f"Dear {self.employee_name}, your status has been changed to {self.status}, please contact your supervisor"
+            send_push_notification(
+                employee_id=self.employee_id,
+                title=subject,
+                body=message
+            )
+        except Exception as e:
+            frappe.log_error(message=f"Failed to send status update notification: {str(e)}", title="Employee Status Update Notification")
 
     def clear_schedules(self):
         # clear future employee schedules
@@ -362,6 +380,134 @@ class EmployeeOverride(EmployeeMaster):
                 frappe.msgprint(f"""
                     Employee Schedule cleared for {self.employee_name} starting from {add_days(self.relieving_date, 1)}
                 """)
+
+    def notify_supervisor_of_status_change(self):
+        """
+        Notify the operations site supervisor when an employee's status changes to Active.
+
+        This method is intended to be called during the employee document lifecycle
+        (e.g. on validate/before save). It compares the previous stored version of
+        the document with the current one, and proceeds only when:
+
+        - A previous document exists (`get_doc_before_save` returns a value).
+        - The employee's status has changed from any non-"Active" value to "Active".
+        - The employee is marked as shift working (`self.shift_working` is truthy).
+        - The employee has an associated Operations Site with a valid site supervisor
+          and that supervisor has a linked user account.
+
+        When these conditions are met, the method sends both a push notification
+        (via `send_push_notification`) and an email (via `sendemail`) to the site
+        supervisor, informing them that the employee is now Active and should be
+        rostered appropriately. Failures to send notifications are logged using
+        Frappe's error log.
+        """
+        last_doc = self.get_doc_before_save()
+        
+        if not last_doc:
+            return
+        
+        status_changed_to_active = last_doc.get("status") != "Active" and self.status == "Active"
+        if not (status_changed_to_active and self.shift_working):
+            return
+        
+        site_supervisor = frappe.db.get_value("Operations Site", self.site, "site_supervisor")
+        if not site_supervisor:
+            frappe.log_error(f"No site supervisor found for site {self.site}", "Employee Status Change Notification")
+            return
+        
+        supervisor_details = frappe.db.get_value(
+            "Employee",
+            site_supervisor,
+            ["user_id", "employee_id", "employee_name"],
+            as_dict=1
+        )
+        
+        if not supervisor_details or not supervisor_details.user_id:
+            frappe.log_error(f"Invalid supervisor details for {site_supervisor}", "Employee Status Change Notification")
+            return
+        
+        subject = f"{self.employee_name} (ID: {self.name}) Status Changed to Active"
+        message = (
+            f"Dear {supervisor_details.employee_name},\n\n"
+            f"{self.employee_name} with Employee ID {self.name} has been changed to 'Active'.\n"
+            f"Please ensure that they are adequately rostered.\n\n"
+            f"Site: {self.site}"
+        )
+        
+        try:
+            send_push_notification(
+                employee_id=supervisor_details.employee_id,
+                title=subject,
+                body=message
+            )
+            sendemail(
+                recipients=[supervisor_details.user_id],
+                subject=subject,
+                message=message
+            )
+        except Exception as e:
+            frappe.log_error(f"Failed to send notification: {str(e)}", "Employee Status Change Notification")
+
+    def setup_wiki_introduction_for_new_employee(self):
+        if self.status == 'Active':
+            return
+        if self.shift_working == 1:
+            return
+        if self.attendance_by_timesheet == 1:
+            return
+        if self.auto_attendance == 1:
+            return
+        if not self.user_id:
+            return
+        if not self.has_value_changed('user_id'):
+            return
+
+        self.set_default_workspace_for_new_user()
+        self.create_wiki_introduction_todo()
+
+    def set_default_workspace_for_new_user(self):
+        default_workspace = frappe.db.get_value("User", self.user_id, "default_workspace")
+        if not default_workspace:
+            onboarding_workspace = frappe.db.get_single_value("HR Settings", "onboarding_workspace") or "Wiki"
+            frappe.db.set_value("User", self.user_id, "default_workspace", onboarding_workspace, update_modified=False)
+
+    def create_wiki_introduction_todo(self):
+        wiki_introduction_doc_link = frappe.db.get_single_value("HR Settings", "wiki_introduction_doc_link")
+        if not wiki_introduction_doc_link:
+            return
+        description = 'Review the "Wiki Introduction" document. Then, review the 14 linked wikis and complete all associated quizzes and feedback forms within one day.'
+        # Check if a "Todo" with the same description and for the same user already exists
+        if not frappe.db.exists("ToDo", {"allocated_to": self.user_id, "description": ["like", f"%{description}%"]}):
+            frappe.get_doc({
+                "doctype": "ToDo",
+                "allocated_to": self.user_id,
+                "description": f'{description} <br> Please review the following document: <a href="{wiki_introduction_doc_link}">Wiki Introduction</a>',
+                "date": getdate(),
+                "due_date": add_days(getdate(), 30)
+            }).insert(ignore_permissions=True)
+
+def create_wiki_assessment_todo_for_employees():
+    wiki_assessment_form_link = frappe.db.get_single_value("HR Settings", "wiki_assessment_form_link")
+    if not wiki_assessment_form_link:
+        return
+    description = f'Complete the wiki assessments:'
+    employees = frappe.get_all("Employee", filters={
+        "status": "Active",
+        "shift_working": 0,
+        "attendance_by_timesheet": 0,
+        "auto_attendance": 0,
+        "user_id": ["is", "set"],
+        "creation": ["<=", add_days(getdate(), -30)]
+    }, fields=["name", "employee_name", "user_id"])
+    for employee in employees:
+        if not frappe.db.exists("ToDo", {"allocated_to": employee.user_id, "description": ["like", f"%{description}%"]}):
+            frappe.get_doc({
+                "doctype": "ToDo",
+                "allocated_to": employee.user_id,
+                "description": f'{description} <a href="{wiki_assessment_form_link}">Wiki Assessments</a>',
+                "date": getdate(),
+                "due_date": getdate()
+            }).insert(ignore_permissions=True)
 
 def validate_leaves(self):
     if self.status=='Vacation':
@@ -454,7 +600,7 @@ class NotifyAttendanceManagerOnStatusChange:
 
     @property
     def _projects_manager(self) -> list:
-        projects = frappe.db.sql(""" SELECT name from `tabProject` WHERE account_manager = %s AND is_active = 'Yes' """, (self.employee_object.name), as_list=1)
+        projects = frappe.db.sql(""" SELECT name from `tabProject` WHERE project_manager = %s AND is_active = 'Yes' """, (self.employee_object.name), as_list=1)
         return list(chain.from_iterable(projects)) if projects else list()
 
     @property
@@ -732,3 +878,28 @@ def get_assurance_level_of_employee(doc, method):
             return True
     except Exception as e:
             frappe.log_error(message=frappe.get_traceback(), title=f"DSS returned NONE values,No API key")
+
+
+def delete_employee_schedules_for_next_7_days(employee_id):
+        start_date = today()
+        end_date = add_days(start_date, 6)
+
+        try:
+            frappe.db.sql("""
+                DELETE FROM `tabEmployee Schedule`
+                WHERE employee = %(employee)s
+                AND date BETWEEN %(start_date)s AND %(end_date)s
+            """, {
+                'employee': employee_id,
+                'start_date': start_date,
+                'end_date': end_date
+            })
+            
+            frappe.db.commit()
+
+        except Exception as e:
+            frappe.log_error(
+                message=f"Error deleting schedules: {str(e)}",
+                title=f"Employee Schedule Deletion Error - {employee_id}"
+            )
+            raise

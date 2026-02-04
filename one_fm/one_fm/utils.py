@@ -512,7 +512,7 @@ def validate_store_keeper_project_supervisor_roles(doc):
                     
             if "project" in doc.keys():
                 if doc["project"]:
-                    project_manager = frappe.db.get_value("Project", doc["project"], "account_manager")
+                    project_manager = frappe.db.get_value("Project", doc["project"], "project_manager")
                     if project_manager:
                         return project_manager == user_emp
                        

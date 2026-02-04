@@ -88,7 +88,7 @@ def create_roster_employee_actions():
 
 				shift_supervisor = get_shift_supervisor(shift_allocation)
 				site_supervisor = frappe.db.get_value('Operations Site', site_allocation, 'site_supervisor')
-				project_manager = frappe.db.get_value('Project', project_allocation, 'account_manager')
+				project_manager = frappe.db.get_value('Project', project_allocation, 'project_manager')
 
 				sorted_dates = sorted(
 					[datetime.strptime(date.strip(), "%Y-%m-%d") for date in dates]
@@ -362,7 +362,7 @@ def get_project_manager_employees(user_employee, start_date, end_date):
 			JOIN `tabOperations Site` site ON os.site = site.name 
 			JOIN `tabProject` p ON site.project = p.name
 		""",
-		where_clause="p.account_manager = %(user_employee)s",
+		where_clause="p.project_manager = %(user_employee)s",
 		user_employee=user_employee,
 		start_date=start_date,
 		end_date=end_date

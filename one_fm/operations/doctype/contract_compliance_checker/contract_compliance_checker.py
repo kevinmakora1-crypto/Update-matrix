@@ -6,6 +6,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import (getdate, get_first_day, get_last_day, add_days, add_months, date_diff, get_datetime)
 from one_fm.utils import get_week_start_end
+from frappe.query_builder.functions import Count
 
 
 class ContractComplianceChecker(Document):
@@ -22,12 +23,60 @@ class GenerateContractComplianceChecker:
 
 	def get_contract_items_list(self):
 		return frappe.db.sql("""
-			SELECT ci.idx, ci.parent, ci.count, ci.item_code, ci.days_off_category, ci.no_of_days_off, ci.off_type, ci.service_type, c.project
+			SELECT
+				ci.name, 
+				ci.idx,
+				ci.parent,
+				ci.is_daily_operation_handled_by_us,
+				ci.count,
+				ci.item_code,
+				ci.days_off_category,
+				ci.no_of_days_off,
+				ci.off_type,
+				ci.service_type,
+				ci.item_type,
+				ci.select_specific_days,
+				ci.sunday,
+				ci.monday,
+				ci.tuesday,
+				ci.wednesday,
+				ci.thursday,
+				ci.friday,
+				ci.saturday,
+				c.project
 			FROM `tabContract Item` ci
 			INNER JOIN `tabContracts` c ON ci.parent = c.name
-			AND c.workflow_state = %s
-			AND ci.item_code IS NOT NULL
+			WHERE c.workflow_state = %s
+				AND ci.item_code IS NOT NULL
+				AND (ci.item_type IS NULL OR ci.item_type != 'Items')
 		""", ("Active"), as_dict=1)
+
+	def _is_checked(self, val):
+		return True if val in (1, "1", True) else False
+
+	def count_selected_weekdays_in_period(self, contract_data, start_date, end_date):
+		start_date = getdate(start_date)
+		end_date = getdate(end_date)
+
+		# Map Python weekday (Mon=0..Sun=6) to Contract Item flags
+		weekday_flags = {
+			0: self._is_checked(getattr(contract_data, "monday", 0)),
+			1: self._is_checked(getattr(contract_data, "tuesday", 0)),
+			2: self._is_checked(getattr(contract_data, "wednesday", 0)),
+			3: self._is_checked(getattr(contract_data, "thursday", 0)),
+			4: self._is_checked(getattr(contract_data, "friday", 0)),
+			5: self._is_checked(getattr(contract_data, "saturday", 0)),
+			6: self._is_checked(getattr(contract_data, "sunday", 0)),
+		}
+
+		count = 0
+		current = start_date
+		while current <= end_date:
+			if weekday_flags.get(current.weekday(), False):
+				count += 1
+			current = getdate(add_days(current, 1))
+		return count
+
 	
 	def get_operation_roles(self, sale_item, project):
 		return frappe.db.get_list('Operations Role', {'sale_item': sale_item, 'status': 'Active', "project": project}, pluck='name')
@@ -43,17 +92,28 @@ class GenerateContractComplianceChecker:
 				fields=["name", "start_date", "end_date"]
 			)
 	
-	def get_post_schedules(self, project, post, start_date, end_date):
-		return frappe.db.count(
-			"Post Schedule",
-			filters={
-				"date": ['BETWEEN', [start_date, end_date]],
-				"project": project,
-				"post": post.name,
-				"post_status": 'Planned'
-			}
-		)
+	def get_post_schedules(self, project, post, start_date, end_date, include_client_post_off=False):
+		filters = {
+			"date": ['BETWEEN', [start_date, end_date]],
+			"project": project,
+			"post": post.name
+		}
+		
+		# For monthly contracts, count both "Planned" and "Client Post Off" statuses
+		if include_client_post_off:
+			filters["post_status"] = ['in', ['Planned', 'Client Post Off']]
+		else:
+			filters["post_status"] = 'Planned'
+		
+		return frappe.db.count("Post Schedule", filters=filters)
 	
+	def get_client_requested_days_count(self, contract_name, contract_item_name, start_date, end_date):
+		return frappe.db.count("Client Requested Days Item", {
+			"parent": contract_name,
+			"contract_item": contract_item_name,
+			"client_requested_date": ["between", [start_date, end_date]]
+		})
+
 	def get_total_employee_schedule_count(self, operations_roles, start_date, end_date):
 		if not operations_roles:
 			return 0
@@ -62,23 +122,39 @@ class GenerateContractComplianceChecker:
 		attendance_count = 0
 		if self.day_before_yesterday >= start_date:
 			attendance_end_date = min(self.day_before_yesterday, end_date)
-			attendance_count = frappe.db.count('Attendance', {
-				'roster_type': "Basic",
-				"status": "Present",
-				"attendance_date": ["between", [start_date, attendance_end_date]],
-				"operations_role": ["in", operations_roles]
-			})
+			Attendance = frappe.qb.DocType('Attendance')
+			attendance_conditions = (
+				(Attendance.attendance_date.between(start_date, attendance_end_date))
+				& (Attendance.operations_role.isin(operations_roles))
+				& (
+					((Attendance.status == "Present") & (Attendance.roster_type.isin(["Basic", "Over-Time"])))
+					| ((Attendance.roster_type == "Basic") & (Attendance.day_off_ot == 1))
+				)
+			)
+			attendance_count = (
+				frappe.qb.from_(Attendance)
+				.select(Count(Attendance.name))
+				.where(attendance_conditions)
+			).run()[0][0] or 0
 			
 		# Employee Schedule: count days from yesterday and above, within start_date and end_date
 		schedule_count = 0
 		if self.yesterday <= end_date:
 			schedule_start_date = max(self.yesterday, start_date)
-			schedule_count = frappe.db.count('Employee Schedule', {
-				'roster_type': "Basic",
-				"employee_availability": "Working",
-				"date": ["between", [schedule_start_date, end_date]],
-				"operations_role": ["in", operations_roles]
-			})
+			EmployeeSchedule = frappe.qb.DocType('Employee Schedule')
+			schedule_conditions = (
+				(EmployeeSchedule.date.between(schedule_start_date, end_date))
+				& (EmployeeSchedule.operations_role.isin(operations_roles))
+				& (
+					((EmployeeSchedule.employee_availability == "Working") & (EmployeeSchedule.roster_type.isin(["Basic", "Over-Time"])))
+					| ((EmployeeSchedule.roster_type == "Basic") & (EmployeeSchedule.day_off_ot == 1))
+				)
+			)
+			schedule_count = (
+				frappe.qb.from_(EmployeeSchedule)
+				.select(Count(EmployeeSchedule.name))
+				.where(schedule_conditions)
+			).run()[0][0] or 0
 
 		return attendance_count + schedule_count
 	
@@ -121,6 +197,7 @@ class GenerateContractComplianceChecker:
 				post_end_date = getdate(post.end_date)
 
 			expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
+			expected_post_schedules += self.get_client_requested_days_count(contract_data.parent, contract_data.item_code, post_start_date, post_end_date)
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
 					post=post,
@@ -184,12 +261,19 @@ class GenerateContractComplianceChecker:
 			if post.end_date and post.end_date < post_end_date:
 				post_end_date = getdate(post.end_date)
 
-			expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
+			# Expected schedules: use selected weekdays when enabled, else all days
+			if self._is_checked(getattr(contract_data, "select_specific_days", 0)):
+				expected_post_schedules = self.count_selected_weekdays_in_period(contract_data, post_start_date, post_end_date)
+			else:
+				expected_post_schedules = date_diff(post_end_date, post_start_date) + 1
+				
+			expected_post_schedules += self.get_client_requested_days_count(contract_data.parent, contract_data.item_code, post_start_date, post_end_date)
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
 					post=post,
 					start_date=post_start_date,
-					end_date=post_end_date
+					end_date=post_end_date,
+					include_client_post_off=True
 				)
 				
 			if not post_schedules_count:
@@ -223,7 +307,7 @@ class GenerateContractComplianceChecker:
 			comment += f"No operations roles created with sale item {contract_data.item_code} in project {contract_data.project}, for contract {contract_data.parent} in items row {contract_data.idx}\n\n"
 
 		working_days_in_period = (date_diff(end_date, start_date) + 1) - contract_data.no_of_days_off
-		expected_schedule_count = working_days_in_period * contract_data.count
+		expected_schedule_count = (working_days_in_period * contract_data.count) + (self.get_client_requested_days_count(contract_data.parent, contract_data.item_code, start_date, end_date) * contract_data.count)
 
 		actual_schedule_count = self.get_total_employee_schedule_count(operations_roles, start_date, end_date)
 
@@ -280,14 +364,26 @@ class GenerateContractComplianceChecker:
 			if post.end_date and getdate(post.end_date) < post_end_date:
 				post_end_date = getdate(post.end_date)
 
-			working_days_in_period = (date_diff(post_end_date, post_start_date) + 1)
-			expected_post_schedules = working_days_in_period - contract_data.no_of_days_off
+			# Expected schedules for Days Off contracts:
+			# When specific days are selected, use only those days within period.
+			# Otherwise, default to working days less monthly off.
+			if self._is_checked(getattr(contract_data, "select_specific_days", 0)):
+				expected_post_schedules = self.count_selected_weekdays_in_period(contract_data, post_start_date, post_end_date)
+			else:
+				working_days_in_period = (date_diff(post_end_date, post_start_date) + 1)
+				expected_post_schedules = working_days_in_period - contract_data.no_of_days_off
 
+			expected_post_schedules += self.get_client_requested_days_count(contract_data.parent, contract_data.item_code, post_start_date, post_end_date)
+
+			# For monthly and weekly contracts, include "Client Post Off" in the count
+			include_client_post_off = contract_data.days_off_category in ["Monthly", "Weekly"]
+			
 			post_schedules_count = self.get_post_schedules(
 					project=contract_data.project,
 					post=post,
 					start_date=post_start_date,
-					end_date=post_end_date
+					end_date=post_end_date,
+					include_client_post_off=include_client_post_off
 				)
 				
 			if not post_schedules_count:
@@ -339,7 +435,7 @@ class GenerateContractComplianceChecker:
 	
 	def create_compliance_checker(self, contract, compliance_details):
 		contract_details = frappe.db.get_value("Contracts", contract, 
-			["client", "project", "project.account_manager"], as_dict=1)
+			["client", "project", "project.project_manager"], as_dict=1)
 		
 		yesterday_repeat_count = frappe.db.get_value("Contract Compliance Checker", {
 				"project": contract_details.project,
@@ -358,7 +454,7 @@ class GenerateContractComplianceChecker:
 			"doctype": "Contract Compliance Checker",
 			"project": contract_details.project,
 			"contract": contract,
-			"project_manager": contract_details.account_manager,
+			"project_manager": contract_details.project_manager,
 			"repeat_count": (yesterday_repeat_count or 0) + 1,
 			"check_date": self.today,
 			"client": contract_details.client,
@@ -374,6 +470,8 @@ class GenerateContractComplianceChecker:
 		
 		doc.insert(ignore_permissions=True)
 	
+	
+	
 	def execute(self):
 		contract_items_list = self.get_contract_items_list()
 
@@ -384,12 +482,16 @@ class GenerateContractComplianceChecker:
 				is_off_type_full_month = contract_item.off_type == "Full Month"
 				has_days_off = contract_item.off_type == "Days Off"
 				has_weekly_days_off = contract_item.days_off_category == "Weekly"
-
+				is_daily_operations_handled_by_us = contract_item.is_daily_operation_handled_by_us  == "Yes"
 				duration_periods = self.get_duration_periods(is_weekly=has_days_off and has_weekly_days_off)
 
 				for period_start, period_end in duration_periods:
 					if contract_item.service_type == "Manpower":
-						status, data = self.calculate_manpower_full_month_compliance(contract_item, period_start, period_end) if is_off_type_full_month else self.calculate_manpower_day_off_compliance(contract_item, period_start, period_end)
+						if not is_off_type_full_month:
+							status, data = self.calculate_manpower_day_off_compliance(contract_item, period_start, period_end)
+						else:
+							continue
+						
 					elif contract_item.service_type == "Post Schedule":
 						status, data = self.calculate_post_schedule_full_month_compliance(contract_item, period_start, period_end) if is_off_type_full_month else self.calculate_post_schedule_day_off_compliance(contract_item, period_start, period_end)
 					else:

@@ -47,6 +47,9 @@ def get_post_scheduler_items(contract, project):
 	items = []
 
 	for item in contract.items:
+		# Skip items of type "Items" as they don't require post scheduling validation
+		if item.item_type == "Items" or (item.item_type == "Service" and item.is_daily_operation_handled_by_us == "No"):
+			continue
 
 		item_message = ""
 
@@ -181,7 +184,7 @@ def schedule_roster_checker():
 				post_scheduler_checker.contract = contract
 				post_scheduler_checker.project = project
 				post_scheduler_checker.site_supervisor = get_working_site_supervisor(project, today)
-				post_scheduler_checker.project_manager = frappe.db.get_value('Project', project, 'account_manager')
+				post_scheduler_checker.project_manager = frappe.db.get_value('Project', project, 'project_manager')
 
 				for sub_item in items:
 					post_scheduler_checker.append("items", sub_item)
@@ -234,4 +237,5 @@ def create_post_schedule_checker_from_contracts(page_size, offset):
 			doc = frappe.get_doc({"doctype":"Post Scheduler Checker", 'contract': row}).insert(ignore_permissions=True)
 		except Exception as e:
 			print(e)
+
 	frappe.db.commit()

@@ -246,6 +246,7 @@ one_fm.patches.v15_0.rename_account_manager_to_project_manager #1-5
 one_fm.patches.v15_0.add_shift_request_custom_fields
 one_fm.patches.v15_0.add_employee_project_manager_name_custom_field
 one_fm.patches.v15_0.create_attendance_for_event_shifts
+one_fm.patches.v15_0.backfill_refundable_from_rfm_to_chain
 
 [post_model_sync]
 one_fm.patches.v15_0.process_task_for_wiki_employee_task

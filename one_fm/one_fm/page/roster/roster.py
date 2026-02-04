@@ -229,6 +229,7 @@ def get_roster_view(start_date, end_date, employee_search_id=None, employee_sear
 
 		response("Success", 200, master_data)
 	except Exception as e:
+		frappe.log_error(title="get_roster_view Error", message=frappe.get_traceback())
 		return response("Server Error", 500, None, str(frappe.get_traceback()))
 
 

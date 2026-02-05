@@ -4,13 +4,6 @@ def execute():
     """
     Consolidated patch to update Contract Items
     
-    IMPROVEMENTS IN v4:
-    - Matches items using BOTH item_code AND rate (handles duplicates)
-    - Correct field: is_daily_operation_handled_by_us (Select: Yes/No)
-    - Print statements for clear output
-    - Proper Excel merged cell handling
-    
-    All data embedded inline - no external files needed
     """
     
     print("\n" + "="*80)

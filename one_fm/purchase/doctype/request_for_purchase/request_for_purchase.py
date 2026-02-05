@@ -54,21 +54,17 @@ class RequestforPurchase(Document):
 		"""Prevent changing `currency` when status is 'Partially Ordered' or 'Ordered'.
 		Allows edits when status is 'To Order' as per business rule.
 		"""
-		try:
-			# Only relevant for submitted documents
-			if getattr(self, 'docstatus', 0) != 1:
-				return
-			# Block currency changes when status is Partially Ordered or Ordered
-			if getattr(self, 'status', '') in ('Partially Ordered', 'Ordered'):
-				previous = self.get_doc_before_save()
-				if previous and previous.currency != self.currency:
-					frappe.throw(
-						_("Currency cannot be changed when Request for Purchase status is 'Ordered' or 'Partially Ordered'."),
-						title=_("Currency Change Not Allowed"),
-					)
-		except Exception:
-			# Fail-safe: don't block save due to unexpected errors in rule check
-			frappe.log_error(message=frappe.get_traceback(), title="RFP Currency Rule Enforcement Error")
+		# Only relevant for submitted documents
+		if getattr(self, 'docstatus', 0) != 1:
+			return
+		# Block currency changes when status is Partially Ordered or Ordered
+		if getattr(self, 'status', '') in ('Partially Ordered', 'Ordered'):
+			previous = self.get_doc_before_save()
+			if previous and previous.currency != self.currency:
+				frappe.throw(
+					_("Currency cannot be changed when Request for Purchase status is 'Ordered' or 'Partially Ordered'."),
+					title=_("Currency Change Not Allowed"),
+				)
 
 	def validate_items_to_order(self):
 		if not self.items_to_order:

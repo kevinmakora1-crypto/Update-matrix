@@ -11,7 +11,7 @@ def execute():
     """
     
     print("\n" + "="*80)
-    print("CONTRACT ITEMS CONSOLIDATED PATCH v3 (FINAL)")
+    print("CONTRACT ITEMS CONSOLIDATED PATCH")
     print("="*80 + "\n")
     
     create_contract_item_category()

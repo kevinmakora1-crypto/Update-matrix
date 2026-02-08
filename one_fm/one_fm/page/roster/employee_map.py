@@ -209,9 +209,11 @@ class CreateMap:
 		# SQL to fetch all attendance records for selected employees and date range
 		return f"""
 			SELECT at.status, at.leave_type, at.leave_application, at.attendance_date, at.employee, at.roster_type,
-				at.employee_name, at.operations_shift, osh.start_time, osh.end_time, at.day_off_ot
+				at.employee_name, at.operations_shift, osh.start_time, osh.end_time, at.day_off_ot,
+				emp.shift as actual_shift
 			FROM `tabAttendance` at 
-			LEFT JOIN `tabOperations Shift` osh ON at.operations_shift = osh.name 
+			LEFT JOIN `tabOperations Shift` osh ON at.operations_shift = osh.name
+			JOIN `tabEmployee` emp ON at.employee = emp.name
 			WHERE at.employee IN {self.employees}
 			AND at.attendance_date BETWEEN '{self.start}' AND '{self.end}'
 			AND at.docstatus = 1
@@ -353,7 +355,8 @@ class CreateMap:
 						'employee_id': self.employee_period_details[employee_id].get('employee_id'),
 						'start_time': attendance['start_time'],
 						'end_time': attendance['end_time'],
-						'day_off_ot': attendance['day_off_ot']
+						'day_off_ot': attendance['day_off_ot'],
+						'actual_shift': attendance.get('actual_shift')
 					})
 					daily_records.append(attendance_entry)
 					

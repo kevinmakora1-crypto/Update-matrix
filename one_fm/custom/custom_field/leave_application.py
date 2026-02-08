@@ -165,6 +165,52 @@ def get_leave_application_custom_fields():
                 "options": "Project",
                 "read_only": 1,
                 "fetch_from": "employee.project"
+            },
+            {
+                "fieldname": "resumption_confirmation_details",
+                "fieldtype": "Section Break",
+                "insert_after": "source",
+                "label": "Resumption Confirmation Details",
+                "depends_on": "eval:doc.workflow_state=='Approved' && doc.leave_type=='Annual Leave'",
+                "allow_on_submit": 1
+            },
+            {
+                "fieldname": "return_ticket_submitted",
+                "fieldtype": "Select",
+                "insert_after": "resumption_confirmation_details",
+                "label": "Return Ticket Submitted",
+                "options": "\nYes\nNo",
+                "allow_on_submit": 1,
+                "translatable": 1
+            },
+            {
+                "fieldname": "actual_return_date",
+                "fieldtype": "Date",
+                "insert_after": "return_ticket_submitted",
+                "label": "Actual Return Date",
+                "allow_on_submit": 1
+            },
+            {
+                "fieldname": "column_break_resumption_details",
+                "fieldtype": "Column Break",
+                "insert_after": "actual_return_date"
+            },
+            {
+                "fieldname": "attach_return_ticket",
+                "fieldtype": "Attach Image",
+                "insert_after": "column_break_resumption_details",
+                "label": "Attach Return Ticket",
+                "depends_on": "eval:doc.return_ticket_submitted == 'Yes'",
+                "allow_on_submit": 1
+            },
+            {
+                "fieldname": "reliever_employee_id",
+                "fieldtype": "Data",
+                "insert_after": "custom_reliever_name",
+                "label": "Reliever ID ",
+                "fetch_from": "custom_reliever_.employee_id",
+                "read_only": 1,
+                "translatable": 1
             }
         ]
     }

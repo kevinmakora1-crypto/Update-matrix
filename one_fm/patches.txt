@@ -238,7 +238,7 @@ one_fm.patches.v15_0.update_existing_attendance_checks
 one_fm.patches.v15_0.add_process_task_agency_expiry_actions
 one_fm.patches.v15_0.add_process_task_demand_letter_expiry
 one_fm.patches.v15_0.process_task_for_update_of_shift_worker_employee_status
-one_fm.patches.v15_0.update_leave_application_custom_field
+one_fm.patches.v15_0.update_leave_application_custom_field #1-2
 one_fm.patches.v15_0.process_task_for_remind_annual_leave_employees_to_helpdesk_user
 one_fm.patches.v15_0.process_task_for_send_open_hd_ticket_count
 one_fm.patches.v15_0.add_employee_uniform_field_to_quality_feedback
@@ -248,6 +248,7 @@ one_fm.patches.v15_0.add_employee_project_manager_name_custom_field
 one_fm.patches.v15_0.create_attendance_for_event_shifts
 one_fm.patches.v15_0.backfill_refundable_from_rfm_to_chain
 one_fm.patches.v15_0.update_contract_items_consolidated #rerun
+one_fm.patches.v15_0.update_leave_application_properties
 
 [post_model_sync]
 one_fm.patches.v15_0.process_task_for_wiki_employee_task

@@ -244,7 +244,6 @@ class RequestforMaterial(BuyingController):
         self.assign_for_technical_verification()
         if self.workflow_state == 'Approved' and frappe.session.user == self.request_for_material_approver:
             self.notify_material_requester()
-            self.assign_to_warehouse_supervisor()
         if self.per_received == 100:
             close_all_assignments(self.doctype, self.name)
         self.set_purchase_rfm_quantity()
@@ -311,7 +310,9 @@ class RequestforMaterial(BuyingController):
                     new_status = "Completed"
 
         if new_status and self.status != new_status:
-            self.db_set("status", new_status)
+            self.status = new_status
+            self.flags.ignore_validate_update_after_submit = True
+            self.save(ignore_permissions=True)
 
     def assign_to_warehouse_supervisor(self):
         try:

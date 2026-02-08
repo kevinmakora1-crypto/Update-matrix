@@ -7,7 +7,7 @@
   "is_assignment_rule_with_workflow": 0,
   "assign_condition": "workflow_state == 'Pending Approval'",
   "unassign_condition": "",
-  "close_condition": "workflow_state in ('Approved', 'Rejected') and per_received == 100",
+  "close_condition": "workflow_state in ('Approved', 'Rejected', 'Pending')",
   "rule": "Based on Field",
   "field": "request_for_material_approver",
   "last_user": "",

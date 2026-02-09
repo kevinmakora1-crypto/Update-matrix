@@ -43,6 +43,9 @@ class AttendanceCheck(Document):
             self.shift_permission = shift_permission.name
             self.has_shift_permissions = 1
 
+        # Set site supervisor
+        self.fetch_and_set_site_supervisor()
+
         # Set approver
         self.set_attedance_check_approver()
 
@@ -173,6 +176,24 @@ class AttendanceCheck(Document):
         if approver:
             self.approver = frappe.db.get_value("Employee", approver, "user_id")
 
+    def fetch_and_set_site_supervisor(self):
+        site = None
+        
+        # 1. Try to get site from Shift Assignment
+        if self.shift_assignment:
+            site = frappe.db.get_value("Shift Assignment", self.shift_assignment, "site")
+        
+        # 2. Fallback to Employee Site Allocation
+        if not site:
+            site = frappe.db.get_value("Employee", self.employee, "site")
+            
+        if site:
+            supervisor = frappe.db.get_value("Operations Site", site, "site_supervisor")
+            if supervisor:
+                self.operations_site = site
+                self.site_supervisor = supervisor
+                # self.site_supervisor_name will be auto-fetched or we can set it
+                self.site_supervisor_name = frappe.db.get_value("Employee", supervisor, "employee_name")
 
     def after_insert(self):
         """

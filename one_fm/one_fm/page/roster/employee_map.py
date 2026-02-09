@@ -251,31 +251,37 @@ class CreateMap:
 		for attendance in self.attendance_records_raw:
 			if isinstance(attendance.get('attendance_date'), (datetime.date, datetime.datetime)):
 				attendance['attendance_date'] = str(attendance['attendance_date'])
-			# Optionally normalize start_time and end_time if needed
 
-		# Convert raw lists to DataFrames for efficient grouping and merging
+		# Convert raw lists to DataFrames
 		df_schedules = pd.DataFrame(self.schedule_records_raw)
 		df_attendance = pd.DataFrame(self.attendance_records_raw)
 
-		# Prepare all combinations of employee and date to ensure no missing days
+		# Prepare all combinations of employee and date
 		employee_ids = [emp['name'] for emp in self.employee_records_raw]
 		all_dates_str = [date.strftime('%Y-%m-%d') for date in self.date_range]
 		employee_date_combinations = pd.MultiIndex.from_product(
 			[employee_ids, all_dates_str], names=['employee', 'date']
 		).to_frame(index=False)
 
-		# Ensure date columns are strings for merging
+		# Ensure date columns are strings
 		if not df_schedules.empty:
 			df_schedules['date'] = df_schedules['date'].astype(str)
 		if not df_attendance.empty:
 			df_attendance['attendance_date'] = df_attendance['attendance_date'].astype(str)
 
+		# Helper function compatible with both old and new pandas
+		def safe_groupby_apply(grouped, func):
+			"""Apply function with pandas version compatibility"""
+			try:
+				# Try pandas >= 2.1.0 syntax
+				return grouped.apply(func, include_groups=False)
+			except TypeError:
+				# Fallback for older pandas versions
+				return grouped.apply(func)
 
-		# Create an empty DataFrame with the expected columns for downstream merging
+		# Process schedules
 		grouped_schedules = pd.DataFrame(columns=['employee', 'date', 'schedule_records'])
 		if not df_schedules.empty and all(col in df_schedules.columns for col in ['employee', 'date']):
-			# Note: pandas 3.0.0 excludes grouping columns from apply by default
-			# We explicitly add them back using group.name
 			def collect_schedule_records(group):
 				records = group.to_dict('records')
 				employee, date = group.name
@@ -285,18 +291,17 @@ class CreateMap:
 				return records
 			
 			grouped_schedules = (
-				df_schedules.groupby(['employee', 'date'])
-				.apply(collect_schedule_records, include_groups=False)
+				safe_groupby_apply(
+					df_schedules.groupby(['employee', 'date']),
+					collect_schedule_records
+				)
 				.reset_index()
 				.rename(columns={0: 'schedule_records'})
 			)
 
-		# Create an empty DataFrame with the expected columns for downstream merging
+		# Process attendance
 		grouped_attendance = pd.DataFrame(columns=['employee', 'date', 'attendance_records'])
 		if not df_attendance.empty and all(col in df_attendance.columns for col in ['employee', 'attendance_date']):
-			# Group attendance records by employee and date, collect as lists
-			# Note: pandas 3.0.0 excludes grouping columns from apply by default
-			# We explicitly add them back using group.name
 			def collect_attendance_records(group):
 				records = group.to_dict('records')
 				employee, attendance_date = group.name
@@ -306,21 +311,22 @@ class CreateMap:
 				return records
 			
 			grouped_attendance = (
-				df_attendance.groupby(['employee', 'attendance_date'])
-				.apply(collect_attendance_records, include_groups=False)
+				safe_groupby_apply(
+					df_attendance.groupby(['employee', 'attendance_date']),
+					collect_attendance_records
+				)
 				.reset_index()
 				.rename(columns={'attendance_date': 'date', 0: 'attendance_records'})
 			)
 
-
-		# Merge all employee-date combinations with grouped schedule and attendance data
+		# Merge all employee-date combinations with grouped data
 		merged_records = (
 			employee_date_combinations
 			.merge(grouped_schedules, on=['employee', 'date'], how='left')
 			.merge(grouped_attendance, on=['employee', 'date'], how='left')
 		)
 
-		# Replace missing schedule or attendance lists with empty lists
+		# Replace missing lists with empty lists
 		merged_records['schedule_records'] = merged_records['schedule_records'].apply(
 			lambda records: records if isinstance(records, list) else []
 		)
@@ -328,14 +334,16 @@ class CreateMap:
 			lambda records: records if isinstance(records, list) else []
 		)
 
-		# Build the final output dictionary: {employee_name: [list of daily records]}
+		# Build final output
 		for employee_id in employee_ids:
 			employee_name = self.employee_period_details[employee_id]['employee_name']
 			self.formated_rs[employee_name] = {}
 			employee_rows = merged_records[merged_records['employee'] == employee_id]
+			
 			for _, day_row in employee_rows.iterrows():
 				daily_records = []
-				# Add attendance records for the day
+				
+				# Add attendance records
 				for attendance in day_row['attendance_records']:
 					attendance_entry = sanitize_record({
 						'employee': attendance['employee'],
@@ -358,13 +366,13 @@ class CreateMap:
 					daily_records.append(attendance_entry)
 					
 				if len(daily_records) == 0:
-					# Add all schedule records (including both Basic and Over-Time)
+					# Add schedule records
 					for schedule in day_row['schedule_records']:
 						schedule_entry = schedule.copy()
 						schedule_entry.update(self.employee_period_details[employee_id])
 						daily_records.append(sanitize_record(schedule_entry))
 
-				# If no records for the day, add a blank/default entry
+				# If no records, add blank entry
 				if not daily_records:
 					blank_record = sanitize_record({
 						'employee': self.employee_period_details[employee_id]['name'],

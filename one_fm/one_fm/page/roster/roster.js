@@ -1217,7 +1217,7 @@ function render_roster(res, page) {
 		let full_name = operations_role_item.full_name || operations_role_item.name;
 
 		let pt_row_html = `
-		<tr class="colorclass scheduledStaff" data-name="${abbr_name}">
+		<tr class="colorclass scheduledStaff" data-name="${escape_values(full_name)}">
 			<td class="sticky">
 				<div class="d-flex">
 					<div class="font16 paddingdiv cursorpointer orangecolor">
@@ -1232,9 +1232,9 @@ function render_roster(res, page) {
 		</tr>
 		`;
 
-		$rosterMonthbody.append(pt_row_html);
-		let $roleRow = $rosterMonthbody.find(`tr[data-name="${escape_values(abbr_name)}"]`).last();
 
+		$rosterMonthbody.append(pt_row_html);
+		let $roleRow = $rosterMonthbody.find(`tr[data-name="${escape_values(full_name)}"]`);
 
 		let { start_date, end_date } = page;
 		let current_day = moment(start_date);

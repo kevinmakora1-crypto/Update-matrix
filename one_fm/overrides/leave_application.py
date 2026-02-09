@@ -312,8 +312,9 @@ class LeaveApplicationOverride(LeaveApplication):
 
     @frappe.whitelist()
     def update_attendance(self):
-        if self.status != "Approved":
+        if self.status != "Approved" and not (self.status == "Open" and self.custom_leave_extension_request):
             return
+
         if self.total_leave_days > 20:
             frappe.enqueue(update_attendance_recods, self=self, is_async=True)
         else:
@@ -342,6 +343,7 @@ class LeaveApplicationOverride(LeaveApplication):
             doc.insert(ignore_permissions=True)
             doc.save()
             doc.submit()
+
 
     @frappe.whitelist()
     def notify_leave_approver(self):
@@ -651,7 +653,7 @@ class LeaveApplicationOverride(LeaveApplication):
 
 
 def update_attendance_recods(self):
-    if self.status != "Approved":
+    if self.status != "Approved" and not (self.status == "Open" and self.custom_leave_extension_request):
         return
 
     holiday_dates = []

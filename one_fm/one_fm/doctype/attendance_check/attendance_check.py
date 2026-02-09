@@ -188,9 +188,12 @@ class AttendanceCheck(Document):
             site = frappe.db.get_value("Employee", self.employee, "site")
             
         if site:
+            # Always set operations_site when a site is resolved
+            self.operations_site = site
+
+            # Conditionally set site supervisor details if available
             supervisor = frappe.db.get_value("Operations Site", site, "site_supervisor")
             if supervisor:
-                self.operations_site = site
                 self.site_supervisor = supervisor
                 # self.site_supervisor_name will be auto-fetched or we can set it
                 self.site_supervisor_name = frappe.db.get_value("Employee", supervisor, "employee_name")

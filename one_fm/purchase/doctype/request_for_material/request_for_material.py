@@ -853,7 +853,7 @@ def create_partial_request_for_purchase(source_name, items):
         rfp.append("items", {
             "item_code": item_data.get('item_code'),
             "qty": item_data.get('qty'),
-            "item_name": source_item_doc.item_name,
+            "item_name": source_item_doc.item_name or source_item_doc.requested_item_name,
             "description": source_item_doc.requested_description,
             "uom": source_item_doc.uom,
             "schedule_date": source_item_doc.schedule_date,

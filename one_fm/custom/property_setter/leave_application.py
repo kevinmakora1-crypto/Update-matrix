@@ -141,5 +141,13 @@ def get_leave_application_properties():
             "property_type": "Data",
             "field_name": "to_date",
             "value": ""
-        }
+        },
+        {
+            "doctype": "Property Setter",
+            "doc_type": "Leave Application",
+            "property": "hidden",
+            "property_type": "Check",
+            "field_name": "half_day",
+            "value": "1"
+        },
     ]

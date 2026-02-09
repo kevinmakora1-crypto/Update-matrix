@@ -117,7 +117,7 @@ def create_roster_post_actions():
             JOIN `tabContract Item` ci ON ci.parent = c.name
             JOIN `tabEmployee` e ON es.employee = e.name
             WHERE es.employee_availability = 'Working'
-            AND e.status = 'Active'
+            AND e.status != 'Not Returned from Leave'
             AND ci.item_code = opr.sale_item
             AND (ci.service_type = 'Post Schedule' OR (ci.is_daily_operation_handled_by_us = 'Yes' AND ci.service_type = 'Manpower'))
             AND es.date BETWEEN '{start_date}' AND '{end_date}'

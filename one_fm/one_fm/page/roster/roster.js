@@ -1233,7 +1233,7 @@ function render_roster(res, page) {
 		`;
 
 		$rosterMonthbody.append(pt_row_html);
-		let $roleRow = $rosterMonthbody.find(`tr[data-name="${escape_values(abbr_name)}"]`);
+		let $roleRow = $rosterMonthbody.find(`tr[data-name="${escape_values(abbr_name)}"]`).last();
 
 
 		let { start_date, end_date } = page;

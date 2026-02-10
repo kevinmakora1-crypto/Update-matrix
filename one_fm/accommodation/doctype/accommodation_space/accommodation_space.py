@@ -64,7 +64,7 @@ class AccommodationSpace(Document):
 
 	def set_title(self):
 		self.title = '-'.join([self.accommodation_name, self.type,
-			self.floor_name+' Floor', self.accommodation_space_type, self.accommodation_space_code])
+			self.floor_name+' Floor', self.accommodation_space_type])
 
 	def before_insert(self):
 		self.validate_no_of_accommodation_space()

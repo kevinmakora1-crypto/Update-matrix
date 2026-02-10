@@ -28,15 +28,15 @@ class ClientInterviewShortlist(Document):
 			fields=["name", "employee_availability"]
 		)
 		for schedule in existing_schedules:
-			self.delete_shift_assignments_for_schedule(interview_employee.employee)
+			self.delete_shift_assignments_for_schedule(interview_employee.employee,schedule.name)
 			frappe.delete_doc("Employee Schedule", schedule.name, ignore_permissions=True)
 			frappe.db.set_value("Client Interview Employee", interview_employee.name, "previous_employee_availability", schedule.employee_availability)
 
-	def delete_shift_assignments_for_schedule(self,employee):
+	def delete_shift_assignments_for_schedule(self,employee,schedule_name):
 		"""Delete shift assignments linked to the given employee schedule."""
 		shift_assignments = frappe.get_all(
 			"Shift Assignment",
-			filters={"start_date": self.interview_date,'employee':employee},
+			filters={"start_date": self.interview_date,'employee':employee,'employee_schedule':schedule_name},
 			fields=["name", "docstatus"]
 		)
 		for sa in shift_assignments:

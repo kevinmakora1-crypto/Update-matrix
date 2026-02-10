@@ -10,7 +10,6 @@
   "close_condition": "status == 'RFP Processed'",
   "rule": "Based on Process Task",
   "field": "requested_by",
-  "last_user": "r.abbas@one-fm.com",
   "doctype": "Assignment Rule",
   "assignment_days": [
     { "day": "Monday", "doctype": "Assignment Rule Day" },
@@ -22,6 +21,5 @@
     { "day": "Sunday", "doctype": "Assignment Rule Day" }
   ],
   "users": [
-    { "user": "h.razak@one-fm.com", "doctype": "Assignment Rule User" }
   ]
 }

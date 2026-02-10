@@ -17,6 +17,7 @@
   "accommodation_unit",
   "accommodation_unit_code",
   "accommodation_space_type",
+  "space_type_abbreviation",
   "bed_space_available",
   "space_qr",
   "bed_details_section",
@@ -130,6 +131,14 @@
    "in_list_view": 1,
    "label": "Bed Space Type",
    "options": "Bed Space Type"
+  },
+  {
+   "fetch_from": "accommodation_space_type.abbreviation",
+   "fieldname": "space_type_abbreviation",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Space Type Abbreviation",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_3",
@@ -268,7 +277,7 @@
   }
  ],
  "links": [],
- "modified": "2020-11-16 08:47:12.986963",
+ "modified": "2026-02-10 07:34:36.453921",
  "modified_by": "Administrator",
  "module": "Accommodation",
  "name": "Accommodation Space",
@@ -299,7 +308,9 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "search_fields": "accommodation_name, floor_name, accommodation_unit_code",
  "sort_field": "modified",
- "sort_order": "DESC"
+ "sort_order": "DESC",
+ "states": []
 }

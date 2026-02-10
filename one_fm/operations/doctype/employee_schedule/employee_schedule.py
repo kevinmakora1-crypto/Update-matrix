@@ -36,6 +36,7 @@ class EmployeeSchedule(Document):
 				frappe.db.set_value("Employee Schedule", employee_schedule.name, "day_off_ot", 0)
 
 	def validate(self):
+		self.validate_ojt_change()
 		self.validate_leave_application()
 		self.validate_relieving_date()
 		if self.employee_availability=='Working' and self.shift_type and self.date:
@@ -77,6 +78,12 @@ class EmployeeSchedule(Document):
 			relieving_date = frappe.db.get_value("Employee", self.employee, "relieving_date")
 			if relieving_date and getdate(self.date) > getdate(relieving_date):
 				frappe.throw(_("Employee {0} is expected to leave on {1}, so cannot be scheduled for {2}").format(self.employee, relieving_date, self.date))
+
+	def validate_ojt_change(self):
+		if not self.is_new() and self.on_the_job_training and self.employee_availability == "Working":
+			old_doc = self.get_doc_before_save()
+			if old_doc and old_doc.employee_availability == "On-the-job Training":
+				frappe.throw(_("Cannot change availability to 'Working' while an OJT record is linked. To change to 'Working', please delete this schedule and create a new one through Roster."))
 
 	def validate_offs(self):
 		"""

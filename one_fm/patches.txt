@@ -297,3 +297,5 @@ one_fm.patches.v15_0.check_po_kwd_rates
 one_fm.patches.v15_0.add_hr_settings_custom_fields #1-2
 one_fm.patches.v15_0.add_assignment_rule_rfm_approver
 one_fm.patches.v15_0.add_assignment_rule_rfm_warehouse_supervisor
+one_fm.patches.v15_0.populate_abbreviation_data #1-1
+one_fm.patches.v15_0.rename_accommodation_hierarchy #1-1

@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "space_type",
+  "abbreviation",
   "bed_space_available"
  ],
  "fields": [
@@ -25,10 +26,15 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Bed Space Available"
+  },
+  {
+   "fieldname": "abbreviation",
+   "fieldtype": "Data",
+   "label": "Abbreviation"
   }
  ],
  "links": [],
- "modified": "2020-11-16 08:45:24.326074",
+ "modified": "2026-02-10 07:29:13.749543",
  "modified_by": "Administrator",
  "module": "Accommodation",
  "name": "Accommodation Space Type",
@@ -60,6 +66,8 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
- "sort_order": "DESC"
+ "sort_order": "DESC",
+ "states": []
 }

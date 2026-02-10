@@ -48,6 +48,7 @@
    "fieldname": "accommodation",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Accommodation",
    "options": "Accommodation",
    "reqd": 1
@@ -63,6 +64,7 @@
   {
    "fieldname": "accommodation_unit",
    "fieldtype": "Link",
+   "in_standard_filter": 1,
    "label": "Unit",
    "options": "Accommodation Unit",
    "reqd": 1
@@ -71,6 +73,7 @@
    "fieldname": "accommodation_space_type",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Space Type",
    "options": "Accommodation Space Type",
    "reqd": 1
@@ -276,8 +279,13 @@
    "label": "Space QR"
   }
  ],
- "links": [],
- "modified": "2026-02-10 07:34:36.453921",
+ "links": [
+  {
+   "link_doctype": "Bed",
+   "link_fieldname": "accommodation_space"
+  }
+ ],
+ "modified": "2026-02-10 08:56:07.605091",
  "modified_by": "Administrator",
  "module": "Accommodation",
  "name": "Accommodation Space",

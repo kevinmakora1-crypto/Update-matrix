@@ -42,11 +42,29 @@ class RequestforPurchase(Document):
 		self._update_linked_rfm_quantities(delete_event=True)
 
 	def validate(self):
+		# Enforce business rules for currency edit restrictions
+		self._enforce_currency_change_rules()
 		self.validate_conversion_factors()
 		self.calculate_stock_quantities()
 		self.calculate_stock_rates()
 		self.calculate_item_values()
 		self.calculate_totals()
+
+	def _enforce_currency_change_rules(self):
+		"""Prevent changing `currency` when status is 'Partially Ordered' or 'Ordered'.
+		Allows edits when status is 'To Order' as per business rule.
+		"""
+		# Only relevant for submitted documents
+		if getattr(self, 'docstatus', 0) != 1:
+			return
+		# Block currency changes when status is Partially Ordered or Ordered
+		if getattr(self, 'status', '') in ('Partially Ordered', 'Ordered'):
+			previous = self.get_doc_before_save()
+			if previous and previous.currency != self.currency:
+				frappe.throw(
+					_("Currency cannot be changed when Request for Purchase status is 'Ordered' or 'Partially Ordered'."),
+					title=_("Currency Change Not Allowed"),
+				)
 
 	def validate_items_to_order(self):
 		if not self.items_to_order:

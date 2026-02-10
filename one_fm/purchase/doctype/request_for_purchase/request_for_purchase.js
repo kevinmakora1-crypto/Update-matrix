@@ -8,6 +8,8 @@ frappe.ui.form.on('Request for Purchase', {
 		update_currency_labels(frm);
 		toggle_base_currency_columns(frm);
 		update_total_labels(frm);
+        // Toggle currency field editability based on RFP status
+        toggle_currency_readonly(frm);
 
 		
 
@@ -43,6 +45,10 @@ frappe.ui.form.on('Request for Purchase', {
 			}
 
 	},
+    status: function(frm) {
+        // Ensure UI reflects currency edit rules when status changes
+        toggle_currency_readonly(frm);
+    },
 	make_custom_buttons: function(frm) {
 		if (frm.doc.docstatus == 1 && frappe.user.has_role('Purchase Officer')){
 			if(frm.doc.workflow_state === 'Approved') {
@@ -516,6 +522,8 @@ frappe.ui.form.on('Request for Purchase', {
         update_currency_labels(frm);
 		toggle_base_currency_columns(frm);
 		update_total_labels(frm);
+        // Apply currency readonly rules on load as well
+        toggle_currency_readonly(frm);
     },
 	exchange_rate: function(frm) {
         recalculate_all_items(frm);
@@ -749,6 +757,27 @@ function toggle_base_currency_columns(frm) {
     }
     frm.fields_dict['items_to_order'].grid.reset_grid();
     frm.refresh_field('items_to_order');
+}
+
+function toggle_currency_readonly(frm) {
+    // Acceptance Criteria:
+    // - If status is 'To Order' => Currency remains editable
+    // - If status is 'Partially Ordered' => Currency cannot be changed
+    // Default: editable unless explicitly blocked
+    try {
+        const status = frm.doc.status;
+        if (status === 'Partially Ordered' || status === 'Ordered') {
+            frm.set_df_property('currency', 'read_only', 1);
+            frm.set_df_property('currency', 'description', __('Currency cannot be changed once the RFP is Ordered or Partially Ordered.'));
+        } else {
+            frm.set_df_property('currency', 'read_only', 0);
+            frm.set_df_property('currency', 'description', null);
+        }
+        frm.refresh_field('currency');
+    } catch (e) {
+        // Non-blocking UI safeguard
+        console && console.warn && console.warn('toggle_currency_readonly error', e);
+    }
 }
 
 function recalculate_all_items(frm) {

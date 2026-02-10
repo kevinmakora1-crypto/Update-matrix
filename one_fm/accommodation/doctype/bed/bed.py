@@ -97,24 +97,32 @@ class Bed(Document):
 				.format(allowed_no, self.accommodation_space)))
 
 	def autoname(self):
-		self.set_bed_code()
-		self.name = self.accommodation_space+self.bed_code
+		if not self.accommodation_space:
+			frappe.throw(_("Accommodation Space is required"))
 
-	def set_bed_code(self):
-		if not self.bed_code:
-			self.bed_code = get_latest_bed_code(self)
+		counter = get_next_bed_number(self.accommodation_space)
+		self.name = "{}-{}".format(self.accommodation_space, counter)
 
-def get_latest_bed_code(doc):
-	query = """
-		select
-			bed_code+1
-		from
-			`tabBed`
-		where
-			accommodation='{0}' and accommodation_unit='{1}' and accommodation_space='{2}'
-		order by
-			bed_code desc limit 1
-	"""
-	bed_code = frappe.db.sql(query.format(doc.accommodation, doc.accommodation_unit, doc.accommodation_space))
-	new_bed_code = bed_code[0][0] if bed_code else 1
-	return str(int(new_bed_code)).zfill(1)
+def get_next_bed_number(accommodation_space):
+	# Pattern: {accommodation_space}-{number}
+	prefix = "{}-".format(accommodation_space)
+
+	# Get all existing names that start with this prefix
+	existing_names = frappe.db.sql("""
+		SELECT name FROM `tabBed`
+		WHERE name LIKE %s
+		ORDER BY length(name) DESC, name DESC
+		LIMIT 1
+	""", (prefix + "%",))
+
+	if existing_names:
+		last_name = existing_names[0][0]
+		# Extract the number part after the last hyphen
+		parts = last_name.split('-')
+		if len(parts) > 1:
+			try:
+				return int(parts[-1]) + 1
+			except ValueError:
+				pass
+
+	return 1

@@ -36,7 +36,7 @@ def warehouse_query(doctype, txt, searchfield, start, page_len, filters, as_dict
         from
             `tabWarehouse`
         where
-            docstatus < 2
+            docstatus < 2 and is_group=0
             {store_keeper_condition}
             and ({scond}) and disabled=0
             {fcond} {mcond}

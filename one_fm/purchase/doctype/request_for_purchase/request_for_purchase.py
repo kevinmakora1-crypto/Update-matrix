@@ -60,9 +60,9 @@ class RequestforPurchase(Document):
 		# Block currency changes when status is Partially Ordered or Ordered
 		if getattr(self, 'status', '') in ('Partially Ordered', 'Ordered'):
 			previous = self.get_doc_before_save()
-			if previous and previous.currency != self.currency:
+			if previous and (previous.currency != self.currency) or (previous.exchange_rate != self.exchange_rate):
 				frappe.throw(
-					_("Currency cannot be changed when Request for Purchase status is 'Ordered' or 'Partially Ordered'."),
+					_("Currency/Exchange Rate cannot be changed when Request for Purchase status is 'Ordered' or 'Partially Ordered'."),
 					title=_("Currency Change Not Allowed"),
 				)
 

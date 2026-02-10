@@ -769,9 +769,11 @@ function toggle_currency_readonly(frm) {
         if (status === 'Partially Ordered' || status === 'Ordered') {
             frm.set_df_property('currency', 'read_only', 1);
             frm.set_df_property('currency', 'description', __('Currency cannot be changed once the RFP is Ordered or Partially Ordered.'));
+            frm.set_df_property('exchange_rate', 'read_only', 1);
         } else {
             frm.set_df_property('currency', 'read_only', 0);
             frm.set_df_property('currency', 'description', null);
+            frm.set_df_property('exchange_rate', 'read_only', 0);
         }
         frm.refresh_field('currency');
     } catch (e) {

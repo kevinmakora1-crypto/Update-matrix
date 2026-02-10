@@ -243,7 +243,7 @@ def mark_single_attendance(emp, att_date, roster_type="Basic"):
                 )
                 return
             elif employee_schedule:
-                if employee_schedule.employee_availability in ['Working','Client Event']:
+                if employee_schedule.employee_availability in ['Working','Client Event', 'On-the-job Training']:
                     # continue to mark attendance if checkin exists
                     mark_for_shift_assignment(employee.name, att_date)
                 
@@ -1320,7 +1320,7 @@ class AttendanceMarking():
 
     def mark_day_off(self):
         days_off = frappe.get_list("Employee Schedule", {
-            'date':self.start.date(), 'employee_availability':'Day Off', "is_replaced": 0
+            'date':self.start.date(), 'employee_availability':['IN', ['Day Off', 'Client Day Off']], "is_replaced": 0
         }, "*")
         for i in days_off:
             try:

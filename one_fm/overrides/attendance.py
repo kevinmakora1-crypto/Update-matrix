@@ -723,7 +723,6 @@ def mark_daily_attendance(start_date, end_date):
             AND e.attendance_by_timesheet = 0
             AND '{start_date}' BETWEEN hl.from_date AND hl.to_date
             AND e.status='Active'
-            AND e.name NOT IN (SELECT employee from `tabEmployee Schedule`es where es.date = '{start_date}' AND es.employee_availability IN ('Day Off', 'Client Day Off', 'Working', 'Client Event', 'On-the-job Training'))
             AND e.date_of_joining < '{today}'
             """,
         as_dict=1)

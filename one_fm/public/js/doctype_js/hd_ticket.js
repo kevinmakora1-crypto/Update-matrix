@@ -8,8 +8,8 @@ frappe.ui.form.on("HD Ticket", {
 
 const add_pathfinder_log_button = (frm) => {
   if (
-    frm.doc.ticket_type === "Feature Request" &&
-    frappe.user.has_role("Business Analyst")
+    ["Feature Request", "Enhancement"].includes(frm.doc.ticket_type) &&
+    (frappe.user.has_role("Business Analyst") || frappe.user.has_role("Process Owner"))
   ) {
     frm.add_custom_button(
       "Pathfinder Log",
@@ -24,7 +24,7 @@ const add_pathfinder_log_button = (frm) => {
               frappe.msgprint({
                 message: __(
                   "Pathfinder Log <a href='/app/pathfinder-log/{0}'>{0}</a> created"
-                , [r.message]),
+                  , [r.message]),
                 title: __("Pathfinder Log Created"),
                 indicator: "green",
               });
@@ -46,7 +46,7 @@ const add_github_issue_button = (frm) => {
         <a href="${frm.doc.custom_github_issue_url}" class="btn btn-primary" target="_blank">View GitHub Issue</a>`;
         frm.dashboard.add_section(el, __("GitHub Issue"));
       }
-    } else if (["Open", "Replied"].includes(frm.doc.status) && frappe.session.user==frm.doc.custom_bug_buster) {
+    } else if (["Open", "Replied"].includes(frm.doc.status) && frappe.session.user == frm.doc.custom_bug_buster) {
       frm.add_custom_button(
         "GitHub Issue",
         () => {

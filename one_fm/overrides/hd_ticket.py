@@ -532,7 +532,8 @@ def get_github_api_token(user=None):
 
 @frappe.whitelist()
 def create_pathfinder_log(hd_ticket_name):
-    if "Business Analyst" not in frappe.get_roles():
+    user_roles = frappe.get_roles()
+    if "Business Analyst" not in user_roles and "Process Owner" not in user_roles:
         frappe.throw(_("You are not authorized to create a Pathfinder Log."), title=_("Permission Denied"))
 
     existing_log = frappe.db.exists("Pathfinder Log", {"hd_ticket": hd_ticket_name})

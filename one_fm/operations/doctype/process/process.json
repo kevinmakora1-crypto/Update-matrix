@@ -7,7 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "process_name",
+  "description",
   "column_break_grtk",
+  "process_map",
   "section_break_fxrs",
   "process_owner",
   "process_owner_name",
@@ -15,7 +17,7 @@
   "business_analyst",
   "business_analyst_name",
   "section_break_xkrb",
-  "description",
+  "process_doctypes",
   "column_break_dpas",
   "roles"
  ],
@@ -89,12 +91,26 @@
   {
    "fieldname": "column_break_dpas",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "process_doctypes",
+   "fieldtype": "Table",
+   "label": "Process Doctypes",
+   "options": "Process Doctype",
+   "reqd": 1
+  },
+  {
+   "fieldname": "process_map",
+   "fieldtype": "Small Text",
+   "label": "Process Map",
+   "options": "URL",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-06 21:00:04.607017",
+ "modified": "2026-02-11 07:36:12.368041",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process",

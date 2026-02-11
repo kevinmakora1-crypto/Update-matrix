@@ -31,6 +31,8 @@ const add_pathfinder_log_button = (frm) => {
               frm.reload_doc();
             }
           },
+          freeze: true,
+          freeze_message: "Creating Pathfinder Log...",
         });
       },
       "Create"

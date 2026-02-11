@@ -287,6 +287,7 @@
    "options": "Currency"
   },
   {
+   "allow_on_submit": 1,
    "default": "1",
    "fieldname": "exchange_rate",
    "fieldtype": "Float",
@@ -370,7 +371,7 @@
  "icon": "fa fa-shopping-cart",
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-05 08:42:50.187399",
+ "modified": "2026-02-10 17:30:38.876150",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Purchase",

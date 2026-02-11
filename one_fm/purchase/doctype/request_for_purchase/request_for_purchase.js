@@ -776,6 +776,7 @@ function toggle_currency_readonly(frm) {
             frm.set_df_property('exchange_rate', 'read_only', 0);
         }
         frm.refresh_field('currency');
+        frm.refresh_field('exchange_rate');
     } catch (e) {
         // Non-blocking UI safeguard
         console && console.warn && console.warn('toggle_currency_readonly error', e);

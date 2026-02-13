@@ -9,9 +9,10 @@ frappe.ui.form.on('Roster Day Off Checker', {
 
 function add_make_cdo_button(frm) {
     if (!frm.doc.__islocal && 
-        frm.doc.status !== 'Completed' && 
-        frm.doc.status !== 'Canceled' &&
-        (frappe.user.has_role('Operation Admin') || frappe.session.user === "Administrator")) {
+        frm.doc.status !== 'Cancelled' &&
+        (frappe.user.has_role('Payroll Operator') || 
+         frappe.user.has_role('Attendance Manager') || 
+         frappe.session.user === "Administrator")) {
         
         frm.add_custom_button(__('Make CDO'), function() {
             show_make_cdo_dialog(frm);

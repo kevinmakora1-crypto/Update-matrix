@@ -18,8 +18,8 @@ class EmployeeSchedule(Document):
 			if frappe.flags.in_patch or frappe.flags.in_install or frappe.flags.in_migrate:
 				return
 			
-			# Allow if ignore_permissions is set (background jobs)
-			if frappe.flags.ignore_permissions:
+			# Allow if ignore_permissions is set (background jobs / programmatic updates)
+			if getattr(self.flags, "ignore_permissions", False):
 				return
 			
 			# Check if user has System Manager role

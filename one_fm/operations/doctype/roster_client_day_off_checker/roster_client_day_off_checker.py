@@ -112,7 +112,7 @@ def create_or_update_cdo_checker(employee, month_start, month_end, cdo_count, to
 	
 	
 	# Get supervisors
-	shift_supervisor = get_shift_supervisor(employee.shift, employee.site) if employee.shift and employee.site else None
+	shift_supervisor = get_shift_supervisor(employee.shift, today) if employee.shift else None
 	site_supervisor = frappe.db.get_value("Operations Site", employee.site, "site_supervisor") if employee.site else None
 	project_manager = frappe.db.get_value("Project", employee.project, "project_manager") if employee.project else None
 	

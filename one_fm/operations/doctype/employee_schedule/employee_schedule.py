@@ -11,6 +11,21 @@ from one_fm.utils import get_week_start_end, get_month_start_end
 from one_fm.processor import sendemail
 
 class EmployeeSchedule(Document):
+	def before_save(self):
+		"""Enforce read-only for non-System Managers"""
+		if not self.is_new():
+			# Allow programmatic updates (ignore_permissions=True)
+			if frappe.flags.in_patch or frappe.flags.in_install or frappe.flags.in_migrate:
+				return
+			
+			# Allow if ignore_permissions is set (background jobs / programmatic updates)
+			if getattr(self.flags, "ignore_permissions", False):
+				return
+			
+			# Check if user has System Manager role
+			if frappe.session.user != "Administrator" and "System Manager" not in frappe.get_roles():
+				frappe.throw(_("Only System Managers can edit Employee Schedule records directly. Please use the appropriate tools (Roster, OJT, Client Event, etc.) to make schedule changes."))
+
 	def before_insert(self):
 		if frappe.db.exists("Employee Schedule", {"employee": self.employee, "date": self.date, "roster_type" : self.roster_type}):
 			frappe.throw(_("Employee Schedule already scheduled for {employee} on {date}.".format(employee=self.employee_name, date=cstr(self.date))))

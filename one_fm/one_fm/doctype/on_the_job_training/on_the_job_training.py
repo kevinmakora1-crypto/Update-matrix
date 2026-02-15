@@ -50,8 +50,13 @@ class OntheJobTraining(Document):
         if self.workflow_state == "Pending Approval":
             # This logic was moved from "Approved" state to "Pending Approval"
             # as per requirement to trigger schedule creation earlier.
-            if self.has_value_changed("workflow_state"):
-                 self.create_or_update_employee_schedules()
+            # Also handle date changes while in "Pending Approval" so schedules stay in sync.
+            if (
+                self.has_value_changed("workflow_state")
+                or self.has_value_changed("start_date")
+                or self.has_value_changed("end_date")
+            ):
+                self.create_or_update_employee_schedules()
 
         if self.workflow_state == "Approved":
             if self.has_value_changed("end_date"):

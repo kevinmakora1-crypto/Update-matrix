@@ -279,7 +279,7 @@
             "fieldtype": "Link",
             "label": "Amended From",
             "no_copy": 1,
-            "options": "Roster Day Off Checker",
+            "options": "Roster Client Day Off Checker",
             "print_hide": 1,
             "read_only": 1,
             "search_index": 1

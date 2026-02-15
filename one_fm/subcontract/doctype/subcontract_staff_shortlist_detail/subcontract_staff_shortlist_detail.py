@@ -21,23 +21,21 @@ class SubcontractStaffShortlistDetail(Document):
 
 
 @frappe.whitelist()
-def trigger_ocr(docname, file_url):
+def trigger_ocr(file_url, id_type, subcontractor=None):
 	"""
 	Trigger OCR processing for uploaded Civil ID document
 	
 	Args:
-		docname (str): Name of the Subcontract Staff Shortlist Detail document
 		file_url (str): URL of the uploaded file
+		id_type (str): Type of ID (must be 'Civil ID')
+		subcontractor (str): ID of the subcontractor (optional)
 		
 	Returns:
 		dict: Extracted data or error message
 	"""
 	try:
-		# Get the document
-		doc = frappe.get_doc("Subcontract Staff Shortlist Detail", docname)
-		
 		# Only process if ID Type is Civil ID
-		if doc.id_type != "Civil ID":
+		if id_type != "Civil ID":
 			return {
 				"success": False,
 				"message": "OCR is only triggered for Civil ID type"
@@ -73,16 +71,13 @@ def trigger_ocr(docname, file_url):
 				"message": "OCR failed to read the document clearly."
 			}
 		
-		# Get parent document to check company name
-		parent_doc = frappe.get_doc("Subcontract Staff Shortlist", doc.parent)
-		
 		# Check if subcontractor name in Arabic exists
 		subcontractor_name_arabic = None
-		if parent_doc.subcontractor:
+		if subcontractor:
 			# Get from Supplier doctype
 			subcontractor_name_arabic = frappe.db.get_value(
 				"Supplier", 
-				parent_doc.subcontractor, 
+				subcontractor, 
 				"supplier_name_in_arabic"
 			)
 		
@@ -93,7 +88,7 @@ def trigger_ocr(docname, file_url):
 		if extracted_data.get('company_name_arabic') and subcontractor_name_arabic:
 			if not compare_arabic_names(extracted_data['company_name_arabic'], subcontractor_name_arabic):
 				warnings.append("Subcontractor Name in Arabic not matching with the Staff Civil ID.")
-		elif extracted_data.get('company_name_arabic') and not subcontractor_name_arabic:
+		elif extracted_data.get('company_name_arabic') and not subcontractor_name_arabic and subcontractor:
 			warnings.append("Comparison failed: Subcontractor Name in Arabic is missing in the main form. Please update the Subcontractor record first.")
 		
 		return {

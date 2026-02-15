@@ -674,7 +674,8 @@ scheduler_events = {
 			'one_fm.operations.doctype.roster_day_off_checker.roster_day_off_checker.generate_checker',
 		],
 		"30 4 * * *": [
-			'one_fm.utils.check_grp_operator_submission_four_half'
+			'one_fm.utils.check_grp_operator_submission_four_half',
+			'one_fm.operations.doctype.roster_client_day_off_checker.roster_client_day_off_checker.check_roster_client_day_off'
 		],
 		"15 6 * * *": [# Runs everyday at 6:15 am.
 			'one_fm.utils.send_gp_letter_attachment_reminder2',

@@ -1026,6 +1026,8 @@ def client_post_off(posts, args):
     
     # Get week days for Weekly repeat
     week_days = get_week_days(args) if args.repeat == "Weekly" else []
+    if args.repeat == "Weekly" and not week_days:
+        frappe.throw(_("Please select at least one weekday for weekly repetition."))
     
     insert_query = """
         Insert Into

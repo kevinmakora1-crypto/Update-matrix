@@ -1055,11 +1055,14 @@ def client_post_off(posts, args):
         if args.repeat in ["Does not repeat", "Selected Days Only"]:
             dates_to_process = post_wise_dates.get(post_name_iter, [])
         else:
+            # Select a non-empty start date for repeating patterns
             from_date = (
-                args.client_post_off_from_date if "client_post_off_from_date" in args
-                else args.post_off_from_date if "post_off_from_date" in args
-                else args.plan_from_date
+                args.get("client_post_off_from_date")
+                or args.get("post_off_from_date")
+                or args.get("plan_from_date")
             )
+            if not from_date:
+                frappe.throw(_("A valid start date is required to generate repeating schedules."))
             # Use appropriate frequency based on repeat type
             if args.repeat == "Monthly":
                 dates_to_process = pd.date_range(start=from_date, end=end_date_val, freq="MS")

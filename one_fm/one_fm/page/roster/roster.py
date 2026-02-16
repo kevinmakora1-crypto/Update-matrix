@@ -1024,6 +1024,9 @@ def client_post_off(posts, args):
     insert_post_flag = False
     delete_post_list = []
     
+    # Get week days for Weekly repeat
+    week_days = get_week_days(args) if args.repeat == "Weekly" else []
+    
     insert_query = """
         Insert Into
             `tabPost Schedule`
@@ -1046,15 +1049,22 @@ def client_post_off(posts, args):
                 site_val = post_details_val["site"]
                 project_detail_val = post_details_val["project"]
         
-        # Handle different repeat patterns like post_off does
+        # Handle different repeat patterns
         if args.repeat in ["Does not repeat", "Selected Days Only"]:
             dates_to_process = post_wise_dates.get(post_name_iter, [])
         else:
-            # For Daily, Weekly, Monthly, Yearly - use date range
-            from_date = args.client_post_off_from_date if "client_post_off_from_date" in args else args.post_off_from_date
+            from_date = (
+                args.client_post_off_from_date if "client_post_off_from_date" in args
+                else args.post_off_from_date if "post_off_from_date" in args
+                else args.plan_from_date
+            )
             dates_to_process = pd.date_range(start=from_date, end=end_date_val)
         
         for date_item in dates_to_process:
+            # Filter by weekday for Weekly repeat
+            if args.repeat == "Weekly" and getdate(date_item).strftime("%A") not in week_days:
+                continue 
+            
             date_str = cstr(date_item.date()) if hasattr(date_item, 'date') else cstr(date_item)
             
             if (post_name_iter, date_str) in existing_schedules_set:
@@ -1088,8 +1098,6 @@ def client_post_off(posts, args):
             frappe.db.delete("Post Schedule", {"name": ["in", list(set(delete_post_list))]})
         frappe.db.sql(insert_query)
         frappe.db.commit()
-
-
 
 def plan_post(posts, args):
 	""" This function sets the post status to planned provided a post, start date and an end date """
@@ -1343,50 +1351,57 @@ def get_post_porjects(unique_posts_list):
 	}
 
 def get_post_schedule_end_date(args, unique_posts_list, post_projects={}):
-	end_date_val = args.repeat_till if args.repeat_till and not cint(args.project_end_date) else None
+    end_date_val = args.repeat_till if args.repeat_till and not cint(args.project_end_date) else None
 
-	# This was plan_from_date, assuming it should be post_off_from_date from context of post_off args
-	from_date_for_logic = args.post_off_from_date if "post_off_from_date" in args else args.plan_from_date
+    from_date_for_logic = (
+        args.client_post_off_from_date if "client_post_off_from_date" in args 
+        else args.post_off_from_date if "post_off_from_date" in args 
+        else args.plan_from_date
+    )
 
-	if args.repeat in ["Does not repeat", "Selected Days Only"]:
-		end_date_val = get_last_day(from_date_for_logic)
-
-
-	# If project_end_date is set, get contract end dates in bulk
-	if cint(args.project_end_date) and post_projects and not (args.repeat_till if "repeat_till" in args else None): # Check specific end date for this flow
-		project_names = list(post_projects.values())
-		if project_names: # Ensure there are projects
-			contract_end_dates = frappe.get_all(
-				"Contracts",
-				filters={"project": ["in", project_names]},
-				fields=["project", "end_date"],
-				as_list=True
-			)
-			contract_map = dict(contract_end_dates)
-			applicable_end_dates = [contract_map.get(proj) for proj in project_names if contract_map.get(proj)]
-			if applicable_end_dates:
-				end_date_val = min(applicable_end_dates)
-			else: # No contract end dates found for the projects
-				if not args.repeat_till : # If no specific override date is given
-					frappe.throw(_("No contract end dates found for associated projects, and no specific 'Repeat Till' date provided."))
-		elif not args.repeat_till: # No projects and no specific end date
-				frappe.throw(_("No projects to determine project end date, and no specific 'Repeat Till' date provided."))
+    if args.repeat in ["Does not repeat", "Selected Days Only"]:
+        end_date_val = get_last_day(from_date_for_logic)
 
 
-	return end_date_val
+    if cint(args.project_end_date) and post_projects and not args.repeat_till:
+        project_names = list(post_projects.values())
+        if project_names:
+            contract_end_dates = frappe.get_all(
+                "Contracts",
+                filters={"project": ["in", project_names]},
+                fields=["project", "end_date"],
+                as_list=True
+            )
+            contract_map = dict(contract_end_dates)
+            applicable_end_dates = [contract_map.get(proj) for proj in project_names if contract_map.get(proj)]
+            if applicable_end_dates:
+                end_date_val = min(applicable_end_dates)
+            else:
+                if not args.repeat_till:
+                    frappe.throw(_("No contract end dates found for associated projects, and no specific 'Repeat Till' date provided."))
+        elif not args.repeat_till:
+            frappe.throw(_("No projects to determine project end date, and no specific 'Repeat Till' date provided."))
+
+    return end_date_val
 
 def get_existing_post_schedules(args, end_date, unique_posts_list):
-	if not unique_posts_list: return []
-	# Assuming plan_from_date should be post_off_from_date for post_off context
-	from_date_for_query = args.post_off_from_date if "post_off_from_date" in args else args.plan_from_date
-	return frappe.get_all(
-		"Post Schedule",
-		filters={
-			"date": ["between", [from_date_for_query, end_date]],
-			"post": ["in", unique_posts_list]
-		},
-		fields=["name", "post", "date"]
-	)
+    if not unique_posts_list: 
+        return []
+    
+    from_date_for_query = (
+        args.client_post_off_from_date if "client_post_off_from_date" in args 
+        else args.post_off_from_date if "post_off_from_date" in args 
+        else args.plan_from_date
+    )
+    
+    return frappe.get_all(
+        "Post Schedule",
+        filters={
+            "date": ["between", [from_date_for_query, end_date]],
+            "post": ["in", unique_posts_list]
+        },
+        fields=["name", "post", "date"]
+    )
 
 def insert_post_schedule(args, unique_posts_list, existing_schedules_set, end_date, posts_orig_list):
 	from one_fm.api.mobile.roster import month_range

@@ -9,9 +9,40 @@ from frappe.model.workflow import apply_workflow
 
 class OntheJobTraining(Document):
     def validate(self):
+        self.validate_workflow_transition()
         self.validate_dates()
         self.validate_extension_request()
         self.calculate_total_scheduled_ojt_days()
+        
+
+    def validate_workflow_transition(self):
+        if self.is_new():
+            return
+
+        if not self.has_value_changed("workflow_state"):
+            return
+
+        today = getdate(frappe.utils.nowdate())
+        # Ensure self.start_date is available (validate checked it? or not required?)
+        # Base Document.validate checks mandatory.
+        if not self.start_date:
+             return
+
+        start_date = getdate(self.start_date)
+        end_date = getdate(self.end_date) if self.end_date else start_date
+
+        # Transition to Draft
+        if self.workflow_state == "Draft":
+            if start_date <= today:
+                # Event started or ended
+                status_msg = "started" if today <= end_date else "taken place"
+                frappe.throw(_("You are unable to return this {{On the Job Training}} to draft as the event has already {0}. Please approve.").format(status_msg))
+
+        # Transition to Rejected
+        if self.workflow_state == "Rejected":
+            # If End Date reached (End Date <= Current Date)
+            if end_date <= today:
+                 frappe.throw(_("You are unable to reject this {{On the Job Training}} as the training has already taken place. Please approve."))
 
     def validate_extension_request(self):
         if self.is_extension_request and self.original_ojt_request:
@@ -58,6 +89,9 @@ class OntheJobTraining(Document):
             ):
                 self.create_or_update_employee_schedules()
 
+        if self.has_value_changed("workflow_state"):
+            self.handle_workflow_cleanup()
+
         if self.workflow_state == "Approved":
             if self.has_value_changed("end_date"):
                 self.calculate_total_scheduled_ojt_days()
@@ -73,6 +107,38 @@ class OntheJobTraining(Document):
                     frappe.msgprint(_("OJT extension submitted for approval."), indicator="blue")
 
                 self.handle_end_date_change()
+
+    def handle_workflow_cleanup(self):
+        today = getdate(frappe.utils.nowdate())
+        if not self.start_date: return
+        
+        start_date = getdate(self.start_date)
+        end_date = getdate(self.end_date) if self.end_date else start_date
+
+        if self.workflow_state == "Draft":
+            # Validation ensures event hasn't started
+            frappe.enqueue(
+                'one_fm.one_fm.doctype.on_the_job_training.on_the_job_training.delete_related_records_async',
+                ojt_name=self.name,
+                future_only=False
+            )
+
+        elif self.workflow_state == "Rejected":
+            if start_date > today:
+                # Not started, delete all
+                frappe.enqueue(
+                    'one_fm.one_fm.doctype.on_the_job_training.on_the_job_training.delete_related_records_async',
+                    ojt_name=self.name,
+                    future_only=False
+                )
+            elif start_date <= today < end_date:
+                # Started but not finished, delete future
+                frappe.enqueue(
+                    'one_fm.one_fm.doctype.on_the_job_training.on_the_job_training.delete_related_records_async',
+                    ojt_name=self.name,
+                    future_only=True
+                )
+
 
     def on_update_after_submit(self):
         self.on_update()
@@ -239,3 +305,28 @@ def create_ojt_extension(source_name, target_doc=None):
     doc.client_agreed_ojt_days = source_doc.client_agreed_ojt_days
 
     return doc
+
+
+def delete_related_records_async(ojt_name, future_only=False):
+    """Background job for fast SQL deletion of related records"""
+    today = getdate(frappe.utils.nowdate())
+    
+    # 1. Employee Schedules
+    schedule_filters = {
+        "on_the_job_training": ojt_name
+    }
+    if future_only:
+        schedule_filters["date"] = [">", today]
+        
+    frappe.db.delete("Employee Schedule", filters=schedule_filters)
+        
+    # 2. Shift Assignments
+    shift_filters = {
+        "custom_on_the_job_training": ojt_name,
+        # We delete regardless of docstatus for performance/cleanup
+    }
+    if future_only:
+        shift_filters["start_date"] = [">", today]
+
+    frappe.db.delete("Shift Assignment", filters=shift_filters)
+    frappe.db.commit()

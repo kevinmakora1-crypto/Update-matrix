@@ -2,28 +2,36 @@ name: "🚀 Trigger AI Agent"
 
 on:
   issues:
-    types: [labeled]
+    types: [opened, reopened, labeled]
+  workflow_dispatch: # Allows you to run it manually from the Actions tab
 
 jobs:
   solve-issue:
-    # This workflow triggers the AI Agent when the 'ai-fix' label is added to an issue.
-    # It is configured to run on a 'self-hosted' runner (your Mac).
-    if: github.event.label.name == 'ai-fix'
-    runs-on: self-hosted
+    # Only run if 'ai-fix' label is present OR if manually triggered
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'ai-fix'))
+    
+    # Matches your M1 Mac runner labels
+    runs-on: [self-hosted, macOS, ARM64]
 
     steps:
-      - name: Run Pure Google Agent
-        env:
-          # These will be read from your local .env or session
-          # The agent uses GCP and GitHub credentials to operate.
-          GITHUB_EVENT_PATH: ${{ github.event_path }}
+      - name: Show Debug Info
         run: |
-          # 1. Navigate to the agent orchestrator directory
+          echo "Processing Issue #${{ github.event.issue.number }}"
+          echo "Runner Architecture: $(uname -m)"
+
+      - name: Run Pure Google Agent
+        run: |
           cd /Users/samdani/Desktop/secure-frappe-pipeline
-          
-          # 2. Activate the local virtual environment
           source venv/bin/activate
           
-          # 3. Execute the agent for the specific issue
-          # The issue number is passed dynamically from the GitHub event.
-          python -m agent_runner.main --run "Solve GitHub issue #${{ github.event.issue.number }}"
+          # If manually triggered, you might need to provide an issue number
+          # Otherwise, we use the issue number from the label event.
+          ISSUE_NUM="${{ github.event.issue.number }}"
+          if [ -z "$ISSUE_NUM" ]; then
+             echo "Error: No issue number found. Please add the 'ai-fix' label to an issue."
+             exit 1
+          fi
+          
+          python -m agent_runner.main --run "Solve GitHub issue #$ISSUE_NUM"

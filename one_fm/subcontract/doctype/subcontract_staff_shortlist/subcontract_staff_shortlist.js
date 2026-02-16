@@ -83,27 +83,8 @@ frappe.ui.form.on('Subcontract Staff Shortlist Detail', {
 		new frappe.ui.FileUploader({
 			folder: 'Home',
 			on_success: (file_doc) => {
-				// Update the data object directly to avoid triggering a full grid refresh
-				// This prevents the modal from closing
-				row.attach_document = file_doc.file_url;
-				
-				// Mark the form as dirty using standard API to enable Save button
-				if (frm.dirty) {
-					frm.dirty();
-				} else {
-					// Fallback for older versions or if method missing
-					frm.doc.__unsaved = 1;
-					frm.trigger('save_enabled');
-				}
-				
-				// If the dialog is open, update the specific field control UI manually
-				if (cur_frm.cur_grid_row && cur_frm.cur_grid_row.name === cdn && cur_frm.cur_grid_row.grid_form.dialog) {
-					let field = cur_frm.cur_grid_row.grid_form.fields_dict['attach_document'];
-					if (field) {
-						// Update the control's value without triggering model events
-						field.set_input(file_doc.file_url);
-					}
-				}
+				// Set the file URL using standard Frappe API
+				frappe.model.set_value(cdt, cdn, 'attach_document', file_doc.file_url);
 				
 				// Handle Civil ID OCR
 				if (row.id_type === "Civil ID") {
@@ -121,44 +102,43 @@ frappe.ui.form.on('Subcontract Staff Shortlist Detail', {
 						},
 						callback: function(r) {
 							if (r.message && r.message.success) {
-								let updates = {};
-								if (r.message.data.civil_id_no) updates['civil_id_no'] = r.message.data.civil_id_no;
-								if (r.message.data.civil_id_expiry_date) updates['civil_id_expiry_date'] = r.message.data.civil_id_expiry_date;
-								if (r.message.data.date_of_birth) updates['date_of_birth'] = r.message.data.date_of_birth;
-								
-								// Apply updates silently (no grid refresh)
-								for (let key in updates) {
-									// Update model
-									row[key] = updates[key];
-									
-									// Update field UI if dialog is open
-									if (cur_frm.cur_grid_row && cur_frm.cur_grid_row.name === cdn && cur_frm.cur_grid_row.grid_form.dialog) {
-										let field = cur_frm.cur_grid_row.grid_form.fields_dict[key];
-										if (field) {
-											field.set_input(updates[key]);
-										}
-									}
+								// Apply OCR results using standard Frappe API
+								if (r.message.data.civil_id_no) {
+									frappe.model.set_value(cdt, cdn, 'civil_id_no', r.message.data.civil_id_no);
+								}
+								if (r.message.data.civil_id_expiry_date) {
+									frappe.model.set_value(cdt, cdn, 'civil_id_expiry_date', r.message.data.civil_id_expiry_date);
+								}
+								if (r.message.data.date_of_birth) {
+									frappe.model.set_value(cdt, cdn, 'date_of_birth', r.message.data.date_of_birth);
 								}
 								
-								// Ensure form is marked dirty again after OCR updates
-								if (frm.dirty) {
-									frm.dirty();
-								} else {
-									frm.doc.__unsaved = 1;
-									frm.trigger('save_enabled');
-								}
-								
-								frappe.show_alert({ message: __('Civil ID data extracted successfully'), indicator: 'green' }, 3);
+								frappe.show_alert({ 
+									message: __('Civil ID data extracted successfully'), 
+									indicator: 'green' 
+								}, 3);
 								
 								if (r.message.warnings && r.message.warnings.length > 0) {
-									r.message.warnings.forEach(w => frappe.msgprint({ title: __('Warning'), indicator: 'orange', message: w }));
+									r.message.warnings.forEach(w => frappe.msgprint({ 
+										title: __('Warning'), 
+										indicator: 'orange', 
+										message: w 
+									}));
 								}
 							} else {
-								frappe.msgprint({ title: __('OCR Failed'), indicator: 'red', message: r.message.message || __('Failed to extract data') });
+								frappe.msgprint({ 
+									title: __('OCR Failed'), 
+									indicator: 'red', 
+									message: r.message.message || __('Failed to extract data') 
+								});
 							}
 						},
 						error: function() {
-							frappe.msgprint({ title: __('Error'), indicator: 'red', message: __('An error occurred while processing') });
+							frappe.msgprint({ 
+								title: __('Error'), 
+								indicator: 'red', 
+								message: __('An error occurred while processing') 
+							});
 						}
 					});
 				}

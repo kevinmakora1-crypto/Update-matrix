@@ -3,11 +3,16 @@ name: "🚀 Trigger AI Agent"
 on:
   issues:
     types: [opened, reopened, labeled]
-  workflow_dispatch: # Allows you to run it manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to solve (e.g. 94)'
+        required: true
+        type: string
 
 jobs:
   solve-issue:
-    # Only run if 'ai-fix' label is present OR if manually triggered
+    # Only run if 'ai-fix' label is present OR if manually triggered via workflow_dispatch
     if: |
       github.event_name == 'workflow_dispatch' || 
       (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'ai-fix'))
@@ -41,10 +46,11 @@ jobs:
             exit 1
           fi
           
-          # Extract issue number
-          ISSUE_NUM="${{ github.event.issue.number }}"
+          # Extract issue number from automated event OR manual input
+          ISSUE_NUM="${{ github.event.issue.number }}${{ github.event.inputs.issue_number }}"
+          
           if [ -z "$ISSUE_NUM" ]; then
-             echo "❌ Error: No issue number found in the event."
+             echo "❌ Error: No issue number found in the event or input."
              exit 1
           fi
           

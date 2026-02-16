@@ -16,22 +16,37 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64]
 
     steps:
-      - name: Show Debug Info
+      - name: Debug Environment
         run: |
-          echo "Processing Issue #${{ github.event.issue.number }}"
-          echo "Runner Architecture: $(uname -m)"
+          echo "🚀 Processing Issue #${{ github.event.issue.number }}"
+          echo "📂 Working Directory: $(pwd)"
+          echo "👤 Current User: $(whoami)"
+          echo "🕒 Time: $(date)"
 
       - name: Run Pure Google Agent
         run: |
           cd /Users/samdani/Desktop/secure-frappe-pipeline
-          source venv/bin/activate
           
-          # If manually triggered, you might need to provide an issue number
-          # Otherwise, we use the issue number from the label event.
+          # Source .env if it exists to load GCP/GitHub secrets local to this Mac
+          if [ -f .env ]; then
+            echo "📝 Loading environment from .env file..."
+            export $(grep -v '^#' .env | xargs)
+          fi
+          
+          # Activate virtual environment
+          if [ -d venv ]; then
+            source venv/bin/activate
+          else
+            echo "❌ Error: Virtual environment (venv) not found!"
+            exit 1
+          fi
+          
+          # Extract issue number
           ISSUE_NUM="${{ github.event.issue.number }}"
           if [ -z "$ISSUE_NUM" ]; then
-             echo "Error: No issue number found. Please add the 'ai-fix' label to an issue."
+             echo "❌ Error: No issue number found in the event."
              exit 1
           fi
           
+          echo "🤖 Starting Agent for Issue #$ISSUE_NUM..."
           python -m agent_runner.main --run "Solve GitHub issue #$ISSUE_NUM"

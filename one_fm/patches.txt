@@ -300,3 +300,4 @@ one_fm.patches.v15_0.add_assignment_rule_rfm_approver #1
 one_fm.patches.v15_0.add_assignment_rule_rfm_warehouse_supervisor #1
 one_fm.patches.v15_0.populate_abbreviation_data #1-1
 one_fm.patches.v15_0.rename_accommodation_hierarchy #1-1
+one_fm.patches.v15_0.add_roster_client_day_off_checker_assignment_rules

@@ -21,6 +21,11 @@
   "last_name_in_arabic",
   "full_name_in_arabic",
   "column_break_7rvpb",
+  "id_type",
+  "upload_document_btn",
+  "attach_document",
+  "civil_id_no",
+  "civil_id_expiry_date",
   "date_of_birth",
   "gender",
   "nationality",
@@ -224,17 +229,48 @@
    "fieldtype": "Link",
    "label": "Designation",
    "options": "Designation"
+  },
+  {
+   "fieldname": "id_type",
+   "fieldtype": "Select",
+   "label": "ID Type",
+   "options": "\nCivil ID\nVisa Copy"
+  },
+  {
+   "fieldname": "attach_document",
+   "fieldtype": "Attach",
+   "label": "Attach Document",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.id_type == \"Civil ID\"",
+   "fieldname": "civil_id_no",
+   "fieldtype": "Data",
+   "label": "Civil ID No"
+  },
+  {
+   "depends_on": "eval:doc.id_type == \"Civil ID\"",
+   "fieldname": "civil_id_expiry_date",
+   "fieldtype": "Date",
+   "label": "Civil ID Expiry Date"
+  },
+  {
+   "fieldname": "upload_document_btn",
+   "fieldtype": "Button",
+   "label": "Upload Document"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-26 16:01:21.816652",
+ "modified": "2026-02-15 13:13:51.263880",
  "modified_by": "Administrator",
  "module": "Subcontract",
  "name": "Subcontract Staff Shortlist Detail",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

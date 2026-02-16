@@ -15,6 +15,7 @@ jobs:
     # Only run if 'ai-fix' label is present OR if manually triggered via workflow_dispatch
     if: |
       github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'issues' && github.event.label.name == 'ai-fix') ||
       (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'ai-fix'))
     
     # Matches your M1 Mac runner labels

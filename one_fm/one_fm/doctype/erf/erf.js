@@ -6,11 +6,9 @@ frappe.ui.form.on('ERF', {
 		if(frm.is_new()){
 			frm.set_value('erf_requested_by', frappe.session.user);
 		}
+		frm.page.wrapper.find('.form-message').remove();
 		if(frm.doc.docstatus==0){
 			frm.set_intro(__("All fields are Mandatory."), 'yellow');
-		}
-		else{
-			frm.set_intro(__(""));
 		}
 		frm.set_query('project', function () {
 			return {

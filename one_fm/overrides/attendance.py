@@ -381,7 +381,6 @@ def create_single_attendance_record(record):
         doc.roster_type = record.roster_type
         if record.comment:
             doc.comment = record.comment
-        
         doc = frappe.get_doc(doc)
         if doc.working_hours and work_duration:
             if (work_duration/2) > doc.working_hours:

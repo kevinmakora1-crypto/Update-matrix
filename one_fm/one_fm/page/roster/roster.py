@@ -1395,11 +1395,16 @@ def get_existing_post_schedules(args, end_date, unique_posts_list):
     if not unique_posts_list: 
         return []
     
-    from_date_for_query = (
-        args.client_post_off_from_date if "client_post_off_from_date" in args 
-        else args.post_off_from_date if "post_off_from_date" in args 
-        else args.plan_from_date
-    )
+    # Determine the from_date for the query using safe lookups and fallback
+    from_date_for_query = args.get("plan_from_date")
+    if from_date_for_query in (None, ""):
+        from_date_for_query = args.get("client_post_off_from_date")
+    if from_date_for_query in (None, ""):
+        from_date_for_query = args.get("post_off_from_date")
+
+    # Validate that a from_date value is provided for the query
+    if not from_date_for_query:
+        frappe.throw(_("A valid from date (Plan From Date, Client Post Off From Date, or Post Off From Date) must be provided."))
     
     return frappe.get_all(
         "Post Schedule",

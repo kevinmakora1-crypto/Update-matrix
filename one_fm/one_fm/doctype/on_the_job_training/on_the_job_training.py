@@ -47,6 +47,17 @@ class OntheJobTraining(Document):
                 )
     
     def on_update(self):
+        if self.workflow_state == "Pending Approval":
+            # This logic was moved from "Approved" state to "Pending Approval"
+            # as per requirement to trigger schedule creation earlier.
+            # Also handle date changes while in "Pending Approval" so schedules stay in sync.
+            if (
+                self.has_value_changed("workflow_state")
+                or self.has_value_changed("start_date")
+                or self.has_value_changed("end_date")
+            ):
+                self.create_or_update_employee_schedules()
+
         if self.workflow_state == "Approved":
             if self.has_value_changed("end_date"):
                 self.calculate_total_scheduled_ojt_days()
@@ -62,8 +73,6 @@ class OntheJobTraining(Document):
                     frappe.msgprint(_("OJT extension submitted for approval."), indicator="blue")
 
                 self.handle_end_date_change()
-            else:
-                self.create_or_update_employee_schedules()
 
     def on_update_after_submit(self):
         self.on_update()

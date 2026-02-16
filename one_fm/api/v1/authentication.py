@@ -576,6 +576,7 @@ def user_login(employee_id, password):
 		endpoint_state = frappe.db.get_single_value("ONEFM General Setting", 'enable_face_recognition_endpoint')
 		msg['endpoint_state'] = endpoint_state
 		msg['employee_endpoint_state'] = user_employee.custom_enable_face_recognition
+		msg['shift_working'] = user_employee.shift_working
 		response("success", 200, msg)
 	except frappe.exceptions.AuthenticationError:
 		print('auth eror')

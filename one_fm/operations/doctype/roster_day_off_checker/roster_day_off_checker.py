@@ -591,9 +591,9 @@ def _get_employees_with_join(join_clause, where_clause, user_employee):
 
 @frappe.whitelist()
 def update_attendance_to_cdo(employee, attendance_date):
-    # Server-side authorization: only Operation Admin or Administrator may update attendance to CDO
+    # Server-side authorization: only Payroll Operator, Attendance Manager or Administrator may update attendance to CDO
     roles = frappe.get_roles(frappe.session.user)
-    if "Operation Admin" not in roles and frappe.session.user != "Administrator":
+    if not any(role in roles for role in ["Payroll Operator", "Attendance Manager"]) and frappe.session.user != "Administrator":
         # Use PermissionError so this is treated as a standard permission failure by Frappe
         frappe.throw("Not permitted to update attendance to CDO.", frappe.PermissionError)
     selected_date = getdate(attendance_date)

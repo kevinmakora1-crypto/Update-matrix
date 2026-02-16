@@ -1,0 +1,29 @@
+name: "🚀 Trigger AI Agent"
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  solve-issue:
+    # This workflow triggers the AI Agent when the 'ai-fix' label is added to an issue.
+    # It is configured to run on a 'self-hosted' runner (your Mac).
+    if: github.event.label.name == 'ai-fix'
+    runs-on: self-hosted
+
+    steps:
+      - name: Run Pure Google Agent
+        env:
+          # These will be read from your local .env or session
+          # The agent uses GCP and GitHub credentials to operate.
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+        run: |
+          # 1. Navigate to the agent orchestrator directory
+          cd /Users/samdani/Desktop/secure-frappe-pipeline
+          
+          # 2. Activate the local virtual environment
+          source venv/bin/activate
+          
+          # 3. Execute the agent for the specific issue
+          # The issue number is passed dynamically from the GitHub event.
+          python -m agent_runner.main --run "Solve GitHub issue #${{ github.event.issue.number }}"

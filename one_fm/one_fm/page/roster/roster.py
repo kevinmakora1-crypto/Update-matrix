@@ -1058,7 +1058,14 @@ def client_post_off(posts, args):
                 else args.post_off_from_date if "post_off_from_date" in args
                 else args.plan_from_date
             )
-            dates_to_process = pd.date_range(start=from_date, end=end_date_val)
+            # Use appropriate frequency based on repeat type
+            if args.repeat == "Monthly":
+                dates_to_process = pd.date_range(start=from_date, end=end_date_val, freq="MS")
+            elif args.repeat == "Yearly":
+                dates_to_process = pd.date_range(start=from_date, end=end_date_val, freq="YS")
+            else:
+                # Default: generate daily dates (used for Weekly and other patterns)
+                dates_to_process = pd.date_range(start=from_date, end=end_date_val)
         
         for date_item in dates_to_process:
             # Filter by weekday for Weekly repeat

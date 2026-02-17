@@ -18,6 +18,7 @@ class HDTicketOverride(HDTicket):
         super().validate()
         self.validate_hd_ticket()
         self.send_mail_for_completion()
+        self.handle_process_based_on_doctype()
 
     def on_change(self):
         self.notify_issue_raiser_about_priority()
@@ -62,6 +63,24 @@ class HDTicketOverride(HDTicket):
 
         if self.status == "Pending Deployment" and not self.resolution_details:
             frappe.throw(_("Please fill in Resolution Details before updating the status to Pending Deployment."))
+
+    def handle_process_based_on_doctype(self):
+        """Handle process field based on doctype selection"""
+        if self.custom_is_doctype_related == "Yes" and self.custom_reference_doctype:
+            # Get filtered processes for the selected doctype
+            filtered_processes = get_filtered_processes(self.custom_reference_doctype, "Yes")
+            
+            # If doctype changed, check if current process is still valid
+            if not self.is_new():
+                previous_doc = self.get_doc_before_save()
+                if previous_doc and previous_doc.custom_reference_doctype != self.custom_reference_doctype:
+                    # Doctype changed, check if current process is still valid
+                    if self.custom_process and self.custom_process not in filtered_processes:
+                        self.custom_process = None
+            
+            # Auto-set process if only one match
+            if len(filtered_processes) == 1 and not self.custom_process:
+                self.custom_process = filtered_processes[0]
 
     def send_google_chat_notification(self):
         """Hangouts Chat incoming webhook to send the Issues Created, in Card Format."""
@@ -553,3 +572,47 @@ def create_pathfinder_log(hd_ticket_name):
     pathfinder_log.flags.ignore_mandatory = True
     pathfinder_log.save(ignore_permissions=True)
     return pathfinder_log.name
+
+@frappe.whitelist()
+def get_filtered_processes(doctype_name=None, is_doctype_related="No"):
+    """
+    Get filtered list of processes based on doctype selection
+    
+    Args:
+        doctype_name: The doctype to filter processes by
+        is_doctype_related: Whether the ticket is doctype related ("Yes" or "No")
+    
+    Returns:
+        List of process names
+    """
+    if is_doctype_related == "Yes" and doctype_name:
+        # Get processes that have this doctype in their process_doctypes child table
+        processes = frappe.db.sql("""
+            SELECT DISTINCT p.name
+            FROM `tabProcess` p
+            INNER JOIN `tabProcess Doctype` pd ON pd.parent = p.name
+            WHERE pd.document_type = %s
+            ORDER BY p.name
+        """, (doctype_name,), as_dict=True)
+        
+        process_list = [p.name for p in processes]
+        
+        # If no processes found, return generic processes
+        if not process_list:
+            generic_processes = frappe.db.get_all(
+                "Process",
+                filters={"is_generic": 1},
+                pluck="name",
+                order_by="name"
+            )
+            return generic_processes
+        
+        return process_list
+    else:
+        # Return all processes if not doctype related
+        all_processes = frappe.db.get_all(
+            "Process",
+            pluck="name",
+            order_by="name"
+        )
+        return all_processes

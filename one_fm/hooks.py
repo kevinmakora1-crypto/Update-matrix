@@ -5,7 +5,7 @@ import frappe as _frappe
 from frappe import _
 from hrms.hr.doctype.shift_type.shift_type import ShiftType
 import werkzeug.wrappers
-werkzeug.wrappers.Request.max_form_memory_size = 50 * 1024 * 1024  # Sets it to 50MB
+werkzeug.wrappers.Request.max_form_memory_size = 5 * 1024 * 1024  # Sets it to 5MB
 
 
 app_name = "one_fm"

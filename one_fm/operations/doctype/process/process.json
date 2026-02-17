@@ -8,6 +8,7 @@
  "field_order": [
   "process_name",
   "description",
+  "is_generic",
   "column_break_grtk",
   "process_map",
   "section_break_fxrs",
@@ -105,12 +106,19 @@
    "label": "Process Map",
    "options": "URL",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Mark as true if this is not a specific business process but a generalized one, e.g. \"Others\"",
+   "fieldname": "is_generic",
+   "fieldtype": "Check",
+   "label": "Is Generic"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-11 07:36:12.368041",
+ "modified": "2026-02-16 22:40:34.165236",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process",

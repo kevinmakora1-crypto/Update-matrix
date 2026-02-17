@@ -3,6 +3,55 @@ frappe.ui.form.on("HD Ticket", {
     add_dev_ticket_button(frm);
     add_github_issue_button(frm);
     add_pathfinder_log_button(frm);
+    setup_process_query(frm);
+  },
+
+  custom_is_doctype_related: function (frm) {
+    // Clear reference doctype and process when switching to "No"
+    if (frm.doc.custom_is_doctype_related === "No") {
+      frm.set_value("custom_reference_doctype", null);
+      // Refresh process field to show all processes
+      frm.set_query("custom_process", function () {
+        return {};
+      });
+    }
+  },
+
+  custom_reference_doctype: function (frm) {
+    if (frm.doc.custom_is_doctype_related === "Yes" && frm.doc.custom_reference_doctype) {
+      // Fetch filtered processes
+      frappe.call({
+        method: "one_fm.overrides.hd_ticket.get_filtered_processes",
+        args: {
+          doctype_name: frm.doc.custom_reference_doctype,
+          is_doctype_related: "Yes",
+        },
+        callback: function (r) {
+          if (r.message) {
+            const filtered_processes = r.message;
+            
+            // Check if current process is still valid
+            if (frm.doc.custom_process && !filtered_processes.includes(frm.doc.custom_process)) {
+              frm.set_value("custom_process", null);
+            }
+            
+            // Auto-set if only one process
+            if (filtered_processes.length === 1 && !frm.doc.custom_process) {
+              frm.set_value("custom_process", filtered_processes[0]);
+            }
+            
+            // Update process field query
+            frm.set_query("custom_process", function () {
+              return {
+                filters: [["Process", "name", "in", filtered_processes]],
+              };
+            });
+            
+            frm.refresh_field("custom_process");
+          }
+        },
+      });
+    }
   },
 });
 
@@ -234,4 +283,18 @@ const add_dev_ticket_button = (frm) => {
       );
     }
   }
+};
+
+const setup_process_query = (frm) => {
+  // Set up dynamic query for process field
+  frm.set_query("custom_process", function () {
+    if (frm.doc.custom_is_doctype_related === "Yes" && frm.doc.custom_reference_doctype) {
+      // This will be handled by the custom_reference_doctype event
+      // Return empty filter for now, will be updated by the event handler
+      return {};
+    } else {
+      // Show all processes when not doctype related
+      return {};
+    }
+  });
 };

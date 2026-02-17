@@ -3,10 +3,29 @@ def get_hd_ticket_custom_fields():
     return {
          "HD Ticket": [
             {
+                "fieldname": "custom_is_doctype_related",
+                "fieldtype": "Select",
+                "label": "Is Doctype Related",
+                "insert_after": "cb00",
+                "reqd": 1,
+                "options": "\nYes\nNo",
+                "translatable": 1,
+                "description": "Select \"Yes\" if this ticket is related to a specific doctype. Then the selected doctype in the \"Reference Doctype\" field can be used to determine the process."
+            },
+            {
+                "fieldname": "custom_reference_doctype",
+                "fieldtype": "Link",
+                "label": "Reference Doctype",
+                "insert_after": "custom_is_doctype_related",
+                "options": "DocType",
+                "depends_on": "eval: doc.custom_is_doctype_related == \"Yes\"",
+                "mandatory_depends_on": "eval: doc.custom_is_doctype_related == \"Yes\""
+            },
+            {
                 "fieldname": "custom_process",
                 "fieldtype": "Link",
                 "label": "Process",
-                "insert_after": "cb00",
+                "insert_after": "custom_reference_doctype",
                 "reqd": 1,
                 "default": "Others", 
                 "options": "Process"

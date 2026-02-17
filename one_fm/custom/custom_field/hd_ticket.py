@@ -9,7 +9,7 @@ def get_hd_ticket_custom_fields():
                 "insert_after": "cb00",
                 "reqd": 1,
                 "options": "\nYes\nNo",
-                "translatable": 1,
+                "translatable": 0,
                 "description": "Select \"Yes\" if this ticket is related to a specific doctype. Then the selected doctype in the \"Reference Doctype\" field can be used to determine the process."
             },
             {

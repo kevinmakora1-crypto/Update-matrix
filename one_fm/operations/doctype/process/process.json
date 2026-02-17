@@ -97,15 +97,13 @@
    "fieldname": "process_doctypes",
    "fieldtype": "Table",
    "label": "Process Doctypes",
-   "options": "Process Doctype",
-   "reqd": 1
+   "options": "Process Doctype"
   },
   {
    "fieldname": "process_map",
    "fieldtype": "Small Text",
    "label": "Process Map",
-   "options": "URL",
-   "reqd": 1
+   "options": "URL"
   },
   {
    "default": "0",
@@ -118,7 +116,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-16 22:40:34.165236",
+ "modified": "2026-02-17 16:37:26.281276",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process",

@@ -1,7 +1,7 @@
 from frappe.workflow.doctype.workflow_action.workflow_action import apply_workflow
 import frappe, pandas as pd
 from frappe import _
-from frappe.utils import getdate, get_link_to_form, format_date
+from frappe.utils import getdate, get_link_to_form, format_date, add_days
 from erpnext.setup.doctype.employee.employee import is_holiday
 from hrms.hr.utils import validate_active_employee
 from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequest
@@ -20,7 +20,32 @@ class AttendanceRequestOverride(AttendanceRequest):
 		if self.half_day:
 			if not getdate(self.from_date) <= getdate(self.half_day_date) <= getdate(self.to_date):
 				frappe.throw(_("Half day date should be in between from date and to date"))
+		self.validate_wfh_before_leave()
 		self.set_approver()
+
+	def validate_wfh_before_leave(self):
+		if self.reason == "Work From Home":
+			# Calculate next working day after to_date
+			next_date = add_days(self.to_date, 1)
+			
+			# Loop to find next working day (skip holidays)
+			while is_holiday(self.employee, next_date):
+				next_date = add_days(next_date, 1)
+			
+			# Check if there is an approved Annual Leave starting on next_date
+			if frappe.db.sql("""
+				select name from `tabLeave Application`
+				where employee = %s
+				and from_date = %s
+				and status = 'Approved'
+				and leave_type = 'Annual Leave'
+				and docstatus = 1
+			""", (self.employee, next_date)):
+				frappe.throw(
+					_("You cannot select 'Work From Home' for {0} because your annual leave starts on {1}.").format(
+						format_date(self.to_date), format_date(next_date)
+					)
+				)
 
 	def before_insert(self):
 		check_for_attendance(self)

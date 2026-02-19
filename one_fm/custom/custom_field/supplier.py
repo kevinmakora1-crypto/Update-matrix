@@ -100,6 +100,13 @@ def get_supplier_custom_fields():
                 "label": "Expense Account",
                 "insert_after": "supplier_payment_terms",
                 "options": "Account"
+            },
+            {
+                "fieldname": "supplier_name_in_arabic",
+                "fieldtype": "Data",
+                "label": "Supplier Name in Arabic",
+                "insert_after": "supplier_name",
+                "translatable": 1
             }
         ]
     }

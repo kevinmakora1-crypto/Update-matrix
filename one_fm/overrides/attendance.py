@@ -367,6 +367,9 @@ def create_single_attendance_record(record):
             doc.shift = record.shift_assignment.shift_type
             doc.operations_shift = record.shift_assignment.shift
             doc.site = record.shift_assignment.site
+            if record.shift_assignment.get('client_event'):
+                doc.reference_doctype = "Client Event"
+                doc.reference_docname = record.shift_assignment.client_event
         if record.checkin:
             if record.checkin.late_entry:doc.late_entry=1
         # check if worked less

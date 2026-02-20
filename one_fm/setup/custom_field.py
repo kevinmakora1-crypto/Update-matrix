@@ -1,4 +1,3 @@
-
 # Custom field imports
 from one_fm.custom.custom_field.additional_salary import get_additional_salary_custom_fields
 from one_fm.custom.custom_field.asset import get_asset_custom_fields
@@ -62,7 +61,6 @@ from one_fm.custom.custom_field.purchase_order import get_purchase_order_custom_
 from one_fm.custom.custom_field.purchase_order_item import get_purchase_order_item_custom_fields
 from one_fm.custom.custom_field.purchase_receipt import get_purchase_receipt_custom_fields
 from one_fm.custom.custom_field.purchase_receipt_item import get_purchase_receipt_item_custom_fields
-from one_fm.custom.custom_field.religion import get_religion_custom_fields
 from one_fm.custom.custom_field.salary_slip import get_salary_slip_custom_fields
 from one_fm.custom.custom_field.salary_component_account import get_salary_component_account_custom_fields
 from one_fm.custom.custom_field.salary_structure_assignment import get_salary_structure_assignment_custom_fields
@@ -95,6 +93,11 @@ from one_fm.custom.custom_field.repayment_schedule import get_repayment_schedule
 from one_fm.custom.custom_field.hd_agent import get_hd_agent_custom_fields
 from one_fm.custom.custom_field.request_for_quotation_item import get_request_for_quotation_item_custom_fields
 from one_fm.custom.custom_field.asset_movement_item import get_asset_movement_item_custom_fields
+from one_fm.custom.custom_field.quality_feedback_template import get_quality_feedback_template_custom_fields
+from one_fm.custom.custom_field.currency_exchange_settings import get_currency_exchange_settings_custom_fields
+from one_fm.custom.custom_field.workflow_document_state import get_workflow_document_state_custom_fields
+from one_fm.custom.custom_field.buying_settings import get_buying_settings_custom_fields
+from one_fm.custom.custom_field.quality_feedback import get_quality_feedback_custom_fields
 
 def get_custom_fields():
 	"""ONEFM specific custom fields that need to be added to the masters in ERPNext"""
@@ -142,7 +145,6 @@ def get_custom_fields():
 	custom_fields.update(get_sales_invoice_advance_custom_fields())
 	custom_fields.update(get_notification_settings_custom_fields())
 	custom_fields.update(get_shift_type_custom_fields())
-	custom_fields.update(get_religion_custom_fields())
 	custom_fields.update(get_sales_invoice_timesheet_custom_fields())
 	custom_fields.update(get_task_type_custom_fields())
 	custom_fields.update(get_shift_request_custom_fields())
@@ -157,6 +159,7 @@ def get_custom_fields():
 	custom_fields.update(get_item_custom_fields())
 	custom_fields.update(get_timesheet_custom_fields())
 	custom_fields.update(get_help_category_custom_fields())
+	custom_fields.update(get_quality_feedback_custom_fields())
 	custom_fields.update(get_project_type_custom_fields())
 	custom_fields.update(get_purchase_receipt_custom_fields())
 	custom_fields.update(get_employee_checkin_custom_fields())
@@ -194,5 +197,9 @@ def get_custom_fields():
 	custom_fields.update(get_hd_agent_custom_fields())
 	custom_fields.update(get_request_for_quotation_item_custom_fields())
 	custom_fields.update(get_asset_movement_item_custom_fields())
+	custom_fields.update(get_quality_feedback_template_custom_fields())
+	custom_fields.update(get_currency_exchange_settings_custom_fields())
+	custom_fields.update(get_workflow_document_state_custom_fields())
+	custom_fields.update(get_buying_settings_custom_fields())
 
 	return custom_fields

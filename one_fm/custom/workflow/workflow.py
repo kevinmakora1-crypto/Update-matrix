@@ -46,11 +46,11 @@ def create_workflow(workflow:dict):
         None
     """
     if not isinstance(workflow, dict) or not ("states" in workflow and "transitions" in workflow):
-        frappe.log_error("Invalid or incomplete workflow definition.")
+        frappe.log_error(title="Invalid or incomplete workflow definition.")
         return
 
     try:
-        state_values = [{"workflow_state_name": state["state"], "style": state.get("style", "Primary")} for state in workflow["states"]]
+        state_values = [{"workflow_state_name": state["state"], "style": state.get("style")} for state in workflow["states"]]
         create_workflow_state(state_values)
 
         actions = list(set([transition["action"] for transition in workflow["transitions"]]))
@@ -86,10 +86,6 @@ def create_workflow_state(states: list):
         try:
             if not frappe.db.exists("Workflow State", state["workflow_state_name"]):
                 frappe.get_doc({"doctype": "Workflow State", **state}).insert(ignore_permissions=True)
-            else:
-                workflow_state = frappe.get_doc("Workflow State", state["workflow_state_name"])
-                workflow_state.update(state)
-                workflow_state.save()
         except Exception as e:
             frappe.log_error(
                 title="Workflow State Error",
@@ -110,7 +106,7 @@ def create_workflow_action_master(action_masters):
         action_masters = [action_masters]
 
     if not isinstance(action_masters, list):
-        frappe.log_error("Workflow actions must be a list or string.")
+        frappe.log_error(title="Workflow actions must be a list or string.")
         return
 
     # Clean and deduplicate
@@ -152,7 +148,7 @@ def delete_workflow(workflow:dict):
     """
     name = workflow.get("workflow_name")
     if not name:
-        frappe.log_error("Missing 'workflow_name' in workflow deletion input.")
+        frappe.log_error(title="Missing 'workflow_name' in workflow deletion input.")
         return
 
     try:

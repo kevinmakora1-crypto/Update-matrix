@@ -92,7 +92,7 @@ def get_magic_link():
             result = {}
         return result
     except:
-        frappe.log_error(frappe.get_traceback(), 'Magic Link')
+        frappe.log_error(message=frappe.get_traceback(), title='Magic Link')
         return result
 
 @frappe.whitelist(allow_guest=True)
@@ -204,19 +204,20 @@ def upload_image():
                 if(k=="expiry_date" and v):
                     frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_passport_expire', v)
                 if(k=="given_names" and v):
-                    for i, j in enumerate(v):
-                        if i==0:
-                            frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_first_name', j.title())
-                        if i==1:
-                            frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_second_name', j.title())
-                        if i==2:
-                            frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_third_name', j.title())
-                        if i==3:
-                            frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_forth_name', j.title())
+                    #given_names is a space separated string, split by space and allocate each name to first second third and fourth names
+                    given_names = v.split()
+                    if len(given_names) >= 1:
+                        frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_first_name', given_names[0].title())
+                    if len(given_names) >= 2:
+                        frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_second_name', given_names[1].title())
+                    if len(given_names) >= 3:
+                        frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_third_name', given_names[2].title())
+                    if len(given_names) >= 4:
+                        frappe.db.set_value(reference_doctype, reference_docname, 'one_fm_fourth_name', given_names[3].title())
             response_data['passport']=result_dict
             # return frappe._dict()
         except Exception as e:
-            frappe.log_error(frappe.get_traceback(), "Mindee-Passport")
+            frappe.log_error(message=frappe.get_traceback(), title="Mindee-Passport")
             errors.append("We could not process your passport document.")
 
     # process high school certificate   
@@ -344,7 +345,7 @@ def upload_image():
             frappe.db.commit()
 
         except Exception as e:
-            frappe.log_error(frappe.get_traceback(), "Mindee-Civil ID")
+            frappe.log_error(message=frappe.get_traceback(), title="Mindee-Civil ID")
             errors.append("We could not process your Civil ID document.")
 
     # civil id Back
@@ -410,7 +411,7 @@ def delete_existing_files(reference_doctype,reference_docname, file_url_filter, 
 
         frappe.db.commit()
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Error deleting existing files")
+        frappe.log_error(message=frappe.get_traceback(), title="Error deleting existing files")
 
 
 @frappe.whitelist(allow_guest=True)
@@ -419,7 +420,7 @@ def update_job_applicant():
         data = frappe.form_dict
 
         # All fields for name
-        name_fields = ['applicant_name', 'one_fm_first_name', 'one_fm_second_name', 'one_fm_third_name', 'one_fm_forth_name', 'one_fm_last_name']
+        name_fields = ['applicant_name', 'one_fm_first_name', 'one_fm_second_name', 'one_fm_third_name', 'one_fm_fourth_name', 'one_fm_last_name']
 
         # If updated field is a name field then convert it into title case
         if data.field in name_fields:

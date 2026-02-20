@@ -79,21 +79,6 @@ frappe.ui.form.on('Job Applicant', {
 	},
 
 	refresh(frm) {
-		// Changes the buttons for `PAM File Number` and `PAM Desigantion` once operator wants to changethe data of any
-		// if(frm.doc.pam_number_button == 0 || frm.is_new()){
-		// 	document.querySelectorAll("[data-fieldname='one_fm_change_pam_file_number']")[1].style.backgroundColor ="#3789ff";
-		// }if(frm.doc.pam_designation_button == 0 || frm.is_new()){
-		// 	document.querySelectorAll("[data-fieldname='one_fm_change_pam_designation']")[1].style.backgroundColor ="#3789ff";
-		// 	document.querySelectorAll("[data-fieldname='one_fm_change_pam_designation']")[1].style.marginLeft ='2em';
-		// }if(frm.doc.pam_number_button == 1 || !frm.is_new()){
-		// 	document.querySelectorAll("[data-fieldname='one_fm_change_pam_file_number']")[1].style.backgroundColor ="#ec645e";
-		// }if(frm.doc.pam_designation_button == 1 || !frm.is_new()){
-		// 	document.querySelectorAll("[data-fieldname='one_fm_change_pam_designation']")[1].style.backgroundColor ="#ec645e";
-		// 	document.querySelectorAll("[data-fieldname='one_fm_change_pam_designation']")[1].style.marginLeft ='2em';
-		// }
-		// document.querySelectorAll("[data-fieldname='one_fm_change_pam_file_number']")[1].style.margin ='1.6em';
-		// document.querySelectorAll("[data-fieldname='one_fm_change_pam_designation']")[1].style.marginLeft ='2em';
-
 		frm.set_df_property('status', 'label', 'Final Status');
 		frm.remove_custom_button("Job Offer");
 		set_country_field_empty_on_load(frm);
@@ -310,7 +295,7 @@ frappe.ui.form.on('Job Applicant', {
 	one_fm_third_name: function(frm) {
     set_applicant_name(frm);
   },
-  one_fm_forth_name: function(frm) {
+  one_fm_fourth_name: function(frm) {
     set_applicant_name(frm);
   },
 	one_fm_last_name: function(frm) {
@@ -904,7 +889,7 @@ var set_grd_field_properties = function(frm){
 		'previous_work_details','one_fm_erf_application_details_section','one_fm_interview_and_career_history_score',
 		'one_fm_interview_schedules_section'];
 
-		let read_fields=['one_fm_in_kuwait_at_present','one_fm_cid_expire','one_fm_visa_type','one_fm_have_a_valid_visa_in_kuwait','one_fm_passport_type','one_fm_passport_expire','one_fm_passport_issued','one_fm_passport_holder_of','one_fm_place_of_birth','one_fm_height','one_fm_last_name_in_arabic','one_fm_forth_name_in_arabic','one_fm_third_name_in_arabic','one_fm_second_name_in_arabic','one_fm_first_name_in_arabic','one_fm_last_name','one_fm_forth_name','one_fm_third_name','one_fm_second_name','one_fm_first_name','source','job_title','one_fm_applicant_status','status','one_fm_application_id','email_id','applicant_name','one_fm_is_transferable','one_fm_applicant_is_overseas_or_local','one_fm_cid_number',
+		let read_fields=['one_fm_in_kuwait_at_present','one_fm_cid_expire','one_fm_visa_type','one_fm_have_a_valid_visa_in_kuwait','one_fm_passport_type','one_fm_passport_expire','one_fm_passport_issued','one_fm_passport_holder_of','one_fm_place_of_birth','one_fm_height','one_fm_last_name_in_arabic','one_fm_fourth_name_in_arabic','one_fm_third_name_in_arabic','one_fm_second_name_in_arabic','one_fm_first_name_in_arabic','one_fm_last_name','one_fm_fourth_name','one_fm_third_name','one_fm_second_name','one_fm_first_name','source','job_title','one_fm_applicant_status','status','one_fm_application_id','email_id','applicant_name','one_fm_is_transferable','one_fm_applicant_is_overseas_or_local','one_fm_cid_number',
 		'one_fm_duration_of_work_permit','one_fm_previous_designation','one_fm_work_permit_salary','one_fm_date_of_birth',
 		'one_fm_nationality','one_fm_marital_status','one_fm_educational_qualification','one_fm_passport_number',
 		'one_fm_gender','one_fm_religion'];
@@ -1557,7 +1542,7 @@ var set_designation_skill = function(frm, skills) {
 };
 
 var set_applicant_name = function(frm) {
-  let name_fields = ['one_fm_second_name', 'one_fm_third_name','one_fm_forth_name', 'one_fm_last_name']
+  let name_fields = ['one_fm_second_name', 'one_fm_third_name','one_fm_fourth_name', 'one_fm_last_name']
   let applicant_name = frm.doc.one_fm_first_name ?frm.doc.one_fm_first_name:'';
   name_fields.forEach((name_field) => {
     if(frm.doc[name_field]){

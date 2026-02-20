@@ -18,7 +18,7 @@ from frappe.utils.data import get_absolute_url
 class OnboardEmployee(Document):
 	def validate(self):
 		# update employee arabic name
-		self.employee_name_in_arabic = " ".join(filter(None, [self.first_name_in_arabic, self.second_name_in_arabic, self.third_name_in_arabic, self.forth_name_in_arabic, self.last_name_in_arabic]))
+		self.employee_name_in_arabic = " ".join(filter(None, [self.first_name_in_arabic, self.second_name_in_arabic, self.third_name_in_arabic, self.fourth_name_in_arabic, self.last_name_in_arabic]))
 		
 		if not self.number_of_days_off:
 			frappe.throw(_("Please set the number of days off."))
@@ -59,8 +59,8 @@ class OnboardEmployee(Document):
 				change_dict['one_fm_second_name_in_arabic'] = self.second_name_in_arabic
 			if old_doc.third_name_in_arabic != self.third_name_in_arabic:
 				change_dict['one_fm_third_name_in_arabic'] = self.third_name_in_arabic
-			if old_doc.forth_name_in_arabic != self.forth_name_in_arabic:
-				change_dict['one_fm_forth_name_in_arabic'] = self.forth_name_in_arabic
+			if old_doc.fourth_name_in_arabic != self.fourth_name_in_arabic:
+				change_dict['one_fm_fourth_name_in_arabic'] = self.fourth_name_in_arabic
 			if old_doc.last_name_in_arabic != self.last_name_in_arabic:
 				change_dict['one_fm_last_name_in_arabic'] = self.last_name_in_arabic
 			if change_dict:
@@ -179,7 +179,7 @@ class OnboardEmployee(Document):
 					employee.one_fm_first_name_in_arabic = self.first_name_in_arabic
 					employee.one_fm_second_name_in_arabic = self.second_name_in_arabic
 					employee.one_fm_third_name_in_arabic = self.third_name_in_arabic
-					employee.one_fm_forth_name_in_arabic = self.forth_name_in_arabic
+					employee.one_fm_fourth_name_in_arabic = self.fourth_name_in_arabic
 					employee.one_fm_last_name_in_arabic = self.last_name_in_arabic
 
 					employee.permanent_address = "Test"

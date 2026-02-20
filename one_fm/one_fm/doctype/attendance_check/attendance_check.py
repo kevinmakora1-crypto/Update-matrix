@@ -11,9 +11,9 @@ from frappe.utils import add_days, today, now, get_url_to_form, getdate
 from one_fm.utils import (
     production_domain,
     fetch_attendance_manager_user,
-    get_approver
+    has_super_user_role,
+    get_shift_supervisor,
 )
-from one_fm.operations.doctype.operations_shift.operations_shift import get_shift_supervisor
 
 class AttendanceCheck(Document):
     def before_insert(self):
@@ -119,19 +119,60 @@ class AttendanceCheck(Document):
             as_dict=1
         )
 
+
+
+    
+    def get_approver(self,employee):
+        '''
+            Method to get the line manager employee of an employee with the priority
+            args:
+                employee: name of Employee object
+            return: employee reference of the line manager or None
+        '''
+
+        if not frappe.db.exists("Employee", {'name':employee}):
+            frappe.log_error(title="Employee does not exists", message=f"Employee {employee} does not exists")
+            return None
+
+        employee_field_list = ["user_id", "reports_to", "shift", "site", "shift_working", "employee_name"]
+        employee_data = frappe.db.get_value('Employee', employee, employee_field_list, as_dict=1)
+
+        line_manager = employee_data.reports_to if employee_data.reports_to else None
+
+        if not line_manager:
+            if employee_data.user_id and has_super_user_role(employee_data.user_id):
+                line_manager = employee
+
+        if not line_manager:
+            if employee_data.shift_working:
+                if employee_data.site:
+                    line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
+                if not line_manager and employee_data.shift:
+                    line_manager = get_shift_supervisor(employee_data.shift,date=self.date)
+                if not line_manager:
+                    project = frappe.db.get_value('Operations Site', employee_data.site, 'project')
+                    if project:
+                        line_manager = frappe.db.get_value('Project', project, 'account_manager')
+                if line_manager:
+                    return line_manager
+                
+            else:
+                if employee_data.site:
+                    line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
+
+                if not line_manager and employee_data.shift:
+                    line_manager = get_shift_supervisor(employee_data.shift,date=self.date)
+
+                if not line_manager:
+                    frappe.log_error(title="Missing Data", message=f"Please ensure that the Reports To or Operations Site Supervisor is set for {employee_data.employee_name}, Since the employee is not shift working")
+
+        return line_manager
+
     def set_attedance_check_approver(self):
-        employee = frappe.db.get_value(
-            "Employee",
-            {"name": self.employee},
-            ["reports_to", "shift", "site"],
-            as_dict=1
-        )
-        if employee.reports_to:
-            self.reports_to = employee.reports_to
-        if employee.shift:
-            self.shift_supervisor = get_shift_supervisor(employee.shift)
-        if employee.site:
-            self.site_supervisor = frappe.db.get_value('Operations Site', employee.site, 'account_supervisor')
+        approver = self.get_approver(self.employee)
+        if approver:
+            self.approver = frappe.db.get_value("Employee", approver, "user_id")
+
 
     def after_insert(self):
         """
@@ -188,7 +229,7 @@ class AttendanceCheck(Document):
         shift_working = frappe.db.get_value("Employee", self.employee, "shift_working")
         if self.attendance_status == "On Leave":
             self.check_on_leave_record()
-        if self.attendance_status == "Day Off" and shift_working:
+        if self.attendance_status in {"Day Off", "Client Day Off"} and shift_working:
             self.validate_day_off()
         if self.attendance_status != "On Leave":
             self.mark_attendance()
@@ -213,6 +254,10 @@ class AttendanceCheck(Document):
         })
 
     def create_employee_checkin_record(self, time, log_type):
+        existing_checkin = self.get_existing_employee_checkin(time, log_type)
+        if existing_checkin:
+            self.update_employee_checkin(existing_checkin, time)
+            return
         checkin = frappe.get_doc({
             "doctype": "Employee Checkin",
             "employee": self.employee,
@@ -223,13 +268,24 @@ class AttendanceCheck(Document):
         })
         checkin.insert(ignore_permissions=True)
 
+    def get_existing_employee_checkin(self, time, log_type):
+        return frappe.db.get_value(
+            "Employee Checkin",
+            {
+                "employee": self.employee,
+                "time": time
+            }
+        )
+
     def check_on_leave_record(self):
         if self.attendance_status == "On Leave":
-            draft_leave_records = self.get_draft_leave_records()
-            if draft_leave_records and len(draft_leave_records) > 0:
-                doc_url = get_url_to_form('Leave Application',draft_leave_records[0].get('name'))
-                error_template = frappe.render_template(
-                    'one_fm/templates/emails/attendance_check_alert.html',
+            # Check for approved leave record
+            if not self.get_approved_leave_records(): # if approval occurs while the document is still being created
+                draft_leave_records = self.get_draft_leave_records()
+                if draft_leave_records and len(draft_leave_records) > 0:
+                    doc_url = get_url_to_form('Leave Application',draft_leave_records[0].get('name'))
+                    error_template = frappe.render_template(
+                        'one_fm/templates/emails/attendance_check_alert.html',
                     context={
                         'doctype':'Leave Application',
                         'current_user':frappe.session.user,
@@ -238,20 +294,20 @@ class AttendanceCheck(Document):
                         'page_link':doc_url,
                         'employee_name':self.employee_name
                     }
-                )
-                frappe.throw(error_template)
-            else:
-                link_to_new_leave = frappe.utils.get_url('/app/leave-application/new-leave-application-1')
-                frappe.throw(f"""
-                    <p>Please note that a Leave Application has not been created for <b>{self.employee_name}</b>.</p>
-                    <hr>
-                    To create a leave application
-                    <a class="btn btn-primary btn-sm"
-                    href='{link_to_new_leave}?doc_id={self.name}&doctype={self.doctype}'
-                    target="_blank" onclick=" ">
-                        Click Here
-                    </a>
-                 """)
+                    )
+                    frappe.throw(error_template)
+                else:
+                    link_to_new_leave = frappe.utils.get_url('/app/leave-application/new-leave-application-1')
+                    frappe.throw(f"""
+                        <p>Please note that a Leave Application has not been created for <b>{self.employee_name}</b>.</p>
+                        <hr>
+                        To create a leave application
+                        <a class="btn btn-primary btn-sm"
+                        href='{link_to_new_leave}?doc_id={self.name}&doctype={self.doctype}'
+                        target="_blank" onclick=" ">
+                            Click Here
+                        </a>
+                    """)
 
     def get_draft_leave_records(self):
         return frappe.db.sql(f"""
@@ -270,9 +326,26 @@ class AttendanceCheck(Document):
             """,
             as_dict=True
         )
+    def get_approved_leave_records(self):
+        return frappe.db.sql(f"""
+            select
+                employee_name, leave_approver_name, name
+            from
+                `tabLeave Application`
+            where
+                employee = '{self.employee}'
+                and
+                '{self.date}' >= from_date
+                and
+                '{self.date}' <= to_date
+                and
+                docstatus = 1
+            """,
+            as_dict=True
+        )
 
     def validate_day_off(self):
-        if self.attendance_status == "Day Off":
+        if self.attendance_status in {"Day Off", "Client Day Off"}:
             # Check if shift request for that day exists
             shift_request = self.get_shift_request()
             if shift_request:
@@ -419,14 +492,13 @@ def create_attendance_check(attendance_date=None):
         # Create attendance check for employee who is shift working but no attendance marked on the date
         attendance_not_marked_shift_employees = get_attendance_not_marked_shift_employees(attendance_date)
         if attendance_not_marked_shift_employees:
-            insert_attendance_check_records(attendance_not_marked_shift_employees, attendance_date, True)
+            insert_attendance_check_records(attendance_not_marked_shift_employees, attendance_date)
 
 def get_absentees_on_date(attendance_date):
     return frappe.get_all("Attendance",
         filters={
             'docstatus': 1,
             'status': 'Absent',
-            "is_unscheduled":0,
             'attendance_date': attendance_date,
             "employee": ["not in", frappe.db.get_list('Shift Permission', filters={'date': attendance_date}, pluck='employee')]
         },
@@ -444,43 +516,73 @@ def get_attendance_not_marked_shift_employees(attendance_date):
     # Fetch the list of employees, attendance marked for the date and basic roster
     
     # Fetch all the employees who is shift working but no attendance marked
-    return frappe.db.get_all("Attendance",
-        filters={
-            "attendance_date": attendance_date,
-            "roster_type": "Basic",
-            "docstatus": 1,
-            'is_unscheduled':1
-        },
-        fields=["employee"]
-    )
+    return frappe.db.sql("""
+        SELECT
+            sa.employee
+        FROM
+            `tabShift Assignment` sa
+        LEFT JOIN
+            `tabAttendance` att
+        ON
+            sa.employee = att.employee AND att.attendance_date = %(attendance_date)s
+        WHERE
+            sa.start_date <= %(attendance_date)s
+            AND sa.end_date >= %(attendance_date)s
+            AND sa.docstatus = 1
+            AND sa.status = 'Active'
+            AND att.name IS NULL
+    """, {"attendance_date": attendance_date}, as_dict=1)
 
-def insert_attendance_check_records(details, attendance_date, is_unscheduled=False):
+def insert_attendance_check_records(details, attendance_date):
+    employee_ids = [d.get("employee") for d in details]
+    # Fetch shift assignments for all employees in a single query
+    shift_assignments = frappe.get_all(
+        "Shift Assignment",
+        filters=[
+            ["start_date", "<=", attendance_date],
+            ["end_date", ">=", attendance_date],
+            ["docstatus", "=", 1],
+            ["employee", "in", employee_ids],
+        ],
+        fields=["employee"],
+    )
+    employees_with_shifts = {sa.employee for sa in shift_assignments}
+
+    # Fetch employees with attendance by timesheet in a single query
+    employees_by_timesheet = frappe.get_all(
+        "Employee",
+        filters={"name": ["in", employee_ids], "attendance_by_timesheet": 1},
+        fields=["name"],
+    )
+    employees_with_timesheet = {emp.name for emp in employees_by_timesheet}
+
     for count, data in enumerate(details):
         try:
-            attendance_by_timesheet = False
-            if not is_unscheduled:
-                attendance_by_timesheet = frappe.db.get_value("Employee", data["employee"], "attendance_by_timesheet")
-            filters = {
-                "doctype": "Attendance Check",
-                "employee": data["employee"],
-                "date": attendance_date,
-                "attendance": data["attendance"] if "attendance" in data else "",
-                "roster_type": data["roster_type"] if "roster_type" in data else "Basic",
-                'is_unscheduled': is_unscheduled,
-                "attendance_by_timesheet": attendance_by_timesheet,
-                "marked_attendance_status": data["attendance_status"] if "attendance_status" in data else "",
-                "shift_assignment": data["shift_assignment"] if "shift_assignment" in data else "",
-                "attendance_marked": 1 if "attendance" in data else 0,
-                "comment": data["attendance_comment"] if "attendance_comment" in data else ""
-            }
+            employee = data.get("employee")
+            has_shift = employee in employees_with_shifts
+            on_timesheet = employee in employees_with_timesheet
 
-            doc = frappe.get_doc(filters)
-            doc.flags.ignore_mandatory = 1
-            doc.insert(ignore_permissions=1)
+            if has_shift or on_timesheet:
+                filters = {
+                    "doctype": "Attendance Check",
+                    "employee": employee,
+                    "date": attendance_date,
+                    "attendance": data.get("attendance", ""),
+                    "roster_type": data.get("roster_type", "Basic"),
+                    "attendance_by_timesheet": on_timesheet,
+                    "marked_attendance_status": data.get("attendance_status", ""),
+                    "shift_assignment": data.get("shift_assignment", ""),
+                    "attendance_marked": 1 if data.get("attendance") else 0,
+                    "comment": data.get("attendance_comment", ""),
+                }
+
+                doc = frappe.get_doc(filters)
+                doc.flags.ignore_mandatory = 1
+                doc.insert(ignore_permissions=1)
         except Exception as e:
-            if not "Attendance Check already exist for" in str(e):
+            if "Attendance Check already exist for" not in str(e):
                 frappe.log_error(message=frappe.get_traceback(), title="Attendance Check Creation")
-        if count%10==0:
+        if count % 10 == 0:
             frappe.db.commit()
     frappe.db.commit()
 
@@ -613,7 +715,7 @@ def create_todos(manager,todos):
         today_datetime = frappe.utils.get_datetime()
 
         if len(todos)>10000:
-            #Query needs to be split to avoid max query package error
+            # Query needs to be split to avoid max query package error
             split_query =create_split_query(todos,10000,manager,today,today_datetime)
             for each in split_query:
                 frappe.db.sql(each,values=[])

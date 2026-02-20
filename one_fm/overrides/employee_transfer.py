@@ -57,4 +57,4 @@ def update_employee_schedules(employee_schedules, shift, site, project):
             schedule.db_set('project', project)
             schedule.db_set('shift_type', operations_shift.shift_type)
     except Exception as e:
-        frappe.log_error(e, "Employee Transfer")
+        frappe.log_error(message=str(e), title="Employee Transfer")

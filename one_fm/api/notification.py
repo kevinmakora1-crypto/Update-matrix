@@ -59,7 +59,7 @@ def get_notification_list():
 			return response("No Notification Yet", notification_list, True, 200)
 
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(title="Error fetching notification list", message=frappe.get_traceback())
 		return response(e, {}, False, 500)
 
 # This function deletes notification of a given `notification_name`
@@ -81,7 +81,7 @@ def delete_notification(notification_name):
 			return response("Notification Doesn't exist", {}, False, 400)
 
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(title="Error deleting notification", message=frappe.get_traceback())
 		return response(e, {}, False, 500)
 
 # This method returing the message and status code of the API

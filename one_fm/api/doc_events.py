@@ -42,11 +42,11 @@ def get_notification_user(doc, employee=None):
 		line_manager = get_shift_supervisor(doc.operations_shift)
 		if not line_manager:
 			site = frappe.db.get_value('Operations Shift', doc.operations_shift, 'site')
-			line_manager = frappe.db.get_value('Operations Site', site, 'account_supervisor')
+			line_manager = frappe.db.get_value('Operations Site', site, 'site_supervisor')
 			if not line_manager:
 				project = frappe.db.get_value('Operations Site', site, 'project')
 				if project:
-					line_manager = frappe.db.get_value('Project', project, 'account_manager')
+					line_manager = frappe.db.get_value('Project', project, 'project_manager')
 	if not line_manager and employee:
 		line_manager = frappe.db.get_value("Employee", employee, "reports_to")
 
@@ -100,7 +100,7 @@ def get_recipients(doc):
 		"""
 			Get line managers. Site Supervisor, Project Manager, Operations Manager.
 		"""
-		project_manager_user = get_employee_user_id(doc.account_manager)
+		project_manager_user = get_employee_user_id(doc.project_manager)
 		operations_manager = frappe.get_list("Employee", {"designation": "Operations Manager"}, ignore_permissions=True)
 		recipient_list = []
 
@@ -237,8 +237,8 @@ def update_training_event_data(doc, method):
 			})
 			doc_esm.save()
 
-def clear_cache(doc):
-	if doc.has_value_changed('account_manager'):
+def clear_cache_project(doc):
+	if doc.has_value_changed('project_manager'):
 		frappe.cache.delete_key('user_permissions')
 
 
@@ -247,12 +247,12 @@ def update_project_manager_name(doc, method):
 		Run when the project is updated. Set the project manager name in the employee doctype for
 		applicable employees.
 	"""
-	if doc.has_value_changed('account_manager'):
-		frappe.db.set_value("Employee", {"project": doc.name}, "project_manager_name", doc.manager_name)
+	if doc.has_value_changed('project_manager'):
+		frappe.db.set_value("Employee", {"project": doc.name}, "project_manager_name", doc.project_manager_name)
 		
 
 def on_project_update_switch_shift_site_post_to_inactive(doc, method):
-    clear_cache(doc)
+    clear_cache_project(doc)
     if doc.is_active == "No" and  doc.project_type == "External":
         list_of_shift = frappe.db.sql(f""" select name from `tabOperations Shift` where project = "{doc.name}" """)
 

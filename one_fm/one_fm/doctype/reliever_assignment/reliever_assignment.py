@@ -329,8 +329,8 @@ class ReassignRelieverAssignment(Document):
 		doclist_to_reassign = [name.get('name')for name in json.loads(data.doclist)]
 		if doclist_to_reassign:
 			frappe.qb.update(Project).set(
-					Project.account_manager, self.on_leave_employee).set(
-					Project.manager_name, self.on_leave_employee_name).set(
+					Project.project_manager, self.on_leave_employee).set(
+					Project.project_manager_name, self.on_leave_employee_name).set(
 					Project.modified, now()).where(
 						(Project.name.isin(doclist_to_reassign)) &
 						(Project.status == "Open")
@@ -341,8 +341,8 @@ class ReassignRelieverAssignment(Document):
 		doclist_to_reassign = [name.get('name')for name in json.loads(data.doclist)]
 		if doclist_to_reassign:
 			frappe.qb.update(OperationsSite).set(
-					OperationsSite.account_supervisor, self.on_leave_employee).set(
-					OperationsSite.account_supervisor_name, self.on_leave_employee_name).set(
+					OperationsSite.site_supervisor, self.on_leave_employee).set(
+					OperationsSite.site_supervisor_name, self.on_leave_employee_name).set(
 					OperationsSite.modified, now()).where(
 					OperationsSite.name.isin(doclist_to_reassign))\
 						.where(OperationsSite.status == "Active").run()
@@ -442,7 +442,7 @@ class ReassignRelieverAssignment(Document):
 		matching_docs_list = [doc for doc in Doctype.as_dict().documents if doc.get('reference_doctype') == reference_type]
 		
 		if not matching_docs_list:
-			frappe.log_error(f"No matching documents found for reference_doctype: {reference_type}")
+			frappe.log_error(title=f"No matching documents found for reference_doctype: {reference_type}")
 			return 
 		
 		matching_docs = matching_docs_list[0]

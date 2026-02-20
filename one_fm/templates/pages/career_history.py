@@ -159,13 +159,17 @@ def create_career_history_from_portal(job_applicant, career_history_details, int
 
     factors_expected_in_new_job = career_histories[-1] if career_histories else {}
     career_history.what_are_the_factors_you_are_looking_for_in_a_new_job = factors_expected_in_new_job.get("factors_in_new_job")
+    awards_received_main = factors_expected_in_new_job.get("have_you_received_any_awards_or_recognition_main")
+    career_history.have_you_received_any_awards_or_recognition = awards_received_main if awards_received_main == "Yes" else "No"
+    career_history.awards_or_recognition_details = factors_expected_in_new_job.get("awards_or_recognition_details_main") if awards_received_main == "Yes" else ""
 
     if career_histories[0].get('expType') == "Experienced":
         for history in career_histories:
-            career_history_fields = ['company_name', 'country_of_employment', 'start_date', 'responsibility_one',
+            career_history_fields = ['company_name', 'country_of_employment', 'start_date', 'responsibility_one', 'major_accomplishment',
             'job_title', "employment_type", 'monthly_salary_in_kwd', 'first_contact_name',
                 'first_contact_email', 'first_contact_phone', 'first_contact_designation', 'second_contact_name',
-                'second_contact_email', 'second_contact_phone', 'second_contact_designation']
+                'second_contact_email', 'second_contact_phone', 'second_contact_designation',
+                'additional_responsibilities', 'have_you_received_any_awards_or_recognition', 'awards_or_recognition_details']
 
             company = career_history.append('career_history_company')
             for field in career_history_fields:
@@ -187,6 +191,9 @@ def create_career_history_from_portal(job_applicant, career_history_details, int
 
                 company.employment_type = last_employment_type
                 company.responsibility_one = last_job_responsibility
+                company.additional_responsibilities = history.get('additional_responsibilities')
+                company.have_you_received_any_awards_or_recognition = history.get('have_you_received_any_awards_or_recognition')
+                company.awards_or_recognition_details = history.get('awards_or_recognition_details')
                 
                 if promotion.get('job_title'):
                     company.job_title = promotion.get('job_title')
@@ -196,6 +203,11 @@ def create_career_history_from_portal(job_applicant, career_history_details, int
                     company.monthly_salary_in_kwd = promotion.get('monthly_salary_in_kwd')
                     last_salary = promotion.get('monthly_salary_in_kwd')
                 company.start_date = getdate(promotion.get('start_date'))
+                # Map promotion/increment reasons when available
+                if promotion.get('reason_for_promotion'):
+                    company.reason_for_promotion = promotion.get('reason_for_promotion')
+                if promotion.get('reason_for_increment'):
+                    company.reason_for_increment = promotion.get('reason_for_increment')
                 if idx < len(promotions) - 1:
                     next_start_date = promotions[idx + 1].get('start_date')
                     if next_start_date:

@@ -1,0 +1,46 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-11-20 12:47:27.170080",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "schedule_name",
+  "column_break_bkdf",
+  "days_after_issuance"
+ ],
+ "fields": [
+  {
+   "fieldname": "schedule_name",
+   "fieldtype": "Data",
+   "label": "Schedule Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_bkdf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "days_after_issuance",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Days after Issuance",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-11-20 12:47:27.170080",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Feedback Schedule Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

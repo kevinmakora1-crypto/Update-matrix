@@ -271,7 +271,7 @@ def get_shift_request_custom_fields():
                 "insert_after": "custom_column_break_ggqao",
                 "fieldtype": "Link",
                 "options": "Employee",
-                "fetch_from": "project.account_manager",
+                "fetch_from": "project.project_manager",
                 "read_only": 1,
                 "ignore_user_permissions": 1
             },
@@ -284,6 +284,14 @@ def get_shift_request_custom_fields():
                 "read_only": 1,
                 "options": "User",
                 "ignore_user_permissions": 1
-             }
+             },
+            {
+                "fieldname": "reason",
+                "fieldtype": "Small Text",
+                "insert_after": "status",
+                "label": "Reason",
+                "reqd": 1,
+                "translatable": 1
+            }
         ]
     }

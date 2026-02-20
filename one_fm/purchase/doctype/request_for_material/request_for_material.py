@@ -194,7 +194,7 @@ class RequestforMaterial(BuyingController):
         if not self.request_for_material_approver:
             approver = False
             if self.type == 'Project' and self.project:
-                approver = frappe.db.get_value('Project', self.project, 'account_manager')
+                approver = frappe.db.get_value('Project', self.project, 'project_manager')
                 if not approver:
                     approver = frappe.db.get_single_value("Operation Settings", "default_operation_manager")
                     if approver:
@@ -784,7 +784,7 @@ def make_request_for_purchase(source_name, target_doc=None):
             "doctype": "Request for Purchase",
             "field_map": [
                 ["name", "request_for_material"],
-                ["t_warehouse", "warehouse"],
+                ["target_warehouse", "warehouse"],
                 ["customer", "customer"],
                 ["project", "project"],
                 ["site", "site"],
@@ -834,7 +834,7 @@ def create_partial_request_for_purchase(source_name, items):
     rfp = frappe.new_doc("Request for Purchase")
     rfp.company = source_doc.company
     rfp.request_for_material = source_name
-    rfp.warehouse = source_doc.t_warehouse
+    rfp.warehouse = source_doc.target_warehouse
     rfp.customer = source_doc.customer
     rfp.project = source_doc.project
     rfp.site = source_doc.site
@@ -853,7 +853,7 @@ def create_partial_request_for_purchase(source_name, items):
         rfp.append("items", {
             "item_code": item_data.get('item_code'),
             "qty": item_data.get('qty'),
-            "item_name": source_item_doc.item_name,
+            "item_name": source_item_doc.item_name or source_item_doc.requested_item_name,
             "description": source_item_doc.requested_description,
             "uom": source_item_doc.uom,
             "schedule_date": source_item_doc.schedule_date,

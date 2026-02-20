@@ -44,7 +44,7 @@ def get_data(filters=None):
 				shift_doc.name,  # Operations Shift Name
 				first_shift_supervisor or "N/A",  # Shift Supervisor Name
 				site_name or "N/A",  # Operations Site Name
-				site_doc.account_supervisor_name if site_doc else "N/A",  # Site Supervisor Name
+				site_doc.site_supervisor_name if site_doc else "N/A",  # Site Supervisor Name
 				count,  # Number of Absentees
 			])
 	return final_data

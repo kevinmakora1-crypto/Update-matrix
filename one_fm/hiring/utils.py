@@ -105,8 +105,8 @@ def set_map_job_applicant_details(target, job_applicant_id, job_applicant=False)
 	for field in one_fm_prefix_fields:
 		target.set(field, job_applicant.get('one_fm_'+field))
 
-	fields = ['one_fm_second_name_in_arabic', 'one_fm_third_name', 'one_fm_third_name_in_arabic', 'one_fm_forth_name',
-		'one_fm_forth_name_in_arabic', 'one_fm_last_name_in_arabic', 'one_fm_place_of_birth', 'one_fm_religion',
+	fields = ['one_fm_second_name_in_arabic', 'one_fm_third_name', 'one_fm_third_name_in_arabic', 'one_fm_fourth_name',
+		'one_fm_fourth_name_in_arabic', 'one_fm_last_name_in_arabic', 'one_fm_place_of_birth', 'one_fm_religion',
 		'one_fm_passport_type', 'one_fm_centralized_number']
 	for field in fields:
 		target.set(field, job_applicant.get(field))
@@ -164,7 +164,7 @@ def create_employee_user_from_employee_id(doc):
 			doc.reload()
 			create_employee_user(doc, f"{doc.employee_id.upper()}@one-fm.com")
 	except Exception as e:
-		frappe.log_error(str(e), 'CREATE USER')
+		frappe.log_error(message=str(e), title='CREATE USER')
 
 def create_employee_user(doc, email):
 	try:
@@ -189,7 +189,7 @@ def create_employee_user(doc, email):
 		doc.db_set("create_user_permission", 1)
 		doc.reload()
 	except Exception as e:
-		frappe.log_error(str(e), 'CREATE USER')
+		frappe.log_error(message=str(e), title='CREATE USER')
 
 
 def generate_employee_id(doc):
@@ -528,7 +528,7 @@ def create_onboarding_from_job_offer(job_offer):
 				o_employee.set('first_name_in_arabic', job_applicant.get('one_fm_first_name_in_arabic') or job_applicant.get('one_fm_first_name'))
 				o_employee.set('second_name_in_arabic', job_applicant.get('one_fm_second_name_in_arabic') or '')
 				o_employee.set('third_name_in_arabic', job_applicant.get('one_fm_third_name_in_arabic') or '')
-				o_employee.set('forth_name_in_arabic', job_applicant.get('one_fm_forth_name_in_arabic') or '')
+				o_employee.set('fourth_name_in_arabic', job_applicant.get('one_fm_fourth_name_in_arabic') or '')
 				o_employee.set('last_name_in_arabic', job_applicant.get('one_fm_last_name_in_arabic') or job_applicant.get('one_fm_last_name'))
 
 				# Set Documents attached in the Job Applicant to Onboard Employee document
@@ -588,7 +588,7 @@ def set_employee_name(doc, method):
 	method: validate
 	This method for getting the arabic full name and fetching children details from job applicant to employee record
 	"""
-	doc.employee_name_in_arabic = ' '.join(filter(lambda x: x, [doc.one_fm_first_name_in_arabic, doc.one_fm_second_name_in_arabic,doc.one_fm_third_name_in_arabic,doc.one_fm_forth_name_in_arabic,doc.one_fm_last_name_in_arabic]))
+	doc.employee_name_in_arabic = ' '.join(filter(lambda x: x, [doc.one_fm_first_name_in_arabic, doc.one_fm_second_name_in_arabic,doc.one_fm_third_name_in_arabic,doc.one_fm_fourth_name_in_arabic,doc.one_fm_last_name_in_arabic]))
 	if doc.employment_type == "Full-time":
 		doc.is_in_kuwait = 1
 	if doc.job_applicant:
@@ -651,7 +651,7 @@ def create_leave_policy(leave_policy_assignments):
 				leave_policy_assignment.save(ignore_permissions=True)
 				leave_policy_assignment.submit()
 		except Exception as e:
-			frappe.log_error(frappe.get_traceback(), "Error while creating leave policy assignment")
+			frappe.log_error(message=frappe.get_traceback(), title="Error while creating leave policy assignment")
 			continue
 
 def update_onboarding_doc_workflow_sate(doc):

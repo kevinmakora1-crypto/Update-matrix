@@ -310,7 +310,6 @@ frappe.ui.form.on('Request for Purchase', {
                 var items_to_order = frm.add_child('items_to_order');
                 items_to_order.item_code = item.item_code;
                 items_to_order.item_name = item.item_name;
-                items_to_order.description = item.description;
                 items_to_order.uom = item.uom;
                 items_to_order.t_warehouse = item.t_warehouse;
                 items_to_order.qty_requested = item.qty;
@@ -340,12 +339,22 @@ frappe.ui.form.on('Request for Purchase', {
                 rfm_items_map[rfm_item.name] = rfm_item;
             });
         }
+
+        let item_codes = frm.doc.items.map(item => item.item_code).filter(code => code);
+        
+        let last_purchase_details = await frappe.call({
+            method: 'one_fm.purchase.doctype.request_for_purchase.request_for_purchase.get_last_purchase_details',
+            args: {
+                item_codes: item_codes
+            }
+        });
+        
+        let last_purchase_map = last_purchase_details.message || {};
         
         frm.doc.items.forEach((item) => {
             var items_to_order = frm.add_child('items_to_order');
             items_to_order.item_code = item.item_code;
             items_to_order.item_name = item.item_name;
-            items_to_order.description = item.description;
             items_to_order.t_warehouse = item.t_warehouse;
             items_to_order.qty_requested = item.qty;
             items_to_order.qty = item.qty;
@@ -377,6 +386,11 @@ frappe.ui.form.on('Request for Purchase', {
                 items_to_order.margin_known = item.margin_known || '';
                 items_to_order.margin_type = item.margin_type || '';
                 items_to_order.margin_rate_or_amount = item.margin_rate_or_amount || 0;
+            }
+
+            if (last_purchase_map[item.item_code]) {
+                items_to_order.last_purchase_supplier = last_purchase_map[item.item_code].supplier;
+                items_to_order.last_purchase_rate = last_purchase_map[item.item_code].rate;
             }
         });
         
@@ -458,8 +472,8 @@ frappe.ui.form.on('Request for Purchase', {
 				doctype: 'Currency Exchange',
 				fields: ['name','exchange_rate','date'],
 				filters: {
-					from_currency: from_currency,
-					to_currency: to_currency,
+					from_currency: to_currency,
+					to_currency: from_currency,
 					date: ['<=', frappe.datetime.get_today()]
 				},
 				order_by: 'date desc',
@@ -1047,7 +1061,7 @@ function calculate_item_values(frm, cdt, cdn) {
     
     if (item.rate && item.qty) {
         let amount = flt(item.rate) * flt(item.qty);
-        let base_rate = flt(item.rate) * (1 / exchange_rate);
+        let base_rate = flt(item.rate) * exchange_rate;
         let base_amount = flt(item.qty) * base_rate;
 
         frappe.model.set_value(cdt, cdn, 'amount', flt(amount, 2));

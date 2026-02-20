@@ -1,0 +1,24 @@
+{
+  "name": "Action HD Ticket - Development Process Owner",
+  "document_type": "HD Ticket",
+  "due_date_based_on": "",
+  "priority": 0,
+  "disabled": 0,
+  "description": "<p>Here is to inform you that the following {{ doctype }}({{ name }}) requires your attention/action. <br/> The details of the request are as follows: <br/> <table cellpadding=\"0\" cellspacing=\"0\" border=\"1\" style=\"border-collapse: collapse;\"> <thead> <tr> <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Label</th> <th style=\"padding: 10px; text-align: left; background-color: #f2f2f2;\">Value</th> </tr> </thead> <tbody> <tr> <td style=\"padding: 10px;\">Subject</td> <td style=\"padding: 10px;\">{{subject}}</td> </tr> <tr> <td style=\"padding: 10px;\">Process</td> <td style=\"padding: 10px;\">{{custom_process}}</td> </tr> </tbody></table></p>",
+  "is_assignment_rule_with_workflow": 0,
+  "assign_condition": "status in (\"Closed\", \"Resolved\") and ticket_type == 'Bug' and not development_process_owner_remark",
+  "unassign_condition": "status in (\"Closed\", \"Resolved\") and ticket_type == 'Bug' and development_process_owner_remark",
+  "close_condition": "",
+  "rule": "Based on Process Task",
+  "doctype": "Assignment Rule",
+  "assignment_days": [
+    { "day": "Monday" },
+    { "day": "Tuesday" },
+    { "day": "Wednesday" },
+    { "day": "Thursday" },
+    { "day": "Friday" },
+    { "day": "Saturday" },
+    { "day": "Sunday" }
+  ],
+  "users": []
+}

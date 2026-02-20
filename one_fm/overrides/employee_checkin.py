@@ -63,7 +63,7 @@ class EmployeeCheckinOverride(EmployeeCheckin):
 			frappe.throw(frappe.get_traceback())
 
 	def validate_duplicate_log(self):
-		doc = frappe.db.sql(f""" select name from `tabEmployee Checkin` where employee = '{self.employee}' and time = '{self.time}' and (NOT name = '{self.name}')""", as_dict=1)
+		doc = frappe.db.sql(f""" select name from `tabEmployee Checkin` where employee = '{self.employee}' and shift_assignment ='{self.shift_assignment}' and time = '{self.time}' and (NOT name = '{self.name}')""", as_dict=1)
 		if doc:
 			doc_link = frappe.get_desk_link("Employee Checkin", doc[0]["name"])
 			frappe.throw(
@@ -89,7 +89,7 @@ class EmployeeCheckinOverride(EmployeeCheckin):
 			if self.log_type == "IN":
 				frappe.enqueue(notify_supervisor_about_late_entry, checkin=self)
 		except Exception as e:
-			frappe.log_error(frappe.get_traceback(), 'Employee Checkin')
+			frappe.log_error(message=frappe.get_traceback(), title='Employee Checkin')
 
 def exists_checkin(current_shift_assignment, checkin_name, log_type="IN"):
 	'''
@@ -111,9 +111,62 @@ def exists_checkin(current_shift_assignment, checkin_name, log_type="IN"):
 
 	return False
 
+
+def validate_shift_assignment(employee_checkin,shift):
+	"""
+		Validate and normalize the shift assignment for an Employee Checkin.
+
+		This helper ensures that Mobile App checkins use the employee's
+		current active shift assignment rather than a potentially stale one.
+
+		Behavior:
+			- If ``employee_checkin`` is a name (string), it is loaded as a
+			  full "Employee Checkin" document.
+			- If the checkin source is "Mobile App" and the checkin is being
+			  created now (``creation`` date equals today's date), the
+			  employee's current shift is fetched via ``get_current_shift``.
+			  If the current shift name differs from the provided ``shift``
+			  argument, the current shift name is returned; otherwise the
+			  original ``shift`` is returned.
+			- For all other cases, the provided ``shift`` argument is
+			  returned unchanged.
+
+		Note: This function does not set or update the shift assignment on
+		the Employee Checkin document; it only validates and returns the
+		appropriate shift name to use.
+	"""
+	try:
+		if isinstance(employee_checkin, str):
+			employee_checkin = frappe.get_doc("Employee Checkin", employee_checkin)
+		if employee_checkin.source == "Mobile App" and getdate(employee_checkin.creation)==getdate():#Ensure that the checkin is being created now
+			current_shift = get_current_shift(employee_checkin.employee,attach_upcoming_shifts=True)
+			if current_shift.get('data'):
+				if current_shift.get('data').get('name') != shift:
+					#Check upcoming shift 
+					if current_shift.get('upcoming_shifts'):
+						upcoming_shift_name = current_shift.get('upcoming_shifts')[0].name
+						if shift == upcoming_shift_name:
+							return shift
+					return current_shift.get('data').get('name')
+				else:
+					return shift
+		return shift
+	except Exception as e:
+		frappe.log_error(message = frappe.get_traceback(),title = 'Checkin Shift Validation')
+
+	
+
+
+
 def after_insert_background(employee_checkin,current_shift):
 	self = frappe.get_doc("Employee Checkin", employee_checkin)
 	try:
+		current_shift = validate_shift_assignment(employee_checkin,current_shift)
+		if not current_shift:
+			shift_details = get_current_shift(self.employee)
+			if shift_details:
+				current_shift = shift_details.get('data').get('name')
+
 		# update shift if not exists
 		curr_shift = frappe.get_doc("Shift Assignment", current_shift)
 		if curr_shift:
@@ -146,7 +199,7 @@ def after_insert_background(employee_checkin,current_shift):
 			frappe.db.sql(query, values=[], as_dict=1)
 			frappe.db.commit()
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), 'Employee Checkin')
+		frappe.log_error(message=frappe.get_traceback(), title='Employee Checkin')
 
 	# send notification
 	# continue to notification
@@ -263,6 +316,8 @@ def notify_supervisor_about_late_entry(checkin):
 	This method notify the supervisor about the late entry of an employee
 	"""
 	try:
+		if checkin.get('shift_permission'):
+			return # return if employee checkin is created from shift permission
 		auto_attendance_employee = frappe.get_value("Employee", {'name':checkin.employee}, ['auto_attendance'])
 		if auto_attendance_employee == 0:
 			shift_permission = frappe.db.sql(f""" select name from `tabShift Permission` where employee = '{checkin.employee}' and date = '{now_datetime().date()}' and log_type = 'IN' and workflow_state IN ('Pending','Approved') ;  """)
@@ -294,11 +349,11 @@ def notify_supervisor_about_late_entry(checkin):
 						return send_push_notification_for_late_entry(get_reports_to, checkin.employee_name, roster_type=the_roster_type if the_roster_type else "Basic", time_difference=time_diff, shift=op_shift, time_of_arrival=time_of_arrival)
 					get_site = frappe.db.get_value("Employee", {"name": checkin.employee}, ['site'])
 					if get_site:
-						get_site_supervisor = frappe.db.get_value("Operations Site", {"name": get_site}, ['account_supervisor'])
+						get_site_supervisor = frappe.db.get_value("Operations Site", {"name": get_site}, ['site_supervisor'])
 						if get_site_supervisor:
 							return send_push_notification_for_late_entry(get_site_supervisor, checkin.employee_name, roster_type=the_roster_type if the_roster_type else "Basic", time_difference=time_diff, shift=op_shift, time_of_arrival=time_of_arrival)
 	except Exception as e:
-		frappe.log_error(e)
+		frappe.log_error(message=str(e), title='Employee Checkin')
 		pass
 
 

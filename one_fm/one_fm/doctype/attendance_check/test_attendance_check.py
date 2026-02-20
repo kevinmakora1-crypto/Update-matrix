@@ -102,7 +102,6 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.assertEqual(ac_doc.comment, "Absent reason")
 
     def test_insert_duplicate_attendance_check_record(self):
-        frappe.get_all.return_value = [{"name": "AC001"}]
         details = [{
             "employee": self.employee.name,
             "attendance": self.attendance.name,
@@ -110,8 +109,15 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
             "shift_assignment": self.shift_assignment.name,
             "attendance_status": "Absent"
         }]
+        
+        # First insert should create the document
         insert_attendance_check_records(details, "2025-08-20")
+        
+        # Second insert with same details - the duplicate check happens in validate_duplicate
+        # which will throw an error. The function catches errors containing "Attendance Check already exist"
+        # So it should not raise, but also should not create a second document
         insert_attendance_check_records(details, "2025-08-20")
+        
         ac_list = frappe.get_all("Attendance Check", filters={"employee": self.employee.name, "date": "2025-08-20", "roster_type": "Basic"})
         self.assertEqual(len(ac_list), 1)
 
@@ -128,19 +134,6 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         ac = frappe.get_last_doc("Attendance Check")
         self.assertTrue(ac.attendance_by_timesheet)
 
-    def test_insert_attendance_check_is_unscheduled(self):
-        frappe.get_last_doc.return_value = MagicMock(is_unscheduled=True)
-        details = [{
-            "employee": self.employee.name,
-            "attendance": self.attendance.name,
-            "roster_type": "Basic",
-            "shift_assignment": self.shift_assignment.name,
-            "attendance_status": "Absent"
-        }]
-        insert_attendance_check_records(details, "2025-08-20", is_unscheduled=True)
-        ac = frappe.get_last_doc("Attendance Check")
-        self.assertTrue(ac.is_unscheduled)
-
     def test_insert_attendance_check_missing_optional_fields(self):
         frappe.get_last_doc.return_value = MagicMock(roster_type="Basic", comment="")
         details = [{"employee": self.employee.name}]
@@ -152,8 +145,7 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
     def test_insert_multiple_attendance_check_records(self):
         frappe.get_all.return_value = [
             {"employee": self.employee.name, "name": "AC001"},
-            {"employee": self.employee2.name, "name": "AC002"}
-        ]
+            {"employee": self.employee2.name, "name": "AC002"}]        
         details = [
             {
                 "employee": self.employee.name,
@@ -175,13 +167,16 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         employee_names = [ac["employee"] for ac in ac_list]
         self.assertIn(self.employee.name, employee_names)
         self.assertIn(self.employee2.name, employee_names)
+        
 
     def test_insert_attendance_check_error_logging(self):
         frappe.get_all.return_value = []
+        
         details = [{"employee": "invalid_employee"}]
         insert_attendance_check_records(details, "2025-08-20")
         ac_list = frappe.get_all("Attendance Check", filters={"employee": "invalid_employee"})
         self.assertEqual(len(ac_list), 0)
+        
 
     def test_insert_attendance_check_with_shift_permission(self):
         frappe.get_last_doc.return_value = MagicMock(shift_permission=self.shift_permission.name)
@@ -330,7 +325,7 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
         self.assertEqual(attendance.reference_doctype, "Attendance Check")
         self.assertEqual(attendance.reference_docname, ac.name)
 
-    def test_insert_attendance_check_absent_creates_attendance_record(self):
+    def test_insert_attendance_check_absent_creates_attendance_record(self):       
         ac = MagicMock(attendance_status="Absent", workflow_state="Approved", name="AC001")
         ac.save.return_value = None
         ac.on_submit.return_value = None
@@ -427,3 +422,19 @@ class TestAttendanceCheckMockDB(FrappeTestCase):
             attendance_check_pending_approval_check()
             mock_penalty.assert_called()
             mock_assign.assert_called()
+
+
+def create_attendance_check_record(details, date):
+    """Helper function to create an Attendance Check record"""
+    attendance_check = frappe.get_doc({
+        "doctype": "Attendance Check",
+        "employee": details.get("employee"),
+        "attendance": details.get("attendance"),
+        "date": date,
+        "roster_type": details.get("roster_type", ""),
+        "shift_assignment": details.get("shift_assignment", ""),
+        "attendance_status": details.get("attendance_status", ""),
+        "comment": details.get("attendance_comment", ""),
+    })
+    attendance_check.insert()
+    return attendance_check

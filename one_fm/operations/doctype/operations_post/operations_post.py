@@ -33,13 +33,39 @@ def create_new_schedule_for_project(proj):
     try:
         existing_proj = frappe.db.exists("Project",proj)
         if existing_proj:
-            all_operations_post = frappe.get_all("Operations Post",{'project':existing_proj})
-            all_operations_post_ = [frappe.get_doc("Operations Post",i.name) for i in all_operations_post]
+            contract_items = frappe.db.sql("""
+                SELECT ci.item_code
+                FROM `tabContract Item` ci
+                INNER JOIN `tabContracts` c ON ci.parent = c.name
+                WHERE c.project = %s
+                    AND c.workflow_state = 'Active'
+                    AND (ci.item_type IS NULL OR ci.item_type != 'Items')
+            """, (existing_proj,), as_dict=1)
+
+            item_codes = [obj.item_code for obj in contract_items]
+            if not item_codes:
+                return response("No active contract items found for the specified project", {}, True, 200)
+
+            operations_role = frappe.db.get_list(
+                "Operations Role",
+                filters={
+                    "project": existing_proj,
+                    "status": "Active",
+                    "sale_item": ["IN", item_codes],
+                },
+                pluck="name",
+            )
+
+            all_operations_post = frappe.get_all(
+                "Operations Post",
+                {"project": existing_proj, "post_template": ["IN", operations_role], "status": "Active"},
+            )
+            all_operations_post_ = [frappe.get_doc("Operations Post", i.name) for i in all_operations_post]
 
             frappe.enqueue(create_post_schedules, operations_posts=all_operations_post_, queue="long",job_name = 'Create Post Schedules')
             return response("Post Creation Scheduled Sucessfully",{}, True, 200)
     except:
-        frappe.log_error("Post Schedule Creation Error",frappe.get_traceback())
+        frappe.log_error(title="Post Schedule Creation Error", message=frappe.get_traceback())
 
 
 
@@ -71,7 +97,7 @@ def update_ops_post(projects):
         if response:
             posts = [i.name for i in response]
     except:
-        frappe.log_error("Post Schedule Creation Error",frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title="Post Schedule Creation Error")
 
     try:
         for each in posts:
@@ -80,7 +106,7 @@ def update_ops_post(projects):
             create_post_schedule_for_operations_post(doc)
             frappe.db.commit()
     except:
-        frappe.log_error("Error Creating Post Schedules",frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title="Error Creating Post Schedules")
 
 
 
@@ -143,19 +169,30 @@ def create_post_schedule_for_operations_post(operations_post):
         if contracts.end_date >= getdate():
             today = getdate()
             start_date = today if contracts.start_date < today else contracts.start_date
+            sale_item = frappe.db.get_value("Operations Role", operations_post.post_template, "sale_item")
+            contract_item = frappe.db.get_value("Contract Item", {
+                "parent": contracts.name,
+                "item_code": sale_item
+            }, ["select_specific_days", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], as_dict=1)
+
+            selected_days = None
+            if contract_item and contract_item.select_specific_days:
+                day_fields = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+                selected_days = {i for i, f in enumerate(day_fields) if contract_item.get(f)}
             exists_schedule_in_between = False
+
             if frappe.db.exists("Post Schedule", {"date": ['between', (start_date, contracts.end_date)], "post": operations_post.name}):
                 exists_schedule_in_between = True
 
-                frappe.enqueue(queue_create_post_schedule_for_operations_post, operations_post=operations_post, contracts=contracts, exists_schedule_in_between=exists_schedule_in_between, start_date=start_date, is_async=True, queue="long")
+                frappe.enqueue(queue_create_post_schedule_for_operations_post, operations_post=operations_post, contracts=contracts, exists_schedule_in_between=exists_schedule_in_between, start_date=start_date, selected_days=selected_days, is_async=True, queue="long")
             else:
-                queue_create_post_schedule_for_operations_post(operations_post, contracts, exists_schedule_in_between, start_date)
+                queue_create_post_schedule_for_operations_post(operations_post, contracts, exists_schedule_in_between, start_date, selected_days)
         else:
             frappe.msgprint(_("End date of the contract referenced in by the project is less than today."))
     else:
         frappe.msgprint(_("No active contract found for the project referenced."))
 
-def queue_create_post_schedule_for_operations_post(operations_post, contracts, exists_schedule_in_between, start_date):
+def queue_create_post_schedule_for_operations_post(operations_post, contracts, exists_schedule_in_between, start_date, selected_days=None):
     try:
         owner = frappe.session.user
         creation = now()
@@ -175,12 +212,14 @@ def queue_create_post_schedule_for_operations_post(operations_post, contracts, e
         #The previous series value from frappe is wrong in some cases
 
         for date in	pd.date_range(start=start_date, end=contracts.end_date):
+            if selected_days is not None and date.weekday() not in selected_days:
+                continue
 
             date_string = frappe.utils.get_date_str(date.date())
             doc_id_template = f"{operations_post.name}_{date_string}"
             schedule_exists = False
             if exists_schedule_in_between:
-                if  frappe.db.exists("Post Schedule", {"date": cstr(date.date()),'operations_role': operations_post.post_template, "post": operations_post.name}):
+                if frappe.db.exists("Post Schedule", {"date": cstr(date.date()),'operations_role': operations_post.post_template, "post": operations_post.name}):
                     schedule_exists = True
             if not schedule_exists:
                 ps_name_idx += 1
@@ -200,6 +239,6 @@ def queue_create_post_schedule_for_operations_post(operations_post, contracts, e
             frappe.msgprint(_("Post is scheduled as Planned."))
     except Exception as e:
         frappe.db.rollback()
-        frappe.log_error('Post Schedule from Operations Post', e)
+        frappe.log_error(message=str(e), title='Post Schedule from Operations Post')
         frappe.msgprint(_("Error log is added."), alert=True, indicator='orange')
         operations_post.reload()

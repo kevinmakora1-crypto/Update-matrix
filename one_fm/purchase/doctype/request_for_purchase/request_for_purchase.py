@@ -45,8 +45,6 @@ class RequestforPurchase(Document):
 		self.validate_conversion_factors()
 		self.calculate_stock_quantities()
 		self.calculate_stock_rates()
-		if self.currency:
-			self.set_exchange_rate()
 		self.calculate_item_values()
 		self.calculate_totals()
 
@@ -332,7 +330,7 @@ class RequestforPurchase(Document):
 				frappe.delete_doc('Purchase Order', po.name, force=1)
 				
 			except Exception as e:
-				frappe.log_error(f"Error deleting PO {po.name}: {str(e)}")
+				frappe.log_error(message=f"Error deleting PO {po.name}: {str(e)}", title="Error Deleting Purchase Order")
 				frappe.throw(_("Error deleting Purchase Order {0}: {1}").format(po.name, str(e)))
 
  
@@ -537,8 +535,8 @@ class RequestforPurchase(Document):
 			latest = frappe.get_list(
 				'Currency Exchange',
 				filters={
-					'from_currency': from_currency,
-					'to_currency': to_currency,
+					'from_currency': to_currency,
+					'to_currency': from_currency,
 					'date': ['<=', frappe.utils.today()]
 				},
 				fields=['name', 'exchange_rate', 'date', 'creation'],
@@ -550,7 +548,7 @@ class RequestforPurchase(Document):
 				if rate:  # guaranteed non-zero/non-negative by business rules
 					self.exchange_rate = rate
 		except Exception as e:
-			frappe.log_error(f"Exchange rate fetch failed for RFP {getattr(self, 'name', 'NEW')}: {e}", 'RFP Exchange Rate Fetch')
+			frappe.log_error(message=f"Exchange rate fetch failed for RFP {getattr(self, 'name', 'NEW')}: {e}", title='RFP Exchange Rate Fetch')
 
 	def validate_conversion_factors(self):
 		for item in self.items_to_order:
@@ -642,8 +640,8 @@ class RequestforPurchase(Document):
 @frappe.whitelist()
 def get_exchange_rate(from_currency, to_currency, transaction_date):
     filters = {
-        "from_currency": from_currency,
-        "to_currency": to_currency,
+        "from_currency": to_currency,
+        "to_currency": from_currency,
         "date": ("<=", transaction_date)
     }
     
@@ -968,3 +966,38 @@ def get_rfm_item_uom_data(rfm_item_names):
 	)
 	
 	return rfm_items
+
+@frappe.whitelist()
+def get_last_purchase_details(item_codes):
+	if isinstance(item_codes, str):
+		item_codes = json.loads(item_codes)
+	
+	if not item_codes:
+		return {}
+	
+	last_purchase_details = {}
+	
+	for item_code in item_codes:
+		result = frappe.db.sql("""
+			SELECT
+				po.supplier,
+				poi.rate
+			FROM
+				`tabPurchase Order Item` AS poi
+			JOIN
+				`tabPurchase Order` AS po ON poi.parent = po.name
+			WHERE
+				poi.item_code = %s
+				AND po.docstatus = 1
+			ORDER BY
+				po.transaction_date DESC
+			LIMIT 1
+		""", (item_code,), as_dict=True)
+		
+		if result:
+			last_purchase_details[item_code] = {
+				'supplier': result[0].supplier,
+				'rate': result[0].rate
+			}
+	
+	return last_purchase_details

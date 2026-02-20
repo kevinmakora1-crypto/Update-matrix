@@ -137,41 +137,84 @@ frappe.ui.form.on('Contracts', {
 			frm.add_custom_button(__("Create Delivery Note"), function() {
 				create_delivery_note(frm);
 			}).addClass('btn btn-danger');
+
 			// Generate Invoice
 			frm.add_custom_button(__("Generate Invoice"), function() {
-				// ask for invoice date, then use it for the rest of the activity
+				// Get contract start year and current year
+				let contract_start_year = frm.doc.start_date ? new Date(frm.doc.start_date).getFullYear() : new Date().getFullYear();
+				let current_year = new Date().getFullYear();
+				
+				// Generate year options from current year back to contract start year
+				let year_options = [];
+				for (let year = current_year; year >= contract_start_year; year--) {
+					year_options.push({ value: year.toString(), label: year.toString() });
+				}
+				
+				// Month options
+				let month_options = [
+					{ value: 1, label: __("January") },
+					{ value: 2, label: __("February") },
+					{ value: 3, label: __("March") },
+					{ value: 4, label: __("April") },
+					{ value: 5, label: __("May") },
+					{ value: 6, label: __("June") },
+					{ value: 7, label: __("July") },
+					{ value: 8, label: __("August") },
+					{ value: 9, label: __("September") },
+					{ value: 10, label: __("October") },
+					{ value: 11, label: __("November") },
+					{ value: 12, label: __("December") },
+				];
+				
+				// Set default to current month and year
+				let current_month = (new Date().getMonth() + 1).toString();
+				let current_year_str = current_year.toString();
+				
 				let d = new frappe.ui.Dialog({
-					title: 'Select Contracts Period',
+					title: __('Select Invoice Period'),
 					fields: [
-							{
-									label: 'Contract Period',
-									fieldname: 'period',
-									fieldtype: 'Date',
-						reqd:1
-							}
-					],
-					primary_action_label: 'Generate',
-					primary_action(values) {
-					// process generate invoice
-					frappe.call({
-						doc: frm.doc,
-						method: 'generate_sales_invoice',
-						args: values,
-						callback: function(r) {
-							if(!r.exc){
-								frappe.show_alert({
-										message:__('Sales Invoice created successfully'),
-										indicator:'green'
-								}, 5);
-								frappe.msgprint(__('Sales Invoice created successfully'))
-								frm.reload_doc();
-							}
+						{
+								label: __('Month'),
+								fieldname: 'month',
+								fieldtype: 'Select',
+								options: month_options,
+								default: current_month,
+								reqd: 1
 						},
-						freeze: true,
-						freeze_message: (__('Creating Sales Invoice'))
-					})
-					// end process generate invoice
-							d.hide();
+						{
+								label: __('Year'),
+								fieldname: 'year',
+								fieldtype: 'Select',
+								options: year_options,
+								default: current_year_str,
+								reqd: 1
+						}
+					],
+					primary_action_label: __('Generate'),
+					primary_action(values) {						
+						frappe.call({
+							doc: frm.doc,
+							method: 'generate_sales_invoice',
+							args: values,
+							callback: function(r) {
+								if(!r.exc){
+									frappe.show_alert({
+											message:__('Sales Invoice created successfully'),
+											indicator:'green'
+									}, 5);
+									
+									if(r.message && r.message.name) {
+										frappe.set_route('Form', 'Sales Invoice', r.message.name);
+									} else {
+										frappe.msgprint(__('Sales Invoice created successfully'));
+										frm.reload_doc();
+									}
+								}
+							},
+							freeze: true,
+							freeze_message: (__('Creating Sales Invoice'))
+						})
+						d.hide();
 					}
 			});
 
@@ -257,7 +300,16 @@ frappe.ui.form.on('Contracts', {
         }
         frm.refresh_field("assets");
 		set_hide_management_fee_fields(frm);
-
+		frm.events.open_sections_onload(frm);
+		
+		frm.fields_dict['client_requested_days'].grid.get_field('contract_item').get_query = function(doc, cdt, cdn) {
+			let valid_items = frm.doc.items.map(item => item.item_code);
+			return {
+				filters: [
+					['Item', 'item_code', 'in', valid_items]
+				]
+			};
+		};
 	},
 	customer_address:function(frm){
 		if(frm.doc.customer_address){
@@ -292,15 +344,18 @@ frappe.ui.form.on('Contracts', {
 	create_sales_invoice_as: function(frm){
 		set_hide_management_fee_fields(frm);
 	},
-	engagement_type: (frm)=>{
-		// disable is auto renewal if engagement type is one-off
-		if(frm.doc.engagement_type=='One-off'){
-			frm.toggle_enable('is_auto_renewal', 0);
-			frm.toggle_display('is_auto_renewal', 0);
-		} else {
-			frm.toggle_enable('is_auto_renewal', 1);
-			frm.toggle_display('is_auto_renewal', 1);
-		}
+	open_sections_onload(frm) {
+		// run after layout is ready
+        frappe.after_ajax(() => {
+            let keep_closed = ['section_break_15', 'section_break_36', 'section_break_55', 'sales_invoice_print_settings_section'];
+			frm.layout.sections.forEach(sec => {
+                if (sec.df && sec.df.collapsible) {
+					if (!keep_closed.includes(sec.df.fieldname)) {
+                        sec.collapse(false);
+                    }
+                }
+            });
+        });
 	}
 });
 

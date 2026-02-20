@@ -64,7 +64,7 @@ def add_party_gl_entries_(self, gl_entries):
             try:
                 customer_advance_account=frappe.get_value('Accounts Additional Settings',None,'customer_advance_account')                    
             except:
-                frappe.log_error("Error while fetching advance account",frappe.get_traceback())
+                frappe.log_error(title="Error while fetching advance account", message=frappe.get_traceback())
                 frappe.throw("An Error occured while fetching advance account, Please review the error logs")
             exchange_rate = self.get_exchange_rate()
             base_unallocated_amount = self.unallocated_amount * exchange_rate

@@ -83,7 +83,7 @@ class Preparation(Document):
         """
 		runs: `validate`
 		param: preparation object
-		This method is fetching values of grd supervisor or operator for renewal from GRD settings
+		This method is fetching values of grd supervisor or operator for renewal from HR Settings
 		"""
         if not self.grd_supervisor:
             self.grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
@@ -101,7 +101,7 @@ class Preparation(Document):
 
     def on_submit(self):
         self.validate_mandatory_fields_on_submit()
-
+        validate_preparation_table(self)
         self.db_set('submitted_by', frappe.session.user)
         self.db_set('submitted_on', now_datetime())
         self.recall_create_work_permit_renewal() ## create work permit record for renewals
@@ -185,7 +185,7 @@ class Preparation(Document):
 # Calculate the date of the next month (First & Last) (monthly cron in hooks)
 def auto_create_preparation_record():
     """
-    runs: at the Preparation Record Creation Day configured in the GRD Settings
+    runs: at the Preparation Record Creation Day configured in the HR Settings
     This method will create preparation record that contain list of all employees that their residency expiry date will be between the first and the last date of the next month
     This record will go to HR user to set value for each employee either renewal or extend and on the submit of this record it will ask for hr permission and approval.
     Then, it will create wp, mi, moi, and paci records for all employees in the list.
@@ -218,7 +218,7 @@ def create_preparation_record():
     )
     employee_entries.sort(key=sort)
     for employee in employee_entries:
-        new_row = {"employee": employee.name}
+        new_row = {"employee": employee.name, "relieving_date": employee.relieving_date}
         
         if employee.one_fm_nationality == "Kuwaiti":
             new_row['renewal_or_extend'] = "Renewal (Kuwaiti)"
@@ -373,8 +373,8 @@ def cancel_delete_doc(doctype,source,row):
 
 def validate_preparation_table(doc):
     """Ensure that all the employees in the preparation table are in Active Status"""
-    
-    all_active_staff = frappe.get_all("Employee",{'status': ["IN",["Active","Vacation"]]})
+
+    all_active_staff = frappe.get_all("Employee",{'status': ["IN",["Active"]]})
     if all_active_staff:
         all_active_staff_list = [o.name for o in all_active_staff]
         for each in doc.preparation_record:

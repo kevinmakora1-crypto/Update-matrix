@@ -798,18 +798,18 @@ def get_job_applicant_custom_fields():
                 "translatable": 1
             },
             {
-                "fieldname": "one_fm_forth_name",
+                "fieldname": "one_fm_fourth_name",
                 "fieldtype": "Data",
                 "insert_after": "one_fm_third_name",
-                "label": "Forth Name",
+                "label": "Fourth Name",
                 "translatable": 1
             },
             {
-                "depends_on": "one_fm_forth_name",
-                "fieldname": "one_fm_forth_name_in_arabic",
+                "depends_on": "one_fm_fourth_name",
+                "fieldname": "one_fm_fourth_name_in_arabic",
                 "fieldtype": "Data",
                 "insert_after": "one_fm_third_name_in_arabic",
-                "label": "Forth Name in Arabic",
+                "label": "Fourth Name in Arabic",
                 "translatable": 1
             },
             {
@@ -940,7 +940,7 @@ def get_job_applicant_custom_fields():
             {
                 "fieldname": "one_fm_last_name",
                 "fieldtype": "Data",
-                "insert_after": "one_fm_forth_name",
+                "insert_after": "one_fm_fourth_name",
                 "label": "Last Name",
                 "reqd": 1,
                 "translatable": 1
@@ -949,7 +949,7 @@ def get_job_applicant_custom_fields():
                 "depends_on": "one_fm_last_name",
                 "fieldname": "one_fm_last_name_in_arabic",
                 "fieldtype": "Data",
-                "insert_after": "one_fm_forth_name_in_arabic",
+                "insert_after": "one_fm_fourth_name_in_arabic",
                 "label": "Last Name in Arabic",
                 "translatable": 1
             },

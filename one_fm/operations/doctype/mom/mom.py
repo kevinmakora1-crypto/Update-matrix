@@ -170,13 +170,13 @@ def fetch_designation_of_users(list_of_users: list = []):
 							WHERE user_id IN %s
 							""",(tuple(loads(list_of_users)), ) ,as_dict=1)
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), "Error encountered while fetching users designation (MOM)")
+		frappe.log_error(message=frappe.get_traceback(), title="Error encountered while fetching users designation (MOM)")
 
 
 @frappe.whitelist()
 def get_project_users(project):
 	doc = frappe.get_doc("Project", project)
 	users = []
-	users.append(doc.manager_name) if all((doc.manager_name, doc.account_manager, doc.project_type == "Internal")) else None
+	users.append(doc.project_manager_name) if all((doc.project_manager_name, doc.project_manager, doc.project_type == "Internal")) else None
 	users.extend([user.full_name for user in doc.users])
 	return users

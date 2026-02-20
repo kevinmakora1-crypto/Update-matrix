@@ -25,19 +25,19 @@ def get_post_schedules(project, post, first_day, last_day):
 
 def get_working_site_supervisor(project, date):
 	try:
-		site_supevisor_list = frappe.db.sql(f"""SELECT account_supervisor from `tabOperations Site`
+		site_supevisor_list = frappe.db.sql(f"""SELECT site_supervisor from `tabOperations Site`
 							 			WHERE project = '{project}'
-										AND account_supervisor in (SELECT employee from `tabEmployee Schedule`
+										AND site_supervisor in (SELECT employee from `tabEmployee Schedule`
 										WHERE employee_availability = 'Working'
 										AND date = '{date}')""", as_dict=1)
 		if site_supevisor_list:
 			site = site_supevisor_list[0]
-			return site["account_supervisor"]
+			return site["site_supervisor"]
 			
 		return None
 
 	except Exception as e:
-		frappe.log_error(title=str(e), message=frappe.get_traceback())
+		frappe.log_error(message=str(e), title="Error fetching working site supervisor")
 
 	
 def get_post_scheduler_items(contract, project):
@@ -47,6 +47,9 @@ def get_post_scheduler_items(contract, project):
 	items = []
 
 	for item in contract.items:
+		# Skip items of type "Items" as they don't require post scheduling validation
+		if item.item_type == "Items" or (item.item_type == "Service" and item.is_daily_operation_handled_by_us == "No"):
+			continue
 
 		item_message = ""
 
@@ -181,7 +184,7 @@ def schedule_roster_checker():
 				post_scheduler_checker.contract = contract
 				post_scheduler_checker.project = project
 				post_scheduler_checker.site_supervisor = get_working_site_supervisor(project, today)
-				post_scheduler_checker.project_manager = frappe.db.get_value('Project', project, 'account_manager')
+				post_scheduler_checker.project_manager = frappe.db.get_value('Project', project, 'project_manager')
 
 				for sub_item in items:
 					post_scheduler_checker.append("items", sub_item)
@@ -234,4 +237,5 @@ def create_post_schedule_checker_from_contracts(page_size, offset):
 			doc = frappe.get_doc({"doctype":"Post Scheduler Checker", 'contract': row}).insert(ignore_permissions=True)
 		except Exception as e:
 			print(e)
+
 	frappe.db.commit()

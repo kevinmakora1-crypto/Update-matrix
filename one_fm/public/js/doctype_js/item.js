@@ -1,7 +1,9 @@
 frappe.ui.form.on('Item', {
 	refresh(frm) {
 		set_item_field_property(frm);
+		set_item_name_properties(frm);
 		set_change_request_btn(frm);
+		set_field_access_for_unauthorized_users(frm);
 		frm.set_query("subitem_group", function() {
 			return {
 				filters: [
@@ -322,6 +324,17 @@ var set_item_field_property = function(frm) {
 	frm.set_df_property('linked_items', 'reqd', false);
 }
 
+var set_item_name_properties = function(frm) {
+	if(frm.is_new()){
+		frm.set_df_property('item_name', 'read_only', false)
+		frm.set_df_property('item_name', 'reqd', true)
+	} else {
+		frm.set_df_property('item_name', 'read_only', true)
+		frm.set_df_property('item_name', 'reqd', false)
+	}
+	frm.refresh_field('item_name')
+}
+
 function get_item_code(frm){
 	frm.set_value('item_code','')
 	frappe.call({
@@ -347,6 +360,15 @@ function set_change_request_btn(frm) {
 				change_request(frm);
 			}, "Actions");
 		}
+	}
+};
+
+function set_field_access_for_unauthorized_users(frm) {
+	if(frm.doc.workflow_state == 'Approved' && !(frappe.user.has_role('Finance Manager') || frappe.user.has_role('Purchase Manager'))){
+		// Set all fields (other than UOM) as read only
+		Object.keys(frm.fields_dict || {}).filter(f => f != "uoms").forEach(f => frm.set_df_property(f, "read_only", 1));
+
+		frm.refresh_fields();
 	}
 };
 

@@ -25,7 +25,8 @@
   "attendance_status_section",
   "roster_type",
   "day_off_ot",
-  "amended_from"
+  "amended_from",
+  "user_confirmed_replace"
  ],
  "fields": [
   {
@@ -103,9 +104,9 @@
   {
    "fetch_from": "client_event.start_date",
    "fieldname": "start_date",
-   "fetch_if_empty": 1,
    "fieldtype": "Date",
    "label": "Start Date",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -114,19 +115,22 @@
    "fetch_if_empty": 1,
    "fieldname": "end_date",
    "fieldtype": "Date",
-   "label": "End Date"
+   "label": "End Date",
+   "read_only": 1
   },
   {
    "fetch_from": "client_event.event_start_datetime",
    "fieldname": "start_datetime",
    "fieldtype": "Datetime",
-   "label": "Start Datetime"
+   "label": "Start Datetime",
+   "read_only": 1
   },
   {
    "fetch_from": "client_event.event_end_datetime",
    "fieldname": "end_datetime",
    "fieldtype": "Datetime",
-   "label": "End Datetime"
+   "label": "End Datetime",
+   "read_only": 1
   },
   {
    "fieldname": "attendance_status_section",
@@ -163,6 +167,14 @@
    "fieldtype": "Link",
    "label": "Designation",
    "options": "Designation"
+  },
+  {
+   "default": "0",
+   "fieldname": "user_confirmed_replace",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "User Confirmed Replace",
+   "no_copy": 1
   }
  ],
  "grid_page_length": 50,
@@ -178,7 +190,7 @@
    "link_fieldname": "event_staff"
   }
  ],
- "modified": "2025-11-18 16:04:05.838036",
+ "modified": "2026-01-05 15:43:14.265778",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Event Staff",

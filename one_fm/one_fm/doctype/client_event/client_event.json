@@ -15,6 +15,14 @@
   "column_break_bajz",
   "event_location",
   "project",
+  "operations_manager",
+  "activity_of_the_day",
+  "space",
+  "section_break_nwcj",
+  "timing_of_informing",
+  "method_of_informing",
+  "column_break_nvtm",
+  "poc_name_that_informed",
   "section_break_zhpk",
   "staffing_requirements",
   "amended_from"
@@ -34,25 +42,31 @@
    "fieldname": "start_date",
    "fieldtype": "Date",
    "label": "Start Date",
+   "read_only_depends_on": "eval: doc.workflow_state != \"Draft\"",
    "reqd": 1
   },
   {
    "fieldname": "end_date",
    "fieldtype": "Date",
-   "label": "End Date"
+   "label": "End Date",
+   "read_only_depends_on": "eval: doc.workflow_state != \"Draft\"",
+   "reqd": 1
   },
   {
    "fieldname": "event_start_datetime",
    "fieldtype": "Datetime",
    "in_list_view": 1,
    "label": "Event Start Datetime",
+   "read_only_depends_on": "eval: doc.workflow_state != \"Draft\"",
    "reqd": 1
   },
   {
    "fieldname": "event_end_datetime",
    "fieldtype": "Datetime",
    "in_list_view": 1,
-   "label": "Event End Datetime"
+   "label": "Event End Datetime",
+   "read_only_depends_on": "eval: doc.workflow_state != \"Draft\"",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_bajz",
@@ -90,6 +104,45 @@
    "fieldtype": "Table",
    "label": "Staffing Requirements",
    "options": "Client Event Staff Requirement"
+  },
+  {
+   "fieldname": "operations_manager",
+   "fieldtype": "Link",
+   "label": "Operations Manager",
+   "options": "User"
+  },
+  {
+   "fieldname": "activity_of_the_day",
+   "fieldtype": "Data",
+   "label": "Activity of the Day"
+  },
+  {
+   "fieldname": "space",
+   "fieldtype": "Data",
+   "label": "Space"
+  },
+  {
+   "fieldname": "section_break_nwcj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "timing_of_informing",
+   "fieldtype": "Data",
+   "label": "Timing of Informing"
+  },
+  {
+   "fieldname": "method_of_informing",
+   "fieldtype": "Data",
+   "label": "Method of Informing"
+  },
+  {
+   "fieldname": "column_break_nvtm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "poc_name_that_informed",
+   "fieldtype": "Data",
+   "label": "POC Name that informed"
   }
  ],
  "grid_page_length": 50,
@@ -109,7 +162,7 @@
    "link_fieldname": "client_event"
   }
  ],
- "modified": "2025-11-11 11:30:37.701862",
+ "modified": "2026-01-27 18:35:34.388248",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Client Event",

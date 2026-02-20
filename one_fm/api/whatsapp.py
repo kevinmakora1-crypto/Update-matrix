@@ -38,7 +38,7 @@ def log_issue(**kwargs):
                         issue.db_set('description',
                             issue.description + "<br>" + f'<img height="300px" width="300px" src="{data.issue_media}" />')
             except Exception as e:
-                frappe.log_error(str(e), 'Issue WhatsApp file attach')
+                frappe.log_error(message=str(e), title='Issue WhatsApp file attach')
 
             return response(
                 'success', 200,

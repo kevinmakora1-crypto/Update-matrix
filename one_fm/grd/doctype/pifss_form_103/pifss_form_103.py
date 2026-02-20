@@ -94,7 +94,7 @@ class PIFSSForm103(Document):
 		"""
 		runs: `validate`
 		param: PIFSS_for_103 object
-		This method is fetching values of grd supervisor or pifss operator from GRD settings
+		This method is fetching values of grd supervisor or pifss operator from HR Settings
 		"""
 		if not self.grd_supervisor:
 			self.grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")

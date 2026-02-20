@@ -47,7 +47,9 @@ def get_attendance_custom_fields():
                 "fieldname": "comment",
                 "fieldtype": "Small Text",
                 "insert_after": "attendance_comment",
-                "label": "Comment"
+                "label": "Comment",
+                "allow_on_submit": 1,
+                "read_only_depends_on": "eval:doc.docstatus==1"
             },
             {
                 "fieldname": "attendance_comment",
@@ -144,7 +146,7 @@ def get_attendance_custom_fields():
                 "insert_after": "early_exit"
             },
             {
-                "fieldname": "is_unscheduled",
+                "fieldname": "has_no_shift_assignment",
                 "fieldtype": "Check",
                 "insert_after": "reference",
                 "label": "Has No Shift Assignment"

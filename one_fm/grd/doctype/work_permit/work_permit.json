@@ -396,11 +396,11 @@
    "options": "Preparation"
   },
   {
-   "depends_on": "eval:doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'",
+   "depends_on": "eval:doc.workflow_state=='Pending By Supervisor' || doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'",
    "fieldname": "new_work_permit_expiry_date",
    "fieldtype": "Date",
    "label": "Updated Work Permit Expiry Date",
-   "mandatory_depends_on": "eval:doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'"
+   "mandatory_depends_on": "eval:doc.workflow_state=='Pending By Supervisor' || doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'"
   },
   {
    "allow_on_submit": 1,
@@ -808,13 +808,13 @@
    "options": "User"
   },
   {
-   "depends_on": "eval:doc.workflow_state == \"Pending by Supervisor\" || doc.workflow_state == \"Pending by Operator\" || doc.workflow_state == \"Completed\"",
+   "depends_on": "eval:doc.workflow_state == \"Pending By Supervisor\" || doc.workflow_state == \"Pending by Operator\" || doc.workflow_state == \"Completed\"|| doc.workflow_state == \"Pending By PAM\"",
    "fieldname": "payment_details_section_section",
    "fieldtype": "Section Break",
    "label": "Payment Details Section"
   },
   {
-   "depends_on": "eval:doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'",
+   "depends_on": "eval:doc.workflow_state=='Pending By Supervisor' || doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'",
    "fieldname": "work_permit_information_section",
    "fieldtype": "Section Break",
    "label": "Work Permit Information"
@@ -921,7 +921,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-03 15:36:45.697257",
+ "modified": "2025-12-24 20:01:52.632169",
  "modified_by": "Administrator",
  "module": "GRD",
  "name": "Work Permit",

@@ -83,7 +83,7 @@ def create_invoice_payment_entry(
             advance_account = frappe.get_value("Employee Advance",doc.employee_advance,'advance_account')
             pe.paid_from = advance_account
         except:
-            frappe.log_error("An Error Occurred while creating the payment entry",frappe.get_traceback())
+            frappe.log_error(title="An Error Occurred while creating the payment entry", message=frappe.get_traceback())
 
     if dt in ["Purchase Order", "Sales Order", "Sales Invoice", "Purchase Invoice"]:
         pe.project = doc.get("project") or reduce(

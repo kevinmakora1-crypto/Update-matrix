@@ -22,7 +22,7 @@ def get_leave_detail(employee_id):
         return leaves
     except Exception as e:
         print(frappe.get_traceback())
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Leave Detail Error')
         return frappe.utils.response.report_error(e)
 
 @frappe.whitelist()
@@ -33,7 +33,7 @@ def leave_detail(leave_id):
         print(Leave_details)
     except Exception as e:
         print(frappe.get_traceback())
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Leave Detail Error')
         return frappe.utils.response.report_error(e)
 
 @frappe.whitelist()
@@ -51,7 +51,7 @@ def get_leave_balance(employee, leave_type):
 
     except Exception as e:
         print(frappe.get_traceback())
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Leave Balance Error')
         return frappe.utils.response.report_error(e)
 
 @frappe.whitelist()
@@ -69,7 +69,7 @@ def leave_type_list(employee):
             return {'message': _('You Are Not currently Allocated with a leave policy.')}
     except Exception as e:
         print(frappe.get_traceback())
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Leave Type List Error')
         return frappe.utils.response.report_error(e)
 
 @frappe.whitelist()
@@ -83,7 +83,7 @@ def leave_notify(docname,status):
         frappe.respond_as_web_page(_("Success"), _("Leave Application "+docname+" was "+status), http_status_code=201)
         #return response('Leave Application was'+status,doc, 201)
     except Exception as e:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Leave Notify Error')
         frappe.respond_as_web_page(_("Error"), e , http_status_code=417)
 
 #This function is the api to create a new leave notification.
@@ -195,7 +195,7 @@ def create_new_leave_application(employee_id,from_date,to_date,leave_type,reason
         return response("Success", 201, doc)
     
     except Exception as error:
-        frappe.log_error(error, 'Leave API')
+        frappe.log_error(message=error, title='Leave API')
         return response("Internal Server Error", 500, None, error)
         
 #create new leave application doctype
@@ -247,7 +247,7 @@ def fetch_leave_approver(employee):
     elif not approver:
         project = frappe.db.get_value('Employee', employee, 'project')
         if project:
-            project_manager = frappe.db.get_value('Project', project, 'account_manager')
+            project_manager = frappe.db.get_value('Project', project, 'project_manager')
             if project_manager:
                 approver = frappe.db.get_value('Employee', project_manager, 'leave_approver')
 

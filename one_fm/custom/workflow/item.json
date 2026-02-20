@@ -1,5 +1,4 @@
 {
-  "name": "Item",
   "workflow_name": "Item",
   "document_type": "Item",
   "is_active": 1,
@@ -15,7 +14,8 @@
       "update_value": "1",
       "is_optional_state": 0,
       "avoid_status_override": 0,
-      "allow_edit": "Accounts User",
+      "allow_edit": "Finance Manager",
+      "send_email": 1,
       "doctype": "Workflow Document State"
     },
     {
@@ -25,7 +25,8 @@
       "update_value": "1",
       "is_optional_state": 0,
       "avoid_status_override": 0,
-      "allow_edit": "Stock Manager",
+      "allow_edit": "Purchase Manager",
+      "send_email": 1,
       "doctype": "Workflow Document State"
     },
     {
@@ -35,7 +36,8 @@
       "update_value": "1",
       "is_optional_state": 0,
       "avoid_status_override": 0,
-      "allow_edit": "Stock User",
+      "allow_edit": "Warehouse Supervisor",
+      "send_email": 1,
       "doctype": "Workflow Document State"
     },
     {
@@ -45,27 +47,8 @@
       "update_value": "1",
       "is_optional_state": 0,
       "avoid_status_override": 0,
-      "allow_edit": "Accounts User",
-      "doctype": "Workflow Document State"
-    },
-    {
-      "state": "Pending Approval",
-      "doc_status": "0",
-      "update_field": "disabled",
-      "update_value": "1",
-      "is_optional_state": 0,
-      "avoid_status_override": 0,
-      "allow_edit": "Stock Manager",
-      "doctype": "Workflow Document State"
-    },
-    {
-      "state": "Pending Approval",
-      "doc_status": "0",
-      "update_field": "disabled",
-      "update_value": "1",
-      "is_optional_state": 0,
-      "avoid_status_override": 0,
-      "allow_edit": "Stock User",
+      "allow_edit": "Purchase Manager",
+      "send_email": 1,
       "doctype": "Workflow Document State"
     },
     {
@@ -75,7 +58,30 @@
       "update_value": "0",
       "is_optional_state": 0,
       "avoid_status_override": 0,
-      "allow_edit": "Purchase Officer",
+      "allow_edit": "Finance Manager",
+      "send_email": 1,
+      "doctype": "Workflow Document State"
+    },
+    {
+      "state": "Approved",
+      "doc_status": "0",
+      "update_field": "disabled",
+      "update_value": "0",
+      "is_optional_state": 0,
+      "avoid_status_override": 0,
+      "allow_edit": "Purchase Manager",
+      "send_email": 1,
+      "doctype": "Workflow Document State"
+    },
+    {
+      "state": "Approved",
+      "doc_status": "0",
+      "update_field": "disabled",
+      "update_value": "0",
+      "is_optional_state": 0,
+      "avoid_status_override": 0,
+      "allow_edit": "Warehouse Supervisor",
+      "send_email": 1,
       "doctype": "Workflow Document State"
     },
     {
@@ -85,100 +91,94 @@
       "update_value": "1",
       "is_optional_state": 0,
       "avoid_status_override": 0,
-      "allow_edit": "Purchase Officer",
+      "allow_edit": "Purchase Manager",
+      "send_email": 1,
       "doctype": "Workflow Document State"
     }
   ],
   "transitions": [
     {
       "state": "Draft",
-      "action": "Submit for Approval",
-      "next_state": "Pending Approval",
-      "allowed": "Accounts User",
+      "action": "Approve",
+      "next_state": "Approved",
+      "allowed": "Finance Manager",
       "allow_self_approval": 1,
+      "send_email_to_creator": 0,
       "skip_multiple_action": 0,
       "skip_creation_of_workflow_action": 0,
       "custom_confirm_transition": 0,
-      "custom_requires_frontend_input": 0,
-      "condition": "doc.is_stock_item == 1 and not doc.variant_of",
+      "require_digital_signature": 0,
+      "condition": "not doc.variant_of",
+      "doctype": "Workflow Transition"
+    },
+    {
+      "state": "Draft",
+      "action": "Approve",
+      "next_state": "Approved",
+      "allowed": "Purchase Manager",
+      "allow_self_approval": 1,
+      "send_email_to_creator": 0,
+      "skip_multiple_action": 0,
+      "skip_creation_of_workflow_action": 0,
+      "custom_confirm_transition": 0,
+      "require_digital_signature": 0,
+      "condition": "not doc.variant_of",
       "doctype": "Workflow Transition"
     },
     {
       "state": "Draft",
       "action": "Submit for Approval",
       "next_state": "Pending Approval",
-      "allowed": "Stock Manager",
+      "allowed": "Warehouse Supervisor",
       "allow_self_approval": 1,
+      "send_email_to_creator": 0,
       "skip_multiple_action": 0,
       "skip_creation_of_workflow_action": 0,
       "custom_confirm_transition": 0,
-      "custom_requires_frontend_input": 0,
-      "condition": "doc.is_stock_item == 1 and not doc.variant_of",
-      "doctype": "Workflow Transition"
-    },
-    {
-      "state": "Draft",
-      "action": "Submit for Approval",
-      "next_state": "Pending Approval",
-      "allowed": "Stock User",
-      "allow_self_approval": 1,
-      "skip_multiple_action": 0,
-      "skip_creation_of_workflow_action": 0,
-      "custom_confirm_transition": 0,
-      "custom_requires_frontend_input": 0,
-      "condition": "doc.is_stock_item == 1 and not doc.variant_of",
+      "require_digital_signature": 0,
+      "condition": "not doc.variant_of",
       "doctype": "Workflow Transition"
     },
     {
       "state": "Pending Approval",
       "action": "Approve",
       "next_state": "Approved",
-      "allowed": "Purchase Officer",
+      "allowed": "Purchase Manager",
       "allow_self_approval": 1,
+      "send_email_to_creator": 0,
       "skip_multiple_action": 0,
       "skip_creation_of_workflow_action": 0,
       "custom_confirm_transition": 0,
-      "custom_requires_frontend_input": 0,
-      "condition": "doc.is_stock_item == 1 and not doc.variant_of",
+      "require_digital_signature": 0,
+      "condition": "not doc.variant_of",
+      "doctype": "Workflow Transition"
+    },
+    {
+      "state": "Pending Approval",
+      "action": "Return To Draft",
+      "next_state": "Draft",
+      "allowed": "Purchase Manager",
+      "allow_self_approval": 1,
+      "send_email_to_creator": 0,
+      "skip_multiple_action": 0,
+      "skip_creation_of_workflow_action": 0,
+      "custom_confirm_transition": 0,
+      "require_digital_signature": 0,
+      "condition": "not doc.variant_of",
       "doctype": "Workflow Transition"
     },
     {
       "state": "Pending Approval",
       "action": "Reject",
       "next_state": "Rejected",
-      "allowed": "Purchase Officer",
+      "allowed": "Purchase Manager",
       "allow_self_approval": 1,
+      "send_email_to_creator": 0,
       "skip_multiple_action": 0,
       "skip_creation_of_workflow_action": 0,
       "custom_confirm_transition": 0,
-      "custom_requires_frontend_input": 0,
-      "condition": "doc.is_stock_item == 1 and not doc.variant_of",
-      "doctype": "Workflow Transition"
-    },
-    {
-      "state": "Approved",
-      "action": "Change Request",
-      "next_state": "Pending Approval",
-      "allowed": "Accounts User",
-      "allow_self_approval": 1,
-      "skip_multiple_action": 0,
-      "skip_creation_of_workflow_action": 0,
-      "custom_confirm_transition": 0,
-      "custom_requires_frontend_input": 0,
-      "condition": "doc.change_request",
-      "doctype": "Workflow Transition"
-    },
-    {
-      "state": "Approved",
-      "action": "Change Request",
-      "next_state": "Draft",
-      "allowed": "Stock Manager",
-      "allow_self_approval": 1,
-      "skip_multiple_action": 0,
-      "skip_creation_of_workflow_action": 0,
-      "custom_confirm_transition": 0,
-      "custom_requires_frontend_input": 0,
-      "condition": "",
+      "require_digital_signature": 0,
+      "condition": "not doc.variant_of",
       "doctype": "Workflow Transition"
     }
   ]

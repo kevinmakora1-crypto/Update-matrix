@@ -76,5 +76,5 @@ def get_client_roster(route_hash: str = None):
         
         return response("Operation Successful", 200, dict(columns=columns, data=data))
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Error while generating client roster")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while generating client roster")
         return response("Operation Successful", 500, None, str(e))

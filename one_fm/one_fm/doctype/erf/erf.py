@@ -187,7 +187,7 @@ class ERF(Document):
 					frappe.enqueue(sendemail, recipients=manager_emails, subject=title, content=msg, at_front=True, is_async=True)
 					frappe.msgprint(_('Recruitment manager will be notified by email.'))
 		except:
-			frappe.log_error(frappe.get_traceback(), "Error while sending mail to recruitment manager(ERF) ")
+			frappe.log_error(message=frappe.get_traceback(), title="Error while sending mail to recruitment manager(ERF)")
 
 
 
@@ -277,7 +277,7 @@ class ERF(Document):
 			frappe.msgprint(msg)
 
 	def notify_grd_supervisor(self):
-		grd_supervisor = frappe.db.get_value('GRD Settings', None, 'default_grd_supervisor')
+		grd_supervisor = frappe.db.get_value('HR Settings', None, 'default_grd_supervisor')
 		page_link = get_url(self.get_url())
 		subject = _("Attention: You Are Requested to Fill GRD Section in ERF")
 		message = "<p>Kindly, you are requested to fill the PAM File Number and PAM Designation for ERF: {0}  <a href='{1}'></a></p>".format(self.name,page_link)

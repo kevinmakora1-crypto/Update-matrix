@@ -59,7 +59,7 @@ def enroll():
 		res_data = frappe._dict(r.json())
 		if res_data.error:
 			# process error
-			frappe.log_error('Face Enrollment v3', res_data.message)
+			frappe.log_error(title='Face Enrollment v3', message=res_data.message)
 			error = True
 			message = res_data.message
 		else:
@@ -70,7 +70,7 @@ def enroll():
 			frappe.db.commit()
 		return {'error':False, 'message':'Enrollment successfull.'}
 	except Exception as exc:
-		frappe.log_error('Face Enrollment v3', frappe.get_traceback())
+		frappe.log_error(title='Face Enrollment v3', message=frappe.get_traceback())
 		frappe.db.commit()
 		return {'error':True, 'message':'Your enrollment could not be completed, please contact your supervisor.'}
 
@@ -109,7 +109,7 @@ def verify():
 		res_data = frappe._dict(r.json())
 		if res_data.error:
 			if not res_data.text:
-				frappe.log_error('Face Verify v3', res_data.message)
+				frappe.log_error(title='Face Verify v3', message=res_data.message)
 			return res_data
 		# create_checkin_log()
 		frappe.enqueue(check_in, log_type=log_type, skip_attendance=skip_attendance, 
@@ -119,7 +119,7 @@ def verify():
 		# frappe.db.commit()
 		return {'error':False, 'message':f'Check {log_type} Successful'}  
 	except Exception as exc:
-		frappe.log_error("Face Verify v3", frappe.get_traceback() + '\n\n\n' + str(frappe.form_dict))
+		frappe.log_error(title="Face Verify v3", message=frappe.get_traceback() + '\n\n\n' + str(frappe.form_dict))
 		return {'error':True, 'message':'Checkin failed, please contact your supervisor.'} 
 
 @frappe.whitelist()
@@ -170,7 +170,7 @@ def check_in(log_type, skip_attendance, latitude, longitude, source):
 		frappe.db.commit()
 		return _('Check {log_type} successful! {docname}'.format(log_type=log_type.lower(), docname=checkin.name))
 	except:
-		frappe.log_error('Mobile Web Checkin', frappe.get_traceback())
+		frappe.log_error(title='Mobile Web Checkin', message=frappe.get_traceback())
 
 @frappe.whitelist()
 def forced_checkin(employee, log_type, time):

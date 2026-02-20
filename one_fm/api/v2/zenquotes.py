@@ -34,7 +34,7 @@ def fetch_quote(direct_response = False):
             else:
                 return get_cached_quote()
     except Exception as error:
-        frappe.log_error(frappe.get_traceback(),"Error fetching Quote")
+        frappe.log_error(message=frappe.get_traceback(), title="Error fetching Quote")
         return response("Internal Server Error", 500, None, error)
         
     
@@ -67,7 +67,7 @@ def set_cached_quote():
                 return
             
     except Exception as error:
-        frappe.log_error(frappe.get_traceback(),"Error Setting Quote in cache")
+        frappe.log_error(message=frappe.get_traceback(), title="Error Setting Quote in cache")
         return response("Internal Server Error", 500, None, error)
     
     

@@ -57,7 +57,7 @@ class AttendanceOverride(Attendance):
     def validate(self):
         from erpnext.controllers.status_updater import validate_status
 
-        validate_status(self.status, ["Present", "Absent", "On Leave", "Half Day", "Work From Home", "Day Off", "Holiday", "On Hold", "Client Day Off", "Medical Appointment", "Fingerprint Appointment"])
+        validate_status(self.status, ["Present", "Absent", "On Leave", "Half Day", "Work From Home", "Day Off", "Holiday", "On Hold", "Client Day Off", "Medical Appointment", "Fingerprint Appointment", "Client Interview"])
         validate_active_employee(self.employee)
         self.validate_attendance_date()
         self.validate_duplicate_record()
@@ -69,9 +69,9 @@ class AttendanceOverride(Attendance):
             self.roster_type='Basic'
 
     def validate_working_hours(self):
-        if self.status not in ['Absent', 'Day Off', 'Holiday', 'On Leave', 'On Hold', "Client Day Off"]:
+        if self.status in ["Present", "Work From Home"]:
             if not self.working_hours:frappe.throw("Working hours is required.")
-            if self.working_hours <= 0:frappe.throw("Working hours must be greater than 0 if staus is Presnet ot Work From Home.")
+            if self.working_hours <= 0:frappe.throw("Working hours must be greater than 0 if status is Present or Work From Home.")
 
     def after_insert(self):
         self.set_day_off_ot()
@@ -243,9 +243,10 @@ def mark_single_attendance(emp, att_date, roster_type="Basic"):
                 )
                 return
             elif employee_schedule:
-                if employee_schedule.employee_availability == 'Working':
+                if employee_schedule.employee_availability in ['Working','Client Event']:
                     # continue to mark attendance if checkin exists
                     mark_for_shift_assignment(employee.name, att_date)
+                
 
             # # check for shift assignment
             else:
@@ -366,6 +367,9 @@ def create_single_attendance_record(record):
             doc.shift = record.shift_assignment.shift_type
             doc.operations_shift = record.shift_assignment.shift
             doc.site = record.shift_assignment.site
+            if record.shift_assignment.get('client_event'):
+                doc.reference_doctype = "Client Event"
+                doc.reference_docname = record.shift_assignment.client_event
         if record.checkin:
             if record.checkin.late_entry:doc.late_entry=1
         # check if worked less
@@ -422,13 +426,15 @@ def mark_for_active_employees(from_date=None, to_date=None):
         "status": ["=", "Active"],
         "attendance_by_timesheet":0,
     }, ["name", "employee_name", "company", "department", "holiday_list"])
-    
-    # Process employees with schedules/shifts
+
     for employee in active_employees:
         mark_bulk_attendance(employee.name, from_date, to_date)
-    
+
     # Process employees without schedules/shifts
     mark_attendance_for_unscheduled_employees(active_employees, from_date)
+
+    mark_absent_for_non_active_employees(from_date, "Absconding")
+    mark_absent_for_non_active_employees(from_date, "Not Returned from Leave")
     
     remark_for_active_employees(from_date)
 
@@ -444,7 +450,7 @@ def mark_attendance_for_unscheduled_employees(employees, date):
         existing_attendance = frappe.get_all("Attendance", {
             'attendance_date': date,
             'roster_type': 'Basic',
-            'status': ['IN', ['Present', 'Holiday', 'On Leave', 'Work From Home', 'On Hold', 'Day Off']]
+            'status': ['IN', ['Present', 'Holiday', 'On Leave', 'Work From Home', 'On Hold', 'Day Off', 'Client Day Off', 'Medical Appointment', 'Fingerprint Appointment', 'Client Interview']]
         }, pluck="employee")
         
         # Get employees with schedules
@@ -474,40 +480,77 @@ def mark_attendance_for_unscheduled_employees(employees, date):
             return
             
         # Create attendance records for unscheduled employees
+        comment = "No schedule or shift assignment found"
+        mark_absent_for_employees(unscheduled_employees, date, comment, True)
+
+    except Exception as e:
+        frappe.log_error(
+            message=frappe.get_traceback(),
+            title="Error in mark_attendance_for_unscheduled_employees"
+        )
+
+def mark_absent_for_non_active_employees(date, non_active_status):
+    """
+        Marks non-active employees as absent for a given date.
+        Args:
+            date (str): Date for which attendance needs to be marked
+            non_active_status (str): Status of non-active employees
+    """
+    employees = frappe.get_all("Employee", {
+        'status': non_active_status,
+        'attendance_by_timesheet':0
+    }, ['name', 'employee_name', 'company', 'department', 'holiday_list'])
+
+    mark_absent_for_employees(employees, date, f"{non_active_status} employee")
+
+def mark_absent_for_employees(employees, date, comment, consider_holiday=False):
+    """
+        Marks employees as absent for a given date.
+        Args:
+            employees (list): List of employee dictionaries containing employee details
+            date (str): Date for which attendance needs to be marked
+            comment (str): Comment to be added to the attendance record
+            consider_holiday (bool): Whether to consider holidays while marking attendance
+    """
+    if not employees:
+        return
+    try:
         creation = now()
         owner = frappe.session.user
         naming_series = 'HR-ATT-.YYYY.-'
-        
+
         query = """
             INSERT INTO `tabAttendance` (
-                `name`, `naming_series`, `employee`, `employee_name`, 
+                `name`, `naming_series`, `employee`, `employee_name`,
                 `status`, `attendance_date`, `company`, `department`,
                 `roster_type`, `docstatus`, `modified_by`, `owner`,
-                `creation`, `modified`, `comment`, `is_unscheduled`
+                `creation`, `modified`, `comment`, `has_no_shift_assignment`
             ) VALUES
         """
-        
+
         query_body = ""
-        for emp in unscheduled_employees:
-            # Check if it's a holiday
+
+        holiday_today = {}
+        if consider_holiday:
             holiday_today = get_holiday_today(date)
+
+        for employee in employees:
             status = "Absent"
-            comment = "No schedule or shift assignment found"
-            
-            if holiday_today.get(emp.holiday_list):
-                status = "Holiday"
-                comment = f"Holiday - {holiday_today.get(emp.holiday_list)}"
-            
-            name = f"HR-ATT_{date}_{emp.name}_Basic"
+            name = f"HR-ATT_{date}_{employee.name}_Basic"
+
+            if consider_holiday:
+                if holiday_today.get(employee.holiday_list):
+                    status = "Holiday"
+                    comment = f"Holiday - {holiday_today.get(employee.holiday_list)}"
+
             query_body += f"""
                 (
-                    "{name}", "{naming_series}", "{emp.name}", "{emp.employee_name}",
-                    "{status}", "{date}", "{emp.company}", "{emp.department}",
+                    "{name}", "{naming_series}", "{employee.name}", "{employee.employee_name}",
+                    "{status}", "{date}", "{employee.company}", "{employee.department}",
                     "Basic", 1, "{owner}", "{owner}",
                     "{creation}", "{creation}", "{comment}", 1
                 ),"""
-            
-        
+
         if query_body:
             query += query_body[:-1]  # Remove trailing comma
             query += """
@@ -518,11 +561,10 @@ def mark_attendance_for_unscheduled_employees(employees, date):
             """
             frappe.db.sql(query)
             frappe.db.commit()
-            
     except Exception as e:
         frappe.log_error(
             message=frappe.get_traceback(),
-            title="Error in mark_attendance_for_unscheduled_employees"
+            title="Error in mark_absent_for_employees"
         )
 
 def remark_for_active_employees(from_date=None):
@@ -815,7 +857,7 @@ def mark_daily_attendance(start_date, end_date):
             timeout=7000
         )
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Attendance Marking")
+        frappe.log_error(message=frappe.get_traceback(), title="Attendance Marking")
 
 def remark_attendance(start_date, end_date):
     try:
@@ -832,7 +874,7 @@ def remark_attendance(start_date, end_date):
         for employee in missing_attendances:
             mark_bulk_attendance(employee, start_date, start_date)
     except:
-        frappe.log_error(frappe.get_traceback(), 'Remark Attendance')
+        frappe.log_error(message=frappe.get_traceback(), title='Remark Attendance')
 
 
 def update_employee_checkin_with_attendance(attendance_dict):
@@ -853,7 +895,7 @@ def update_day_off_ot(attendances):
                 if day_off_ot:
                     att.db_set("day_off_ot", day_off_ot)
             except:
-                frappe.log_error(frappe.get_traceback(), "Attendance Marking OT")
+                frappe.log_error(message=frappe.get_traceback(), title="Attendance Marking OT")
 
 
 def mark_open_timesheet_and_create_attendance():
@@ -866,7 +908,7 @@ def mark_open_timesheet_and_create_attendance():
         try:
             apply_workflow(frappe.get_doc("Timesheet", i.name), 'Approve')
         except Exception as e:
-            frappe.log_error(frappe.get_traceback(), "Timesheet Marking")
+            frappe.log_error(message=frappe.get_traceback(), title="Timesheet Marking")
 
     present_employees = frappe.db.get_list("Timesheet", filters={"start_date": the_date, "workflow_state": "Approved"}, pluck="employee")
     for obj in employee_list:
@@ -890,7 +932,7 @@ def mark_open_timesheet_and_create_attendance():
                     att.insert(ignore_permissions=True)
                     att.submit()
                 except Exception as e:
-                    frappe.log_error(frappe.get_traceback(), "TImesheet Attendance Marking")
+                    frappe.log_error(message=frappe.get_traceback(), title="Timesheet Attendance Marking")
     frappe.db.commit()
 
 
@@ -901,7 +943,7 @@ def approve_pending_employee_checkin_issue():
             try:
                 apply_workflow(frappe.get_doc("Employee Checkin Issue", obj), "Approve")
             except Exception as e:
-                frappe.log_error(frappe.get_traceback(), "Error while approving employee checkin issue")
+                frappe.log_error(message=frappe.get_traceback(), title="Error while approving employee checkin issue")
             frappe.db.commit()
 
 

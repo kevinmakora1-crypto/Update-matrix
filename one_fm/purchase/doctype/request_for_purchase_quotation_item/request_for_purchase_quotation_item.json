@@ -34,6 +34,8 @@
   "ordered_qty",
   "base_rate",
   "base_amount",
+  "last_purchase_supplier",
+  "last_purchase_rate",
   "quotation_section",
   "quotation",
   "supplier",
@@ -245,7 +247,8 @@
    "fieldname": "conversion_factor",
    "fieldtype": "Float",
    "label": "UOM Conversion Factor",
-   "mandatory_depends_on": "eval: doc.uom != doc.stock_uom"
+   "mandatory_depends_on": "eval: doc.uom != doc.stock_uom",
+   "precision": "4"
   },
   {
    "fieldname": "stock_qty",
@@ -253,6 +256,7 @@
    "label": "Qty in Stock UOM"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "stock_rate",
    "fieldtype": "Currency",
    "label": "Stock Rate",
@@ -286,12 +290,25 @@
    "fieldtype": "Float",
    "label": "Margin Rate or Amount",
    "read_only": 1
+  },
+  {
+   "fieldname": "last_purchase_supplier",
+   "fieldtype": "Link",
+   "label": "Last Purchase Supplier",
+   "options": "Supplier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_purchase_rate",
+   "fieldtype": "Currency",
+   "label": "Last Purchase Rate",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "istable": 1,
  "links": [],
- "modified": "2025-11-04 00:45:14.988127",
+ "modified": "2026-01-03 07:54:55.984549",
  "modified_by": "Administrator",
  "module": "Purchase",
  "name": "Request for Purchase Quotation Item",

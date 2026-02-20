@@ -62,17 +62,18 @@ class WorkPermit(Document):
                 frappe.throw(_("{0}'s Relieving Date has been set to {1}. Work Permit processing is not allowed.").format(employee_details.employee_name, employee_details.relieving_date))
 
     def validate_workflow_state_fields(self):
-        states = ['Pending By PAM Operator', 'Pending By Operator']
+        states = ['Pending By Supervisor', 'Pending By PAM']
         db_state = frappe.db.get_value("Work Permit", self.name, 'workflow_state')
         # check for required fields based on workflow
-        if db_state in states and not self.new_work_permit_expiry_date:
-            frappe.throw("Missing Data fill Updated Work Permit Expiry Date field.")
-
-        # check if receipt uploaded and status is supervisor
-        if self.attach_invoice and self.workflow_state=="Pending By PAM Operator":
-            # send email to perm operation
-            send_workflow_action_email(self, [self.pam_operator])
-        # frappe.throw(f"""{pam_operator_email}, {self.attach_invoice}, {self.workflow_state}""")
+        if db_state in states:
+            msg = False
+            if not self.attach_invoice:
+                msg = "Upload the required document(Invoice)"
+            if not self.new_work_permit_expiry_date:
+                msg = ((msg+" and ") if msg else "") + "Set <i>Updated Work Permit Expiry Date</i>"
+            if msg:
+                msg += " to submit"
+                frappe.throw(_(msg))
 
 
     def send_work_permit_receipt_to_perm_operator(self):
@@ -83,7 +84,7 @@ class WorkPermit(Document):
         """
 		runs: `validate`
 		param: work permit object
-		This method is fetching values of grd supervisor and operator for transfer, pifss operator from GRD settings
+		This method is fetching values of grd supervisor and operator for transfer, pifss operator from HR Settings
 		"""
         if not self.grd_supervisor:
             self.grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
@@ -238,7 +239,7 @@ class WorkPermit(Document):
                 self.set_work_permit_attachment_in_employee_doctype(self.new_work_permit_expiry_date)
             else:
                 msg = False
-                if  not self.attach_invoice:
+                if not self.attach_invoice:
                     msg = "Upload the required document(Invoice)"
                 if not self.new_work_permit_expiry_date:
                     msg = ((msg+" and ") if msg else "") + "Set <i>Updated Work Permit Expiry Date</i>"
@@ -416,7 +417,11 @@ def create_work_permit_renewal(preparation_name):
     if employee_in_preparation.preparation_record:
         for employee in employee_in_preparation.preparation_record:
             if employee.renewal_or_extend in  ['Renewal (Non-Kuwaiti)','Renewal (Kuwaiti)']:
-                create_wp_renewal(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
+                try:
+                    create_wp_renewal(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
+                except Exception:
+                    frappe.log_error(message=frappe.get_traceback(), title=f"Work Permit Renewal Creation Failed for Employee {employee.employee} in Preparation {preparation_name}")
+                    continue
 
 
 #FOR RENEWAL
@@ -430,6 +435,7 @@ def create_wp_renewal(employee,status,name):
             work_permit_type = "Renewal Kuwaiti"
         if employee.one_fm_nationality != "Kuwaiti":
             work_permit_type = "Renewal Non Kuwaiti"
+
     if employee.one_fm_work_permit:
         work_permit = frappe.get_doc('Work Permit', employee.one_fm_work_permit)
         new_work_permit = frappe.copy_doc(work_permit)

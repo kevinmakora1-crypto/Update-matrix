@@ -79,8 +79,8 @@ class FingerprintAppointment(Document):
     def notify_supervisor_of_gr_rejection(self):
         if not self.employee_supervisor:
             frappe.log_error(
-                f"No supervisor found for {self.name}",
-                "Fingerprint Appointment Notification Error"
+                title=f"No supervisor found for {self.name}",
+                message="Fingerprint Appointment Notification Error"
             )
             return
         
@@ -106,8 +106,8 @@ class FingerprintAppointment(Document):
         
         if not self.date_and_time_confirmation:
             frappe.log_error(
-                f"Date and Time Confirmation is missing for {self.name}",
-                "Fingerprint Appointment Notification Error"
+                title=f"Date and Time Confirmation is missing for {self.name}",
+                message="Fingerprint Appointment Notification Error"
             )
             return
         
@@ -115,8 +115,8 @@ class FingerprintAppointment(Document):
         
         if not employee_user:
             frappe.log_error(
-                f"No user found for employee {self.employee}",
-                "Fingerprint Appointment Notification Error"
+                title=f"No user found for employee {self.employee}",
+                message="Fingerprint Appointment Notification Error"
             )
             return
         
@@ -242,8 +242,8 @@ class FingerprintAppointment(Document):
         
         if not document_creator or document_creator == "Guest":
             frappe.log_error(
-                f"No valid creator found for rejection notification",
-                "Fingerprint Appointment Notification Error"
+                title=f"No valid creator found for rejection notification",
+                message="Fingerprint Appointment Notification Error"
             )
             return
         
@@ -276,7 +276,7 @@ class FingerprintAppointment(Document):
         if site:
             site_doc = frappe.get_doc("Operations Site",site)
             if site_doc:
-                employee = frappe.get_doc("Employee", site_doc.account_supervisor)
+                employee = frappe.get_doc("Employee", site_doc.site_supervisor)
                 send_email_notification(self, [employee.user_id])
 
     def notify_shift_supervisor(self):
@@ -434,7 +434,7 @@ def get_rejection_reason_options():
             return field.options
         return None
     except Exception as e:
-        frappe.log_error(f"Error fetching rejection options: {str(e)}", "Rejection Options Error")
+        frappe.log_error(title=f"Error fetching rejection options: {str(e)}", message="Rejection Options Error")
         return None
     
 

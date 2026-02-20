@@ -244,7 +244,7 @@ def get_signatory_name_erf_file(parent,name):
 @frappe.whitelist()
 def notify_supervisor_change_file_number(name):
     job_Applicant = frappe.get_doc('Job Applicant',name)
-    grd_supervisor = frappe.db.get_single_value('GRD Settings','default_grd_supervisor')
+    grd_supervisor = frappe.db.get_single_value('HR Settings','default_grd_supervisor')
     page_link = get_url(job_Applicant.get_url())
     subject = _("You Are Requested to Change/Approve New PAM File Number for Applicant with Civil ID:{0} ").format(job_Applicant.one_fm_cid_number)
     message = "<p>Kindly, you are requested to Change the PAM File Number for Job Applicant: {0}  <a href='{1}'></a></p>".format(job_Applicant.name,page_link)
@@ -253,7 +253,7 @@ def notify_supervisor_change_file_number(name):
 @frappe.whitelist()
 def notify_supervisor_change_pam_designation(name):
     job_Applicant = frappe.get_doc('Job Applicant',name)
-    grd_supervisor = frappe.db.get_single_value('GRD Settings','default_grd_supervisor')
+    grd_supervisor = frappe.db.get_single_value('HR Settings','default_grd_supervisor')
     page_link = get_url(job_Applicant.get_url())
     subject = _("You Are Requested to Change/Approve New PAM Designation for Applicant with Civil ID:{0} ").format(job_Applicant.one_fm_cid_number)
     message = "<p>Kindly, you are requested to Change the PAM Designation for Job Applicant: {0}  <a href='{1}'></a></p>".format(job_Applicant.name,page_link)
@@ -263,7 +263,7 @@ def notify_supervisor_change_pam_designation(name):
 def notify_operator_with_supervisor_response(name):
     """This method will notify Government Relations Operator with GRD supervisor response (Accept/Reject) on the PAM Number - PAM Desigantion changes for solving internal tp issues"""
     job_Applicant = frappe.get_doc('Job Applicant',name)
-    grd_operator = frappe.db.get_single_value('GRD Settings','default_grd_operator_transfer')
+    grd_operator = frappe.db.get_single_value('HR Settings','default_grd_operator_transfer')
     if job_Applicant.accept_changes == 1 and job_Applicant.reject_changes == 0:
         page_link = get_url(job_Applicant.get_url())
         subject = _("Supervisor Accepted Your Changes in Job Applicant")
@@ -512,14 +512,14 @@ def validate_store_keeper_project_supervisor_roles(doc):
                     
             if "project" in doc.keys():
                 if doc["project"]:
-                    project_manager = frappe.db.get_value("Project", doc["project"], "account_manager")
+                    project_manager = frappe.db.get_value("Project", doc["project"], "project_manager")
                     if project_manager:
                         return project_manager == user_emp
                        
             return roles_check
         return False
     except Exception as e:
-        frappe.log_error(e, "Validate Purchase Order(store keeper)")
+        frappe.log_error(message=str(e), title="Validate Purchase Order(store keeper)")
         return False
    
 

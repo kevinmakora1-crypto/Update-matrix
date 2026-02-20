@@ -4,7 +4,8 @@ from . import __version__ as app_version
 import frappe as _frappe
 from frappe import _
 from hrms.hr.doctype.shift_type.shift_type import ShiftType
-
+import werkzeug.wrappers
+werkzeug.wrappers.Request.max_form_memory_size = 5 * 1024 * 1024  # Sets it to 5MB
 
 
 app_name = "one_fm"
@@ -33,11 +34,19 @@ app_include_js = [
 		"/assets/one_fm/js/desk.js",
         "/assets/one_fm/js/showdown.min.js",
 		"/assets/one_fm/js/form_overrides/workflow_override.js",
-        "text_editor.bundle.js"
+        "text_editor.bundle.js",
+        "/assets/one_fm/js/workflow_banner.js"
 ]
 # include js, css files in header of web template
 # web_include_css = "/assets/one_fm/css/one_fm.css"
 web_include_js = "/assets/one_fm/js/web/one_fm.js"
+
+# Server-side website redirects
+website_redirects = [
+	# Host-based site
+	{"source": "/jobs", "target": "/careers"},
+	{"source": "/jobs/", "target": "/careers"},
+]
 
 # include js in page
 page_js = {
@@ -120,7 +129,9 @@ doctype_js = {
     "Leave Allocation": "public/js/doctype_js/leave_allocation.js",
     "Contact": "public/js/doctype_js/contact.js",
     "ToDo": "public/js/doctype_js/todo.js",
-    "Loan": "public/js/doctype_js/loan.js"
+    "Loan": "public/js/doctype_js/loan.js",
+    "Quality Feedback": "public/js/doctype_js/quality_feedback.js",
+    "Quality Feedback Template": "public/js/doctype_js/quality_feedback_template.js"
 }
 doctype_list_js = {
 	"Job Applicant" : "public/js/doctype_js/job_applicant_list.js",
@@ -133,6 +144,7 @@ doctype_list_js = {
     "Employee": "public/js/doctype_list_js/employee_list.js",
     "ToDo": "public/js/doctype_list_js/todo_list.js",
     "Designation": "public/js/doctype_list_js/designation_list.js",
+    "Shift Request": "public/js/doctype_list_js/shift_request_list.js",
 }
 doctype_tree_js = {
 	"Warehouse" : "public/js/doctype_tree_js/warehouse_tree.js",
@@ -331,19 +343,6 @@ doc_events = {
 	"Contact": {
 		"on_update": "one_fm.accommodation.doctype.accommodation.accommodation.accommodation_contact_update",
         "validate": "one_fm.accommodation.doctype.accommodation.accommodation.validate_contact",
-	},
-	"Project": {
-		"validate": [
-			"one_fm.one_fm.project_custom.validate_poc_list",
-			"one_fm.one_fm.project_custom.validate_project"
-		],
-		"after_insert": "one_fm.overrides.project.update_project_user_assignment",
-		"onload": "one_fm.one_fm.project_custom.get_depreciation_expense_amount",
-		"on_update": [
-						"one_fm.api.doc_events.on_project_update_switch_shift_site_post_to_inactive",
-						"one_fm.api.doc_events.update_project_manager_name"
-					]
-			# 	"on_update": "one_fm.api.doc_events.project_on_update"
 	},
 	"Attendance": {
 		"on_submit": [
@@ -561,7 +560,9 @@ override_doctype_class = {
     "Purchase Receipt": "one_fm.overrides.purchase_receipt.PurchaseReceiptOverride",
     "Asset": "one_fm.overrides.asset.AssetOverride",
     "Asset Movement": "one_fm.overrides.asset_movement.AssetMovement",
-    
+    "Project": "one_fm.overrides.project.ProjectOverride",
+    "Quality Feedback": "one_fm.overrides.quality_feedback.QualityFeedbackOverride",
+	"Quality Feedback Template": "one_fm.overrides.quality_feedback_template.QualityFeedbackTemplateOverride",
 }
 
 
@@ -594,7 +595,7 @@ scheduler_events = {
 		"one_fm.operations.doctype.contracts.contracts.renew_contracts_by_termination_date",
         "one_fm.developer.doctype.bug_buster.bug_buster.roster_bug_buster",
         'one_fm.utils.set_employee_status',
-        'one_fm.utils.set_out_of_office_for_leaves',
+        'one_fm.utils.queue_set_out_of_office_for_leaves',
         'one_fm.utils.update_active_employees_assurance_level',
         'one_fm.operations.doctype.process_task.process_task.create_task_on_monthly_on_day',
         'one_fm.operations.doctype.process_task.process_task.trigger_method_from_monthly_on_day_process_task',
@@ -632,9 +633,6 @@ scheduler_events = {
 			'one_fm.grd.doctype.paci.paci.system_remind_transfer_operator_to_apply',
 			'one_fm.grd.doctype.paci.paci.notify_operator_to_take_hawiyati_renewal',#paci hawiyati
 			'one_fm.grd.doctype.paci.paci.notify_operator_to_take_hawiyati_transfer'
-		],
-		"00 8 * * 0,1,2,3,4":[# run “At 08:00 AM on Sunday, Monday, Tuesday, Wednesday, and Thursday.”
-			'one_fm.events.issue.send_open_issue_count_to_google_chat_notification'
 		],
 		"15 3 * * *": [
 			'one_fm.tasks.one_fm.daily.generate_contracts_invoice', #Generate contracts sales invoice
@@ -748,6 +746,9 @@ scheduler_events = {
 		"15 13 * * *":[ # Attendance Check
 			'one_fm.one_fm.doctype.attendance_check.attendance_check.attendance_check_pending_approval_check'
 		],
+        "0 6 * * *": [ # update currency exchange rates daily at 6 am
+			"one_fm.tasks.one_fm.currency_exchange.update_currency_exchange_rates"
+		],
 		"15 12 * * *": [ # create shift assignment
 			'one_fm.api.tasks.assign_pm_shift'
 		],
@@ -850,6 +851,7 @@ override_whitelisted_methods = {
     "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_receipt":"one_fm.overrides.purchase_order.make_purchase_receipt",
     "erpnext.accounts.doctype.purchase_invoice.purchase_invoice.make_purchase_receipt":"one_fm.overrides.purchase_invoice.make_purchase_receipt",
     "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_invoice":"one_fm.overrides.purchase_order.make_purchase_invoice",
+    "frappe.desk.form.utils.get_next": "one_fm.utils.get_next"
 
 }
 
@@ -859,7 +861,8 @@ override_doctype_dashboards = {
     'HD Ticket': 'one_fm.overrides.hd_ticket_dashboard.get_data',
     'Item': 'one_fm.overrides.item_dashboard.get_data',
     'Sales Invoice': 'one_fm.overrides.sales_invoice_dashboard.get_data',
-    "Purchase Invoice": "one_fm.overrides.purchase_invoice_dashboard.get_data"
+    "Purchase Invoice": "one_fm.overrides.purchase_invoice_dashboard.get_data",
+    "Job Applicant": "one_fm.overrides.job_applicant_dashboard.get_data"
 }
 
 

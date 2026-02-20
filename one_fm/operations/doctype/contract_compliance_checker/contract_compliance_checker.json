@@ -50,7 +50,7 @@
    "reqd": 1
   },
   {
-   "fetch_from": "project.account_manager",
+   "fetch_from": "project.project_manager",
    "fieldname": "project_manager",
    "fieldtype": "Link",
    "label": "Project Manager",
@@ -110,7 +110,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-21 09:19:45.965769",
+ "modified": "2026-01-08 09:19:45.965769",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Contract Compliance Checker",

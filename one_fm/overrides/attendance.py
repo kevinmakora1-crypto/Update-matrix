@@ -1323,7 +1323,7 @@ class AttendanceMarking():
 
     def mark_day_off(self):
         days_off = frappe.get_list("Employee Schedule", {
-            'date':self.start.date(), 'employee_availability':['IN', ['Day Off', 'Client Day Off']], "is_replaced": 0
+            'date':self.start.date(), 'employee_availability':'Day Off', "is_replaced": 0
         }, "*")
         for i in days_off:
             try:

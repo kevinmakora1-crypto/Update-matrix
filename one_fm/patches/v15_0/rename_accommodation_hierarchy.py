@@ -107,7 +107,7 @@ def rename_bed_records():
         
         try:
             counter = get_next_bed_number(space)
-            new_name = "{}-{}".format(space, counter)
+            new_name = "{}-B{}".format(space, counter)
             
             frappe.rename_doc("Bed", bed.name, new_name, force=True)
             frappe.db.commit()

@@ -19,7 +19,9 @@ def execute():
             "description": process_name,
             "doctype": "Process",
             "process_owner_name": "Administrator",
-            "process_owner": "Administrator"
+            "process_owner": "Administrator",
+            "business_analyst": "Administrator",
+            "business_analyst_name": "Administrator"
         }).insert(ignore_permissions=True)
 
     task_type = "Routine"

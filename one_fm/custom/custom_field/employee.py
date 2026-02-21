@@ -4,7 +4,6 @@ def get_employee_custom_fields():
         "Employee": [
             {
                 "fieldname": "site_supervisor_name",
-                "owner":"Administrator",
                 "fieldtype": "Data",
                 "label": "Site Supervisor Name",
                 "insert_after": "site",
@@ -13,7 +12,6 @@ def get_employee_custom_fields():
             },
             {
                 "fieldname": "project_manager_name",
-                "owner":"Administrator",
                 "fieldtype": "Data",
                 "label": "Project Manager Name",
                 "insert_after": "project",

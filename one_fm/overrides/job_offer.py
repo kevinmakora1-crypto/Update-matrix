@@ -82,7 +82,6 @@ class JobOfferOverride(JobOffer):
             self.letter_head = 'ONE FM - Job Offer'
         # update terms and consitions
         if self.docstatus == 0 or self.has_value_changed("applicant_name"):
-            print(f"DEBUG: validate called. docstatus={self.docstatus}, applicant_name changed={self.has_value_changed('applicant_name')}")
             # set job offer terms according to designation (if not set)
             if not self.job_offer_term_template and self.docstatus == 0:
                 target_offer_template = frappe.db.get_value('Designation',{ "name": self.designation }, "custom_job_offer_term_template")

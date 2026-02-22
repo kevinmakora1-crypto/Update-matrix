@@ -675,16 +675,13 @@ def mark_overtime_attendance(from_date, to_date):
 
 def mark_all_attendance():
     from one_fm.operations.doctype.shift_permission.shift_permission import approve_open_shift_permission
-    # start_date = add_days(getdate(), -1)
-    # end_date =  getdate()
-    start_date = getdate("2026-02-17")
-    end_date = getdate("2026-02-17")
+    start_date = add_days(getdate(), -1)
+    end_date =  getdate()
     frappe.enqueue(approve_open_shift_permission, start_date=str(start_date), end_date=str(end_date))
     frappe.enqueue(approve_pending_employee_checkin_issue)
     frappe.enqueue(mark_open_timesheet_and_create_attendance)
     frappe.enqueue(approve_pending_attendance_request, start_date=start_date)
-    # frappe.enqueue(mark_daily_attendance, start_date=start_date, end_date=end_date, timeout=4000, queue='long')
-    mark_daily_attendance(start_date=start_date, end_date=end_date)
+    frappe.enqueue(mark_daily_attendance, start_date=start_date, end_date=end_date, timeout=4000, queue='long')
 
 
 def mark_daily_attendance(start_date, end_date):
@@ -1227,11 +1224,7 @@ class AttendanceMarking():
                 no_checkins = [i for i in shifts if not i.employee in checked_in_employees]
                 if no_checkins: #create absent if no attendance already exists
                     for i in no_checkins:
-                        if i.employee not in existing_attendance and not frappe.db.exists("Attendance", {
-                            'employee':i.employee,
-                            'attendance_date':i.start_date,
-                            'status':['IN', ['Present', 'Holiday', 'On Leave','Work From Home', 'On Hold', 'Day Off']]}
-                            ):
+                        if i.employee not in existing_attendance:
                             try:
                                 record = frappe._dict({**dict(i), **{
                                     "status":"Absent", "comment":"No checkin record found", "working_hours":0,

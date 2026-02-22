@@ -235,12 +235,18 @@ def mark_single_attendance(emp, att_date, roster_type="Basic"):
                 status = "Work From Home" if att_req.reason == "Work From Home" else "Present"
                 comment = f"Attendance Request - {att_req.name}"
 
-                shift_assignment = frappe.get_doc("Shift Assignment", {
-                'employee':employee.name,
-                'start_date': att_date,
-                "status": "Active",
-                "docstatus":1,
-                "shift_type": att_req.shift})
+                shift_assignment_name = frappe.db.get_value(
+                    "Shift Assignment",
+                    {
+                        "employee": employee.name,
+                        "start_date": att_date,
+                        "status": "Active",
+                        "docstatus": 1,
+                        "shift_type": att_req.shift,
+                    },
+                    "name",
+                )
+                shift_assignment = frappe.get_doc("Shift Assignment", shift_assignment_name) if shift_assignment_name else None
 
                 create_single_attendance_record(
                     frappe._dict({

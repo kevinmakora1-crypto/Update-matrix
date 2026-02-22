@@ -806,6 +806,7 @@ def get_employees(doctype, txt, searchfield, start, page_len, filters):
     employee_master_roles = frappe.get_all("ONEFM Document Access Roles Detail",
                                            {'parent': "ONEFM General Setting", 'parentfield': "employee_master_role"},
                                            ['role'])
+    print(employee_master_roles, "\n\n\n\n\n")
     user_roles = frappe.get_roles(frappe.session.user) or []
     default_user_roles = [i.role for i in employee_master_roles] if employee_master_roles else ['HR Manager', "HR User"]
     #if user has any default hr role

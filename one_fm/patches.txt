@@ -234,6 +234,7 @@ one_fm.patches.v15_0.set_conversion_factor_precision
 one_fm.patches.v15_0.add_buying_settings_custom_field
 one_fm.patches.v15_0.create_process_task_for_medical_reminders
 one_fm.patches.v15_0.add_assignment_rule_action_attendance_check_approver
+one_fm.patches.v15_0.clean_orphaned_attendance_check_todos
 one_fm.patches.v15_0.update_existing_attendance_checks
 one_fm.patches.v15_0.add_process_task_agency_expiry_actions
 one_fm.patches.v15_0.add_process_task_demand_letter_expiry

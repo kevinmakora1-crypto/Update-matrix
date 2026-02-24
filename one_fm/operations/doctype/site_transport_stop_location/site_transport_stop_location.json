@@ -31,7 +31,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Site Arrangement",
-   "options": "One Location Many Sites\nOne Site Many Locations"
+   "options": "One Location Many Sites\nOne Site Many Locations",
+   "reqd": 1
   },
   {
    "fieldname": "one_location_many_sites_section",

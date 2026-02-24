@@ -1,0 +1,24 @@
+{
+ "doctype": "DocType",
+ "name": "Site To Location Mapping",
+ "module": "Operations",
+ "istable": 1,
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "location"
+ ],
+ "fields": [
+  {
+   "fieldname": "location",
+   "fieldtype": "Link",
+   "label": "Transport Stop Location",
+   "options": "Location",
+   "in_list_view": 1,
+   "reqd": 1
+  }
+ ],
+ "permissions": [],
+ "owner": "Administrator",
+ "sort_order": "DESC"
+}

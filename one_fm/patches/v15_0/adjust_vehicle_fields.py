@@ -1,9 +1,43 @@
 import frappe
+from one_fm.setup.setup import add_property_setter
 
 def execute():
-    frappe.db.set_value("DocField", {"parent": "Vehicle", "fieldname": "employee"}, "reqd", 1)
-    frappe.db.set_value("DocField", {"parent": "Vehicle", "fieldname": "location"}, "label", "Vehicle Location")
-    frappe.db.set_value("DocField", {"parent": "Vehicle", "fieldname": "location"}, "fieldtype", "Link")
-    frappe.db.set_value("DocField", {"parent": "Vehicle", "fieldname": "location"}, "options", "Location")
-    frappe.db.set_value("DocField", {"parent": "Vehicle", "fieldname": "location"}, "reqd", 1)
+    properties = [
+        {
+            "doctype": "Vehicle",
+            "fieldname": "employee",
+            "property": "reqd",
+            "value": "1",
+            "property_type": "Check",
+        },
+        {
+            "doctype": "Vehicle",
+            "fieldname": "location",
+            "property": "label",
+            "value": "Vehicle Location",
+            "property_type": "Data",
+        },
+        {
+            "doctype": "Vehicle",
+            "fieldname": "location",
+            "property": "fieldtype",
+            "value": "Link",
+            "property_type": "Select",
+        },
+        {
+            "doctype": "Vehicle",
+            "fieldname": "location",
+            "property": "options",
+            "value": "Location",
+            "property_type": "Small Text",
+        },
+        {
+            "doctype": "Vehicle",
+            "fieldname": "location",
+            "property": "reqd",
+            "value": "1",
+            "property_type": "Check",
+        },
+    ]
+    add_property_setter(properties)
     frappe.clear_cache(doctype="Vehicle")

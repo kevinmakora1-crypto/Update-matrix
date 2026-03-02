@@ -123,7 +123,6 @@ def get_vehicle_custom_fields():
                 "fieldtype": "Int",
                 "label": "Seats",
                 "insert_after": "doors",
-                "translatable": 1,
                 "reqd": 1
             },
         ]

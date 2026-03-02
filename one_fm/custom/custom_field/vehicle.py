@@ -117,6 +117,14 @@ def get_vehicle_custom_fields():
                 "fieldname": "image",
                 "fieldtype": "Attach Image",
                 "label": "Image"
-            }
+            },
+            {
+                "fieldname": "seats",
+                "fieldtype": "Int",
+                "label": "Seats",
+                "insert_after": "doors",
+                "translatable": 1,
+                "reqd": 1
+            },
         ]
     }

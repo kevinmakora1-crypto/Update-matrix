@@ -251,6 +251,7 @@ one_fm.patches.v15_0.update_contract_items_consolidated #rerun
 one_fm.patches.v15_0.update_leave_application_properties
 one_fm.patches.v15_0.add_supplier_name_in_arabic_field
 one_fm.patches.v15_0.update_leave_extension_attendance
+one_fm.patches.v15_0.update_job_offer_for_ERF-2026-00004
 
 [post_model_sync]
 one_fm.patches.v15_0.process_task_for_wiki_employee_task

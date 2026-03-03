@@ -15,7 +15,7 @@ import frappe
 from frappe.desk.form import assign_to
 
 @frappe.whitelist()
-def get_assignment_rule_description(doctype):
+def get_assignment_rule_description(doctype, doc=None):
     mandatory_fields, employee_fields, labels = get_doctype_mandatory_fields(doctype)
     message_html = '<p>Here is to inform you that the following {{ doctype }}({{ name }}) requires your attention/action.'
     if mandatory_fields:
@@ -44,33 +44,34 @@ def get_assignment_rule_description(doctype):
 
     return message_html
 
-def get_workflow_assignment_rule_description(doc, user):
-    doctype = doc.get('doctype')
-    message_html = get_assignment_rule_description(doctype)
-    workflow = get_workflow_name(doctype)
+def get_workflow_action_buttons(doc, user):
+    """Generate the workflow action buttons HTML for a given document and user."""
+    workflow = get_workflow_name(doc.get('doctype'))
+    buttons_html = ""
     if workflow:
         transitions = get_next_possible_transitions(
             workflow, get_doc_workflow_state(doc), doc
         )
-
-        action_details = []
-
-        for transition in transitions:
-            action_details.append(
-                frappe._dict(
-                    {
-                        "action_name": transition.action,
-                        "action_link": get_confirm_workflow_action_url(doc, transition.action, user),
-                    }
-                )
-            )
-
-        if action_details and len(action_details) > 0:
-            message_html += "<div>"
+        action_details = [
+            frappe._dict({
+                "action_name": transition.action,
+                "action_link": get_confirm_workflow_action_url(doc, transition.action, user),
+            })
+            for transition in transitions
+        ]
+        if action_details:
+            buttons_html = "<div>"
             for action in action_details:
-                message_html += '<a href={0} class="btn btn-primary btn-action" style="margin-right: 10px;">{1}</a>'.format(action.action_link, action.action_name)
-            message_html += "</div>"
+                buttons_html += '<a href={0} class="btn btn-primary btn-action" style="margin-right: 10px;">{1}</a>'.format(
+                    action.action_link, action.action_name
+                )
+            buttons_html += "</div>"
+    return buttons_html
 
+def get_workflow_assignment_rule_description(doc, user):
+    doctype = doc.get('doctype')
+    message_html = get_assignment_rule_description(doctype)
+    message_html += get_workflow_action_buttons(doc, user)
     return message_html
 
 def do_assignment(self, doc):
@@ -78,14 +79,23 @@ def do_assignment(self, doc):
     if frappe.session.user == "Guest":
         frappe.set_user('Administrator')
     assign_to.clear(doc.get("doctype"), doc.get("name"))
-    
+
 
     user = self.get_user(doc)
 
     if user:
-        description = self.description
         if self.is_assignment_rule_with_workflow:
-            description = get_workflow_assignment_rule_description(doc, user)
+            if self.description:
+                # Use the assignment rule's stored description (supports Jinja ternary
+                # expressions like {{ 'Arrival Time' if log_type == 'IN' else 'Leaving Time' }})
+                # and append the dynamic workflow action buttons.
+                description = self.description + get_workflow_action_buttons(doc, user)
+            else:
+                # Default: auto-generate the table from the doctype's mandatory fields.
+                description = get_workflow_assignment_rule_description(doc, user)
+        else:
+            description = self.description
+
         assign_to.add(
             dict(
                 assign_to=[user],

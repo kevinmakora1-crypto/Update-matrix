@@ -252,6 +252,7 @@ one_fm.patches.v15_0.update_leave_application_properties
 one_fm.patches.v15_0.add_supplier_name_in_arabic_field
 one_fm.patches.v15_0.update_leave_extension_attendance
 one_fm.patches.v15_0.adjust_vehicle_fields
+one_fm.patches.v15_0.add_customer_custom_fields
 one_fm.patches.v15_0.add_seats_field_to_vehicle
 
 [post_model_sync]

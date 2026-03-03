@@ -615,6 +615,13 @@ career_history = Class.extend({
         let interest_reason = $('[name="interest_reason"]').val();
         // Collect factors in new job for Fresher
         let factors_in_new_job = $(`.factors_in_new_job_${company_no}_text`).val();
+        // Collect Main Form Awards/Recognition for Fresher and validate if required
+        let main_awards_sel = $(`.main_awards_recognition_select_${company_no}`).val();
+        let main_awards_details = $(`.main_award_recognition_details_${company_no}`).val();
+        if(main_awards_sel === 'Yes' && !main_awards_details){
+          frappe.msgprint(frappe._("Please provide Award/Recognition Details in the main section."));
+          return {};
+        }
         fresher_details = {
           expType: expType,
           learning_journey: learning_journey,
@@ -622,7 +629,9 @@ career_history = Class.extend({
           tugs: tugs,
           ranked_factors: ranked_factors,
           interest_reason: interest_reason,
-          factors_in_new_job: factors_in_new_job
+          factors_in_new_job: factors_in_new_job,
+          have_you_received_any_awards_or_recognition_main: main_awards_sel,
+          awards_or_recognition_details_main: main_awards_details
         };
         break; // Only one fresher section expected
       }
@@ -766,6 +775,7 @@ career_history = Class.extend({
           <button class="btn btn-primary mb-3 add-learning-and-development-journey">Add Learning and Development Journey</button>
           ${get_shoves_tugs_html(company_no)}
         </div>
+        ${me.main_awards_section_html(company_no)}
         <div class="mx-auto col-lg-12 col-md-12 factors_in_new_job_${company_no}">
           <label class="form-label">What are the factors you are looking for in a new job?</label>
           <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text"></textarea>
@@ -773,6 +783,7 @@ career_history = Class.extend({
         `;
         companyDetailsElement.html(fresherDetailsHTML);
         me.on_click_add_learning_and_development_journey(company_no);
+        me.bind_main_awards_recognition(company_no);
         me.show_final_interest_step(company_no); // Reuse for Freshers
           // Show submit button by default for Fresher
           $('.submit-btn').fadeIn();

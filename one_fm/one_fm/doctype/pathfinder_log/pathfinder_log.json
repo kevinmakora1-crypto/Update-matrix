@@ -6,8 +6,9 @@
  "engine": "InnoDB",
  "field_order": [
   "guideline_section",
-  "checklist",
+  "process_map",
   "column_break_ihrb",
+  "checklist",
   "section_break_wx0s",
   "process_name",
   "goal_description",
@@ -157,16 +158,23 @@
   {
    "fieldname": "column_break_ihrb",
    "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "process_name.process_map",
+   "fieldname": "process_map",
+   "fieldtype": "Small Text",
+   "label": "Process Map",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-19 09:42:30.798667",
+ "modified": "2026-02-11 07:37:22.416810",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Pathfinder Log",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

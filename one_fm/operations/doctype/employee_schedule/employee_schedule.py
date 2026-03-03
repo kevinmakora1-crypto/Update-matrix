@@ -11,6 +11,21 @@ from one_fm.utils import get_week_start_end, get_month_start_end
 from one_fm.processor import sendemail
 
 class EmployeeSchedule(Document):
+	def before_save(self):
+		"""Enforce read-only for non-System Managers"""
+		if not self.is_new():
+			# Allow programmatic updates (ignore_permissions=True)
+			if frappe.flags.in_patch or frappe.flags.in_install or frappe.flags.in_migrate:
+				return
+			
+			# Allow if ignore_permissions is set (background jobs / programmatic updates)
+			if getattr(self.flags, "ignore_permissions", False):
+				return
+			
+			# Check if user has System Manager role
+			if frappe.session.user != "Administrator" and "System Manager" not in frappe.get_roles():
+				frappe.throw(_("Only System Managers can edit Employee Schedule records directly. Please use the appropriate tools (Roster, OJT, Client Event, etc.) to make schedule changes."))
+
 	def before_insert(self):
 		if frappe.db.exists("Employee Schedule", {"employee": self.employee, "date": self.date, "roster_type" : self.roster_type}):
 			frappe.throw(_("Employee Schedule already scheduled for {employee} on {date}.".format(employee=self.employee_name, date=cstr(self.date))))
@@ -36,6 +51,7 @@ class EmployeeSchedule(Document):
 				frappe.db.set_value("Employee Schedule", employee_schedule.name, "day_off_ot", 0)
 
 	def validate(self):
+		self.validate_ojt_change()
 		self.validate_leave_application()
 		self.validate_relieving_date()
 		if self.employee_availability=='Working' and self.shift_type and self.date:
@@ -77,6 +93,12 @@ class EmployeeSchedule(Document):
 			relieving_date = frappe.db.get_value("Employee", self.employee, "relieving_date")
 			if relieving_date and getdate(self.date) > getdate(relieving_date):
 				frappe.throw(_("Employee {0} is expected to leave on {1}, so cannot be scheduled for {2}").format(self.employee, relieving_date, self.date))
+
+	def validate_ojt_change(self):
+		if not self.is_new() and self.on_the_job_training and self.employee_availability == "Working":
+			old_doc = self.get_doc_before_save()
+			if old_doc and old_doc.employee_availability == "On-the-job Training":
+				frappe.throw(_("Cannot change availability to 'Working' while an OJT record is linked. To change to 'Working', please delete this schedule and create a new one through Roster."))
 
 	def validate_offs(self):
 		"""

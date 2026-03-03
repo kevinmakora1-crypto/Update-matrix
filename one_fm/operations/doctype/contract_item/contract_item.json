@@ -7,44 +7,32 @@
  "field_order": [
   "item_type",
   "contract_item_category",
+  "is_fixed_fee",
+  "amount",
+  "is_there_any_budget",
+  "budget_type",
+  "total_budget",
   "item_code",
   "item_group",
   "subitem_group",
+  "item_description",
   "count",
   "uom",
   "price_list_rate",
+  "rate",
   "type",
   "unit_rate",
   "monthly_rate_without_fee",
-  "management_fee_percentage",
-  "management_fee",
   "monthly_rate",
-  "rate",
   "column_break_4",
   "item_price",
   "item_name",
-  "shift_hours",
-  "gender",
-  "service_type",
-  "is_daily_operation_handled_by_us",
   "rate_type",
-  "off_type",
-  "is_yearly_month",
-  "days_off_category",
-  "no_of_days_off",
   "include_actual_hour",
+  "is_yearly_month",
   "overtime_rate",
-  "site",
-  "operational_requirements_section",
-  "select_specific_days",
-  "sunday",
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "column_break_ilmm"
+  "is_public_holiday_rate",
+  "public_holiday_rate_multiplier"
  ],
  "fields": [
   {
@@ -77,15 +65,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.subitem_group=='Service'",
-   "fetch_from": "item_price.shift_hours",
-   "fieldname": "shift_hours",
-   "fieldtype": "Float",
-   "label": "Shift Hours",
-   "precision": "3",
-   "read_only": 1
-  },
-  {
    "default": "0",
    "depends_on": "eval:doc.type == 'Monthly'",
    "fieldname": "monthly_rate",
@@ -111,34 +90,10 @@
    "options": "currency"
   },
   {
-   "default": "0",
-   "depends_on": "eval:doc.subitem_group=='Service'",
-   "fieldname": "management_fee_percentage",
-   "fieldtype": "Percent",
-   "label": "Management Fee Percentage"
-  },
-  {
-   "depends_on": "eval:doc.subitem_group=='Service'",
-   "fieldname": "management_fee",
-   "fieldtype": "Currency",
-   "label": "Management Fee",
-   "options": "currency",
-   "read_only": 1
-  },
-  {
    "fieldname": "item_price",
    "fieldtype": "Link",
    "label": "Item Price",
    "options": "Item Price"
-  },
-  {
-   "depends_on": "eval:doc.subitem_group=='Service'",
-   "fetch_from": "item_price.gender",
-   "fieldname": "gender",
-   "fieldtype": "Link",
-   "label": "Gender",
-   "options": "Gender",
-   "read_only": 1
   },
   {
    "columns": 2,
@@ -184,13 +139,6 @@
    "label": "Overtime Rate"
   },
   {
-   "depends_on": "eval:doc.subitem_group!='Service'",
-   "fieldname": "site",
-   "fieldtype": "Link",
-   "label": "Site",
-   "options": "Operations Site"
-  },
-  {
    "fetch_from": "item_code.subitem_group",
    "fetch_if_empty": 1,
    "fieldname": "subitem_group",
@@ -215,37 +163,6 @@
    "label": "Rate Type",
    "mandatory_depends_on": "eval:doc.item_type != \"Items\"",
    "options": "Monthly\nHourly\nDaily"
-  },
-  {
-   "default": "Full Month",
-   "depends_on": "eval:doc.rate_type == 'Monthly' && doc.item_type != 'Items'",
-   "fieldname": "off_type",
-   "fieldtype": "Select",
-   "label": "Off Type",
-   "mandatory_depends_on": "eval:doc.rate_type == 'Monthly' && doc.item_type != 'Items'",
-   "options": "Full Month\nDays Off"
-  },
-  {
-   "depends_on": "eval:doc.item_type != \"Items\"",
-   "fieldname": "service_type",
-   "fieldtype": "Select",
-   "label": "Service Type",
-   "mandatory_depends_on": "eval:doc.item_type != \"Items\"",
-   "options": "\nManpower\nPost Schedule"
-  },
-  {
-   "depends_on": "eval:doc.off_type=='Days Off' && doc.rate_type=='Monthly'",
-   "fieldname": "days_off_category",
-   "fieldtype": "Select",
-   "label": "Days off Category",
-   "options": "Weekly\nMonthly"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:doc.days_off_category && doc.off_type=='Days Off' && doc.rate_type=='Monthly'",
-   "fieldname": "no_of_days_off",
-   "fieldtype": "Int",
-   "label": "No of Days Off"
   },
   {
    "default": "0",
@@ -278,82 +195,62 @@
    "options": "Contract Item Category"
   },
   {
-   "fieldname": "operational_requirements_section",
-   "fieldtype": "Section Break",
-   "label": "Operational Requirements"
+   "default": "0",
+   "depends_on": "eval:doc.item_type == \"Items\"",
+   "fieldname": "is_fixed_fee",
+   "fieldtype": "Check",
+   "label": "Is Fixed Fee?"
+  },
+  {
+   "depends_on": "eval:doc.is_fixed_fee == 1",
+   "fieldname": "amount",
+   "fieldtype": "Float",
+   "label": "Amount"
   },
   {
    "default": "0",
-   "description": "Check to specify days manually. Leave unchecked to use system defaults.",
-   "fieldname": "select_specific_days",
+   "depends_on": "eval:doc.item_type == \"Items\"",
+   "fieldname": "is_there_any_budget",
    "fieldtype": "Check",
-   "label": "Select Specific Days"
+   "label": "Is there any budget?"
   },
   {
-   "default": "0",
-   "depends_on": "eval:doc.select_specific_days == 1",
-   "fieldname": "sunday",
-   "fieldtype": "Check",
-   "label": "Sunday"
-  },
-  {
-   "fieldname": "column_break_ilmm",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:doc.select_specific_days == 1",
-   "fieldname": "monday",
-   "fieldtype": "Check",
-   "label": "Monday"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:doc.select_specific_days == 1",
-   "fieldname": "tuesday",
-   "fieldtype": "Check",
-   "label": "Tuesday"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:doc.select_specific_days == 1",
-   "fieldname": "wednesday",
-   "fieldtype": "Check",
-   "label": "Wednesday"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:doc.select_specific_days == 1",
-   "fieldname": "thursday",
-   "fieldtype": "Check",
-   "label": "Thursday"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:doc.select_specific_days == 1",
-   "fieldname": "friday",
-   "fieldtype": "Check",
-   "label": "Friday"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:doc.select_specific_days == 1",
-   "fieldname": "saturday",
-   "fieldtype": "Check",
-   "label": "Saturday"
-  },
-  {
-   "depends_on": "eval:doc.service_type == 'Manpower'",
-   "fieldname": "is_daily_operation_handled_by_us",
+   "depends_on": "eval:doc.is_there_any_budget == 1",
+   "fieldname": "budget_type",
    "fieldtype": "Select",
-   "label": "Is Daily Operation Handled by Us?",
-   "mandatory_depends_on": "eval:doc.service_type == 'Manpower'",
-   "options": "\nYes\nNo"
+   "label": "Budget Type",
+   "options": "\nMonthly\nYearly\nContract Period"
+  },
+  {
+   "depends_on": "eval:doc.is_there_any_budget == 1",
+   "fieldname": "total_budget",
+   "fieldtype": "Float",
+   "label": "Total Budget"
+  },
+  {
+   "fetch_from": "item_code.item_type",
+   "fieldname": "item_description",
+   "fieldtype": "Data",
+   "label": "Item Description",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.item_type == \"Service\"",
+   "fieldname": "is_public_holiday_rate",
+   "fieldtype": "Check",
+   "label": "Is Public Holiday Rate"
+  },
+  {
+   "depends_on": "eval:doc.is_public_holiday_rate == 1",
+   "fieldname": "public_holiday_rate_multiplier",
+   "fieldtype": "Float",
+   "label": "Public Holiday Rate Multiplier"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-01-30 13:22:41.053217",
+ "modified": "2026-03-02 10:52:25.436943",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Contract Item",

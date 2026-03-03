@@ -9,74 +9,49 @@
  "field_order": [
   "amended_from",
   "client",
+  "column_break_d7ug",
   "project",
-  "monthly_working_days",
-  "type_of_service",
-  "column_break_4",
-  "commercial_registration",
-  "customer_address",
-  "address_display",
-  "renewal_count",
   "section_break_8",
   "contact_html",
   "poc",
-  "section_break_15",
-  "signature",
-  "civil_id_of_authorized_signature",
-  "column_break_20",
-  "paci",
-  "column_break_21",
-  "commercial_license",
-  "column_break_24",
-  "contract",
-  "section_break_20",
+  "mode_of_payment",
+  "credit_period",
+  "ownership_proof",
+  "column_break_pzrn",
   "start_date",
+  "end_date",
+  "duration",
+  "duration_in_days",
+  "signed_on_client_template",
+  "addendums",
+  "section_break_20",
   "contract_end_internal_notification",
   "contract_end_internal_notification_date",
   "contract_termination_decision_period",
   "contract_termination_decision_period_date",
-  "end_date",
+  "column_break_qwei",
+  "contract",
   "is_auto_renewal",
   "contract_date",
-  "column_break_27",
-  "overtime_rate",
-  "duration",
-  "duration_in_days",
   "section_break_26",
-  "is_public_holiday_rate",
-  "public_holiday_rate",
-  "column_break_33",
-  "holiday_list",
+  "column_break_0dnf",
+  "column_break_obib",
   "price_list",
   "section_break_35",
   "items",
-  "client_requested_days",
-  "section_break_28",
-  "frequency",
-  "section_break_30",
   "create_sales_invoice_as",
-  "site_wise_option",
-  "column_break_38",
   "invoice_frequency",
-  "month_of_invoice",
   "due_date",
+  "month_of_invoice",
   "invoice_output_format",
+  "site_wise_option",
   "is_attendance_for_invoice",
   "is_po_for_invoice",
   "use_portal_for_invoice",
-  "section_break_36",
-  "bank_account",
-  "bank_name",
-  "iban",
-  "column_break_43",
-  "mode_of_payment",
-  "section_break_4",
-  "addendums",
+  "operational_requirements_section",
+  "contract_items_operation",
   "section_break_55",
-  "password_management",
-  "sales_invoice_print_settings_section",
-  "sales_invoice_print_format",
-  "sales_invoice_letter_head"
+  "password_management"
  ],
  "fields": [
   {
@@ -95,70 +70,52 @@
    "reqd": 1
   },
   {
-   "fieldname": "section_break_4",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "addendums",
-   "fieldtype": "Table",
-   "label": "Addendums",
-   "options": "Contract Addendum"
-  },
-  {
-   "fieldname": "renewal_count",
-   "fieldtype": "Data",
-   "label": "Renewal Count",
-   "read_only": 1
-  },
-  {
-   "fieldname": "commercial_registration",
-   "fieldtype": "Data",
-   "label": "Commercial Registration"
-  },
-  {
-   "fieldname": "customer_address",
+   "fieldname": "amended_from",
    "fieldtype": "Link",
-   "label": "Customer Address",
-   "options": "Address"
+   "label": "Amended From",
+   "options": "Contracts",
+   "read_only": 1
   },
   {
-   "fieldname": "address_display",
-   "fieldtype": "Small Text",
-   "label": "Address",
-   "read_only": 1
+   "fieldname": "column_break_d7ug",
+   "fieldtype": "Column Break"
   },
   {
    "collapsible": 1,
    "fieldname": "section_break_8",
    "fieldtype": "Section Break",
-   "label": "POC List"
+   "label": "Commercial Terms"
   },
   {
-   "collapsible": 1,
-   "fieldname": "section_break_15",
-   "fieldtype": "Section Break",
-   "label": "Attatchments"
+   "fieldname": "contact_html",
+   "fieldtype": "HTML",
+   "label": "Contact Html"
   },
   {
-   "fieldname": "paci",
+   "fieldname": "poc",
+   "fieldtype": "Table",
+   "label": "POC",
+   "options": "POC"
+  },
+  {
+   "fieldname": "mode_of_payment",
+   "fieldtype": "Link",
+   "label": "Mode Of Payment",
+   "options": "Mode of Payment"
+  },
+  {
+   "fieldname": "credit_period",
+   "fieldtype": "Data",
+   "label": "Credit Period (Days)"
+  },
+  {
+   "fieldname": "ownership_proof",
    "fieldtype": "Attach",
-   "label": "PACI"
+   "label": "Ownership Proof"
   },
   {
-   "fieldname": "commercial_license",
-   "fieldtype": "Attach",
-   "label": "Commercial License"
-  },
-  {
-   "fieldname": "signature",
-   "fieldtype": "Attach",
-   "label": "Authorized Signature"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "section_break_20",
-   "fieldtype": "Section Break",
-   "label": "Terms"
+   "fieldname": "column_break_pzrn",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "start_date",
@@ -175,26 +132,103 @@
    "reqd": 1
   },
   {
-   "fieldname": "due_date",
-   "fieldtype": "Select",
-   "label": "Invoice Due Date",
-   "options": "5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\nEnd of Month"
+   "fieldname": "duration",
+   "fieldtype": "Read Only",
+   "label": "Duration"
   },
   {
-   "fieldname": "invoice_output_format",
-   "fieldtype": "Select",
-   "label": "Invoice Output Format",
-   "options": "\nMonthly\nDaily\nHourly"
+   "fieldname": "duration_in_days",
+   "fieldtype": "Read Only",
+   "label": "Duration In Days"
   },
   {
-   "fieldname": "invoice_frequency",
-   "fieldtype": "Select",
-   "label": "Invoice Frequency",
-   "options": "\nMonthly\nQuarterly"
+   "default": "0",
+   "fieldname": "signed_on_client_template",
+   "fieldtype": "Check",
+   "label": "Signed on Client Template"
+  },
+  {
+   "fieldname": "addendums",
+   "fieldtype": "Table",
+   "label": "Addendums",
+   "options": "Contract Addendum"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_20",
+   "fieldtype": "Section Break",
+   "label": "Legal and Compliance"
+  },
+  {
+   "fieldname": "contract_end_internal_notification",
+   "fieldtype": "Int",
+   "label": "Contract End Internal Notification (# of Months from Contract Termination Decision Period Date)"
+  },
+  {
+   "fieldname": "contract_end_internal_notification_date",
+   "fieldtype": "Date",
+   "label": "Contract End Internal Notification Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "contract_termination_decision_period",
+   "fieldtype": "Int",
+   "label": "Contract Termination Decision Period (# of Months from Contract End Date)"
+  },
+  {
+   "fieldname": "contract_termination_decision_period_date",
+   "fieldtype": "Date",
+   "label": "Contract Termination Decision Period Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_qwei",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "contract",
+   "fieldtype": "Attach",
+   "label": "Contract"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_auto_renewal",
+   "fieldtype": "Check",
+   "label": "Is Auto Renewal"
+  },
+  {
+   "fieldname": "contract_date",
+   "fieldtype": "Table",
+   "label": "Contract Date",
+   "options": "Contracts Date",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_26",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_0dnf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_obib",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Standard Selling",
+   "fieldname": "price_list",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Price List",
+   "options": "Price List",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_35",
+   "fieldtype": "Section Break",
+   "label": "Financial Provisions"
   },
   {
    "fieldname": "items",
@@ -204,15 +238,43 @@
    "reqd": 1
   },
   {
-   "collapsible": 1,
-   "fieldname": "section_break_28",
-   "fieldtype": "Section Break",
-   "label": "Contract Assets"
+   "description": "<b>1. Separate Item Line for Each Site:</b>\n  If two or more site in the same project (against a contract), then while selecting this, the Invoice will be created with item lines having multiple item line for same service item for each site.\n<br>\n<b>2. Separate Invoice for Each Site:</b>\n  If two or more site in the same project (against a contract), then while selecting this, the Invoice will be created for each site Separately. \n<br>\n<b>3. Separate Item Line for Days of Work and Service Item:</b>\n  While selecting this, the Invoice will be created with item lines having multiple item line for same service item for same number of days.\n<br>\n<b>4. Invoice for Full Amount in the Contract:</b>\n  While selecting this, the Invoice will be created with full amount mentioned in the contract without checking the Service (Eg: Without checking the attendance of Security Guards)\n<br>\n<b>5. Invoice for Airport:</b>\n  Select this Option if this contract is related to Airport Services",
+   "fieldname": "create_sales_invoice_as",
+   "fieldtype": "Select",
+   "label": "Create Auto Sales Invoice as",
+   "options": "Single Invoice\nSeparate Item Line for Each Site\nSeparate Invoice for Each Site\nSeparate Item Line for Days of Work and Service Item\nInvoice for Full Amount in the Contract\nInvoice for Airport"
   },
   {
-   "fieldname": "section_break_30",
-   "fieldtype": "Section Break",
-   "label": "Invoice Types"
+   "fieldname": "invoice_frequency",
+   "fieldtype": "Select",
+   "label": "Invoice Frequency",
+   "options": "\nMonthly\nQuarterly\nYearly"
+  },
+  {
+   "fieldname": "due_date",
+   "fieldtype": "Select",
+   "label": "Invoice Submission Due Date",
+   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\nEnd of Month"
+  },
+  {
+   "fieldname": "month_of_invoice",
+   "fieldtype": "Select",
+   "label": "Invoice Submission Month",
+   "options": "Current Month\nPrevious Month"
+  },
+  {
+   "fieldname": "invoice_output_format",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Invoice Output Format",
+   "options": "\nMonthly\nDaily\nHourly"
+  },
+  {
+   "depends_on": "eval: doc.create_sales_invoice_as == 'Separate Item Line for Each Site'",
+   "fieldname": "site_wise_option",
+   "fieldtype": "Select",
+   "label": "Site Wise Option",
+   "options": "Add With Hours\nGroup By Days"
   },
   {
    "default": "0",
@@ -234,73 +296,16 @@
   },
   {
    "collapsible": 1,
-   "fieldname": "section_break_36",
+   "fieldname": "operational_requirements_section",
    "fieldtype": "Section Break",
-   "label": "Bank Details"
+   "label": "Operational Requirements"
   },
   {
-   "fieldname": "bank_name",
-   "fieldtype": "Data",
-   "label": "Customer Bank Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "mode_of_payment",
-   "fieldtype": "Link",
-   "label": "Mode Of Payment",
-   "options": "Mode of Payment"
-  },
-  {
-   "fieldname": "column_break_4",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_20",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_27",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_43",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_21",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_38",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "monthly_working_days",
-   "fieldtype": "Int",
-   "label": "Monthly Working Days"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_public_holiday_rate",
-   "fieldtype": "Check",
-   "label": "Is Public Holiday Rate"
-  },
-  {
-   "fieldname": "column_break_33",
-   "fieldtype": "Column Break"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "section_break_35",
-   "fieldtype": "Section Break",
-   "label": "Contract Items"
-  },
-  {
-   "depends_on": "eval:doc.is_public_holiday_rate == 1",
-   "fieldname": "public_holiday_rate",
-   "fieldtype": "Float",
-   "label": "Public Holiday Rate Multiplier",
-   "precision": "3"
+   "fieldname": "contract_items_operation",
+   "fieldtype": "Table",
+   "label": "Contract Items Operation",
+   "options": "Contract Items Operation",
+   "reqd": 1
   },
   {
    "collapsible": 1,
@@ -314,174 +319,10 @@
    "label": "Password Management",
    "options": "Password Management",
    "read_only": 1
-  },
-  {
-   "fieldname": "bank_account",
-   "fieldtype": "Link",
-   "label": "Bank Account",
-   "options": "Bank Account"
-  },
-  {
-   "fieldname": "iban",
-   "fieldtype": "Data",
-   "label": "IBAN",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_24",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "contract",
-   "fieldtype": "Attach",
-   "label": "Contract"
-  },
-  {
-   "fieldname": "contact_html",
-   "fieldtype": "HTML",
-   "label": "Contact Html"
-  },
-  {
-   "fieldname": "poc",
-   "fieldtype": "Table",
-   "label": "POC",
-   "options": "POC"
-  },
-  {
-   "fieldname": "frequency",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "label": "Frequency",
-   "options": "\nDelivery Note Based\nMonthly"
-  },
-  {
-   "fieldname": "price_list",
-   "fieldtype": "Link",
-   "label": "Price List",
-   "options": "Price List",
-   "reqd": 1
-  },
-  {
-   "fieldname": "holiday_list",
-   "fieldtype": "Link",
-   "label": "Holiday List",
-   "options": "Holiday List"
-  },
-  {
-   "depends_on": "eval: doc.create_sales_invoice_as == 'Separate Item Line for Each Site'",
-   "fieldname": "site_wise_option",
-   "fieldtype": "Select",
-   "label": "Site Wise Option",
-   "options": "Add With Hours\nGroup By Days"
-  },
-  {
-   "fieldname": "type_of_service",
-   "fieldtype": "Small Text",
-   "label": "Type Of Service"
-  },
-  {
-   "fieldname": "civil_id_of_authorized_signature",
-   "fieldtype": "Attach",
-   "label": "Civil ID Of Authorized Signature"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_auto_renewal",
-   "fieldtype": "Check",
-   "label": "Is Auto Renewal"
-  },
-  {
-   "fieldname": "duration",
-   "fieldtype": "Read Only",
-   "label": "Duration"
-  },
-  {
-   "fieldname": "duration_in_days",
-   "fieldtype": "Read Only",
-   "label": "Duration In Days"
-  },
-  {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "options": "Contracts",
-   "read_only": 1
-  },
-  {
-   "fieldname": "overtime_rate",
-   "fieldtype": "Float",
-   "label": "Overtime rate",
-   "precision": "3"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "sales_invoice_print_settings_section",
-   "fieldtype": "Section Break",
-   "label": "Sales Invoice Print Settings"
-  },
-  {
-   "fieldname": "sales_invoice_print_format",
-   "fieldtype": "Link",
-   "label": "Sales Invoice Print Format",
-   "options": "Print Format"
-  },
-  {
-   "fieldname": "sales_invoice_letter_head",
-   "fieldtype": "Link",
-   "label": "Sales Invoice Letter Head",
-   "options": "Letter Head"
-  },
-  {
-   "description": "<b>1. Separate Item Line for Each Site:</b>\n  If two or more site in the same project (against a contract), then while selecting this, the Invoice will be created with item lines having multiple item line for same service item for each site.\n<br>\n<b>2. Separate Invoice for Each Site:</b>\n  If two or more site in the same project (against a contract), then while selecting this, the Invoice will be created for each site Separately. \n<br>\n<b>3. Separate Item Line for Days of Work and Service Item:</b>\n  While selecting this, the Invoice will be created with item lines having multiple item line for same service item for same number of days.\n<br>\n<b>4. Invoice for Full Amount in the Contract:</b>\n  While selecting this, the Invoice will be created with full amount mentioned in the contract without checking the Service (Eg: Without checking the attendance of Security Guards)\n<br>\n<b>5. Invoice for Airport:</b>\n  Select this Option if this contract is related to Airport Services",
-   "fieldname": "create_sales_invoice_as",
-   "fieldtype": "Select",
-   "label": "Create Auto Sales Invoice as",
-   "options": "Single Invoice\nSeparate Item Line for Each Site\nSeparate Invoice for Each Site\nSeparate Item Line for Days of Work and Service Item\nInvoice for Full Amount in the Contract\nInvoice for Airport"
-  },
-  {
-   "fieldname": "month_of_invoice",
-   "fieldtype": "Select",
-   "label": "Month of Invoice",
-   "options": "Current Month\nPrevious Month"
-  },
-  {
-   "fieldname": "contract_date",
-   "fieldtype": "Table",
-   "label": "Contract Date",
-   "options": "Contracts Date",
-   "read_only": 1
-  },
-  {
-   "fieldname": "contract_termination_decision_period",
-   "fieldtype": "Int",
-   "label": "Contract Termination Decision Period (# of Months from Contract End Date)"
-  },
-  {
-   "fieldname": "contract_termination_decision_period_date",
-   "fieldtype": "Date",
-   "label": "Contract Termination Decision Period Date",
-   "read_only": 1
-  },
-  {
-   "fieldname": "contract_end_internal_notification",
-   "fieldtype": "Int",
-   "label": "Contract End Internal Notification (# of Months from Contract Termination Decision Period Date)"
-  },
-  {
-   "fieldname": "contract_end_internal_notification_date",
-   "fieldtype": "Date",
-   "label": "Contract End Internal Notification Date",
-   "read_only": 1
-  },
-  {
-   "fieldname": "client_requested_days",
-   "fieldtype": "Table",
-   "label": "Client Requested Days",
-   "options": "Client Requested Days Item"
   }
  ],
  "links": [],
- "modified": "2026-01-30 22:19:24.439728",
+ "modified": "2026-03-03 01:59:04.834492",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Contracts",

@@ -94,7 +94,7 @@ def create_roster_post_actions():
             JOIN `tabOperations Role` opr ON ps.operations_role = opr.name
             JOIN `tabProject` pr ON opr.project = pr.name
             JOIN `tabContracts` c ON c.project = pr.name
-            JOIN `tabContract Item` ci ON ci.parent = c.name
+            JOIN `tabContract Items Operation` ci ON ci.parent = c.name
             WHERE ps.post_status = 'Planned'
             AND osh.status = 'Active'
             AND os.status = 'Active'
@@ -114,7 +114,7 @@ def create_roster_post_actions():
             JOIN `tabOperations Role` opr ON es.operations_role = opr.name
             JOIN `tabProject` pr ON opr.project = pr.name
             JOIN `tabContracts` c ON c.project = pr.name
-            JOIN `tabContract Item` ci ON ci.parent = c.name
+            JOIN `tabContract Items Operation` ci ON ci.parent = c.name
             JOIN `tabEmployee` e ON es.employee = e.name
             WHERE es.employee_availability = 'Working'
             AND e.status != 'Not Returned from Leave'
@@ -283,7 +283,7 @@ def get_overfilled_underfilled_posts():
     JOIN `tabOperations Role` opr ON ps.operations_role = opr.name
     JOIN `tabProject` pr ON opr.project = pr.name
     JOIN `tabContracts` c ON c.project = pr.name
-    JOIN `tabContract Item` ci ON ci.parent = c.name
+    JOIN `tabContract Items Operation` ci ON ci.parent = c.name
     WHERE ps.post_status = 'Planned' 
     AND os.status = 'Active'
     AND op.status = 'Active' 

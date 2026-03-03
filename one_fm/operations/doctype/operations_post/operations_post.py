@@ -35,11 +35,11 @@ def create_new_schedule_for_project(proj):
         if existing_proj:
             contract_items = frappe.db.sql("""
                 SELECT ci.item_code
-                FROM `tabContract Item` ci
+                FROM `tabContract Items Operation` ci
                 INNER JOIN `tabContracts` c ON ci.parent = c.name
                 WHERE c.project = %s
                     AND c.workflow_state = 'Active'
-                    AND (ci.item_type IS NULL OR ci.item_type != 'Items')
+                    AND ci.item_code IS NOT NULL
             """, (existing_proj,), as_dict=1)
 
             item_codes = [obj.item_code for obj in contract_items]
@@ -170,7 +170,7 @@ def create_post_schedule_for_operations_post(operations_post):
             today = getdate()
             start_date = today if contracts.start_date < today else contracts.start_date
             sale_item = frappe.db.get_value("Operations Role", operations_post.post_template, "sale_item")
-            contract_item = frappe.db.get_value("Contract Item", {
+            contract_item = frappe.db.get_value("Contract Items Operation", {
                 "parent": contracts.name,
                 "item_code": sale_item
             }, ["select_specific_days", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], as_dict=1)

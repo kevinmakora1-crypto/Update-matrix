@@ -3,8 +3,8 @@ import frappe
 def execute():
     # 1. Update Accommodation Space Type abbreviations
     type_abbreviations = {
-        "Bedroom": "B",
-        "Bathroom": "W",
+        "Bedroom": "R",
+        "Bathroom": "T",
         "Kitchen": "K",
         "Living room": "L",
         "Office": "O"

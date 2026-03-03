@@ -227,6 +227,11 @@ standard_queries = {
 }
 
 doc_events = {
+	"*":{
+		"on_trash":[
+			"one_fm.overrides.todo.delete_linked_todos"
+		]
+	},
 	"Stock Entry": {
 		"validate": [
 			"one_fm.overrides.stock_entry.alert_item_multiple_entry",

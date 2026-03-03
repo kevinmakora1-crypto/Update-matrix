@@ -230,6 +230,38 @@ def mark_single_attendance(emp, att_date, roster_type="Basic"):
                     )
                     return
 
+            att_req = frappe.db.get_value("Attendance Request", {"workflow_state": "Approved", 'employee': emp, 'from_date': ['<=', att_date], 'to_date': ['>=', att_date]}, ["reason", "name", "shift"], as_dict=1)
+            if att_req:
+                status = "Work From Home" if att_req.reason == "Work From Home" else "Present"
+                comment = f"Attendance Request - {att_req.name}"
+
+                shift_assignment_name = frappe.db.get_value(
+                    "Shift Assignment",
+                    {
+                        "employee": employee.name,
+                        "start_date": att_date,
+                        "status": "Active",
+                        "docstatus": 1,
+                        "shift_type": att_req.shift,
+                    },
+                    "name",
+                )
+                shift_assignment = frappe.get_doc("Shift Assignment", shift_assignment_name) if shift_assignment_name else None
+
+                create_single_attendance_record(
+                    frappe._dict({
+                        'employee':employee,
+                        'attendance_date':att_date,
+                        'status':status,
+                        'comment':comment,
+                        "attendance_request": att_req.name,
+                        "reference_doctype":"Attendance Request",
+                        "reference_docname":att_req.name,
+                        "shift_assignment": shift_assignment
+                    })
+                )
+                return
+
             if holiday_today.get(employee.holiday_list):
                 status = "Holiday"
                 comment = "Holiday - " +str(holiday_today.get(employee.holiday_list))
@@ -362,6 +394,9 @@ def create_single_attendance_record(record):
         doc.company = record.employee.company
         doc.department = record.employee.department
         doc.working_hours = round(record.working_hours, 2) if record.working_hours else 0
+        doc.attendance_request = record.attendance_request if record.attendance_request else ''
+        doc.reference_doctype = record.reference_doctype if record.reference_doctype else ''
+        doc.reference_docname = record.reference_docname if record.reference_docname else ''
         if record.shift_assignment:
             doc.shift_assignment = record.shift_assignment.name
             doc.shift = record.shift_assignment.shift_type
@@ -779,6 +814,13 @@ def mark_daily_attendance(start_date, end_date):
 
         # create BASIC DAY OFF
         for i in attendance_request:
+            shift_assignment = frappe.db.get_value("Shift Assignment", {
+                'employee':i.name,
+                'start_date': start_date,
+                "status": "Active",
+                "docstatus":1}) or ""
+            
+            
             status = "Work From Home" if i.ar_reason == "Work From Home" else "Present"
             if not i.get('ar_name'):
                 i.ar_name = i.description
@@ -796,15 +838,20 @@ def mark_daily_attendance(start_date, end_date):
                 query_body+= f"""
                 (
                     "HR-ATT_{start_date}_{i.name}_Basic", "{naming_series}" , "{i.name}", "{i.employee_name}", 0,  "{status}", '', NULL,
-                    NULL, "", "", "", "", "{start_date}", "{i.company}",
+                    NULL, "{shift_assignment}", "", "", "", "{start_date}", "{i.company}",
                     "{i.department}", 0, 0, "", "", "Basic", 1, "{owner}",
                     "{owner}", "{creation}", "{creation}", "Attendance Request - {i.ar_name}"
                 ),"""
 
+
             else:
                 att_name = frappe.db.get_value("Attendance", {"employee": i.name, "attendance_date": start_date}, "name")
                 if att_name:
-                    frappe.db.set_value("Attendance", att_name, "status", status)
+                    updates = {"status": status}
+                    if shift_assignment:
+                        updates["shift_assignment"] = shift_assignment
+                    frappe.db.set_value("Attendance", att_name, updates)
+ 
 
 
         # UPDATE QUERY
@@ -1323,7 +1370,7 @@ class AttendanceMarking():
 
     def mark_day_off(self):
         days_off = frappe.get_list("Employee Schedule", {
-            'date':self.start.date(), 'employee_availability':['IN', ['Day Off', 'Client Day Off']], "is_replaced": 0
+            'date':self.start.date(), 'employee_availability':'Day Off', "is_replaced": 0
         }, "*")
         for i in days_off:
             try:

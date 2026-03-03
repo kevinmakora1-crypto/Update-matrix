@@ -39,6 +39,7 @@
    "description": "Enter the Post title (e.g., Security Guard, Cashier, Janitor, or Customer Service Agent). Proper naming ensures accurate automated generation of Temporary Post name.",
    "fieldname": "post_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Post Name",
    "reqd": 1
   },
@@ -65,7 +66,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-03 05:20:57.681641",
+ "modified": "2026-03-03 05:27:58.860265",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Temporary Deployment Item",

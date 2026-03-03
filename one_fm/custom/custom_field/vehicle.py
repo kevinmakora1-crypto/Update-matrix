@@ -78,7 +78,7 @@ def get_vehicle_custom_fields():
                 "fieldtype": "Select",
                 "label": "Vehicle Category",
                 "insert_after": "license_plate",
-                "options": "\nOwned\nLeased\nRental",
+                "options": "\nOwned\nLeased",
                 "translatable": 1,
                 "reqd": 1
             },

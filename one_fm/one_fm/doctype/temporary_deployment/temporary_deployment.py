@@ -4,7 +4,7 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils import cint
-
+from frappe.query_builder import DocType
 
 class TemporaryDeployment(Document):
 	def on_submit(self):
@@ -52,3 +52,11 @@ class TemporaryDeployment(Document):
 				alert=True,
 				indicator="green",
 			)
+
+	def on_cancel(self):
+		TemporaryPost = DocType("Temporary Post")
+		query = (frappe.qb.update(TemporaryPost)
+			.set(TemporaryPost.status, "Completed")
+			.where(TemporaryPost.temporary_deployment == self.name)
+		)
+		query.run()

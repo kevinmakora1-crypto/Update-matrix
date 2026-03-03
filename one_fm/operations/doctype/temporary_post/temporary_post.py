@@ -69,7 +69,7 @@ def generate_temporary_post_schedule(temporary_post, exists_schedule_in_between,
 		frappe.msgprint(_("Post is scheduled as Planned."))
 	except Exception as e:
 		frappe.db.rollback()
-		frappe.log_error(message=str(e), title='Post Schedule from Operations Post')
+		frappe.log_error(message=str(e), title='Post Schedule from Temporary Post')
 		frappe.msgprint(_("Error log is added."), alert=True, indicator='orange')
 		temporary_post.reload()
 

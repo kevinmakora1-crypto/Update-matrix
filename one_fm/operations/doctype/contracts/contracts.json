@@ -234,8 +234,8 @@
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Items",
-   "options": "Contract Item",
-   "reqd": 1
+   "mandatory_depends_on": "eval: doc.workflow_state == 'Submit to Finance Manager'",
+   "options": "Contract Item"
   },
   {
    "description": "<b>1. Separate Item Line for Each Site:</b>\n  If two or more site in the same project (against a contract), then while selecting this, the Invoice will be created with item lines having multiple item line for same service item for each site.\n<br>\n<b>2. Separate Invoice for Each Site:</b>\n  If two or more site in the same project (against a contract), then while selecting this, the Invoice will be created for each site Separately. \n<br>\n<b>3. Separate Item Line for Days of Work and Service Item:</b>\n  While selecting this, the Invoice will be created with item lines having multiple item line for same service item for same number of days.\n<br>\n<b>4. Invoice for Full Amount in the Contract:</b>\n  While selecting this, the Invoice will be created with full amount mentioned in the contract without checking the Service (Eg: Without checking the attendance of Security Guards)\n<br>\n<b>5. Invoice for Airport:</b>\n  Select this Option if this contract is related to Airport Services",
@@ -304,8 +304,8 @@
    "fieldname": "contract_items_operation",
    "fieldtype": "Table",
    "label": "Contract Items Operation",
-   "options": "Contract Items Operation",
-   "reqd": 1
+   "mandatory_depends_on": "eval: doc.workflow_state == 'Submit to Operations Admin'",
+   "options": "Contract Items Operation"
   },
   {
    "collapsible": 1,
@@ -322,7 +322,7 @@
   }
  ],
  "links": [],
- "modified": "2026-03-03 01:59:04.834492",
+ "modified": "2026-03-03 16:49:06.754014",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Contracts",

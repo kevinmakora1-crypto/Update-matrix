@@ -120,7 +120,7 @@ def execute():
             frappe.db.sql("""
                 INSERT INTO `tabContract Items Operation`
                     (name, parent, parenttype, parentfield, idx,
-                     item_code, item_type, count, rate_type,
+                     item_code, count, rate_type,
                      service_type, is_daily_operation_handled_by_us,
                      off_type, days_off_category, no_of_days_off,
                      select_specific_days,
@@ -129,7 +129,7 @@ def execute():
                      creation, modified, owner, modified_by, docstatus)
                 VALUES
                     (%(name)s, %(parent)s, 'Contracts', 'contract_items_operation', %(idx)s,
-                     %(item_code)s, %(item_type)s, %(count)s, %(rate_type)s,
+                     %(item_code)s, %(count)s, %(rate_type)s,
                      %(service_type)s, %(is_daily_operation_handled_by_us)s,
                      %(off_type)s, %(days_off_category)s, %(no_of_days_off)s,
                      %(select_specific_days)s,
@@ -141,7 +141,6 @@ def execute():
                 "parent": ci.parent,
                 "idx": max_idx + 1,
                 "item_code": ci.item_code,
-                "item_type": ci.item_type or "",
                 "count": ci.count or 0,
                 "rate_type": ci.rate_type or "",
                 "service_type": ci.service_type or "",

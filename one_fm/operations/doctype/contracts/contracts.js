@@ -303,11 +303,11 @@ frappe.ui.form.on('Contracts', {
 		frm.events.open_sections_onload(frm);
 		
 		frm.fields_dict['contract_items_operation'].grid.get_field('item_code').get_query = function() {
+			let valid_items = frm.doc.items.map(item => item.item_code);
 			return {
-				filters: {
-					is_sales_item: 1,
-					disabled: 0
-				}
+				filters: [
+					['Item', 'item_code', 'in', valid_items]
+				]
 			};
 		};
 
@@ -350,8 +350,6 @@ frappe.ui.form.on('Contracts', {
 				const fn = df.fieldname;
 				const ft = df.fieldtype;
 
-				console.log("current section", current_section)
-				console.log("field name", fn)
 				// Advance current section when we hit a Section Break
 				if (ft === 'Section Break') {
 					current_section = section_role_map.hasOwnProperty(fn) ? fn : '__unknown__';
@@ -368,7 +366,6 @@ frappe.ui.form.on('Contracts', {
 				const can_edit = owners.length > 0 && owners.some(r => user_roles.includes(r));
 				frm.set_df_property(fn, 'read_only', can_edit ? 0 : 1);
 				processed++;
-				console.log("can edit", can_edit)
 			});
 
 			console.log(`[Contracts] Role enforcement applied to ${processed} fields. Section: ${current_section}`);

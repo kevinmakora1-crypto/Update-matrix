@@ -114,13 +114,6 @@ def get_vehicle_custom_fields():
                 "depends_on": "vehicle_leasing_contract"
             },
             {
-                "fieldname": "transport_stop_vehicle",
-                "fieldtype": "Check",
-                "label": "Transport Stop Vehicle",
-                "insert_after": "image",
-                "default": 0
-            },
-            {
                 "fieldname": "image",
                 "fieldtype": "Attach Image",
                 "label": "Image"
@@ -131,6 +124,13 @@ def get_vehicle_custom_fields():
                 "label": "Seats",
                 "insert_after": "doors",
                 "reqd": 1
+            },
+            {
+                "fieldname": "transport_stop_vehicle",
+                "fieldtype": "Check",
+                "label": "Transport Stop Vehicle",
+                "insert_after": "image",
+                "default": 0
             },
         ]
     }

@@ -78,7 +78,7 @@ def get_vehicle_custom_fields():
                 "fieldtype": "Select",
                 "label": "Vehicle Category",
                 "insert_after": "license_plate",
-                "options": "\nOwned\nLeased",
+                "options": "\nOwned\nLeased\nRental",
                 "translatable": 1,
                 "reqd": 1
             },
@@ -112,6 +112,13 @@ def get_vehicle_custom_fields():
                 "insert_after": "vehicle_leasing_contract",
                 "options": "Vehicle Leasing Contract Item",
                 "depends_on": "vehicle_leasing_contract"
+            },
+            {
+                "fieldname": "transport_stop_vehicle",
+                "fieldtype": "Check",
+                "label": "Transport Stop Vehicle",
+                "insert_after": "image",
+                "default": 0
             },
             {
                 "fieldname": "image",

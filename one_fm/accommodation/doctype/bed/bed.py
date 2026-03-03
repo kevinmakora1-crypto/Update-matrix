@@ -101,11 +101,11 @@ class Bed(Document):
 			frappe.throw(_("Accommodation Space is required"))
 
 		counter = get_next_bed_number(self.accommodation_space)
-		self.name = "{}-{}".format(self.accommodation_space, counter)
+		self.name = "{}-B{}".format(self.accommodation_space, counter)
 
 def get_next_bed_number(accommodation_space):
-	# Pattern: {accommodation_space}-{number}
-	prefix = "{}-".format(accommodation_space)
+	# Pattern: {accommodation_space}-B{number}
+	prefix = "{}-B".format(accommodation_space)
 
 	# Get all existing names that start with this prefix
 	existing_names = frappe.db.sql("""
@@ -117,11 +117,10 @@ def get_next_bed_number(accommodation_space):
 
 	if existing_names:
 		last_name = existing_names[0][0]
-		# Extract the number part after the last hyphen
-		parts = last_name.split('-')
-		if len(parts) > 1:
+		if last_name.startswith(prefix):
+			number_part = last_name[len(prefix):]  # Everything after "{accommodation_space}-B"
 			try:
-				return int(parts[-1]) + 1
+				return int(number_part) + 1
 			except ValueError:
 				pass
 

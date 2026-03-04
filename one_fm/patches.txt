@@ -249,7 +249,7 @@ one_fm.patches.v15_0.add_employee_project_manager_name_custom_field
 one_fm.patches.v15_0.create_attendance_for_event_shifts
 one_fm.patches.v15_0.backfill_refundable_from_rfm_to_chain
 one_fm.patches.v15_0.update_contract_items_consolidated #rerun
-one_fm.patches.v15_0.migrate_contract_item_to_operations #2026-03-04
+one_fm.patches.v15_0.migrate_contract_item_to_operations #2026-03-05
 one_fm.patches.v15_0.update_leave_application_properties
 one_fm.patches.v15_0.add_supplier_name_in_arabic_field
 one_fm.patches.v15_0.update_leave_extension_attendance

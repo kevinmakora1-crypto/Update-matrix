@@ -35,10 +35,10 @@ def execute():
 	)[0][0]
 
 	if count == 0:
-		frappe.logger().info(
+		print(
 			"Patch clean_orphaned_attendance_check_todos: Successfully cleared orphaned ToDo references."
 		)
 	else:
-		frappe.logger().warning(
+		print(
 			f"Patch clean_orphaned_attendance_check_todos: {count} orphaned ToDo records remain after cleanup."
 		)

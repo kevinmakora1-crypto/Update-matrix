@@ -38,7 +38,7 @@ def execute():
     """, as_dict=1)
 
     if not contract_items:
-        frappe.logger().info("Patch migrate_contract_item_to_operations: No Contract Items found to migrate.")
+        print("Patch migrate_contract_item_to_operations: No Contract Items found to migrate.")
         return
 
     migrated = 0
@@ -160,7 +160,7 @@ def execute():
             migrated += 1
 
     frappe.db.commit()
-    frappe.logger().info(
+    print(
         f"Patch migrate_contract_item_to_operations: "
         f"Migrated {migrated} new rows, updated {updated} existing rows, skipped {skipped} rows."
     )

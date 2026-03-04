@@ -17,7 +17,6 @@ def execute():
         SELECT
             ci.parent,
             ci.item_code,
-            ci.item_type,
             ci.count,
             ci.rate_type,
             ci.service_type,
@@ -65,7 +64,6 @@ def execute():
             frappe.db.sql("""
                 UPDATE `tabContract Items Operation`
                 SET
-                    item_type = COALESCE(NULLIF(item_type, ''), %(item_type)s),
                     count = COALESCE(NULLIF(count, 0), %(count)s),
                     rate_type = COALESCE(NULLIF(rate_type, ''), %(rate_type)s),
                     service_type = COALESCE(NULLIF(service_type, ''), %(service_type)s),
@@ -86,7 +84,6 @@ def execute():
                     modified_by = %(user)s
                 WHERE name = %(existing_name)s
             """, {
-                "item_type": ci.item_type or "",
                 "count": ci.count or 0,
                 "rate_type": ci.rate_type or "",
                 "service_type": ci.service_type or "",

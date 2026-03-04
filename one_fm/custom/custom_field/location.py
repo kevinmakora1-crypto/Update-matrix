@@ -33,6 +33,13 @@ def get_location_custom_fields():
                 "insert_after": "area",
                 "label": "Governorate Area",
                 "options": "Governorate Area"
+            },
+            {
+                "fieldname": "location_type",
+                "fieldtype": "Select",
+                "label": "Type",
+                "insert_after": "sb_location_details",
+                "options": "Site\nStop Location",
             }
         ]
     }

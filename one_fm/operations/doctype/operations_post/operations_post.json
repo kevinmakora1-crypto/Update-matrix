@@ -165,12 +165,13 @@
    "fieldname": "operations_post_activation",
    "fieldtype": "Table",
    "label": "Operations Post Activation",
-   "options": "Operations Post Activation"
+   "options": "Operations Post Activation",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2026-03-05 13:55:04.047926",
+ "modified": "2026-03-05 15:16:18.479522",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Operations Post",

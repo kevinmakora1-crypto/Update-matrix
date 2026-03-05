@@ -25,7 +25,8 @@
   "post_description",
   "section_break_14",
   "skills",
-  "designations"
+  "designations",
+  "operations_post_activation"
  ],
  "fields": [
   {
@@ -159,14 +160,21 @@
    "fieldname": "end_date",
    "fieldtype": "Date",
    "label": "End Date"
+  },
+  {
+   "fieldname": "operations_post_activation",
+   "fieldtype": "Table",
+   "label": "Operations Post Activation",
+   "options": "Operations Post Activation"
   }
  ],
+ "grid_page_length": 50,
  "links": [],
- "modified": "2025-07-04 10:48:37.464794",
+ "modified": "2026-03-05 13:55:04.047926",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Operations Post",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -260,6 +268,7 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "search_fields": "site_shift, post_template",
  "sort_field": "modified",
  "sort_order": "DESC",

@@ -1572,6 +1572,59 @@ def delete_existing_post_schedules(date_str_arg,post_name_arg):
 	except:
 		frappe.log_error(message=frappe.get_traceback(), title="Error Deleting Post Schedules")
 
+def check_client_day_off_eligibility(employee, date_str):
+	"""
+	Check whether an employee is eligible to receive a 'Client Day Off' on a given date.
+	Eligibility requires that the mandatory Day Off quota has been fully rostered
+	within the applicable period (weekly or monthly).
+
+	Returns:
+		(True, None)              – eligible, proceed with Client Day Off.
+		(False, error_message)    – not eligible, surface error_message as msgprint.
+	"""
+	emp_data = frappe.db.get_value(
+		"Employee", employee, ["day_off_category", "number_of_days_off"]
+	)
+	if not emp_data:
+		return True, None
+		
+	day_off_category, number_of_days_off = emp_data
+
+	if not day_off_category or not number_of_days_off:
+		# No quota configured — allow Client Day Off
+		return True, None
+
+	number_of_days_off = cint(number_of_days_off)
+	current_date = getdate(date_str)
+
+	if day_off_category == "Monthly":
+		period_start = get_first_day(current_date)
+		period_end = get_last_day(current_date)
+		error_msg = _("Total day off for this calendar month has not been utilized fully. Please assign a Day Off first.")
+	else:  # Weekly
+		# Week starts on Sunday: align using the same logic as get_week_start_end in utils.py
+		week_day_map = {0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 0}  # Mon=0..Sun=6 → 1..0
+		start_offset = week_day_map[current_date.weekday()]
+		period_start = add_days(current_date, -start_offset)
+		period_end = add_days(period_start, 6)
+		error_msg = _("Total day off for this week has not been utilized fully. Please assign a Day Off first.")
+
+	# Count existing 'Day Off' schedules in the period (excluding the current date being set)
+	existing_day_offs = frappe.db.count(
+		"Employee Schedule",
+		{
+			"employee": employee,
+			"employee_availability": "Day Off",
+			"date": ["between", [period_start, period_end]],
+		}
+	)
+
+	if existing_day_offs >= number_of_days_off:
+		return True, None
+
+	return False, error_msg
+
+
 @frappe.whitelist()
 def dayoff(employees, client_day_off=0, selected_dates=0, selected_reliever=None, repeat=0, repeat_freq=None, week_days=[], repeat_till=None, project_end_date=None):
 	try:
@@ -1604,6 +1657,17 @@ def dayoff(employees, client_day_off=0, selected_dates=0, selected_reliever=None
 				roster_list.append(roster_data)
 
 				if getdate(date_val) > getdate(today()):
+					# --- Client Day Off eligibility check ---
+					if cint(client_day_off):
+						eligible, msg = check_client_day_off_eligibility(employee_item["employee"], date_val)
+						if not eligible:
+							emp_name = frappe.db.get_value("Employee", employee_item["employee"], "employee_name") or employee_item["employee"]
+							frappe.msgprint(
+								_("{0} ({1}) on {2}: {3}").format(emp_name, employee_item["employee"], date_val, msg),
+								title=_("Client Day Off Warning"),
+								indicator="orange"
+							)
+					# ----------------------------------------
 					name = f"{date_val}_{employee_item['employee']}_{roster_type}"
 					query_values_dayoff.append(f"""(
 						"{name}", "{employee_item["employee"]}", "{date_val}", "", "", "",
@@ -1646,6 +1710,17 @@ def dayoff(employees, client_day_off=0, selected_dates=0, selected_reliever=None
 					for date_iter in pd.date_range(start=current_employee_date, end=effective_end_date):
 						month_end_date_iter = get_last_day(getdate(date_iter))
 						if getdate(date_iter).strftime("%A") in week_days and getdate(date_iter) > getdate(today()):
+							# --- Client Day Off eligibility check (Weekly repeat) ---
+							if cint(client_day_off):
+								eligible, msg = check_client_day_off_eligibility(employee_item["employee"], str(date_iter.date()))
+								if not eligible:
+									emp_name = frappe.db.get_value("Employee", employee_item["employee"], "employee_name") or employee_item["employee"]
+									frappe.msgprint(
+										_("{0} ({1}) on {2}: {3}").format(emp_name, employee_item["employee"], str(date_iter.date()), msg),
+										title=_("Client Day Off Warning"),
+										indicator="orange"
+									)
+							# ---------------------------------------------------------
 							name = f"{date_iter.date()}_{employee_item['employee']}_{roster_type}"
 							query_values_dayoff.append(f"""(
 								"{name}", "{employee_item["employee"]}", "{date_iter.date()}", "", "", "",
@@ -1671,6 +1746,17 @@ def dayoff(employees, client_day_off=0, selected_dates=0, selected_reliever=None
 					for date_iter in month_range(current_employee_date, effective_end_date):
 						month_end_date_iter = get_last_day(getdate(date_iter))
 						if getdate(date_iter) > getdate(today()):
+							# --- Client Day Off eligibility check (Monthly repeat) ---
+							if cint(client_day_off):
+								eligible, msg = check_client_day_off_eligibility(employee_item["employee"], str(date_iter.date()))
+								if not eligible:
+									emp_name = frappe.db.get_value("Employee", employee_item["employee"], "employee_name") or employee_item["employee"]
+									frappe.msgprint(
+										_("{0} ({1}) on {2}: {3}").format(emp_name, employee_item["employee"], str(date_iter.date()), msg),
+										title=_("Client Day Off Warning"),
+										indicator="orange"
+									)
+							# ----------------------------------------------------------
 							name = f"{date_iter.date()}_{employee_item['employee']}_{roster_type}"
 							query_values_dayoff.append(f"""(
 								"{name}", "{employee_item["employee"]}", "{date_iter.date()}", "", "", "",
@@ -1733,6 +1819,37 @@ def reliever_roster_assignment(reliver_emp_name, roster_list_arg):
 	keep_days_off = 0
 	employee_list_for_extreme = [reliver_emp_name]
 	otRoster = "false"
+	
+	# Validate that the reliever has at least 1 Day Off in the periods they are being rostered
+	day_off_category = frappe.db.get_value("Employee", reliver_emp_name, "day_off_category")
+	if day_off_category:
+		periods_checked = set()
+		for roster_data_item in roster_list_arg:
+			if roster_data_item and roster_data_item.get("date"):
+				date_val_str = roster_data_item["date"].strftime("%Y-%m-%d") if isinstance(roster_data_item["date"], (datetime, pd.Timestamp)) else cstr(roster_data_item["date"])
+				current_date = getdate(date_val_str)
+				
+				if day_off_category == "Monthly":
+					period_start = get_first_day(current_date)
+					period_end = get_last_day(current_date)
+				else:  # Weekly
+					week_day_map = {0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 0}
+					start_offset = week_day_map[current_date.weekday()]
+					period_start = add_days(current_date, -start_offset)
+					period_end = add_days(period_start, 6)
+				
+				period_key = (period_start, period_end)
+				if period_key not in periods_checked:
+					day_off_count = frappe.db.count("Employee Schedule", {
+						"employee": reliver_emp_name,
+						"employee_availability": "Day Off",
+						"date": ["between", [period_start, period_end]]
+					})
+					if day_off_count < 1:
+						reliever_name = frappe.db.get_value("Employee", reliver_emp_name, "employee_name") or reliver_emp_name
+						frappe.throw(_("Reliever {0} must have at least 1 Day Off scheduled in the period ({1} to {2}) when being rostered.").format(reliever_name, period_start, period_end))
+					periods_checked.add(period_key)
+
 	for roster_data_item in roster_list_arg:
 		if roster_data_item and roster_data_item.get("shift") and roster_data_item.get("operations_role") and \
 		   roster_data_item.get("start_datetime") and roster_data_item.get("end_datetime") and roster_data_item.get("date"):

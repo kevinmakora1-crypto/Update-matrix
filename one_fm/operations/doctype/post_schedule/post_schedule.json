@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "post",
+  "temporary_post",
   "operations_role",
   "post_abbrv",
   "column_break_2",
@@ -24,6 +25,7 @@
  ],
  "fields": [
   {
+   "depends_on": "eval:!doc.temporary_post",
    "fieldname": "post",
    "fieldtype": "Link",
    "in_standard_filter": 1,
@@ -36,6 +38,7 @@
   },
   {
    "fetch_from": "post.site_shift",
+   "fetch_if_empty": 1,
    "fieldname": "shift",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -91,6 +94,7 @@
   },
   {
    "fetch_from": "post.post_template",
+   "fetch_if_empty": 1,
    "fieldname": "operations_role",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -101,6 +105,7 @@
   },
   {
    "fetch_from": "shift.project",
+   "fetch_if_empty": 1,
    "fieldname": "project",
    "fieldtype": "Link",
    "label": "Project",
@@ -109,6 +114,7 @@
   },
   {
    "fetch_from": "shift.site",
+   "fetch_if_empty": 1,
    "fieldname": "site",
    "fieldtype": "Link",
    "label": "Site",
@@ -121,14 +127,21 @@
    "fieldtype": "Data",
    "label": "Post Abbreviation",
    "read_only": 1
+  },
+  {
+   "depends_on": "eval:!doc.post",
+   "fieldname": "temporary_post",
+   "fieldtype": "Link",
+   "label": "Temporary Post",
+   "options": "Temporary Post"
   }
  ],
  "links": [],
- "modified": "2026-01-19 06:59:41.102373",
+ "modified": "2026-03-03 14:25:57.793720",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Post Schedule",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

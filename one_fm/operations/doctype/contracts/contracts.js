@@ -302,7 +302,7 @@ frappe.ui.form.on('Contracts', {
 		set_hide_management_fee_fields(frm);
 		frm.events.open_sections_onload(frm);
 		
-		frm.fields_dict['client_requested_days'].grid.get_field('contract_item').get_query = function(doc, cdt, cdn) {
+		frm.fields_dict['contract_items_operation'].grid.get_field('item_code').get_query = function() {
 			let valid_items = frm.doc.items.map(item => item.item_code);
 			return {
 				filters: [
@@ -310,6 +310,78 @@ frappe.ui.form.on('Contracts', {
 				]
 			};
 		};
+
+		// Role-based read-only enforcement.
+		// Uses frm.meta.fields (ordered by idx from DB) to walk sections reliably.
+		// Wrapped in setTimeout to guarantee the form DOM is fully rendered.
+		setTimeout(() => {
+			const user_roles = frappe.user_roles;
+			const is_system_manager = user_roles.includes('System Manager');
+
+			// Optional: log roles to browser console for debugging
+			console.log('[Contracts] user_roles:', user_roles);
+
+			if (is_system_manager) {
+				console.log('[Contracts] System Manager — skipping role enforcement');
+				return;
+			}
+
+			// Map section-break fieldname → role(s) that may EDIT that section.
+			// [] = read-only to everyone; omit entry = leave as-is (custom sections)
+			const section_role_map = {
+				'__header__':                       ['Sales Manager'],
+				'section_break_8':                  ['Sales Manager'],
+				'section_break_20':                 ['Legal Manager'],
+				'section_break_26':                 ['Finance Manager'],
+				'section_break_35':                 ['Finance Manager'],
+				'operational_requirements_section': ['Operation Admin'],
+				'section_break_55':                 [],
+			};
+
+			// Fieldtypes that must never be set read_only (they control layout)
+			const layout_types = new Set(['Section Break', 'Column Break', 'Tab Break', 'HTML', 'Heading']);
+			const skip_fields  = new Set(['amended_from', 'password_management', 'workflow_state']);
+
+			let current_section = '__header__';
+			let processed = 0;
+
+			// frm.meta.fields is ordered by DB idx — the definitive rendering order
+			(frm.meta.fields || []).forEach(df => {
+				const fn = df.fieldname;
+				const ft = df.fieldtype;
+
+				// Advance current section when we hit a Section Break
+				if (ft === 'Section Break') {
+					current_section = section_role_map.hasOwnProperty(fn) ? fn : '__unknown__';
+					return; // never touch section break fields themselves
+				}
+
+
+				// Skip layout and system fields
+				if (layout_types.has(ft) || skip_fields.has(fn)) return;
+
+				const owners = section_role_map[current_section];
+				if (owners === undefined) return; // unknown/custom section → leave alone
+
+				const can_edit = owners.length > 0 && owners.some(r => user_roles.includes(r));
+				frm.set_df_property(fn, 'read_only', can_edit ? 0 : 1);
+				processed++;
+			});
+
+			console.log(`[Contracts] Role enforcement applied to ${processed} fields. Section: ${current_section}`);
+			frm.refresh_fields();
+
+			// Lock add/delete on operations table for non-Operation Admin
+			if (!user_roles.includes('Operation Admin')) {
+				const ops_grid = frm.get_field('contract_items_operation');
+				if (ops_grid && ops_grid.grid) {
+					ops_grid.grid.cannot_add_rows = true;
+					ops_grid.grid.cannot_delete_rows = true;
+					ops_grid.grid.refresh();
+				}
+			}
+		}, 300);
+
 	},
 	customer_address:function(frm){
 		if(frm.doc.customer_address){
@@ -362,6 +434,10 @@ frappe.ui.form.on('Contracts', {
 var set_hide_management_fee_fields = function(frm) {
 	var management_fee_percentage = frappe.meta.get_docfield("Contract Item", "management_fee_percentage", frm.doc.name);
 	var management_fee = frappe.meta.get_docfield("Contract Item", "management_fee", frm.doc.name);
+
+	// Guard: fields may not exist if Contract Item was restructured
+	if (!management_fee_percentage || !management_fee) return;
+
 	if(frm.doc.create_sales_invoice_as == 'Invoice for Airport'){
 		management_fee_percentage.hidden = 0;
 		management_fee.hidden = 0;

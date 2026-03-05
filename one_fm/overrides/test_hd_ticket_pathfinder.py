@@ -1,6 +1,6 @@
 import frappe
 import unittest
-from one_fm.one_fm.overrides.hd_ticket import create_pathfinder_log
+from one_fm.overrides.hd_ticket import create_pathfinder_log
 
 class TestHDTicketPathfinder(unittest.TestCase):
     def setUp(self):

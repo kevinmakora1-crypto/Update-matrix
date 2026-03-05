@@ -1,0 +1,80 @@
+{
+    "actions": [],
+    "allow_rename": 1,
+    "creation": "2026-03-04 13:30:00.000000",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+        "enabled",
+        "general_settings_section",
+        "service_duration_boarding_unboarding",
+        "fixed_cost",
+        "cost_per_kilometer",
+        "cost_per_hour",
+        "penalty_cost"
+    ],
+    "fields": [
+        {
+            "default": "1",
+            "fieldname": "enabled",
+            "fieldtype": "Check",
+            "label": "Enabled"
+        },
+        {
+            "fieldname": "general_settings_section",
+            "fieldtype": "Section Break",
+            "label": "General Settings"
+        },
+        {
+            "fieldname": "service_duration_boarding_unboarding",
+            "fieldtype": "Int",
+            "label": "Service Duration (Boarding/Unboarding)"
+        },
+        {
+            "fieldname": "fixed_cost",
+            "fieldtype": "Int",
+            "label": "Fixed Cost"
+        },
+        {
+            "fieldname": "cost_per_kilometer",
+            "fieldtype": "Int",
+            "label": "Cost Per Kilometer"
+        },
+        {
+            "fieldname": "cost_per_hour",
+            "fieldtype": "Int",
+            "label": "Cost Per Hour"
+        },
+        {
+            "fieldname": "penalty_cost",
+            "fieldtype": "Int",
+            "label": "Penalty Cost"
+        }
+    ],
+    "index_web_pages_for_search": 1,
+    "issingle": 1,
+    "links": [],
+    "modified": "2026-03-04 13:30:00.000000",
+    "modified_by": "Administrator",
+    "module": "Fleet Management",
+    "name": "Route Optimization API Configuration",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "print": 1,
+            "read": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "row_format": "Dynamic",
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "states": [],
+    "track_changes": 1
+}

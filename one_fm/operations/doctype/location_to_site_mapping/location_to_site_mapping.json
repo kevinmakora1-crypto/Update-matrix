@@ -1,0 +1,24 @@
+{
+ "doctype": "DocType",
+ "name": "Location To Site Mapping",
+ "module": "Operations",
+ "istable": 1,
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "sites"
+ ],
+ "fields": [
+  {
+   "fieldname": "sites",
+   "fieldtype": "Link",
+   "label": "Sites",
+   "options": "Operations Site",
+   "in_list_view": 1,
+   "reqd": 1
+  }
+ ],
+ "permissions": [],
+ "owner": "Administrator",
+ "sort_order": "DESC"
+}

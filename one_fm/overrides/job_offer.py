@@ -81,9 +81,9 @@ class JobOfferOverride(JobOffer):
         if frappe.db.exists('Letter Head', 'ONE FM - Job Offer') and not self.letter_head:
             self.letter_head = 'ONE FM - Job Offer'
         # update terms and consitions
-        if self.docstatus==0:
+        if self.docstatus == 0 or self.has_value_changed("applicant_name"):
             # set job offer terms according to designation (if not set)
-            if not self.job_offer_term_template:
+            if not self.job_offer_term_template and self.docstatus == 0:
                 target_offer_template = frappe.db.get_value('Designation',{ "name": self.designation }, "custom_job_offer_term_template")
                 if target_offer_template:
                     self.job_offer_term_template = target_offer_template
@@ -97,18 +97,37 @@ class JobOfferOverride(JobOffer):
                             "value": item.value,
                         })
 
-            # Set terms according to default terms and conditions (if not set)
             if not self.select_terms:
                 default_terms = frappe.db.get_single_value('Hiring Settings', 'default_terms_and_conditions') or 'Job Offer Acceptance'
                 self.select_terms = default_terms
-            terms = frappe.db.get_value("Terms and Conditions", self.select_terms, "terms")
+            
+            self.update_terms_and_conditions()
+
+    def update_terms_and_conditions(self):
+        """
+        Regenerates the terms and conditions based on the selected template and current document state.
+        This allows terms to be updated even if the document is submitted, provided the applicant name changes.
+        """
+        if not self.select_terms:
+            return
+
+        terms = frappe.db.get_value("Terms and Conditions", self.select_terms, "terms")
+        if terms:
             self.terms = frappe.render_template(terms, {
-                'applicant_name':self.applicant_name, 'designation':self.designation, 'company':self.company}
-            )
+                'applicant_name': self.applicant_name,
+                'designation': self.designation,
+                'company': self.company
+            })
 
     def on_update_after_submit(self):
+        # update terms if applicant name changes
+        if self.has_value_changed("applicant_name"):
+            self.update_terms_and_conditions()
+            self.db_set("terms", self.terms)
+
         self.onload()
         self.validate_job_offer_mandatory_fields()
+        
         if self.workflow_state == 'Submit to Onboarding Officer':
             msg = "Please select {0} to Accept the Offer and Process Onboard"
             if not self.estimated_date_of_joining and not self.onboarding_officer:

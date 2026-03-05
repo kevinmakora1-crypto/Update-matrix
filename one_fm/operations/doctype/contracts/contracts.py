@@ -23,15 +23,17 @@ class Contracts(Document):
         self.validate_no_of_days_off()
         self.validate_off_type_with_daily_operations()
         self.update_contract_dates()
-        self.validate_client_requested_days()
-        # if self.overtime_rate == 0:
-        # 	frappe.msgprint(_("Overtime rate not set."), alert=True, indicator='orange')
 
 
     def on_update(self):
         self.update_project_start_end_date()
-        self.process_client_requested_days()
         cancel_unselected_day_schedules(self)
+
+        if (
+            self.has_value_changed("workflow_state")
+            and self.workflow_state == "Submit to Operations Admin"
+        ):
+            self.submit_to_operations_admin()
 
     
     def update_project_start_end_date(self):
@@ -75,21 +77,21 @@ class Contracts(Document):
             self.contract_end_internal_notification_date = None
 
     def validate_no_of_days_off(self):
-        if self.items:
-            for item in self.items:
+        if self.contract_items_operation:
+            for item in self.contract_items_operation:
                 if item.days_off_category == 'Weekly':
                     if item.no_of_days_off > 6:
-                        frappe.throw(_('Row {0} - Weekly, not able to set No of Days off greater than 6!'.format(item.idx)))
+                        frappe.throw(_('Contract Items Operation Row {0} - Weekly, not able to set No of Days off greater than 6!'.format(item.idx)))
                 elif item.days_off_category == 'Monthly':
                     if item.no_of_days_off > 29:
-                        frappe.throw(_('Row {0} - Monthly, not able to set No of Days off greater than 29!'.format(item.idx)))
+                        frappe.throw(_('Contract Items Operation Row {0} - Monthly, not able to set No of Days off greater than 29!'.format(item.idx)))
 
     def validate_off_type_with_daily_operations(self):
         """Validate that Off Type is not set to 'Full Month' when Daily Operations are not handled by us"""
-        if self.items:
-            for item in self.items:
+        if self.contract_items_operation:
+            for item in self.contract_items_operation:
                 if item.is_daily_operation_handled_by_us == "No" and item.off_type == "Full Month":
-                    frappe.throw(_('Row {0} - Error: If Daily Operations are not handled by us, the Off Type must be set to \'Days Off\'.'.format(item.idx)))
+                    frappe.throw(_('Contract Items Operation Row {0} - Error: If Daily Operations are not handled by us, the Off Type must be set to \'Days Off\'.'.format(item.idx)))
 
     def before_submit(self):
         # check if items and poc exists
@@ -325,128 +327,41 @@ class Contracts(Document):
             frappe.throw(f"No contracts site for {self.project} between {posting_date.replace(day=1)} AND {posting_date.replace(day=last_day)}")
 
 
-    def validate_client_requested_days(self):
-        if not self.client_requested_days:
-            return
+    def submit_to_operations_admin(self):
+        """
+        Auto-populate the Contract Items Operation table from the Contract Item table.
+        Each row in the items table is mapped to a corresponding row in contract_items_operation
+        by item_code. Existing rows in contract_items_operation are preserved/updated; new ones
+        are appended. This method is called when Finance clicks "Submit to Operations Admin".
+        """
+        if not self.items:
+            frappe.throw(_("No Contract Items found. Please add items before submitting to Operations Admin."))
 
-        if self.workflow_state == "Inactive":
-            frappe.throw(_("Cannot modify requested days. The contract is currently Inactive"))
+        # Build a map of existing operation rows by item_code for fast lookup
+        existing_ops_map = {row.item_code: row for row in (self.contract_items_operation or [])}
 
-        valid_items_map = {d.item_code: d for d in self.items}
-        
-        # Check for duplicates
-        seen_dates = set()
-        for row in self.client_requested_days:
-             key = f"{row.contract_item}_{row.client_requested_date}"
-             if key in seen_dates:
-                 frappe.throw(_("Row {0}: This Date is already requested for this Item.").format(row.idx))
-             seen_dates.add(key)
+        for item in self.items:
+            if not item.item_code:
+                continue
+            if item.item_code in existing_ops_map:
+                # Update count and rate_type on the matching row if they changed
+                ops_row = existing_ops_map[item.item_code]
+                ops_row.count = item.count
+                ops_row.rate_type = item.rate_type
+            else:
+                # Append a new row to contract_items_operation
+                self.append('contract_items_operation', {
+                    'item_code': item.item_code,
+                    'count': item.count,
+                    'rate_type': item.rate_type,
+                })
 
-        doc_before_save = self.get_doc_before_save()
-        old_rows_map = {}
-        if doc_before_save and doc_before_save.client_requested_days:
-             old_rows_map = {d.name: d for d in doc_before_save.client_requested_days}
-
-        for row in self.client_requested_days:
-            if row.contract_item not in valid_items_map:
-                frappe.throw(_("Row {0}: Invalid Contract Item selected.").format(row.idx))
-            
-            c_item = valid_items_map[row.contract_item]
-             
-            # Validity Period
-            req_date = getdate(row.client_requested_date)
-            if req_date < getdate(self.start_date) or req_date > getdate(self.end_date):
-                 frappe.throw(_("Row {0}: The Requested Date must fall within the Contract validity period").format(row.idx))
-            
-            # Past Date Check for NEW/Changed
-            is_new = True
-            if row.name in old_rows_map:
-                 old_row = old_rows_map[row.name]
-                 if getdate(old_row.client_requested_date) == req_date:
-                     is_new = False
-            
-            if is_new and req_date < getdate(today()):
-                 frappe.throw(_("Row {0}: Invalid: Client requests cannot be scheduled for past dates for {1}.").format(row.idx, c_item.item_code))
-
-            # Specific Days Check
-            if c_item.select_specific_days:
-                 # get weekday name
-                 weekday = req_date.strftime("%A").lower()
-                 if c_item.get(weekday):
-                      frappe.throw(_("Row {0}: Invalid Entry: The requested date for {1} falls on a {2} which is already a standard working day for this item").format(row.idx, c_item.item_code, weekday.capitalize()))
-
-        # Deletion Check
-        if doc_before_save and doc_before_save.client_requested_days:
-             current_ids = [r.name for r in self.client_requested_days]
-             for old_row in doc_before_save.client_requested_days:
-                 if old_row.name not in current_ids:
-                      # Deleted
-                      if getdate(old_row.client_requested_date) < getdate(today()):
-                           frappe.throw(_("Cannot delete past requested dates. The scheduled shift has already occurred."))
-
-    def process_client_requested_days(self):
-         # Create Schedules
-         for row in self.client_requested_days:
-             if getdate(row.client_requested_date) >= getdate(today()):
-                  self.create_post_schedule_for_requested_day(row)
-         
-         # Cancel Schedules
-         doc_before_save = self.get_doc_before_save()
-         if doc_before_save and doc_before_save.client_requested_days:
-             current_rows_map = {r.name: r for r in self.client_requested_days}
-             for old_row in doc_before_save.client_requested_days:
-                  should_cancel = False
-                  if old_row.name not in current_rows_map:
-                       # Row was deleted: cancel previously planned schedules for this date/item
-                       should_cancel = True
-                  else:
-                       new_row = current_rows_map[old_row.name]
-                       # Cancel if either the date or the contract_item changed
-                       if (
-                            getdate(new_row.client_requested_date) != getdate(old_row.client_requested_date)
-                            or new_row.contract_item != old_row.contract_item
-                       ):
-                            should_cancel = True
-                  
-                  if should_cancel:
-                       self.cancel_post_schedule_for_requested_day(old_row, doc_before_save)
-
-    def create_post_schedule_for_requested_day(self, row):
-        valid_items_map = {d.item_code: d for d in self.items}
-        if row.contract_item not in valid_items_map: return
-        item = valid_items_map[row.contract_item]
-
-        ops_roles = frappe.get_all("Operations Role", filters={"sale_item": item.item_code, "status": "Active"}, pluck="name")
-        for role in ops_roles:
-             posts = frappe.get_all("Operations Post", filters={"post_template": role, "project": self.project, "status": "Active"}, fields=["name", "site", "site_shift"])
-             for post in posts:
-                  exists = frappe.db.exists("Post Schedule", {
-                       "post": post.name,
-                       "date": row.client_requested_date,
-                       "project": self.project
-                  })
-                  if not exists:
-                       ps = frappe.new_doc("Post Schedule")
-                       ps.post = post.name
-                       ps.date = row.client_requested_date
-                       ps.post_status = "Planned"
-                       ps.insert(ignore_permissions=True)
-
-    def cancel_post_schedule_for_requested_day(self, row, doc_ref):
-        # Need to find item from doc_ref (before save)
-        old_items_map = {d.item_code: d for d in doc_ref.items}
-        if row.contract_item not in old_items_map: return
-        item = old_items_map[row.contract_item]
-        
-        ops_roles = frappe.get_all("Operations Role", filters={"sale_item": item.item_code}, pluck="name")
-        for role in ops_roles:
-             posts = frappe.get_all("Operations Post", filters={"post_template": role, "project": self.project}, pluck="name")
-             schedules = frappe.get_all("Post Schedule", 
-                  filters={"post": ["in", posts], "date": row.client_requested_date, "post_status": "Planned", "project": self.project},
-                  pluck="name"
-             )
-             for ps in schedules:
-                  frappe.db.set_value("Post Schedule", ps, "post_status", "Cancelled")
+        self.save(ignore_permissions=True)
+        frappe.msgprint(
+            _("Contract Items have been submitted to Operations Admin. The 'Contract Item Operations' table has been updated."),
+            alert=True,
+            indicator='green'
+        )
 
 
 @frappe.whitelist()
@@ -1379,64 +1294,69 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
 
 
 def cancel_unselected_day_schedules(contract_doc):
+    """
+    When specific operating days are unchecked on a Contract Items Operation row,
+    cancel all future Planned post schedules that fall on those now-excluded weekdays.
+    Reads from contract_items_operation (not items) since weekday flags live there.
+    """
     day_fields = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
     today = getdate()
 
     old_doc = contract_doc.get_doc_before_save()
     if not old_doc:
-        return 
-    
-    old_items_map = {item.name: item for item in (old_doc.items or [])}
+        return
 
-    for item in contract_doc.items or []:
+    old_ops_map = {item.name: item for item in (old_doc.contract_items_operation or [])}
+
+    for item in (contract_doc.contract_items_operation or []):
         if not item.select_specific_days:
             continue
 
-        old_item = old_items_map.get(item.name)
+        old_item = old_ops_map.get(item.name)
         if not old_item:
-            continue  
+            continue
 
         if not old_item.select_specific_days:
             continue
 
         unchecked = {
-            i for i, f in enumerate(day_fields) 
+            i for i, f in enumerate(day_fields)
             if old_item.get(f) and not item.get(f)
         }
-        
+
         if not unchecked:
             continue
 
-        operations_roles = frappe.db.get_list("Operations Role", 
+        operations_roles = frappe.db.get_list("Operations Role",
             filters={
                 "project": contract_doc.project,
                 "sale_item": item.item_code,
                 "status": "Active"
-            }, 
+            },
             pluck="name"
         )
 
         if not operations_roles:
             continue
 
-        operations_posts = frappe.db.get_list("Operations Post", 
+        operations_posts = frappe.db.get_list("Operations Post",
             filters={
                 "project": contract_doc.project,
                 "post_template": ["in", operations_roles],
                 "status": "Active"
-            }, 
+            },
             pluck="name"
         )
 
         if not operations_posts:
             continue
 
-        future_schedules = frappe.db.get_list("Post Schedule", 
+        future_schedules = frappe.db.get_list("Post Schedule",
             filters={
                 "post": ["in", operations_posts],
                 "date": [">=", today],
                 "post_status": "Planned"
-            }, 
+            },
             fields=["name", "date"]
         )
 

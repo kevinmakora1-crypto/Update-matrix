@@ -19,13 +19,11 @@ from one_fm.utils import get_field_with_label
 
 class Contracts(Document):
     def validate(self):
-        print(self.start_date, self.end_date, "\n\n\n\n\n\n")
         self.calculate_contract_duration()
         self.validate_no_of_days_off()
         self.validate_off_type_with_daily_operations()
         self.update_contract_dates()
         self.validate_client_requested_days()
-        print(self.start_date, self.end_date, "\n\n\n\n\n\n")
         # if self.overtime_rate == 0:
         # 	frappe.msgprint(_("Overtime rate not set."), alert=True, indicator='orange')
 

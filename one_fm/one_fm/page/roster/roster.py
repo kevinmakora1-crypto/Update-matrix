@@ -409,6 +409,12 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
 		_start_date = getdate(start_date)
 
 		validation_logs = []
+		day_off_ot_warning = ""
+		if cint(day_off_ot):
+			day_off_ot_allowed = frappe.db.get_value("Operations Shift", shift, "day_off_ot_allowed")
+			if not day_off_ot_allowed:
+				day_off_ot_warning = f"<br><br><b>Note:</b> This {shift} prohibits Day Off OT."
+
 		user, user_roles, user_employee = get_current_user_details()
 
 		employees = json.loads(employees)
@@ -485,7 +491,7 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
 			# extreme schedule
 			extreme_schedule(employees=employees, start_date=start_date, end_date=end_date, shift=shift,
 				operations_role=operations_role, otRoster=otRoster, keep_days_off=keep_days_off, keep_days_off_ot=keep_days_off_ot, day_off_ot=day_off_ot,
-				employee_list=employee_list
+				employee_list=employee_list, day_off_ot_warning=day_off_ot_warning
 			)
 			update_roster(key="roster_view")
 
@@ -500,7 +506,7 @@ def update_roster(key):
 
 
 def extreme_schedule(employees, shift, operations_role, otRoster, start_date, end_date, keep_days_off, day_off_ot,
-	employee_list, selected_reliever=None, keep_days_off_ot=0):
+	employee_list, selected_reliever=None, keep_days_off_ot=0, day_off_ot_warning=""):
 	if not employees:
 		frappe.throw("Please select employees before rostering")
 		return
@@ -749,8 +755,11 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 		<b>Role: {operations_role_doc.post_abbrv}</b> ({operations_role_doc.name}) <br>
 		<b>Shift:</b> {operations_shift_doc.name}<br>
 		<b>Dates:</b> {omitted_days_str}
+		{day_off_ot_warning}
 		"""
 		frappe.msgprint(_(msg), _(title))
+	elif day_off_ot_warning:
+		frappe.msgprint(_(day_off_ot_warning.replace("<br><br><b>Note:</b> ", "")), _("Day Off OT Warning"))
 
 
 	frappe.enqueue(update_employee_shift, employees=list(employees_date_dict.keys()), shift=shift, owner=owner, creation=creation)

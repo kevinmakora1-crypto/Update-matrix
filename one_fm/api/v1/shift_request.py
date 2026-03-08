@@ -1,10 +1,8 @@
 import frappe
-from frappe import _
-import json
-from one_fm.api.v1.utils import response, validate_date
-from frappe.utils import getdate, add_months, cstr
+from one_fm.api.v1.utils import response
+from frappe.utils import getdate, add_months
 from one_fm.utils import (
-    workflow_approve_reject, get_approver
+    get_approver
 )
 from one_fm.api.notification import get_employee_user_id
 from frappe.model.workflow import apply_workflow
@@ -13,7 +11,7 @@ from frappe.model.workflow import apply_workflow
 def shift_request_list(employee_id: str, from_date: str = None, to_date: str = None, 
                        purpose: str = None, status: str = None) -> dict:
     """
-    Retrives list of shift requests for both employee and reports to.
+    Retrieves list of shift requests for both employee and reports to.
     Reports to is based on custom_reports_to field in Shift Request.
     """
     try:
@@ -115,7 +113,6 @@ def create_shift_request(employee_id: str, purpose: str, from_date: str, to_date
         shift_req.operations_shift = employee.shift
         
         # Reports to logic
-        employee_user_id = get_employee_user_id(employee.name)
         approver = get_approver(employee.name)
         approver_user_id = get_employee_user_id(approver)
         shift_req.approver = approver_user_id

@@ -110,7 +110,6 @@ def create_shift_request(employee_id: str, purpose: str, from_date: str, to_date
         shift_req.operations_shift = employee.shift
         
         # Reports to logic
-        employee_user_id = get_employee_user_id(employee.name)
         approver = get_approver(employee.name)
         approver_user_id = get_employee_user_id(approver)
         shift_req.approver = approver_user_id

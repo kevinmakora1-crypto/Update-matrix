@@ -11,7 +11,7 @@ from frappe.model.workflow import apply_workflow
 def shift_request_list(employee_id: str, from_date: str = None, to_date: str = None, 
                        purpose: str = None, status: str = None) -> dict:
     """
-    Retrives list of shift requests for both employee and reports to.
+    Retrieves list of shift requests for both employee and reports to.
     Reports to is based on custom_reports_to field in Shift Request.
     """
     try:

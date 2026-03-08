@@ -127,11 +127,10 @@ def create_shift_request(employee_id: str, purpose: str, from_date: str, to_date
 
 @frappe.whitelist()
 def shift_request_action(shift_request_id: str, action: str, reason: str = None) -> dict:
-    current_user = frappe.session.user
-    
     """
     Performs a workflow action (e.g., Approve, Reject) on a shift request.
     """
+    current_user = frappe.session.user
     try:
         doc = frappe.get_doc("Shift Request", shift_request_id)
         

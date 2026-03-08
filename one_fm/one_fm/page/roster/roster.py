@@ -478,6 +478,37 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
 				GROUP BY es.shift
 			""".format(start_date=start_date, end_date=end_date, emp_tuple=emp_tuple), as_dict=1)
 
+		# Evaluate final acceptance conditions for creating Employee Schedule
+		# (Keep Days Off, Keep Days Off OT, Has Day Off OT not checked)
+		# "Given Employee Schedule is being created, When Employee Availability=Day Off and Keep Days Off is checked, 
+		# Then the system should check if the total Rostered Day Off for that calender month=0; If Yes, Throw an error message"
+		
+		# Availability=Working and Has Day Off OT is not checked -> check RDO
+		# Availability=Working and Has Day Off OT checked and Keep Day OFF OT checked -> check RDO
+		
+		month_start = get_first_day(start_date)
+		month_end = get_last_day(end_date)
+		
+		for obj in employee_list:
+			rdo_count = frappe.db.count("Employee Schedule", filters={
+				"employee": obj,
+				"employee_availability": ["in", ["Day Off", "Client Day Off"]],
+				"date": ["between", [month_start, month_end]]
+			})
+			
+			if cint(keep_days_off): # Effectively: Availability=Day Off and Keep Days Off is checked (since we skip dates already day off, effectively keeping them)
+				if rdo_count == 0:
+					validation_logs.append(f"Cannot schedule {obj}: Keep Days Off is checked but total Rostered Day Off for the month is 0.")
+					
+			if not cint(day_off_ot): # Has Day Off OT is NOT checked
+				if rdo_count == 0:
+					validation_logs.append(f"Cannot schedule {obj}: Day Off OT is not checked and total Rostered Day Off for the month is 0.")
+					
+			if cint(day_off_ot) and cint(keep_days_off_ot): # Has Day Off OT checked and Keep Day OFF OT checked
+				if rdo_count == 0:
+					validation_logs.append(f"Cannot schedule {obj}: Day Off OT and Keep Day Off OT are checked but total Rostered Day Off for the month is 0.")
+
+
 		if len(validation_logs) > 0:
 			frappe.log_error(message=str(validation_logs), title="Roster Schedule")
 			frappe.throw(str(validation_logs))
@@ -603,6 +634,11 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 			# Log or handle cases where employee details or date_of_joining is missing
 			frappe.log_error(message=f"Employee {i.get('employee')} missing details or date_of_joining.", title="Extreme Schedule Data Prep")
 
+	# Validate Day Off Preference for Over-Time (Day Off OT) creations
+	if roster_type == "Over-Time":
+		for emp, date_values in employees_date_dict.items():
+			dates = [dv["date"] for dv in date_values]
+			check_day_off_preference_validation([emp], dates, attempt_type="Day Off OT", is_update=False)
 
 	# check for intersection schedules
 	error_msg = """"""
@@ -1572,6 +1608,83 @@ def delete_existing_post_schedules(date_str_arg,post_name_arg):
 	except:
 		frappe.log_error(message=frappe.get_traceback(), title="Error Deleting Post Schedules")
 
+def check_day_off_preference_validation(employees, date_list, attempt_type="Day Off", is_update=False):
+	"""
+	Validates if an employee can be rostered for Day Off or Day Off OT based on their preference
+	and current Rostered Day Off (RDO) count for the calendar months of the given dates.
+	
+	args:
+		employees: list of employee names/dicts
+		date_list: list of dates being scheduled
+		attempt_type: 'Day Off' or 'Day Off OT'
+		is_update: True if updating an existing schedule, False if creating new
+	"""
+	if not employees or not date_list:
+		return
+
+	# Normalize employees to a list of dicts with 'employee' and 'date'
+	extracted_emps = []
+	for emp in employees:
+		if isinstance(emp, dict):
+			extracted_emps.append(emp.get("employee"))
+			if "date" in emp and emp["date"] not in date_list:
+				date_list.append(getdate(emp["date"]))
+		else:
+			extracted_emps.append(emp)
+			
+	employee_names = list(set(extracted_emps))
+	if not employee_names:
+		return
+
+	# Fetch preferences for all employees in one go
+	preferences = frappe.get_all(
+		"Employee", 
+		filters={"name": ["in", employee_names]}, 
+		fields=["name", "custom_day_off_preference"]
+	)
+	pref_map = {p.name: p.custom_day_off_preference for p in preferences}
+
+	# Identify calendar months involved
+	month_ranges = {}
+	for d in date_list:
+		dt = getdate(d)
+		month_key = (dt.year, dt.month)
+		if month_key not in month_ranges:
+			month_ranges[month_key] = {"start": get_first_day(dt), "end": get_last_day(dt)}
+
+	# Gather RDO count per employee per month
+	for emp in employee_names:
+		pref = pref_map.get(emp)
+		if not pref:
+			continue # Optional: default behavior if no preference is set
+
+		for month_key, m_range in month_ranges.items():
+			# Get total RDO for this month
+			rdo_count = frappe.db.count("Employee Schedule", filters={
+				"employee": emp,
+				"employee_availability": ["in", ["Day Off", "Client Day Off"]],
+				"date": ["between", [m_range["start"], m_range["end"]]]
+			})
+
+			if pref == "Day Off":
+				if attempt_type == "Day Off":
+					pass # Allowed
+				elif attempt_type == "Day Off OT":
+					frappe.throw(f"Cannot assign Day Off OT to {emp} as their preference is Day Off.")
+
+			elif pref == "Day Off OT":
+				if attempt_type == "Day Off":
+					if rdo_count > 0:
+						action = "update the existing" if is_update else "create"
+						frappe.throw(f"Cannot {action} Employee Schedule for {emp} with Day Off. Preference is Day Off OT and total Rostered Day Off for the month is not 0 (Current: {rdo_count}).")
+				elif attempt_type == "Day Off OT":
+					if not is_update: # Creation
+						if rdo_count > 0:
+							frappe.throw(f"Cannot create Employee Schedule for {emp} with Day Off OT. Preference is Day Off OT and total Rostered Day Off for the month is not 0 (Current: {rdo_count}).")
+					else: # Updating
+						if rdo_count == 0:
+							frappe.throw(f"Cannot update existing Employee Schedule for {emp} with Day Off OT. Preference is Day Off OT and total Rostered Day Off for the month is 0.")
+
 @frappe.whitelist()
 def dayoff(employees, client_day_off=0, selected_dates=0, selected_reliever=None, repeat=0, repeat_freq=None, week_days=[], repeat_till=None, project_end_date=None):
 	try:
@@ -1587,8 +1700,55 @@ def dayoff(employees, client_day_off=0, selected_dates=0, selected_reliever=None
 			frappe.throw(_("Please select either a repeat till date, check the project end date option, or select specific dates."))
 
 		from one_fm.api.mobile.roster import month_range
+		
+		# Validate Day Off creation/update before proceeding
+		validation_dates = []
 		if cint(selected_dates):
-			for employee_item in json.loads(employees):
+			validation_dates = [emp["date"] for emp in json.loads(employees)]
+		else:
+			# If recurring, checking all dates could be expensive or complex upfront.
+			# Let's check against the start dates at least, or ideally after gathering all target dates.
+			pass # We will do a generic check or let the loop handle it
+			
+		# To accurately check, we need the full list of dates being processed for each employee.
+		# We'll collect all dates into a dict of {employee: [dates]} to pass to validation.
+		emp_date_map = frappe._dict()
+		employees_list = json.loads(employees)
+
+		if cint(selected_dates):
+			for emp in employees_list:
+				emp_date_map.setdefault(emp["employee"], []).append(emp["date"])
+		else:
+			effective_end_date = None
+			if repeat_till and not cint(project_end_date):
+				effective_end_date = getdate(repeat_till)
+			for emp in employees_list:
+				current_employee_date = getdate(emp["date"])
+				# Resolve effective_end_date per employee if project_end_date is checked
+				emp_end_date = effective_end_date
+				if cint(project_end_date) and not (repeat_till and not cint(project_end_date)):
+					project_val = frappe.db.get_value("Employee", emp["employee"], "project")
+					if project_val and frappe.db.exists("Contracts", {"project": project_val}):
+						contract, contract_end_date = frappe.db.get_value("Contracts", {"project": project_val}, ["name", "end_date"])
+						if contract_end_date:
+							emp_end_date = getdate(contract_end_date)
+
+				if emp_end_date:
+					if repeat and repeat_freq == "Weekly":
+						for date_iter in pd.date_range(start=current_employee_date, end=emp_end_date):
+							if getdate(date_iter).strftime("%A") in week_days and getdate(date_iter) > getdate(today()):
+								emp_date_map.setdefault(emp["employee"], []).append(str(date_iter.date()))
+					elif repeat and repeat_freq == "Monthly":
+						for date_iter in month_range(current_employee_date, emp_end_date):
+							if getdate(date_iter) > getdate(today()):
+								emp_date_map.setdefault(emp["employee"], []).append(str(date_iter.date()))
+
+		# Now validate all collected dates per employee
+		for emp_mapped, dates_mapped in emp_date_map.items():
+			check_day_off_preference_validation([emp_mapped], dates_mapped, attempt_type="Day Off", is_update=False)
+
+		if cint(selected_dates):
+			for employee_item in employees_list:
 				date_val = employee_item["date"]
 				start_date_val = getdate(date_val)
 				month_end_date = get_last_day(start_date_val)

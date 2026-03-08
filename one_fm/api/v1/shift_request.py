@@ -71,7 +71,7 @@ def get_shift_request_detail(shift_request_id: str) -> dict:
         
         # Check if user is the manager (custom_reports_to_user)
         is_approver = 0
-        if doc.custom_project_manager_user == frappe.session.user:
+        if doc.custom_project_manager_user == frappe.session.user and doc.workflow_state == "Pending Approval" and doc.docstatus == 0:
             is_approver = 1
                 
         data.update({"is_approver": is_approver})
@@ -90,6 +90,9 @@ def create_shift_request(employee_id: str, purpose: str, from_date: str, to_date
         if not all([employee_id, purpose, from_date, to_date]):
             return response("error", 400, {}, "Missing required fields.")
             
+        if not frappe.db.exists("Employee", {"employee_id": employee_id}):
+            return response("error", 404, {}, "No employee record found with employee id {employee_id}".format(employee_id=employee_id))
+
         employee = frappe.get_doc("Employee", {"employee_id": employee_id})
         
         shift_req = frappe.new_doc("Shift Request")
@@ -127,11 +130,12 @@ def create_shift_request(employee_id: str, purpose: str, from_date: str, to_date
 
 @frappe.whitelist()
 def shift_request_action(shift_request_id: str, action: str, reason: str = None) -> dict:
-    current_user = frappe.session.user
+    
     
     """
     Performs a workflow action (e.g., Approve, Reject) on a shift request.
     """
+    
     try:
         doc = frappe.get_doc("Shift Request", shift_request_id)
         

@@ -67,7 +67,7 @@ jobs:
             exit 1
           fi
 
-          echo "Connecting to: $CLOUD_RUN_URL"
+          echo "Connecting to Cloud Run agent service"
           echo "Requesting fix for Issue #$ISSUE_NUM"
 
           # Use jq to build JSON safely and avoid format issues

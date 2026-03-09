@@ -18,6 +18,15 @@ class ToDo(FrappeToDo):
         except Exception as e:
             frappe.log_error(message=f"Failed to delete Google Task on ToDo trash: {e}", title="ToDo on_trash Error")
 
+def delete_linked_todos(doc, method):
+    todos = frappe.get_all("ToDo", filters={
+        "reference_type": doc.doctype,
+        "reference_name": doc.name
+    }, pluck="name")
+
+    for todo in todos:
+        frappe.delete_doc("ToDo", todo, force=1)
+
 def validate_todo(doc, method):
     notify_todo_status_change(doc)
     set_todo_type_from_refernce_doc(doc)

@@ -12,7 +12,9 @@ class ClientEvent(Document):
 		self.validate_workflow_transition()
 
 	def validate_date_time(self):
-		if not self.is_new() and self.workflow_state != "Pending Approval":
+		if not self.is_new() and self.workflow_state not in ("Pending Approval", None):
+			return
+		if self.workflow_state == "Approved":
 			return
 		now = now_datetime()
 

@@ -1170,6 +1170,7 @@ let classmap = {
 	"ASA": "pinkboxcolor",
 	"Day Off OT": "yellowboxcolor",
 	"Present": "greenboxcolor",
+	"Present (Different)": "presentdifferent",
 	"Absent": "redboxcolor",
 	"Work From Home": "greenboxcolor",
 	"Half Day": "greenboxcolor",
@@ -1184,6 +1185,7 @@ let classmap = {
 
 let abbr_map = {
 	"Present": "P",
+	"Present (Different)": "P(D)",
 	"Absent": "A",
 	"Work From Home": "WFH",
 	"Half Day": "HD",
@@ -1434,7 +1436,13 @@ function render_roster(res, page) {
 							bgclass = "presentdayoffot";
 						} else {
 							basic_count++;
-							bgclass = "presentbasic";
+							// Check if employee is on a different shift than their default
+							let actual_shift = employees_data[employee_key][date_key][k].actual_shift;
+							if (actual_shift && shift !== actual_shift) {
+								bgclass = "presentdifferent";
+							} else {
+								bgclass = "presentbasic";
+							}
 						}
 					}
 

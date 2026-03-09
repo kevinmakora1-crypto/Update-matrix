@@ -24,24 +24,41 @@ class AccommodationUnit(Document):
 		self.title = '-'.join([self.accommodation_name, self.type, self.floor_name+' Floor'])
 
 	def autoname(self):
-		self.set_accommodation_unit_code()
-		self.name = self.accommodation+str(int(self.floor)).zfill(2)+self.accommodation_unit_code
+		if not self.accommodation:
+			frappe.throw(_("Accommodation is required"))
+		if not self.floor:
+			# If floor is not set, try to fetch it from floor_name
+			if self.floor_name:
+				self.floor = frappe.db.get_value("Floor", self.floor_name, "floor")
 
-	def set_accommodation_unit_code(self):
-		if not self.accommodation_unit_code:
-			self.accommodation_unit_code = str(int(self.floor)).zfill(2)+get_latest_accommodation_unit_code(self)
+			if not self.floor:
+				frappe.throw(_("Floor is required"))
 
-def get_latest_accommodation_unit_code(doc):
-	query = """
-		select
-			accommodation_unit_code+1
-		from
-			`tabAccommodation Unit`
-		where
-			accommodation='{0}' and floor='{1}'
-		order by
-			accommodation_unit_code desc limit 1
-	"""
-	accommodation_unit_code = frappe.db.sql(query.format(doc.accommodation, doc.floor))
-	new_accommodation_unit_code = accommodation_unit_code[0][0] if accommodation_unit_code else 1
-	return str(int(new_accommodation_unit_code))[-1]
+		counter = get_next_unit_number(self.accommodation, self.floor)
+		self.name = "{}-F{}-U{}".format(self.accommodation, self.floor, counter)
+
+
+def get_next_unit_number(accommodation, floor):
+	# Pattern: {accommodation}-F{floor}-U%
+	prefix = "{}-F{}-U".format(accommodation, floor)
+
+	# Get all existing names that start with this prefix
+	existing_names = frappe.db.sql("""
+		SELECT name FROM `tabAccommodation Unit`
+		WHERE name LIKE %s
+		ORDER BY length(name) DESC, name DESC
+		LIMIT 1
+	""", (prefix + "%",))
+
+	if existing_names:
+		last_name = existing_names[0][0]
+		# Extract the number part after the last 'U'
+		parts = last_name.split('-U')
+		if len(parts) > 1:
+			try:
+				return int(parts[-1]) + 1
+			except ValueError:
+				pass
+
+	return 1
+

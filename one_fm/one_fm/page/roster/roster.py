@@ -479,12 +479,6 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
 			""".format(start_date=start_date, end_date=end_date, emp_tuple=emp_tuple), as_dict=1)
 
 		# Evaluate final acceptance conditions for creating Employee Schedule
-		# (Keep Days Off, Keep Days Off OT, Has Day Off OT not checked)
-		# "Given Employee Schedule is being created, When Employee Availability=Day Off and Keep Days Off is checked, 
-		# Then the system should check if the total Rostered Day Off for that calender month=0; If Yes, Throw an error message"
-		
-		# Availability=Working and Has Day Off OT is not checked -> check RDO
-		# Availability=Working and Has Day Off OT checked and Keep Day OFF OT checked -> check RDO
 		
 		month_start = get_first_day(start_date)
 		month_end = get_last_day(end_date)
@@ -496,10 +490,22 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
 				"date": ["between", [month_start, month_end]]
 			})
 
+			# Check if we are actively overwriting an existing Day Off
+			# "When Employee Availability=Day Off and Keep Days Off is unchecked"
+			obj_dates = [getdate(e.get("date")) for e in employees if e.get("employee") == obj]
+			overwritten_rdo_count = 0
+			if obj_dates:
+				overwritten_rdo_count = frappe.db.count("Employee Schedule", filters={
+					"employee": obj,
+					"employee_availability": "Day Off",
+					"date": ["in", obj_dates]
+				})
+
 			# Evaluate complex condition: Does Days after Joining Date or Days before Relieving Date
 			# exceed Majority days AND Approved Leave=0 AND Total Rostered Day Offs=0?
+			# Expanded: For overwriting, check if Total Rostered Day Offs <= 1.
 			is_violating_rdo_policy = False
-			if rdo_count == 0:
+			if rdo_count == 0 or (rdo_count <= 1 and overwritten_rdo_count > 0 and not cint(keep_days_off)):
 				emp_details = frappe.db.get_value("Employee", obj, ["date_of_joining", "relieving_date"], as_dict=True)
 				if emp_details:
 					month_days = date_diff(month_end, month_start) + 1
@@ -533,29 +539,19 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
 					})
 					
 					if exceeds_majority and (leave_count == 0):
-						is_violating_rdo_policy = True
+						is_violating_rdo_policy = True				
 
-			# 1. When Employee Availability=Day Off and Keep Days Off is checked
-			if cint(keep_days_off):
-				if is_violating_rdo_policy:
-					validation_logs.append(f"{obj} total scheduled day off for this full calender month is 0. Please assign a day off.")
-
-			# 2. When Employee Availability=Working and “Day Off OT” is not checked
-			if not cint(day_off_ot):
-				if is_violating_rdo_policy:
-					validation_logs.append(f"{obj} total scheduled day off for this full calender month is 0. Please assign a day off.")
-					
-			# 3. When Employee Availability=Working and “Day Off OT” is checked and Keep “Day OFF OT” is checked
-			if cint(day_off_ot) and cint(keep_days_off_ot):
-				if is_violating_rdo_policy:
-					validation_logs.append(f"{obj} total scheduled day off for this full calender month is 0. Please assign a day off.")
+			# Execute new overwrite condition check explicitly
+			if overwritten_rdo_count > 0 and not cint(keep_days_off):
+				if rdo_count <= 1 and is_violating_rdo_policy:
+					validation_logs.append(f"{obj} total scheduled day off for this full calender month will be less than 1. Please assign a day off before overwriting.")
 
 			pref = frappe.db.get_value("Employee", obj, "custom_day_off_preference")			
 			if cint(day_off_ot) and pref == "Day Off":
 				validation_logs.append(f"{obj} Day Off Preference has been set as 'Day Off'. Please assign other employee or create Shift Request for Day Off OT.")
 
 			if cint(day_off_ot) and pref == "Day Off OT":
-				if is_violating_rdo_policy:
+				if rdo_count == 0 and is_violating_rdo_policy:
 					validation_logs.append(f"{obj} total scheduled day off for this full calender month is 0. Please assign a day off.")
 
 

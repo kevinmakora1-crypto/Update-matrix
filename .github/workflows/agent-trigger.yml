@@ -69,6 +69,12 @@ jobs:
 
           echo "Connecting to: $CLOUD_RUN_URL"
           echo "Requesting fix for Issue #$ISSUE_NUM"
+          echo ""
+          echo "💡 NOTE: The AI agent can take 2-15 minutes to complete its reasoning loop."
+          echo "📖 VIEW REAL-TIME LOGS HERE:"
+          echo "https://console.cloud.google.com/run/detail/${{ secrets.GCP_LOCATION || 'us-central1' }}/onefm-frappe-agent/logs?project=${{ secrets.GCP_PROJECT_ID || 'ai-agents-10' }}"
+          echo ""
+          echo "Waiting for agent to finish..."
 
           # Use jq to build JSON safely and avoid format issues
           PAYLOAD=$(jq -n --arg input "Solve GitHub issue #$ISSUE_NUM" --arg requester "$ACTOR" '{input: $input, requester: $requester}')

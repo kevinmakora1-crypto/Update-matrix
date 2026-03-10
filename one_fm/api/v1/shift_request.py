@@ -45,7 +45,7 @@ def shift_request_list(employee_id: str, from_date: str = None, to_date: str = N
         
         # Reports To - Fetching requests where custom_reports_to is the current employee
         reports_to_query = frappe.get_list("Shift Request", 
-            filters={**base_filters, "custom_project_manager": employee.name},
+            filters={**base_filters, "custom_reports_to": employee.name},
             fields=["name", "employee_name", "workflow_state", "purpose", "from_date", "to_date", "reason"]
         )
         
@@ -69,7 +69,7 @@ def get_shift_request_detail(shift_request_id: str) -> dict:
         
         # Check if user is the manager (custom_reports_to_user)
         is_approver = 0
-        if doc.custom_project_manager_user == frappe.session.user and doc.workflow_state == "Pending Approval" and doc.docstatus == 0:
+        if doc.custom_reports_to_user == frappe.session.user and doc.workflow_state == "Pending Approval" and doc.docstatus == 0:
             is_approver = 1
                 
         data.update({"is_approver": is_approver})
@@ -127,6 +127,7 @@ def create_shift_request(employee_id: str, purpose: str, from_date: str, to_date
 
 @frappe.whitelist()
 def shift_request_action(shift_request_id: str, action: str, reason: str = None) -> dict:
+
     
     
     """
@@ -137,7 +138,7 @@ def shift_request_action(shift_request_id: str, action: str, reason: str = None)
         doc = frappe.get_doc("Shift Request", shift_request_id)
         
         # Permission check: current user must be the manager
-        if doc.custom_project_manager_user != frappe.session.user and frappe.session.user != "Administrator":
+        if doc.custom_reports_to_user != frappe.session.user and frappe.session.user != "Administrator":
              return response("error", 403, {}, "You are not authorized to perform this action.")
 
         if reason:

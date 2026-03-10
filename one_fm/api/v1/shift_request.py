@@ -43,9 +43,13 @@ def shift_request_list(employee_id: str, from_date: str = None, to_date: str = N
             fields=["name", "employee_name", "workflow_state", "purpose", "from_date", "to_date", "reason"]
         )
         
-        # Reports To - Fetching requests where custom_reports_to is the current employee
+        # Reports To - Fetching requests where current user is either approver or project manager
         reports_to_query = frappe.get_list("Shift Request", 
-            filters={**base_filters, "custom_reports_to": employee.name},
+            filters=base_filters,
+            or_filters={
+                "approver": frappe.session.user,
+                "custom_project_manager_user": frappe.session.user
+            },
             fields=["name", "employee_name", "workflow_state", "purpose", "from_date", "to_date", "reason"]
         )
         
@@ -67,9 +71,10 @@ def get_shift_request_detail(shift_request_id: str) -> dict:
         doc = frappe.get_doc("Shift Request", shift_request_id)
         data = doc.as_dict()
         
-        # Check if user is the manager (custom_reports_to_user)
+        # Check if user is the manager or project manager
         is_approver = 0
-        if doc.custom_reports_to_user == frappe.session.user and doc.workflow_state == "Pending Approval" and doc.docstatus == 0:
+        if (doc.approver == frappe.session.user or doc.custom_project_manager_user == frappe.session.user) \
+            and doc.workflow_state == "Pending Approval" and doc.docstatus == 0:
             is_approver = 1
                 
         data.update({"is_approver": is_approver})
@@ -137,8 +142,8 @@ def shift_request_action(shift_request_id: str, action: str, reason: str = None)
     try:
         doc = frappe.get_doc("Shift Request", shift_request_id)
         
-        # Permission check: current user must be the manager
-        if doc.custom_reports_to_user != frappe.session.user and frappe.session.user != "Administrator":
+        # Permission check: current user must be the manager or project manager
+        if doc.approver != frappe.session.user and doc.custom_project_manager_user != frappe.session.user and frappe.session.user != "Administrator":
              return response("error", 403, {}, "You are not authorized to perform this action.")
 
         if reason:

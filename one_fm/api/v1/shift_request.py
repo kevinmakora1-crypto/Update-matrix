@@ -47,8 +47,8 @@ def shift_request_list(employee_id: str, from_date: str = None, to_date: str = N
         reports_to_query = frappe.get_list("Shift Request", 
             filters=base_filters,
             or_filters={
-                "approver": frappe.session.user,
-                "custom_project_manager_user": frappe.session.user
+                "approver": employee.user_id    ,
+                "custom_project_manager_user": employee.user_id
             },
             fields=["name", "employee_name", "workflow_state", "purpose", "from_date", "to_date", "reason"]
         )
@@ -144,7 +144,7 @@ def shift_request_action(shift_request_id: str, action: str, reason: str = None)
         
         # Permission check: current user must be the manager or project manager
         if doc.approver != frappe.session.user and doc.custom_project_manager_user != frappe.session.user and frappe.session.user != "Administrator":
-             return response("error", 403, {}, "You are not authorized to perform this action.")
+            return response("error", 403, {}, "You are not authorized to perform this action.")
 
         if reason:
             doc.db_set('reason', reason)

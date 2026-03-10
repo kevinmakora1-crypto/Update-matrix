@@ -1721,14 +1721,6 @@ def check_day_off_preference_validation(employees, date_list, attempt_type="Day 
 				if attempt_type == "Day Off":
 					if rdo_count > 0:
 						
-						# Complex Condition Evaluation:
-						# Does Days after Joining Date or Days before Relieving Date exceed the Majority days of the Calendar Month
-						# AND Approved Annual Leave=0 AND Total Rostered Day Offs =0?
-						# Note: User mentioned "Total Rostered Day Offs = 0?" in their prompt for THIS block, but we are inside `if rdo_count > 0`. 
-						# Wait, the prompt says: "When the preference is "Day Off OT" and the attempt type is "Day Off" and rostered day off count (rdo_count) is greater than zero... add additional condition (... AND Total Rostered Day Offs =0?)"
-						# If rdo_count is ALREADY > 0, then "Total Rostered Day Offs = 0" will ALWAYS be False.
-						# Let's implement the math exactly as requested.
-						
 						month_days = date_diff(month_end, month_start) + 1
 						majority_days = (month_days // 2) + 1
 						
@@ -1760,13 +1752,9 @@ def check_day_off_preference_validation(employees, date_list, attempt_type="Day 
 							"to_date": [">=", month_start]
 						})
 						
-						# Condition: exceeds majority AND leaves == 0 AND rdo_count == 0 (which is impossible here, but taking it literally as requested)
-						# Actually, "Total Rostered Day Offs =0" might refer to something else, or maybe it evaluates to False causing the throw.
-						# The user said: "The validation error is going to throw when all these conditions are NOT met (i.e No)"
 						condition_met = exceeds_majority and (leave_count == 0) and (rdo_count == 0)
 						
 						if not condition_met:
-							action = "update the existing" if is_update else "create"
 							frappe.throw(f"{emp} Day Off Preference has been set as 'Day Off OT'. Please create Shift Request for Day Off.")
 							
 				

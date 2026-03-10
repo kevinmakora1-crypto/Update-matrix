@@ -67,7 +67,7 @@ jobs:
             exit 1
           fi
 
-          echo "Connecting to: $CLOUD_RUN_URL"
+          echo "Connecting to Cloud Run agent service"
           echo "Requesting fix for Issue #$ISSUE_NUM"
           echo ""
           echo "💡 NOTE: The AI agent can take 2-15 minutes to complete its reasoning loop."

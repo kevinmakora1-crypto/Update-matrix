@@ -17,6 +17,13 @@ def get_employee_custom_fields():
                 "insert_after": "project",
                 "fetch_from":"project.project_manager_name",
                 "read_only": 1,
+            },
+            {
+                "fieldname": "custom_day_off_preference",
+                "fieldtype": "Select",
+                "label": "Day Off Preference",
+                "insert_after": "leave_policy",
+                "options": "\nDay Off\nDay Off OT"
             }
         ]
     }

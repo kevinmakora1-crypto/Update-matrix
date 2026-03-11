@@ -4549,9 +4549,9 @@ def get_field_with_label(doctype, field_name, value):
         "value": value
     }
 
-def create_process_task(process_name, erp_document, task_description, employee=None, process_owner=None, business_analyst=None, task_type="Repetitive", is_routine_task=0, frequency="", cron_format="", is_automated=0, method=""):
-    create_process_if_not_exists(process_name, process_owner, business_analyst)
-    create_method_if_not_exists(method, erp_document)
+def create_process_task(process_name, erp_document, task_description, process_description=None, employee=None, process_owner=None, business_analyst=None, task_type="Repetitive", is_routine_task=0, frequency="", cron_format="", is_automated=0, method=""):
+    create_process_if_not_exists(process_name, description=process_description, process_owner=process_owner, business_analyst=business_analyst)
+    create_method_if_not_exists(method, erp_document, description=process_description)
     task_type = get_task_type(task_type, is_routine_task)
 
     if frequency == "Cron" and not cron_format:
@@ -4581,7 +4581,7 @@ def create_process_task(process_name, erp_document, task_description, employee=N
         "method": method
     }).insert(ignore_permissions=True)
 
-def create_process_if_not_exists(process_name, process_owner="Administrator", business_analyst="Administrator"):
+def create_process_if_not_exists(process_name, description=None, process_owner="Administrator", business_analyst="Administrator"):
     if not frappe.db.exists("Process", process_name):
         process_owner = process_owner or "Administrator"
         business_analyst = business_analyst or "Administrator"
@@ -4591,7 +4591,7 @@ def create_process_if_not_exists(process_name, process_owner="Administrator", bu
 
         frappe.get_doc({
             "process_name": process_name,
-            "description": process_name,
+            "description": description or process_name,
             "doctype": "Process",
             "process_owner": process_owner,
             "process_owner_name": process_owner_name,
@@ -4599,11 +4599,11 @@ def create_process_if_not_exists(process_name, process_owner="Administrator", bu
             "business_analyst_name": business_analyst_name
         }).insert(ignore_permissions=True)
 
-def create_method_if_not_exists(method, document_type):
+def create_method_if_not_exists(method, document_type, description=None):
     if method and not frappe.db.exists("Method", method):
         frappe.get_doc({
             "method": method,
-            "description": method,
+            "description": description or method,
             "document_type": document_type,
             "doctype": "Method"
         }).insert(ignore_permissions=True)

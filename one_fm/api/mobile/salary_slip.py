@@ -9,7 +9,7 @@ def get_salary_slip_list(employee_id):
         return salary_list 
     except Exception as e:
         print(frappe.get_traceback())
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Get Salary Slip List Error')
         return frappe.utils.response.report_error(e)
 
 #This function returns the details of  given salary slips.
@@ -20,5 +20,5 @@ def salary_slip_details(salary_slip_id):
         return salary_slip_details
     except Exception as e:
         print(frappe.get_traceback())
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Salary Slip Details Error')
         return frappe.utils.response.report_error(e)

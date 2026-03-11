@@ -87,7 +87,7 @@ def get_data():
 			]
 		},
 		{
-			"label": _("GRD Settings"),
+			"label": _("HR Settings"),
 			"items": [
 				{
 					"type": "doctype",
@@ -111,7 +111,7 @@ def get_data():
 			"items": [
 				{
 					"type": "doctype",
-					"name": "MOI Residency Jawazat",
+					"name": "Residency",
 					"onboard": 1,
 				},
 				{

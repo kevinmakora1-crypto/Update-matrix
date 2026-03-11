@@ -11,7 +11,7 @@ from datetime import date
 from frappe.core.doctype.communication.email import make
 from frappe.utils import now_datetime
 from one_fm.grd.doctype.residency_payment_request import residency_payment_request
-from one_fm.grd.doctype.moi_residency_jawazat import moi_residency_jawazat
+from one_fm.grd.doctype.residency import residency
 from one_fm.processor import sendemail
 from one_fm.utils import is_scheduler_emails_enabled
 
@@ -34,9 +34,9 @@ class MedicalInsurance(Document):
 
     def set_value(self):
         if not self.grd_supervisor:
-            self.grd_supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
+            self.grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
         if not self.grd_operator:
-            self.grd_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator")
+            self.grd_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator")
 
     def on_submit(self):
         self.set_depend_on_fields()
@@ -46,21 +46,24 @@ class MedicalInsurance(Document):
             self.recall_create_moi_transfer()
 
     def recall_create_moi_transfer(self):
-        moi_residency_jawazat.creat_moi_for_transfer(self.work_permit)
+        residency.create_moi_for_transfer(self.work_permit)
 
 
     def set_depend_on_fields(self):
-        if self.upload_medical_insurance == None:
-            frappe.throw(_('Upload Medical Insurance Is Required To Submit'))
+        if self.upload_medical_insurance is None:
+            frappe.throw(_('You need to upload the Medical Insurance document before you can mark this record as “Done”.'))
 
 
 def valid_work_permit_exists(preparation_name):
     employee_in_preparation = frappe.get_doc('Preparation',preparation_name)
     if employee_in_preparation.preparation_record:
         for employee in employee_in_preparation.preparation_record:
-            if employee.renewal_or_extend == 'Renewal' and employee.nationality != 'Kuwaiti':
-                
-                create_mi_record(frappe.get_doc('Work Permit',{'preparation':preparation_name,'employee':employee.employee}))
+            if employee.renewal_or_extend == 'Renewal (Non-Kuwaiti)' and employee.nationality != 'Kuwaiti':
+                try:
+                    create_mi_record(frappe.get_doc('Work Permit',{'preparation':preparation_name,'employee':employee.employee}))
+                except Exception as e:
+                    frappe.log_error(message=frappe.get_traceback(), title=f"Error creating Medical Insurance for Work Permit of employee {employee.employee} in Preparation {preparation_name}")
+                    continue
 
 #Creating mi for transfer
 def creat_medical_insurance_for_transfer(employee_name):
@@ -100,8 +103,8 @@ def system_remind_renewal_operator_to_apply_mi():
     """
     This is a cron method runs every day at 8am. It gets Draft `renewal` Medical Insurance list and reminds operator to apply on pam website
     """
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    renewal_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    renewal_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator")
     medical_insurance_list = frappe.db.get_list('Medical Insurance',
     {'date_of_application':['<=',today()],'workflow_state':'Apply Online by PRO','insurance_status':['in',('Renewal','New')]},['civil_id','name','reminder_grd_operator','reminder_grd_operator_again'])
     
@@ -113,8 +116,8 @@ def system_remind_transfer_operator_to_apply_mi():
     """
     This is a cron method runs every day at 8am. It gets Draft `transfer` Medical Insurance list and reminds operator to apply on pam website
     """
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    transfer_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    transfer_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
     medical_insurance_list = frappe.db.get_list('Medical Insurance',
     {'date_of_application':['<=',today()],'workflow_state':'Apply Online by PRO','insurance_status':['=',('Local Transfer')]},['civil_id','name','reminder_grd_operator','reminder_grd_operator_again'])
     

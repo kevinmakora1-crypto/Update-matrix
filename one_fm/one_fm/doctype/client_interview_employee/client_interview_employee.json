@@ -1,0 +1,89 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-11-28 12:45:29.715231",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "column_break_xhrc",
+  "roster_type",
+  "previous_employee_availability",
+  "column_break_fcjs",
+  "attended",
+  "selected"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "roster_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Roster Type",
+   "options": "\nBasic\nOver-Time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_xhrc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "depends_on": "attended",
+   "fieldname": "attended",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Attended"
+  },
+  {
+   "fieldname": "column_break_fcjs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "selected",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Selected",
+   "read_only_depends_on": "eval:!doc.attended"
+  },
+  {
+   "fieldname": "previous_employee_availability",
+   "fieldtype": "Data",
+   "label": "Previous Employee Availability"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-12-01 14:45:27.088030",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Client Interview Employee",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

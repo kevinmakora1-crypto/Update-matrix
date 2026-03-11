@@ -1,7 +1,7 @@
 from frappe.workflow.doctype.workflow_action.workflow_action import apply_workflow
 import frappe, pandas as pd
 from frappe import _
-from frappe.utils import getdate, get_link_to_form, format_date
+from frappe.utils import getdate, get_link_to_form, format_date, add_days
 from erpnext.setup.doctype.employee.employee import is_holiday
 from hrms.hr.utils import validate_active_employee
 from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequest
@@ -20,7 +20,32 @@ class AttendanceRequestOverride(AttendanceRequest):
 		if self.half_day:
 			if not getdate(self.from_date) <= getdate(self.half_day_date) <= getdate(self.to_date):
 				frappe.throw(_("Half day date should be in between from date and to date"))
+		self.validate_wfh_before_leave()
 		self.set_approver()
+
+	def validate_wfh_before_leave(self):
+		if self.reason == "Work From Home":
+			# Calculate next working day after to_date
+			next_date = add_days(self.to_date, 1)
+			
+			# Loop to find next working day (skip holidays)
+			while is_holiday(self.employee, next_date):
+				next_date = add_days(next_date, 1)
+			
+			# Check if there is an approved Annual Leave starting on next_date
+			if frappe.db.sql("""
+				select name from `tabLeave Application`
+				where employee = %s
+				and from_date = %s
+				and status = 'Approved'
+				and leave_type = 'Annual Leave'
+				and docstatus = 1
+			""", (self.employee, next_date)):
+				frappe.throw(
+					_("You cannot select 'Work From Home' for {0} because your annual leave starts on {1}.").format(
+						format_date(self.to_date), format_date(next_date)
+					)
+				)
 
 	def before_insert(self):
 		check_for_attendance(self)
@@ -88,35 +113,14 @@ class AttendanceRequestOverride(AttendanceRequest):
 			shift_assignment = self.get_shift_assignment(attendance_date)
 			working_hours = frappe.db.get_value('Shift Type', shift_assignment.shift_type, 'duration')  if shift_assignment  else 8
 			# check if attendance exists
-			attendance_name = super(AttendanceRequestOverride, self).get_attendance_record(attendance_date)
+			attendance_name = self.get_attendance_doc(attendance_date)
 			status = "Present" if self.reason == "On Duty" else "Work From Home"
 			if attendance_name:
 				# update existing attendance, change the status
-				doc = frappe.get_doc("Attendance", attendance_name)
+				doc = frappe.get_doc("Attendance", attendance_name.name)
 				old_status = doc.status
 
-				if old_status != 'Present':
-					doc.db_set({
-						"status": status,
-						"attendance_request": self.name,
-						"working_hours": working_hours,
-						"reference_doctype":"Attendance Request",
-						"reference_docname":self.name})
-					text = _("Changed the status from {0} to {1} via Attendance Request").format(
-						frappe.bold(old_status), frappe.bold(status)
-					)
-					doc.add_comment(comment_type="Info", text=text)
-
-					frappe.msgprint(
-						_("Updated status from {0} to {1} for date {2} in the attendance record {3}").format(
-							frappe.bold(old_status),
-							frappe.bold(status),
-							frappe.bold(format_date(attendance_date)),
-							get_link_to_form("Attendance", doc.name),
-						),
-						title=_("Attendance Updated"),
-					)
-				elif old_status == 'Present' and status == "Work From Home":
+				if old_status != status:
 					doc.db_set({
 						"status": status,
 						"attendance_request": self.name,
@@ -155,7 +159,7 @@ class AttendanceRequestOverride(AttendanceRequest):
 				attendance.save(ignore_permissions=True)
 				attendance.submit()
 		except Exception as e:
-			frappe.log_error(str(frappe.get_traceback()), 'Attendance Request')
+			frappe.log_error(message=str(frappe.get_traceback()), title='Attendance Request')
 
 
 	def send_notification(self):
@@ -253,7 +257,7 @@ def mark_future_attendance_request():
 		try:
 			frappe.get_doc("Attendance Request", row.name).mark_attendance(str(getdate()))
 		except Exception as e:
-			frappe.log_error(str(e), 'Attendance Request')
+			frappe.log_error(message=str(e), title='Attendance Request')
 
 
 @frappe.whitelist()
@@ -273,4 +277,4 @@ def approve_pending_attendance_request(start_date):
             doc = frappe.get_doc("Attendance Request", row.name)
             apply_workflow(doc, "Approve")
         except Exception as e:
-            frappe.log_error(frappe.get_traceback(), "Attendance Request Marking")
+            frappe.log_error(message=frappe.get_traceback(), title="Attendance Request Marking")

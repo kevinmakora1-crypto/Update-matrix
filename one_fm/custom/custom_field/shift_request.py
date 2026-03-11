@@ -45,7 +45,7 @@ def get_shift_request_custom_fields():
                 "insert_after": "shift",
                 "options": "Operations Site",
                 "fetch_from": "operations_shift.site",
-                "depends_on": "eval:doc.purpose != 'Assign Day Off'"
+                "depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
             },
             {
                 "fieldname": "roster_type",
@@ -53,7 +53,7 @@ def get_shift_request_custom_fields():
                 "label": "Roster Type",
                 "insert_after": "operations_role",
                 "options": "Basic\nOver-Time",
-                "depends_on": "eval:doc.purpose != 'Assign Day Off';",
+                "depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
                 "translatable": 1
             },
             {
@@ -63,8 +63,8 @@ def get_shift_request_custom_fields():
                 "insert_after": "to_date",
                 "options": "Operations Role",
                 "fetch_if_empty": 1,
-                "depends_on": "eval:doc.purpose != 'Assign Day Off';",
-                "mandatory_depends_on": "eval:doc.purpose != 'Assign Day Off';"
+                "depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
+                "mandatory_depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)'
             },
             {
                 "fieldname": "company_name",
@@ -82,7 +82,7 @@ def get_shift_request_custom_fields():
                 "insert_after": "operations_shift",
                 "options": "Shift Type",
                 "fetch_from": "operations_shift.shift_type",
-                "depends_on": "eval:doc.purpose != 'Assign Day Off';",
+                "depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
                 "read_only": 1
             },
             {
@@ -219,7 +219,7 @@ def get_shift_request_custom_fields():
                 "fieldtype": "Section Break",
                 "label": "Site Request",
                 "insert_after": "amended_from",
-                "depends_on": "eval:doc.purpose != 'Assign Day Off'"
+                "depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
             },
             {
                 "fieldname": "operations_shift",
@@ -229,8 +229,8 @@ def get_shift_request_custom_fields():
                 "options": "Operations Shift",
                 "fetch_from": "employee.shift",
                 "fetch_if_empty": 1,
-                "depends_on": "eval:doc.purpose != 'Assign Day Off';",
-                "mandatory_depends_on": "eval:doc.purpose != 'Assign Day Off';",
+                "depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
+                "mandatory_depends_on": 'eval:!["Assign Day Off", "Assign Client Day Off"].includes(doc.purpose)',
                 "reqd": 1
             },
            {
@@ -271,7 +271,7 @@ def get_shift_request_custom_fields():
                 "insert_after": "custom_column_break_ggqao",
                 "fieldtype": "Link",
                 "options": "Employee",
-                "fetch_from": "project.account_manager",
+                "fetch_from": "project.project_manager",
                 "read_only": 1,
                 "ignore_user_permissions": 1
             },
@@ -284,6 +284,14 @@ def get_shift_request_custom_fields():
                 "read_only": 1,
                 "options": "User",
                 "ignore_user_permissions": 1
-             }
+             },
+            {
+                "fieldname": "reason",
+                "fieldtype": "Small Text",
+                "insert_after": "status",
+                "label": "Reason",
+                "reqd": 1,
+                "translatable": 1
+            }
         ]
     }

@@ -154,6 +154,69 @@ def get_shift_assignment_custom_fields():
                 "label": "Shift",
                 "insert_after": "department",
                 "options": "Operations Shift"
-            }
+            },
+            {
+                "fieldname": "is_event_based_shift",
+                "label": "Is Event-based Shift",
+                "fieldtype": "Check",
+                "insert_after": "custom_day_off_ot",
+                "fetch_from": "employee_schedule.is_event_schedule",
+                "read_only": 1
+            },
+            {
+                "fieldname": "client_event",
+                "label": "Client Event",
+                "fieldtype": "Link",
+                "insert_after": "is_event_based_shift",
+                "options": "Client Event",
+                "fetch_from": "event_staff.client_event",
+                "read_only": 1
+            },
+            {
+                "fieldname": "event_staff",
+                "label": "Event Staff",
+                "fieldtype": "Link",
+                "insert_after": "client_event",
+                "options": "Event Staff",
+                "fetch_from": "employee_schedule.event_staff",
+                "fetch_if_empty": 1,
+                "read_only": 1
+            },
+            {
+                "fieldname": "event_location",
+                "label": "Event Location",
+                "fieldtype": "Link",
+                "insert_after": "event_staff",
+                "options": "Location",
+                "fetch_from": "event_staff.event_location",
+                "read_only": 1
+            },
+            {
+                "fieldname": "custom_designation",
+                "label": "Designation",
+                "fieldtype": "Link",
+                "insert_after": "status",
+                "options": "Designation",
+                "fetch_from": "employee.designation",
+                "depends_on": "eval:doc.is_event_based_shift == 1",
+            },
+            {
+                "fieldname": "employee_is_replaced",
+                "label": " Employee Is Replaced",
+                "fieldtype": "Check",
+                "insert_after": "employee_schedule",
+            },
+            {
+                "fieldname": "custom_on_the_job_training",
+                "label": "On the Job Training",
+                "fieldtype": "Link",
+                "insert_after": "event_location",
+                "options": "On the Job Training",
+                "fetch_from": "employee_schedule.on_the_job_training",
+                "read_only": 1,
+                "search_index": 1
+            },
+
+
         ]
     }

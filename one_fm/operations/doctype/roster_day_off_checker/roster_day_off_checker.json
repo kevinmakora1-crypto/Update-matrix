@@ -41,6 +41,9 @@
   "column_break_ywpy",
   "day_off_taken",
   "worked_day_off_ot",
+  "column_break_nzpu",
+  "rostered_client_day_off",
+  "client_day_off_taken",
   "column_break_qxlm",
   "day_off_difference",
   "repeat_count",
@@ -311,11 +314,28 @@
    "fieldtype": "Int",
    "label": "Repeat Count",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_nzpu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rostered_client_day_off",
+   "fieldtype": "Int",
+   "label": "Rostered Client Day Off",
+   "read_only": 1
+  },
+  {
+   "fieldname": "client_day_off_taken",
+   "fieldtype": "Int",
+   "label": "Client Day Off Taken",
+   "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-09 17:12:23.782346",
+ "modified": "2026-02-01 11:23:40.014428",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Roster Day Off Checker",
@@ -378,6 +398,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

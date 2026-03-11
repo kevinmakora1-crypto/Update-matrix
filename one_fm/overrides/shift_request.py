@@ -530,7 +530,7 @@ def replace_employee_schedule(doc, existing_schedules, schedule_date_range):
             replaced_employee_schedule.db_set("replaced_employee_schedule", es.name)
     except Exception as e:
         frappe.throw(_("Error Replacing Employee Schedule"))
-        frappe.log_error(frappe.get_traceback(), "Error Replacing Employee Schedule")
+        frappe.log_error(message=frappe.get_traceback(), title="Error Replacing Employee Schedule")
 
 
 def create_shift_assignment_from_request(shift_request, submit=True,day_off_ot = False):
@@ -582,6 +582,8 @@ def create_employee_schedule_from_request(doc, date):
 
 
 def assign_day_off(shift_request):
+    current_user = frappe.session.user
+    frappe.set_user("Administrator")
     shift_assignment = frappe.get_list('Shift Assignment',
                                        {'employee': shift_request.employee, 'start_date': shift_request.from_date, 'roster_type': "Basic"},
                                        ['name', "start_date"])
@@ -596,8 +598,10 @@ def assign_day_off(shift_request):
     if employee_schedule:
         for es in employee_schedule:
             schedule = frappe.get_doc("Employee Schedule", es.name)
+            schedule.reference_doctype = "Shift Request"
+            schedule.reference_docname = shift_request.name
             schedule.employee_availability = 'Day Off'
-            schedule.save()
+            schedule.save(ignore_permissions=True)
     else:
         start_date = datetime.datetime.strptime(shift_request.from_date, '%Y-%m-%d')
         end_date = datetime.datetime.strptime(shift_request.to_date, '%Y-%m-%d')
@@ -606,9 +610,12 @@ def assign_day_off(shift_request):
             schedule = frappe.new_doc("Employee Schedule")
             schedule.employee = shift_request.employee
             schedule.date = start_date
+            schedule.reference_doctype = "Shift Request"
+            schedule.reference_docname = shift_request.name
             schedule.employee_availability = 'Day Off'
-            schedule.save()
+            schedule.save(ignore_permissions=True)
             start_date += delta
+    frappe.set_user(current_user)
     frappe.db.commit()
 
 def assign_client_day_off(shift_request):
@@ -625,7 +632,7 @@ def assign_client_day_off(shift_request):
             if es.roster_type == "Basic":
                 schedule = frappe.get_doc("Employee Schedule", es.name)
                 schedule.employee_availability = 'Client Day Off'
-                schedule.save()
+                schedule.save(ignore_permissions=True)
             else:
                 frappe.delete_doc("Employee Schedule", es.name)
     else:
@@ -637,7 +644,7 @@ def assign_client_day_off(shift_request):
             schedule.employee = shift_request.employee
             schedule.date = start_date
             schedule.employee_availability = 'Client Day Off'
-            schedule.save()
+            schedule.save(ignore_permissions=True)
             start_date += delta
     frappe.db.commit()
 
@@ -733,7 +740,7 @@ def validate_from_date(doc, method):
         if frappe.session.user == attendance_manager:
             return
 
-        if doc.purpose != 'Assign Day Off':
+        if doc.purpose not in {'Assign Day Off', "Assign Client Day Off"}:
             message = "Please note that Shift Requests cannot be created for a past date." if doc.is_new() else "Please note that Shift Requests cannot be updated to a past date."
             frappe.throw(
                 _(message),
@@ -775,11 +782,11 @@ def get_manager(doctype, employee):
     Returns:
         _type_: _description_
     """
-    if doctype =="Operations Shift":
+    if doctype == "Operations Shift":
         return get_supervisor_operations_shifts(employee)
 
     else:
-        field_map = {"Project": "account_manager", "Operations Site": "account_supervisor"}
+        field_map = {"Project": "project_manager", "Operations Site": "site_supervisor"}
         if doctype in field_map:
             values = frappe.get_all(doctype, {field_map[doctype]:employee},['name'])
             if values:

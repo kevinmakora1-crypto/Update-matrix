@@ -476,7 +476,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRD Operator",
+   "role": "Government Relations Operator",
    "share": 1,
    "submit": 1,
    "write": 1
@@ -507,7 +507,7 @@
   {
    "permlevel": 1,
    "read": 1,
-   "role": "GRD Operator"
+   "role": "Government Relations Operator"
   },
   {
    "delete": 1,

@@ -48,7 +48,7 @@ frappe.ui.form.on('Operations Site', {
 		}
 	},
 	onload: function(frm){
-		frm.set_query("account_supervisor", function() {
+		frm.set_query("site_supervisor", function() {
 			return {
 				"filters": {
 					"status": "Active",
@@ -60,7 +60,7 @@ frappe.ui.form.on('Operations Site', {
 	before_save:  function(frm){
 		validate_linked_schedules(frm)
 	},
-	account_supervisor: function(frm){
+	site_supervisor: function(frm){
 		frm.trigger("get_employee_status")
 	},
 	get_employee_status: function(frm){
@@ -69,12 +69,12 @@ frappe.ui.form.on('Operations Site', {
 			args: {
 				doctype:"Employee",
 				filters: {
-					name:frm.doc.account_supervisor
+					name:frm.doc.site_supervisor
 				},
 				fieldname:["status",]
 			}, 
 			callback: function(r) { 
-				frm.toggle_display(["account_supervisor_name"], r.message.status == "Active")
+				frm.toggle_display(["site_supervisor_name"], r.message.status == "Active")
 
 			}
 		})
@@ -324,11 +324,6 @@ frappe.ui.form.on('POC', {
 		let doc = locals[cdt][cdn];
 		if(doc.poc !== undefined){
 			get_contact(doc);
-		}
-	},
-	before_poc_remove: function(frm, cdt, cdn){
-		if(!frappe.user_roles.includes("Shift Supervisor") && !frappe.user_roles.includes("Site Supervisor")){
-			frappe.throw(__("You are not allowed to make changes to POC list."))
 		}
 	},
 	poc: function(frm, cdt, cdn){

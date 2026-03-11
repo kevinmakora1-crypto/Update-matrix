@@ -5,7 +5,7 @@ from collections import OrderedDict
 import frappe
 from datetime import date, timedelta, datetime
 from frappe.utils import (
-    get_first_day, get_last_day, getdate, add_days, add_months, nowdate, date_diff
+    get_first_day, get_last_day, getdate, add_days, add_months, nowdate, date_diff, today
 )
 from frappe.model.document import Document
 from frappe.query_builder.functions import Count
@@ -32,24 +32,35 @@ class RosterDayOffChecker(Document):
 	pass
 
 def get_leave_dates_by_employee():
+    """
+    Fetch and organize approved leave dates by employee for all leave applications
+    that overlap the period between the first day of the current month and
+    the last day of the next month.
+
+    The function includes any leave that:
+      - Starts before but ends within or after the period, or
+      - Starts within but ends after the period.
+    
+    Returns:
+        dict: A dictionary where each key is an employee ID and the value is
+        a sorted list of `date` objects representing all individual leave dates
+        that overlap with the defined two-month period.
+    """
     today = getdate(nowdate())
     
     # First of current month
     current_month_start = get_first_day(today)
 
-    # last day of next month
+    # Last day of next month
     next_month_end = get_last_day(add_months(today, 1))
 
     results = frappe.db.sql("""
         SELECT employee, from_date, to_date
         FROM `tabLeave Application`
         WHERE leave_type IN ('Annual Leave', 'Leave Without Pay')
-		AND status = 'Approved'
-        AND (
-            (from_date BETWEEN %(start_date)s AND %(end_date)s)
-            OR
-            (to_date BETWEEN %(start_date)s AND %(end_date)s)
-        )
+        AND status = 'Approved'
+        AND from_date <= %(end_date)s
+        AND to_date >= %(start_date)s
     """, { "start_date": current_month_start, "end_date": next_month_end }, as_dict=True)
 
     leave_days_by_employee = {}
@@ -60,7 +71,7 @@ def get_leave_dates_by_employee():
         to_date = getdate(row.to_date)
         
         days_count = date_diff(to_date, from_date) + 1  # inclusive
-        leave_days = [(add_days(from_date, i)) for i in range(days_count)]
+        leave_days = [add_days(from_date, i) for i in range(days_count)]
 
         if employee not in leave_days_by_employee:
             leave_days_by_employee[employee] = set()
@@ -73,6 +84,22 @@ def get_leave_dates_by_employee():
 
     return leave_days_by_employee
 
+
+def get_employee_absent_dates(employee, start_date, end_date):
+    absent_dates = frappe.get_all(
+        "Attendance",
+        filters=[
+            ["employee", "=", employee],
+            ["docstatus", "=", 1],
+            ["attendance_date", "between", [start_date, end_date]],
+            ["status", "=", "Absent"]
+        ],
+		fields=["attendance_date"],
+    )
+
+    return [record.attendance_date for record in absent_dates]
+
+
 def get_day_off_comparison_dates(employee, total_leave_dates):
     today = getdate()
     comparison_periods = []
@@ -82,7 +109,9 @@ def get_day_off_comparison_dates(employee, total_leave_dates):
     joining_date = employee.date_of_joining or date.min
     relieving_date = employee.relieving_date or date.max
 
-    def add_period(start, end, total_days):
+    def add_period(start, end):
+        total_days = date_diff(end, start) + 1  # inclusive
+
         # Clamp dates within employee tenure
         start_date = max(start, joining_date)
         end_date = min(end, relieving_date)
@@ -90,14 +119,17 @@ def get_day_off_comparison_dates(employee, total_leave_dates):
         if start_date > end_date:
             return
 
+        # Consider non-absent days count as total days for this period
+        absent_dates = get_employee_absent_dates(employee.name, start_date, end_date)
+
         working_dates = []
         leave_dates_in_period = []
-		
+
         current = start_date
         while current <= end_date:
             if current in total_leave_dates:
                 leave_dates_in_period.append(current)
-            else:
+            elif current not in absent_dates:
                 working_dates.append(current)
             current += timedelta(days=1)
 
@@ -109,27 +141,28 @@ def get_day_off_comparison_dates(employee, total_leave_dates):
             "end_date": end_date,
             "calculated_number_of_days_off": round(calculated_days_off),
             "leave_dates": leave_dates_in_period,
-            "working_dates": working_dates
+            "working_dates": working_dates,
+			"absent_dates": absent_dates
         })
 
     if employee.day_off_category == "Monthly":
         # Current month
-        add_period(get_first_day(today), get_last_day(today), 30)
+        add_period(get_first_day(today), get_last_day(today))
 
         # Next month
         next_month = add_months(today, 1)
-        add_period(get_first_day(next_month), get_last_day(next_month), 30)
+        add_period(get_first_day(next_month), get_last_day(next_month))
 
     elif employee.day_off_category == "Weekly":
         # First week (starting from tomorrow)
         week1_start = add_days(today, 1)
         week1_end = add_days(week1_start, 6)
-        add_period(week1_start, week1_end, 7)
+        add_period(week1_start, week1_end)
 
         # Second week
         week2_start = add_days(week1_end, 1)
         week2_end = add_days(week2_start, 6)
-        add_period(week2_start, week2_end, 7)
+        add_period(week2_start, week2_end)
 
     return comparison_periods
 
@@ -181,7 +214,7 @@ def check_roster_day_off():
 		today = getdate()
 
 		Employee = frappe.qb.DocType("Employee")
-		employees = frappe.db.sql(frappe.qb.from_(Employee).select("*").where((Employee.status=="Active") & (Employee.shift_working == 1) & ((Employee.relieving_date.isnull()) | (Employee.relieving_date > today))), as_dict=1)
+		employees = frappe.db.sql(frappe.qb.from_(Employee).select("*").where((Employee.status.isin(["Active", "Vacation"])) & (Employee.shift_working == 1) & ((Employee.relieving_date.isnull()) | (Employee.relieving_date > today))), as_dict=1)
 
 		leave_dates_by_employee = get_leave_dates_by_employee()
 
@@ -189,9 +222,9 @@ def check_roster_day_off():
 			employee_leave_dates = leave_dates_by_employee.get(employee.name)
 			comparison_dates = get_day_off_comparison_dates(employee, employee_leave_dates)
 
-			site_supervisor = frappe.db.get_value("Operations Site", employee.site, "account_supervisor")
+			site_supervisor = frappe.db.get_value("Operations Site", employee.site, "site_supervisor")
 			shift_supervisor = get_shift_supervisor(employee.shift)
-			project_manager = frappe.db.get_value("Project", employee.project, "account_manager")
+			project_manager = frappe.db.get_value("Project", employee.project, "project_manager")
 
 			for period in comparison_dates:	# Always 2 iterations only because we have just two period for comparison
 				day_off_data = get_employee_day_off_comparison(employee, period["start_date"], period["end_date"], period["calculated_number_of_days_off"], period["working_dates"])
@@ -227,6 +260,8 @@ def check_roster_day_off():
 					day_off_checker.day_off_taken = day_off_data["availed_off_days"]
 					day_off_checker.worked_day_off_ot = day_off_data["availed_ot_days"]
 					day_off_checker.day_off_difference = day_off_data["day_off_difference"]
+					day_off_checker.rostered_client_day_off = day_off_data["rostered_client_day_off"]
+					day_off_checker.client_day_off_taken = day_off_data["client_day_off_taken"]
 					day_off_checker.insert(ignore_permissions=1)
 
 		frappe.db.commit()
@@ -240,8 +275,10 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 
 	off_days = 0
 	ot_days = 0
+	taken_client_off_days = 0
 
 	rostered_off_days = 0
+	rostered_client_off_days = 0
 	rostered_ot_days = 0
 
 	availed_off_days = 0
@@ -262,9 +299,6 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 			(Attendance.attendance_date.between(attendance_start_date, attendance_end_date))
 		)
 
-		if working_dates:
-			conditions &= Attendance.attendance_date.isin(working_dates)
-
 		# Calculate no of off days
 		od = (
 			frappe.qb.from_(Attendance)
@@ -276,6 +310,23 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 		attendance_off_days = od[0].off_days if od else 0
 		off_days += attendance_off_days
 		availed_off_days = attendance_off_days
+
+		if working_dates:
+			conditions &= Attendance.attendance_date.isin(working_dates)
+
+		rostered_client_off_days = frappe.db.count("Employee Schedule", {
+			"employee": employee.name,
+			"date": ["between", [attendance_start_date, attendance_end_date]],
+			"employee_availability": "Client Day Off",
+			"day_off_ot": 0
+		})
+
+		taken_client_off_days = frappe.db.count("Attendance", {
+			"employee": employee.name,
+			"attendance_date": ["between", [attendance_start_date, attendance_end_date]],
+			"status": "Client Day Off",
+			"docstatus": 1
+		})
 
 		# Calculate no of ot days
 		ot = (
@@ -304,8 +355,6 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 			(EmployeeSchedule.date[schedule_start_date:schedule_end_date])
 		)
 
-		if working_dates:
-			conditions &= EmployeeSchedule.date.isin(working_dates)
 
 		# Calculate no of off days
 		od = (
@@ -318,6 +367,17 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 		schedule_off_days = od[0].off_days if od else 0
 		off_days += schedule_off_days
 		rostered_off_days = schedule_off_days
+
+
+		if working_dates:
+			conditions &= EmployeeSchedule.date.isin(working_dates)
+
+		rostered_client_off_days = frappe.db.count("Employee Schedule", {
+			"employee": employee.name,
+			"date": ["between", [schedule_start_date, schedule_end_date]],
+			"employee_availability": "Client Day Off",
+			"day_off_ot": 0
+		})
 
 		# Calculate no of ot days
 		ot = (
@@ -333,6 +393,7 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 
 	day_off_diff = ""
 	employee_number_of_days_off = calculated_day_offs
+
 
 	if employee_number_of_days_off != (off_days + ot_days): # If has any discrepency
 		if off_days > employee_number_of_days_off and not ot_days:
@@ -359,7 +420,9 @@ def get_employee_day_off_comparison(employee, start_date, end_date, calculated_d
 		"rostered_ot_days": rostered_ot_days,
 		"availed_off_days": availed_off_days,
 		"availed_ot_days": availed_ot_days,
-		"day_off_difference": day_off_diff
+		"day_off_difference": day_off_diff,
+		"rostered_client_day_off": rostered_client_off_days,
+		"client_day_off_taken": taken_client_off_days
 	}
 
 
@@ -478,7 +541,7 @@ def get_project_manager_employees(user_employee):
 			JOIN `tabOperations Site` site ON os.site = site.name
 			JOIN `tabProject` p ON site.project = p.name
 		""",
-		where_clause="p.account_manager = %(user_employee)s",
+		where_clause="p.project_manager = %(user_employee)s",
 		user_employee=user_employee
 	)
 
@@ -489,7 +552,7 @@ def get_site_supervisor_employees(user_employee):
 			JOIN `tabOperations Shift` os ON e.shift = os.name
 			JOIN `tabOperations Site` site ON os.site = site.name
 		""",
-		where_clause="site.account_supervisor = %(user_employee)s",
+		where_clause="site.site_supervisor = %(user_employee)s",
 		user_employee=user_employee
 	)
 
@@ -523,3 +586,89 @@ def _get_employees_with_join(join_clause, where_clause, user_employee):
 			AND e.shift_working = 1
 			AND {where_clause}
 	""", {"user_employee": user_employee}, as_dict=True)
+
+
+
+@frappe.whitelist()
+def update_attendance_to_cdo(employee, attendance_date):
+    # Server-side authorization: only Payroll Operator, Attendance Manager or Administrator may update attendance to CDO
+    roles = frappe.get_roles(frappe.session.user)
+    if not any(role in roles for role in ["Payroll Operator", "Attendance Manager"]) and frappe.session.user != "Administrator":
+        # Use PermissionError so this is treated as a standard permission failure by Frappe
+        frappe.throw("Not permitted to update attendance to CDO.", frappe.PermissionError)
+    selected_date = getdate(attendance_date)
+    current_date = getdate(today())
+    
+    if selected_date >= current_date:
+        return {
+            'success': False,
+            'error': True,
+            'message': 'Cannot update attendance for current or future dates. Please select a past date.'
+        }
+    
+    try:
+        attendance_list = frappe.get_all(
+            'Attendance',
+            filters={
+                'employee': employee,
+                'attendance_date': attendance_date,
+                'docstatus': 1
+            },
+            fields=['name', 'status', 'roster_type']
+        )
+        
+        if not attendance_list:
+            return {
+                'success': False,
+                'error': True,
+                'message': f'No Attendance record found for employee {employee} on {attendance_date}'
+            }
+
+        if len(attendance_list) > 1:
+            return {
+                'success': False,
+                'error': True,
+                'message': (
+                    f'Multiple Attendance records found for employee {employee} on {attendance_date}. '
+                    'Please resolve duplicate records before updating.'
+                )
+            }
+        attendance = attendance_list[0]
+        
+        if attendance.get('roster_type') and attendance.get('roster_type') != 'Basic':
+            return {
+                'success': False,
+                'error': True,
+                'message': f'Can only update Basic attendance. Current attendance type is {attendance.get("roster_type")}'
+            }
+        
+
+        attendance_doc = frappe.get_doc('Attendance', attendance['name'])
+        old_status = attendance_doc.status
+        attendance_doc.status = 'Client Day Off'
+        # Reset working hours for non-working status to avoid stale values from previous status
+        if hasattr(attendance_doc, "working_hours"):
+            attendance_doc.working_hours = 0
+        attendance_doc.flags.ignore_validate_update_after_submit = True
+        attendance_doc.save(ignore_permissions=True)
+        
+        attendance_doc.add_comment(
+            'Info',
+            f'Attendance status changed from "{old_status}" to "Client Day Off"'
+        )
+        
+        return {
+            'success': True,
+            'message': f'Attendance status updated to Client Day Off for {employee} on {attendance_date}'
+        }
+    
+    except Exception as e:
+        frappe.log_error(
+            message=f"Error updating attendance to CDO: {str(e)}",
+            title=f"Make CDO Error - {employee}"
+        )
+        return {
+            'success': False,
+            'error': True,
+            'message': f'Failed to update attendance: {str(e)}'
+        }

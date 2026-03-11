@@ -25,6 +25,9 @@ from one_fm.utils import send_workflow_action_email, is_scheduler_emails_enabled
 
 # from pdfminer.pdfparser import PDFParser, PDFDocument
 class WorkPermit(Document):
+    def onload(self):
+        if self.docstatus == 0:
+            self.employee_last_checkin = get_employee_last_checkin(self.employee)
 
     def before_insert(self):
         self.cancel_existing()
@@ -43,29 +46,34 @@ class WorkPermit(Document):
         self.update_work_permit_details_in_tp()
         self.update_passport_details_in_employee()
         self.check_required_document_for_workflow()
-        self.notify()
         self.send_work_permit_receipt_to_perm_operator()
         self.set_new_pam_details_in_employee()
 
     def validate(self):
         self.set_grd_values()
         self.validate_workflow_state_fields()
+        self.employee_last_checkin = get_employee_last_checkin(self.employee)
 
+        if self.employee:
+            employee_details = frappe.db.get_value("Employee", self.employee, ["status", "relieving_date", "employee_name"], as_dict=True)
+            if employee_details.status != "Active":
+                frappe.throw(_("{0}'s status is currently not active. Work Permit processing is only allowed for active employees").format(employee_details.employee_name))
+            if employee_details.relieving_date:
+                frappe.throw(_("{0}'s Relieving Date has been set to {1}. Work Permit processing is not allowed.").format(employee_details.employee_name, employee_details.relieving_date))
 
     def validate_workflow_state_fields(self):
-        states = ['Pending By PAM Operator', 'Pending By Operator']
+        states = ['Pending By Supervisor', 'Pending By PAM']
         db_state = frappe.db.get_value("Work Permit", self.name, 'workflow_state')
         # check for required fields based on workflow
-        if db_state in states and not (
-            self.upload_work_permit and self.new_work_permit_expiry_date and self.upload_work_permit_on
-            ):
-            frappe.throw("Missing Data\nUpload Work Permit, fill Updated Work Permit Expiry Date and Upload On field.")
-
-        # check if receipt uploaded and status is supervisor
-        if self.attach_invoice and self.workflow_state=="Pending By PAM Operator":
-            # send email to perm operation
-            send_workflow_action_email(self, [self.pam_operator])
-        # frappe.throw(f"""{pam_operator_email}, {self.attach_invoice}, {self.workflow_state}""")
+        if db_state in states:
+            msg = False
+            if not self.attach_invoice:
+                msg = "Upload the required document(Invoice)"
+            if not self.new_work_permit_expiry_date:
+                msg = ((msg+" and ") if msg else "") + "Set <i>Updated Work Permit Expiry Date</i>"
+            if msg:
+                msg += " to submit"
+                frappe.throw(_(msg))
 
 
     def send_work_permit_receipt_to_perm_operator(self):
@@ -76,22 +84,16 @@ class WorkPermit(Document):
         """
 		runs: `validate`
 		param: work permit object
-		This method is fetching values of grd supervisor and operator for transfer, pifss operator from GRD settings
+		This method is fetching values of grd supervisor and operator for transfer, pifss operator from HR Settings
 		"""
         if not self.grd_supervisor:
-            self.grd_supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
+            self.grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
         if not self.grd_operator:
-            self.grd_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator")
+            self.grd_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator")
         if not self.grd_operator_transfer:
-            self.grd_operator_transfer = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+            self.grd_operator_transfer = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
         if not self.pam_operator:
-            self.pam_operator = pam_operator_email = frappe.db.get_single_value("GRD Settings", 'default_pam_operator')
-
-    def notify(self):
-        if self.workflow_state == "Pending By Supervisor":
-            subject = ("Work Permit Needs Action")
-            message = "<p>Please Take Action on the Work Permit Record:  <a href='{0}'>{1}</a>.</p>".format(get_url_to_form(self.doctype, self.name),self.name )
-            send_email(self, [self.grd_supervisor], message, subject)
+            self.pam_operator = pam_operator_email = frappe.db.get_single_value("HR Settings", 'default_pam_operator')
 
     def check_required_document_for_workflow(self):
         """
@@ -190,25 +192,20 @@ class WorkPermit(Document):
             if tp:
                 if tp.work_permit_records != []:# If table for tracking wp in the transfer paper records is not empty, update the rows of the work permit records in the transfer paper upon wp referance name
                     for wp_index, wp in enumerate(tp.work_permit_records):
-                        if wp.work_permit_reference == self.name and self.work_permit_status != "Completed":
-                            wp.update({
-                                "status": self.work_permit_status,
-                                "reason_of_rejection": self.reason_of_rejection
-                                })
+                        if wp.work_permit_reference == self.name and self.workflow_state != "Completed":
+                            wp.update({"reason_of_rejection": self.reason_of_rejection})
                             wp.save()
                         if wp.work_permit_reference != self.name and wp_index == len(tp.work_permit_records)-1:
                             tp.append("work_permit_records", {
-                            "work_permit_reference": self.name,
-                            "status": self.work_permit_status,
-                            "reason_of_rejection": self.reason_of_rejection
+                                "work_permit_reference": self.name,
+                                "reason_of_rejection": self.reason_of_rejection
                             })
                         if wp.work_permit_reference  != self.name and wp_index != len(tp.work_permit_records)-1:
                             continue
                 elif tp.work_permit_records == []:# If table for tracking wp in the transfer paper records is empty, append into the table
                     tp.append("work_permit_records", {
-                    "work_permit_reference": self.name,
-                    "status": self.work_permit_status,
-                    "reason_of_rejection": self.reason_of_rejection
+                        "work_permit_reference": self.name,
+                        "reason_of_rejection": self.reason_of_rejection
                     })
             tp.save()
             tp.reload()
@@ -229,6 +226,8 @@ class WorkPermit(Document):
             updated_values['passport_number'] = self.new_passport_number
         if self.new_passport_expiry_date:
             updated_values['valid_upto'] = self.new_passport_expiry_date
+        if self.new_passport_issuance_date:
+            updated_values['date_of_issue'] = self.new_passport_issuance_date
 
         if self.employee and updated_values:
             frappe.db.set_value('Employee', self.employee, updated_values)
@@ -236,13 +235,11 @@ class WorkPermit(Document):
     def on_submit(self):
         if self.work_permit_type not in ['Cancellation', 'New Kuwaiti', 'Local Transfer'] and self.workflow_state != "Rejected":
             if self.workflow_state == "Completed" and self.attach_invoice and self.new_work_permit_expiry_date:
-                print("\n\n\n\n####\n\n\n\n")
-                self.db_set('work_permit_status', 'Completed')
                 # self.clean_old_wp_record_in_employee_doctype()
-                self.set_work_permit_attachment_in_employee_doctype(self.new_work_permit_expiry_date, self.upload_work_permit)
+                self.set_work_permit_attachment_in_employee_doctype(self.new_work_permit_expiry_date)
             else:
                 msg = False
-                if  not self.attach_invoice:
+                if not self.attach_invoice:
                     msg = "Upload the required document(Invoice)"
                 if not self.new_work_permit_expiry_date:
                     msg = ((msg+" and ") if msg else "") + "Set <i>Updated Work Permit Expiry Date</i>"
@@ -250,12 +247,11 @@ class WorkPermit(Document):
                     msg += " to submit"
                     frappe.throw(_(msg))
 
-        if self.work_permit_type == "Cancellation":
-            self.db_set('work_permit_status', 'Completed')
+        # ToDo
+        # If work permit type is Cancellation, set workflow_state to Completed
 
         if self.workflow_state == "Completed":
             if self.work_permit_type == "Local Transfer":
-                self.db_set('work_permit_status', 'Completed')
                 self.update_wp_child_table_in_transfer_paper()
                 self.recall_create_medical_insurance_transfer() # Auto create mi record for transfer wp
                 self.set_work_permit_attachment_in_employee_doctype(self.work_permit_expiry_date, self.attach_work_permit)
@@ -270,11 +266,8 @@ class WorkPermit(Document):
         tp = frappe.get_doc('Transfer Paper',self.transfer_paper)
         if tp:
             for wp in tp.work_permit_records:
-                if wp.work_permit_reference  == self.name and self.work_permit_status == "Completed":
-                    wp.update({
-                        "status": self.work_permit_status,
-                        "reason_of_rejection": self.reason_of_rejection
-                        })
+                if wp.work_permit_reference  == self.name and self.workflow_state == "Completed":
+                    wp.update({"reason_of_rejection": self.reason_of_rejection})
                     wp.save()
             tp.workflow_state = "Completed"
             tp.save()
@@ -284,7 +277,7 @@ class WorkPermit(Document):
         medical_insurance.creat_medical_insurance_for_transfer(self.employee)
 
     def notify_grd_transfer_mi_record(self):
-        transfer_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+        transfer_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
         mi = frappe.db.get_value("Medical Insurance",{'employee':self.employee,'insurance_status':'Local Transfer'},['name'])
         if mi:
             mi_record = frappe.get_doc('Medical Insurance', mi)
@@ -294,17 +287,17 @@ class WorkPermit(Document):
             create_notification_log(subject, message, [transfer_operator], mi_record)
 
     def validate_mandatory_fields_for_grd_operator_again(self):
-        users = frappe.utils.user.get_users_with_role('GRD Operator')
+        users = frappe.utils.user.get_users_with_role('Government Relations Operator')
         filtered_users = []
         for user in users:
             if has_permission(doctype=self.doctype, user=user):
                 filtered_users.append(user)
             if filtered_users and len(filtered_users) > 0:
-                if "Pending By PAM Operator" in self.workflow_state and not self.upload_work_permit and not self.attach_invoice:
+                if "Pending By PAM Operator" in self.workflow_state and not self.attach_invoice:
                     frappe.throw(_("Upload Required Documents To Submit"))
 
     def notify_grd(self,message,subject,user):
-        if user == "GRD Operator":
+        if user == "Government Relations Operator":
             send_email(self, [self.grd_operator], message, subject)
             create_notification_log(subject, message, [self.grd_operator], self)
         if user == "GRD Supervisor":
@@ -423,13 +416,17 @@ def create_work_permit_renewal(preparation_name):
     employee_in_preparation = frappe.get_doc('Preparation',preparation_name)
     if employee_in_preparation.preparation_record:
         for employee in employee_in_preparation.preparation_record:
-            if employee.renewal_or_extend == 'Renewal':
-                create_wp_renewal(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
+            if employee.renewal_or_extend in  ['Renewal (Non-Kuwaiti)','Renewal (Kuwaiti)']:
+                try:
+                    create_wp_renewal(frappe.get_doc('Employee',employee.employee),employee.renewal_or_extend,preparation_name)
+                except Exception:
+                    frappe.log_error(message=frappe.get_traceback(), title=f"Work Permit Renewal Creation Failed for Employee {employee.employee} in Preparation {preparation_name}")
+                    continue
 
 
 #FOR RENEWAL
 def create_wp_renewal(employee,status,name):
-    if status and status == "Renewal":
+    if status and status in ['Renewal (Non-Kuwaiti)',"Renewal (Kuwaiti)"]:
         start_day = add_days(employee.residency_expiry_date, -14)
         Doctype = "Preparation"
         preparation_name = name
@@ -438,6 +435,7 @@ def create_wp_renewal(employee,status,name):
             work_permit_type = "Renewal Kuwaiti"
         if employee.one_fm_nationality != "Kuwaiti":
             work_permit_type = "Renewal Non Kuwaiti"
+
     if employee.one_fm_work_permit:
         work_permit = frappe.get_doc('Work Permit', employee.one_fm_work_permit)
         new_work_permit = frappe.copy_doc(work_permit)
@@ -523,8 +521,8 @@ def system_remind_renewal_operator_to_apply():
     """
     This is a cron method runs every day at 8am. It gets Draft `renewal` work permit list and reminds operator to apply on pam website
     """
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    renewal_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    renewal_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator")
     work_permit_list = frappe.db.get_list('Work Permit',
     {'date_of_application':['<=',today()],'workflow_state':['in',('Draft','Apply Online by PRO')],'work_permit_type':['in',('Renewal Non Kuwaiti','Renewal Kuwaiti')]},['civil_id','name','reminded_grd_operator','reminded_grd_operator_again'])
 
@@ -535,8 +533,8 @@ def system_remind_transfer_operator_to_apply():
     """
     This is a cron method runs every day at 8am. It gets Draft `transfer` work permit list and reminds operator to apply on pam website
     """
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    transfer_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    transfer_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
     work_permit_list = frappe.db.get_list('Work Permit',
     {'date_of_application':['<=',today()],'workflow_state':['in',('Draft','Apply Online by PRO')],'work_permit_type':['=',('Local Transfer')]},['civil_id','name','reminded_grd_operator','reminded_grd_operator_again'])
 
@@ -611,3 +609,24 @@ def create_notification_log(subject, message, for_users, reference_doc):
         doc.document_type = reference_doc.doctype
         doc.document_name = reference_doc.name
         doc.from_user = reference_doc.modified_by
+
+@frappe.whitelist()
+def get_employee_last_checkin(employee):
+    """
+        Return last_checkin_date (MAX(date) in Employee Checkin) for each employee.
+    """
+    if not employee:
+        return {}
+    result = frappe.db.sql(
+        """
+        SELECT
+            MAX(date) AS last_checkin_date
+        FROM `tabEmployee Checkin` e
+        WHERE e.employee = %(employee)s
+        """,
+        {"employee": employee},
+        as_dict=True,
+    )
+    if len(result) > 0:
+        return result[0].last_checkin_date
+    return None

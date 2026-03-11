@@ -7,7 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "religion",
-  "religion_arabic"
+  "religion_arabic",
+  "column_break_prwb",
+  "eligible_for_hajj"
  ],
  "fields": [
   {
@@ -20,14 +22,25 @@
    "fieldtype": "Data",
    "label": "Religion",
    "unique": 1
+  },
+  {
+   "fieldname": "column_break_prwb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "eligible_for_hajj",
+   "fieldtype": "Check",
+   "label": "Eligible for Hajj"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-09-01 11:08:53.228378",
+ "modified": "2025-12-25 14:26:48.095726",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Religion",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
@@ -43,7 +56,9 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

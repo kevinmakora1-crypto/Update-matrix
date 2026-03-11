@@ -35,14 +35,25 @@ class PACI(Document):
 
     def set_grd_values(self):
         if not self.grd_supervisor:
-            self.grd_supervisor = frappe.db.get_value('GRD Settings', None, 'default_grd_supervisor')
+            self.grd_supervisor = frappe.db.get_value('HR Settings', None, 'default_grd_supervisor')
         if not self.grd_operator:
-            self.grd_operator = frappe.db.get_value('GRD Settings', None, 'default_grd_operator')
+            self.grd_operator = frappe.db.get_value('HR Settings', None, 'default_grd_operator')
         if not self.grd_operator_transfer:
-            self.grd_operator_transfer = frappe.db.get_value('GRD Settings', None, 'default_grd_operator_transfer')
+            self.grd_operator_transfer = frappe.db.get_value('HR Settings', None, 'default_grd_operator_transfer')
 
     def set_new_expiry_date(self):
-        self.new_civil_id_expiry_date = frappe.db.get_value("Employee", self.employee, "work_permit_expiry_date")
+        """
+        Set civil ID and residency expiry dates from employee's work permit expiry date.
+        
+        - For new documents: Sets new_civil_id_expiry_date.
+        - When payment invoice is uploaded: Sets both new_civil_id_expiry_date and residency_expiry_date.
+        """
+        payment_invoice_uploaded = (self.has_value_changed('upload_civil_id_payment') and self.upload_civil_id_payment)
+        if self.is_new() or payment_invoice_uploaded:
+            work_permit_expiry = frappe.db.get_value("Employee", self.employee, "work_permit_expiry_date")
+            self.new_civil_id_expiry_date = work_permit_expiry
+            if payment_invoice_uploaded:
+                self.residency_expiry_date = work_permit_expiry
 
 
     def on_update(self):
@@ -110,8 +121,12 @@ def create_PACI_renewal(preparation_name):
     employee_in_preparation = frappe.get_doc('Preparation',preparation_name)
     if employee_in_preparation.preparation_record:
         for employee in employee_in_preparation.preparation_record:
-            if employee.renewal_or_extend == 'Renewal' and employee.nationality != 'Kuwaiti':
-                create_PACI(frappe.get_doc('Employee',employee.employee),"Renewal",preparation_name)
+            if employee.renewal_or_extend == 'Renewal (Non-Kuwaiti)' and employee.nationality != 'Kuwaiti':
+                try:
+                    create_PACI(frappe.get_doc('Employee',employee.employee),"Renewal",preparation_name)
+                except Exception:
+                    frappe.log_error(message=frappe.get_traceback(), title=f"Error creating PACI for Employee {employee.employee} in Preparation {preparation_name}")
+                    continue
 
 def create_PACI_for_transfer(employee_name):
     employee = frappe.get_doc('Employee',employee_name)
@@ -135,8 +150,8 @@ def create_PACI(employee,Type,preparation_name = None):
 #==============================================================================> Reminder Notification
 def notify_operator_to_take_hawiyati_renewal():# cron job at 8am in working days
     renewal_list=[]
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    renewal_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    renewal_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator")
     paci_list_renewal = frappe.db.get_list('PACI',{'category':'Renewal','workflow_state':"Under Process",'upload_hawiyati':['=','']},['civil_id','name','upload_civil_id_payment_datetime'])
     for paci in paci_list_renewal:
         if date_diff(date.today(),getdate(paci.upload_civil_id_payment_datetime))>=2:
@@ -147,8 +162,8 @@ def notify_operator_to_take_hawiyati_renewal():# cron job at 8am in working days
 
 def notify_operator_to_take_hawiyati_transfer(): # cron job at 8am in working days
     transfer_list=[]
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    transfer_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    transfer_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
     paci_list_transfer = frappe.db.get_list('PACI',{'category':'Transfer','workflow_state':"Under Process",'upload_hawiyati':['=','']},['civil_id','name','upload_civil_id_payment_datetime'])
     for paci in paci_list_transfer:
         if date_diff(date.today(),getdate(paci.upload_civil_id_payment_datetime))>=2:
@@ -161,8 +176,8 @@ def system_remind_renewal_operator_to_apply():# cron job at 8am in working days
     """
     This is a cron method runs every day at 8am. It gets Draft renewal PACI list and reminds operator to apply on pam website
     """
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    renewal_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    renewal_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator")
     paci_list = frappe.db.get_list('PACI',
     {'date_of_application':['<=',date.today()],'workflow_state':['=',('Apply Online by PRO')],'category':['=',('Renewal')]},['civil_id','name','reminder_grd_operator','reminder_grd_operator_again'])
 
@@ -174,8 +189,8 @@ def system_remind_transfer_operator_to_apply():# cron job at 8am in working days
     """
     This is a cron method runs every day at 8am. It gets Draft transfer PACI list and reminds operator to apply on pam website
     """
-    supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
-    transfer_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+    supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
+    transfer_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
     paci_list = frappe.db.get_list('PACI',
     {'date_of_application':['<=',today()],'workflow_state':['=',('Apply Online by PRO')],'category':['=',('Transfer')]},['civil_id','name','reminder_grd_operator','reminder_grd_operator_again'])
 

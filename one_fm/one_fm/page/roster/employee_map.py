@@ -2,6 +2,30 @@ import frappe
 import pandas as pd
 from frappe.utils import nowdate, add_to_date, cstr, cint, getdate
 import datetime
+import math
+
+
+def safe_value(val):
+	"""Convert pandas NaN/NaT and other non-JSON-serializable values to None."""
+	if val is None:
+		return None
+	if pd.isna(val):
+		return None
+	# Handle float NaN explicitly
+	if isinstance(val, float) and math.isnan(val):
+		return None
+	# Handle timedelta objects
+	if isinstance(val, pd.Timedelta):
+		return str(val) if not pd.isna(val) else None
+	# Handle datetime/date objects
+	if isinstance(val, (datetime.datetime, datetime.date)):
+		return str(val)
+	return val
+
+
+def sanitize_record(record):
+	"""Apply safe_value to all values in a record dictionary."""
+	return {k: safe_value(v) for k, v in record.items()}
 
 
 class PostMap():
@@ -31,7 +55,7 @@ class PostMap():
 		self.start_mapping()
 
 	def create_template(self,row):
-		self.template[row.post_abbrv] = []
+		self.template[row.operations_role] = {"name":row.operations_role, "data":[]} 
 		return
 
 	def sort_post_schedule(self,each):
@@ -39,14 +63,14 @@ class PostMap():
 		if self.post_schedule_map.get(each.operations_role):
 			pass
 		else:
-			self.post_schedule_map[each.operations_role] = [one for one in self.post_schedule_count if one.operations_role ==each.operations_role]
+			self.post_schedule_map[each.operations_role] = [one for one in self.post_schedule_count if one.operations_role == each.operations_role]
 		return self.post_schedule_map
 
 	def sort_post_filled(self,each):
 		if self.post_filled_map.get(each.operations_role):
 			pass
 		else:
-			self.post_filled_map[each.operations_role] = [one for one in self.post_filled_count if one.operations_role==each.operations_role]
+			self.post_filled_map[each.operations_role] = [one for one in self.post_filled_count if one.operations_role == each.operations_role]
 		return self.post_filled_map
 
 	def summarise_schedule_data(self,data):
@@ -62,21 +86,25 @@ class PostMap():
 
 	def create_part_result(self,row):
 
-		if not self.preformated_data.get(self.abbrvs.get(row.get('operations_role'))):
-			self.preformated_data[self.abbrvs.get(row.get('operations_role'))] = [row]
-		else:
-			self.preformated_data[self.abbrvs.get(row.get('operations_role'))].append(row)
+		if not self.preformated_data.get(row.get('operations_role')):
+			self.preformated_data[row.get('operations_role')] = [row]
+		else: 
+			self.preformated_data[row.get('operations_role')].append(row)
+
 
 	def create_second_section(self,row):
 		highlight = "bggreen"
+		role_name = row.get('operations_role')
 
-		daily_values = self.preformated_data.get(self.abbrvs.get(row.get('operations_role')))  if self.preformated_data.get(self.abbrvs.get(row.get('operations_role'))) else []
+		daily_values = self.preformated_data.get(role_name)  if self.preformated_data.get(role_name) else []
 		cur_date_values = [i for i in daily_values if self.cur_date == i['date']]
 		if not cur_date_values:
 			row.update({'post_count':0})
 		else:
 			row.update(cur_date_values[0])
-		row['abbr'] = self.abbrvs.get(row.get('operations_role'))
+		row['abbr'] = self.abbrvs.get(role_name)
+		if not row['abbr']:
+			return
 		row['count'] = cstr(row['sche_count'])+'/'+cstr(row['post_count'])
 		if row['sche_count'] > row['post_count']:
 			highlight = "bgyellow"
@@ -84,18 +112,19 @@ class PostMap():
 			highlight = "bgred"
 		row['highlight'] = highlight
 		row['operations_role'] = row['abbr']
-		if not self.template.get(row['abbr']):
-			self.template[row['abbr']] = [row]
+
+		if not self.template.get(role_name):
+			self.template[role_name]["data"] = [row]
 		else:
-			self.template[row['abbr']].append(row)
+			self.template[role_name]["data"].append(row)
+
 
 		return self.template
 
 	def create_date_post_summary(self,date):
 		self.cur_date = cstr(date).split(' ')[0]
-		summary_data =  list(map(self.summarise_post_data,self.post_filled_map))
-		list(map(self.create_part_result,summary_data  ))
-
+		summary_data =  list(map(self.summarise_post_data, self.post_filled_map))
+		list(map(self.create_part_result,summary_data))
 		self.post_filled_summary.append(summary_data)
 
 	def create_date_schedule_summary(self,date):
@@ -104,12 +133,27 @@ class PostMap():
 		list(map(self.create_second_section,summary_schedule))
 		self.post_schedule_summary.append(summary_schedule)
 
+	def switch_template_keys(self):
+		final_list = []
+		for key, value in self.template.items():
+			abbr = self.abbrvs.get(key)
+			value['full_name'] = key
+			if abbr:
+				value['name'] = abbr
+			else:
+				value['name'] = key
+			final_list.append(value)
+		self.template = final_list
+
+
+
 	def start_mapping(self):
 		list(map(self.sort_post_schedule,self.post_schedule_count))
 		list(map(self.sort_post_filled,self.post_filled_count))
 		list(map(self.create_template,self.operations))
 		list(map(self.create_date_post_summary,self.date_range))
 		list(map(self.create_date_schedule_summary,self.date_range))
+		self.switch_template_keys()
 
 
 
@@ -152,7 +196,7 @@ class CreateMap:
 			SELECT es.employee, es.employee_name, es.date, es.operations_role, es.post_abbrv, 
 				es.shift, es.start_datetime, es.end_datetime, es.roster_type, es.employee_availability, 
 				es.day_off_ot, es.project, es.site, emp.project as actual_project,
-				emp.site as actual_site, emp.shift as actual_shift
+				emp.site as actual_site, emp.shift as actual_shift, es.event_location
 			FROM `tabEmployee Schedule` es 
 			JOIN `tabEmployee` emp
 			ON es.employee = emp.name
@@ -165,9 +209,11 @@ class CreateMap:
 		# SQL to fetch all attendance records for selected employees and date range
 		return f"""
 			SELECT at.status, at.leave_type, at.leave_application, at.attendance_date, at.employee, at.roster_type,
-				at.employee_name, at.operations_shift, osh.start_time, osh.end_time, at.day_off_ot
+				at.employee_name, at.operations_shift, osh.start_time, osh.end_time, at.day_off_ot,
+				emp.shift as actual_shift
 			FROM `tabAttendance` at 
-			LEFT JOIN `tabOperations Shift` osh ON at.operations_shift = osh.name 
+			LEFT JOIN `tabOperations Shift` osh ON at.operations_shift = osh.name
+			JOIN `tabEmployee` emp ON at.employee = emp.name
 			WHERE at.employee IN {self.employees}
 			AND at.attendance_date BETWEEN '{self.start}' AND '{self.end}'
 			AND at.docstatus = 1
@@ -230,9 +276,19 @@ class CreateMap:
 		# Create an empty DataFrame with the expected columns for downstream merging
 		grouped_schedules = pd.DataFrame(columns=['employee', 'date', 'schedule_records'])
 		if not df_schedules.empty and all(col in df_schedules.columns for col in ['employee', 'date']):
+			# Note: pandas 3.0.0 excludes grouping columns from apply by default
+			# We explicitly add them back using group.name
+			def collect_schedule_records(group):
+				records = group.to_dict('records')
+				employee, date = group.name
+				for rec in records:
+					rec['employee'] = employee
+					rec['date'] = date
+				return records
+			
 			grouped_schedules = (
 				df_schedules.groupby(['employee', 'date'])
-				.apply(lambda group: group.to_dict('records'))
+				.apply(collect_schedule_records, include_groups=False)
 				.reset_index()
 				.rename(columns={0: 'schedule_records'})
 			)
@@ -241,9 +297,19 @@ class CreateMap:
 		grouped_attendance = pd.DataFrame(columns=['employee', 'date', 'attendance_records'])
 		if not df_attendance.empty and all(col in df_attendance.columns for col in ['employee', 'attendance_date']):
 			# Group attendance records by employee and date, collect as lists
+			# Note: pandas 3.0.0 excludes grouping columns from apply by default
+			# We explicitly add them back using group.name
+			def collect_attendance_records(group):
+				records = group.to_dict('records')
+				employee, attendance_date = group.name
+				for rec in records:
+					rec['employee'] = employee
+					rec['attendance_date'] = attendance_date
+				return records
+			
 			grouped_attendance = (
 				df_attendance.groupby(['employee', 'attendance_date'])
-				.apply(lambda group: group.to_dict('records'))
+				.apply(collect_attendance_records, include_groups=False)
 				.reset_index()
 				.rename(columns={'attendance_date': 'date', 0: 'attendance_records'})
 			)
@@ -273,7 +339,7 @@ class CreateMap:
 				daily_records = []
 				# Add attendance records for the day
 				for attendance in day_row['attendance_records']:
-					attendance_entry = {
+					attendance_entry = sanitize_record({
 						'employee': attendance['employee'],
 						'employee_name': attendance['employee_name'],
 						'leave_application': attendance['leave_application'],
@@ -289,8 +355,9 @@ class CreateMap:
 						'employee_id': self.employee_period_details[employee_id].get('employee_id'),
 						'start_time': attendance['start_time'],
 						'end_time': attendance['end_time'],
-						'day_off_ot': attendance['day_off_ot']
-					}
+						'day_off_ot': attendance['day_off_ot'],
+						'actual_shift': attendance.get('actual_shift')
+					})
 					daily_records.append(attendance_entry)
 					
 				if len(daily_records) == 0:
@@ -298,11 +365,11 @@ class CreateMap:
 					for schedule in day_row['schedule_records']:
 						schedule_entry = schedule.copy()
 						schedule_entry.update(self.employee_period_details[employee_id])
-						daily_records.append(schedule_entry)
+						daily_records.append(sanitize_record(schedule_entry))
 
 				# If no records for the day, add a blank/default entry
 				if not daily_records:
-					blank_record = {
+					blank_record = sanitize_record({
 						'employee': self.employee_period_details[employee_id]['name'],
 						'employee_id': self.employee_period_details[employee_id]['employee_id'],
 						'employee_name': self.employee_period_details[employee_id]['employee_name'],
@@ -310,7 +377,7 @@ class CreateMap:
 						'relieving_date': self.employee_period_details[employee_id]['relieving_date'],
 						'day_off_category': self.employee_period_details[employee_id]['day_off_category'],
 						'number_of_days_off': self.employee_period_details[employee_id]['number_of_days_off']
-					}
+					})
 					self.formated_rs[employee_name][day_row['date']] = [blank_record]
 				else:
 					self.formated_rs[employee_name][day_row['date']] = daily_records

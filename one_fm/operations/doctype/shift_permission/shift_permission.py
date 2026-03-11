@@ -36,9 +36,10 @@ class ShiftPermission(Document):
 			self.title = self.emp_name
 
 	def validate_attendance(self):
-		attendance = frappe.db.exists('Attendance',{'attendance_date': self.date, 'employee': self.employee, 'docstatus': 1})
-		if attendance:
-			frappe.throw(_('There is an Attendance {0} exists for the Employee {1} on {2}'.format(attendance, self.emp_name, format_date(self.date))), exc=ExistAttendance)
+		if self.workflow_state not in {"Approved"}:
+			attendance = frappe.db.exists('Attendance',{'attendance_date': self.date, 'employee': self.employee, 'docstatus': 1})
+			if attendance:
+				frappe.throw(_('There is an Attendance {0} exists for the Employee {1} on {2}'.format(attendance, self.emp_name, format_date(self.date))), exc=ExistAttendance)
 
 	def on_update(self):
 		self.update_shift_assignment_checkin()
@@ -51,8 +52,8 @@ class ShiftPermission(Document):
 
 	# This method validates the permission date and avoid creating permission for previous days
 	def validate_date(self):
-		if getdate(self.date) < getdate() and frappe.session.user not in ['Administrator']:
-			frappe.throw(_("Please note that shift permission can not be created for past date")) if self.is_new() else frappe.throw("Please note that shift permission can not be updated to a past date")
+		if getdate(self.date) < getdate() and frappe.session.user not in ['Administrator'] and self.workflow_state not in {"Approved"}:
+			frappe.throw(_("Please note that shift permission can not be created for past date")) if self.is_new() else frappe.throw(_("Please note that shift permission can not be updated to a past date"))
 
 	# This method validates any dublicate permission for the employee on same day
 	def validate_record(self):
@@ -114,7 +115,36 @@ class ShiftPermission(Document):
 				create_notification_log(subject, message, [employee_user], self)
 
 	def on_cancel(self):
-		pass
+		if getdate(self.date) < getdate():
+			frappe.throw(_("Cannot cancel shift permission for a past date."))
+
+		# Revert checkin
+		checkins = frappe.get_all("Employee Checkin", filters={"shift_permission": self.name}, fields=["name"])
+		for checkin in checkins:
+			frappe.delete_doc("Employee Checkin", checkin.name, ignore_permissions=True)
+
+		# Revert shift assignment datetimes
+		if self.assigned_shift:
+			shift_assignment = frappe.get_doc("Shift Assignment", self.assigned_shift)
+			if shift_assignment.shift_type:
+				shift_type = frappe.get_value("Shift Type", shift_assignment.shift_type, ["start_time", "end_time"], as_dict=True)
+
+				start_time = shift_type.start_time
+				end_time = shift_type.end_time
+
+				# Recalculate start_datetime
+				start_datetime = datetime.combine(shift_assignment.start_date, datetime.min.time()) + start_time
+
+				# Recalculate end_datetime, handling midnight crossing
+				end_date = shift_assignment.start_date
+				if start_time > end_time:
+					end_date = frappe.utils.add_days(end_date, 1)
+				end_datetime = datetime.combine(end_date, datetime.min.time()) + end_time
+
+				frappe.db.set_value("Shift Assignment", self.assigned_shift, {
+					"start_datetime": start_datetime,
+					"end_datetime": end_datetime
+				})
 
 
 	def update_shift_assignment_checkin(self) -> None:
@@ -225,9 +255,9 @@ def approve_open_shift_permission(start_date, end_date):
 				apply_workflow(shift_permission, 'Approve')
 			except Exception as e:
 				error_list += str(e)+'\n\n'
-		if error_list:frappe.log_error(error_list, 'Shift Permission')
+		if error_list:frappe.log_error(message=error_list, title='Shift Permission')
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), 'Shift Permission')
+		frappe.log_error(message=frappe.get_traceback(), title='Shift Permission')
 
 def create_checkin(shift_permission):
 	# create checkin from shift permission

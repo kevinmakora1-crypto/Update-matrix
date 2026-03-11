@@ -17,11 +17,33 @@ class JobApplicantOverride(JobApplicant):
 	def autoname(self):
 		pass
 
+	def update_applicant_name(self):
+		"""
+		Constructs full applicant name from individual name components.
+		Triggered before save when any name field changes.
+		"""
+		name_parts = [
+			self.one_fm_first_name,
+			self.one_fm_second_name,
+			self.one_fm_third_name,
+			self.one_fm_fourth_name,
+			self.one_fm_last_name
+		]
+
+		# Filter out None and empty strings, join with space
+		full_name = " ".join(filter(None, name_parts))
+
+		if full_name and full_name != self.applicant_name:
+			self.applicant_name = full_name
+			return True
+		return False
+
 	def validate(self):
 		self.set_hiring_method()
 		self.validate_duplicate_application()
 		super(JobApplicantOverride, self).validate()
 		self.validate_transfer_reminder_date()
+		self.update_applicant_name()
 		self.convert_name_to_title_case()
 		if self.status == 'Open' and self.one_fm_applicant_status == 'Shortlisted':
 			self.mark_as_shortlisted_first = True
@@ -140,17 +162,128 @@ class JobApplicantOverride(JobApplicant):
 					frappe.throw(_("Oops! You can't choose a date in the past or today. Please select a future date."))
 
 			except Exception as e:
-				frappe.log_error(frappe.get_traceback(), "Error while validating date of local transfer in Job Applicant")
+				frappe.log_error(message=frappe.get_traceback(), title="Error while validating date of local transfer in Job Applicant")
 				...
 
 	def convert_name_to_title_case(self):
-		name_fields = ['applicant_name', 'one_fm_first_name', 'one_fm_second_name', 'one_fm_third_name', 'one_fm_forth_name', 'one_fm_last_name']
+		name_fields = ['applicant_name', 'one_fm_first_name', 'one_fm_second_name', 'one_fm_third_name', 'one_fm_fourth_name', 'one_fm_last_name']
 		for name_attr in name_fields:
 			current_name = getattr(self, name_attr, '')
 			if current_name is not None:
 				setattr(self, name_attr, current_name.title())
 
+	def on_update(self):
+		self.sync_fields_to_linked_documents()
 
+	def sync_fields_to_linked_documents(self):
+		"""
+		Synchronizes specified fields from Job Applicant to linked Job Offers and Onboard Employee records.
+		Only updates documents that are not cancelled (docstatus < 2 for Job Offer, any for Onboard Employee).
+		"""
+		job_offer_fields = {
+			"applicant_name": "applicant_name",
+			"one_fm_nationality": "nationality"
+		}
+		job_offer_changed_fields = [field for field in job_offer_fields.keys() if self.has_value_changed(field)]
+
+		onboard_employee_field_mapping = self.get_onboard_employee_field_mapping()
+		onboard_employee_changed_fields = [field for field in onboard_employee_field_mapping.keys() if self.has_value_changed(field)]
+
+		if job_offer_changed_fields:
+			job_offers = self.get_linked_job_offers()
+			self.update_linked_documents(job_offers, "Job Offer", job_offer_fields, job_offer_changed_fields)
+
+		if onboard_employee_changed_fields:
+			onboard_employees = self.get_linked_onboard_employees()
+			self.update_linked_documents(onboard_employees, "Onboard Employee", onboard_employee_field_mapping, onboard_employee_changed_fields)
+
+	def get_onboard_employee_field_mapping(self):
+		return {
+			"one_fm_first_name_in_arabic": "first_name_in_arabic",
+			"one_fm_second_name_in_arabic": "second_name_in_arabic",
+			"one_fm_third_name_in_arabic": "third_name_in_arabic",
+			"one_fm_fourth_name_in_arabic": "fourth_name_in_arabic",
+			"one_fm_last_name_in_arabic": "last_name_in_arabic",
+			"applicant_name": "employee_name",
+			"one_fm_gender": "gender",
+			"one_fm_date_of_birth": "date_of_birth",
+			"one_fm_nationality": "nationality",
+			"one_fm_passport_number": "passport_number",
+			"one_fm_passport_issued": "passport_issued",
+			"one_fm_passport_expire": "passport_expire"
+		}
+
+	def get_linked_job_offers(self):
+		return frappe.get_all(
+			"Job Offer",
+			filters={
+				"job_applicant": self.name,
+				"docstatus": ["<", 2]  # Draft or Submitted, not Cancelled
+			},
+			pluck="name"
+		)
+
+	def update_linked_documents(self, linked_docs, linked_doctype, field_mappings, changed_fields):
+		for linked_doc_name in linked_docs:
+			try:
+				linked_doc = frappe.get_doc(linked_doctype, linked_doc_name)
+				updated = False
+				for job_applicant_field in changed_fields:
+					linked_doc_field = field_mappings[job_applicant_field]
+					if hasattr(linked_doc, linked_doc_field):
+						new_value = self.get(job_applicant_field)
+						if linked_doc.get(linked_doc_field) != new_value:
+							linked_doc.set(linked_doc_field, new_value)
+							updated = True
+
+				if updated:
+					linked_doc.flags.ignore_validate_update_after_submit = True
+					linked_doc.flags.ignore_mandatory = True
+					linked_doc.save(ignore_permissions=True)
+					frappe.db.commit()
+
+			except Exception as e:
+				frappe.log_error(
+					title=f"Failed to sync to {linked_doctype} {linked_doc_name}",
+					message=f"Error: {str(e)}\n\n{frappe.get_traceback()}"
+				)
+
+	def sync_to_onboard_employee(self, field_mappings, changed_fields):
+		"""Sync changes to Onboard Employee documents"""
+		onboard_employees = self.get_linked_onboard_employees()
+
+		for onboard_emp_name in onboard_employees:
+			try:
+				onboard_emp = frappe.get_doc("Onboard Employee", onboard_emp_name)
+				updated = False
+
+				for job_applicant_field in changed_fields:
+					oe_field = field_mappings[job_applicant_field][1]
+					if hasattr(onboard_emp, oe_field):
+						new_value = self.get(job_applicant_field)
+						if onboard_emp.get(oe_field) != new_value:
+							onboard_emp.set(oe_field, new_value)
+							updated = True
+
+				if updated:
+					onboard_emp.flags.ignore_validate_update_after_submit = True
+					onboard_emp.flags.ignore_mandatory = True
+					onboard_emp.save(ignore_permissions=True)
+					frappe.db.commit()
+
+			except Exception as e:
+				frappe.log_error(
+					title=f"Failed to sync to Onboard Employee {onboard_emp_name}",
+					message=f"Error: {str(e)}\n\n{frappe.get_traceback()}"
+				)
+	def get_linked_onboard_employees(self):
+		return frappe.get_all(
+			"Onboard Employee",
+			filters={
+				"job_applicant": self.name
+			},
+			pluck="name"
+		)
 
 def notify_hr_manager_about_local_transfer() -> None:
 	if production_domain() and is_scheduler_emails_enabled():
@@ -202,7 +335,7 @@ class NotifyLocalTransfer:
 						msg = frappe.render_template('one_fm/templates/emails/notify_recruiter_about_local_transfer.html', context=data)
 						sendemail(recipients=receivers, subject=title, content=msg)
 		except:
-			frappe.log_error(frappe.get_traceback(), "Error while sending notification of local transfer")
+			frappe.log_error(message=frappe.get_traceback(), title="Error while sending notification of local transfer")
 
 @frappe.whitelist()
 def create_interview(doc,interview_round):

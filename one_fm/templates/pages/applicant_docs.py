@@ -2,7 +2,8 @@ from google.cloud import vision
 import os, io, base64, datetime, hashlib, frappe, json
 from frappe.utils import cstr
 import frappe.sessions
-from mindee import Client, documents
+
+from mindee import ClientV2, InferenceParameters, PathInput
 
 
 from dateutil.parser import parse
@@ -259,39 +260,51 @@ def get_passport_text():
         return result
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Passport Reader")
+        frappe.log_error(message=frappe.get_traceback(), title="Passport Reader")
         frappe.throw(e)
 
 
 def get_passport_data(image_path):
     try:
         # Init a new client
-        mindee_client = Client(api_key=frappe.local.conf.mindee_passport_api)
-        # Load a file from disk
-        input_doc = mindee_client.doc_from_path(image_path)
-        # Parse the Passport by passing the appropriate type
-        result = input_doc.parse(documents.TypePassportV1)
+        mindee_client = ClientV2(api_key=frappe.local.conf.mindee_passport_api)
+        passport_model_id = frappe.local.conf.passport_model_id
+        input_doc = PathInput(image_path)
+        passport_params = InferenceParameters(
+            # ID of the model, required.
+            model_id=passport_model_id,
+            # Options: set to `True` or `False` to override defaults
+            # Enhance extraction accuracy with Retrieval-Augmented Generation.
+            rag=None,
+            # Extract the full text content from the document as strings.
+            raw_text=None,
+            # Calculate bounding box polygons for all fields.
+            polygon=None,
+            # Boost the precision and accuracy of all extractions.
+            # Calculate confidence scores for all fields.
+            confidence=None,
+            )
+        passport_response = mindee_client.enqueue_and_get_inference(
+        input_doc,passport_params
+        )
+        passport_fields: dict = passport_response.inference.result.fields
         # Print a brief summary of the parsed data
-        doc = result.document
+        
         result_dict = frappe._dict(dict(
-            birth_place=doc.birth_place.value,
-            expiry_date=doc.expiry_date.value,
-            full_name=doc.full_name.value,
-            given_names=[i.value for i in doc.given_names],
-            is_expired=doc.is_expired(),
-            mrz=doc.mrz.value,
-            mrz1=doc.mrz1.value,
-            mrz2=doc.mrz2.value,
-            type=doc.type,
-            birth_date=doc.birth_date.value,
-            country=doc.country.value,
-            gender=doc.gender.value,
-            id_number=doc.id_number.value,
-            issuance_date=doc.issuance_date.value,
-            surname=doc.surname.value
+            birth_place=passport_fields.place_of_birth.value,
+            expiry_date=passport_fields.date_of_expiry.value,
+            given_names= passport_fields.given_names.value,
+            mrz1=passport_fields.mrz_line_1.value,
+            mrz2=passport_fields.mrz_line_2.value,
+            birth_date=passport_fields.date_of_birth.value,
+            country=passport_fields.issuing_country.value,
+            gender=passport_fields.gender.value,
+            id_number=passport_fields.passport_number.value,
+            issuance_date=passport_fields.date_of_issue.value,
+            surname=passport_fields.surnames.value
         ))
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Mindee")
+        frappe.log_error(message=frappe.get_traceback(), title="Mindee")
         return frappe._dict({})
     return result_dict
 
@@ -466,7 +479,7 @@ def update_application_function(job_applicant, data):
             "type_of_copy": "Soft Copy",
             })
     except Exception as e:
-        frappe.log_error(e, "Update Job Applicant (Magic Link)")
+        frappe.log_error(message=str(e), title="Update Job Applicant (Magic Link)")
         
     return new_doc
 

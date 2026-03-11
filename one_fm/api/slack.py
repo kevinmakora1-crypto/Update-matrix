@@ -45,11 +45,9 @@ def send_slack_message(message):
             r = requests.post(webhook.url, data=json.dumps(data), timeout=60)
             if not r.ok:
                 message = error_messages.get(r.status_code, r.status_code)
-                frappe.log_error(message, _('Slack Webhook Error'))
+                frappe.log_error(message=message, title='Slack Webhook Error')
                 return 'error'
 
             return 'success'
     except Exception as e:
-        frappe.log_error(
-            frappe.get_traceback(),
-            'Slack Integration')
+        frappe.log_error(title='Slack Integration', message=frappe.get_traceback())

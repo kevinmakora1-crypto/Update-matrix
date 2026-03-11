@@ -6,6 +6,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "candidate_type",
   "naming_series",
   "job_applicant",
   "applicant_name",
@@ -29,9 +30,12 @@
   "tugs",
   "about_the_opportunity_section",
   "column_break_clfa",
+  "have_you_received_any_awards_or_recognition",
+  "awards_or_recognition_details",
   "about_the_opportunity",
   "what_are_the_factors_you_are_looking_for_in_a_new_job",
   "amended_from",
+  "learning_and_development_journey",
   "rank_and_factors"
  ],
  "fields": [
@@ -53,8 +57,8 @@
    "fieldname": "career_history_company",
    "fieldtype": "Table",
    "label": "Career History",
-   "options": "Career History Company",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.candidate_type !== \"Fresher\"",
+   "options": "Career History Company"
   },
   {
    "fetch_from": "job_applicant.one_fm_erf",
@@ -81,6 +85,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.candidate_type == \"Experienced\"",
    "fieldname": "career_history_company_section",
    "fieldtype": "Section Break",
    "label": "Career History Company"
@@ -102,7 +107,7 @@
   },
   {
    "fieldname": "shoves",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Shoves"
   },
   {
@@ -111,7 +116,7 @@
   },
   {
    "fieldname": "tugs",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Tugs"
   },
   {
@@ -147,6 +152,7 @@
    "label": "Total Number of Promotions and Salary Changes"
   },
   {
+   "depends_on": "eval:doc.candidate_type == \"Experienced\"",
    "fieldname": "section_break_8",
    "fieldtype": "Section Break"
   },
@@ -189,11 +195,39 @@
    "fieldtype": "Table",
    "label": "Rank and Factors",
    "options": "Rank and Factors"
+  },
+  {
+   "fieldname": "candidate_type",
+   "fieldtype": "Select",
+   "label": "Candidate Type",
+   "options": "Fresher\nExperienced",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.candidate_type == \"Fresher\"",
+   "fieldname": "learning_and_development_journey",
+   "fieldtype": "Table",
+   "ignore_user_permissions": 1,
+   "label": "Learning and Development Journey",
+   "options": "Career History Freshers Experience"
+  },
+  {
+   "fieldname": "have_you_received_any_awards_or_recognition",
+   "fieldtype": "Select",
+   "label": "Have you received any awards or recognition?",
+   "options": "\nYes\nNo"
+  },
+  {
+   "depends_on": "eval:doc.have_you_received_any_awards_or_recognition == \"Yes\"",
+   "fieldname": "awards_or_recognition_details",
+   "fieldtype": "Small Text",
+   "label": "Awards or Recognition Details"
   }
  ],
+ "grid_page_length": 50,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-07-27 14:11:16.588067",
+ "modified": "2026-02-04 17:20:33.493859",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Career History",
@@ -246,6 +280,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

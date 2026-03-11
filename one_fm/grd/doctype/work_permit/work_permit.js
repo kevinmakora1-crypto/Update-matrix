@@ -2,15 +2,7 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Work Permit', {
-    // onload: function(frm){
-    //     set_employee_details(frm); 
-    // },
     validate: function(frm){
-    },
-    work_permit_status: function(frm){
-        if (frm.doc.work_permit_status == "Rejected"){
-            frm.set_value("work_permit_status","read_only",1);
-        }
     },
     employee: function(frm){
         let {employee} = frm.doc.employee;
@@ -59,9 +51,6 @@ frappe.ui.form.on('Work Permit', {
     grd_operator_apply_work_permit_on_ashal: function(frm){
         set_dates_grd_operator(frm);
     },
-    upload_work_permit: function(frm){
-        set_upload_work_permit(frm);
-    },
     attach_invoice: function(frm){
         set_upload_work_permit_invoice(frm);
     },
@@ -91,11 +80,7 @@ frappe.ui.form.on('Work Permit', {
     },
     // reason_of_rejection: function(frm){
     //     inform_previous_company_for_rejection(frm);
-    // }
-
-   
-
-    
+    // }    
 });
 var set_button_for_medical_insurance_transfer = function(frm){
     if(frm.doc.docstatus === 1 && frm.doc.work_permit_type == "Local Transfer" && frm.doc.workflow_state == "Completed"){
@@ -111,7 +96,7 @@ var set_button_for_medical_insurance_transfer = function(frm){
 }
 };
 var set_restart_application = function(frm){
-    if(frm.doc.docstatus == 1 && frm.doc.work_permit_status == "Rejected"){
+    if(frm.doc.docstatus == 1 && frm.doc.workflow_state == "Rejected"){
         frm.add_custom_button(__('Restart Application'), function(){
             frappe.call({
                 method: "one_fm.hiring.utils.create_new_work_permit", 
@@ -271,9 +256,9 @@ var set_authorized_signatory_name_arabic = function(frm) {
 
 var set_grd_supervisor = function(frm) {
     if(frm.is_new()){
-        frappe.db.get_value('GRD Settings', {name: 'GRD Settings'}, 'default_grd_supervisor', function(r) {
+        frappe.db.get_value('HR Settings', {name: 'HR Settings'}, 'default_grd_supervisor', function(r) {
             if(r && r.default_grd_supervisor){
-                frm.set_value('grd_supervisor', r.default_grd_supervisor);//the field in the work permit will be set based on the default_grd_supervisor field in GRD settings
+                frm.set_value('grd_supervisor', r.default_grd_supervisor);//the field in the work permit will be set based on the default_grd_supervisor field in HR Settings
             }
         });
     }
@@ -284,17 +269,6 @@ var set_dates_grd_operator = function(frm)
 	if(((frm.doc.grd_operator_apply_work_permit_on_ashal == "Yes") && (!frm.doc.grd_operator_apply_work_permit_on_ashal_date)))
     {
         frm.set_value('grd_operator_apply_work_permit_on_ashal_date',frappe.datetime.now_datetime());
-        frm.set_value('work_permit_status',"Pending by Supervisor");
-    }
-};
-var set_upload_work_permit = function(frm) //3
-{
-	if(((frm.doc.upload_work_permit)&&(!frm.doc.upload_work_permit_on)))
-    {
-        frm.set_value('upload_work_permit_on',frappe.datetime.now_datetime());
-    }if(((!frm.doc.upload_work_permit)&&(frm.doc.upload_work_permit_on)))
-    {
-        frm.set_value('upload_work_permit_on',null);
     }
 };
 var set_upload_work_permit_invoice = function(frm){

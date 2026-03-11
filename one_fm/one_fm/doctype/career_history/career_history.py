@@ -19,6 +19,7 @@ class CareerHistory(Document):
 		if self.career_history_company and self.calculate_promotions_and_experience_automatically:
 			self.calculate_promotions_and_experience()
 		self.calculate_career_history_score()
+		self.validate_awards_details()
 
 	def career_history_score_action(self):
 		if self.career_history_score and self.career_history_score > 0 and self.career_history_score < 2.99:
@@ -42,6 +43,19 @@ class CareerHistory(Document):
 		self.career_history_score = career_history_score
 		if career_history_score <= 0 and self.pass_to_next_interview:
 			self.pass_to_next_interview = ''
+
+	def validate_awards_details(self):
+		"""Ensure award/recognition details are provided when marked Yes.
+		Applies to main form and each row in Career History Company when candidate is Experienced.
+		"""
+		if getattr(self, 'candidate_type', None) == 'Experienced':
+			# Main form check
+			if getattr(self, 'have_you_received_any_awards_or_recognition', None) == 'Yes' and not getattr(self, 'awards_or_recognition_details', None):
+				frappe.throw(_("Please provide Award/Recognition Details on the main form."))
+			# Child rows check
+			for row in (self.career_history_company or []):
+				if getattr(row, 'have_you_received_any_awards_or_recognition', None) == 'Yes' and not getattr(row, 'awards_or_recognition_details', None):
+					frappe.throw(_("Row {0}: Please provide Award/Recognition Details for company: {1}").format(row.idx, row.company_name or row.job_title or row.name))
 
 	def validate_with_applicant(self):
 		if self.job_applicant:
@@ -69,6 +83,8 @@ class CareerHistory(Document):
 			promotions = {}
 			salary_hikes = {}
 			end_date_in_company = {}
+			# Track latest entry per company for missing end date
+			latest_entry_per_company = {}
 			for item in self.career_history_company:
 				if item.company_name not in start_date_in_company:
 					start_date_in_company[item.company_name] = item.start_date
@@ -82,7 +98,17 @@ class CareerHistory(Document):
 					salary_hikes[item.company_name] = [item.monthly_salary_in_kwd]
 				elif salary_hikes[item.company_name] != item.monthly_salary_in_kwd:
 					salary_hikes[item.company_name].append(item.monthly_salary_in_kwd)
-
+				# Track latest entry for missing end date
+				if not item.end_date:
+					if item.company_name not in latest_entry_per_company:
+						latest_entry_per_company[item.company_name] = item
+					else:
+						# Compare start dates
+						if getdate(item.start_date) > getdate(latest_entry_per_company[item.company_name].start_date):
+							latest_entry_per_company[item.company_name] = item
+			# For companies with missing end date, set it to today for the latest entry
+			for company, entry in latest_entry_per_company.items():
+				end_date_in_company[company] = today()
 		for company in start_date_in_company:
 			start_date = start_date_in_company[company]
 			if company in end_date_in_company:

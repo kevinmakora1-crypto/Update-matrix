@@ -1,4 +1,3 @@
-
 # Property setter imports
 from one_fm.custom.property_setter.asset import get_asset_properties
 from one_fm.custom.property_setter.asset_category_account import get_asset_category_account_properties
@@ -18,7 +17,6 @@ from one_fm.custom.property_setter.leave_application import get_leave_applicatio
 from one_fm.custom.property_setter.leave_type import get_leave_type_properties
 from one_fm.custom.property_setter.location import get_location_properties
 from one_fm.custom.property_setter.purchase_invoice import get_purchase_invoice_properties
-from one_fm.custom.property_setter.religion import get_religion_properties
 from one_fm.custom.property_setter.sales_invoice import get_sales_invoice_properties
 from one_fm.custom.property_setter.sales_invoice_advance import get_sales_invoice_advance_properties
 from one_fm.custom.property_setter.shift_request import get_shift_request_properties
@@ -69,15 +67,17 @@ from one_fm.custom.property_setter.supplier import get_supplier_properties
 from one_fm.custom.property_setter.timesheet_detail import get_timesheet_detail_properties
 from one_fm.custom.property_setter.timesheet import get_timesheet_properties
 from one_fm.custom.property_setter.todo import get_todo_properties
+from one_fm.custom.property_setter.user import get_user_properties
 from one_fm.custom.property_setter.vehicle import get_vehicle_properties
 from one_fm.custom.property_setter.warehouse import get_warehouse_properties
 from one_fm.custom.property_setter.job_offer import get_job_offer_properties
 from one_fm.custom.property_setter.employee import get_employee_properties
+from one_fm.custom.property_setter.quality_feedback_template import get_quality_feedback_template_properties
+
 
 def get_field_properties():
 	"""ONEFM specific field properties that need to be added to the masters in ERPNext"""
 	field_properties = get_assignment_rule_properties()
-	field_properties.extend(get_employee_properties())
 	field_properties.extend(get_asset_category_account_properties())
 	field_properties.extend(get_asset_finance_book_properties())
 	field_properties.extend(get_asset_properties())
@@ -95,6 +95,7 @@ def get_field_properties():
 	field_properties.extend(get_employee_advance_properties())
 	field_properties.extend(get_employee_incentive_properties())
 	field_properties.extend(get_employee_performance_feedback_properties())
+	field_properties.extend(get_employee_properties())
 	field_properties.extend(get_erf_salary_detail_properties())
 	field_properties.extend(get_expense_claim_properties())
 	field_properties.extend(get_gender_properties())
@@ -129,7 +130,6 @@ def get_field_properties():
 	field_properties.extend(get_purchase_order_item_properties())
 	field_properties.extend(get_purchase_receipt_properties())
 	field_properties.extend(get_purchase_receipt_item_properties())
-	field_properties.extend(get_religion_properties())
 	field_properties.extend(get_salary_component_account_properties())
 	field_properties.extend(get_salary_slip_properties())
 	field_properties.extend(get_sales_invoice_properties())
@@ -149,5 +149,7 @@ def get_field_properties():
 	field_properties.extend(get_todo_properties())
 	field_properties.extend(get_vehicle_properties())
 	field_properties.extend(get_warehouse_properties())
+	field_properties.extend(get_user_properties())
+	field_properties.extend(get_quality_feedback_template_properties())
 
 	return field_properties

@@ -137,41 +137,84 @@ frappe.ui.form.on('Contracts', {
 			frm.add_custom_button(__("Create Delivery Note"), function() {
 				create_delivery_note(frm);
 			}).addClass('btn btn-danger');
+
 			// Generate Invoice
 			frm.add_custom_button(__("Generate Invoice"), function() {
-				// ask for invoice date, then use it for the rest of the activity
+				// Get contract start year and current year
+				let contract_start_year = frm.doc.start_date ? new Date(frm.doc.start_date).getFullYear() : new Date().getFullYear();
+				let current_year = new Date().getFullYear();
+				
+				// Generate year options from current year back to contract start year
+				let year_options = [];
+				for (let year = current_year; year >= contract_start_year; year--) {
+					year_options.push({ value: year.toString(), label: year.toString() });
+				}
+				
+				// Month options
+				let month_options = [
+					{ value: 1, label: __("January") },
+					{ value: 2, label: __("February") },
+					{ value: 3, label: __("March") },
+					{ value: 4, label: __("April") },
+					{ value: 5, label: __("May") },
+					{ value: 6, label: __("June") },
+					{ value: 7, label: __("July") },
+					{ value: 8, label: __("August") },
+					{ value: 9, label: __("September") },
+					{ value: 10, label: __("October") },
+					{ value: 11, label: __("November") },
+					{ value: 12, label: __("December") },
+				];
+				
+				// Set default to current month and year
+				let current_month = (new Date().getMonth() + 1).toString();
+				let current_year_str = current_year.toString();
+				
 				let d = new frappe.ui.Dialog({
-					title: 'Select Contracts Period',
+					title: __('Select Invoice Period'),
 					fields: [
-							{
-									label: 'Contract Period',
-									fieldname: 'period',
-									fieldtype: 'Date',
-						reqd:1
-							}
-					],
-					primary_action_label: 'Generate',
-					primary_action(values) {
-					// process generate invoice
-					frappe.call({
-						doc: frm.doc,
-						method: 'generate_sales_invoice',
-						args: values,
-						callback: function(r) {
-							if(!r.exc){
-								frappe.show_alert({
-										message:__('Sales Invoice created successfully'),
-										indicator:'green'
-								}, 5);
-								frappe.msgprint(__('Sales Invoice created successfully'))
-								frm.reload_doc();
-							}
+						{
+								label: __('Month'),
+								fieldname: 'month',
+								fieldtype: 'Select',
+								options: month_options,
+								default: current_month,
+								reqd: 1
 						},
-						freeze: true,
-						freeze_message: (__('Creating Sales Invoice'))
-					})
-					// end process generate invoice
-							d.hide();
+						{
+								label: __('Year'),
+								fieldname: 'year',
+								fieldtype: 'Select',
+								options: year_options,
+								default: current_year_str,
+								reqd: 1
+						}
+					],
+					primary_action_label: __('Generate'),
+					primary_action(values) {						
+						frappe.call({
+							doc: frm.doc,
+							method: 'generate_sales_invoice',
+							args: values,
+							callback: function(r) {
+								if(!r.exc){
+									frappe.show_alert({
+											message:__('Sales Invoice created successfully'),
+											indicator:'green'
+									}, 5);
+									
+									if(r.message && r.message.name) {
+										frappe.set_route('Form', 'Sales Invoice', r.message.name);
+									} else {
+										frappe.msgprint(__('Sales Invoice created successfully'));
+										frm.reload_doc();
+									}
+								}
+							},
+							freeze: true,
+							freeze_message: (__('Creating Sales Invoice'))
+						})
+						d.hide();
 					}
 			});
 
@@ -257,6 +300,93 @@ frappe.ui.form.on('Contracts', {
         }
         frm.refresh_field("assets");
 		set_hide_management_fee_fields(frm);
+		frm.events.open_sections_onload(frm);
+		
+		frm.fields_dict['contract_items_operation'].grid.get_field('item_code').get_query = function() {
+			let valid_items = frm.doc.items.map(item => item.item_code);
+			return {
+				filters: [
+					['Item', 'item_code', 'in', valid_items]
+				]
+			};
+		};
+
+		// Role-based read-only enforcement.
+		// Uses frm.meta.fields (ordered by idx from DB) to walk sections reliably.
+		// Wrapped in setTimeout to guarantee the form DOM is fully rendered.
+		setTimeout(() => {
+			const user_roles = frappe.user_roles;
+			const is_system_manager = user_roles.includes('System Manager');
+
+			// Optional: log roles to browser console for debugging
+			console.log('[Contracts] user_roles:', user_roles);
+
+			if (is_system_manager) {
+				console.log('[Contracts] System Manager — skipping role enforcement');
+				return;
+			}
+
+			// Map section-break fieldname → role(s) that may EDIT that section.
+			// [] = read-only to everyone; omit entry = leave as-is (custom sections)
+			const section_role_map = {
+				'__header__':                       ['Sales Manager'],
+				'section_break_8':                  ['Sales Manager'],
+				'section_break_20':                 ['Legal Manager'],
+				'section_break_26':                 ['Finance Manager'],
+				'section_break_35':                 ['Finance Manager'],
+				'operational_requirements_section': ['Operation Admin'],
+				'section_break_55':                 [],
+			};
+
+			// Fieldtypes that must never be set read_only (they control layout)
+			const layout_types = new Set(['Section Break', 'Column Break', 'Tab Break', 'HTML', 'Heading']);
+			const skip_fields  = new Set(['amended_from', 'password_management', 'workflow_state']);
+
+			let current_section = '__header__';
+			let processed = 0;
+
+			// frm.meta.fields is ordered by DB idx — the definitive rendering order
+			(frm.meta.fields || []).forEach(df => {
+				const fn = df.fieldname;
+				const ft = df.fieldtype;
+
+				// Advance current section when we hit a Section Break
+				if (ft === 'Section Break') {
+					current_section = section_role_map.hasOwnProperty(fn) ? fn : '__unknown__';
+					return; // never touch section break fields themselves
+				}
+
+
+				// Skip layout and system fields
+				if (layout_types.has(ft) || skip_fields.has(fn)) return;
+
+				const owners = section_role_map[current_section];
+				if (owners === undefined) return; // unknown/custom section → leave alone
+
+				const can_edit = owners.length > 0 && owners.some(r => user_roles.includes(r));
+				frm.set_df_property(fn, 'read_only', can_edit ? 0 : 1);
+				processed++;
+			});
+
+			console.log(`[Contracts] Role enforcement applied to ${processed} fields. Section: ${current_section}`);
+			frm.refresh_fields();
+
+			
+				const ops_grid = frm.get_field('contract_items_operation');
+				if (ops_grid && ops_grid.grid) {
+					ops_grid.grid.cannot_add_rows = true;
+					ops_grid.grid.cannot_delete_rows = true;
+					
+					if (user_roles.includes('Operation Admin')) {
+						['item_code', 'count', 'rate_type', 'uom'].forEach(fieldname => {
+							ops_grid.grid.update_docfield_property(fieldname, 'read_only', 1);
+						});
+					}
+
+					ops_grid.grid.refresh();
+				}
+			
+		}, 300);
 
 	},
 	customer_address:function(frm){
@@ -292,21 +422,28 @@ frappe.ui.form.on('Contracts', {
 	create_sales_invoice_as: function(frm){
 		set_hide_management_fee_fields(frm);
 	},
-	engagement_type: (frm)=>{
-		// disable is auto renewal if engagement type is one-off
-		if(frm.doc.engagement_type=='One-off'){
-			frm.toggle_enable('is_auto_renewal', 0);
-			frm.toggle_display('is_auto_renewal', 0);
-		} else {
-			frm.toggle_enable('is_auto_renewal', 1);
-			frm.toggle_display('is_auto_renewal', 1);
-		}
+	open_sections_onload(frm) {
+		// run after layout is ready
+        frappe.after_ajax(() => {
+            let keep_closed = ['section_break_15', 'section_break_36', 'section_break_55', 'sales_invoice_print_settings_section'];
+			frm.layout.sections.forEach(sec => {
+                if (sec.df && sec.df.collapsible) {
+					if (!keep_closed.includes(sec.df.fieldname)) {
+                        sec.collapse(false);
+                    }
+                }
+            });
+        });
 	}
 });
 
 var set_hide_management_fee_fields = function(frm) {
 	var management_fee_percentage = frappe.meta.get_docfield("Contract Item", "management_fee_percentage", frm.doc.name);
 	var management_fee = frappe.meta.get_docfield("Contract Item", "management_fee", frm.doc.name);
+
+	// Guard: fields may not exist if Contract Item was restructured
+	if (!management_fee_percentage || !management_fee) return;
+
 	if(frm.doc.create_sales_invoice_as == 'Invoice for Airport'){
 		management_fee_percentage.hidden = 0;
 		management_fee.hidden = 0;

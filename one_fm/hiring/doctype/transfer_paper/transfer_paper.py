@@ -75,7 +75,7 @@ class TransferPaper(Document):
 
     def set_grd_values(self):
         if not self.grd_operator_transfer:
-            self.grd_operator_transfer = frappe.db.get_single_value("GRD Settings", "default_grd_operator_transfer")
+            self.grd_operator_transfer = frappe.db.get_single_value("HR Settings", "default_grd_operator_transfer")
 
     def set_electronic_signature(self):
         if not self.authorized_signature:
@@ -90,29 +90,29 @@ class TransferPaper(Document):
         """This method arranges the names in the print format based on what is filled in job applicant doctype"""
         if self.applicant:
             applicant = frappe.get_doc('Job Applicant',self.applicant)
-            if applicant.one_fm_first_name_in_arabic and not applicant.one_fm_second_name_in_arabic and not applicant.one_fm_third_name_in_arabic and not applicant.one_fm_forth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
+            if applicant.one_fm_first_name_in_arabic and not applicant.one_fm_second_name_in_arabic and not applicant.one_fm_third_name_in_arabic and not applicant.one_fm_fourth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
                 self.first_name_in_arabic = applicant.one_fm_first_name_in_arabic
                 self.second_name_in_arabic = applicant.one_fm_last_name_in_arabic
                 self.third_name_in_arabic = ''
-                self.forth_name_in_arabic = ''
+                self.fourth_name_in_arabic = ''
                 self.last_name_in_arabic = ''
-            elif applicant.one_fm_first_name_in_arabic and applicant.one_fm_second_name_in_arabic and not applicant.one_fm_third_name_in_arabic and not applicant.one_fm_forth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
+            elif applicant.one_fm_first_name_in_arabic and applicant.one_fm_second_name_in_arabic and not applicant.one_fm_third_name_in_arabic and not applicant.one_fm_fourth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
                 self.first_name_in_arabic = applicant.one_fm_first_name_in_arabic
                 self.second_name_in_arabic = applicant.one_fm_second_name_in_arabic
                 self.third_name_in_arabic = applicant.one_fm_last_name_in_arabic
-                self.forth_name_in_arabic = ''
+                self.fourth_name_in_arabic = ''
                 self.last_name_in_arabic = ''
-            elif applicant.one_fm_first_name_in_arabic and applicant.one_fm_second_name_in_arabic and applicant.one_fm_third_name_in_arabic and not applicant.one_fm_forth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
+            elif applicant.one_fm_first_name_in_arabic and applicant.one_fm_second_name_in_arabic and applicant.one_fm_third_name_in_arabic and not applicant.one_fm_fourth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
                 self.first_name_in_arabic = applicant.one_fm_first_name_in_arabic
                 self.second_name_in_arabic = applicant.one_fm_second_name_in_arabic
                 self.third_name_in_arabic = applicant.one_fm_third_name_in_arabic
-                self.forth_name_in_arabic = applicant.one_fm_last_name_in_arabic
+                self.fourth_name_in_arabic = applicant.one_fm_last_name_in_arabic
                 self.last_name_in_arabic = ''
-            elif applicant.one_fm_first_name_in_arabic and applicant.one_fm_second_name_in_arabic and not applicant.one_fm_third_name_in_arabic and applicant.one_fm_forth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
+            elif applicant.one_fm_first_name_in_arabic and applicant.one_fm_second_name_in_arabic and not applicant.one_fm_third_name_in_arabic and applicant.one_fm_fourth_name_in_arabic and applicant.one_fm_last_name_in_arabic:
                 self.first_name_in_arabic = applicant.one_fm_first_name_in_arabic
                 self.second_name_in_arabic = applicant.one_fm_second_name_in_arabic
-                self.third_name_in_arabic = applicant.one_fm_forth_name_in_arabic
-                self.forth_name_in_arabic = applicant.one_fm_last_name_in_arabic
+                self.third_name_in_arabic = applicant.one_fm_fourth_name_in_arabic
+                self.fourth_name_in_arabic = applicant.one_fm_last_name_in_arabic
                 self.last_name_in_arabic = ''
 
     def check_workflow_states(self):
@@ -163,7 +163,7 @@ class TransferPaper(Document):
         work_permit.create_work_permit_transfer(self.name,employee)
 
     def notify_grd_transfer_wp_record(self):
-        wp = frappe.db.get_value("Work Permit",{'transfer_paper':self.name,'work_permit_status':'Draft'})
+        wp = frappe.db.get_value("Work Permit",{'transfer_paper':self.name,'workflow_state':'Draft'})
         if wp:
             wp_record = frappe.get_doc('Work Permit', wp)
             page_link = get_url(wp_record.get_url())

@@ -18,6 +18,15 @@ class ToDo(FrappeToDo):
         except Exception as e:
             frappe.log_error(message=f"Failed to delete Google Task on ToDo trash: {e}", title="ToDo on_trash Error")
 
+def delete_linked_todos(doc, method):
+    todos = frappe.get_all("ToDo", filters={
+        "reference_type": doc.doctype,
+        "reference_name": doc.name
+    }, pluck="name")
+
+    for todo in todos:
+        frappe.delete_doc("ToDo", todo, force=1)
+
 def validate_todo(doc, method):
     notify_todo_status_change(doc)
     set_todo_type_from_refernce_doc(doc)
@@ -26,6 +35,8 @@ def validate_todo(doc, method):
 def notify_todo_status_change(doc):
     """Notify user if ToDo status changes. Modular, clear, and logs notification."""
     if doc.is_new():
+        return
+    if not doc.notify_allocated_to_via_email:
         return
     status_in_db = frappe.db.get_value(doc.doctype, doc.name, "status")
     if status_in_db != doc.status and doc.assigned_by != doc.allocated_to:
@@ -95,6 +106,14 @@ def is_google_task_synchronization_enabled():
 
 def get_google_task_service(employee_email):
     """Return Google Tasks API service for the given employee email. Logs and returns None on error."""
+
+    if not is_user_id_company_prefred_email_in_employee(employee_email):
+        frappe.log_error(
+            message="Employee {0} does not have a Google account associated.".format(employee_email), 
+            title="Google Task Service Error - Employee Email: {0}".format(employee_email)
+        )
+        return None
+
     credentials_path = frappe.get_site_path("private", "files", "gcp.json")
     try:
         with open(credentials_path, "r") as file:
@@ -109,8 +128,7 @@ def get_google_task_service(employee_email):
 def before_save(doc,method):
     previous_doc = doc.get_doc_before_save()
     if previous_doc:
-        service = get_google_task_service(previous_doc.allocated_to)
-        return service
+        return get_google_task_service(previous_doc.allocated_to)
 
 def create_google_task_on_todo_creation(doc, method):
     # Skip if general trigger is not enabled
@@ -128,7 +146,6 @@ def create_google_task_on_todo_creation_in_erp(doc, method):
     try:
         service = get_google_task_service(employee_email)
         if not service:
-            frappe.log_error(message="Google Task service unavailable", title="Google Task Creation Error")
             return
         if method == "on_update":
             prev_service = before_save(doc, method)
@@ -211,7 +228,6 @@ def update_google_task_on_todo_status_change(doc, method):
         frappe.throw(_("No assigned user found for this ToDo"))
     service = get_google_task_service(employee_email)
     if not service:
-        frappe.log_error(message="Google Task service unavailable", title="Google Task Update Error")
         return
     try:
         task = service.tasks().get(tasklist="@default", task=doc.custom_google_task_id).execute()
@@ -247,6 +263,8 @@ def delete_google_task_on_todo_delete(doc):
             frappe.throw(_("No assigned user found for this ToDo"))
         try:
             service = get_google_task_service(employee_email)
+            if not service:
+                return {"status": "skipped", "message": "Google Task service unavailable for user {0}".format(employee_email)}
             response = service.tasks().delete(tasklist="@default", task=doc.custom_google_task_id).execute()
             # Google Tasks API delete returns an empty dict on success
             if response == {}:
@@ -285,7 +303,7 @@ def sync_google_tasks_with_todos():
         batch_size = 5
         for i in range(0, len(user_emails_having_google_account), batch_size):
             batch_user_emails = user_emails_having_google_account[i:i+batch_size]
-            frappe.enqueue(sync_google_tasks_for_users, user_emails=batch_user_emails, is_async=True)
+            frappe.enqueue(sync_google_tasks_for_users, user_emails=batch_user_emails, is_async=True, timeout=600)
 
         return { "error": False, "message" : "Google Tasks synchronized successfully" }
 
@@ -303,9 +321,9 @@ def sync_my_google_tasks_with_todos():
         if not is_google_task_synchronization_enabled() or logged_in_user == "Administrator":
             return { "error": True, "message" : "You are not allowed to sync google tasks" }
 
-        sync_google_tasks_for_users(user_emails=[logged_in_user])
+        frappe.enqueue(sync_google_tasks_for_users, user_emails=[logged_in_user], is_async=True, timeout=600)
 
-        return { "error": False, "message" : "My Google Tasks synchronized successfully" }
+        return { "error": False, "message" : "Your Google Tasks will be synced in the background." }
 
     except Exception as e:
         frappe.log_error(message =str(e),title = "Failed to sync google tasks to ERP ToDo")
@@ -313,16 +331,19 @@ def sync_my_google_tasks_with_todos():
 
 
 @frappe.whitelist()
-def sync_google_tasks_for_users(user_emails=[]):
+def sync_google_tasks_for_users(user_emails=[], timedelta_kwargs=None):
     all_google_tasks = []
 
-      # Iterate through user emails having google account and fetch each user's tasks
+    # Iterate through user emails having google account and fetch each user's tasks
     for user_email in user_emails:
         try:
             service = get_google_task_service(user_email)
 
-            five_minutes_ago = datetime.now(timezone.utc) - timedelta(minutes=5)
-            updated_min = five_minutes_ago.isoformat()
+            if timedelta_kwargs is None:
+                timedelta_kwargs = {"minutes": 5}
+
+            time_ago = datetime.now(timezone.utc) - timedelta(**timedelta_kwargs)
+            updated_min = time_ago.isoformat()
 
             results = service.tasks().list(tasklist="@default", showHidden=True, showDeleted=True, updatedMin=updated_min).execute()
             user_tasks = results.get("items", [])

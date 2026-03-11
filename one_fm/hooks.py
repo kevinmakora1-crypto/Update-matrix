@@ -4,7 +4,8 @@ from . import __version__ as app_version
 import frappe as _frappe
 from frappe import _
 from hrms.hr.doctype.shift_type.shift_type import ShiftType
-
+import werkzeug.wrappers
+werkzeug.wrappers.Request.max_form_memory_size = 5 * 1024 * 1024  # Sets it to 5MB
 
 
 app_name = "one_fm"
@@ -33,11 +34,19 @@ app_include_js = [
 		"/assets/one_fm/js/desk.js",
         "/assets/one_fm/js/showdown.min.js",
 		"/assets/one_fm/js/form_overrides/workflow_override.js",
-        "text_editor.bundle.js"
+        "text_editor.bundle.js",
+        "/assets/one_fm/js/workflow_banner.js"
 ]
 # include js, css files in header of web template
 # web_include_css = "/assets/one_fm/css/one_fm.css"
 web_include_js = "/assets/one_fm/js/web/one_fm.js"
+
+# Server-side website redirects
+website_redirects = [
+	# Host-based site
+	{"source": "/jobs", "target": "/careers"},
+	{"source": "/jobs/", "target": "/careers"},
+]
 
 # include js in page
 page_js = {
@@ -119,7 +128,10 @@ doctype_js = {
     "Employee Performance Feedback":"public/js/doctype_js/employee_performance_feedback.js",
     "Leave Allocation": "public/js/doctype_js/leave_allocation.js",
     "Contact": "public/js/doctype_js/contact.js",
-    "ToDo": "public/js/doctype_js/todo.js"
+    "ToDo": "public/js/doctype_js/todo.js",
+    "Loan": "public/js/doctype_js/loan.js",
+    "Quality Feedback": "public/js/doctype_js/quality_feedback.js",
+    "Quality Feedback Template": "public/js/doctype_js/quality_feedback_template.js"
 }
 doctype_list_js = {
 	"Job Applicant" : "public/js/doctype_js/job_applicant_list.js",
@@ -132,6 +144,7 @@ doctype_list_js = {
     "Employee": "public/js/doctype_list_js/employee_list.js",
     "ToDo": "public/js/doctype_list_js/todo_list.js",
     "Designation": "public/js/doctype_list_js/designation_list.js",
+    "Shift Request": "public/js/doctype_list_js/shift_request_list.js",
 }
 doctype_tree_js = {
 	"Warehouse" : "public/js/doctype_tree_js/warehouse_tree.js",
@@ -214,6 +227,11 @@ standard_queries = {
 }
 
 doc_events = {
+	"*":{
+		"on_trash":[
+			"one_fm.overrides.todo.delete_linked_todos"
+		]
+	},
 	"Stock Entry": {
 		"validate": [
 			"one_fm.overrides.stock_entry.alert_item_multiple_entry",
@@ -221,19 +239,26 @@ doc_events = {
 		],
 		"on_submit": [
 			"one_fm.api.doc_methods.stock_entry.validate_budget",
-			"one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_and_requested_qty"
 		],
-		"on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_and_requested_qty"
 	},
 	"Purchase Order": {
-		"on_submit": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",
-		"on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",
+		"on_submit": [
+			"one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",
+			"one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_order"
+		],
+		"on_cancel": [
+			"one_fm.purchase.doctype.request_for_material.request_for_material.update_completed_purchase_qty",
+			"one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_order"
+		],
 		"after_insert": "one_fm.purchase.utils.set_quotation_attachment_in_po",
 		"validate":[
 			"one_fm.overrides.purchase_order.validate_purchase_uom"
 		],
 		'on_update':"one_fm.overrides.purchase_order.on_update",
-		"on_update_after_submit": "one_fm.purchase.utils.set_po_letter_head"
+		"on_update_after_submit": [
+            "one_fm.purchase.utils.set_po_letter_head",
+            "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_order"
+		]
 	},
 	"Leave Application": {
 		"on_submit": ["one_fm.utils.leave_appillication_on_submit"],
@@ -295,9 +320,26 @@ doc_events = {
 	"Employee Checkin": {
 		"on_update": "one_fm.utils.create_additional_salary_for_overtime_request_for_head_office"
 	},
+	"Request for Purchase": {
+		"on_submit": "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_rfp",
+		"on_cancel": "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_rfp",
+		"on_update_after_submit": "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_rfp",
+	},
 	"Purchase Receipt": {
 		"before_submit": "one_fm.purchase.utils.before_submit_purchase_receipt",
-		"on_submit": "one_fm.one_fm.doctype.customer_asset.customer_asset.on_purchase_receipt_submit",
+		"on_submit": [
+			"one_fm.one_fm.doctype.customer_asset.customer_asset.on_purchase_receipt_submit",
+			"one_fm.overrides.purchase_receipt.update_received_qty",
+            "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_receipt"
+		],
+		"on_cancel": [
+            "one_fm.overrides.purchase_receipt.update_received_qty",
+            "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_receipt"
+        ],
+		"on_update_after_submit": [
+            "one_fm.overrides.purchase_receipt.update_received_qty",
+            "one_fm.purchase.doctype.request_for_material.request_for_material.update_rfm_status_against_purchase_receipt"
+        ],
 		"validate": [
 			"one_fm.purchase.utils.validate_store_keeper_project_supervisor",
 			"one_fm.overrides.purchase_receipt.validate_item_batch"
@@ -306,19 +348,6 @@ doc_events = {
 	"Contact": {
 		"on_update": "one_fm.accommodation.doctype.accommodation.accommodation.accommodation_contact_update",
         "validate": "one_fm.accommodation.doctype.accommodation.accommodation.validate_contact",
-	},
-	"Project": {
-		"validate": [
-			"one_fm.one_fm.project_custom.validate_poc_list",
-			"one_fm.one_fm.project_custom.validate_project",
-			"one_fm.overrides.project.update_project_user_assignment"
-		],
-		"onload": "one_fm.one_fm.project_custom.get_depreciation_expense_amount",
-		"on_update": [
-						"one_fm.api.doc_events.on_project_update_switch_shift_site_post_to_inactive",
-						"one_fm.api.doc_events.update_project_manager_name"
-					]
-			# 	"on_update": "one_fm.api.doc_events.project_on_update"
 	},
 	"Attendance": {
 		"on_submit": [
@@ -528,6 +557,17 @@ override_doctype_class = {
     "HD Ticket": "one_fm.overrides.hd_ticket.HDTicketOverride",
     "ToDo": "one_fm.overrides.todo.ToDo",
     "Task": "one_fm.overrides.task.TaskOverride",
+    "Loan Application": "one_fm.overrides.loan_application.LoanApplicationOverride",
+    "Loan": "one_fm.overrides.loan.LoanOverride",
+    "Stock Entry": "one_fm.overrides.stock_entry.StockEntryOverride",
+    "Sales Invoice": "one_fm.overrides.sales_invoice.SalesInvoiceOverride",
+    "Purchase Invoice": "one_fm.overrides.purchase_invoice.PurchaseInvoiceOverride",
+    "Purchase Receipt": "one_fm.overrides.purchase_receipt.PurchaseReceiptOverride",
+    "Asset": "one_fm.overrides.asset.AssetOverride",
+    "Asset Movement": "one_fm.overrides.asset_movement.AssetMovement",
+    "Project": "one_fm.overrides.project.ProjectOverride",
+    "Quality Feedback": "one_fm.overrides.quality_feedback.QualityFeedbackOverride",
+	"Quality Feedback Template": "one_fm.overrides.quality_feedback_template.QualityFeedbackTemplateOverride",
 }
 
 
@@ -560,7 +600,7 @@ scheduler_events = {
 		"one_fm.operations.doctype.contracts.contracts.renew_contracts_by_termination_date",
         "one_fm.developer.doctype.bug_buster.bug_buster.roster_bug_buster",
         'one_fm.utils.set_employee_status',
-        'one_fm.utils.set_out_of_office_for_leaves',
+        'one_fm.utils.queue_set_out_of_office_for_leaves',
         'one_fm.utils.update_active_employees_assurance_level',
         'one_fm.operations.doctype.process_task.process_task.create_task_on_monthly_on_day',
         'one_fm.operations.doctype.process_task.process_task.trigger_method_from_monthly_on_day_process_task',
@@ -592,15 +632,12 @@ scheduler_events = {
 			'one_fm.grd.doctype.work_permit.work_permit.system_remind_transfer_operator_to_apply',
 			'one_fm.grd.doctype.medical_insurance.medical_insurance.system_remind_renewal_operator_to_apply_mi',#mi
 			'one_fm.grd.doctype.medical_insurance.medical_insurance.system_remind_transfer_operator_to_apply_mi',
-			'one_fm.grd.doctype.moi_residency_jawazat.moi_residency_jawazat.system_remind_renewal_operator_to_apply',#moi
-			'one_fm.grd.doctype.moi_residency_jawazat.moi_residency_jawazat.system_remind_transfer_operator_to_apply',
+			'one_fm.grd.doctype.residency.residency.system_remind_renewal_operator_to_apply',#moi
+			'one_fm.grd.doctype.residency.residency.system_remind_transfer_operator_to_apply',
 			'one_fm.grd.doctype.paci.paci.system_remind_renewal_operator_to_apply',#paci
 			'one_fm.grd.doctype.paci.paci.system_remind_transfer_operator_to_apply',
 			'one_fm.grd.doctype.paci.paci.notify_operator_to_take_hawiyati_renewal',#paci hawiyati
 			'one_fm.grd.doctype.paci.paci.notify_operator_to_take_hawiyati_transfer'
-		],
-		"00 8 * * 0,1,2,3,4":[# run “At 08:00 AM on Sunday, Monday, Tuesday, Wednesday, and Thursday.”
-			'one_fm.events.issue.send_open_issue_count_to_google_chat_notification'
 		],
 		"15 3 * * *": [
 			'one_fm.tasks.one_fm.daily.generate_contracts_invoice', #Generate contracts sales invoice
@@ -643,7 +680,8 @@ scheduler_events = {
 			'one_fm.operations.doctype.roster_day_off_checker.roster_day_off_checker.generate_checker',
 		],
 		"30 4 * * *": [
-			'one_fm.utils.check_grp_operator_submission_four_half'
+			'one_fm.utils.check_grp_operator_submission_four_half',
+			'one_fm.operations.doctype.roster_client_day_off_checker.roster_client_day_off_checker.check_roster_client_day_off'
 		],
 		"15 6 * * *": [# Runs everyday at 6:15 am.
 			'one_fm.utils.send_gp_letter_attachment_reminder2',
@@ -657,7 +695,6 @@ scheduler_events = {
 			'one_fm.grd.utils.sendmail_reminder_to_book_appointment_for_pifss',
 			'one_fm.grd.utils.sendmail_reminder_to_collect_pifss_documents',
 			'one_fm.hiring.doctype.transfer_paper.transfer_paper.check_signed_workContract_employee_completed',
-			'one_fm.grd.doctype.preparation.preparation.auto_create_preparation_record',
             # create roster post and employee action
 			'one_fm.one_fm.doctype.roster_post_actions.roster_post_actions.create',
             'one_fm.one_fm.doctype.roster_employee_actions.roster_employee_actions.create'
@@ -714,6 +751,9 @@ scheduler_events = {
 		],
 		"15 13 * * *":[ # Attendance Check
 			'one_fm.one_fm.doctype.attendance_check.attendance_check.attendance_check_pending_approval_check'
+		],
+        "0 6 * * *": [ # update currency exchange rates daily at 6 am
+			"one_fm.tasks.one_fm.currency_exchange.update_currency_exchange_rates"
 		],
 		"15 12 * * *": [ # create shift assignment
 			'one_fm.api.tasks.assign_pm_shift'
@@ -811,17 +851,26 @@ override_whitelisted_methods = {
 	"hrms.hr.doctype.leave_application.leave_application.get_leave_details" : "one_fm.overrides.leave_application.get_leave_details",
     "frappe.desk.form.load.getdoc": "one_fm.permissions.getdoc",
     "frappe.desk.form.load.get_docinfo": "one_fm.permissions.get_docinfo",
-	"erpnext.controllers.accounts_controller.update_child_qty_rate":"one_fm.overrides.accounts_controller.update_child_qty_rate",
 	"hrms.hr.doctype.goal.goal.get_children":"one_fm.overrides.goal.get_childrens",
     "hrms.payroll.doctype.payroll_entry.payroll_entry.get_start_end_dates": "one_fm.overrides.payroll_entry.get_start_end_dates",
-    "hrms.hr.doctype.job_applicant.job_applicant.create_interview": "one_fm.overrides.job_applicant.create_interview"
+    "hrms.hr.doctype.job_applicant.job_applicant.create_interview": "one_fm.overrides.job_applicant.create_interview",
+    "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_receipt":"one_fm.overrides.purchase_order.make_purchase_receipt",
+    "erpnext.accounts.doctype.purchase_invoice.purchase_invoice.make_purchase_receipt":"one_fm.overrides.purchase_invoice.make_purchase_receipt",
+    "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_invoice":"one_fm.overrides.purchase_order.make_purchase_invoice",
+    "frappe.desk.form.utils.get_next": "one_fm.utils.get_next"
 
 }
 
 
 override_doctype_dashboards = {
     'Project': 'one_fm.overrides.project_dashboard.get_data',
+    'HD Ticket': 'one_fm.overrides.hd_ticket_dashboard.get_data',
+    'Item': 'one_fm.overrides.item_dashboard.get_data',
+    'Sales Invoice': 'one_fm.overrides.sales_invoice_dashboard.get_data',
+    "Purchase Invoice": "one_fm.overrides.purchase_invoice_dashboard.get_data",
+    "Job Applicant": "one_fm.overrides.job_applicant_dashboard.get_data"
 }
+
 
 
 

@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 import frappe
 
-from hrms.payroll.doctype.payroll_entry.payroll_entry import PayrollEntry
+# from hrms.payroll.doctype.payroll_entry.payroll_entry import PayrollEntry
 from hrms.payroll.doctype.salary_slip.salary_slip import SalarySlip
 from erpnext.stock.doctype.item_price.item_price import ItemPrice
 from erpnext.setup.doctype.employee.employee import Employee
@@ -51,10 +51,10 @@ from frappe.core.doctype.user_permission import user_permission
 from one_fm.permissions import get_custom_user_permissions
 import frappe.workflow.doctype.workflow_action.workflow_action as wa
 from one_fm.overrides.workflow import confirm_action as custom_confirm_action
+from one_fm.overrides.purchase_order import calculate_margin
 
 
-
-__version__ = '15.4.2'
+__version__ = '15.4.14'
 
 wa.confirm_action = custom_confirm_action
 user_permission.get_user_permissions = get_custom_user_permissions
@@ -84,6 +84,7 @@ ItemPrice.validate = validate
 ItemPrice.check_duplicates = check_duplicates
 LeaveApplication.notify_leave_approver = notify_leave_approver
 calculate_taxes_and_totals.calculate_item_values = calculate_item_values
+calculate_taxes_and_totals.calculate_margin = calculate_margin
 LeaveAllocation.get_existing_leave_count = get_existing_leave_count
 
 NotificationLog.after_insert = after_insert
@@ -95,3 +96,4 @@ ShiftAssignment = ShiftAssignmentOverride
 AssignmentRule.do_assignment = do_assignment
 AssignmentRule.get_user_based_on_process_task = get_user_based_on_process_task
 AssignmentRule.get_user = get_user
+

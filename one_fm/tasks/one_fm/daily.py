@@ -16,7 +16,7 @@ def generate_contracts_invoice():
         dt = datetime
         contracts = frappe.get_list('Contracts', filters={
             'workflow_state': 'Active',
-            # 'due_date':str(dt.today().date().day)
+            # 'due_date':str(getdate().day)
         })
         # generate
         for contract in contracts:
@@ -26,11 +26,11 @@ def generate_contracts_invoice():
             if str(contract_due_date).lower() == "end of month" and getdate() == get_last_day(getdate()):
                 contract_doc.generate_sales_invoice()
 
-            elif contract_due_date == str(dt.today().date().day):
+            elif contract_due_date == str(getdate().day):
                 contract_doc.generate_sales_invoice()
 
     except Exception as e:
-        frappe.log(str(e), "Contracts Invoice")
+        frappe.log_error(message=str(e), title="Contracts Invoice")
 
 
 def roster_projection_view_task():
@@ -42,7 +42,7 @@ def roster_projection_view_task():
     report = frappe.get_doc("Report", 'Roster Projection View')
     background_enqueue_run(report.name,
                            filters=json.dumps(
-                               {'month': dt.today().month, 'year': dt.today().year}), user='Administrator'
+                               {'month': getdate().month, 'year': getdate().year}), user='Administrator'
                            )
 
 
@@ -51,8 +51,8 @@ def notify_for_employee_docs_expiry():
         Method to notify Onboarding officers about employee docs expiration
     """
     try:
-        # Get the GRD Settings to make the recipients
-        grd_settings = frappe.get_single('GRD Settings')
+        # Get the HR Settings to make the recipients
+        grd_settings = frappe.get_single('HR Settings')
         recipients = list(
             set([
                 grd_settings.default_grd_supervisor,
@@ -71,7 +71,7 @@ def notify_for_employee_docs_expiry():
             send_employee_doc_expiry_notification(employees, recipients)
 
     except Exception as e:
-        frappe.log_error(str(e), 'Employee Docs Expiry')
+        frappe.log_error(message=str(e), title='Employee Docs Expiry')
 
 def get_employees_by_expiry_doc(notify_days_before):
     target_expiry_date = add_days(today(), notify_days_before)

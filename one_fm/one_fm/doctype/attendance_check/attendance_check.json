@@ -14,15 +14,7 @@
   "attendance_by_timesheet",
   "column_break_1",
   "date",
-  "reports_to",
-  "reports_to_user",
-  "report_to_name",
-  "site_supervisor",
-  "site_supervisor_name",
-  "site_supervisor_user",
-  "shift_supervisor",
-  "shift_supervisor_name",
-  "shift_supervisor_user",
+  "approver",
   "justification_section",
   "attendance_status",
   "justification",
@@ -41,6 +33,9 @@
   "shift_permission",
   "section_break_nirwm",
   "shift_assignment",
+  "operations_site",
+  "site_supervisor",
+  "site_supervisor_name",
   "column_break_2",
   "start_time",
   "column_break_3",
@@ -53,8 +48,7 @@
   "attendance_request",
   "section_break_xzkb1",
   "comment",
-  "amended_from",
-  "is_unscheduled"
+  "amended_from"
  ],
  "fields": [
   {
@@ -63,6 +57,13 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approver",
+   "fieldtype": "Link",
+   "label": "Approver",
+   "options": "User",
    "read_only": 1
   },
   {
@@ -91,46 +92,18 @@
    "read_only": 1
   },
   {
-   "fetch_from": "employee.reports_to",
-   "fieldname": "reports_to",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "in_standard_filter": 1,
-   "label": "Reports To",
-   "options": "Employee",
-   "read_only": 1
-  },
-  {
-   "fieldname": "site_supervisor",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "in_standard_filter": 1,
-   "label": "Site Supervisor",
-   "options": "Employee",
-   "read_only": 1
-  },
-  {
-   "fieldname": "shift_supervisor",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "in_standard_filter": 1,
-   "label": "Shift Supervisor",
-   "options": "Employee",
-   "read_only": 1
-  },
-  {
    "depends_on": "eval:doc.attendance_status=='Present'",
    "fieldname": "justification",
    "fieldtype": "Select",
    "label": "Justification",
    "mandatory_depends_on": "eval:doc.attendance_status=='Present'",
-   "options": "\nMobile isn't supporting the app\nOut-of-site location\nUser not assigned to shift\nEmployees insist that he/she did check in or out\nChecked in and out at the same time\nForgot to check in\nOther\nApproved by Administrator"
+   "options": "\nMobile isn't supporting the app\nOut-of-site location\nUser not assigned to shift\nEmployees insist that he/she did check in or out\nChecked in and out at the same time\nForgot to check in\nOther\nApproved by Administrator\nApplication is missing geolocation permissions"
   },
   {
    "fieldname": "attendance_status",
    "fieldtype": "Select",
    "label": "Attendance Status",
-   "options": "\nPresent\nAbsent\nOn Leave\nDay Off"
+   "options": "\nPresent\nAbsent\nOn Leave\nDay Off\nClient Day Off"
   },
   {
    "fieldname": "shift_assignment",
@@ -165,6 +138,20 @@
    "fieldtype": "Link",
    "label": "Shift Permission",
    "options": "Shift Permission",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site_supervisor",
+   "fieldtype": "Link",
+   "label": "Site Supervisor",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "site_supervisor.employee_name",
+   "fieldname": "site_supervisor_name",
+   "fieldtype": "Data",
+   "label": "Site Supervisor Name",
    "read_only": 1
   },
   {
@@ -255,36 +242,6 @@
    "label": "Justification Section"
   },
   {
-   "fetch_from": "reports_to.user_id",
-   "fieldname": "reports_to_user",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "ignore_user_permissions": 1,
-   "label": "Reports To User",
-   "options": "User",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "site_supervisor.user_id",
-   "fieldname": "site_supervisor_user",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "ignore_user_permissions": 1,
-   "label": "Site Supervisor User",
-   "options": "User",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "shift_supervisor.user_id",
-   "fieldname": "shift_supervisor_user",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "ignore_user_permissions": 1,
-   "label": "Shift Supervisor User",
-   "options": "User",
-   "read_only": 1
-  },
-  {
    "default": "Basic",
    "fieldname": "roster_type",
    "fieldtype": "Select",
@@ -300,30 +257,6 @@
    "fieldname": "attendance_comment",
    "fieldtype": "Data",
    "label": "Attendance Comment",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "reports_to.employee_name",
-   "fetch_if_empty": 1,
-   "fieldname": "report_to_name",
-   "fieldtype": "Data",
-   "label": "Report to Name",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "site_supervisor.employee_name",
-   "fetch_if_empty": 1,
-   "fieldname": "site_supervisor_name",
-   "fieldtype": "Data",
-   "label": "Site Supervisor Name",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "shift_supervisor.employee_name",
-   "fetch_if_empty": 1,
-   "fieldname": "shift_supervisor_name",
-   "fieldtype": "Data",
-   "label": "Shift Supervisor Name",
    "read_only": 1
   },
   {
@@ -346,12 +279,12 @@
    "mandatory_depends_on": "eval:doc.justification == \"Mobile isn't supporting the app\""
   },
   {
-   "depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\"].includes(doc.justification)",
+   "depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\", \"Application is missing geolocation permissions\"].includes(doc.justification)",
    "description": "Upload screenshot with the same issue!",
    "fieldname": "screenshot",
    "fieldtype": "Attach",
    "label": "Screenshot",
-   "mandatory_depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\"].includes(doc.justification)"
+   "mandatory_depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\", \"Application is missing geolocation permissions\"].includes(doc.justification)"
   },
   {
    "depends_on": "eval:doc.justification == \"Other\"",
@@ -359,13 +292,6 @@
    "fieldtype": "Small Text",
    "label": "Other Reason",
    "mandatory_depends_on": "eval:doc.justification == \"Other\""
-  },
-  {
-   "default": "0",
-   "fieldname": "is_unscheduled",
-   "fieldtype": "Check",
-   "label": "Has No Shift Assignment",
-   "read_only": 1
   },
   {
    "fieldname": "column_break_eekf",
@@ -392,16 +318,22 @@
    "fieldname": "support_ticket_no",
    "fieldtype": "Link",
    "label": "Support Ticket No",
-   "mandatory_depends_on": "eval:doc.raised_issue_to_support_team == \"Yes\"",
+   "mandatory_depends_on": "eval:doc.raised_issue_to_support_team == \"Yes\" && doc.justification == \"Employees insist that he/she did check in or out\"",
    "options": "HD Ticket"
   },
   {
    "depends_on": "eval:[\"Forgot to check in\",\"Checked in and out at the same time\"].includes(doc.justification)",
    "fieldname": "penalty_serial_no",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Penalty Serial No",
-   "mandatory_depends_on": "eval:[\"Forgot to check in\",\"Checked in and out at the same time\"].includes(doc.justification)",
-   "options": "Penalty"
+   "mandatory_depends_on": "eval:[\"Forgot to check in\",\"Checked in and out at the same time\"].includes(doc.justification)"
+  },
+  {
+   "fieldname": "operations_site",
+   "fieldtype": "Link",
+   "label": "Operations Site",
+   "options": "Operations Site",
+   "read_only": 1
   }
  ],
  "in_create": 1,
@@ -412,7 +344,7 @@
    "link_fieldname": "reference_docname"
   }
  ],
- "modified": "2025-09-03 11:43:08.116467",
+ "modified": "2026-02-09 03:46:34.549905",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Attendance Check",

@@ -90,7 +90,7 @@
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Hours per Frequency",
-   "reqd": 1
+   "mandatory_depends_on": "frequency"
   },
   {
    "fieldname": "employee",
@@ -328,8 +328,13 @@
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-07-17 00:32:27.075265",
+ "links": [
+  {
+   "link_doctype": "Scheduled Job Type",
+   "link_fieldname": "process_task"
+  }
+ ],
+ "modified": "2026-01-15 10:20:48.338066",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process Task",
@@ -349,6 +354,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

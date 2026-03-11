@@ -6,13 +6,12 @@ from datetime import date
 import datetime
 import collections
 
-from frappe.utils import cint, cstr, getdate, add_months
+from frappe.utils import cint, cstr, getdate, add_months, add_days
 from hrms.hr.doctype.leave_application.leave_application import get_leave_balance_on, get_leave_allocation_records, get_leave_details
 
 from one_fm.api.api import upload_file
 from one_fm.api.tasks import get_action_user,get_notification_user
 from one_fm.api.v1.utils import response, validate_date
-from frappe.utils import cint, cstr, getdate
 from one_fm.utils import check_if_backdate_allowed, get_approver, get_approver_user
 from one_fm.api.utils import validate_sick_leave_attachment
 
@@ -235,7 +234,7 @@ def get_employees_list():
 
 @frappe.whitelist()
 def create_new_leave_application(employee_id: str = None, from_date: str = None, 
-    to_date: str = None, leave_type: str = None, reason: str = None, proof_document = {},reliever:str=None) -> dict:
+    to_date: str = None, leave_type: str = None, reason: str = None, proof_document = {},reliever:str=None, resumption_date: str = None) -> dict:
     """[summary]
     Args:
         employee (str): Employee record name.
@@ -281,6 +280,13 @@ def create_new_leave_application(employee_id: str = None, from_date: str = None,
 
         if not isinstance(to_date, str):
             return response("Bad Request", 400, None, "Invalid To date. Please enter a valid value.")
+
+        if not resumption_date:
+            resumption_date = cstr(add_days(getdate(to_date), 1))
+        elif not isinstance(resumption_date, str):
+            return response("Bad Request", 400, None, "Invalid Resumption date. Please enter a valid value.")
+        if not validate_date(resumption_date):
+            return response("Bad Request", 400, None, "Resumption date must be of the format yyyy-mm-dd.")
 
         if not isinstance(leave_type, str):
             return response("Bad Request", 400, None, "Invalid leave type. Please enter a valid value.")
@@ -332,15 +338,15 @@ def create_new_leave_application(employee_id: str = None, from_date: str = None,
                 'attachment_name':attachment_name,
                 'attachment_hashed_name':filename,
                 'attachment_file':content
-            })
+            }, resumption_date=resumption_date)
         else:
-            doc = new_leave_application(employee, from_date, to_date, leave_type, "Open", reason, leave_approver,reliever)
+            doc = new_leave_application(employee, from_date, to_date, leave_type, "Open", reason, leave_approver,reliever, resumption_date=resumption_date)
         return response("Success", 201, doc)
     except Exception as error:
         frappe.log_error(message=frappe.get_traceback(), title='Leave API')
         return response("Internal Server Error", 500, None, error)
     
-def new_leave_application(employee: str, from_date: str,to_date: str,leave_type: str,status:str, reason: str,leave_approver: str,reliever:str, attachments = {}) -> dict:
+def new_leave_application(employee: str, from_date: str,to_date: str,leave_type: str,status:str, reason: str,leave_approver: str,reliever:str, attachments = {}, resumption_date: str = None) -> dict:
     leave = frappe.new_doc("Leave Application")
     leave.employee=employee
     leave.leave_type=leave_type
@@ -352,6 +358,7 @@ def new_leave_application(employee: str, from_date: str,to_date: str,leave_type:
     leave.status=status
     leave.leave_approver = leave_approver
     leave.custom_reliever_ = reliever
+    leave.resumption_date = resumption_date
     leave.leave_approver_name = frappe.db.get_value("User", leave_approver, 'full_name')
     leave.save(ignore_permissions=True)
     if reliever:
@@ -416,7 +423,7 @@ def leave_approver_action(leave_id: str,status: str) -> dict:
         frappe.db.commit()
         return response("Success", 201, doc)
     except Exception as e:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title="Leave Application Error")
         return response("error", 500, {}, str(e))
 
 @frappe.whitelist()
@@ -503,6 +510,6 @@ def fetch_proof_document(file_name: str, docname: str, doctype: str) -> dict:
         }
         return response("Success", 200, data)
     except Exception as e:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title="Fetch Proof Document Error")
         frappe.respond_as_web_page(_("Error"), e , http_status_code=417)
         return response("Bad Request", 404, None, "Unable to fetch proof document")

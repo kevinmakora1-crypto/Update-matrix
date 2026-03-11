@@ -266,7 +266,7 @@ def append_code_in_file(file_path, search_text, appendable_code, insert_before_s
         return False
 
 def update_hd_ticket_agent():
-    FILE_PATH = frappe.utils.get_bench_path()+'/apps/helpdesk/desk/src/pages/TicketAgent.vue'
+    FILE_PATH = frappe.utils.get_bench_path()+'/apps/helpdesk/desk/src/pages/ticket/TicketAgent.vue'
     if (os.path.exists(FILE_PATH)):
         # Append lines before 'const showSubjectDialog = ref(false);'
         search_text = 'const showSubjectDialog = ref(false);'
@@ -296,31 +296,17 @@ def update_hd_ticket_agent():
                 onSuccess: (data) => {
                     showStoryCreationProgressDialog.value = false;
                     if (data.error){
-                    createToast({
-                      title: "Dev Ticket Error",
-                      text: data.message || "Something went wrong in creating dev ticket",
-                      icon: "x",
-                      iconClasses: "text-red-600",
-                    });
+                    toast.error(data.message || "Something went wrong in creating dev ticket")
                   } else if (data.status == 'success' ) {
 
-                    createToast({
-                      title: "Dev ticket created successfully",
-                      icon: "check",
-                      iconClasses: "text-green-600",
-                    });
+                    toast.success("Dev ticket created successfully")
 
                   }
                     ticket.reload();
                 },
                 onError: (error) => {
                     showStoryCreationProgressDialog.value = false;
-                    createToast({
-                    title: 'Dev Ticket Error',
-                    text: error.message || "Something went wrong in creating dev ticket",
-                    icon: "x",
-                    iconClasses: "text-red-600",
-                  });
+                    toast.error(error.message || "Something went wrong in creating dev ticket")
                 },
                 });
             }
@@ -424,7 +410,7 @@ def update_hd_ticket_agent():
 
 
 def add_resolution_details_updation():
-    FILE_PATH = frappe.utils.get_bench_path()+'/apps/helpdesk/desk/src/pages/TicketAgent.vue'
+    FILE_PATH = frappe.utils.get_bench_path()+'/apps/helpdesk/desk/src/pages/ticket/TicketAgent.vue'
     if (os.path.exists(FILE_PATH)):
         # Append lines before '} from "frappe-ui";' to import TextEditor
         search_text = '} from "frappe-ui";'
@@ -523,6 +509,27 @@ def deploy_ticket_views():
     shutil.copy2(ticket_edit_source, ticket_edit_target)
     print(f"[✅] TicketEdit.vue deployed to: {ticket_edit_target}")
 
+    ticket_customer_source = os.path.join(bench_path, "apps", "one_fm", "one_fm", "public", "js", "form_overrides", "hd_ticket", "TicketCustomer.vue")
+    ticket_customer_target = os.path.join(ticket_target_folder, "TicketCustomer.vue")
+
+    if not os.path.exists(ticket_customer_source):
+        print(f"[❌] Source TicketCustomer.vue not found: {ticket_customer_source}")
+        return False
+
+    shutil.copy2(ticket_customer_source, ticket_customer_target)
+    print(f"[✅] TicketCustomer.vue deployed to: {ticket_customer_target}")
+
+    ticket_new_source = os.path.join(bench_path, "apps", "one_fm", "one_fm", "public", "js", "form_overrides", "hd_ticket", "TicketNew.vue")
+    ticket_new_target = os.path.join(ticket_target_folder, "TicketNew.vue")
+
+    if not os.path.exists(ticket_new_source):
+        print(f"[❌] Source TicketNew.vue not found: {ticket_new_source}")
+        return False
+
+    shutil.copy2(ticket_new_source, ticket_new_target)
+    print(f"[✅] TicketNew.vue deployed to: {ticket_new_target}")
+
+
     router_file = os.path.join(bench_path, "apps", "helpdesk", "desk", "src", "router", "index.ts")
 
     if not os.path.exists(router_file):
@@ -561,9 +568,8 @@ def deploy_ticket_views():
             print("⚠️ Could not find insertion point for router update.")
             return False
 
-    print("[🎉] TicketNew and TicketEdit views deployed successfully.")
+    print("[🎉] TicketEdit, TicketCustomer and TicketNew views deployed successfully.")
     return True
-
 
 def update_hd_ticket_side_bar():
     FILE_PATH = frappe.utils.get_bench_path()+'/apps/helpdesk/desk/src/components/ticket/TicketAgentFields.vue'
@@ -626,12 +632,14 @@ def update_all_ticket_features():
         any_changes = True
     if update_hd_ticket_side_bar():
         any_changes = True
+    if update_ticket_status():
+        any_changes = True
 
     if any_changes:
         bench_path = frappe.utils.get_bench_path()
         helpdesk_dir = os.path.join(bench_path, 'apps/helpdesk/desk')
 
-        run_command("yarn build", cwd=helpdesk_dir)
+        run_command("NODE_OPTIONS=\"--max-old-space-size=4096\" yarn build", cwd=helpdesk_dir)
         run_command("bench restart", cwd=bench_path)
     else:
         print("No changes detected. Skipping build and restart.")
@@ -671,3 +679,43 @@ def disable_sync_on_developer_mode():
             0
         )
         print(f"Disabled Google Task Synchronization")
+
+
+def update_ticket_status():
+    """
+    Replaces the standard Helpdesk ticketStatus.ts file with the custom version from one_fm
+    and triggers a build to apply the changes.
+    """
+    print("🚀 Overriding Helpdesk ticketStatus.ts file...")
+
+    # Get the base path of the bench directory
+    bench_path = frappe.utils.get_bench_path()
+
+    # Define the source and destination file paths
+    source_file = os.path.join(
+        bench_path, "apps", "helpdesk", "desk", "src", "stores", "ticketStatus.ts"
+    )
+    replacement_file = os.path.join(
+        bench_path, "apps", "one_fm", "one_fm", "public", "js", "form_overrides", "hd_ticket", "ticketStatus.ts"
+    )
+
+    # Ensure the custom replacement file actually exists before proceeding
+    if not os.path.exists(replacement_file):
+        print(f"❌ Error: Replacement file not found at: {replacement_file}")
+        return False
+
+    try:
+        # Copy the content from your custom file to the source file, overwriting it
+        print(f"📄 Copying from {replacement_file} to {source_file}")
+        shutil.copy2(replacement_file, source_file)
+        print("✅ Successfully replaced ticketStatus.ts.")
+        
+        return True
+
+    except FileNotFoundError:
+        print(f"⚠️ Warning: Original file not found at: {source_file}. Skipping replacement.")
+    except Exception as e:
+        print(f"🔥 An unexpected error occurred: {e}")
+        frappe.log_error(title="ONEFM TicketStatus.ts Override Failed", message=frappe.get_traceback())
+
+    return False

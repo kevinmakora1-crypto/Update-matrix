@@ -64,12 +64,12 @@ class MGRP(Document):
 		"""
 		runs: `validate`
 		param: mgrp object
-		This method sets the user_id for both GRD Supervisor and Operator handling pifss form GRD Settings Doctype
+		This method sets the user_id for both GRD Supervisor and Operator handling pifss form HR Settings Doctype
 		"""
 		if not self.grd_supervisor:
-			self.grd_supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
+			self.grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
 		if not self.grd_operator:
-			self.grd_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_pifss")
+			self.grd_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_pifss")
 
 	def get_children_table(self):
 		"""
@@ -175,8 +175,8 @@ def notification_reminder(mgrp_list):
 		mgrp_list ([list of objects]): [list of objects having `Awaiting Response` workflow state]
 	"""
 	message_list=[]
-	grd_user = frappe.db.get_single_value("GRD Settings", "default_grd_operator_pifss")
-	grd_supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
+	grd_user = frappe.db.get_single_value("HR Settings", "default_grd_operator_pifss")
+	grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
 	for mgrp in mgrp_list:
 		page_link = get_url(mgrp.get_url())
 		message = "<a href='{0}'>{1}</a>".format(page_link, mgrp.civil_id)

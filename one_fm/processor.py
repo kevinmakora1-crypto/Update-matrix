@@ -31,9 +31,11 @@ def sendemail(recipients, subject, header=None, message=None,
 		if not is_scheduler_emails_enabled:
 			return
 
-
-	if "Administrator" in recipients:
-		recipients.remove("Administrator")
+	if recipients and "Administrator" in recipients:
+		if isinstance(recipients, list):
+			recipients.remove("Administrator")
+		else:
+			recipients = recipients.replace("Administrator", "")
 
 	if args:
 		template = "default_email_with_workflow"
@@ -103,25 +105,33 @@ def is_email_notifications_allowed(user):
     # If all conditions pass, return True (email notifications are allowed)
     return True
 
-
 @frappe.whitelist()
 def is_user_id_company_prefred_email_in_employee(user_id):
 	'''
-		This method is used for finding the receiver is company prefered_email
-		in the employee record linked with the user_id
-		args:
-			user_id: email id (Text)(Email)
-		return True if user id is company prefered email id
-		return False if employee not exists for the user id / user id is company prefered email id
+	Check if user_id is an active employee's company email set as preferred contact.
+	Args:
+		user_id: email id (Text/Email)
+	Returns:
+		True if user_id matches an active employee's company email with Company Email preference
+		False otherwise
 	'''
-	user_id_company_prefred_in_employee = False
-	employee = frappe.db.exists('Employee', {'user_id': user_id}) or frappe.db.exists('Employee', {'personal_email': user_id})
-	if employee:
-		employee_details = frappe.db.get_value("Employee", employee, ["prefered_email", "company_email", "prefered_contact_email", "status", "personal_email"], as_dict=1)
-		if employee_details:
-			if all((employee_details.get("prefered_contact_email", "") == 'Company Email', employee_details.get("prefered_email", "") == employee_details.get("company_email", ""), ((employee_details.get("prefered_email", "") == user_id) or (employee_details.get("personal_email", "") == user_id)), employee_details.get("status", "") == "Active")):
-				user_id_company_prefred_in_employee = True
-	return user_id_company_prefred_in_employee
+	employee = frappe.db.get_value(
+		"Employee",
+		{
+			"user_id": user_id,
+			"status": "Active",
+			"prefered_contact_email": "Company Email",
+			"company_email": user_id,
+			"prefered_email": user_id
+		},
+		["name"],
+		as_dict=1
+	)
+
+	if not employee:
+		return False
+
+	return True
 
 @frappe.whitelist()
 def send_whatsapp(sender_id, template_name, content_variables):

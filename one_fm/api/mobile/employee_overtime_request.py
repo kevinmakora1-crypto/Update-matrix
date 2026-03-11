@@ -25,7 +25,7 @@ def create_overtime_request(employee, request_type, date, start_time=None, end_t
         return response("Overtime Request Successfully Created", doc, True, 201)
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Overtime Request Creation Error')
         return response(e, {}, False, 500)
 
 
@@ -100,7 +100,7 @@ def employee_accept_or_reject_overtime_request(employee, overtime_request_id, wo
             return response("You can Accept/Reject an Overtime Request with Pending Status only ..!", {}, False, 400)
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback())
+        frappe.log_error(message=frappe.get_traceback(), title='Overtime Request Error')
         return response(e, {}, False, 500)
 
 # This method returing the message and status code of the API

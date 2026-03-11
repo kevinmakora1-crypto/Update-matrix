@@ -222,7 +222,7 @@
    "fieldname": "grd_operator",
    "fieldtype": "Link",
    "hidden": 1,
-   "label": "GRD Operator",
+   "label": "Government Relations Operator",
    "no_copy": 1,
    "options": "User",
    "read_only": 1
@@ -276,7 +276,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Category",
-   "options": "\nRenewal\nTransfer"
+   "options": "\nNew Application\nRenewal\nTransfer"
   },
   {
    "default": "Draft",
@@ -294,26 +294,26 @@
    "fieldname": "grd_operator_transfer",
    "fieldtype": "Data",
    "hidden": 1,
-   "label": "GRD Operator Transfer"
+   "label": "Government Relations Operator Transfer"
   },
   {
    "default": "0",
    "fieldname": "reminder_grd_operator",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminder GRD Operator"
+   "label": "Reminder Government Relations Operator"
   },
   {
    "default": "0",
    "fieldname": "reminder_grd_operator_again",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminder GRD Operator Again"
+   "label": "Reminder Government Relations Operator Again"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-08-15 15:44:39.951477",
+ "modified": "2025-11-16 13:14:06.886454",
  "modified_by": "Administrator",
  "module": "GRD",
  "name": "PACI",
@@ -338,7 +338,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRD Operator",
+   "role": "Government Relations Operator",
    "share": 1,
    "submit": 1,
    "write": 1
@@ -358,6 +358,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "search_fields": "civil_id,date_of_application,employee_id",
  "sort_field": "date_of_application",
  "sort_order": "DESC",

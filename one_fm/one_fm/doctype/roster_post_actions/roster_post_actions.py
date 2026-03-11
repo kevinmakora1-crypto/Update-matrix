@@ -15,17 +15,7 @@ from frappe.permissions import get_doctype_roles
 from one_fm.one_fm.page.roster.roster import get_current_user_details
 
 class RosterPostActions(Document):
-    def after_insert(self):
-        # send notification to supervisor
-        user_id = frappe.db.get_value("Employee", self.supervisor, ["user_id"])
-        if user_id:
-            link = get_link_to_form(self.doctype, self.name)
-            subject = _("New Action Required")
-            message = _("""
-				You have been issued a Roster Post Action.<br>
-				Please review the Post Type for the specified date in the roster, take necessary actions and update the status.<br>
-				Link: {link}""".format(link=link))
-            sendemail([user_id], subject=subject, message=message, reference_doctype=self.doctype, reference_name=self.name)
+    pass
 
 
 
@@ -103,30 +93,69 @@ def create_roster_post_actions():
             JOIN `tabOperations Post` op ON ps.post = op.name
             JOIN `tabOperations Role` opr ON ps.operations_role = opr.name
             JOIN `tabProject` pr ON opr.project = pr.name
+            JOIN `tabContracts` c ON c.project = pr.name
+            JOIN `tabContract Items Operation` ci ON ci.parent = c.name
             WHERE ps.post_status = 'Planned'
             AND osh.status = 'Active'
             AND os.status = 'Active'
             AND op.status = 'Active'
             AND opr.status = 'Active'
             AND pr.is_active = 'Yes'
+            AND ci.item_code = opr.sale_item
+            AND (ci.service_type = 'Post Schedule' OR (ci.is_daily_operation_handled_by_us = 'Yes' AND ci.service_type = 'Manpower'))
             AND ps.date BETWEEN '{start_date}' AND '{end_date}'
-            ORDER BY date ASC
+            ORDER BY ps.date ASC
         """, as_dict=1)
 
         # Fetch employee schedules in the date range that are working
         employee_schedules = frappe.db.sql(f"""
-            SELECT es.date, es.shift, es.operations_role
+            SELECT es.date, es.shift, es.operations_role, es.employee
             FROM `tabEmployee Schedule` es
+            JOIN `tabOperations Role` opr ON es.operations_role = opr.name
+            JOIN `tabProject` pr ON opr.project = pr.name
+            JOIN `tabContracts` c ON c.project = pr.name
+            JOIN `tabContract Items Operation` ci ON ci.parent = c.name
+            JOIN `tabEmployee` e ON es.employee = e.name
             WHERE es.employee_availability = 'Working'
+            AND e.status != 'Not Returned from Leave'
+            AND ci.item_code = opr.sale_item
+            AND (ci.service_type = 'Post Schedule' OR (ci.is_daily_operation_handled_by_us = 'Yes' AND ci.service_type = 'Manpower'))
             AND es.date BETWEEN '{start_date}' AND '{end_date}'
-            ORDER BY date ASC
+            AND (es.on_the_job_training IS NULL OR es.on_the_job_training = '')
+            ORDER BY es.date ASC
         """, as_dict=1)
 
-        post_counts = Counter((ps["date"], ps["operations_role"], ps["shift"]) for ps in post_schedules)
-        employee_counts = Counter((es["date"], es["operations_role"], es["shift"]) for es in employee_schedules)
+        attendance_list = frappe.db.sql(""" 
+            SELECT employee, attendance_date 
+            FROM `tabAttendance`
+            WHERE attendance_date BETWEEN %s AND %s 
+            AND status = 'On Leave' 
+        """, (start_date, end_date), as_dict=1)
 
-        for key, post_count in post_counts.items():
-            emp_count = employee_counts.get(key, 0)  # Default to 0 if no employee schedule exists
+
+        attendance_dict = {}
+        for record in attendance_list:
+            employee = record['employee']
+            attendance_date = record['attendance_date']
+            
+            if employee not in attendance_dict:
+                attendance_dict[employee] = []
+            
+            attendance_dict[employee].append(attendance_date)
+
+
+        post_counts = Counter((ps["date"], ps["operations_role"], ps["shift"]) for ps in post_schedules)
+
+
+        employee_counts = Counter(
+            (es["date"], es["operations_role"], es["shift"]) 
+            for es in employee_schedules 
+            if es["date"] not in attendance_dict.get(es["employee"], [])
+        )
+
+
+        for key, post_count in post_counts.items():# Default to 0 if no employee schedule exists
+            emp_count = employee_counts.get(key, 0)
             date, role, shift = key
 
             if post_count > emp_count: # If post schedules are more than employee schedules
@@ -135,8 +164,8 @@ def create_roster_post_actions():
                     "quantity": post_count - emp_count
                 })
 
-        for key, emp_count in employee_counts.items():
-            post_count = post_counts.get(key, 0)  # Default to 0 if no post schedule exists
+        for key, emp_count in employee_counts.items(): # Default to 0 if no post schedule exists
+            post_count = post_counts.get(key, 0)
             date, role, shift = key
 
             if emp_count > post_count: # If employee schedules are more than post schedules
@@ -157,7 +186,7 @@ def create_roster_post_actions():
                     ORDER BY oss.idx ASC
                     LIMIT 1
                 ) AS shift_supervisor,
-                op_site.account_supervisor AS site_supervisor
+                op_site.site_supervisor AS site_supervisor
             FROM `tabOperations Shift` op_shift
             LEFT JOIN `tabOperations Site` op_site ON op_site.name = op_shift.site
             WHERE op_shift.status = 'Active'
@@ -214,7 +243,7 @@ def create_roster_post_actions():
 
                 roster_post_actions_doc.save()
             except:
-                frappe.log_error(frappe.get_traceback(), "Error while creating roster post actions")
+                frappe.log_error(message=frappe.get_traceback(), title="Error while creating roster post actions")
 
         frappe.db.commit()
 
@@ -247,18 +276,24 @@ def get_overfilled_underfilled_posts():
     shifts_sub_query = f" AND ps.shift in {shift_tuple}" if len(shift_tuple) > 1 else f" AND ps.shift = '{shift_tuple[0]}'"
     # Fetch post schedules in the date range that are active
     post_schedules = frappe.db.sql(f"""
-		SELECT ps.name, ps.date, ps.shift, ps.operations_role, ps.post
-        FROM `tabPost Schedule` ps
-        JOIN `tabOperations Site` os ON ps.site=os.name
-        JOIN `tabOperations Post` op ON ps.post=op.name
-        JOIN `tabOperations Role` opr ON ps.operations_role=opr.name
-        JOIN `tabProject` pr ON opr.project=pr.name
-          WHERE
-        ps.post_status='Planned' AND os.status='Active'
-        AND op.status='Active' AND opr.status='Active'
-        AND pr.is_active='Yes' {shifts_sub_query}
-        AND ps.date BETWEEN '{start_date}' AND '{end_date}'
-        ORDER BY date ASC
+    SELECT ps.name, ps.date, ps.shift, ps.operations_role, ps.post
+    FROM `tabPost Schedule` ps
+    JOIN `tabOperations Site` os ON ps.site = os.name
+    JOIN `tabOperations Post` op ON ps.post = op.name
+    JOIN `tabOperations Role` opr ON ps.operations_role = opr.name
+    JOIN `tabProject` pr ON opr.project = pr.name
+    JOIN `tabContracts` c ON c.project = pr.name
+    JOIN `tabContract Items Operation` ci ON ci.parent = c.name
+    WHERE ps.post_status = 'Planned' 
+    AND os.status = 'Active'
+    AND op.status = 'Active' 
+    AND opr.status = 'Active'
+    AND pr.is_active = 'Yes'
+    AND ci.item_code = opr.sale_item
+    AND ci.service_type = 'Post Schedule'
+    {shifts_sub_query}
+    AND ps.date BETWEEN '{start_date}' AND '{end_date}'
+    ORDER BY ps.date ASC
     """, as_dict=1)
 
 
@@ -336,7 +371,7 @@ def get_all_shifts():
 
 
 def get_project_shifts(employee):
-    active_projects = frappe.get_all("Project",{'status':"Open",'account_manager':employee},pluck ="name")
+    active_projects = frappe.get_all("Project",{'status':"Open",'project_manager':employee},pluck ="name")
     if active_projects:
         all_shifts = frappe.get_all("Operations Shift",{'status':'Active','project':['in',active_projects]},pluck ="name")
         return all_shifts
@@ -344,7 +379,7 @@ def get_project_shifts(employee):
         return []
 
 def get_site_shifts(employee):
-    active_sites = frappe.get_all("Operations Site",{'status':"Active",'account_supervisor':employee},pluck ="name")
+    active_sites = frappe.get_all("Operations Site",{'status':"Active",'site_supervisor':employee},pluck ="name")
     if active_sites:
         all_shifts = frappe.get_all("Operations Shift",{'status':'Active','site':['in',active_sites]},pluck ="name")
         return all_shifts

@@ -323,7 +323,7 @@ def get_assigned_projects(employee_id):
             return frappe.get_list("Project", {"project_type": "External"}, limit_page_length=9999, order_by="name asc")
 
         if "Projects Manager" in user_roles:
-            return frappe.get_list("Project", {"account_manager": employee_id, "project_type": "External"},
+            return frappe.get_list("Project", {"project_manager": employee_id, "project_type": "External"},
                                    limit_page_length=9999, order_by="name asc")
         return []
     except Exception as e:
@@ -345,7 +345,7 @@ def get_assigned_sites(employee_id, project=None):
             return frappe.get_list("Operations Site", filters, limit_page_length=9999, order_by="name asc")
 
         elif "Site Supervisor" in user_roles:
-            filters.update({"account_supervisor": employee_id})
+            filters.update({"site_supervisor": employee_id})
             return frappe.get_list("Operations Site", filters, limit_page_length=9999, order_by="name asc")
         return []
 
@@ -640,7 +640,7 @@ def get_filtered_values(start_date, end_date, project=None, site=None, shift=Non
 
 
     except:
-        frappe.log_error(frappe.get_traceback(), 'Roster API Error')
+        frappe.log_error(message=frappe.get_traceback(), title='Roster API Error')
 
 
 @frappe.whitelist()

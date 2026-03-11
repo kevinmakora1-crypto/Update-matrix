@@ -77,7 +77,7 @@ def checkin_checkout_initial_reminder():
 		frappe.enqueue(schedule_initial_reminder, shifts_list=shifts_list, now_time=now_time, is_async=True, queue='long')
 
 	except Exception as error:
-		frappe.log_error(str(error), 'Checkin/checkout initial reminder failed')
+		frappe.log_error(message=str(error), title='Checkin/checkout initial reminder failed')
 
 def schedule_initial_reminder(shifts_list, now_time):
 	notification_title = _("Checkin/Checkout reminder")
@@ -116,7 +116,7 @@ def checkin_checkout_final_reminder():
 		#Send final reminder to checkin or checkout to employees who have not even after shift has ended
 		frappe.enqueue(schedule_final_notification, shifts_list=shifts_list, now_time=now_time, is_async=True, queue='long')
 	except Exception as error:
-		frappe.log_error(str(error), 'Checkin/checkout final reminder failed')
+		frappe.log_error(message=str(error), title='Checkin/checkout final reminder failed')
 
 def schedule_final_notification(shifts_list, now_time):
 	notification_title = _("Final Reminder")
@@ -411,8 +411,8 @@ def get_action_user(employee, shift):
 		action_user = get_employee_user_id(report_to)
 		Role = "Report To"
 	else:
-		if operations_site.account_supervisor:
-			site_supervisor = get_employee_user_id(operations_site.account_supervisor)
+		if operations_site.site_supervisor:
+			site_supervisor = get_employee_user_id(operations_site.site_supervisor)
 			if site_supervisor != operations_shift.owner and site_supervisor != current_user:
 				action_user = site_supervisor
 				Role = "Site Supervisor"
@@ -424,8 +424,8 @@ def get_action_user(employee, shift):
 				Role = "Shift Supervisor"
 
 		elif operations_site.project:
-			if project.account_manager:
-				project_manager = get_employee_user_id(project.account_manager)
+			if project.project_manager:
+				project_manager = get_employee_user_id(project.project_manager)
 				if project_manager != operations_shift.owner and project_manager != current_user:
 					action_user = project_manager
 					Role = "Project Manager"
@@ -486,10 +486,10 @@ def get_notification_user(employee, shift, Role):
 
 	reports_to = frappe.get_value("Employee", {"name":employee},["reports_to"])
 
-	if operations_site.project and project.account_manager and get_employee_user_id(project.account_manager) != operations_shift.owner:
-		project_manager = get_employee_user_id(project.account_manager)
-	if operations_site.account_supervisor and get_employee_user_id(operations_site.account_supervisor) != operations_shift.owner:
-		site_supervisor = get_employee_user_id(operations_site.account_supervisor)
+	if operations_site.project and project.project_manager and get_employee_user_id(project.project_manager) != operations_shift.owner:
+		project_manager = get_employee_user_id(project.project_manager)
+	if operations_site.site_supervisor and get_employee_user_id(operations_site.site_supervisor) != operations_shift.owner:
+		site_supervisor = get_employee_user_id(operations_site.site_supervisor)
 	elif operations_shift.supervisor and get_employee_user_id(operations_shift.supervisor) != operations_shift.owner:
 		shift_supervisor = get_employee_user_id(operations_shift.supervisor)
 
@@ -737,7 +737,7 @@ def assign_am_shift():
 			SELECT * from `tabEmployee Schedule` ES
 			WHERE
 			ES.date = '{date}'
-			AND ES.employee_availability = "Working"
+			AND ES.employee_availability IN ("Working", "On-the-job Training")
 			AND ES.is_replaced = 0
 			AND ES.roster_type = "Basic"
 			AND ES.shift_type IN(
@@ -755,7 +755,7 @@ def assign_am_shift():
 		roster.extend(non_shift)
 
 	create_shift_assignment(roster, date, 'AM')
-
+	create_client_event_shift_assignment(date)
 
 def assign_pm_shift():
 	date = cstr(getdate())
@@ -765,7 +765,7 @@ def assign_pm_shift():
 			SELECT * from `tabEmployee Schedule` ES
 			WHERE
 			ES.date = '{date}'
-			AND ES.employee_availability = "Working"
+			AND ES.employee_availability IN ("Working", "On-the-job Training")
 			AND ES.is_replaced = 0
 			AND ES.roster_type = "Basic"
 			AND ES.shift_type IN(
@@ -783,7 +783,74 @@ def assign_pm_shift():
 		roster.extend(non_shift)
 
 	create_shift_assignment(roster, date, 'PM')
+	create_client_event_shift_assignment(date)
 
+def create_client_event_shift_assignment(date):
+	date = cstr(getdate())
+	employment_type = ["Full-time", "Part-time", "Intern", "Subcontractor"]
+	roster = get_client_event_schedule(date, employment_type)
+	if not roster:
+		return
+	for employee_schedule in roster:
+		existing_assignments = frappe.db.get_list(
+			"Shift Assignment",
+			filters={
+				'employee': employee_schedule.employee,
+				'start_date': employee_schedule.start_datetime.date(),
+				'docstatus': 1,
+				'is_event_based_shift': 1
+			},
+			fields=['name']
+		)
+		if existing_assignments:
+			continue
+		try:
+			shift_assignment = frappe.get_doc(
+				{
+					"doctype": "Shift Assignment",
+					"employee": employee_schedule.employee,
+					"employee_name": employee_schedule.employee_name,
+					"start_date": employee_schedule.start_datetime.date(),
+					"end_date": employee_schedule.end_datetime.date(),
+					"shift": employee_schedule.shift,
+					"employee_schedule": employee_schedule.name,
+					"site": employee_schedule.site,
+					"project": employee_schedule.project,
+					"is_event_based_shift": 1,
+					"event_staff": employee_schedule.event_staff,
+					"start_datetime": employee_schedule.start_datetime,
+					"end_datetime": employee_schedule.end_datetime,
+					"site_location": employee_schedule.site_location,
+				}
+			)
+			shift_assignment.insert(ignore_permissions=True)
+			shift_assignment.submit()
+		except Exception as e:
+			frappe.log_error(message=frappe.get_traceback(), title='Error Creating Client Event Shift Assignment')
+
+def get_client_event_schedule(date, employment_type):
+	from frappe.query_builder import DocType
+
+	EmployeeSchedule = DocType('Employee Schedule')
+	Employee = DocType('Employee')
+
+	return (
+		frappe.qb.from_(EmployeeSchedule)
+		.select(EmployeeSchedule.star)
+		.where(
+			(EmployeeSchedule.date == date) &
+			(EmployeeSchedule.roster_type == "Basic") &
+			(EmployeeSchedule.is_event_schedule == 1) &
+			(EmployeeSchedule.employee.isin(
+				frappe.qb.from_(Employee)
+				.select(Employee.name)
+				.where(
+					(Employee.status == "Active") &
+					(Employee.employment_type.isin(employment_type))
+				)
+			))
+		)
+	).run(as_dict=True)
 
 def end_previous_shifts(time):
 	shift_type = get_shift_type(time)
@@ -805,8 +872,6 @@ def get_shift_type(time):
 
 def create_shift_assignment(roster, date, time):
 	try:
-		
-		
 		owner = frappe.session.user
 		creation = now()
 		shift_type = get_shift_type(time)
@@ -868,7 +933,7 @@ def create_shift_assignment(roster, date, time):
 				INSERT INTO `tabShift Assignment` (`name`, `company`, `docstatus`, `employee`, `employee_name`, `shift_type`, `site`, `project`, `status`,
 				`shift_classification`, `site_location`, `start_date`, `start_datetime`, `end_datetime`, `department`,
 				`shift`, `operations_role`, `post_abbrv`, `roster_type`, `owner`, `modified_by`, `creation`, `modified`,
-				`shift_request`, `check_in_site`, `check_out_site`,`custom_day_off_ot`)
+				`shift_request`, `check_in_site`, `check_out_site`,`custom_day_off_ot`, `employee_schedule`, `custom_on_the_job_training`)
 				VALUES
 			"""
 			query_body = """"""
@@ -895,7 +960,7 @@ def create_shift_assignment(roster, date, time):
 							"{_shift_request.site or ''}", "{_project_r or ''}", 'Active', '{_shift_request.shift_type}', "{sites_list_dict.get(_shift_request.site) or ''}", "{date}",
 							"{shift_r_start_time or str(date)+' 08:00:00'}", "{shift_r_end_time or str(date)+' 17:00:00'}", "{r.department}",
 							"{_shift_request.operations_shift or ''}", "{_shift_request.operations_role or ''}", "{r.post_abbrv or ''}", "{_shift_request.roster_type}",
-							"{owner}", "{owner}", "{creation}", "{creation}", "{_shift_request.name}", "{_shift_request.check_in_site}", "{_shift_request.check_out_site}","{_day_off_ot}"),"""
+							"{owner}", "{owner}", "{creation}", "{creation}", "{_shift_request.name}", "{_shift_request.check_in_site}", "{_shift_request.check_out_site}","{_day_off_ot}", "{r.name}", "{r.on_the_job_training if r.employee_availability == 'On-the-job Training' else ''}"),"""
 					else:
 						_shift_type = shift_types_dict.get(r.shift_type) or default_shift
 						query_body += f"""
@@ -904,7 +969,7 @@ def create_shift_assignment(roster, date, time):
 							"{r.site or ''}", "{r.project or ''}", 'Active', '{_shift_type.shift_type}', "{sites_list_dict.get(r.site) or ''}", "{date}",
 							"{_shift_type.start_datetime or str(date)+' 08:00:00'}",
 							"{_shift_type.end_datetime or str(date)+' 17:00:00'}", "{r.department}", "{r.shift or ''}", "{r.operations_role or ''}", "{r.post_abbrv or ''}", "{r.roster_type}",
-							"{owner}", "{owner}", "{creation}", "{creation}", '', '', '',"{_day_off_ot}"),"""
+							"{owner}", "{owner}", "{creation}", "{creation}", '', '', '',"{_day_off_ot}", '{r.name}', "{r.on_the_job_training if r.employee_availability == 'On-the-job Training' else ''}"),"""
 				else:
 					has_rostered.append(r.employee_name)
 
@@ -933,13 +998,15 @@ def create_shift_assignment(roster, date, time):
 					check_out_site = VALUES(check_out_site),
 					shift_classification = VALUES(shift_classification),
 					status = VALUES(status),
-					custom_day_off_ot = '{_day_off_ot}'
+					custom_day_off_ot = '{_day_off_ot}',
+					employee_schedule = VALUES(employee_schedule),
+					custom_on_the_job_training = VALUES(custom_on_the_job_training)
 				"""
 				frappe.db.sql(query, values=[], as_dict=1)
 				frappe.db.commit()
 
 	except Exception as e:
-		frappe.log_error(f'Shift Assignment - {time}', frappe.get_traceback())
+		frappe.log_error(title=f'Shift Assignment - {time}', message=frappe.get_traceback())
 		sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
 		recipient = frappe.get_value("Email Account", {"name":"Support"}, ["email_id"])
 		msg = frappe.render_template('one_fm/templates/emails/missing_shift_assignment.html', context={"rosters": roster})
@@ -1010,10 +1077,15 @@ def validate_shift_assignment(is_scheduled_event=True):
 				roster_emp.append(r)
 
 	if len(roster)>0:
-		sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
-		recipient = frappe.get_value("Email Account", {"name":"Develop"}, ["email_id"])
-		msg = frappe.render_template('one_fm/templates/emails/missing_shift_assignment.html', context={"rosters": roster})
-		sendemail(sender=sender, recipients= recipient, content=msg, subject="Missed Shift Assignments List", delayed=False, is_scheduler_email=is_scheduled_event)
+		missing_shift_assignment_support_email(roster, is_scheduled_event)
+
+def missing_shift_assignment_support_email(roster, is_scheduler_email=False):
+	sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
+	recipient = frappe.get_value("Email Account", {"name":"Support"}, ["email_id"])
+	if not recipient:
+		return
+	msg = frappe.render_template('one_fm/templates/emails/missing_shift_assignment.html', context={"rosters": roster})
+	sendemail(sender=sender, recipients= recipient, content=msg, subject="Missed Shift Assignments List", delayed=False, is_scheduler_email=is_scheduler_email)
 
 def validate_am_shift_assignment(is_scheduled_event=True):
 	"""
@@ -1050,7 +1122,7 @@ def validate_am_shift_assignment(is_scheduled_event=True):
 				AND E.status IN ("Left", "Vacation", "Court Case"))
 	""".format(date=cstr(date)), as_dict=1)
 
-	non_shift = fetch_non_shift(date, "PM")
+	non_shift = fetch_non_shift(date, "AM")
 	if non_shift:
 		roster.extend(non_shift)
 
@@ -1059,10 +1131,7 @@ def validate_am_shift_assignment(is_scheduled_event=True):
 	roster = [i for i in roster if not i.employee in todays_leaves]
 
 	if len(roster)>0:
-		sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
-		recipient = frappe.get_value("Email Account", {"name":"Support"}, ["email_id"])
-		msg = frappe.render_template('one_fm/templates/emails/missing_shift_assignment.html', context={"rosters": roster})
-		sendemail(sender=sender, recipients= recipient, content=msg, subject="Missed Shift Assignments List", delayed=False, is_scheduler_email=True)
+		missing_shift_assignment_support_email(roster, True)
 		frappe.enqueue(create_shift_assignment, roster = roster, date = date, time='AM', is_async=True, queue='long')
 
 def validate_pm_shift_assignment():
@@ -1103,12 +1172,8 @@ def validate_pm_shift_assignment():
 	roster = [i for i in roster if not i.employee in todays_leaves]
 
 	if len(roster)>0:
-		sender = frappe.get_value("Email Account", filters = {"default_outgoing": 1}, fieldname = "email_id") or None
-		recipient = frappe.get_value("Email Account", {"name":"Support"}, ["email_id"])
-		msg = frappe.render_template('one_fm/templates/emails/missing_shift_assignment.html', context={"rosters": roster})
-		sendemail(sender=sender, recipients= recipient, content=msg, subject="Missed Shift Assignments List", delayed=False)
+		missing_shift_assignment_support_email(roster)
 		frappe.enqueue(create_shift_assignment, roster = roster, date = date, time='PM', is_async=True, queue='long')
-
 
 def overtime_shift_assignment():
 	"""
@@ -1145,7 +1210,7 @@ def process_overtime_shift(roster, date, time):
 				else:
 					create_overtime_shift_assignment(schedule, date)
 		except Exception as e:
-			frappe.log_error(title="Error Creating Overtime Shift Assignment",message = frappe.get_traceback())
+			frappe.log_error(title="Error Creating Overtime Shift Assignment", message=frappe.get_traceback())
 			continue
 
 def create_overtime_shift_assignment(schedule, date):
@@ -1174,7 +1239,7 @@ def create_overtime_shift_assignment(schedule, date):
 			pass
 		except Exception:
 			# Log all the errors except the OverlappingShiftError(ValidationError)
-			frappe.log_error(frappe.get_traceback(), "Create Overtime Shift Assignment")
+			frappe.log_error(title="Create Overtime Shift Assignment", message=frappe.get_traceback())
 
 def update_shift_type():
 	today_datetime = now_datetime()
@@ -1215,7 +1280,7 @@ def generate_payroll():
 	try:
 		auto_create_payroll_entry()
 	except Exception:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(title="Error Generating Payroll", message=frappe.get_traceback())
 
 def generate_penalties():
 	# start_date = add_to_date(getdate(), months=-1)
@@ -1262,7 +1327,11 @@ def calculate_penalty_amount(employee, start_date, end_date, logs):
 	else:
 		frappe.throw("Please Add Basic Salary Component in HR and Payroll Additional Settings.")
 
-	salary_structure, base = frappe.get_value("Salary Structure Assignment", filters, ["salary_structure","base"], order_by="from_date desc")
+
+	salary_structure_assignment = frappe.db.get_value("Salary Structure Assignment", filters, ["salary_structure","base"], order_by="from_date desc", as_dict=1)
+
+	salary_structure = salary_structure_assignment.salary_structure if salary_structure_assignment else None
+	base = salary_structure_assignment.base if salary_structure_assignment else 0
 
 	if salary_structure:
 		basic = frappe.db.sql("""
@@ -1277,6 +1346,12 @@ def calculate_penalty_amount(employee, start_date, end_date, logs):
 			basic_salary = int(base)*float(percent)
 		else:
 			basic_salary = basic[0].amount
+	else:
+		frappe.log_error(
+			"Salary Structure not found for employee {} with filters {}".format(employee, filters),
+			"Penalty Calculation Error"
+		)
+		return
 
 	#Single day salary of employee = Basic Salary(WP salary) divided by 26 days
 	single_day_salary = basic_salary / 26
@@ -1407,7 +1482,7 @@ def create_additional_salary(employee, amount, component, end_date, notes):
 			additional_salary.submit()
 		frappe.db.commit()
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), 'Additional Salary - {0}'.format(component))
+		frappe.log_error(title='Additional Salary - {0}'.format(component), message=frappe.get_traceback())
 
 def generate_ot_additional_salary():
 	# Gather the required Date details such as start date, and respective end date.
@@ -1482,7 +1557,7 @@ def process_attendance_for_ot_additional_salary(attendance_doc, overtime_compone
 				create_additional_salary(attendance_doc.employee, amount, overtime_component, end_date, notes)
 			else:
 				error_msg = _("Overtime rate must be greater than zero for project: {project}".format(project=project))
-				frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+				frappe.log_error(title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name), message=error_msg)
 
 		# If no overtime rate is specified, follow labor law => (Basic Hourly Wage * number of worked hours * 1.5)
 		else:
@@ -1508,8 +1583,8 @@ def process_attendance_for_ot_additional_salary(attendance_doc, overtime_compone
 							notes = f"Attendance: {attendance_doc.name} \nCalculated based on working day rate => Basic hourly wage*Duration of worked hours*Working day overtime rate => {hourly_wage}*{overtime_duration}*{working_day_overtime_rate} = {amount} \n\n"
 							create_additional_salary(attendance_doc.employee, amount, overtime_component, end_date, notes)
 						else:
-							error_msg = _("No Wroking Day overtime rate set in HR and Payroll Additional Settings.")
-							frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+							error_msg = _("No Working Day overtime rate set in HR and Payroll Additional Settings.")
+							frappe.log_error(message=error_msg, title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
 
 					# Check if attendance date falls in a holiday list
 					elif holiday_list:
@@ -1530,7 +1605,7 @@ def process_attendance_for_ot_additional_salary(attendance_doc, overtime_compone
 								create_additional_salary(attendance_doc.employee, amount, overtime_component, end_date, notes)
 							else:
 								error_msg = _("No Day Off overtime rate set in HR and Payroll Additional Settings.")
-								frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+								frappe.log_error(message=error_msg, title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
 
 						# Check for weekly off days set to "False", ie, Public/additional holidays in holiday list
 						elif len(holidays_public_holiday) > 0:
@@ -1542,16 +1617,16 @@ def process_attendance_for_ot_additional_salary(attendance_doc, overtime_compone
 								create_additional_salary(attendance_doc.employee, amount, overtime_component, end_date, notes)
 							else:
 								error_msg = _("No Public Holiday overtime rate set in HR and Payroll Additional Settings.")
-								frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+								frappe.log_error(message=error_msg, title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
 					else:
 						error_msg = _("No basic Employee Schedule or Holiday List found for employee: {employee}".format(employee=attendance_doc.employee))
-						frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+						frappe.log_error(message=error_msg, title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
 				else:
 					error_msg = _("Basic Salary not set for employee: {employee} in the employee record.".format(employee=attendance_doc.employee))
-					frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+					frappe.log_error(message=error_msg, title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
 			else:
 				error_msg = _("Shift not set for employee: {employee} in the employee record.".format(employee=attendance_doc.employee))
-				frappe.log_error(error_msg, 'OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
+				frappe.log_error(message=error_msg, title='OT Additional Salary - Attendance {0}'.format(attendance_doc.name))
 
 def generate_sick_leave_deduction():
 	# Gather the required Date details such as start date, and respective end date.
@@ -1735,13 +1810,15 @@ def fetch_employees_not_in_checkin():
 			sa.shift as operations_shift, st.notification_reminder_after_shift_start,
 			st.notification_reminder_after_shift_end, st.late_entry_grace_period, 
 			st.supervisor_reminder_shift_start, st.supervisor_reminder_start_ends, 
-			os.supervisor as shift_supervisor, osi.account_supervisor as site_supervisor,
+			os.supervisor as shift_supervisor, osi.site_supervisor as site_supervisor,
 			sa.name as shift_assignment_id
 			FROM `tabShift Assignment` sa
-			RIGHT JOIN `tabShift Type` st ON sa.shift_type = st.name
-			RIGHT JOIN `tabOperations Shift` os ON sa.shift = os.name
-			RIGHT JOIN `tabOperations Site` osi ON sa.site = osi.name
+			INNER JOIN `tabEmployee` emp ON sa.employee = emp.name
+			INNER JOIN `tabShift Type` st ON sa.shift_type = st.name
+			INNER JOIN `tabOperations Shift` os ON sa.shift = os.name
+			INNER JOIN `tabOperations Site` osi ON sa.site = osi.name
 			WHERE {'sa.start_datetime' if log_type=='IN' else 'sa.end_datetime'} BETWEEN '{target_start_datetime_str}' AND '{target_end_datetime_str}'
+			AND emp.status = 'Active'
 			AND sa.status = 'Active' 
 			AND sa.docstatus = 1
 		""", as_dict=1)
@@ -2102,7 +2179,7 @@ def run_checkin_reminder():
 		if res:
 			initiate_checkin_notification(res)
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), 'Checkin Notification')
+		frappe.log_error(message=frappe.get_traceback(), title='Checkin Notification')
 
 
 

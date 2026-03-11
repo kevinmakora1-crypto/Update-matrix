@@ -13,6 +13,8 @@ frappe.ui.form.on('Asset', {
 		}
 	}
 });
+
+
 frappe.ui.form.on('Depreciation Schedule', {
 	make_depreciation: function(frm, cdt, cdn) {
 		var row = locals[cdt][cdn];

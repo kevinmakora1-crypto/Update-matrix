@@ -170,6 +170,11 @@ body[data-route="roster"] .search-employee {
   border: none;
   width: 270px;
 }
+
+body[data-route="roster"] .todayclass {
+  background: #ccf1f8 !important;
+}
+
 body[data-route="roster"] .closed {
   cursor: pointer;
   position: absolute;
@@ -277,4 +282,20 @@ body[data-route="roster"] .switch-container {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   position: absolute;
   width: 100%;
+}
+
+.cyanboxcolor {
+    background-color: #00BCD4;
+}
+
+.tealboxcolor {
+    background-color: #00897B;
+}
+
+.post-off-color {
+    background-color: #9E9E9E !important;
+}
+
+.client-post-off-color {
+    background-color: #34495E !important;
 }

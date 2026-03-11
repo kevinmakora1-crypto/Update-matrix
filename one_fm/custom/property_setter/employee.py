@@ -266,7 +266,7 @@ def get_employee_properties():
 			"doctype_or_field": "DocField",
 			"field_name": "status",
 			"property": "options",
-			"value": "\nActive\nCourt Case\nAbsconding\nLeft\nVacation",
+			"value": "\nActive\nCourt Case\nAbsconding\nLeft\nVacation\nNot Returned from Leave",
 			"property_type": "Text",
 			"default_value": None
 		},

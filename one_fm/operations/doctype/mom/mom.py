@@ -33,6 +33,7 @@ class MOM(Document):
 		"""
 			Create a POC Check if all the rows in the attendees table in a MOM record are not checked as attended
 		"""	
+		
 		table_checks  = [int(i.attended_meeting) for i in self.attendees]
 		if not any(table_checks):
 		#Create POC Check if no row in the POC table is marked
@@ -75,12 +76,11 @@ class MOM(Document):
 
 				
 			
-	def on_submit(self):
-		self.create_poc_check()
-		project_type = frappe.db.get_value("Project", self.project, "project_type")
-		if project_type != "External":
+	def on_submit(self):	
+		if self.project_type != "External":
 			self.create_task_and_assign()
 		else:
+			self.create_poc_check()
 			if self.issues == "Yes":
 				self.create_task_and_assign()
 	
@@ -96,6 +96,13 @@ class MOM(Document):
 				op_task.description = issue.description
 				op_task.priority = issue.priority
 				op_task.project = self.project 
+
+				# Clear and append child table rows properly
+				op_task.custom_assigned_to = []
+				if issue.user:
+					op_task.append("custom_assigned_to", {
+						"user": issue.user
+					})
 				op_task.save(ignore_permissions=True)
 
 				add_assignment({
@@ -114,9 +121,23 @@ class MOM(Document):
 		if not is_attended:
 			frappe.throw(_("At least one POC or General Attendance must be marked present."))
    
+@frappe.whitelist()
+def review_last_internal_mom(mom,project):
+	last_mom = frappe.db.get_list('MOM', filters={ 
+		'name': ['!=', mom ],
+		'project': project
+	
+	},
+	order_by='date desc',
+	page_length=1
+
+	)
+	if len(last_mom)>0:
+		return frappe.get_doc('MOM',last_mom[0].name)
+
 
 @frappe.whitelist()
-def review_last_mom(mom,site):
+def review_last_external_mom(mom,site):
 	last_mom = frappe.db.get_list('MOM', filters={ 
 		'name': ['!=', mom ],
 		'site': site
@@ -149,10 +170,13 @@ def fetch_designation_of_users(list_of_users: list = []):
 							WHERE user_id IN %s
 							""",(tuple(loads(list_of_users)), ) ,as_dict=1)
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), "Error encountered while fetching users designation (MOM)")
+		frappe.log_error(message=frappe.get_traceback(), title="Error encountered while fetching users designation (MOM)")
 
 
 @frappe.whitelist()
 def get_project_users(project):
-    doc = frappe.get_doc("Project", project)
-    return [u.full_name for u in doc.users]
+	doc = frappe.get_doc("Project", project)
+	users = []
+	users.append(doc.project_manager_name) if all((doc.project_manager_name, doc.project_manager, doc.project_type == "Internal")) else None
+	users.extend([user.full_name for user in doc.users])
+	return users

@@ -25,8 +25,8 @@ def get_context(context):
 	if context.driving_license_required != 0:
 		context.type_of_license = ["Light", "Heavy", "Motor Bike", "Inshaya"]
 	context.visa_type = frappe.get_all("Visa Type", ["name"])
-	# Get Country List to the context to show in the portal
-	context.country_list = frappe.get_all('Country', fields=['name'])
+	# Get Nationality List to the context to show in the portal
+	context.nationality_list = frappe.get_all('Nationality', fields=['name'])
 	languages = frappe.get_all(
 		'Employee Language Requirement',
 		fields = ['language', 'language_name'],
@@ -76,21 +76,19 @@ def easy_apply(first_name, second_name, third_name, last_name, nationality, civi
         return 0
 
 @frappe.whitelist(allow_guest=True)
-def create_job_applicant_from_job_portal(applicant_name, country, applicant_email, applicant_mobile, job_opening, name_of_file, resume_attachment_url="", rotation_shift=None, night_shift=None, travel=None, travel_type=None, driving_license=None,license_type=None, visa=None, visa_type=None, in_kuwait=None, languages=[]):
+def create_job_applicant_from_job_portal(applicant_name, nationality, applicant_email, applicant_mobile, job_opening, name_of_file, resume_attachment_url="", rotation_shift=None, night_shift=None, travel=None, travel_type=None, driving_license=None,license_type=None, visa=None, visa_type=None, in_kuwait=None, languages=[]):
     '''
         Method to create Job Applicant from Portal
         args:
             applicant_name: Name of the Applicant
-            country: Country of the Applicant
+            nationality: Nationality of the Applicant
             applicant_email: Applicant Email ID
             applicant_mobile: Applicant Mobile Number
             job_opening: Job Opening ID
             files: The CV attached
-        Return True if Job Applicant created Succesfully
+        Return True if Job Applicant created Successfully
     '''
     try:
-        # Get Nationality from country given by the applicant
-        nationality = frappe.db.exists('Nationality', {'country': country})
         # Create Job Applicant
         applicant_name = applicant_name.title()
         split_name = parse_names(applicant_name)
@@ -122,7 +120,7 @@ def create_job_applicant_from_job_portal(applicant_name, country, applicant_emai
         job_applicant.one_fm_third_name = third_name
 
 
-        job_applicant.one_fm_forth_name = fourth_name
+        job_applicant.one_fm_fourth_name = fourth_name
 
 
         job_applicant.resume_attachment = resume_attachment_url
@@ -191,7 +189,7 @@ def create_job_applicant_from_job_portal(applicant_name, country, applicant_emai
         # job_applicant.save(ignore_permissions=True)
         return True
     except:
-        frappe.log_error(frappe.get_traceback(), "Error while uploading file (Easy Apply)")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while uploading file (Easy Apply)")
         frappe.throw("An Error Occured while submitting the job application")
 
 @frappe.whitelist()
@@ -211,7 +209,7 @@ def attach_file_to_job_applicant(filedata, job_applicant):
                 # Set resume_attachment as url of the file stored
                 job_applicant.resume_attachment = filedoc.file_url
     except:
-        frappe.log_error(frappe.get_traceback(), "Error while uploading file (Easy Apply)")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while uploading file (Easy Apply)")
 
 
 def create_job_applicant_for_easy_apply(applicant_name, first_name, second_name, third_name, last_name, nationality,

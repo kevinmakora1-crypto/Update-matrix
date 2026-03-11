@@ -331,7 +331,8 @@ def set_earnings_and_deduction_with_respect_to_payroll_cycle(doc, method):
         doc.set_totals()
         doc.compute_year_to_date()
     else:
-        doc.has_multiple_salary_structure = 0
+        if not doc.loans:
+            doc.has_multiple_salary_structure = 0
         last_salary_slip = get_last_salary_slip(doc.employee)
         if last_salary_slip and len(last_salary_slip) > 0:
             payroll_based_on = frappe.db.get_value("Payroll Settings", None, "payroll_based_on")
@@ -559,7 +560,7 @@ def get_salary_detail(structure_dict,doc,components):
         else:
             frappe.throw(f"The total number of payment days of the components {sum(all_payment_days)} does not match the total payment days on the form {doc.payment_days} ")
     except:
-        frappe.log_error("Error Generating Salary",frappe.get_traceback())
+        frappe.log_error(title="Error Generating Salary", message=frappe.get_traceback())
         frappe.throw("An error ocurred while generating salary, Kindly review error Logs")
 
 
@@ -646,7 +647,7 @@ def get_prorated_amount(component,doc,data,payment_days_for_period):
             salary_slip_amount = (salary_slip_amount*payment_days_for_period)/doc.total_working_days
         return salary_slip_amount
     except:
-        frappe.log_error("Error Generating Salary Amount",frappe.get_traceback())
+        frappe.log_error(title="Error Generating Salary Amount", message=frappe.get_traceback())
         frappe.throw("An error ocurred while generating salary, Kindly review error Logs")
 
 

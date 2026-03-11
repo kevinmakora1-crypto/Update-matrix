@@ -41,8 +41,9 @@ def get_purchase_order_custom_fields():
                 "label": "Place of Delivery",
                 "fieldtype": "Small Text",
                 "insert_after": "shipping_address",
-                "hidden": 1,
-                "translatable": 1
+                "translatable": 1,
+                "allow_on_submit": 1,
+                "hidden": 0
             },
             {
                 "fieldname": "custom_purchase_order_approver_name",
@@ -127,7 +128,7 @@ def get_purchase_order_custom_fields():
             },
             {
                 "fieldname": "other_conditions",
-                "label": "Other Conditions",
+                "label": "Notes",
                 "fieldtype": "Text Editor",
                 "insert_after": "terms",
                 "translatable": 1
@@ -224,6 +225,59 @@ def get_purchase_order_custom_fields():
                 "insert_after": "company",
                 "options": "Item Request",
                 "hidden": 1
-            }
+            },
+            {
+                "fieldname": "custom_contact_person",
+                "label": "Contact Person",
+                "fieldtype": "Data",
+                "insert_after": "shipping_address_display",
+                "allow_on_submit": 1
+            },
+            {
+                "fieldname": "custom_contact_number",
+                "label": "Contact Number",
+                "fieldtype": "Data",
+                "insert_after": "custom_contact_person",
+                "allow_on_submit": 1,
+            },
+            {
+                "fieldname": "custom_customer",
+                "label": "Customer",
+                "fieldtype": "Link",
+                "options": "Customer",
+                "insert_after": "department_manager",
+                "read_only": 1
+            },
+            {
+                "fieldname": "custom_site",
+                "label": "Site",
+                "fieldtype": "Link",
+                "options": "Operations Site",
+                "insert_after": "project",
+                "read_only": 1
+            },
+            {
+                "fieldname": "is_refundable",
+                "label": "Refundable",
+                "fieldtype": "Check",
+                "insert_after": "custom_customer",
+                "read_only": 1
+            },
+            {
+                "label": "Margin Type",
+                "fieldname": "custom_margin_type",
+                "insert_after": "is_refundable",
+                "fieldtype": "Select",
+                "options": "\nPercentage\nAmount",
+                "read_only": 1,
+            },
+            {
+                "label": "Margin Rate or Amount",
+                "fieldname": "custom_margin_rate_or_amount",
+                "insert_after": "custom_margin_type",
+                "fieldtype": "Float",
+                "read_only": 1,
+            },
+            
         ]
     }

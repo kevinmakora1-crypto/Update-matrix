@@ -96,7 +96,7 @@ def enroll():
 
 	except Exception as exc:
 		print(frappe.get_traceback())
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(message=frappe.get_traceback(), title='Face Recognition Enrollment Error')
 		raise exc
 
 
@@ -147,7 +147,7 @@ def verify():
 		return check_in(log_type, skip_attendance, latitude, longitude, "Frappe Page")
 
 	except Exception as exc:
-		frappe.log_error(frappe.get_traceback())
+		frappe.log_error(message=frappe.get_traceback(), title='Face Recognition Enrollment Error')
 		raise exc
 
 @frappe.whitelist()

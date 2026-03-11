@@ -38,6 +38,7 @@ def create_workflows():
 	create_workflow(get_workflow_json_file("purchase_request_wf.json"))
 	create_workflow(get_workflow_json_file("supplier_purchase_order_wf.json"))
 	create_workflow(get_workflow_json_file("legal_investigation.json"))
+	create_workflow(get_workflow_json_file("attendance_amendment.json"))
 	create_workflow(get_workflow_json_file("sales_invoice.json"))
 	create_workflow(get_workflow_json_file("asset.json"))
 	create_workflow(get_workflow_json_file("asset_movement.json"))
@@ -57,6 +58,14 @@ def create_workflows():
 	create_workflow(get_workflow_json_file("subcontract_staff_request.json"))
 	create_workflow(get_workflow_json_file("onboard_subcontract_employee.json"))
 	create_workflow(get_workflow_json_file("leave_extension_request.json"))
+	create_workflow(get_workflow_json_file("loan_application.json"))
+	create_workflow(get_workflow_json_file("client_interview_shortlist.json"))
+	create_workflow(get_workflow_json_file("pathfinder_log.json"))
+	create_workflow(get_workflow_json_file("employee_uniform.json"))
+	create_workflow(get_workflow_json_file("medical_appointment.json"))
+	create_workflow(get_workflow_json_file("client_event.json"))
+	create_workflow(get_workflow_json_file("on_the_job_training.json"))
+	create_workflow(get_workflow_json_file("temporary_deployment.json"))
 
 def delete_workflows():
 	delete_workflow(get_workflow_json_file("erf.json"))
@@ -113,3 +122,4 @@ def delete_workflows():
 	delete_workflow(get_workflow_json_file("subcontract_staff_request.json"))
 	delete_workflow(get_workflow_json_file("onboard_subcontract_employee.json"))
 	delete_workflow(get_workflow_json_file("leave_extension_request.json"))
+	delete_workflow(get_workflow_json_file("loan_application.json"))

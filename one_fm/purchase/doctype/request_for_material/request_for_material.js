@@ -5,7 +5,84 @@
 frappe.provide("erpnext.accounts.dimensions");
 erpnext.buying.setup_buying_controller();
 
+var handle_uom_conversion = function(frm, cdt, cdn) {
+    let row = locals[cdt][cdn];
+    if (row.item_code && row.uom && row.stock_uom && row.uom !== row.stock_uom) {
+        frappe.call({
+            method: "get_conversion_factor",
+			doc: frm.doc,
+            args: {
+                item_code: row.item_code,
+                uom: row.uom
+            },
+            callback: function(r) {
+				
+				if(r.message.edit_row){
+				setTimeout(async function(){
+					frappe.model.set_value(cdt, cdn, "conversion_factor", 0);
+					frm.fields_dict[row.parentfield].grid.grid_rows_by_docname[cdn].toggle_editable('conversion_factor', true);
+				},700)
+				}
+				
+            }
+        });
+    } else {
+		
+        // frappe.model.set_value(cdt, cdn, "conversion_factor", 1);
+        if(row.qty){
+            frappe.model.set_value(cdt, cdn, "stock_qty", row.qty);
+        } else {
+            frappe.model.set_value(cdt, cdn, "stock_qty", 0);
+        }
+    }
+};
+
+var calculate_stock_qty = function(cdt, cdn) {
+    let row = locals[cdt][cdn];
+    if (row.qty && row.uom && row.stock_uom && row.uom !== row.stock_uom) {
+        if(row.conversion_factor) {
+            frappe.model.set_value(cdt, cdn, "stock_qty", flt(row.qty) * flt(row.conversion_factor));
+        }
+    } else if (row.qty) {
+        frappe.model.set_value(cdt, cdn, "stock_qty", row.qty);
+    } else {
+		frappe.model.set_value(cdt, cdn, "stock_qty", 0);
+	}
+};
+
 frappe.ui.form.on('Request for Material', {
+	purchase_rfm: function(frm){
+		if(frm.is_dirty()){
+			frappe.msgprint(__('Please save before creating Purchase RFM.'));
+			return;
+		}
+		if(frm.doc.linked_request_for_material){
+			frappe.msgprint(__('This document is already a Purchase RFM.'));
+			return;
+		}
+		if(!frm.doc.linked_request_for_material) {
+			frappe.call({
+				doc: frm.doc,
+				method: 'get_session_user_approver',
+				callback: function(r) {
+					let new_doc = frappe.model.copy_doc(frm.doc);
+					new_doc.linked_request_for_material = frm.doc.name;
+					new_doc.workflow_state = '';
+					new_doc.linked_purchase_rfm = ""
+					new_doc.issue_transfer_rfm =  frm.doc.name
+					new_doc.purpose = 'Purchase';
+					new_doc.requested_by = frappe.session.user;
+					new_doc.request_for_material_approver = r.message;
+					new_doc.docstatus = 0;
+					for(let i=0; i<new_doc.items.length; i++){
+						new_doc.items[i].linked_request_for_material = frm.doc.name
+					}
+					frappe.set_route('Form', new_doc.doctype, new_doc.name);
+
+				}
+			});
+		}	
+	},
 	before_workflow_action: function(frm){
 		if(frm.doc.workflow_state == 'Pending Approval' && frm.doc.request_for_material_approver != frappe.session.user){
 			frappe.throw(__("You are not authorized to approve!!"));
@@ -48,22 +125,21 @@ frappe.ui.form.on('Request for Material', {
 			frm.set_value('requested_by', frappe.session.user);
 		}
 
-		set_t_warehouse_hidden(frm);
 		// set schedule_date
 		set_schedule_date(frm);
-		frm.fields_dict["items"].grid.get_field("t_warehouse").get_query = function(doc) {
-			return {
-				filters: {'company': doc.company}
-			};
-		};
 	},
 	onload_post_render: function(frm) {
 		frm.get_field("items").grid.set_multiple_add("item_code", "qty");
 	},
 	refresh: function(frm) {
-		
+		if(frm.doc.workflow_state=="Approved"&& frm.doc.docstatus==1){
+			set_intro(frm);
+		}
 		frm.events.make_custom_buttons(frm);
+		add_stock_entry_buttons(frm);
 		set_item_field_property(frm);
+		add_request_for_quotation_button(frm);
+		add_supplier_quotation_button(frm);
 		let status = ['Draft', 'Accepted', 'Approved', 'Rejected', 'Transferred'];
 		if(status.includes(frm.doc.status) && frm.doc.docstatus == 1){
 			frm.set_df_property('status', 'options', status);
@@ -86,18 +162,48 @@ frappe.ui.form.on('Request for Material', {
 				method: 'get_default_warehouse',
 				callback: function(r) {
 					if(r && r.default_warehouse){
-						frm.set_value('t_warehouse', r.default_warehouse);
+						frm.set_value('target_warehouse', r.default_warehouse);
 					}
 					else{
-						frm.set_value('t_warehouse', '');
+						frm.set_value('target_warehouse', '');
 					}
 				}
 			});
 		}
 		set_filters(frm);
-		set_warehouse_filters(frm);
 		toggle_child_table_fields(frm);
 
+		if(frm.doc.linked_request_for_material){
+			frm.set_df_property('purpose', 'read_only', 1);
+		}
+		add_purchase_rfm_button(frm);
+		frm.events.add_asset_movement_button(frm);
+	},
+	add_asset_movement_button: function(frm) {
+		if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved' && ["Issue", "Transfer"].includes(frm.doc.purpose)) {
+			const has_fixed_asset_items = frm.doc.items.some(item => item.is_fixed_asset && item.custom_pending_quantity > 0);
+			if (has_fixed_asset_items) {
+				frm.add_custom_button(__('Asset Movement'), function() {
+					frm.events.create_asset_movement(frm);
+				}, __('Create'));
+			}
+		}
+	},
+	create_asset_movement: (frm) => {
+		frappe.call({
+			method: 'one_fm.purchase.doctype.request_for_material.request_for_material.make_asset_movement',
+			args: {
+				source_name: frm.doc.name
+			},
+			callback: function(r) {
+				if (r.message) {
+					// Open the new Asset Movement form without saving
+					let doc = r.message;
+					frappe.model.sync(doc);
+					frappe.set_route('Form', doc.doctype, doc.name);
+				}
+			}
+		});
 	},
 	items_on_form_rendered: (frm) => {
 	},
@@ -110,7 +216,8 @@ frappe.ui.form.on('Request for Material', {
 	items_move: (frm) => {
 	},
 	make_custom_buttons: function(frm) {
-		if (frm.doc.docstatus == 1 && frm.doc.status == 'Approved' && frappe.user.has_role("Stock User")) {
+		if (frm.doc.docstatus == 1 && frm.doc.workflow_state == 'Approved' && frappe.user.has_role("Stock User")) {
+			
 			if(frm.doc.items){
 				var any_items_ordered = false;
 				var item_exist_in_stock = false;
@@ -123,10 +230,24 @@ frappe.ui.form.on('Request for Material', {
 					if(item.item_code && item.actual_qty>0){
 						item_exist_in_stock = true;
 					}
-					if(item.pur_qty > 0){
+					if(item.custom_rfp_quantity < item.qty){
 						purchase_item_exist = true;
+						
 					}
 				});
+
+				if(purchase_item_exist && frappe.user_roles.includes("Warehouse Supervisor") && frm.doc.purpose=="Purchase"){
+					frm.add_custom_button(__("Request for Purchase"),
+						function(){
+							
+							frm.events.make_request_for_purchase(frm)
+						}, __('Create'))
+							
+							
+						
+						
+				}
+
 				if(item_exist_in_stock){
 					if(frm.doc.type=="Individual" || frm.doc.type=="Onboarding" || frm.doc.type=="Project"|| frm.doc.type=="Project Mobilization" || frm.doc.type=="Stock"){
 						frappe.db.get_value('Stock Entry', {'one_fm_request_for_material': frm.doc.name}, ['name', 'docstatus'],function(r) {
@@ -147,30 +268,13 @@ frappe.ui.form.on('Request for Material', {
 								if(frm.doc.type == "Individual"){
 									stock_entry_button_name = __("Material Issue");
 								}
-								frm.add_custom_button(stock_entry_button_name, () => frm.events.make_stock_entry(frm), __('Create'));
-							}
+								if(frappe.user_roles.includes("Warehouse Supervisor")){
+									frm.add_custom_button(stock_entry_button_name, () => frm.events.make_stock_entry(frm), __('Create'));
+								}
+								}
+								
 						});
-						if(purchase_item_exist){
-							frappe.db.get_value('Request for Purchase', {'request_for_material': frm.doc.name}, ['name','docstatus'],function(r) {
-								if(r && r.name && r.docstatus != 2){
-									frappe.show_alert({
-										message:__('A purchase request ')+r.name+__(' has been made against this RFM'),
-										indicator:'green'
-									}, 5);
-								}
-								else{
-									if(r && r.docstatus == 2){
-										frappe.show_alert({
-											message:__('Request for Purchase ')+r.name+__(' was made against this RFM, which has now been cancelled'),
-											indicator:'red'
-										}, 5);
-									}
-									frm.add_custom_button(__("Request for Purchase"),
-							            () => frm.events.make_request_for_purchase(frm), __('Create'));
-								}
-							});
-
-						}
+						
 						if(any_items_ordered){
 							frm.add_custom_button(__("Make Delivery Note"),
 						 	    () => frm.events.make_delivery_note(frm), __('Create'));
@@ -178,25 +282,13 @@ frappe.ui.form.on('Request for Material', {
 
 					}
 				}
-				else {
-					frappe.db.get_value('Request for Purchase', {'request_for_material': frm.doc.name}, ['name','docstatus'],function(r) {
-						if(r && r.name && r.docstatus != 2){
-							frappe.show_alert({
-								message:__('A purchase request ')+r.name+__(' has been made against this RFM'),
-								indicator:'green'
-							}, 5);
-						}
-						else{
-							if(r && r.docstatus == 2){
-								frappe.show_alert({
-									message:__('Request for Purchase ')+r.name+__(' was made against this RFM, which has now been cancelled'),
-									indicator:'red'
-								}, 5);
-							}
+				else {	
+					if(purchase_item_exist && frappe.user_roles.includes("Warehouse Supervisor" && frm.doc.purpose=="Purchase") ){
 							frm.add_custom_button(__("Request for Purchase"),
 								() => frm.events.make_request_for_purchase(frm), __('Create'));
-						}
-					});
+					}
+							
+						
 					if(any_items_ordered){
 						frm.add_custom_button(__("Make Delivery Note"),
 							() => frm.events.make_delivery_note(frm), __('Create'));
@@ -233,6 +325,7 @@ frappe.ui.form.on('Request for Material', {
 				}
 			},
 			callback: function(r) {
+				
 				const d = item;
 				if(!r.exc) {
 					$.each(r.message, function(k, v) {
@@ -277,16 +370,144 @@ frappe.ui.form.on('Request for Material', {
 			});
 		}
 	},
-	make_request_for_purchase: function(frm) {
-		if(frm.is_dirty()){
-			frappe.msgprint(__("Please Update the Document and Create."))
+	validate_rfm_type : function(frm){
+		
+		// ensure that the purpose field is set throw an error if it is not
+		if((!frm.doc.purpose)&& (frappe.user_roles.includes("Warehouse Supervisor"))){
+			frappe.throw(__("Cannot Create Document. Purpose field needs to be selected"));
 		}
-		else{
-			frappe.model.open_mapped_doc({
-				method: "one_fm.purchase.doctype.request_for_material.request_for_material.make_request_for_purchase",
-				frm: frm
-			});
+	},
+	make_request_for_purchase: async function(frm) {
+		await frm.events.validate_rfm_type(frm);
+		
+		if (frm.is_dirty()) {
+			frappe.msgprint(__("Please save your changes before creating a Request for Purchase."));
+			return;
 		}
+
+		const items_to_purchase = frm.doc.items.filter(d => d.pur_qty > 0 && !d.rejected_item);
+		if (items_to_purchase.length === 0) {
+			frappe.msgprint(__("There are no items marked for purchasing."));
+			return;
+		}
+
+		let dialog = new frappe.ui.Dialog({
+			title: __('Create Request for Purchase'),
+			fields: [
+				{
+					fieldtype: 'HTML',
+					options: __("Create a purchase request for all items, or select specific items?")
+				}
+			],
+			primary_action_label: __('Select Items'),
+			primary_action: () => {
+				dialog.hide();
+				let selection_dialog = new frappe.ui.Dialog({
+					title: __('Select Items and Quantities for RFP'),
+					fields: [
+						{
+							fieldname: 'items_html',
+							fieldtype: 'HTML'
+						}
+					],
+					primary_action_label: __('Create RFP'),
+					primary_action: () => {
+						let selected_items = [];
+						selection_dialog.get_field('items_html').$wrapper.find('tbody tr').each(function() {
+							let row = $(this);
+							if (row.find('.select-item').prop('checked')) {
+								let qty_to_rfp = parseFloat(row.find('.qty-to-rfp').val() || 0);
+								let pending_qty = parseFloat(row.find('.pending-qty').text());
+								if (qty_to_rfp > pending_qty) {
+									frappe.throw(__("Quantity for item {0} cannot exceed pending quantity.", [row.data('item-code')]));
+								}
+								if (qty_to_rfp > 0) {
+									selected_items.push({
+										'item_code': row.data('item-code'),
+										'qty': qty_to_rfp,
+										'request_for_material_item': row.data('item-name'),
+										'uom': row.data('uom'),
+										'stock_uom': row.data('stock-uom'),
+										'conversion_factor': row.data('conversion-factor')
+									});
+								}
+							}
+						});
+
+						if (selected_items.length === 0) {
+							frappe.msgprint(__('Please select at least one item with a quantity greater than 0.'));
+							return;
+						}
+
+						frappe.call({
+							method: "one_fm.purchase.doctype.request_for_material.request_for_material.create_partial_request_for_purchase",
+							args: {
+								source_name: frm.doc.name,
+								items: selected_items
+							},
+							callback: function(r) {
+								if (r.message) {
+									selection_dialog.hide();
+									frappe.set_route('Form', r.message.doctype, r.message.name);
+								}
+							},
+							freeze: true,
+							freeze_message: __('Creating Request for Purchase...')
+						});
+					}
+				});
+
+				let items_with_pending_qty = frm.doc.items.filter(d => (d.qty - (d.custom_rfp_quantity || 0)) > 0 && !d.rejected_item);
+
+				let table_html = `
+				<table class="table table-bordered" style="width: 100%;">
+					<thead>
+						<tr>
+							<th style="width: 5%;"><input type="checkbox" class="select-all-items"></th>
+							<th style="width: 55%;">${__('Item')}</th>
+							<th style="width: 20%;">${__('Pending Qty')}</th>
+							<th style="width: 20%;">${__('Qty for RFP')}</th>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>`;
+				selection_dialog.get_field('items_html').$wrapper.html(table_html);
+				let tbody = selection_dialog.get_field('items_html').$wrapper.find('tbody');
+
+				items_with_pending_qty.forEach(item => {
+					let pending_qty = item.qty - (item.custom_rfp_quantity || 0);
+					let row_html = `
+						<tr data-item-name="${item.name}" 
+							data-item-code="${item.item_code}"
+							data-uom="${item.uom || ''}"
+							data-stock-uom="${item.stock_uom || ''}"
+							data-conversion-factor="${item.conversion_factor || 1}">
+							<td><input type="checkbox" class="select-item" checked></td>
+							<td>${item.item_code}: ${item.requested_item_name}</td>
+							<td class="pending-qty">${pending_qty}</td>
+							<td><input type="number" class="form-control qty-to-rfp" value="${pending_qty}" max="${pending_qty}" min="0"></td>
+						</tr>
+					`;
+					tbody.append(row_html);
+				});
+
+				selection_dialog.get_field('items_html').$wrapper.find('.select-all-items').on('change', function() {
+					selection_dialog.get_field('items_html').$wrapper.find('.select-item').prop('checked', $(this).prop('checked'));
+				});
+
+				selection_dialog.show();
+			},
+			secondary_action_label: __('All Items'),
+			secondary_action: () => {
+				dialog.hide();
+				frappe.model.open_mapped_doc({
+					method: "one_fm.purchase.doctype.request_for_material.request_for_material.make_request_for_purchase",
+					frm: frm
+				});
+			}
+		});
+		dialog.show();
 	},
 	make_stock_entry: function(frm) {
 		if(frm.is_dirty()){
@@ -310,8 +531,11 @@ frappe.ui.form.on('Request for Material', {
 			});
 		}
 	},
-	t_warehouse: function(frm) {
-		set_t_warehouse(frm);
+	source_warehouse: function(frm) {
+		set_source_warehouse(frm);
+	},
+	target_warehouse: function(frm) {
+		set_target_warehouse(frm);
 	},
 	status: function(frm) {
 		if(frm.doc.status && frm.doc.status == 'Rejected'){
@@ -324,43 +548,167 @@ frappe.ui.form.on('Request for Material', {
 	type: function(frm) {
 		set_employee_or_project(frm);
 		set_item_field_property(frm);
-		set_warehouse_filters(frm);
 		set_filters(frm);
 		toggle_child_table_fields(frm);
 	},
-	project: function(frm) {
-		set_t_warehouse_hidden(frm);
-		set_warehouse_filters(frm);
+	is_refundable: function(frm) {
+		sync_child_table(frm, 'is_refundable');
 	},
-	department: function(frm) {
-		set_warehouse_filters(frm);
+	margin_known: function(frm) {
+		sync_child_table(frm, 'margin_known');
 	},
-	site: function(frm) {
-		set_warehouse_filters(frm);
-	}
+	margin_type: function(frm) {
+		sync_child_table(frm, 'margin_type');
+	},
+	margin_rate_or_amount: function(frm) {
+		sync_child_table(frm, 'margin_rate_or_amount');
+	},
+	
 });
 
-var set_t_warehouse_hidden = function(frm) {
-	if(frm.doc.project){
-		frm.set_df_property('t_warehouse', 'hidden', false);
-	}
-	else {
-		frm.set_df_property('t_warehouse', 'hidden', true);
-	}
+
+function sync_child_table(frm, fieldname) {
+	if (!frm.doc.items || frm.doc.items.length === 0) return;	
+	frm.doc.items.forEach(function(item, idx) {
+		item[fieldname] = frm.doc[fieldname];
+	});
+	
+	frm.refresh_field('items');
 }
 
-frappe.ui.form.on('Request for Material Item', { // The child table is defined in a DoctType called "Dynamic Link"
-	items_on_form_rendered: (frm) => {
-	},
-	before_items_remove: (frm) => {
-	},
-	items_add: (frm) => {
-	},
-	items_remove: (frm) => {
-	},
-	items_move: (frm) => {
-	},
-});
+function add_stock_entry_buttons(frm) {
+    if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved') {
+        if (frm.doc.purpose === "Transfer") {
+            frm.add_custom_button(__('Material Transfer'), function() {
+                create_stock_entry(frm, 'Material Transfer');
+            }, __('Create'));
+            
+            frm.add_custom_button(__('Material Transfer - In Transit'), function() {
+                create_stock_entry(frm, 'Material Transfer-In Transit');
+            }, __('Create'));
+        }
+        
+        if (frm.doc.purpose === "Issue") {
+            frm.add_custom_button(__('Material Issue'), function() {
+                create_stock_entry(frm, 'Material Issue');
+            }, __('Create'));
+
+            check_and_show_employee_uniform_button(frm);
+        }
+    }
+}
+
+function check_and_show_employee_uniform_button(frm) {
+    let has_uniform_items = frm.doc.items && frm.doc.items.some(
+        item => item.is_uniform_request && item.employee
+    );
+    
+    if (!has_uniform_items) {
+        return;
+    }
+    
+    frappe.call({
+        method: 'one_fm.purchase.doctype.request_for_material.request_for_material.has_pending_uniform_items',
+        args: {
+            rfm_name: frm.doc.name
+        },
+        callback: function(r) {
+            if (r.message === true) {
+                frm.add_custom_button(__('Employee Uniform'), function() {
+                    create_employee_uniform_from_rfm(frm);
+                }, __('Create'));
+            }
+        }
+    });
+}
+
+function create_employee_uniform_from_rfm(frm) {
+    let uniform_items = frm.doc.items.filter(
+    item => item.is_uniform_request && 
+            item.employee && 
+            (item.issued_quantity || 0) < (item.qty || 0)
+	);
+
+	if (uniform_items.length === 0) {
+		frappe.msgprint({
+			title: __('No Pending Uniform Items'),
+			message: __('All uniform items have been fully issued or there are no uniform request items with assigned employees.'),
+			indicator: 'orange'
+		});
+		return;
+	}
+    
+    frappe.call({
+        method: 'one_fm.purchase.doctype.request_for_material.request_for_material.create_employee_uniform',
+        args: {
+            rfm_name: frm.doc.name
+        },
+        freeze: true,
+        freeze_message: __('Creating Employee Uniform documents...'),
+        callback: function(r) {
+            if (r.message && r.message.success) {
+                frappe.show_alert({
+                    message: __(r.message.message),
+                    indicator: 'green'
+                }, 5);
+                
+                frm.reload_doc();
+                
+                if (r.message.created_uniforms && r.message.created_uniforms.length > 0) {
+                    let uniform_html = '<table class="table table-bordered">';
+                    uniform_html += '<thead><tr><th>Employee Uniform</th><th>Employee</th><th>Items</th><th>Total Qty</th></tr></thead>';
+                    uniform_html += '<tbody>';
+                    
+                    r.message.created_uniforms.forEach(uniform => {
+                        uniform_html += `<tr>
+                            <td><a href="/app/employee-uniform/${uniform.name}" target="_blank">${uniform.name}</a></td>
+                            <td>${uniform.employee_name} (${uniform.employee})</td>
+                            <td>${uniform.total_items}</td>
+                            <td>${uniform.total_quantity}</td>
+                        </tr>`;
+                    });
+                    
+                    uniform_html += '</tbody></table>';
+                    
+                    frappe.msgprint({
+                        title: __('Employee Uniforms Created Successfully'),
+                        message: uniform_html,
+                        indicator: 'green',
+                        primary_action: {
+                            label: __('View First Uniform'),
+                            action: function() {
+                                frappe.set_route('Form', 'Employee Uniform', r.message.created_uniforms[0].name);
+                            }
+                        }
+                    });
+                }
+            }
+        },
+        error: function(r) {
+            if (!r || !r._server_messages) {
+                frappe.msgprint({
+                    title: __('Error'),
+                    message: __('Failed to create Employee Uniform documents. Please check the error log.'),
+                    indicator: 'red'
+                });
+            }
+        }
+    });
+}
+function create_stock_entry(frm, stock_entry_type) {
+    frappe.call({
+        method: 'one_fm.purchase.doctype.request_for_material.request_for_material.create_stock_entry_from_rfm',
+        args: {
+            rfm_name: frm.doc.name,
+            stock_entry_type: stock_entry_type
+        },
+        callback: function(r) {
+            if (r.message) {
+                frappe.set_route('Form', 'Stock Entry', r.message);
+            }
+        }
+    });
+}
 
 var set_filters = function(frm) {
 	frm.set_query("erf", function() {
@@ -382,11 +730,6 @@ var set_filters = function(frm) {
 			filters: [
 				['project', '=', frm.doc.project]
 			]
-		};
-	});
-	frm.set_query("t_warehouse", function() {
-		return {
-			filters: {'is_group': 0}
 		};
 	});
 };
@@ -419,6 +762,15 @@ var fetch_designation_items = function(frm) {
 		});
 	}
 };
+let validate_item_code = function(frm) {
+    if (!frm.doc.items || frm.doc.items.length === 0) return;
+    frm.doc.items.forEach((item, idx) => {
+        if (!item.item_code) {
+            frappe.throw(__("Item code must be filled for all items. Row {0} is missing item code.", [idx + 1]));
+        }
+    });
+}
+
 
 var fetch_erf_items = function(frm){
 	if(frm.doc.erf){
@@ -455,7 +807,7 @@ var set_item_field_property = function(frm) {
 	var fields_dict = [];
 	frappe.meta.get_docfield("Request for Material Item", "item_code", frm.doc.name).read_only = true;
 	frappe.meta.get_docfield("Request for Material Item", "item_code", frm.doc.name).depends_on = 'eval:doc.docstatus==1';
-	if((frm.doc.docstatus == 1 && (frappe.session.user == frm.doc.request_for_material_accepter || frm.doc.status == 'Approved')) || frm.doc.type == 'Stock'){
+	if((frm.doc.docstatus == 1 && (frappe.session.user == frm.doc.request_for_material_accepter || frm.doc.workflow_state == 'Approved')) || frm.doc.type == 'Stock'){
 		frappe.meta.get_docfield("Request for Material Item", "item_code", frm.doc.name).read_only = false;
 		frappe.meta.get_docfield("Request for Material Item", "item_code", frm.doc.name).depends_on = '';
 	}
@@ -468,8 +820,8 @@ var set_item_field_property = function(frm) {
 		frappe.meta.get_docfield("Request for Material Item", "requested_item_name", frm.doc.name).reqd = false;
 		frappe.meta.get_docfield("Request for Material Item", "requested_description", frm.doc.name).reqd = false;
 	}
-	else if((frm.doc.docstatus == 1 && frm.doc.status == 'Approved')){
-		var fields = ['requested_item_name', 'requested_description', 'qty', 'uom', 'stock_uom'];
+	else if((frm.doc.docstatus == 1 && frm.doc.workflow_state == 'Approved')){
+		var fields = ['requested_item_name', 'requested_description', 'qty', 'stock_uom'];
 		fields.forEach((field, i) => {
 			fields_dict[i] = {'fieldname': field, 'read_only': true}
 		});
@@ -489,24 +841,6 @@ var set_item_field_read_only = function(frm, fields) {
 		frappe.meta.get_docfield("Request for Material Item", field.fieldname, frm.doc.name).read_only = field.read_only;
 	});
 };
-
-var set_warehouse_filters = function(frm) {
-	var wh_filters = {'is_group': 0};
-	if(frm.doc.type == 'Department'){
-		wh_filters = {'is_group': 0, 'department': frm.doc.department};
-	}
-	if(frm.doc.type == 'Project'){
-		wh_filters = {'is_group': 0, 'one_fm_project': frm.doc.project};
-		if(frm.doc.site){
-			wh_filters['one_fm_site'] = frm.doc.site;
-		}
-	}
-	frm.set_query("t_warehouse", function() {
-		return {
-			filters: wh_filters
-		};
-	});
-}
 
 var set_employee_from_the_session_user = function(frm) {
 	if(frappe.session.user != 'Administrator'){
@@ -558,10 +892,18 @@ var set_employee_or_project = function(frm) {
 };
 
 
+
 frappe.ui.form.on("Request for Material Item", {
 	setup: (frm)=>{
 	},
+    uom: function(frm, cdt, cdn) {
+        handle_uom_conversion(frm, cdt, cdn);
+    },
+    conversion_factor: function(frm, cdt, cdn) {
+        calculate_stock_qty(cdt, cdn);
+    },
 	qty: function (frm, doctype, name) {
+        calculate_stock_qty(doctype, name);
 	},
 	pur_qty: function (frm, doctype, name){
 		var d = locals[doctype][name];
@@ -795,7 +1137,33 @@ frappe.ui.form.on("Request for Material Item", {
 			});
 			dialog.show();
 		}
-	}
+	},
+	items_on_form_rendered: (frm) => {
+	},
+	before_items_remove: (frm) => {
+	},
+	items_add: function(frm, cdt, cdn) {
+
+		frappe.model.set_value(cdt, cdn, 'is_refundable', frm.doc.is_refundable || 0);
+		frappe.model.set_value(cdt, cdn, 'margin_known', frm.doc.margin_known || '');
+		frappe.model.set_value(cdt, cdn, 'margin_type', frm.doc.margin_type || '');
+		frappe.model.set_value(cdt, cdn, 'margin_rate_or_amount', frm.doc.margin_rate_or_amount || 0);
+		frappe.model.set_value(cdt, cdn, 'warehouse', frm.doc.source_warehouse);
+		frappe.model.set_value(cdt, cdn, 't_warehouse', frm.doc.target_warehouse);
+	},
+	items_remove: (frm) => {
+	},
+	items_move: (frm) => {
+	},
+	is_refundable: function(frm, cdt, cdn) {
+		frm.refresh_field('items');
+	},
+	margin_known: function(frm, cdt, cdn) {
+		frm.refresh_field('items');
+	},
+	margin_type: function(frm, cdt, cdn) {
+		frm.refresh_field('items');
+	},
 });
 
 
@@ -830,7 +1198,6 @@ erpnext.buying.MaterialRequestController = class MaterialRequestController exten
 			refresh_field("schedule_date", cdn, "items");
 		} else {
 			this.frm.script_manager.copy_from_first_row("items", row, ["schedule_date"]);
-			this.frm.script_manager.copy_from_first_row("items", row, ["t_warehouse"]);
 		}
 	}
 
@@ -847,16 +1214,36 @@ erpnext.buying.MaterialRequestController = class MaterialRequestController exten
 // for backward compatibility: combine new and previous states
 extend_cscript(cur_frm.cscript, new erpnext.buying.MaterialRequestController({frm: cur_frm}));
 
+function set_value_in_all_items (frm, fieldname, value) {
+	if (value) {
+		var items = frm.doc.items || [];
+		for (var i = 0; i < items.length; i++) {
+			if (!items[i][fieldname]) items[i][fieldname] = value;
+		}
+	}
+	refresh_field("items");
+}
+
 function set_schedule_date(frm) {
 	if(frm.doc.schedule_date){
 		erpnext.utils.copy_value_in_all_rows(frm.doc, frm.doc.doctype, frm.doc.name, "items", "schedule_date");
 	}
 };
 
-function set_t_warehouse(frm){
-	if(frm.doc.t_warehouse){
-		erpnext.utils.copy_value_in_all_rows(frm.doc, frm.doc.doctype, frm.doc.name, "items", "t_warehouse");
+function set_intro(frm){
+	if(!frm.doc.purpose){
+		frm.set_intro("Please select the Purpose of this Request for Material before converting.");
 	}
+	 let intro_string = "Only Warehouse Supervisor can convert this Request for Material to Request for Purchase/Purchase RFM or Material Transfer/Material Issue."
+	 frm.set_intro(intro_string);
+}
+
+function set_source_warehouse(frm){
+	set_value_in_all_items(frm, "warehouse", frm.doc.source_warehouse);
+};
+
+function set_target_warehouse(frm){
+	set_value_in_all_items(frm, "t_warehouse", frm.doc.target_warehouse);
 };
 
 
@@ -870,3 +1257,54 @@ function toggle_child_table_fields(frm) {
 	}
 }
 
+function add_purchase_rfm_button(frm){
+	if(!(frm.doc.docstatus == 1 && frm.doc.workflow_state == 'Approved' && frappe.user_roles.includes('Warehouse Supervisor'))){
+		return;
+	}
+
+	if(!frm.doc.linked_request_for_material && (["Transfer", "Issue"].includes(frm.doc.purpose))){
+		frm.add_custom_button(__('Purchase RFM'), () => frm.events.purchase_rfm(frm), __('Create'));
+		frm.page.set_inner_btn_group_as_primary(__('Create'));
+	}
+
+}
+
+
+function add_request_for_quotation_button(frm){
+    if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved' && frm.doc.purpose === 'Purchase') {
+        let has_pending_items = frm.doc.items.some(item => {
+            let ordered = item.ordered_qty || 0;
+            let purchase_qty = item.qty || 0;
+            return ordered < purchase_qty;
+        });
+
+        
+        if (has_pending_items) {
+            frm.page.add_inner_button(__('Request for Quotation'), function() {
+                frappe.model.open_mapped_doc({
+                    method: 'one_fm.purchase.doctype.request_for_material.request_for_material.make_request_for_request_for_quotation',
+                    frm: frm
+                });
+            }, __('Create'));
+        }
+    }
+}
+
+function add_supplier_quotation_button(frm){
+    if (frm.doc.docstatus === 1 && frm.doc.workflow_state === 'Approved' && frm.doc.purpose === 'Purchase') {
+        let has_pending_items = frm.doc.items.some(item => {
+            let ordered = item.ordered_qty || 0;
+            let purchase_qty = item.qty || 0;
+            return ordered < purchase_qty;
+        });
+        
+        if (has_pending_items) {
+            frm.page.add_inner_button(__('Supplier Quotation'), function() {
+                frappe.model.open_mapped_doc({
+                    method: 'one_fm.purchase.doctype.request_for_material.request_for_material.make_supplier_quotation',
+                    frm: frm
+                });
+            }, __('Create'));
+        }
+    }
+}

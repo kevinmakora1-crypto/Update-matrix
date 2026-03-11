@@ -12,32 +12,35 @@ import math
 class PostSchedulerChecker(Document):
 	pass
 
-def get_post_schedules(project, post, first_day, last_day):
-	return frappe.db.count(
-		"Post Schedule",
-		filters={
-			"date": ['BETWEEN', [first_day, last_day]],
-			"project": project,
-			"post": post.name,
-			"post_status": 'Planned'
-		}
-	)
+def get_post_schedules(project, post, first_day, last_day, include_client_post_off=False):
+	filters = {
+		"date": ['BETWEEN', [first_day, last_day]],
+		"project": project,
+		"post": post.name
+	}
+
+	if include_client_post_off:
+		filters["post_status"] = ['in', ['Planned', 'Client Post Off']]
+	else:
+		filters["post_status"] = 'Planned'
+
+	return frappe.db.count("Post Schedule", filters=filters)
 
 def get_working_site_supervisor(project, date):
 	try:
-		site_supevisor_list = frappe.db.sql(f"""SELECT account_supervisor from `tabOperations Site`
+		site_supevisor_list = frappe.db.sql(f"""SELECT site_supervisor from `tabOperations Site`
 							 			WHERE project = '{project}'
-										AND account_supervisor in (SELECT employee from `tabEmployee Schedule`
+										AND site_supervisor in (SELECT employee from `tabEmployee Schedule`
 										WHERE employee_availability = 'Working'
 										AND date = '{date}')""", as_dict=1)
 		if site_supevisor_list:
 			site = site_supevisor_list[0]
-			return site["account_supervisor"]
+			return site["site_supervisor"]
 			
 		return None
 
 	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), str(e))
+		frappe.log_error(message=str(e), title="Error fetching working site supervisor")
 
 	
 def get_post_scheduler_items(contract, project):
@@ -46,7 +49,10 @@ def get_post_scheduler_items(contract, project):
 
 	items = []
 
-	for item in contract.items:
+	for item in contract.contract_items_operation:
+		# Skip items of type "Items" as they don't require post scheduling validation
+		if item.is_daily_operation_handled_by_us == "No":
+			continue
 
 		item_message = ""
 
@@ -81,7 +87,7 @@ def get_post_scheduler_items(contract, project):
 				# Get two periods: current & next
 				periods = []
 
-				if item.rate_type_off == 'Days Off' and item.days_off_category == 'Weekly':
+				if item.off_type == 'Days Off' and item.days_off_category == 'Weekly':
 					# Weekly: current week and next week
 					curr_week = get_week_start_end(str(current_date))
 					next_week = get_week_start_end(str(add_days(current_date, 7)))
@@ -113,14 +119,21 @@ def get_post_scheduler_items(contract, project):
 
 					expected = date_diff(last_day, first_day) + 1
 
-					if item.rate_type_off == 'Days Off':
+					if item.off_type == 'Days Off':
 						expected -= item.no_of_days_off
+
+					include_client_post_off = False
+					if item.off_type == 'Full Month':
+						include_client_post_off = True
+					elif item.off_type == 'Days Off' and item.days_off_category in ['Monthly', 'Weekly']:
+						include_client_post_off = True
 
 					post_schedules = get_post_schedules(
 						project=contract.project,
 						post=post,
 						first_day=first_day,
-						last_day=last_day
+						last_day=last_day,
+						include_client_post_off=include_client_post_off
 					)
 
 					post_message = ""
@@ -137,7 +150,7 @@ def get_post_scheduler_items(contract, project):
 							'from_date': first_day,
 							'to_date': last_day,
 							'rate_type': item.rate_type,
-							'rate_type_off': item.rate_type_off,
+							'off_type': item.off_type,
 							'no_of_days_off': item.no_of_days_off,
 							'days_off_category': item.days_off_category,
 							'comment': item_message + post_message
@@ -181,7 +194,7 @@ def schedule_roster_checker():
 				post_scheduler_checker.contract = contract
 				post_scheduler_checker.project = project
 				post_scheduler_checker.site_supervisor = get_working_site_supervisor(project, today)
-				post_scheduler_checker.project_manager = frappe.db.get_value('Project', project, 'account_manager')
+				post_scheduler_checker.project_manager = frappe.db.get_value('Project', project, 'project_manager')
 
 				for sub_item in items:
 					post_scheduler_checker.append("items", sub_item)
@@ -189,7 +202,7 @@ def schedule_roster_checker():
 				post_scheduler_checker.save()
 			
 		except Exception as e:
-			frappe.log_error(frappe.get_traceback(), "Error while generating Post Scheduler Checker")
+			frappe.log_error(title="Error while generating Post Scheduler Checker", message=frappe.get_traceback())
 			continue
 
 	frappe.db.commit()
@@ -234,4 +247,5 @@ def create_post_schedule_checker_from_contracts(page_size, offset):
 			doc = frappe.get_doc({"doctype":"Post Scheduler Checker", 'contract': row}).insert(ignore_permissions=True)
 		except Exception as e:
 			print(e)
+
 	frappe.db.commit()

@@ -1,6 +1,6 @@
 import frappe, requests, re, json
 from frappe import _
-from frappe.utils import getdate
+from frappe.utils import getdate, now, get_fullname
 from json import dumps
 from httplib2 import Http
 from frappe.desk.form.assign_to import get as get_assignments,add as add_assignment
@@ -8,6 +8,7 @@ from helpdesk.helpdesk.doctype.hd_ticket.hd_ticket import HDTicket
 from one_fm.processor import sendemail
 from one_fm.api.doc_events import get_employee_user_id
 from one_fm.utils import response
+from frappe.utils.password import get_decrypted_password
 
 class HDTicketOverride(HDTicket):
     def before_insert(self):
@@ -17,6 +18,7 @@ class HDTicketOverride(HDTicket):
         super().validate()
         self.validate_hd_ticket()
         self.send_mail_for_completion()
+        self.handle_process_based_on_doctype()
 
     def on_change(self):
         self.notify_issue_raiser_about_priority()
@@ -58,6 +60,27 @@ class HDTicketOverride(HDTicket):
 
         if (self.status == "Closed" or self.status == "Resolved") and not self.resolution_details:
             frappe.throw(_("Please fill in Resolution Details before closing the ticket."))
+
+        if self.status == "Pending Deployment" and not self.resolution_details:
+            frappe.throw(_("Please fill in Resolution Details before updating the status to Pending Deployment."))
+
+    def handle_process_based_on_doctype(self):
+        """Handle process field based on doctype selection"""
+        if self.custom_is_doctype_related == "Yes" and self.custom_reference_doctype:
+            # Get filtered processes for the selected doctype
+            filtered_processes = get_filtered_processes(self.custom_reference_doctype, "Yes")
+            
+            # If doctype changed, check if current process is still valid
+            if not self.is_new():
+                previous_doc = self.get_doc_before_save()
+                if previous_doc and previous_doc.custom_reference_doctype != self.custom_reference_doctype:
+                    # Doctype changed, check if current process is still valid
+                    if self.custom_process and self.custom_process not in filtered_processes:
+                        self.custom_process = None
+            
+            # Auto-set process if only one match
+            if len(filtered_processes) == 1 and not self.custom_process:
+                self.custom_process = filtered_processes[0]
 
     def send_google_chat_notification(self):
         """Hangouts Chat incoming webhook to send the Issues Created, in Card Format."""
@@ -128,18 +151,27 @@ class HDTicketOverride(HDTicket):
                     body=dumps(bot_message),
                 )
         except Exception as e:
-             frappe.log_error(frappe.get_traceback(), "Error while sending google notification")
+             frappe.log_error(message=frappe.get_traceback(), title="Error while sending google notification")
+
+    @property
+    def get_name_for_mailing(self):
+        try:
+            employee_name = frappe.db.get_value("Employee", {"user_id": self.raised_by}, "employee_name")
+            if employee_name:
+                return employee_name
+            return self.raised_by.split("@")[0]
+        except (AttributeError, IndexError):
+            return self.raised_by
 
     def notify_ticket_raiser_of_resolution_details(self):
-        if self.status == "Closed":
-            previous_doc = self.get_doc_before_save() # Check if status was just changed to Closed
-            if previous_doc and previous_doc.status != "Closed":
+        if self.status == "Resolved":
+            previous_doc = self.get_doc_before_save()
+            if previous_doc and previous_doc.status != "Resolved":
                 try:
-                    subject = f"HD Ticket {self.name} Closed"
-                    employee=  frappe.db.get_value("Employee", {"user_id": self.raised_by}, ["employee_name"], as_dict=1)
+                    subject = f"HD Ticket {self.name} Resolved"
 
                     args = frappe._dict({
-                        "employee_name": employee.employee_name,
+                        "employee_name": self.get_name_for_mailing,
                         "ticket_subject": self.subject,
                         "resolution_details": self.resolution_details,
                         "base_url": frappe.utils.get_url(),
@@ -154,10 +186,9 @@ class HDTicketOverride(HDTicket):
     def notify_ticket_raiser_of_receipt(self):
         try:
             subject = f"HD Ticket {self.name} Raised"
-            employee=  frappe.db.get_value("Employee", {"user_id": self.raised_by}, ["employee_name"], as_dict=1)
 
             args = frappe._dict({
-                "employee_name": employee.employee_name,
+                "employee_name": self.get_name_for_mailing,
                 "ticket_subject": self.subject,
                 "base_url": frappe.utils.get_url(),
                 "doc_type": self.doctype,
@@ -239,6 +270,7 @@ class HDTicketOverride(HDTicket):
         # Fetch description from communication if not set already. This might not be needed
         # anymore as a communication is created when a ticket is created.
         self.description = self.description or c.content
+        self.flags.ignore_mandatory = True
         # Save the ticket, allowing for hooks to run.
         self.save()
 
@@ -343,8 +375,8 @@ def cleanhtml(raw_html):
 
 @frappe.whitelist()
 def get_ticket_details(name: str):
-    fields = ['subject', 'description',]
-    hd_ticket = frappe.db.get_value('HD Ticket',{'status': 'Draft', "name": name}, fields, as_dict=True)
+    fields = ['subject', 'description', "priority", "custom_process"]
+    hd_ticket = frappe.db.get_value('HD Ticket',{"name": name}, fields, as_dict=True)
     if not hd_ticket:
         frappe.throw(_("Ticket not found"), frappe.DoesNotExistError)
     return {
@@ -370,6 +402,7 @@ def update_ticket(name: str, updates: str):
 
     doc.status = "Open"
 
+    doc.flags.ignore_mandatory = True
     doc.save(ignore_permissions=True)
     frappe.db.commit()
     doc.notify_ticket_raiser_of_receipt()
@@ -388,7 +421,7 @@ def _fetch_list(doctype):
             "data": data,
         }
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), f"Error fetching list for {doctype}")
+        frappe.log_error(message=frappe.get_traceback(), title=f"Error fetching list for {doctype}")
         return {
             "message": f"Failed to fetch {doctype}",
             "status_code": 500,
@@ -420,11 +453,14 @@ def create_github_issue(name, description):
         description = cleanhtml(description) or doc.subject
 
         # Get GitHub credentials from site_config.json
-        github_token = frappe.conf.get("github_api_token")
+        github_token = get_github_api_token(doc.custom_bug_buster)
+        if not github_token:
+            frappe.msgprint("GitHub token not found for user, please set it in your HD Agent profile")
+            return {'error': 'GitHub Issue Error', 'message': "GitHub token not found for user, please set it in your HD Agent profile"}
         github_repo_owner = frappe.conf.get("github_repo_owner")
         github_repo_name = frappe.conf.get("github_repo_name")
 
-        if not all([github_token, github_repo_owner, github_repo_name]):
+        if not all([github_repo_owner, github_repo_name]):
             frappe.throw("GitHub credentials not found in site_config.json")
 
         headers = {
@@ -434,7 +470,7 @@ def create_github_issue(name, description):
 
         data = {
             "title": doc.subject,
-            "body": f"**From HD Ticket:** [{doc.name}]({doc_link})\n\n**Description:**\n{description}"
+            "body": f"**From HD Ticket:** [{doc.name}]({doc_link})\n\n**Description:**\n{description}",
         }
 
         url = f"https://api.github.com/repos/{github_repo_owner}/{github_repo_name}/issues"
@@ -452,3 +488,134 @@ def create_github_issue(name, description):
     except Exception as e:
         frappe.log_error(message=frappe.get_traceback(), title="GitHub Issue Creation Error")
         return {'error': 'GitHub Issue Error', 'message': f"GitHub issue could not be created:\n {str(e)}"}
+
+@frappe.whitelist()
+def update_ticket_with_feedback(ticket_id, feedback, action):
+    try:
+        if not ticket_id or not feedback or not action:
+            return {
+                "success": False,
+                "message": "Missing required parameters"
+            }
+        
+        ticket = frappe.get_doc("HD Ticket", ticket_id)
+        user_name = get_fullname(frappe.session.user) or frappe.session.user
+        current_time = now()
+        
+        if action == "close":
+            ticket.feedback = feedback.strip()
+            ticket.status = "Closed"
+            ticket.add_comment("Comment", f"Ticket closed by {user_name}. Feedback: {feedback.strip()}")
+            message = "Ticket has been closed successfully with your feedback."
+            
+        elif action == "reopen":
+            current_description = ticket.description or ""
+            feedback_section = f"\n\n--- Reopen Feedback ({current_time}) by {user_name} ---\n{feedback.strip()}"
+            ticket.description = current_description + feedback_section
+            ticket.status = "Open"
+            ticket.add_comment("Comment", f"Ticket reopened by {user_name}. Reason: {feedback.strip()}")
+            message = "Ticket has been reopened successfully. Your feedback has been added to the description."
+            
+        else:
+            return {
+                "success": False,
+                "message": "Invalid action specified"
+            }
+        
+        ticket.flags.ignore_mandatory = True
+        ticket.save(ignore_permissions=True)
+        frappe.db.commit()
+        
+        return {
+            "success": True,
+            "message": message
+        }
+        
+    except Exception as e:
+        frappe.log_error(message=f"Error in update_ticket_with_feedback: {str(e)}", title="HD Ticket Feedback Update Error")
+        return {
+            "success": False,
+            "message": "An error occurred while updating the ticket"
+        }
+
+def get_github_api_token(user=None):
+    if not user:
+        user = frappe.session.user
+    agent_for_user = frappe.db.exists("HD Agent", {"user": user, "is_active": 1})
+    if not agent_for_user:
+        frappe.msgprint("No active HD Agent found for user")
+        return None
+    token = get_decrypted_password("HD Agent", agent_for_user, 'github_api_token', raise_exception=True)
+    if not token:
+        frappe.msgprint("No GitHub API token found for user, please set it in your HD Agent profile. Follow <a href='https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token'>this link</a> for more details")
+        return None
+    return token
+
+@frappe.whitelist()
+def create_pathfinder_log(hd_ticket_name):
+    user_roles = frappe.get_roles()
+    if "Business Analyst" not in user_roles and "Process Owner" not in user_roles:
+        frappe.throw(_("You are not authorized to create a Pathfinder Log."), title=_("Permission Denied"))
+
+    existing_log = frappe.db.exists("Pathfinder Log", {"hd_ticket": hd_ticket_name})
+    if existing_log:
+        log_url = frappe.utils.get_url_to_form("Pathfinder Log", existing_log)
+        frappe.throw(
+            _("Pathfinder Log already exists for this HD Ticket: <a href='{0}'>{1}</a>").format(
+                log_url, existing_log
+            ),
+            title=_("Exists")
+        )
+
+    hd_ticket = frappe.get_doc("HD Ticket", hd_ticket_name)
+    pathfinder_log = frappe.new_doc("Pathfinder Log")
+    pathfinder_log.process_name = hd_ticket.custom_process
+    pathfinder_log.goal_description = hd_ticket.description
+    pathfinder_log.hd_ticket = hd_ticket.name
+    pathfinder_log.flags.ignore_mandatory = True
+    pathfinder_log.save(ignore_permissions=True)
+    return pathfinder_log.name
+
+@frappe.whitelist()
+def get_filtered_processes(doctype_name=None, is_doctype_related="No"):
+    """
+    Get filtered list of processes based on doctype selection
+    
+    Args:
+        doctype_name: The doctype to filter processes by
+        is_doctype_related: Whether the ticket is doctype related ("Yes" or "No")
+    
+    Returns:
+        List of process names
+    """
+    if is_doctype_related == "Yes" and doctype_name:
+        # Get processes that have this doctype in their process_doctypes child table
+        processes = frappe.db.sql("""
+            SELECT DISTINCT p.name
+            FROM `tabProcess` p
+            INNER JOIN `tabProcess Doctype` pd ON pd.parent = p.name
+            WHERE pd.document_type = %s
+            ORDER BY p.name
+        """, (doctype_name,), as_dict=True)
+        
+        process_list = [p.name for p in processes]
+        
+        # If no processes found, return generic processes
+        if not process_list:
+            generic_processes = frappe.db.get_all(
+                "Process",
+                filters={"is_generic": 1},
+                pluck="name",
+                order_by="name"
+            )
+            return generic_processes
+        
+        return process_list
+    else:
+        # Return all processes if not doctype related
+        all_processes = frappe.db.get_all(
+            "Process",
+            pluck="name",
+            order_by="name"
+        )
+        return all_processes

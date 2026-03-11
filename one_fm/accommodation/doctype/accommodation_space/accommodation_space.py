@@ -17,14 +17,6 @@ class AccommodationSpace(Document):
 		if not self.is_new():
 			bed_space_type = frappe.db.get_value('Accommodation Space', self.name, 'bed_space_type')
 			if bed_space_type != self.bed_space_type:
-				# if frappe.db.count('Bed', {'status': 'Occupied', 'disabled': False, 'accommodation_space': self.name}) > 0:
-				# 	frappe.throw(_("There are Occupied Bed in this Space. To change Bed Space Type, Please make all Bed Vacant"))
-				# elif frappe.db.count('Bed', {'status': 'Booked', 'disabled': False, 'accommodation_space': self.name}) > 0:
-				# 	frappe.throw(_("There are Booked Bed in this Space. To change Bed Space Type, Please make all Bed Vacant"))
-				# elif frappe.db.count('Bed', {'status': 'Temporarily Booked', 'disabled': False, 'accommodation_space': self.name}) > 0:
-				# 	frappe.throw(_("There are Temporarily Booked Bed in this Space. To change Bed Space Type, Please make all Bed Vacant"))
-				# else:
-				# 	self.disable_rest_of_beds()
 				self.disable_rest_of_beds()
 
 	def disable_rest_of_beds(self):
@@ -72,7 +64,7 @@ class AccommodationSpace(Document):
 
 	def set_title(self):
 		self.title = '-'.join([self.accommodation_name, self.type,
-			self.floor_name+' Floor', self.accommodation_space_type, self.accommodation_space_code])
+			self.floor_name+' Floor', self.accommodation_space_type])
 
 	def before_insert(self):
 		self.validate_no_of_accommodation_space()
@@ -88,14 +80,6 @@ class AccommodationSpace(Document):
 				'accommodation_space_type': self.accommodation_space_type}) >= allowed_no:
 			frappe.throw(_("Only {0} {1} is allowed in Accommodation Unit {2}"
 				.format(allowed_no, self.accommodation_space_type, self.accommodation_unit)))
-
-	def autoname(self):
-		self.set_accommodation_space_code()
-		self.name = self.accommodation_unit+self.accommodation_space_code
-
-	def set_accommodation_space_code(self):
-		if not self.accommodation_space_code:
-			self.accommodation_space_code = self.accommodation_unit_code+get_latest_accommodation_space_code(self)
 
 	def create_beds_in_space(self):
 		if self.bed_space_available and self.bed_space_type and self.single_bed_capacity:
@@ -115,20 +99,60 @@ class AccommodationSpace(Document):
 					bed_in_space.bed_type = bed.bed_type
 					bed_in_space.gender = bed.gender
 
-def get_latest_accommodation_space_code(doc):
-	query = """
-		select
-			accommodation_space_code+1
-		from
-			`tabAccommodation Space`
-		where
-			accommodation='{0}' and accommodation_unit='{1}'
-		order by
-			accommodation_space_code desc limit 1
-	"""
-	accommodation_space_code = frappe.db.sql(query.format(doc.accommodation, doc.accommodation_unit))
-	new_accommodation_space_code = accommodation_space_code[0][0] if accommodation_space_code else 1
-	return str(int(new_accommodation_space_code))[-1]
+	def autoname(self):
+		if not self.accommodation_unit:
+			frappe.throw(_("Accommodation Unit is required"))
+
+		abbr = self.space_type_abbreviation
+		if not abbr:
+			# Try to fetch if not set (though it should be fetched automatically)
+			if self.accommodation_space_type:
+				abbr = frappe.db.get_value("Accommodation Space Type", self.accommodation_space_type, "abbreviation")
+
+		if not abbr:
+			abbr = "X"
+
+		counter = get_next_space_number(self.accommodation_unit, abbr)
+		self.name = "{}-{}{}".format(self.accommodation_unit, abbr, counter)
+
+
+def get_next_space_number(accommodation_unit, abbr):
+	# Pattern: {accommodation_unit}-{abbr}{number}
+	prefix = "{}-{}".format(accommodation_unit, abbr)
+
+	# Get all existing names that start with this prefix
+	existing_names = frappe.db.sql("""
+		SELECT name FROM `tabAccommodation Space`
+		WHERE name LIKE %s
+		ORDER BY length(name) DESC, name DESC
+		LIMIT 1
+	""", (prefix + "%",))
+
+	if existing_names:
+		last_name = existing_names[0][0]
+		# Extract the number part after the last hyphen + abbr
+		# Example: ACC...-U4-B1
+		# prefix: ACC...-U4-B
+		# We want '1'
+
+		# Safer way: verify it starts with prefix and parse the rest
+		if last_name.startswith(prefix):
+			suffix = last_name[len(prefix):]
+			if suffix.isdigit():
+				return int(suffix) + 1
+
+			# If suffix contains other chars (maybe existing data was different?), fall back to regex or split
+			# But for new clean pattern, isdigit check is good.
+			# Let's try to handle potential edge cases or keep it simple as per prompt specs.
+
+			# Fallback parsing if simple prefix check is risky
+			import re
+			match = re.search(r"(\d+)$", last_name)
+			if match:
+				return int(match.group(1)) + 1
+
+	return 1
+
 
 @frappe.whitelist()
 def filter_floor(doctype, txt, searchfield, start, page_len, filters):
@@ -148,69 +172,3 @@ def filter_floor(doctype, txt, searchfield, start, page_len, filters):
 			'txt': "%%%s%%" % txt
 		}
 	)
-
-def change_room_type():
-	space_details = [
-		{"D":"01010110111"},
-		{"D":"01010110112"},
-		{"D":"01010110113"},
-		{"D":"01010120121"},
-		{"D":"01010120122"},
-		{"D":"01010120123"},
-		{"D":"01020210211"},
-		{"D":"01020210212"},
-		{"D":"01020210213"},
-		{"D":"01020230231"},
-		{"B":"01030310311"},
-		{"D":"01030310313"},
-		{"D":"01030320321"},
-		{"D":"01030320322"},
-		{"D":"01030320323"},
-		{"D":"01030330331"},
-		{"D":"01030330332"},
-		{"D":"01030330333"},
-		{"D":"01040410411"},
-		{"D":"01040410412"},
-		{"C":"01040410413"},
-		{"D":"01040420421"},
-		{"D":"01040420422"},
-		{"D":"01040420423"},
-		{"D":"01040430431"},
-		{"D":"01040430432"},
-		{"D":"01040430433"},
-		{"D":"01050510511"},
-		{"D":"01050510512"},
-		{"D":"01050510513"},
-		{"D":"01050520521"},
-		{"D":"01050520522"},
-		{"D":"01050520523"},
-		{"D":"01050530531"},
-		{"D":"01050530532"},
-		{"D":"01050530533"},
-		{"C":"01060610611"},
-		{"C":"01060610612"},
-		{"C":"01060610613"},
-		{"D":"01060620621"},
-		{"D":"01060620622"},
-		{"D":"01060620623"},
-		{"D":"01060630631"},
-		{"D":"01060630632"},
-		{"D":"01060630633"},
-		{"D":"01070710711"},
-		{"D":"01070710712"},
-		{"D":"01070710716"},
-		{"D":"01070720721"},
-		{"D":"01101021021"},
-		{"D":"01070730731"},
-		{"D":"01070730732"},
-		{"D":"01070730733"},
-		{"D":"01080820821"},
-		{"D":"01080830831"},
-		{"D":"01090930931"},
-		{"D":"01101031031"}
-	]
-	for space in space_details:
-		for key in space:
-			accommodation_space = frappe.get_doc('Accommodation Space', space[key])
-			accommodation_space.bed_space_type = key
-			accommodation_space.save(ignore_permissions=True)

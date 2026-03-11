@@ -2,8 +2,106 @@ def get_project_custom_fields():
     return {
         "Project": [
             {
+                "label": "Success Metrics",
+                "fieldname": "custom_success_metrics",
+                "insert_after": "custom_success_and_completion_criteria",
+                "fieldtype": "Text",
+                "description": "Define the metric of success",
+            },
+            {
+                "label": "Milestones and Meeting Dates",
+                "fieldname": "custom_milestones_and_meeting_dates",
+                "insert_after": "custom_end_date",
+                "fieldtype": "Table",
+                "options": "Milestones and Meeting Dates",
+            },
+            {
+                
+                "label": "Project Communication",
+                "fieldname": "custom_project_communication",
+                "insert_after": "custom_meeting_frequency",
+                "fieldtype": "Check",
+                "description": "Make Sure to create a Google Chat or Google Space",
+            },
+            {
+                "label": "Meeting Frequency",
+                "fieldname": "custom_meeting_frequency",
+                "insert_after": "custom_project_duration_weeks",
+                "fieldtype": "Small Text",
+            },
+            {
+                "label": "Success and Completion Criteria",
+                "fieldname": "custom_success_and_completion_criteria",
+                "insert_after": "custom_column_break_acgz2",
+                "fieldtype": "Text",
+                "description": "What signifies the project’s completion?",
+            },
+            {
+    
+                "label": "",
+                "fieldname": "custom_column_break_acgz2",
+                "insert_after": "custom_evidence_of_completion",
+                "fieldtype": "Column Break",
+            },
+            
+            {
+                "label": "End Date",
+                "fieldname": "custom_end_date",
+                "insert_after": "custom_column_break_vf2fc",
+                "fieldtype": "Date",
+            },
+            {
+                "fieldname": "custom_column_break_vf2fc",
+                "insert_after": "custom_project_duration_weeks",
+                "fieldtype": "Column Break",
+            },
+            {
+                "label": "Project Duration (Weeks)",
+                "fieldname": "custom_project_duration_weeks",
+                "insert_after": "custom_start_date",
+                "fieldtype": "Data",
+                "read_only": 1,
+            },
+            {
+                "label": "Start Date",
+                "fieldname": "custom_start_date",
+                "insert_after": "custom_work_project_structure",
+                "fieldtype": "Date",
+            },
+            {
+                "label": "Work Project Structure",
+                "fieldname": "custom_work_project_structure",
+                "depends_on": "eval:doc.project_type == \"Internal\"",
+                "fieldtype": "Section Break",
+                "insert_after":"custom_success_metrics",
+                "collapsible": 1,
+            },
+            {
+                "label": "Evidence of Completion",
+                "fieldname": "custom_evidence_of_completion",
+                "insert_after": "custom_project_outcome",
+                "fieldtype": "Attach",
+                "description": "Attach document signifying project's completion",
+            },
+            {
+                "label": "Project Outcome",
+                "fieldname": "custom_project_outcome",
+                "insert_after": "custom_project_outcome_summary",
+                "fieldtype": "Text",
+                "description": "This project must answer three questions: <br>Why are we doing this (its connection to company goals)?<br> What is the successful outcome we need (the Key Result)? <br> And how will we get there (the list of required stories/tasks)?",
+            },
+            {
+                "label": "Project Outcome",
+                "fieldname": "custom_section_break_xvhtn",
+                "insert_after": "custom_exclude_from_default_shift_checker",
+                "fieldtype": "Section Break",
+                "collapsible": 1,
+                "depends_on": "eval:doc.project_type == \"Internal\"",
+            },
+            {
                 "fieldname": "custom_exclude_from_default_shift_checker",
                 "label": "Exclude from Default Shift Checker",
+                "depends_on": "eval:doc.project_type != \"Internal\"",
                 "fieldtype": "Check",
                 "description": "If set to True, all Employees allocated under this project will not be considered in Default Shift Checker.",
                 "insert_after": "exempt_auto_employee_schedule"
@@ -34,6 +132,7 @@ def get_project_custom_fields():
                 "fieldname": "custom_payroll_frequency",
                 "label": "Payroll Frequency",
                 "fieldtype": "Section Break",
+                "depends_on": "eval:doc.project_type != \"Internal\"",
                 "insert_after": "poc"
             },
             {
@@ -53,6 +152,7 @@ def get_project_custom_fields():
             },
             {
                 "fieldname": "exempt_auto_employee_schedule",
+                "depends_on": "eval:doc.project_type != \"Internal\"",
                 "label": "Exempt Auto Employee Schedule",
                 "fieldtype": "Check",
                 "insert_after": "project_image"
@@ -61,7 +161,8 @@ def get_project_custom_fields():
                 "fieldname": "has_overtime_rate",
                 "label": "Has Overtime Rate",
                 "fieldtype": "Check",
-                "insert_after": "number_of_posts"
+                "insert_after": "number_of_posts",
+                "depends_on": "eval:doc.project_type == \"External\""
             },
             {
                 "fieldname": "overtime_rate",
@@ -74,6 +175,7 @@ def get_project_custom_fields():
             },
             {
                 "fieldname": "project_name_in_arabic",
+                "depends_on": "eval:doc.project_type != \"Internal\"",
                 "label": "Project Name In Arabic",
                 "fieldtype": "Data",
                 "insert_after": "project_name",
@@ -102,11 +204,11 @@ def get_project_custom_fields():
                 "hidden": 1
             },
             {
-                "fieldname": "manager_name",
-                "label": "Manager Name",
+                "fieldname": "project_manager_name",
+                "label": "Project Manager Name",
                 "fieldtype": "Data",
-                "fetch_from": "account_manager.employee_name",
-                "insert_after": "account_manager",
+                "fetch_from": "project_manager.employee_name",
+                "insert_after": "project_manager",
                 "read_only": 1,
                 "translatable": 1
             },
@@ -151,14 +253,15 @@ def get_project_custom_fields():
             {
                 "fieldname": "column_break_64",
                 "fieldtype": "Column Break",
-                "insert_after": "manager_name"
+                "insert_after": "no_of_posts_as_per_contract"
             },
             {
-                "fieldname": "account_manager",
+                "fieldname": "project_manager",
                 "label": "Project Manager",
                 "fieldtype": "Link",
-                "insert_after": "no_of_posts_as_per_contract",
+                "insert_after": "users_section",
                 "options": "Employee",
+                "ignore_user_permissions": 1,
                 "mandatory_depends_on": "eval:doc.project_type==\"External\""
             },
             {
@@ -191,6 +294,7 @@ def get_project_custom_fields():
             {
                 "fieldname": "project_image",
                 "label": "Project Image",
+                "depends_on": "eval:doc.project_type != \"Internal\"",
                 "fieldtype": "Attach Image",
                 "insert_after": "department"
             },

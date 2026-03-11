@@ -7,19 +7,27 @@
  "engine": "InnoDB",
  "field_order": [
   "process_name",
+  "description",
+  "is_generic",
+  "column_break_grtk",
+  "process_map",
+  "section_break_fxrs",
   "process_owner",
   "process_owner_name",
-  "column_break_grtk",
-  "roles",
+  "column_break_pycp",
+  "business_analyst",
+  "business_analyst_name",
   "section_break_xkrb",
-  "description"
+  "process_doctypes",
+  "column_break_dpas",
+  "roles"
  ],
  "fields": [
   {
    "fieldname": "process_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Process",
+   "label": "Process Name",
    "reqd": 1,
    "unique": 1
   },
@@ -57,12 +65,58 @@
    "fieldtype": "Table",
    "label": "Roles",
    "options": "Process Role"
+  },
+  {
+   "fieldname": "section_break_fxrs",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_pycp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "business_analyst",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Business Analyst",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "business_analyst.full_name",
+   "fieldname": "business_analyst_name",
+   "fieldtype": "Data",
+   "label": "Business Analyst Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dpas",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "process_doctypes",
+   "fieldtype": "Table",
+   "label": "Process Doctypes",
+   "options": "Process Doctype"
+  },
+  {
+   "fieldname": "process_map",
+   "fieldtype": "Small Text",
+   "label": "Process Map",
+   "options": "URL"
+  },
+  {
+   "default": "0",
+   "description": "Mark as true if this is not a specific business process but a generalized one, e.g. \"Others\"",
+   "fieldname": "is_generic",
+   "fieldtype": "Check",
+   "label": "Is Generic"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-01 17:37:13.027477",
+ "modified": "2026-02-17 16:37:26.281276",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process",

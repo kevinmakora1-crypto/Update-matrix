@@ -16,9 +16,9 @@
   "transfer_paper",
   "column_break_8",
   "work_permit_type",
-  "work_permit_status",
   "reason_of_rejection",
   "details_of_rejection",
+  "employee_last_checkin",
   "work_permit_details_section",
   "attach_work_permit",
   "work_permit_expiry_date",
@@ -37,10 +37,7 @@
   "column_break_29",
   "upload_payment_invoice_on",
   "work_permit_information_section",
-  "upload_work_permit",
   "new_work_permit_expiry_date",
-  "column_break_32",
-  "upload_work_permit_on",
   "pam_work_permit_registration_section",
   "reference_number_on_pam_registration",
   "work_permit_registration",
@@ -88,17 +85,11 @@
   "work_permit_salary",
   "duration_of_work_permit",
   "visa_reference_number",
-  "section_break_46",
-  "work_contract",
-  "column_break_62",
-  "salary_certificate",
-  "column_break_64",
-  "iqrar",
   "new_passport_details_section",
   "new_passport_type",
-  "column_break_yjma",
   "new_passport_number",
-  "column_break_jgpb",
+  "column_break_yjma",
+  "new_passport_issuance_date",
   "new_passport_expiry_date",
   "documents_required_section",
   "documents_required",
@@ -295,7 +286,7 @@
   {
    "fieldname": "grd_operator",
    "fieldtype": "Link",
-   "label": "GRD Operator",
+   "label": "Government Relations Operator",
    "no_copy": 1,
    "options": "User",
    "read_only": 1
@@ -305,7 +296,7 @@
    "fieldname": "reminded_grd_operator",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminded GRD Operator",
+   "label": "Reminded Government Relations Operator",
    "no_copy": 1,
    "read_only": 1
   },
@@ -314,26 +305,14 @@
    "fieldname": "reminded_grd_operator_again",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminder GRD Operator Again",
+   "label": "Reminder Government Relations Operator Again",
    "no_copy": 1,
    "read_only": 1
   },
   {
    "allow_on_submit": 1,
-   "default": "Draft",
-   "fieldname": "work_permit_status",
-   "fieldtype": "Select",
-   "in_standard_filter": 1,
-   "label": "Work Permit Status",
-   "no_copy": 1,
-   "options": "\nDraft\nPending by Supervisor\nPending by Operator\nPending by Previous Company\nPending by Supervisor for Payment\nCompleted\nClosed\nRejected",
-   "read_only": 1,
-   "translatable": 1
-  },
-  {
-   "allow_on_submit": 1,
    "default": "0",
-   "depends_on": "eval: doc.work_permit_status=='Approved'",
+   "depends_on": "eval: doc.workflow_state=='Approved'",
    "fieldname": "payment_transferred_from_finance_dept",
    "fieldtype": "Check",
    "label": "Payment Transferred From Finance Dept",
@@ -342,7 +321,7 @@
   },
   {
    "allow_on_submit": 1,
-   "depends_on": "eval: doc.work_permit_status=='Approved'",
+   "depends_on": "eval: doc.workflow_state=='Approved'",
    "fieldname": "notify_finance_user",
    "fieldtype": "Link",
    "label": "Notify Finance User",
@@ -367,7 +346,7 @@
   },
   {
    "allow_on_submit": 1,
-   "depends_on": "eval: doc.work_permit_status=='Approved'",
+   "depends_on": "eval: doc.workflow_state=='Approved'",
    "fieldname": "amount_to_pay",
    "fieldtype": "Currency",
    "label": "Amount To Pay",
@@ -375,16 +354,12 @@
   },
   {
    "allow_on_submit": 1,
-   "depends_on": "eval: doc.work_permit_status=='Rejected'",
+   "depends_on": "eval: doc.workflow_state=='Rejected'",
    "fieldname": "reason_for_rejection",
    "fieldtype": "Data",
    "hidden": 1,
    "label": "N Reason for Rejection",
    "permlevel": 1
-  },
-  {
-   "fieldname": "column_break_32",
-   "fieldtype": "Column Break"
   },
   {
    "allow_on_submit": 1,
@@ -407,13 +382,6 @@
   },
   {
    "allow_on_submit": 1,
-   "depends_on": "eval:doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'",
-   "fieldname": "upload_work_permit",
-   "fieldtype": "Attach",
-   "label": "Upload Work Permit"
-  },
-  {
-   "allow_on_submit": 1,
    "fetch_from": "employee.work_permit_salary",
    "fieldname": "work_permit_salary",
    "fieldtype": "Data",
@@ -428,11 +396,11 @@
    "options": "Preparation"
   },
   {
-   "depends_on": "eval:doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'",
+   "depends_on": "eval:doc.workflow_state=='Pending By Supervisor' || doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'",
    "fieldname": "new_work_permit_expiry_date",
    "fieldtype": "Date",
    "label": "Updated Work Permit Expiry Date",
-   "mandatory_depends_on": "eval:doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'"
+   "mandatory_depends_on": "eval:doc.workflow_state=='Pending By Supervisor' || doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'"
   },
   {
    "allow_on_submit": 1,
@@ -454,13 +422,6 @@
   },
   {
    "allow_on_submit": 1,
-   "depends_on": "eval:doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'",
-   "fieldname": "upload_work_permit_on",
-   "fieldtype": "Data",
-   "label": "Upload On"
-  },
-  {
-   "allow_on_submit": 1,
    "fieldname": "upload_payment_invoice_on",
    "fieldtype": "Data",
    "label": "Upload Payment Invoice On",
@@ -479,7 +440,7 @@
    "fieldname": "reminded_grd_operator_approve_previous_company",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminded GRD Operator Approve Previous Company",
+   "label": "Reminded Government Relations Operator Approve Previous Company",
    "no_copy": 1,
    "print_hide": 1,
    "read_only": 1
@@ -490,7 +451,7 @@
    "fieldname": "reminded_grd_operator_approve_previous_company_again",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Reminder GRD Operator Approve Previous Company Again",
+   "label": "Reminder Government Relations Operator Approve Previous Company Again",
    "no_copy": 1,
    "print_hide": 1,
    "read_only": 1
@@ -619,7 +580,7 @@
   {
    "allow_on_submit": 1,
    "collapsible": 1,
-   "collapsible_depends_on": "eval: doc.work_permit_status=='Approved'",
+   "collapsible_depends_on": "eval: doc.workflow_state=='Approved'",
    "fieldname": "section_break_60",
    "fieldtype": "Section Break",
    "hidden": 1,
@@ -649,14 +610,14 @@
    "options": "ref_doctype"
   },
   {
-   "depends_on": "eval:doc.work_permit_status == \"Rejected\"",
+   "depends_on": "eval:doc.workflow_state == \"Rejected\"",
    "fieldname": "reason_of_rejection",
    "fieldtype": "Select",
    "label": "Reason Of Rejection",
    "options": "\nRejected by PAM\nRejected by previous company"
   },
   {
-   "depends_on": "eval:doc.work_permit_status == \"Rejected\" ",
+   "depends_on": "eval:doc.workflow_state == \"Rejected\" ",
    "fieldname": "details_of_rejection",
    "fieldtype": "Small Text",
    "label": "Details of Rejection"
@@ -675,42 +636,11 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.work_permit_type != \"Cancellation\" && doc.work_permit_type != \"New Kuwaiti\"",
-   "fieldname": "section_break_46",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_62",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_64",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "0",
    "fieldname": "notify_to_upload",
    "fieldtype": "Check",
    "hidden": 1,
    "label": "Notify to Upload"
-  },
-  {
-   "allow_on_submit": 1,
-   "fieldname": "work_contract",
-   "fieldtype": "Attach",
-   "label": "Work Contract"
-  },
-  {
-   "allow_on_submit": 1,
-   "fieldname": "salary_certificate",
-   "fieldtype": "Attach",
-   "label": "Salary Certificate"
-  },
-  {
-   "allow_on_submit": 1,
-   "fieldname": "iqrar",
-   "fieldtype": "Attach",
-   "label": "Iqrar"
   },
   {
    "depends_on": "eval:doc.work_permit_type == \"Cancellation\" && doc.workflow_state != \"Draft\"",
@@ -874,17 +804,17 @@
   {
    "fieldname": "grd_operator_transfer",
    "fieldtype": "Link",
-   "label": "GRD Operator Transfer",
+   "label": "Government Relations Operator Transfer",
    "options": "User"
   },
   {
-   "depends_on": "eval:doc.work_permit_status == \"Pending by Supervisor\" || doc.work_permit_status == \"Pending by Operator\" || doc.work_permit_status == \"Completed\"",
+   "depends_on": "eval:doc.workflow_state == \"Pending By Supervisor\" || doc.workflow_state == \"Pending by Operator\" || doc.workflow_state == \"Completed\"|| doc.workflow_state == \"Pending By PAM\"",
    "fieldname": "payment_details_section_section",
    "fieldtype": "Section Break",
    "label": "Payment Details Section"
   },
   {
-   "depends_on": "eval:doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'",
+   "depends_on": "eval:doc.workflow_state=='Pending By Supervisor' || doc.workflow_state=='Pending By PAM' || doc.workflow_state=='Pending By Operator'",
    "fieldname": "work_permit_information_section",
    "fieldtype": "Section Break",
    "label": "Work Permit Information"
@@ -919,13 +849,14 @@
    "fieldtype": "Column Break"
   },
   {
+   "fieldname": "new_passport_issuance_date",
+   "fieldtype": "Date",
+   "label": "Passport Issuance Date"
+  },
+  {
    "fieldname": "new_passport_number",
    "fieldtype": "Data",
    "label": "Passport Number"
-  },
-  {
-   "fieldname": "column_break_jgpb",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "new_passport_expiry_date",
@@ -980,11 +911,17 @@
   {
    "fieldname": "column_break_zsnm",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "employee_last_checkin",
+   "fieldtype": "Date",
+   "label": "Employee Last Checkin",
+   "read_only": 1
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-08-26 10:15:55.860237",
+ "modified": "2025-12-24 20:01:52.632169",
  "modified_by": "Administrator",
  "module": "GRD",
  "name": "Work Permit",
@@ -997,7 +934,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRD Operator",
+   "role": "Government Relations Operator",
    "share": 1,
    "submit": 1,
    "write": 1
@@ -1023,7 +960,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRD Operator",
+   "role": "Government Relations Operator",
    "share": 1
   },
   {
@@ -1050,6 +987,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "search_fields": "date_of_application,employee_id,civil_id",
  "sort_field": "date_of_application",
  "sort_order": "DESC",

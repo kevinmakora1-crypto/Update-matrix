@@ -19,8 +19,12 @@ def get_context(context):
     context.country_list = frappe.get_all('Country', fields=['name'])
     context.employment_type_list = frappe.db.get_all("Employment Type", pluck="name")
 
-
-
+@frappe.whitelist(allow_guest=True)
+def get_experience_types(name = None):
+    if not name:
+        return frappe.get_all('Experience Type',['name'])
+    else:
+        return frappe.get_all('Assessment Questions', filters={'parent': name}, fields=['experience_type_question'])
 
 
 @frappe.whitelist(allow_guest=True)
@@ -34,8 +38,15 @@ def create_recruitment_documents(job_applicant, career_history_details, best_ref
             career_history_details: Career History details as json
             best_references: Best References details as json
     '''
-    create_career_history_from_portal(job_applicant, career_history_details, interest_reason,rank_and_factors)
-    create_best_references_from_portal(job_applicant, best_references)
+    career_histories = json.loads(career_history_details)
+    exp_type = None
+    if career_histories and isinstance(career_histories, list):
+        exp_type = career_histories[0].get('expType')
+    if exp_type == "Fresher":
+        create_career_history_from_portal(job_applicant, career_history_details, interest_reason,rank_and_factors)
+    else:
+        create_career_history_from_portal(job_applicant, career_history_details, interest_reason,rank_and_factors)
+        create_best_references_from_portal(job_applicant, best_references)
 
 
 def create_best_references_from_portal(job_applicant, best_references):
@@ -102,68 +113,110 @@ def create_career_history_from_portal(job_applicant, career_history_details, int
         Return Boolean
     '''
     # Create Career History
+    career_histories = json.loads(career_history_details)
+
     if isinstance(rank_and_factors, str):
         rank_and_factors = json.loads(rank_and_factors)
     career_history = frappe.new_doc('Career History')
+    career_history.candidate_type = career_histories[0].get('expType')
+    if 'shoves' in career_histories[0]:
+        career_history.shoves = career_histories[0]['shoves']
+    if 'tugs' in career_histories[0]:
+        career_history.tugs = career_histories[0]['tugs']
     career_history.job_applicant = job_applicant
     career_history.about_the_opportunity = interest_reason
     career_history.rank_and_factors = [] 
     for item in rank_and_factors:
-        career_history.append("rank_and_factors", {
+        # Only set valid links for factors and description
+        factor_name = None
+        description_name = None
+        if item.get("factor"):
+            factor_name = frappe.db.get_value("Career Move Factors", {"factors": item.get("factor")}, "name")
+        if item.get("description"):
+            description_name = frappe.db.get_value("Career Move Factors", {"description": item.get("description")}, "name")
+        # Only append if both are valid (or adjust as needed)
+        if factor_name and description_name:
+            career_history.append("rank_and_factors", {
                 "rank": item.get("rank"),
-                "factors": item.get("factor"),
-                "description": item.get("description")
+                "factors": factor_name,
+                "description": description_name
             })
-    
-    career_histories = json.loads(career_history_details)
+    learning_journey = career_histories[0].get('learning_journey', [])
+    for entry in learning_journey:
+        questions = entry.get('questions', [])
+        for q in questions:
+            row = career_history.append('learning_and_development_journey', {})
+            row.activity_type = entry.get('activity_type')
+            row.experience_title = entry.get('activity_title')
+            assessment_question_name = frappe.db.get_value("Assessment Questions", {"experience_type_question": q.get("label")}, "name")
+            if assessment_question_name:
+                row.assessment_question = assessment_question_name
+            else:
+                row.assessment_question = None 
+            row.description = q.get('answer')        
+
+        
 
     factors_expected_in_new_job = career_histories[-1] if career_histories else {}
     career_history.what_are_the_factors_you_are_looking_for_in_a_new_job = factors_expected_in_new_job.get("factors_in_new_job")
+    awards_received_main = factors_expected_in_new_job.get("have_you_received_any_awards_or_recognition_main")
+    career_history.have_you_received_any_awards_or_recognition = awards_received_main if awards_received_main == "Yes" else "No"
+    career_history.awards_or_recognition_details = factors_expected_in_new_job.get("awards_or_recognition_details_main") if awards_received_main == "Yes" else ""
 
-    for history in career_histories:
-        career_history_fields = ['company_name', 'country_of_employment', 'start_date', 'responsibility_one',
-           'job_title', "employment_type", 'monthly_salary_in_kwd', 'first_contact_name',
-            'first_contact_email', 'first_contact_phone', 'first_contact_designation', 'second_contact_name',
-            'second_contact_email', 'second_contact_phone', 'second_contact_designation']
+    if career_histories[0].get('expType') == "Experienced":
+        for history in career_histories:
+            career_history_fields = ['company_name', 'country_of_employment', 'start_date', 'responsibility_one', 'major_accomplishment',
+            'job_title', "employment_type", 'monthly_salary_in_kwd', 'first_contact_name',
+                'first_contact_email', 'first_contact_phone', 'first_contact_designation', 'second_contact_name',
+                'second_contact_email', 'second_contact_phone', 'second_contact_designation',
+                'additional_responsibilities', 'have_you_received_any_awards_or_recognition', 'awards_or_recognition_details']
 
-        company = career_history.append('career_history_company')
-        for field in career_history_fields:
-            company.set(field, history.get(field))
-        
-        promotions = [p for p in history.get('promotions', []) if p.get('start_date')]
-        if promotions and promotions[0].get("start_date"):
-            company.end_date = getdate(promotions[0].get("start_date"))
-
-        last_job_title = history.get('job_title')
-        last_employment_type = history.get("employment_type")
-        last_salary = history.get('monthly_salary_in_kwd')
-        last_job_responsibility = history.get("responsibility_one")
-
-        for idx, promotion in enumerate(promotions):
             company = career_history.append('career_history_company')
-            company.company_name = history.get('company_name')
-            company.job_title = last_job_title
-
-            company.employment_type = last_employment_type
-            company.responsibility_one = last_job_responsibility
+            for field in career_history_fields:
+                company.set(field, history.get(field))
             
-            if promotion.get('job_title'):
-                company.job_title = promotion.get('job_title')
-                last_job_title = promotion.get('job_title')
-            company.monthly_salary_in_kwd = last_salary
-            if promotion.get('monthly_salary_in_kwd'):
-                company.monthly_salary_in_kwd = promotion.get('monthly_salary_in_kwd')
-                last_salary = promotion.get('monthly_salary_in_kwd')
-            company.start_date = getdate(promotion.get('start_date'))
-            if idx < len(promotions) - 1:
-                next_start_date = promotions[idx + 1].get('start_date')
-                if next_start_date:
-                    company.end_date = getdate(next_start_date)
-        if history.get('left_the_company'):
-            company.end_date = history.get('left_the_company')
-        if history.get('reason_for_leaving_job'):
-            company.end_date = today()
-            company.why_do_you_plan_to_leave_the_job = history.get('reason_for_leaving_job')
+            promotions = [p for p in history.get('promotions', []) if p.get('start_date')]
+            if promotions and promotions[0].get("start_date"):
+                company.end_date = getdate(promotions[0].get("start_date"))
+
+            last_job_title = history.get('job_title')
+            last_employment_type = history.get("employment_type")
+            last_salary = history.get('monthly_salary_in_kwd')
+            last_job_responsibility = history.get("responsibility_one")
+
+            for idx, promotion in enumerate(promotions):
+                company = career_history.append('career_history_company')
+                company.company_name = history.get('company_name')
+                company.job_title = last_job_title
+
+                company.employment_type = last_employment_type
+                company.responsibility_one = last_job_responsibility
+                company.additional_responsibilities = history.get('additional_responsibilities')
+                company.have_you_received_any_awards_or_recognition = history.get('have_you_received_any_awards_or_recognition')
+                company.awards_or_recognition_details = history.get('awards_or_recognition_details')
+                
+                if promotion.get('job_title'):
+                    company.job_title = promotion.get('job_title')
+                    last_job_title = promotion.get('job_title')
+                company.monthly_salary_in_kwd = last_salary
+                if promotion.get('monthly_salary_in_kwd'):
+                    company.monthly_salary_in_kwd = promotion.get('monthly_salary_in_kwd')
+                    last_salary = promotion.get('monthly_salary_in_kwd')
+                company.start_date = getdate(promotion.get('start_date'))
+                # Map promotion/increment reasons when available
+                if promotion.get('reason_for_promotion'):
+                    company.reason_for_promotion = promotion.get('reason_for_promotion')
+                if promotion.get('reason_for_increment'):
+                    company.reason_for_increment = promotion.get('reason_for_increment')
+                if idx < len(promotions) - 1:
+                    next_start_date = promotions[idx + 1].get('start_date')
+                    if next_start_date:
+                        company.end_date = getdate(next_start_date)
+            if history.get('left_the_company'):
+                company.end_date = history.get('left_the_company')
+            if history.get('reason_for_leaving_job'):
+                company.end_date = today()
+                company.why_do_you_plan_to_leave_the_job = history.get('reason_for_leaving_job')
 
     career_history.save(ignore_permissions=True)
     set_expire_magic_link('Job Applicant', job_applicant, 'Career History')

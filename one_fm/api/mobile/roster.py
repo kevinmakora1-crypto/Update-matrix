@@ -288,21 +288,25 @@ def get_assigned_employees(shift, date, limit_start=None, limit_page_length=20):
 
 
 @frappe.whitelist()
-def get_assigned_projects(employee_id):
+def get_assigned_projects(employee_id=None):
 	try:
 		user, user_roles, user_employee = get_current_user_details()
 		if "Operations Manager"  in user_roles or 'Operation Admin' in user_roles:
 			return frappe.get_list("Project", {"project_type": "External", "is_active": "Yes"}, "name as project", limit_page_length=9999, order_by="name asc")
-		
+
+		if not employee_id:
+			return []
+
 		if "Projects Manager" in user_roles:
-			return frappe.get_list("Project", {"account_manager": employee_id, "project_type": "External", "is_active": "Yes"}, "name as project", limit_page_length=9999, order_by="name asc")
+			return frappe.get_list("Project", {"project_manager": employee_id, "project_type": "External", "is_active": "Yes"}, "name as project", limit_page_length=9999, order_by="name asc")
+
 		return []
 	except Exception as e:
 		return frappe.utils.response.report_error(e.http_status_code)
 
 
 @frappe.whitelist()
-def get_assigned_sites(employee_id, project=None):
+def get_assigned_sites(employee_id=None, project=None):
 	try:
 		user, user_roles, user_employee = get_current_user_details()
 		filters = { "status": "Active" }
@@ -315,7 +319,9 @@ def get_assigned_sites(employee_id, project=None):
 			return frappe.get_list("Operations Site", filters, ["name as site", "project"], limit_page_length=9999, order_by="name asc")
 
 		elif "Site Supervisor" in user_roles:
-			filters.update({"account_supervisor": employee_id})
+			if not employee_id:
+				return []
+			filters.update({"site_supervisor": employee_id})
 			return frappe.get_list("Operations Site", filters, ["name as site", "project"], limit_page_length=9999, order_by="name asc")
 		return []
 
@@ -325,7 +331,7 @@ def get_assigned_sites(employee_id, project=None):
 
 
 @frappe.whitelist()
-def get_assigned_shifts(employee_id, project=None, site=None):
+def get_assigned_shifts(employee_id=None, project=None, site=None):
 	try:
 		user_roles = frappe.get_roles(frappe.session.user)
 		user_roles_set = set(user_roles)
@@ -333,13 +339,13 @@ def get_assigned_shifts(employee_id, project=None, site=None):
 		if any(role in user_roles_set for role in allowed_roles):
 			if not site:
 				return get_supervisor_operations_shifts()
-			return get_supervisor_operations_shifts(project, site)
+			return get_supervisor_operations_shifts(project=project, site=site)
 		elif "Shift Supervisor" in user_roles:
-			return get_supervisor_operations_shifts(employee_id, project, site)
+			return get_supervisor_operations_shifts(supervisor=employee_id, project=project, site=site)
 		return []
 
 	except Exception as e:
-		frappe.log_error(frappe.traceback(), str(e))
+		frappe.log_error(message=str(e), title='Get Assigned Shifts Error')
 		return frappe.utils.response.report_error(str(e))
 
 def get_supervisor_operations_shifts(supervisor=None, project=None, site=None):
@@ -399,10 +405,10 @@ def get_employees():
 		if "Operations Manager" in user_roles:
 			pass			
 		elif "Projects Manager" in user_roles:
-			projects = frappe.get_all("Project", {"account_manager": user_employee.name}, ["name as project"], limit_page_length=9999, order_by="name asc")
+			projects = frappe.get_all("Project", {"project_manager": user_employee.name}, ["name as project"], limit_page_length=9999, order_by="name asc")
 			filters["project"] = ["IN", [project.project for project in projects]]
 		elif "Site Supervisor" in user_roles:
-			sites = frappe.get_all("Operations Site", {"account_supervisor": user_employee.name}, ["name as site"], limit_page_length=9999, order_by="name asc")
+			sites = frappe.get_all("Operations Site", {"site_supervisor": user_employee.name}, ["name as site"], limit_page_length=9999, order_by="name asc")
 			filters["site"] = ["IN", [site.site for site in sites]]
 		elif "Shift Supervisor" in user_roles:
 			shifts = frappe.get_all("Operations Shift Supervisor", {"supervisor": user_employee.name}, ["distinct parent as shift"], limit_page_length=9999, order_by="parent asc")
@@ -524,7 +530,7 @@ def schedule_staff(employee, shift, operations_role, start_date, end_date=None, 
 				roster.save(ignore_permissions=True)
 			return True
 	except Exception as e:
-		frappe.log_error(e)
+		frappe.log_error(message=str(e), title='Schedule Staff Error')
 		frappe.throw(_(e))
 
 

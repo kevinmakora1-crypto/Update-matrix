@@ -3,7 +3,7 @@ import json
 import os
 from one_fm.utils import get_json_file
 
-def get_assignment_rule_json_file(file_name):
+def get_assignment_rule_json_file(file_name, app_name="one_fm"):
     """
     Load JSON data from a file in the 'assignment_rule' folder.
     Args:
@@ -11,10 +11,10 @@ def get_assignment_rule_json_file(file_name):
     Returns:
         dict: The parsed JSON data.
     """
-    folder = frappe.get_app_path("one_fm", "custom", "assignment_rule")
+    folder = frappe.get_app_path(app_name, "custom", "assignment_rule")
     return get_json_file(file_name, folder)
 
-def create_assignment_rule(assignment_rule:dict):
+def create_assignment_rule(assignment_rule:dict, process_task_name:str=None):
     """
     Create or update an Assignment Rule based on the provided dictionary.
 
@@ -36,16 +36,18 @@ def create_assignment_rule(assignment_rule:dict):
         None
     """
     if not assignment_rule or not isinstance(assignment_rule, dict):
-        frappe.log_error("Invalid assignment rule data.")
+        frappe.log_error(title="Invalid assignment rule data.")
         return
 
     if "name" not in assignment_rule:
-        frappe.log_error("Missing required field: 'name'.")
+        frappe.log_error(title="Missing required field: 'name'.")
         return
 
     assignment_rule_name = assignment_rule["name"]
 
     try:
+        if process_task_name:
+            assignment_rule["custom_routine_task"] = process_task_name
         if not frappe.db.exists("Assignment Rule", assignment_rule_name):
             frappe.get_doc(assignment_rule).insert(ignore_permissions=True)
         else:
@@ -68,12 +70,12 @@ def delete_assignment_rule(assignment_rule:dict):
         None
     """
     if not assignment_rule or not isinstance(assignment_rule, dict):
-        frappe.log_error("Invalid assignment rule data.")
+        frappe.log_error(title="Invalid assignment rule data.")
         return
 
     name = assignment_rule.get("name")
     if not name:
-        frappe.log_error("Missing 'name' in assignment rule.")
+        frappe.log_error(title="Missing 'name' in assignment rule.")
         return
 
     try:

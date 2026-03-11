@@ -8,11 +8,12 @@ from datetime import datetime
 import pandas as pd
 from six import string_types
 
-
+from firebase_admin import messaging
 import frappe
 from frappe import _
 from frappe.auth import validate_ip_address
 from frappe.utils.nestedset import validate_loop
+from frappe.query_builder import DocType
 from frappe.desk.form.assign_to import add as add_assignment
 from frappe.desk.notifications import extract_mentions
 from frappe.desk.doctype.notification_log.notification_log import get_title, get_title_html
@@ -32,13 +33,13 @@ from frappe.utils import (
 )
 from frappe.workflow.doctype.workflow_action.workflow_action import (
     get_email_template, deduplicate_actions, get_next_possible_transitions,
-    get_doc_workflow_state, get_workflow_name, get_workflow_action_url,get_confirm_workflow_action_url,
-    get_users_next_action_data as _get_users_next_action_data
+    get_doc_workflow_state, get_workflow_name, get_workflow_action_url, get_confirm_workflow_action_url,
+    get_users_next_action_data as _get_users_next_action_data, get_email_template_from_workflow
 )
 
 import erpnext
 from erpnext.setup.doctype.employee.employee import (
-    get_holiday_list_for_employee, get_all_employee_emails, get_employee_email
+    get_holiday_list_for_employee, get_employee_email
 )
 
 
@@ -50,7 +51,7 @@ from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import (
 
 from one_fm.api.notification import create_notification_log, get_employee_user_id
 
-from one_fm.processor import sendemail
+from one_fm.processor import sendemail, is_user_id_company_prefred_email_in_employee
 from one_fm.one_fm.payroll_utils import get_user_list_by_role
 from one_fm.operations.doctype.operations_shift.operations_shift import get_shift_supervisor
 from one_fm.api import api
@@ -64,7 +65,7 @@ def get_common_email_args(doc):
 	doctype = doc.get("doctype")
 	docname = doc.get("name")
 
-	email_template = get_email_template(doc)
+	email_template = get_email_template_from_workflow(doc)
 	if email_template:
 		subject = frappe.render_template(email_template.subject, vars(doc))
 		response = frappe.render_template(email_template.response, vars(doc))
@@ -894,7 +895,7 @@ def create_leave_allocation(employee, policy_detail, leave_type_details, from_da
 			allocation.save(ignore_permissions = True)
 			allocation.submit()
 		except Exception as e:
-			frappe.log_error(str(e), 'Leave allocation builder exception against {0}/{1}'.format(employee.name, leave_type))
+			frappe.log_error(message=str(e), title='Leave allocation builder exception against {0}/{1}'.format(employee.name, leave_type))
 
 
 def increase_daily_leave_balance():
@@ -943,13 +944,13 @@ def increase_daily_leave_balance():
 
             except Exception as e:
                 try:
-                    frappe.log_error(f"Error processing Leave Allocation {leave_allocation.name}: {str(e)}")
+                    frappe.log_error(title=f"Error processing Leave Allocation {leave_allocation.name}", message=str(e))
                 except Exception as log_error:
                     print(f"Logging failed for Leave Allocation {leave_allocation.name}: {str(log_error)}")
                 continue
 
     except Exception as e:
-          frappe.log_error(f"Error processing Leave Allocation {leave_allocation.name}: {str(e)}")
+          frappe.log_error(title=f"Error processing Leave Allocation {leave_allocation.name}", message=str(e))
 
 
 def update_leave_ledger_for_paid_annual_leave(allocation, is_carry_forward):
@@ -1515,9 +1516,6 @@ def validate_job_applicant(doc, method):
     if doc.one_fm_night_shift:
         frappe.db.set_value("Job Applicant", doc.name, "one_fm_night_shift", doc.one_fm_night_shift)
 
-    # Because first name and last name are mandatory so merge both to generate applicant name
-    doc.applicant_name = doc.one_fm_first_name + " " + doc.one_fm_last_name
-
     from one_fm.one_fm.utils import check_mendatory_fields_for_grd_and_recruiter
     check_mendatory_fields_for_grd_and_recruiter(doc, method)#fix visa 22
     # validate_pam_file_number_and_pam_designation(doc, method)
@@ -2018,7 +2016,7 @@ def notify_payroll_officer(doc):
         else:
             frappe.throw("Please add Payroll Officer in the HR and Payroll Additional Settings")
     except:
-        frappe.log_error(message = frappe.get_traceback(),title = "Error while sending notification of local transfer")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while sending notification of local transfer")
 
 
 def send_roster_report():
@@ -2717,6 +2715,20 @@ def set_expire_magic_link(reference_doctype, reference_docname, link_for):
             expired_field = "career_history_ml_expired"
         frappe.db.set_value(reference_doctype, reference_docname, expired_field, True)
 
+def expire_magic_link(reference_doctype, reference_docname, link_for):
+    """
+        Method used to expire magic link
+        based on the reference_doctype, reference_docname and link_for values
+        args:
+            reference_doctype: DocType name (Example: 'Job Applicant')
+            reference_docname: Data (Example: 'HR-APP-2022-00286')
+            link_for: Data (Example: Career History)
+    """
+    magic_link = frappe.db.exists('Magic Link', {'reference_doctype': reference_doctype,
+        'reference_docname': reference_docname, 'link_for': link_for, 'expired': False})
+    if magic_link:
+        frappe.db.set_value('Magic Link', magic_link, {'expired': True, "expired_on": now_datetime()})
+
 def check_path(path):
     return os.path.isdir(path)
 
@@ -3095,6 +3107,22 @@ def get_today_leaves(cur_date):
     """, as_dict=1)]
 
 @frappe.whitelist()
+def get_employee_site_supervisor_user(employee):
+    site_supervisor = get_employee_site_supervisor(employee)
+    if site_supervisor:
+        return frappe.db.get_value("Employee", site_supervisor, "user_id")
+    return None
+
+@frappe.whitelist()
+def get_employee_site_supervisor(employee):
+    employee_field_list = ["user_id", "reports_to", "shift", "site", "shift_working", "employee_name"]
+    employee_data = frappe.db.get_value('Employee', employee, employee_field_list, as_dict=1)
+    if employee_data.site:
+        site_supervisor = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
+        return site_supervisor
+    return None
+
+@frappe.whitelist()
 def get_approver_user(employee):
     approver = get_approver(employee)
     if approver:
@@ -3130,14 +3158,14 @@ def get_approver(employee, date=False):
                 if line_manager:
                     return line_manager
             if not line_manager and employee_data.site:
-                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'account_supervisor')
+                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
                 if not line_manager:
                     project = frappe.db.get_value('Operations Site', employee_data.site, 'project')
                     if project:
-                        line_manager = frappe.db.get_value('Project', project, 'account_manager')
+                        line_manager = frappe.db.get_value('Project', project, 'project_manager')
         else:
             if employee_data.site:
-                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'account_supervisor')
+                line_manager = frappe.db.get_value('Operations Site', employee_data.site, 'site_supervisor')
 
             if not line_manager and employee_data.shift:
                 line_manager = get_shift_supervisor(employee_data.shift, date)
@@ -3194,7 +3222,7 @@ def get_approver_for_many_employees(supervisor=None):
     if has_roles:
         return [i.name for i in frappe.db.get_list("Employee", ignore_permissions=True)]
     employees = [i.name for i in frappe.db.get_list('Employee', {'reports_to':supervisor}, "name", ignore_permissions=True)]
-    operations_site = [i.name for i in frappe.db.get_list('Operations Site', {'account_supervisor':supervisor}, "name", ignore_permissions=True)]
+    operations_site = [i.name for i in frappe.db.get_list('Operations Site', {'site_supervisor':supervisor}, "name", ignore_permissions=True)]
     if operations_site:
         employees += [i.name for i in frappe.db.get_list('Employee', {'site':['IN', operations_site]}, "name", ignore_permissions=True) if not i.name in employees]
     operations_shift = [i.name for i in frappe.db.get_list('Operations Shift', {'supervisor':supervisor}, "name", ignore_permissions=True)]
@@ -3217,13 +3245,13 @@ def get_other_managers(employee):
                 query +=f"""
 
                     UNION
-                    SELECT account_manager as manager FROM `tabProject`
+                    SELECT project_manager as manager FROM `tabProject`
                     WHERE name = '{emp_data.get('project')}'
 
                     """
             else:
                 query = f"""
-                    SELECT account_manager  as manager  FROM `tabProject`
+                    SELECT project_manager  as manager  FROM `tabProject`
                     WHERE name = '{emp_data.get('project')}'  """
         if emp_data.get("site"):
             if query:
@@ -3231,13 +3259,13 @@ def get_other_managers(employee):
 
                     UNION
 
-                    SELECT account_supervisor  as manager FROM `tabOperations Site`
+                    SELECT site_supervisor  as manager FROM `tabOperations Site`
                     WHERE name = '{emp_data.get('site')}' AND status = 'Active'
 
                     """
             else:
                 query = f"""
-                    SELECT account_supervisor as manager FROM `tabOperations Site`
+                    SELECT site_supervisor as manager FROM `tabOperations Site`
                 WHERE name = '{emp_data.get('site')}' AND status = 'Active'
 
                 """
@@ -3293,12 +3321,12 @@ def check_employee_permission_on_doc(doc):
         pass
 
 
-def post_login(self):
+def post_login(self, session_end: str | None = None, audit_user: str | None = None):
     self.run_trigger("on_login")
     validate_ip_address(self.user)
     self.validate_hour()
     self.get_user_info()
-    self.make_session()
+    self.make_session(session_end=session_end, audit_user=audit_user)
     self.setup_boot_cache()
     self.set_user_info()
 
@@ -3408,7 +3436,6 @@ def change_item_details(item, item_name=False, description=False):
     if description:
         item_obj.db_set("description", description)
     item_obj.db_set("change_request", True)
-    apply_workflow(item_obj, "Change Request")
 
 
 def translate_words(word: str, target_language_code: str="ar") -> str:
@@ -3417,7 +3444,7 @@ def translate_words(word: str, target_language_code: str="ar") -> str:
             translated = GoogleTranslator(source='auto', target=target_language_code).translate(word)
             return translated
         except:
-            frappe.log_error(message = frappe.get_traceback(), title = "Error while translating word")
+            frappe.log_error(message=frappe.get_traceback(), title="Error while translating word")
             return word
     return word
 
@@ -3435,7 +3462,7 @@ def custom_validate_interviewer(self):
 
 
 @frappe.whitelist()
-def get_current_shift(employee):
+def get_current_shift(employee, attach_upcoming_shifts=False):
     try:
         nowtime = now_datetime()
         sql = f"""
@@ -3454,63 +3481,108 @@ def get_current_shift(employee):
             """
 
         shifts = frappe.db.sql(sql, as_dict=1)
-        if shifts:
-             # Find the current shift
-            current_shift = None
-            for shift in shifts:
-                # Check if the shift is currently active
-                checkin = frappe.db.get_list(
-                    "Employee Checkin",
-                    filters={"employee": employee, "shift_assignment":shift.name },
-                    fields=["log_type", "time", "shift_assignment"],
-                    order_by="time desc",
-                    limit=1,
-                )
+        if not shifts:
+            return False
 
-                if checkin:
-                    last_log = checkin[0]
-                    # CASE 1: Last log is IN → Shift is active
-                    if last_log.log_type == "IN":
-                        if shift.checkin_time <= nowtime <= shift.checkout_time:
-                            current_shift = shift
-                            break
-                    # CASE 2: Last log is OUT → Only skip if within grace period
-                    elif last_log.log_type == "OUT":
-                        # Check if OUT happened during grace period
-                        if shift.actual_end_time <= last_log.time <= shift.checkout_time:
-                            continue  # Skip this shift, check next one
-                        else:
-                            current_shift = shift
-                            break
-                else:
-                    # Allow checkin if within window
+        # Find the current shift
+        current_shift = None
+        is_current_shift_completed = False # Flag to check if employee has checked in and out for the current shift
+
+        for shift in shifts:
+            # Check if the shift is currently active
+            checkins = frappe.db.get_all(
+                "Employee Checkin",
+                filters={"employee": employee, "shift_assignment": shift.name},
+                fields=["log_type", "time", "shift_assignment"],
+                order_by="time desc",
+                limit_page_length=0,
+            )
+
+            if checkins:
+                # Temporary flag so callers can know completion state without DB write
+                has_in = any(log.log_type == "IN" for log in checkins)
+                has_out = any(log.log_type == "OUT" for log in checkins)
+                is_current_shift_completed = bool(has_in and has_out)
+
+                last_log = checkins[0]
+                # CASE 1: Last log is IN → Shift is active
+                if last_log.log_type == "IN":
                     if shift.checkin_time <= nowtime <= shift.checkout_time:
                         current_shift = shift
                         break
+                # CASE 2: Last log is OUT → Only skip if within grace period
+                elif last_log.log_type == "OUT":
+                    # Check if OUT happened during grace period
+                    if shift.actual_end_time <= last_log.time <= shift.checkout_time:
+                        continue  # Skip this shift, check next one
+                    else:
+                        current_shift = shift
+                        break                
+            else:
+                # Allow checkin if within window
+                if shift.checkin_time <= nowtime <= shift.checkout_time:
+                    current_shift = shift
+                    break
 
+        # Prepare response
+        response = {}
+        
+        if current_shift:
+            # Current shift found
+            data = frappe.get_doc("Shift Assignment", current_shift.name)
 
-            if current_shift:
-                # If a current shift is found, return its details
-                data = frappe.get_doc("Shift Assignment", current_shift.name)
-                if current_shift.checkin_time > nowtime:
-                    minutes = int((current_shift.checkin_time - nowtime).total_seconds() / 60)
-                    return{"type": "Early", "data": data, "time": minutes}
-                elif current_shift.checkout_time < nowtime:
-                    minutes = int((nowtime - current_shift.checkout_time).total_seconds() / 60)
-                    return{"type": "Late", "data": data, "time": minutes}
-                elif current_shift.checkin_time <= nowtime <= current_shift.checkout_time:
-                    return {"type": "On Time", "data": data, "time": 0}
+            data.is_completed = is_current_shift_completed # Carry over temporary completion flag (non-persistent)
 
-             # If no active shift is found, check if the next shift is about to start
-            for shift in shifts:
-                if shift.checkin_time > nowtime:  # Next shift starting in the future
-                    data = frappe.get_doc("Shift Assignment", shift.name)
-                    minutes = int((shift.checkin_time - nowtime).total_seconds() / 60)
-                    return {"type": "Upcoming", "data": data, "time": minutes}
-            return False
+            if current_shift.checkin_time > nowtime:
+                minutes = int((current_shift.checkin_time - nowtime).total_seconds() / 60)
+                response = {"type": "Early", "data": data, "time": minutes}
+            elif current_shift.checkout_time < nowtime:
+                minutes = int((nowtime - current_shift.checkout_time).total_seconds() / 60)
+                response = {"type": "Late", "data": data, "time": minutes}
+            else:
+                response = {"type": "On Time", "data": data, "time": 0}
+            
+            # Attach upcoming shifts if requested
+            if attach_upcoming_shifts:
+                upcoming_shifts = [
+                    frappe.get_doc("Shift Assignment", shift.name)
+                    for shift in shifts
+                    if shift.name != current_shift.name
+                ]
+                response["upcoming_shifts"] = upcoming_shifts
+            
+            return response
+        
+        # No active shift found - find next upcoming shift
+        target_shift = None
+        for shift in shifts:
+            if shift.checkin_time > nowtime:  # Next shift starting in the future
+                target_shift = shift
+                break
+        
+        if not target_shift:
+            # If no upcoming shift found, use first shift as target
+            target_shift = shifts[0] if shifts else None
+        
+        if target_shift:
+            data = frappe.get_doc("Shift Assignment", target_shift.name)
+            minutes = int((target_shift.checkin_time - nowtime).total_seconds() / 60)
+            response = {"type": "Upcoming", "data": data, "time": minutes}
+            
+            # Attach upcoming shifts if requested
+            if attach_upcoming_shifts:
+                upcoming_shifts = [
+                    frappe.get_doc("Shift Assignment", shift.name)
+                    for shift in shifts
+                    if shift.name != target_shift.name
+                ]
+                response["upcoming_shifts"] = upcoming_shifts
+            
+            return response
+        
         return False
     except Exception as e:
-        frappe.log_error(message = frappe.get_traceback(), title= "Error while getting current shift")
+        frappe.log_error(message=frappe.get_traceback(), title="Error while getting current shift")
         return False
 
 
@@ -3588,65 +3660,63 @@ def get_sender_email() -> str | None:
 @frappe.whitelist()
 def send_birthday_reminders():
     """Send Employee birthday reminders if no 'Stop Birthday Reminders' is not set."""
-    from hrms.controllers.employee_reminders import send_birthday_reminder, get_employees_who_are_born_today,get_birthday_reminder_text_and_message
+    from hrms.controllers.employee_reminders import send_birthday_reminder, get_employees_who_are_born_today, get_birthday_reminder_text_and_message
 
     to_send = int(frappe.db.get_single_value("HR Settings", "send_birthday_reminders")) or is_scheduler_emails_enabled()
     if not to_send:
         return
 
     sender = get_sender_email()
+    if not sender:
+        return
+
     employees_born_today = get_employees_who_are_born_today()
 
     for company, birthday_persons in employees_born_today.items():
-        employee_emails = get_all_employee_emails(company,is_birthday = True)
+        employee_emails = get_users_for_reminders(birthday=True)
 
-        birthday_person_emails = [get_employee_email(doc) for doc in birthday_persons]
+        birthday_person_emails = [birthday_person.get("user_id") for birthday_person in birthday_persons]
         recipients = list(set(employee_emails) - set(birthday_person_emails))
 
         reminder_text, message = get_birthday_reminder_text_and_message(birthday_persons)
-        send_birthday_reminder(recipients, reminder_text, birthday_persons, message, sender)
+        if recipients and len(recipients) > 0:
+            send_birthday_reminder(recipients, reminder_text, birthday_persons, message, sender)
 
-        if len(birthday_persons) > 1:
+        if birthday_persons and len(birthday_persons) > 1:
             # special email for people sharing birthdays
             for person in birthday_persons:
-                person_email = person["user_id"] or person["personal_email"] or person["company_email"]
-                if frappe.get_value("Notification Settings",person['user_id'],'custom_enable_employee_birthday_notification'):
+                if not person.get('user_id'):
+                    continue
+                allowed_to_remind = get_users_for_reminders(birthday=True, user_id=person.get('user_id'))
+                if allowed_to_remind:
                     others = [d for d in birthday_persons if d != person]
                     reminder_text, message = get_birthday_reminder_text_and_message(others)
-                    send_birthday_reminder(person_email, reminder_text, others, message, sender)
+                    send_birthday_reminder(person.get('user_id'), reminder_text, others, message, sender)
 
+def get_users_for_reminders(birthday=False, anniversary=False, user_id=False):
+    """Returns a list of user IDs for employees who have opted in for birthday or anniversary reminders."""
+    allowed_users = []
+    if not birthday and not anniversary:
+        return allowed_users
 
+    filters = {}
+    if birthday:
+        filters["custom_enable_employee_birthday_notification"] = 1
+    if anniversary:
+        filters["custom_enable_work_anniversary_notification"] = 1
+    if user_id:
+        filters["name"] = user_id
 
-def get_all_employee_emails(company,is_birthday=False,is_anniversary = False):
-    """Returns list of employee emails either based on user_id or company_email"""
-
-    if not is_birthday and not is_anniversary:
-        return []
-    all_users=[]
-    if is_anniversary:
-        all_users = frappe.get_all("Notification Settings",{'custom_enable_work_anniversary_notification':1},['name'])
-    if is_birthday:
-        all_users = frappe.get_all("Notification Settings",{'custom_enable_employee_birthday_notification':1},['name'])
-    if all_users and None not in all_users:
-        all_users = [i.name for i in all_users]
-    else:
-        return []
-    employee_list = frappe.get_all(
-        "Employee", fields=["name", "employee_name"], filters={'user_id':['IN',all_users],"status": "Active", "company": company}
+    users = frappe.get_all(
+        "Notification Settings",
+        filters=filters,
+        fields=['name']
     )
-
-    employee_emails = []
-    for employee in employee_list:
-        if not employee:
-            continue
-        user, company_email, personal_email = frappe.db.get_value(
-            "Employee", employee, ["user_id", "company_email", "personal_email"]
-        )
-        email = user or company_email or personal_email
-        if email:
-            employee_emails.append(email)
-    return employee_emails
-
+    if users:
+        for user in users:
+            if is_user_id_company_prefred_email_in_employee(user.name):
+                allowed_users.append(user.name)
+    return allowed_users
 
 @frappe.whitelist()
 def send_work_anniversary_reminders():
@@ -3664,7 +3734,7 @@ def send_work_anniversary_reminders():
     message += _("Everyone, let’s congratulate them on their work anniversary!")
 
     for company, anniversary_persons in employees_joined_today.items():
-        employee_emails = get_all_employee_emails(company,is_anniversary=True)
+        employee_emails = get_users_for_reminders(anniversary=True)
 
         anniversary_person_emails = [get_employee_email(doc) for doc in anniversary_persons]
         recipients = list(set(employee_emails) - set(anniversary_person_emails))
@@ -3729,7 +3799,7 @@ def set_employee_status():
     )
    
     if not all_leaves:
-        frappe.log_error(_("No employees found with approved leave applications for today or earlier."))
+        frappe.log_error(title=_("No employees found with approved leave applications for today or earlier."))
         return
 
     # Split into leaves_ending and leaves_starting
@@ -3779,8 +3849,7 @@ def set_employee_status():
         frappe.log(_("Employee statuses updated: {0} set to 'Vacation', {1} set to 'Active'.")
                 .format(employees_set_to_vacation, employees_set_to_active))
     except:
-        
-        frappe.log_error(message = frappe.get_traceback(),title= "Error occurred while trying to reassign duties")
+        frappe.log_error(message=frappe.get_traceback(), title="Error occurred while trying to reassign duties")
 
 
 
@@ -3808,7 +3877,7 @@ def get_service(employee_email, api, version, scopes):
         with open(credentials_path, 'r') as file:
             credentials_dict = json.load(file)
     except Exception as e:
-        frappe.log_error(f"Error reading Google credentials: {str(e)}")
+        frappe.log_error(title="Error reading Google credentials:", message=str(e))
         return
 
     credentials = service_account.Credentials.from_service_account_info(credentials_dict, scopes=scopes)
@@ -3839,7 +3908,7 @@ def set_out_of_office(employee_email, start_date, end_date, custom_reliever_name
         service.users().settings().updateVacation(userId='me', body=vacation_settings).execute()
         frappe.msgprint(f"Out-of-office set for {employee_email} from {start_date} to {end_date}.")
     except Exception as e:
-        frappe.log_error(title="Failed to set out-of-office", message=str(e))
+        frappe.log_error(title="Failed to set out-of-office - {0} - {1}".format(employee_email, start_date), message=str(e))
 
 
 def disable_out_of_office(employee_email):
@@ -3854,6 +3923,10 @@ def disable_out_of_office(employee_email):
         frappe.msgprint(f"Out-of-office disabled for {employee_email}.")
     except Exception as e:
         frappe.log_error(title="Failed to disable out-of-office", message=str(e))
+
+@frappe.whitelist()
+def queue_set_out_of_office_for_leaves():
+    frappe.enqueue(set_out_of_office_for_leaves, queue='long', timeout=800)
 
 
 def set_out_of_office_for_leaves():
@@ -3892,38 +3965,48 @@ def set_out_of_office_for_leaves():
 def update_assurance_level_task():
     today = datetime.now().date()
     condition_1 = frappe.get_all(
-    'Employee',
-    filters=[
-        ['status', '=', 'Active'],
-        ['one_fm_civil_id', 'not in', ['', 'NONE']],
-        ['custom_civil_id_assurance_level', '!=', 'High'],
-        ['civil_id_expiry_date', 'is', 'set'],
-        ['civil_id_expiry_date', '!=', '']
-    ],
-    fields=['employee', 'one_fm_civil_id', 'custom_civil_id_assurance_level', 'civil_id_expiry_date']
-)
+        'Employee',
+        filters=[
+            ['status', '=', 'Active'],
+            ['one_fm_civil_id', 'not in', ['', 'NONE']],
+            ['custom_civil_id_assurance_level', '!=', 'High'],
+            ['civil_id_expiry_date', 'is', 'set'],
+            ['civil_id_expiry_date', '!=', '']
+        ],
+        fields=['employee', 'one_fm_civil_id', 'custom_civil_id_assurance_level', 'civil_id_expiry_date']
+    )
     condition_2 = frappe.get_all(
-    'Employee',
-    filters=[
-        ['status', '=', 'Active'],
-        ['one_fm_civil_id', 'not in', ['', 'NONE']],
-        ['custom_civil_id_assurance_level', '=', 'High'],
-        ['civil_id_expiry_date', '<=', today]
-    ],
-    fields=['employee', 'one_fm_civil_id', 'custom_civil_id_assurance_level', 'civil_id_expiry_date']
-)
+        'Employee',
+        filters=[
+            ['status', '=', 'Active'],
+            ['one_fm_civil_id', 'not in', ['', 'NONE']],
+            ['custom_civil_id_assurance_level', '=', 'High'],
+            ['civil_id_expiry_date', '<=', today]
+        ],
+        fields=['employee', 'one_fm_civil_id', 'custom_civil_id_assurance_level', 'civil_id_expiry_date']
+    )
     employees = condition_1 + condition_2
 
     for employee in employees:
         expiry_date = employee.get("civil_id_expiry_date")
         if isinstance(expiry_date, date):
             employee["civil_id_expiry_date"] = expiry_date.isoformat()
+    
     verification_level = call_to_get_assurance_level(employees)
+
+    if not isinstance(verification_level, list):
+        frappe.log_error(
+            message=f"API call failed or returned invalid response: {verification_level}",
+            title="Update Assurance Level Task - API Error"
+        )
+        return False
+    
     verification_dict = {ver['employee']: ver['customCivilIdAssuranceLevel'] for ver in verification_level}
     for employee in employees:
-            verification_level = verification_dict.get(employee['employee'])
-            if verification_level:
-                frappe.db.set_value('Employee', employee['employee'], 'custom_civil_id_assurance_level', verification_level)
+        verification_level_value = verification_dict.get(employee['employee'])
+        if verification_level_value:
+            frappe.db.set_value('Employee', employee['employee'], 'custom_civil_id_assurance_level', verification_level_value)
+    
     return True
 
 def call_to_get_assurance_level(employees):
@@ -3938,7 +4021,7 @@ def call_to_get_assurance_level(employees):
                 data = response.json()
                 return data.get("data", None)
             else:
-                frappe.log_error(title = "ERROR CALLING ASSURANCE API" ,message = frappe.get_traceback())
+                frappe.log_error(title="ERROR CALLING ASSURANCE API", message=frappe.get_traceback())
                 return {"error": response.status_code, "title": response.json()}
         else:
             url = f"https://staging-apiwrapper.one-fm.com/api/DigitalSigning/BulkCheckMobileIdentity"
@@ -3955,14 +4038,14 @@ def call_to_get_assurance_level(employees):
                         all_results.extend(batch_result)
                         frappe.msgprint(f"Batch {i} sent successfully.")
                     else:
-                        frappe.log_error(message = frappe.get_traceback(), title = "Error calling assurance API")
+                        frappe.log_error(message=frappe.get_traceback(), title="Error calling assurance API")
                         return {"error": response.status_code, "title": response.json()}
                 except Exception as e:
-                        frappe.log_error(message = frappe.get_traceback(), title = "Error calling assurance API")
+                        frappe.log_error(message=frappe.get_traceback(), title="Error calling assurance API")
                         return {"error": str(e), "title": "API call failed"}
             return all_results
     except Exception as e:
-        frappe.log_error(message = frappe.get_traceback(),title = f"An error occurred while making the API call: {str(e)}")
+        frappe.log_error(message=frappe.get_traceback(), title=f"An error occurred while making the API call: {str(e)}")
         return {"error": str(e), "title": "API Call Failed"}
 
 
@@ -4064,10 +4147,10 @@ def get_json_file(file_name, folder):
             data = json.load(f)
 
     except json.JSONDecodeError as e:
-        frappe.log_error(f"Invalid JSON format in file {file_path}: {str(e)}")
+        frappe.log_error(title=f"Invalid JSON format in file {file_path}", message=str(e))
 
     except Exception as e:
-        frappe.log_error(f"An error occurred while reading the file {file_path}: {str(e)}")
+        frappe.log_error(title=f"An error occurred while reading the file {file_path}", message=str(e))
 
     return data
 
@@ -4170,7 +4253,7 @@ def add_calendar_event(employee_email, start_date, end_date, employee_name, leav
 
         frappe.msgprint(f"Calendar event created for {employee_email} leave.")
     except Exception as e:
-        frappe.log_error(title="Failed to create calendar event", message=str(e))
+        frappe.log_error(title="Failed to create calendar event - {0} - {1}".format(employee_email, leave_application_name), message=str(e))
 
 
 def cancel_calendar_event(employee_email, leave_application_name):
@@ -4296,7 +4379,7 @@ def send_absences_notification(absent_employees):
     category = "Report"
     attendance_manager = get_employee_user_id(frappe.db.get_single_value("ONEFM General Setting", "attendance_manager"))
     if not attendance_manager:
-        frappe.log_error("Attendance Manager user not found. Notification not sent.", "send_absences_notification")
+        frappe.log_error(title="Attendance Manager user not found. Notification not sent.", message="send_absences_notification")
         return
     recipients = [attendance_manager]
     for user in recipients:
@@ -4313,3 +4396,290 @@ def send_absences_notification(absent_employees):
         notification.document_name = notification.name
         notification.save(ignore_permissions=True)
         frappe.db.commit()
+
+
+def send_enrollment_status():
+	"""
+	Sends a daily email to site supervisors with a list of employees who are not enrolled in face recognition.
+	"""
+	Employee = DocType("Employee")
+
+	# Fetch employees who are not enrolled
+	employees = (
+		frappe.qb.from_(Employee)
+		.select(
+			Employee.name,
+			Employee.employee_id,
+			Employee.employee_name,
+			Employee.site,
+			Employee.department,
+			Employee.date_of_joining
+		)
+		.where(
+			(Employee.status == "Active") &
+			(Employee.attendance_by_timesheet != 1) &
+			(Employee.auto_attendance == 0) &
+			(Employee.enrolled == 0) &
+			(Employee.site.isnotnull()) &
+			(Employee.date_of_joining <= today())
+		)
+	).run(as_dict=True)
+
+	if not employees:
+		return
+
+	# Group employees by supervisor
+	supervisors = {}
+	for emp in employees:
+		if not emp.site:
+			continue
+
+		site_details = frappe.get_value(
+			"Operations Site",
+			emp.site,
+			["site_supervisor", "site_supervisor_name"],
+			as_dict=True
+		)
+
+		if not site_details or not site_details.site_supervisor:
+			continue
+
+		supervisor_id = site_details.site_supervisor
+		supervisor_name = site_details.site_supervisor_name
+
+		supervisor_email = frappe.get_value("Employee", supervisor_id, "user_id")
+
+		if not supervisor_email:
+			continue
+
+		if supervisor_email not in supervisors:
+			supervisors[supervisor_email] = {
+				"name": supervisor_name or frappe.get_value("Employee", supervisor_id, "employee_name"),
+				"employees": [],
+				"sites": set()
+			}
+
+		supervisors[supervisor_email]["employees"].append(emp)
+		supervisors[supervisor_email]["sites"].add(emp.site)
+
+	# Send emails
+	for email, data in supervisors.items():
+		supervisor_name = data["name"]
+		employee_list = data["employees"]
+		sites = data["sites"]
+
+		subject = _("Pending Face Recognition Enrollment for site(s): {0}").format(", ".join(sites))
+
+		message = frappe.render_template(
+			"one_fm/templates/emails/enrollment_status_notification.html",
+			{
+				"doc": {
+					"supervisor_name": supervisor_name,
+					"employees": employee_list
+				}
+			}
+		)
+
+		frappe.enqueue(
+			sendemail,
+			recipients=[email],
+			subject=subject,
+			content=message,
+			delayed=False,
+			is_scheduler_email=True
+		)
+
+
+@frappe.whitelist(allow_guest=True)
+def get_experience_types():
+    experience_types = frappe.get_all(
+        "Experience Type",
+        fields=["name"],
+        limit_page_length=100
+    )
+    return experience_types
+
+
+@frappe.whitelist()
+def send_push_notification(employee_id, title, body, data=None):   
+    try:
+        api.initialize_firebase()
+        employee_data = frappe.db.get_value("Employee", {"employee_id": employee_id}, ["fcm_token", "device_os"],as_dict=1)
+        if not employee_data:
+            employee_data = frappe.db.get_value("Employee", employee_id, ["fcm_token", "device_os"],as_dict=1)
+        deviceToken = employee_data.fcm_token
+        device_os = employee_data.device_os
+
+        if deviceToken:
+            message = messaging.Message(
+                notification=messaging.Notification(
+                    title=title,
+                    body=body,
+                ),
+                token=deviceToken,
+                data=data
+            )
+            messaging.send(message)
+            return True
+    except Exception as e:
+        frappe.log_error(message=frappe.get_traceback(), title="Error in sending push notification")
+        return False
+
+def get_field_with_label(doctype, field_name, value):
+    """
+    Get the label for a field in a doctype and return it with its value.
+
+    Args:
+        doctype (str): Name of the doctype.
+        field_name (str): Name of the field.
+        value: Value of the field (can be None).
+
+    Returns:
+        dict: Dictionary with 'name' (field label or field name if label not found) and 'value' keys.
+    """
+    try:
+        meta = frappe.get_meta(doctype)
+        label = meta.get_label(field_name)
+        if not label:
+            label = field_name  # Fallback to field name if label not found
+    except Exception:
+        label = field_name  # Fallback if meta or get_label fails
+    return {
+        "name": label,
+        "value": value
+    }
+
+def create_process_task(process_name, erp_document, task_description, employee=None, process_owner=None, business_analyst=None, task_type="Repetitive", is_routine_task=0, frequency="", cron_format="", is_automated=0, method=""):
+    create_process_if_not_exists(process_name, process_owner, business_analyst)
+    create_method_if_not_exists(method, erp_document)
+    task_type = get_task_type(task_type, is_routine_task)
+
+    if frequency == "Cron" and not cron_format:
+        frappe.throw("Please provide a valid cron format for the task frequency.")
+
+    return frappe.get_doc({
+        "naming_series": "P-TASK-.YYYY.-",
+        "process_name": process_name,
+        "is_erp_task": 1,
+        "is_automated": is_automated,
+        "is_active": 1,
+        "erp_document": erp_document,
+        "task": task_description,
+        "task_type": task_type,
+        "frequency": frequency,
+        "cron_format": cron_format,
+        "repeat_on_day": 0,
+        "repeat_on_last_day": 0,
+        "hours_per_frequency": 0.0,
+        "coordination_needed": "No",
+        "employee": employee,
+        "start_date": today(),
+        "report_frequency": "",
+        "doctype": "Process Task",
+        "coordination_method": [],
+        "repeat_on_days": [],
+        "method": method
+    }).insert(ignore_permissions=True)
+
+def create_process_if_not_exists(process_name, process_owner="Administrator", business_analyst="Administrator"):
+    if not frappe.db.exists("Process", process_name):
+        process_owner = process_owner or "Administrator"
+        business_analyst = business_analyst or "Administrator"
+
+        process_owner_name = "Administrator" if process_owner == "Administrator" else frappe.db.get_value("User", process_owner, "full_name")
+        business_analyst_name = "Administrator" if business_analyst == "Administrator" else frappe.db.get_value("User", business_analyst, "full_name")
+
+        frappe.get_doc({
+            "process_name": process_name,
+            "description": process_name,
+            "doctype": "Process",
+            "process_owner": process_owner,
+            "process_owner_name": process_owner_name,
+            "business_analyst": business_analyst,
+            "business_analyst_name": business_analyst_name
+        }).insert(ignore_permissions=True)
+
+def create_method_if_not_exists(method, document_type):
+    if method and not frappe.db.exists("Method", method):
+        frappe.get_doc({
+            "method": method,
+            "description": method,
+            "document_type": document_type,
+            "doctype": "Method"
+        }).insert(ignore_permissions=True)
+
+def get_task_type(task_type="Repetitive", is_routine_task=0):
+    if not frappe.db.exists("Task Type", task_type):
+        task_type = frappe.get_doc({
+            "name": task_type,
+            "is_routine_task": is_routine_task,
+            "doctype": "Task Type"
+        }).insert(ignore_permissions=True)
+        return task_type.name
+    return task_type
+
+
+@frappe.whitelist()
+def get_next(doctype, value, prev, filters=None, sort_order="desc", sort_field="modified"):
+	prev = int(prev)
+	if not filters:
+		filters = []
+	if isinstance(filters, str):
+		filters = json.loads(filters)
+	condition = ">" if sort_order.lower() == "asc" else "<"
+
+	if prev:
+		sort_order = "asc" if sort_order.lower() == "desc" else "desc"
+		condition = "<" if condition == ">" else ">"
+
+
+	if sort_field == "status":
+		current_status = frappe.db.get_value(doctype, value, "status")
+		current_modified = frappe.db.get_value(doctype, value, "modified")
+		
+		same_status_filters = filters + [
+			[doctype, "status", "=", current_status],
+			[doctype, "modified", condition, current_modified]
+		]
+		
+		res = frappe.get_list(
+			doctype,
+			fields=["name"],
+			filters=same_status_filters,
+			order_by=f"`tab{doctype}`.modified {sort_order}",
+			limit_page_length=1,
+			as_list=True,
+		)
+		
+		if not res:
+			different_status_filters = filters + [
+				[doctype, "status", condition, current_status]
+			]
+			
+			res = frappe.get_list(
+				doctype,
+				fields=["name"],
+				filters=different_status_filters,
+				order_by=f"`tab{doctype}`.status {sort_order}, `tab{doctype}`.modified {sort_order}",
+				limit_page_length=1,
+				as_list=True,
+			)
+	
+	else:
+		filters.append([doctype, sort_field, condition, frappe.get_value(doctype, value, sort_field)])
+		
+		res = frappe.get_list(
+			doctype,
+			fields=["name"],
+			filters=filters,
+			order_by=f"`tab{doctype}`.{sort_field} {sort_order}",
+			limit_start=0,
+			limit_page_length=1,
+			as_list=True,
+		)
+
+	if not res:
+		frappe.msgprint(_("No further records"))
+		return None
+	else:
+		return res[0][0]

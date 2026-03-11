@@ -26,7 +26,7 @@ def get_recent_openings():
                                     'status': 'Open'
                                 },
                                 ["name","job_title_in_arabic","designation", "description", "description_in_arabic","one_fm_job_opening_created", "department", "job_title"],
-                                order_by="one_fm_job_opening_created desc",
+                                order_by="one_fm_job_opening_created desc", ignore_permissions=True
                                 )
     for opening in recent_openings_raw_format:
         data = {

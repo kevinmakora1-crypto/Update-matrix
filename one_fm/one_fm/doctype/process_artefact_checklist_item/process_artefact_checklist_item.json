@@ -1,0 +1,56 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-12-16 09:14:13.018289",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "checklist_item",
+  "has_checklist",
+  "linked_checklist",
+  "column_break_oqhz"
+ ],
+ "fields": [
+  {
+   "fieldname": "checklist_item",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Checklist Item",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "default": "0",
+   "fieldname": "has_checklist",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Has Checklist"
+  },
+  {
+   "fieldname": "linked_checklist",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Linked Checklist",
+   "options": "Process Artefact Checklist"
+  },
+  {
+   "fieldname": "column_break_oqhz",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-12-29 22:03:35.429443",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Process Artefact Checklist Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

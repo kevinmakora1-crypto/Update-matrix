@@ -21,15 +21,16 @@ import datetime
 from one_fm.grd.doctype.work_permit import work_permit
 from one_fm.grd.doctype.medical_insurance import medical_insurance
 from one_fm.grd.doctype.residency_payment_request import residency_payment_request
-from one_fm.grd.doctype.moi_residency_jawazat import moi_residency_jawazat
+from one_fm.grd.doctype.residency import residency
 from one_fm.grd.doctype.paci import paci
 from one_fm.grd.doctype.fingerprint_appointment import fingerprint_appointment
 from one_fm.processor import sendemail
 
 class Preparation(Document):
     def update_total_amount(self):
-        doc_total = sum(i.total_amount for i in self.preparation_record)
+        doc_total =  sum(i.total_amount or 0 for i in self.preparation_record if i)
         frappe.db.set_value(self.doctype,self.name,'total_payment',doc_total)
+        self.total_payment = doc_total
                      
     def on_update_after_submit(self):
         self.compare_preparation_record()
@@ -76,17 +77,18 @@ class Preparation(Document):
         self.set_grd_values()
         self.set_hr_values()
         validate_preparation_table(self)
+        self.update_total_amount()
         
     def set_grd_values(self):
         """
 		runs: `validate`
 		param: preparation object
-		This method is fetching values of grd supervisor or operator for renewal from GRD settings
+		This method is fetching values of grd supervisor or operator for renewal from HR Settings
 		"""
         if not self.grd_supervisor:
-            self.grd_supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
+            self.grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
         if not self.grd_operator:
-            self.grd_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator")
+            self.grd_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator")
 
     def set_hr_values(self):
         """
@@ -99,7 +101,7 @@ class Preparation(Document):
 
     def on_submit(self):
         self.validate_mandatory_fields_on_submit()
-
+        validate_preparation_table(self)
         self.db_set('submitted_by', frappe.session.user)
         self.db_set('submitted_on', now_datetime())
         self.recall_create_work_permit_renewal() ## create work permit record for renewals
@@ -123,8 +125,6 @@ class Preparation(Document):
             message += '</ul>'
             frappe.throw(message)
 
-        if self.hr_approval == "No":
-            frappe.throw("Must Be Approved By HR ")
 
     def recall_create_work_permit_renewal(self):
         work_permit.create_work_permit_renewal(self.name)
@@ -133,7 +133,7 @@ class Preparation(Document):
         medical_insurance.valid_work_permit_exists(self.name)
 
     def recall_create_moi_renewal_and_extend(self):
-        moi_residency_jawazat.set_employee_list_for_moi(self.name)
+        residency.set_employee_list_for_moi(self.name)
 
     def recall_create_paci(self):
         paci.create_PACI_renewal(self.name)
@@ -152,32 +152,30 @@ class Preparation(Document):
             subject = 'Records are created for WP, MI, MOI, PACI, and FP'
             create_notification_log(subject, message, [self.grd_operator], self)
 
-        inform_the_costing_to = frappe.db.get_single_value('GRD Settings', 'inform_the_costing_to')
+        inform_the_costing_to = frappe.db.get_single_value('HR Settings', 'inform_the_costing_to')
         if inform_the_costing_to:
             page_link = get_url(self.get_url())
             message = "<p>Records are created<a href='{0}'>{1}</a>.</p>".format(page_link, self.name)
             subject = 'Details of the Preparation Cost for WP, MI, MOI, PACI, and FP'
-            print_format = frappe.db.get_single_value('GRD Settings', 'costing_print_format')
+            print_format = frappe.db.get_single_value('HR Settings', 'costing_print_format')
             if not print_format:
                 print_format = 'Standard'
             attachments = [frappe.attach_print(self.doctype, self.name, file_name=self.name, print_format=print_format)]
             send_email(self, [inform_the_costing_to], message, subject, attachments)
 
-    def after_insert(self):
-        self.update_last_preparation_details_to_grd_settings()
-
-    def update_last_preparation_details_to_grd_settings(self):
-        frappe.db.set_value("GRD Settings", None, "last_preparation_record_created_on", self.creation)
-        frappe.db.set_value("GRD Settings", None, "last_preparation_record_created_by", self.owner)
+   
 
     @frappe.whitelist()
     def set_renewal_for_all_preparation_record(self, renew_all):
-        # Get costing of renewal for an year
-        costing  = get_grd_renewal_extension_cost("Renewal", "1 Year")
+        no_of_years = "1 Year"
+
         # Set the costing of renewal for an year in preparation record
         for preparation in self.preparation_record:
-            preparation.renewal_or_extend = "Renewal" if renew_all else ""
-            preparation.no_of_years = "1 Year" if renew_all else ""
+            # Get costing of renewal for an year
+            costing, extension_type  = get_renewal_extension_cost_for_employee(preparation.employee, no_of_years)
+
+            preparation.renewal_or_extend = extension_type if renew_all else ""
+            preparation.no_of_years = no_of_years if renew_all else ""
             preparation.work_permit_amount = costing.work_permit_amount if renew_all else ""
             preparation.medical_insurance_amount = costing.medical_insurance_amount if renew_all else ""
             preparation.residency_stamp_amount = costing.residency_stamp_amount if renew_all else ""
@@ -187,12 +185,12 @@ class Preparation(Document):
 # Calculate the date of the next month (First & Last) (monthly cron in hooks)
 def auto_create_preparation_record():
     """
-    runs: at the Preparation Record Creation Day configured in the GRD Settings
+    runs: at the Preparation Record Creation Day configured in the HR Settings
     This method will create preparation record that contain list of all employees that their residency expiry date will be between the first and the last date of the next month
     This record will go to HR user to set value for each employee either renewal or extend and on the submit of this record it will ask for hr permission and approval.
     Then, it will create wp, mi, moi, and paci records for all employees in the list.
     """
-    preparation_record_creation_day = frappe.db.get_single_value("GRD Settings", "preparation_record_creation_day")
+    preparation_record_creation_day = frappe.db.get_single_value("HR Settings", "preparation_record_creation_day")
     if preparation_record_creation_day and preparation_record_creation_day > 0:
         preparation_record_creation_day_date = datetime.date.today().replace(day=preparation_record_creation_day)
         if getdate(preparation_record_creation_day_date) == getdate(today()):
@@ -205,12 +203,13 @@ def create_preparation_record():
         The record contain list of all employees that their residency expiry date will be between the first and the last date of the next month
         This record will go to HR user to set value for each employee either renewal or extend and on the submit of this record it will ask for hr permission and approval.
     """
+   
     doc = frappe.new_doc('Preparation')
     doc.posting_date = nowdate()
     first_day = get_first_day(add_months(getdate(today()), 1))
     last_day = get_last_day(getdate(first_day))
     employee_entries = frappe.db.get_list('Employee',
-        fields=("residency_expiry_date", "name"),
+        fields=("residency_expiry_date", "name",'one_fm_nationality','status','relieving_date'),
         filters={
             'residency_expiry_date': ['between', (first_day, last_day)],
             'status': 'Active',
@@ -219,9 +218,17 @@ def create_preparation_record():
     )
     employee_entries.sort(key=sort)
     for employee in employee_entries:
-        doc.append("preparation_record", {
-            "employee": employee.name
-        })
+        new_row = {"employee": employee.name, "relieving_date": employee.relieving_date}
+        
+        if employee.one_fm_nationality == "Kuwaiti":
+            new_row['renewal_or_extend'] = "Renewal (Kuwaiti)"
+        else:
+            if employee.relieving_date: 
+                new_row['renewal_or_extend'] = "Extend 3 months"
+            else:
+                new_row['renewal_or_extend'] = "Renewal (Non-Kuwaiti)"
+        doc.append("preparation_record", new_row)
+            
     doc.save()
     notify_hr(doc)
 
@@ -236,7 +243,7 @@ def notify_hr(doc):
     create_notification_log(subject, message, [doc.hr_user], doc)
 
 def notify_request_for_renewal_or_extend():# Notify finance
-    filters = {'docstatus': 1, 'hr_approval': ['=', "Yes"]}
+    filters = {'docstatus': 1}
     preparation_list = frappe.get_doc('Preparation', filters,['name', 'notify_finance_user'])
     page_link = get_url(preparation_list.get_url())
     message = "<p>Please Review the Renewal and Extend List of employee {0}<a href='{1}'></a></p>".format(page_link,preparation_list.name)
@@ -276,7 +283,7 @@ def get_grd_renewal_extension_cost(renewal_or_extend, no_of_years=False):
 			from
 				`tabGRD Renewal Extension Cost`
 			where
-				parent = 'GRD Settings'
+				parent = 'HR Settings'
 				and
 				renewal_or_extend = '{0}'
 		""".format(renewal_or_extend)
@@ -297,7 +304,7 @@ def handle_creation_of_grd_docs(row,source):
         work_permit.create_wp_renewal(employee_doc,row.renewal_or_extend,source)
         frappe.db.commit() #because Medical Insurance depends on the work permit
         medical_insurance.create_mi_record(frappe.get_doc('Work Permit',{'preparation':source,'employee':employee_doc.employee}))
-        moi_residency_jawazat.create_moi_record(employee_doc,row.renewal_or_extend,preparation_name=source)
+        residency.create_moi_record(employee_doc,row.renewal_or_extend,preparation_name=source)
         paci.create_PACI(employee_doc,row.renewal_or_extend,source)   
     except:
         frappe.log_error(title=f"Error Creating New GRD documents  for {row.employee} </b>",message=frappe.get_traceback()) 
@@ -336,7 +343,7 @@ def handle_extension(source,row):
 
 def handle_cancelation(source,row):
     """Cancel all the linked GRD documents for an employee"""
-    cancel_delete_doc("MOI Residency Jawazat",source,row)
+    cancel_delete_doc("Residency",source,row)
     cancel_delete_doc("PACI",source,row)
     cancel_delete_doc("Medical Insurance",source,row)
     cancel_delete_doc("Work Permit",source,row)
@@ -366,10 +373,94 @@ def cancel_delete_doc(doctype,source,row):
 
 def validate_preparation_table(doc):
     """Ensure that all the employees in the preparation table are in Active Status"""
-    
-    all_active_staff = frappe.get_all("Employee",{'status': ["IN",["Active","Vacation"]]})
+
+    all_active_staff = frappe.get_all("Employee",{'status': ["IN",["Active"]]})
     if all_active_staff:
         all_active_staff_list = [o.name for o in all_active_staff]
         for each in doc.preparation_record:
             if each.employee not in all_active_staff_list:
                 frappe.throw(f"The Employee in row <b>{each.idx}</b> <b>{each.full_name}</b> is not Active at the moment")
+
+@frappe.whitelist()
+def get_employees_relieving_date(employees):
+    """
+        Return relieving_date in Employee for each employee.
+    """
+    if not employees:
+        return {}
+    if isinstance(employees, str):
+        try:
+            import json as _json
+            employees = _json.loads(employees)
+        except Exception:
+            employees = [employees]
+    if not isinstance(employees, (list, tuple, set)):
+        employees = [employees]
+    employees = list({e for e in employees if e})  # dedupe & drop falsy
+    if not employees:
+        return {}
+
+    params = {"employees": tuple(employees)}
+    # Single query: Employee + MAX(checkin.date)
+    rows = frappe.db.sql(
+        """
+        SELECT
+            e.name AS employee,
+            e.relieving_date AS relieving_date
+        FROM `tabEmployee` e
+        WHERE e.name IN %(employees)s
+        """,
+        params,
+        as_dict=True,
+    )
+
+    result = {}
+    for r in rows:
+        result[r.employee] = {
+            "relieving_date": r.relieving_date
+        }
+    return result
+
+@frappe.whitelist()
+def update_preparation_employee_dates(preparation: str):
+    """
+        Update relieving_date in child rows without making the form dirty.
+        Uses frappe.db.set_value (update_modified=False) so the client doc stays clean until reload.
+        Returns map of updated rows and data used.
+    """
+    if not preparation:
+        return {}
+    doc = frappe.get_doc('Preparation', preparation)
+    if doc.is_new():  # cannot update unsaved document rows
+        return {'updated_rows': [], 'data': {}}
+    employees = [r.employee for r in doc.preparation_record if r.employee]
+    if not employees:
+        return {'updated_rows': [], 'data': {}}
+    data = get_employees_relieving_date(employees)
+    updated = []
+    for row in doc.preparation_record:
+        if not row.employee:
+            continue
+        info = data.get(row.employee)
+        if not info:
+            continue
+        rel = info.get('relieving_date')
+        if row.relieving_date != rel:
+            frappe.db.set_value(row.doctype, row.name, {
+                'relieving_date': rel
+            }, update_modified=False)
+            updated.append(row.name)
+    return {'updated_rows': updated, 'data': data}
+
+def get_renewal_extension_cost_for_employee(employee, no_of_years = "1 Year"):
+    """
+        Get renewal/extension cost for an employee based on his nationality
+    """
+    employee_nationality = frappe.db.get_value("Employee", employee, "one_fm_nationality")
+
+    if employee_nationality == "Kuwaiti":
+        extension_type = "Renewal (Kuwaiti)"
+    else:
+        extension_type = "Renewal (Non-Kuwaiti)"
+    
+    return get_grd_renewal_extension_cost(extension_type, no_of_years), extension_type

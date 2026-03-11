@@ -79,21 +79,6 @@ frappe.ui.form.on('Job Applicant', {
 	},
 
 	refresh(frm) {
-		// Changes the buttons for `PAM File Number` and `PAM Desigantion` once operator wants to changethe data of any
-		// if(frm.doc.pam_number_button == 0 || frm.is_new()){
-		// 	document.querySelectorAll("[data-fieldname='one_fm_change_pam_file_number']")[1].style.backgroundColor ="#3789ff";
-		// }if(frm.doc.pam_designation_button == 0 || frm.is_new()){
-		// 	document.querySelectorAll("[data-fieldname='one_fm_change_pam_designation']")[1].style.backgroundColor ="#3789ff";
-		// 	document.querySelectorAll("[data-fieldname='one_fm_change_pam_designation']")[1].style.marginLeft ='2em';
-		// }if(frm.doc.pam_number_button == 1 || !frm.is_new()){
-		// 	document.querySelectorAll("[data-fieldname='one_fm_change_pam_file_number']")[1].style.backgroundColor ="#ec645e";
-		// }if(frm.doc.pam_designation_button == 1 || !frm.is_new()){
-		// 	document.querySelectorAll("[data-fieldname='one_fm_change_pam_designation']")[1].style.backgroundColor ="#ec645e";
-		// 	document.querySelectorAll("[data-fieldname='one_fm_change_pam_designation']")[1].style.marginLeft ='2em';
-		// }
-		// document.querySelectorAll("[data-fieldname='one_fm_change_pam_file_number']")[1].style.margin ='1.6em';
-		// document.querySelectorAll("[data-fieldname='one_fm_change_pam_designation']")[1].style.marginLeft ='2em';
-
 		frm.set_df_property('status', 'label', 'Final Status');
 		frm.remove_custom_button("Job Offer");
 		set_country_field_empty_on_load(frm);
@@ -310,7 +295,7 @@ frappe.ui.form.on('Job Applicant', {
 	one_fm_third_name: function(frm) {
     set_applicant_name(frm);
   },
-  one_fm_forth_name: function(frm) {
+  one_fm_fourth_name: function(frm) {
     set_applicant_name(frm);
   },
 	one_fm_last_name: function(frm) {
@@ -563,7 +548,7 @@ frappe.ui.form.on('Job Applicant', {
 		}
 	},
 	one_fm_has_issue: function(frm){
-		if(frm.doc.one_fm_has_issue && frappe.user.has_role("GRD Operator")){
+		if(frm.doc.one_fm_has_issue && frappe.user.has_role("Government Relations Operator")){
 		// check the Authorized signatory based on file number
 			if((frm.doc.pam_number_button == 1) && (frm.doc.one_fm_pam_file_number)){
 				// if PAM file Number has changes in job applicant, set the signatory names of the new file
@@ -895,8 +880,8 @@ var set_grd_field_properties = function(frm){
 		set_hidden_fields(frm, hide_fields, true);
 	 }
 
-	 // Hide irrelevant sections for GRD Operator and set read only option to the required fields
-	 if(frm.doc.one_fm_is_transferable == "Yes" && frappe.user.has_role("GRD Operator")){
+	 // Hide irrelevant sections for Government Relations Operator and set read only option to the required fields
+	 if(frm.doc.one_fm_is_transferable == "Yes" && frappe.user.has_role("Government Relations Operator")){
 		let hide_fields=['one_fm_basic_skill_section','one_fm_uniform_measurements',
 		'one_fm_work_details_section','section_break_6','section_break_88',
 		'one_fm_educational_qualification_section','one_fm_current_employment_section_',
@@ -904,7 +889,7 @@ var set_grd_field_properties = function(frm){
 		'previous_work_details','one_fm_erf_application_details_section','one_fm_interview_and_career_history_score',
 		'one_fm_interview_schedules_section'];
 
-		let read_fields=['one_fm_in_kuwait_at_present','one_fm_cid_expire','one_fm_visa_type','one_fm_have_a_valid_visa_in_kuwait','one_fm_passport_type','one_fm_passport_expire','one_fm_passport_issued','one_fm_passport_holder_of','one_fm_place_of_birth','one_fm_height','one_fm_last_name_in_arabic','one_fm_forth_name_in_arabic','one_fm_third_name_in_arabic','one_fm_second_name_in_arabic','one_fm_first_name_in_arabic','one_fm_last_name','one_fm_forth_name','one_fm_third_name','one_fm_second_name','one_fm_first_name','source','job_title','one_fm_applicant_status','status','one_fm_application_id','email_id','applicant_name','one_fm_is_transferable','one_fm_applicant_is_overseas_or_local','one_fm_cid_number',
+		let read_fields=['one_fm_in_kuwait_at_present','one_fm_cid_expire','one_fm_visa_type','one_fm_have_a_valid_visa_in_kuwait','one_fm_passport_type','one_fm_passport_expire','one_fm_passport_issued','one_fm_passport_holder_of','one_fm_place_of_birth','one_fm_height','one_fm_last_name_in_arabic','one_fm_fourth_name_in_arabic','one_fm_third_name_in_arabic','one_fm_second_name_in_arabic','one_fm_first_name_in_arabic','one_fm_last_name','one_fm_fourth_name','one_fm_third_name','one_fm_second_name','one_fm_first_name','source','job_title','one_fm_applicant_status','status','one_fm_application_id','email_id','applicant_name','one_fm_is_transferable','one_fm_applicant_is_overseas_or_local','one_fm_cid_number',
 		'one_fm_duration_of_work_permit','one_fm_previous_designation','one_fm_work_permit_salary','one_fm_date_of_birth',
 		'one_fm_nationality','one_fm_marital_status','one_fm_educational_qualification','one_fm_passport_number',
 		'one_fm_gender','one_fm_religion'];
@@ -916,10 +901,10 @@ var set_grd_field_properties = function(frm){
 	}
 
 	//field only for grd supervisor
-	if(frappe.user.has_role("GRD Operator")){
+	if(frappe.user.has_role("Government Relations Operator")){
 		let hide_fields=['save_me']
 		set_hidden_fields(frm, hide_fields, true);
-	}//field only for grd operator
+	}//field only for Government Relations Operator
 	if(frappe.user.has_role("GRD Supervisor")){
 		let hide_fields=['send_changes_to_supervisor']
 		set_hidden_fields(frm, hide_fields, true);
@@ -929,19 +914,19 @@ var set_grd_field_properties = function(frm){
 		set_hidden_fields(frm, hide_fields, true);
 	}
 	//show the field for operator only
-	if(!frappe.user.has_role("GRD Operator")){
+	if(!frappe.user.has_role("Government Relations Operator")){
 		let hide_fields=['no_internal_issues']
 		set_hidden_fields(frm, hide_fields, true);
 	}
 	//activate no internal issue checkbox
-	if(frappe.user.has_role("GRD Supervisor") || frappe.user.has_role("GRD Operator")){
+	if(frappe.user.has_role("GRD Supervisor") || frappe.user.has_role("Government Relations Operator")){
 		if(frm.doc.reject_changes && ((frm.doc.pam_designation_button == 1) || (doc.pam_number_button ==1))){
 			let hide_fields=['no_internal_issues']
 			set_hidden_fields(frm, hide_fields, true);
 		}
 	}
-	//Set GRD section as read only for all role except GRD Operator and GRD Supervisor
-	if(frm.doc.one_fm_has_issue && !frappe.user.has_role("GRD Operator") && !frappe.user.has_role("GRD Supervisor")){
+	//Set GRD section as read only for all role except Government Relations Operator and GRD Supervisor
+	if(frm.doc.one_fm_has_issue && !frappe.user.has_role("Government Relations Operator") && !frappe.user.has_role("GRD Supervisor")){
 		let read_fields=['authorized_signatory','previous_company_details','authorized_signatory_section',
 		'one_fm_has_issue','one_fm_type_of_issues','one_fm_pam_file_number','one_fm_pam_designation',
 		'one_fm_previous_company_trade_name_in_arabic','one_fm__previous_company_authorized_signatory_name_arabic',
@@ -1557,7 +1542,7 @@ var set_designation_skill = function(frm, skills) {
 };
 
 var set_applicant_name = function(frm) {
-  let name_fields = ['one_fm_second_name', 'one_fm_third_name','one_fm_forth_name', 'one_fm_last_name']
+  let name_fields = ['one_fm_second_name', 'one_fm_third_name','one_fm_fourth_name', 'one_fm_last_name']
   let applicant_name = frm.doc.one_fm_first_name ?frm.doc.one_fm_first_name:'';
   name_fields.forEach((name_field) => {
     if(frm.doc[name_field]){

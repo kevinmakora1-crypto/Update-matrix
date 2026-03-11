@@ -4,6 +4,15 @@
 frappe.ui.form.on('Employee Schedule', {
 	refresh: frm => {
 		filter_active_employee(frm);
+		
+		// Make form read-only for non-System Managers
+		if (!frappe.user.has_role('System Manager')) {
+			// Set all fields as read-only individually to persist state
+			frm.fields.forEach(field => {
+				frm.set_df_property(field.df.fieldname, 'read_only', 1);
+			});
+			frm.disable_save();
+		}
 	},
 	shift : function(frm) {
 		let {shift} = frm.doc;

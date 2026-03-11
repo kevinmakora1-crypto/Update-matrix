@@ -1,0 +1,26 @@
+import frappe
+from frappe.utils import today
+from one_fm.setup.assignment_rule import create_assignment_rule, get_assignment_rule_json_file
+from one_fm.utils import create_process_task
+
+def execute():
+    process_task = create_process_task(
+        process_name="Others",
+        erp_document="Assignment Rule",
+        task_description="Assigning Ms Genevive John upon selection of A la Carte Recruitment in the Hiring Method field of ERF doctype.",
+        employee="HR-EMP-02659",
+        process_owner=None,
+        business_analyst=None,
+        task_type="Repetitive",
+        is_routine_task=0
+    )
+    assignment_rule_data = get_assignment_rule_json_file("erf_a_la_carte_recruitment.json")
+    if process_task:
+        process_task_name = process_task.name
+        if process_task.employee:
+            employee_data = frappe.db.get_value("Employee", process_task.employee, ["employee_name", "user_id", "department"], as_dict=True)
+            if employee_data:
+                assignment_rule_data["employee_name"] = employee_data.employee_name
+                assignment_rule_data["employee_user"] = employee_data.user_id
+                assignment_rule_data["department"] = employee_data.department
+    create_assignment_rule(assignment_rule_data, process_task_name)

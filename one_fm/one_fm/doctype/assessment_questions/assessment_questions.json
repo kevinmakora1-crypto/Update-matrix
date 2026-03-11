@@ -1,0 +1,37 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:experience_type_question",
+ "creation": "2025-09-10 19:53:41.474943",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "experience_type_question"
+ ],
+ "fields": [
+  {
+   "fieldname": "experience_type_question",
+   "fieldtype": "Data",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "label": "Assessment Question",
+   "unique": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-09-10 20:10:58.180614",
+ "modified_by": "Administrator",
+ "module": "One Fm",
+ "name": "Assessment Questions",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

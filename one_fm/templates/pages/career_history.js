@@ -52,9 +52,17 @@ career_history = Class.extend({
           <label class="form-label">So, tell us what position you got promoted to first.</label>
           <input type="text" class="form-control position_${company_no}${promotion_no}" placeholder="Enter Your New Job Title"/>
         </div>`;
+      var promotion_details_reason_promotion_html = `<div class="my-3 col-lg-12 col-md-12">
+          <label class="form-label">Reason for Promotion<span style="color: red">*</span></label>
+          <textarea class="form-control reason_for_promotion_${company_no}${promotion_no}" rows="3" placeholder="Briefly explain the reason for promotion"></textarea>
+        </div>`;
       var promotion_details_salary_html = `<div class="my-5 col-lg-12 col-md-12">
           <label class="form-label">How much was your incremented salary in KWD?</label>
           <input type="text" class="form-control salary_${company_no}${promotion_no}" placeholder="Enter your increased Salary in KWD"/>
+        </div>`;
+      var promotion_details_reason_increment_html = `<div class="my-3 col-lg-12 col-md-12">
+          <label class="form-label">Reason for Increment<span style="color: red">*</span></label>
+          <textarea class="form-control reason_for_increment_${company_no}${promotion_no}" rows="3" placeholder="Briefly explain the reason for salary increase"></textarea>
         </div>`;
       var promotion_details_promotion_date_html = `<div class="my-5 col-lg-12 col-md-12">
           <label class="form-label">When did you get promoted?</label>
@@ -69,13 +77,24 @@ career_history = Class.extend({
         value="3" if selected 'Yes, Only Got a Salary Increase'
       */
       if(promotion_select == 1){
-        promotion_details_html = promotion_details_next_job_title_html+promotion_details_salary_html+promotion_details_promotion_date_html;
+        // Promotion with salary increase: show both reasons below job title
+        promotion_details_html = promotion_details_next_job_title_html +
+                                 promotion_details_reason_promotion_html +
+                                 promotion_details_reason_increment_html +
+                                 promotion_details_salary_html +
+                                 promotion_details_promotion_date_html;
       }
       else if(promotion_select == 2){
-        promotion_details_html = promotion_details_next_job_title_html+promotion_details_promotion_date_html;
+        // Promotion only: show reason for promotion below job title
+        promotion_details_html = promotion_details_next_job_title_html +
+                                 promotion_details_reason_promotion_html +
+                                 promotion_details_promotion_date_html;
       }
       else if(promotion_select == 3){
-        promotion_details_html = promotion_details_salary_html+promotion_details_promotion_date_html;
+        // Salary increase only: show reason for increment below salary field
+        promotion_details_html = promotion_details_salary_html +
+                                 promotion_details_reason_increment_html +
+                                 promotion_details_promotion_date_html;
       }
       $(`.promotion_details_section_${company_no}${promotion_no}`).empty();
       $(`.promotion_details_section_${company_no}${promotion_no}`).append(promotion_details_html);
@@ -120,6 +139,7 @@ career_history = Class.extend({
       $(".factors_in_new_job_"+(company_no.toString())).remove();
       $(".are_you_still_working_"+(company_no.toString())).remove();
       $(".when_did_you_left_"+(company_no.toString())).remove();
+      $(`.main_awards_section_${company_no}`).remove();
       if (still_working == 1){
         var reason_why_leave_job_html = `<div class="mx-auto col-lg-12 col-md-12 mb-3 reason_why_leave_job_${company_no}">
           <label class="form-label">Why do you plan to leave the job?</label>
@@ -129,8 +149,10 @@ career_history = Class.extend({
           <label class="form-label">What are the factors you are looking for in a new job?</label>
           <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text"></textarea>
         </div>`;
-        $(".company_"+(company_no.toString())).append(reason_why_leave_job_html);
-        $(".company_"+(company_no.toString())).append(factors_in_new_job);
+        $(".company_details_"+(company_no.toString())).append(reason_why_leave_job_html);
+        $(".company_details_"+(company_no.toString())).append(me.main_awards_section_html(company_no));
+        me.bind_main_awards_recognition(company_no);
+        $(".company_details_"+(company_no.toString())).append(factors_in_new_job);
         me.show_final_interest_step(company_no.toString());
         $('.submit-btn').fadeIn();
       }
@@ -155,7 +177,7 @@ career_history = Class.extend({
         <option value="2">Yes</option>
       </select>
     </div>`
-    $(".company_"+(company_no.toString())).append(are_you_still_working_html);
+    $(".company_details_"+(company_no.toString())).append(are_you_still_working_html);
     this.on_change_are_you_still_working(company_no)
   },
   when_did_you_left_the_company: function(company_no) {
@@ -163,13 +185,15 @@ career_history = Class.extend({
       <label  class="form-label">When did you leave the company?<span style="color: red">*</span></label>
       <input type="date" class="form-control when_did_you_left_${company_no}_date"/>
     </div>`
-    $(".company_"+(company_no.toString())).append(when_did_you_left_the_company_html);
+    $(".company_details_"+(company_no.toString())).append(when_did_you_left_the_company_html);
   },
   on_change_are_you_still_working: function(company_no) {
     var me = this;
     $(`.are_you_still_working_${company_no}_select`).on("change", function(){
       var are_you_still_working = $(`.are_you_still_working_${company_no}_select`).val();
       $(".factors_in_new_job_"+(company_no.toString())).remove();
+      $(".shoves-tugs-block").remove();
+      $(`.main_awards_section_${company_no}`).remove();
       if(are_you_still_working == 2){
         $('.final-interest-section').remove();
         $('.submit-btn').fadeOut();
@@ -187,279 +211,182 @@ career_history = Class.extend({
           <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text"></textarea>
         </div>`;
         $('.next-btn').fadeOut();
-        $(".company_"+(company_no.toString())).append(factors_in_new_job);
+        $(".company_details_"+(company_no.toString())).append(me.main_awards_section_html(company_no));
+        me.bind_main_awards_recognition(company_no);
+        $(".company_details_"+(company_no.toString())).append(factors_in_new_job);
+        $(".company_details_"+(company_no.toString())).append(get_shoves_tugs_html(company_no));
         $('.submit-btn').fadeIn();
         for (let i = company_no; i < TOTAL_COMPANY_NO; i++) {
           $(".company_"+((i+1).toString())).remove();
-
         }
         TOTAL_COMPANY_NO = company_no;
         me.show_final_interest_step(TOTAL_COMPANY_NO);
       }
     });
   },
-  
-show_final_interest_step: function(TOTAL_COMPANY_NO) {
-    // Remove existing sections to prevent duplicates if this function is called multiple times.
-    // Be cautious with this selector if 'final-interest-section' elements are meant to persist.
-    // If the table is part of what should be removed and re-added, this is fine.
-    $('.final-interest-section').remove();
+  show_final_interest_step: function(TOTAL_COMPANY_NO) {
+      // Remove existing sections to prevent duplicates if this function is called multiple times.
+      // Be cautious with this selector if 'final-interest-section' elements are meant to persist.
+      // If the table is part of what should be removed and re-added, this is fine.
+      $('.final-interest-section').remove();
 
-    var interestSection = $(`
-        <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
-            <div class="col-lg-12 col-md-12 mb-3">
-                <label class="form-label">Which career factors are most important to you?<span style="color: red">*</span></label>
-                <h6>Instructions for Candidate:</h6>
-                <ul style="font-size: smaller; font-weight: bold;">
-                    <li>Think about what really drives your career decisions.</li>
-                    <li>Please drag and drop the rows in the table below to rank the career factors from 1 (most important) to 7 (least important) based on what matters most to you.</li>
-                    <li>There are no right or wrong answers — your response helps us understand how to align the role with your career goals.</li>
-                </ul>
-                <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden sortable-table" name="rank_and_factors">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Factor</th>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                        </tr>
-                    </thead>
-                    <tbody id="sortableRows" class="divide-y divide-gray-200">
-                        <!-- Corrected: Each row needs its own <tr> tag -->
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">1</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Projects & Technology</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">A mix of more satisfying and engaging work</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">2</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Manager & Teams</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Working with the right types of people and leaders</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">3</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Compensation</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Total rewards including salary, benefits, and bonuses</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">4</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Continuing Growth Rate</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Long-term career advancement and opportunity</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">5</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Job Stretch & Learning</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Bigger challenges, scope, and learning potential</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">6</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Work/Life Balance</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Time and flexibility for personal life and well-being</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                            <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">7</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Company Mission & Values (optional addition)</td>
-                            <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Alignment with your personal purpose and values</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
-            <div class="col-lg-12 col-md-12 mb-3">
-                <label class="form-label">What makes you interested in this opportunity?</label>
-                <textarea rows="4" cols="50"
-                    name="interest_reason"
-                    class="form-control what_make_your_interested_in_this_opportunity"
-                    required></textarea>
-            </div>
-        </div>
-    `);
+      var interestSection = $(`
+          <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
+              <div class="col-lg-12 col-md-12 mb-3">
+                  <label class="form-label">Which career factors are most important to you?<span style="color: red">*</span></label>
+                  <h6>Instructions for Candidate:</h6>
+                  <ul style="font-size: smaller; font-weight: bold;">
+                      <li>Think about what really drives your career decisions.</li>
+                      <li>Please drag and drop the rows in the table below to rank the career factors from 1 (most important) to 7 (least important) based on what matters most to you.</li>
+                      <li>There are no right or wrong answers — your response helps us understand how to align the role with your career goals.</li>
+                  </ul>
+                  <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden sortable-table" name="rank_and_factors">
+                      <thead class="bg-gray-50">
+                          <tr>
+                              <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                              <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Factor</th>
+                              <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                          </tr>
+                      </thead>
+                      <tbody id="sortableRows" class="divide-y divide-gray-200">
+                          <!-- Corrected: Each row needs its own <tr> tag -->
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">1</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Projects & Technology</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">A mix of more satisfying and engaging work</td>
+                          </tr>
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">2</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Manager & Teams</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Working with the right types of people and leaders</td>
+                          </tr>
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">3</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Compensation</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Total rewards including salary, benefits, and bonuses</td>
+                          </tr>
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">4</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Continuing Growth Rate</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Long-term career advancement and opportunity</td>
+                          </tr>
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">5</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Job Stretch & Learning</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Bigger challenges, scope, and learning potential</td>
+                          </tr>
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">6</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Work/Life Balance</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Time and flexibility for personal life and well-being</td>
+                          </tr>
+                          <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                              <td class="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 rank-cell">7</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Company Mission & Values (optional addition)</td>
+                              <td class="py-4 px-6 whitespace-nowrap text-sm text-gray-700">Alignment with your personal purpose and values</td>
+                          </tr>
+                      </tbody>
+                  </table>
+              </div>
+          </div>
+          <div class="row mx-auto col-lg-12 col-md-12 mb-3 final-interest-section">
+              <div class="col-lg-12 col-md-12 mb-3">
+                  <label class="form-label">What makes you interested in this opportunity?</label>
+                  <textarea rows="4" cols="50"
+                      name="interest_reason"
+                      class="form-control what_make_your_interested_in_this_opportunity"
+                      required></textarea>
+              </div>
+          </div>
+      `);
 
-    // Append the new HTML content to the DOM
-    $('.section_' + (TOTAL_COMPANY_NO)).after(interestSection);
+      // Append the new HTML content to the DOM
+      $('.section_' + (TOTAL_COMPANY_NO)).after(interestSection);
 
-    // --- SortableJS Initialization (Corrected) ---
-    // Get the tbody element where the rows are located
-    const sortableList = document.getElementById('sortableRows');
+      // --- SortableJS Initialization (Corrected) ---
+      // Get the tbody element where the rows are located
+      const sortableList = document.getElementById('sortableRows');
 
-    // Check if the element exists before initializing SortableJS
-    if (sortableList) {
-        new Sortable(sortableList, {
-            animation: 150, // ms, animation speed moving items when sorting, `0` — no animation
-            ghostClass: 'sortable-ghost', // Class name for the drop placeholder
-            chosenClass: 'sortable-chosen', // Class name for the chosen item
-            dragClass: 'sortable-drag', // Class name for the dragging item
-            // handle: '.rank-cell', // Uncomment this if you only want to drag by the rank number cell
+      // Check if the element exists before initializing SortableJS
+      if (sortableList) {
+          new Sortable(sortableList, {
+              animation: 150, // ms, animation speed moving items when sorting, `0` — no animation
+              ghostClass: 'sortable-ghost', // Class name for the drop placeholder
+              chosenClass: 'sortable-chosen', // Class name for the chosen item
+              dragClass: 'sortable-drag', // Class name for the dragging item
+              // handle: '.rank-cell', // Uncomment this if you only want to drag by the rank number cell
 
-            // Callback when an item is dropped
-            onEnd: function (evt) {
-                console.log('Item moved:', evt.oldIndex, 'to', evt.newIndex);
-                updateRanks(); // Call function to re-assign ranks after sorting
-            }
-        });
+              // Callback when an item is dropped
+              onEnd: function (evt) {
+                 
+                  updateRanks(); // Call function to re-assign ranks after sorting
+              }
+          });
 
-        // Function to update the rank numbers in the first column
-        function updateRanks() {
-            // Select all direct <tr> children of the sortable tbody
-            Array.from(sortableList.children).forEach(function(row, index) {
-                // Find the cell with the 'rank-cell' class and update its text content
-                const rankCell = row.querySelector('.rank-cell');
-                if (rankCell) {
-                    rankCell.textContent = index + 1;
-                }
-            });
-        }
-        updateRanks();
+          // Function to update the rank numbers in the first column
+          function updateRanks() {
+              // Select all direct <tr> children of the sortable tbody
+              Array.from(sortableList.children).forEach(function(row, index) {
+                  // Find the cell with the 'rank-cell' class and update its text content
+                  const rankCell = row.querySelector('.rank-cell');
+                  if (rankCell) {
+                      rankCell.textContent = index + 1;
+                  }
+              });
+          }
+          updateRanks();
 
-    } else {
-        console.error("Element with ID 'sortableRows' not found after appending. SortableJS not initialized.");
-    }
-    // --- END SortableJS Initialization ---
-},
-
-  create_company_section_html: function(company_no) {
+      } else {
+          console.error("Element with ID 'sortableRows' not found after appending. SortableJS not initialized.");
+      }
+      // --- END SortableJS Initialization ---
+  },
+  create_company_section_html: function(company_no, preselected_experience_type = null) {
     $('.main_section').delay(400).fadeIn();
     if(company_no>=2){
       $('.back-btn').fadeIn();
       this.back_career_history(company_no);
     }
+    var experience_select_html = `
+      <div class="my-3 col-lg-12 col-md-12">
+        <label class="form-label">Are you a Fresher or Experienced?</label>
+        <select class="form-control fresher_experienced_select_${company_no}">
+          <option value="" disabled selected>Select</option>
+          <option value="Fresher">Fresher</option>
+          <option value="Experienced">Experienced</option>
+        </select>
+      </div>
+    `;
+    // If preselected_experience_type is provided, hide the select and set its value
+    if (preselected_experience_type) {
+      experience_select_html = `
+        <input type="hidden" class="fresher_experienced_select_${company_no}" value="${preselected_experience_type}" />
+        <div class="my-3 col-lg-12 col-md-12">
+          <label class="form-label">Experience Type:</label>
+          <span style="font-weight:bold;">${preselected_experience_type}</span>
+        </div>
+      `;
+    }
     var company_section_html = `
     <div class="section_${company_no}">
-    <h3 class="mx-auto">Hello, {{job_applicant.applicant_name}}, tell us about the ${stringifyNumber(company_no)} company you worked for!</h3>
-    <div class="row mx-auto col-lg-12 col-md-12 mb-3 company_${company_no} border-top">
-        <div class="my-3 col-lg-12 col-md-12">
-        <label class="form-label">What was the company's name? </label>
-        <input type="text" class="form-control company_${company_no}_name" placeholder="Enter the ${stringifyNumber(company_no)} Company Name"/>
-        </div>
+      <h3 class="mx-auto">Hello, {{job_applicant.applicant_name}}!</h3>
 
-        <div class="my-3 col-lg-12 col-md-12">
-        <label class="form-label">Which country did you get employed in?</label> <br>
-          <select class="form-control country_of_company_${company_no}">
-          <option>Select Country</option>
-          {% for country in country_list %}
-          <option>{{country.name}}</option>
-          {% endfor %}
-        </select>
-        </div>
-        <div class="mb-3 col-lg-12 col-md-12">
-        <label class="form-label">When did you join the company?</label>
-        <input type="date" class="form-control joined_company${company_no}"/>
-        </div>
-
-        <div class="mb-3 col-lg-12 col-md-12">
-        <label class="form-label">What was your first salary at this company?</label>
-        <input type="text" class="form-control salary_company${company_no}" placeholder="Enter your Salary in KWD"/>
-        </div>
-
-      <div class="col-lg-12 col-md-12">
-        <hr class="my-5"/>
+      <div
+        class="row border-top"
+      >
+      ${experience_select_html}
       </div>
 
-      <div class="mb-3 col-lg-12 col-md-12">
-        <label  class="form-label">What was your starting job title?</label>
-        <input type="text" class="form-control starting_job_title_company_${company_no}" placeholder="Enter the Job Title"/>
-      </div>
-
-
-     <div class="col-lg-12 col-md-12 mb-3">
-        <label class="form-label">What was your employment type?</label>
-        <select class="custom-select employment_type_company_${company_no}">
-        <option value="" disabled selected>Select Employment Type</option>
-          {% for type in employment_type_list %}
-          <option value="{{ type }}">{{ type }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-
-
-      <div class="mb-3 col-lg-12 col-md-12">
-        <label class="form-label">Briefly describe your responsibilities in this role</label>
-        <textarea class="form-control responsibilities_company_${company_no}" rows="4" placeholder="E.g. Managed a team of 5, handled client reports, etc."></textarea>
-      </div>
-
-
-      <div class="mt-5 promotion_section_${company_no}" style="width: 100%">
-
-      </div>
-
-      <div class="col-lg-12 col-md-12 mb-3">
-        <label>Tell us about contact person details from ${stringifyNumber(company_no)} company you worked!</label>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Full name</label>
-        <input type="text" class="form-control first_contact_name_${company_no}" placeholder="Full Name"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Email</label>
-        <input type="text" class="form-control first_contact_email_${company_no}" placeholder="Email"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Designation</label>
-        <input type="text" class="form-control first_contact_designation_${company_no}" placeholder="Designation"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Phone number with country code</label>
-        <input type="text" class="form-control first_contact_phone_${company_no}" placeholder="Phone number with country code"/>
-      </div>
-      <div class="col-lg-12 col-md-12 mb-3 add_more_contact_${company_no}">
-        <button class="btn btn-dark float-left btn_add_more_contact_${company_no}" type="button">{{ _(" + Add more contact person") }}</button>
-      </div>
-      <div class="col-lg-12 col-md-12 mb-3">
-        <label>Tell us some details about your best boss from ${stringifyNumber(company_no)} company you worked</label>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Full name</label>
-        <input type="text" class="form-control best_boss_name_${company_no}" placeholder="Full Name"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Email</label>
-        <input type="text" class="form-control best_boss_email_${company_no}" placeholder="Email"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Phone number with country code</label>
-        <input type="text" class="form-control best_boss_phone_${company_no}" placeholder="Phone number with country code"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Why is He/She the best?</label>
-        <input type="text" class="form-control why_best_boss${company_no}" placeholder="Why is he/she the best?"/>
-      </div>
-
-       <div class="col-lg-12 col-md-12 mb-3 mt-5" style="width: 100%">
-        <label> Tell us some details about your best colleague from ${stringifyNumber(company_no)} company you worked</label>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Full name</label>
-        <input type="text" class="form-control best_colleague_name_${company_no}" placeholder="Full Name"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Email</label>
-        <input type="text" class="form-control best_colleague_email_${company_no}" placeholder="Email"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Phone number with country code</label>
-        <input type="text" class="form-control best_colleague_phone_${company_no}" placeholder="Phone number with country code"/>
-      </div>
-      <div class="col-lg-6 col-md-6 mb-3">
-        <label>Why is He/She the best?</label>
-        <input type="text" class="form-control why_best_colleague${company_no}" placeholder="Why is he/she the best?"/>
-      </div>
-      <div class="col-lg-12 col-md-12 mb-3">
-        <label>Are you still working for the same company?</label>
-        <select class="custom-select still_working_on_same_company_${company_no}">
-        <option value="0">Choose</option>
-        <option value="1">Yes</option>
-        <option value="2">No</option>
-        </select>
-      </div>
-  </div>
-
-  </div>`;
+      <div class="row company_details_${company_no}"></div>
+    </div>
+    `;
     $(".main_section").append(company_section_html);
     TOTAL_COMPANY_NO += 1;
-    this.set_promotion_section_html(company_no, 1);
-    this.on_change_still_working_on_same_company(company_no);
-    this.on_click_add_more_contact_person(company_no);
+      if (preselected_experience_type) {
+      this.on_change_experience_type(company_no, preselected_experience_type);
+    } else {
+      this.on_change_experience_type(company_no);
+    }
   },
   on_click_add_more_contact_person: function(company_no) {
     var company_contact_html = `
@@ -491,12 +418,18 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
     $('.btn-next-career-history').click(function(){
       $(`.section_${company_no-1}`).fadeOut();
       $('.next-btn').fadeOut();
+
+      var prev_type = $(`.fresher_experienced_select_${company_no-1}`).val();
       if($(`.section_${company_no}`).length){
         $(`.section_${company_no}`).delay(400).fadeIn();
       }
       else{
-        me.create_company_section_html(company_no);
-      }
+          if (prev_type === "Experienced") {
+          me.create_company_section_html(company_no, "Experienced");
+        } else {
+          me.create_company_section_html(company_no);
+        }
+        }
 
     });
   },
@@ -511,66 +444,84 @@ show_final_interest_step: function(TOTAL_COMPANY_NO) {
     });
   },
   // Function to get the current order of factors from the sortable table
-getRankedFactorsData:function() {
-    const rankedFactors = [];
-    const sortableList = document.getElementById('sortableRows'); // Get the tbody by its ID
+  getRankedFactorsData:function() {
+      const rankedFactors = [];
+      const sortableList = document.getElementById('sortableRows'); // Get the tbody by its ID
 
-    if (sortableList) {
-        // Iterate over each table row (<tr>) directly within the sortable tbody
-        Array.from(sortableList.children).forEach(function(row, index) {
-            // Find the cells containing the factor and description.
-            // Based on your HTML: <td>Rank</td> <td>Factor</td> <td>Description</td>
-            const factorCell = row.children[1]; // Second td for Factor
-            const descriptionCell = row.children[2]; // Third td for Description
+      if (sortableList) {
+          // Iterate over each table row (<tr>) directly within the sortable tbody
+          Array.from(sortableList.children).forEach(function(row, index) {
+              // Find the cells containing the factor and description.
+              // Based on your HTML: <td>Rank</td> <td>Factor</td> <td>Description</td>
+              const factorCell = row.children[1]; // Second td for Factor
+              const descriptionCell = row.children[2]; // Third td for Description
 
-            if (factorCell && descriptionCell) {
-                rankedFactors.push({
-                    // The rank is simply its current index + 1 in the reordered list
-                    rank: index + 1,
-                    factor: factorCell.textContent.trim(),
-                    description: descriptionCell.textContent.trim()
-                });
-            }
-        });
-    }
-    return rankedFactors;
-},
-
+              if (factorCell && descriptionCell) {
+                  rankedFactors.push({
+                      // The rank is simply its current index + 1 in the reordered list
+                      rank: index + 1,
+                      factor: factorCell.textContent.trim(),
+                      description: descriptionCell.textContent.trim()
+                  });
+              }
+          });
+      }
+      return rankedFactors;
+  },
   submit_career_history: function() {
     // Submit Career History
     var me = this;
     $('.btn-submit-career-history').click(function(){
-      var {career_histories, interest_reason} =  me.get_details_from_form();
-      var rank_and_factors = me.getRankedFactorsData()
-      
-      var isDefaultOrder = rank_and_factors.every(function(row, idx) {
-            return row.factor === DEFAULT_RANKED_FACTORS[idx];
-        });
+      var formData = me.get_details_from_form();
 
-      if (isDefaultOrder) {
-            return frappe.msgprint(frappe._("Please drag and rank the factors according to your preference before submitting."));
+      var fresher_args = null;
+      var exper_args = null;
+      var should_submit = false;
+      if (formData.fresher_details) {
+        // Fresher: build args
+        var fresherData = formData.fresher_details;
+        var rank_and_factors = fresherData.ranked_factors || [];
+        var interest_reason = fresherData.interest_reason;
+        var job_applicant = $('#job_applicant').attr("data");
+        fresher_args = {
+          job_applicant: job_applicant,
+          career_history_details: JSON.stringify([fresherData]),
+          best_references: JSON.stringify([]),
+          interest_reason: interest_reason,
+          rank_and_factors: JSON.stringify(rank_and_factors)
+        };
+        should_submit = !!job_applicant;
+      } else {
+        var {career_histories, interest_reason} =  formData;
+        var rank_and_factors = me.getRankedFactorsData();
+        var isDefaultOrder = rank_and_factors.every(function(row, idx) {
+              return row.factor === DEFAULT_RANKED_FACTORS[idx];
+          });
+        if (isDefaultOrder) {
+              return frappe.msgprint(frappe._("Please drag and rank the factors according to your preference before submitting."));
+          }
+        var all_best_references = me.get_all_best_references();
+        if(!validateResponsibilities(career_histories)){
+          return frappe.msgprint(frappe._("Kindly fill the responsibility for the most recent job"));
         }
-      var all_best_references = me.get_all_best_references();
-      if(!validateBestReferencesAndColleague(all_best_references)){
-        return frappe.msgprint(frappe._("Kindly fill the best reference for the most recent job"));
+        exper_args = {
+          job_applicant: $('#job_applicant').attr("data"),
+          career_history_details: JSON.stringify(career_histories),
+          best_references: JSON.stringify(all_best_references),
+          interest_reason: interest_reason,
+          rank_and_factors: JSON.stringify(rank_and_factors)
+        };
+        should_submit = $('#job_applicant').attr("data") && career_histories.length > 0;
       }
 
-      if(!validateResponsibilities(career_histories)){
-        return frappe.msgprint(frappe._("Kindly fill the responsibility for the most recent job"));
-      }
       // POST Career History if all the conditions are satisfied
-      if ($('#job_applicant').attr("data") && career_histories.length > 0){
+      var args_to_send = fresher_args || exper_args;
+      if (should_submit && args_to_send) {
         frappe.freeze();
         frappe.call({
           type: "POST",
           method: "one_fm.templates.pages.career_history.create_recruitment_documents",
-          args: {
-            job_applicant: $('#job_applicant').attr("data"),
-            career_history_details: career_histories,
-            best_references: all_best_references,
-            interest_reason: interest_reason,
-            rank_and_factors:rank_and_factors
-          },
+          args: args_to_send,
           btn: this,
           callback: function(r){
             frappe.unfreeze();
@@ -580,11 +531,10 @@ getRankedFactorsData:function() {
             }
           }
         });
-      }
-      else{
+      } else {
         frappe.msgprint(frappe._("Please fill all the details to submit the career history."));
       }
-    });
+  });
   },
   intro_btn: function(me) {
     // Create Comapany Section
@@ -614,60 +564,115 @@ getRankedFactorsData:function() {
   },
   get_details_from_form: function() {
     var career_histories = [];
-    
+    let fresher_details = null;
+    let isFresher = false;
+    // Check experience type for each company
+    let expType = null;
     for (let company_no = 1; company_no <= TOTAL_COMPANY_NO; company_no++) {
+      expType = $(`.fresher_experienced_select_${company_no}`).val();
+      if (expType === 'Fresher') {
+        isFresher = true;
+        // For fresher, check at least one activity type is selected (robust)
+        let learning_journey = [];
+        // Fix: check for any select with class containing 'activity_type_select_' and a value, regardless of company_no
+        let hasActivity = $(".learning-journey-items select").filter(function(){
+          return $(this).val() && $(this).attr('class') && $(this).attr('class').indexOf('activity_type_select_') !== -1;
+        }).length > 0;
+        $(`.learning-journey-items .learning-journey-item`).each(function() {
+          // Find the select and input for activity type and title inside this item
+          let activityType = $(this).find("select").filter(function(){
+            return $(this).attr('class') && $(this).attr('class').indexOf('activity_type_select_') !== -1;
+          }).val();
+          let activity_title = $(this).find("input").filter(function(){
+            return $(this).attr('class') && $(this).attr('class').indexOf('activity_title_') !== -1;
+          }).val();
+          let questions = [];
+          $(this).find("textarea").filter(function(){
+            return $(this).attr('class') && $(this).attr('class').indexOf('assessment_question_') !== -1;
+          }).each(function() {
+            let label = $(this).prev("label").text().trim();
+            let answer = $(this).val();
+            questions.push({ label: label, answer: answer });
+          });
+          if (activityType) {
+            learning_journey.push({
+              activity_type: activityType,
+              activity_title: activity_title,
+              questions: questions
+            });
+          }
+        });
+        if (!hasActivity) {
+          frappe.msgprint(frappe._("Please add at least one Learning and Development Activity Type."));
+          return {};
+        }
+        // Collect shoves and tugs
+        let shoves = $(`.shoves_input_${company_no}`).val();
+        let tugs = $(`.tugs_input_${company_no}`).val();
+        // Collect ranked factors
+        let ranked_factors = this.getRankedFactorsData ? this.getRankedFactorsData() : [];
+        // Collect interest reason
+        let interest_reason = $('[name="interest_reason"]').val();
+        // Collect factors in new job for Fresher
+        let factors_in_new_job = $(`.factors_in_new_job_${company_no}_text`).val();
+        // Collect Main Form Awards/Recognition for Fresher and validate if required
+        let main_awards_sel = $(`.main_awards_recognition_select_${company_no}`).val();
+        let main_awards_details = $(`.main_award_recognition_details_${company_no}`).val();
+        if(main_awards_sel === 'Yes' && !main_awards_details){
+          frappe.msgprint(frappe._("Please provide Award/Recognition Details in the main section."));
+          return {};
+        }
+        fresher_details = {
+          expType: expType,
+          learning_journey: learning_journey,
+          shoves: shoves,
+          tugs: tugs,
+          ranked_factors: ranked_factors,
+          interest_reason: interest_reason,
+          factors_in_new_job: factors_in_new_job,
+          have_you_received_any_awards_or_recognition_main: main_awards_sel,
+          awards_or_recognition_details_main: main_awards_details
+        };
+        break; // Only one fresher section expected
+      }
+      // Experienced: run all validations as before
       var career_history = {};
-      
       career_history['company_name'] = $(`.company_${company_no}_name`).val();
       career_history['country_of_employment'] = $(`.country_of_company_${company_no}`).val();
       career_history['start_date'] = $(`.joined_company${company_no}`).val();
       career_history['monthly_salary_in_kwd'] = $(`.salary_company${company_no}`).val();
       career_history['responsibility_one'] = $(`.responsibilities_company_${company_no}`).val();
+      career_history['major_accomplishment'] = $(`.accomplishment_company_${company_no}`).val();
       career_history['job_title'] = $(`.starting_job_title_company_${company_no}`).val();
       career_history['employment_type'] = $(`.employment_type_company_${company_no}`).val();
-
       career_history['first_contact_name'] = $(`.first_contact_name_${company_no}`).val();
       career_history['first_contact_email'] = $(`.first_contact_email_${company_no}`).val();
       career_history['first_contact_phone'] = $(`.first_contact_phone_${company_no}`).val();
       career_history['first_contact_designation'] = $(`.first_contact_designation_${company_no}`).val();
-
       career_history['second_contact_name'] = $(`.second_contact_name_${company_no}`).val();
       career_history['second_contact_email'] = $(`.second_contact_email_${company_no}`).val();
       career_history['second_contact_phone'] = $(`.second_contact_phone_${company_no}`).val();
-      career_history['second_contact_designation'] = $(`.second_contact_designation_${company_no}`).val(); 
-
+      career_history['second_contact_designation'] = $(`.second_contact_designation_${company_no}`).val();
+      career_history['expType'] = expType;
       if(!career_history['start_date']){
-        return frappe.msgprint(frappe._("Kindly fill the date of joining field."));
+        frappe.msgprint(frappe._("Kindly fill the date of joining field."));
+        return {};
       }
-      
-      /*
-        Still working in same company
-        value="1" if selected 'Yes'
-        value="2" if selected 'No'
-      */
       if($(`.still_working_on_same_company_${company_no}`).val() == 1){
         career_history['reason_for_leaving_job'] = $(`.reason_why_leave_job_${company_no}_text`).val();
       }
       else{
         career_history['left_the_company'] = $(`.when_did_you_left_${company_no}_date`).val();
         if(validateEndDate(career_history['left_the_company'])){
-          return frappe.msgprint(frappe._("Kindly fill the when did you leave the company field."));
+          frappe.msgprint(frappe._("Kindly fill the when did you leave the company field."));
+          return false;
         }
       }
       career_history['factors_in_new_job'] = $(`.factors_in_new_job_${company_no}_text`).val();
-
-      // Set Promotion Details
       var max_promotion = PROMOTIONS_IN_COMPANY[company_no];
       var promotions = [];
       for (let promotion_no = 1; promotion_no <= max_promotion; promotion_no++) {
         var promotion = {};
-        /*
-        Got any Promotion or Salary Increase
-        value="0" if selected 'No, I did not get any promotion or salary increase'
-        value="1" if selected 'Yes, I Got a Promotion with a Salary Increase'
-        value="2" if selected 'Yes, Only Got a Promotion'
-        value="3" if selected 'Yes, Only Got a Salary Increase'
-        */
         var got_promoted = $(`.promotion_select_${company_no}${promotion_no}`).val();
         if(got_promoted > 0){
           promotion['start_date'] = $(`.date_of_promotion_${company_no}${promotion_no}`).val();
@@ -675,17 +680,64 @@ getRankedFactorsData:function() {
         if(got_promoted == 1){
           promotion['job_title'] = $(`.position_${company_no}${promotion_no}`).val();
           promotion['monthly_salary_in_kwd'] = $(`.salary_${company_no}${promotion_no}`).val();
+          promotion['reason_for_promotion'] = $(`.reason_for_promotion_${company_no}${promotion_no}`).val();
+          promotion['reason_for_increment'] = $(`.reason_for_increment_${company_no}${promotion_no}`).val();
+          if(!promotion['reason_for_promotion'] || !promotion['reason_for_increment']){
+            frappe.msgprint(frappe._("Please provide both Reason for Promotion and Reason for Increment for your promotion with salary increase."));
+            return {};
+          }
         }
         else if(got_promoted == 2){
           promotion['job_title'] = $(`.position_${company_no}${promotion_no}`).val();
+          promotion['reason_for_promotion'] = $(`.reason_for_promotion_${company_no}${promotion_no}`).val();
+          if(!promotion['reason_for_promotion']){
+            frappe.msgprint(frappe._("Please provide the Reason for Promotion."));
+            return {};
+          }
         }
         else if(got_promoted == 3){
           promotion['monthly_salary_in_kwd'] = $(`.salary_${company_no}${promotion_no}`).val();
+          promotion['reason_for_increment'] = $(`.reason_for_increment_${company_no}${promotion_no}`).val();
+          if(!promotion['reason_for_increment']){
+            frappe.msgprint(frappe._("Please provide the Reason for Increment."));
+            return {};
+          }
         }
         promotions.push(promotion);
       }
       career_history['promotions'] = promotions;
-
+      // Additional Responsibilities mapping when Experienced and scope changes selected
+      var scope_change_val = $(`.scope_changes_select_${company_no}`).val();
+      if(scope_change_val === 'Yes'){
+        var scope_details = $(`.scope_changes_details_${company_no}`).val();
+        if(!scope_details){
+          frappe.msgprint(frappe._("Please describe the scope changes or additional responsibilities."));
+          return {};
+        }
+        career_history['additional_responsibilities'] = scope_details;
+      }
+      // Awards/Recognition in Work Experience Details
+      var awards_sel = $(`.awards_recognition_select_${company_no}`).val();
+      var awards_details = $(`.award_recognition_details_${company_no}`).val();
+      if(awards_sel === 'Yes' && !awards_details){
+        frappe.msgprint(frappe._("Please provide Award/Recognition Details."));
+        return {};
+      }
+      if(awards_sel){
+        career_history['have_you_received_any_awards_or_recognition'] = awards_sel;
+        career_history['awards_or_recognition_details'] = awards_details;
+      }
+      // Main Form Awards/Recognition (conditional placement)
+      var main_awards_sel = $(`.main_awards_recognition_select_${company_no}`).val();
+      var main_awards_details = $(`.main_award_recognition_details_${company_no}`).val();
+      if(main_awards_sel === 'Yes' && !main_awards_details){
+        frappe.msgprint(frappe._("Please provide Award/Recognition Details in the main section."));
+        return {};
+      }
+      if(main_awards_sel){
+        career_history['have_you_received_any_awards_or_recognition_main'] = main_awards_sel;
+        career_history['awards_or_recognition_details_main'] = main_awards_details;
+      }
       career_histories.push(career_history);
     }
     let interest_reason = $('[name="interest_reason"]').val();
@@ -695,9 +747,339 @@ getRankedFactorsData:function() {
     let continuing_growth_rate = $('[name="continuing_growth_rate"]').val();
     let jobstretch_and_learning = $('[name="jobstretch_and_learning"]').val();
     let work_life_balance = $('[name="work_life_balance"]').val();
-    return {career_histories, interest_reason,project_and_technology, manager_and_team,compensation,continuing_growth_rate,jobstretch_and_learning,work_life_balance};
+    if (isFresher && fresher_details) {
+      return { fresher_details, expType };
+    }
+    return {career_histories, interest_reason, expType, project_and_technology, manager_and_team,compensation,continuing_growth_rate,jobstretch_and_learning,work_life_balance};
+  },
+  on_change_experience_type: function (company_no, forced_type = null) {
+    const me = this;
+    if (forced_type) {
+      setTimeout(function() {
+        $(`.fresher_experienced_select_${company_no}`).val(forced_type).trigger('change');
+      }, 0);
+    }
+    $(`.fresher_experienced_select_${company_no}`).on('change', function() {
+      const selectedExperienceType = forced_type || $(this).val();
+      const companyDetailsElement = $(`.company_details_${company_no}`);
+      if (selectedExperienceType === 'Fresher') {
+        heading_html = '<h3 class="mx-auto">Hello, {{job_applicant.applicant_name}}, tell us about your learning and development journey!</h3>';
+        $(`.section_${company_no} h3.mx-auto`).replaceWith($(heading_html));
+         $('.next-btn').remove();
+        const fresherDetailsHTML = `
+        <div class="learning-journey-block my-3 col-lg-12 col-md-12">
+          <h6 class="learning-journey-heading">
+            Learning and Development Journey
+          </h6>
+          <div class="learning-journey-items mb-5"></div>
+          <button class="btn btn-primary mb-3 add-learning-and-development-journey">Add Learning and Development Journey</button>
+          ${get_shoves_tugs_html(company_no)}
+        </div>
+        ${me.main_awards_section_html(company_no)}
+        <div class="mx-auto col-lg-12 col-md-12 factors_in_new_job_${company_no}">
+          <label class="form-label">What are the factors you are looking for in a new job?</label>
+          <textarea rows="4" cols="50" name="comment" form="usrform" class="form-control factors_in_new_job_${company_no}_text"></textarea>
+        </div>
+        `;
+        companyDetailsElement.html(fresherDetailsHTML);
+        me.on_click_add_learning_and_development_journey(company_no);
+        me.bind_main_awards_recognition(company_no);
+        me.show_final_interest_step(company_no); // Reuse for Freshers
+          // Show submit button by default for Fresher
+          $('.submit-btn').fadeIn();
+      } else if (selectedExperienceType === 'Experienced') {
+         heading_html = '<h3 class="mx-auto">Hello, {{job_applicant.applicant_name}}, tell us about the ' + stringifyNumber(company_no) + ' company you worked for!</h3>';
+      $(`.section_${company_no} h3.mx-auto`).replaceWith($(heading_html));
+        $('.final-interest-section').remove();
+        $('.submit-btn').fadeOut();
+        const experienceDetailsHTML = `
+        <div class="my-3 col-lg-12 col-md-12">
+          <label class="form-label">What was the company's name? </label>
+          <input
+            type="text"
+            class="form-control company_${company_no}_name"
+            placeholder="Enter the ${stringifyNumber(company_no)} Company Name"
+          />
+        </div>
+        <div class="my-3 col-lg-12 col-md-12">
+          <label class="form-label">Which country did you get employed in?</label> <br>
+              <select class="form-control country_of_company_${company_no}">
+              <option>Select Country</option>
+              {% for country in country_list %}
+              <option>{{country.name}}</option>
+              {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12">
+          <label class="form-label">When did you join the company?</label>
+          <input type="date" class="form-control joined_company${company_no}" />
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12">
+          <label class="form-label">What was your first salary at this company?</label>
+          <input
+            type="text"
+            class="form-control salary_company${company_no}"
+            placeholder="Enter your Salary in KWD"
+          />
+        </div>
+        <div class="col-lg-12 col-md-12">
+          <hr class="my-5" />
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12">
+          <label class="form-label">What was your starting job title?</label>
+          <input
+            type="text"
+            class="form-control starting_job_title_company_${company_no}"
+            placeholder="Enter the Job Title"
+          />
+        </div>
+        <div class="col-lg-12 col-md-12 mb-3">
+          <label class="form-label">What was your employment type?</label>
+            <select class="custom-select employment_type_company_${company_no}">
+            <option value="" disabled selected>Select Employment Type</option>
+              {% for type in employment_type_list %}
+              <option value="{{ type }}">{{ type }}</option>
+              {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12">
+          <label class="form-label"
+            >Briefly describe your responsibilities in this role</label>
+          <textarea
+            class="form-control responsibilities_company_${company_no}"
+            rows="4"
+            placeholder="E.g. Managed a team of 5, handled client reports, etc."
+          ></textarea>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12">
+          <label class="form-label"
+            >Briefly describe your major accomplishment in this role</label>
+          <textarea
+            class="form-control accomplishment_company_${company_no}"
+            rows="4"
+            placeholder="E.g. Managed a team of 5, handled client reports, etc."
+          ></textarea>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12 scope_changes_block_${company_no}">
+          <label class="form-label">Were there any additional responsibilities given or scope changes?</label>
+          <select class="custom-select scope_changes_select_${company_no}">
+            <option value="">Blank</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12 scope_changes_details_block_${company_no}" style="display:none;">
+          <label class="form-label">Briefly describe any scope changes or additional responsibilities<span style="color: red">*</span></label>
+          <textarea class="form-control scope_changes_details_${company_no}" rows="3" placeholder="e.g., Assigned to larger/critical projects, increased team size, or regional expansion."></textarea>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12 awards_block_${company_no}">
+          <label class="form-label">Have you received any awards or recognition?</label>
+          <select class="custom-select awards_recognition_select_${company_no}">
+            <option value="">Select</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div class="mb-3 col-lg-12 col-md-12 awards_details_block_${company_no}" style="display:none;">
+          <label class="form-label">Award/Recognition Details<span style="color: red">*</span></label>
+          <textarea class="form-control award_recognition_details_${company_no}" rows="3" placeholder="Describe the award or recognition..."></textarea>
+        </div>
+        <div class="mt-5 promotion_section_${company_no}" style="width: 100%"></div>
+        <div class="col-lg-12 col-md-12 mb-3">
+          <label>Tell us about contact person details from ${stringifyNumber(company_no)} company you worked!</label>
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Full name</label>
+          <input type="text" class="form-control first_contact_name_${company_no}" placeholder="Full Name" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Email</label>
+          <input type="text" class="form-control first_contact_email_${company_no}" placeholder="Email" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Designation</label>
+          <input type="text" class="form-control first_contact_designation_${company_no}" placeholder="Designation" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Phone number with country code</label>
+          <input type="text" class="form-control first_contact_phone_${company_no}" placeholder="Phone number with country code" />
+        </div>
+        <div class="col-lg-12 col-md-12 mb-3 add_more_contact_${company_no}">
+          <button class="btn btn-dark float-left btn_add_more_contact_${company_no}" type="button">+ Add more contact person</button>
+        </div>
+        <div class="col-lg-12 col-md-12 mb-3">
+          <label>Tell us some details about your best boss from ${stringifyNumber(company_no)} company you worked</label>
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Full name</label>
+          <input type="text" class="form-control best_boss_name_${company_no}" placeholder="Full Name" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Email</label>
+          <input type="text" class="form-control best_boss_email_${company_no}" placeholder="Email" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Phone number with country code</label>
+          <input type="text" class="form-control best_boss_phone_${company_no}" placeholder="Phone number with country code" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Why is He/She the best?</label>
+          <input type="text" class="form-control why_best_boss${company_no}" placeholder="Why is he/she the best?" />
+        </div>
+        <div class="col-lg-12 col-md-12 mb-3 mt-5" style="width: 100%">
+          <label>Tell us some details about your best colleague from ${stringifyNumber(company_no)} company you worked</label>
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Full name</label>
+          <input type="text" class="form-control best_colleague_name_${company_no}" placeholder="Full Name" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Email</label>
+          <input type="text" class="form-control best_colleague_email_${company_no}" placeholder="Email" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Phone number with country code</label>
+          <input type="text" class="form-control best_colleague_phone_${company_no}" placeholder="Phone number with country code" />
+        </div>
+        <div class="col-lg-6 col-md-6 mb-3">
+          <label>Why is He/She the best?</label>
+          <input type="text" class="form-control why_best_colleague${company_no}" placeholder="Why is he/she the best?" />
+        </div>
+        <div class="col-lg-12 col-md-12 mb-3">
+          <label>Are you still working for the same company?</label>
+          <select class="custom-select still_working_on_same_company_${company_no}">
+            <option value="0">Choose</option>
+            <option value="1">Yes</option>
+            <option value="2">No</option>
+          </select>
+        </div>
+        `;
+        companyDetailsElement.html(experienceDetailsHTML);
+        me.set_promotion_section_html(company_no, 1);
+        me.on_change_still_working_on_same_company(company_no);
+        me.on_click_add_more_contact_person(company_no);
+        me.bind_scope_changes(company_no);
+        me.bind_awards_recognition(company_no);
+      }
+    })
+  },
+  bind_scope_changes: function(company_no) {
+    $(`.scope_changes_select_${company_no}`).on('change', function(){
+      var val = $(this).val();
+      if(val === 'Yes'){
+        $(`.scope_changes_details_block_${company_no}`).show();
+      } else {
+        $(`.scope_changes_details_block_${company_no}`).hide();
+        $(`.scope_changes_details_${company_no}`).val("");
+      }
+    });
+  },
+  bind_awards_recognition: function(company_no) {
+    $(`.awards_recognition_select_${company_no}`).on('change', function(){
+      var val = $(this).val();
+      if(val === 'Yes'){
+        $(`.awards_details_block_${company_no}`).show();
+      } else {
+        $(`.awards_details_block_${company_no}`).hide();
+        $(`.award_recognition_details_${company_no}`).val("");
+      }
+    });
+  },
+  main_awards_section_html: function(company_no){
+    return `<div class="mx-auto col-lg-12 col-md-12 mb-3 main_awards_section_${company_no}">
+      <label class="form-label">Have you received any awards or recognition?</label>
+      <select class="custom-select main_awards_recognition_select_${company_no}">
+        <option value="">Select</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+      <div class="mb-3 col-lg-12 col-md-12 main_awards_details_block_${company_no}" style="display:none; margin-top:10px;">
+        <label class="form-label">Award/Recognition Details<span style="color: red">*</span></label>
+        <textarea class="form-control main_award_recognition_details_${company_no}" rows="3" placeholder="Describe the award or recognition..."></textarea>
+      </div>
+    </div>`;
+  },
+  bind_main_awards_recognition: function(company_no){
+    $(`.main_awards_recognition_select_${company_no}`).on('change', function(){
+      var val = $(this).val();
+      if(val === 'Yes'){
+        $(`.main_awards_details_block_${company_no}`).show();
+      } else {
+        $(`.main_awards_details_block_${company_no}`).hide();
+        $(`.main_award_recognition_details_${company_no}`).val("");
+      }
+    });
+  },
+  on_click_add_learning_and_development_journey: function(company_no) {
+    const me = this;
+    let activityTypes = [];
+
+    frappe.call({
+      method: "one_fm.utils.get_experience_types",
+      callback: function (r) {
+        activityTypes = r.message;
+      },
+    });
+
+    $(`.add-learning-and-development-journey`).click(function(e) {
+      e.preventDefault();
+
+      const learningJourneyItemsContainer = $(`.learning-journey-items`);
+      const currentItemCount = learningJourneyItemsContainer.children().length;
+
+      const learningJourneyItem = `
+        <div class="learning-journey-item mb-3" data-item-index="${currentItemCount + 1}">
+          <div class="mb-3">
+            <label class="form-label">Select the Learning Activity you have been engaged in</label>
+            <select class="form-control activity_type_select_${company_no}_${currentItemCount + 1}">
+              <option value="" selected disabled>None</option>
+              ${activityTypes.map(type => `<option value="${type.name}">${type.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="assessment-questions"></div>
+        </div>
+      `;
+
+      learningJourneyItemsContainer.append(learningJourneyItem);
+
+      me.on_change_learning_and_development_journey_activity_type(company_no, currentItemCount + 1);
+    })
+  },
+  on_change_learning_and_development_journey_activity_type: function(company_no, item_no) {
+    $(`.activity_type_select_${company_no}_${item_no}`).on('change', function() {
+      const selectedActivityType = $(this).val();
+      if (selectedActivityType) {
+        frappe.call({
+          method: "one_fm.templates.pages.career_history.get_experience_types",
+          args: {
+            name: selectedActivityType
+          },
+          callback: function(r) {
+            const assessmentQuestions = r.message.experience_type_question || [];
+            const questionsContainer = $(`.activity_type_select_${company_no}_${item_no}`).closest('.learning-journey-item').find('.assessment-questions');
+            let questionsHTML = `
+              <div class="mb-3">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-control activity_title_${company_no}_${item_no}" placeholder="Enter title..." />
+              </div>
+            `;
+            r.message.forEach((question, index) => {
+              questionsHTML += `
+                <div class="mb-3">
+                  <label class="form-label">${question.experience_type_question}</label>
+                  <textarea class="form-control assessment_question_${company_no}_${item_no}_${index + 1}" rows="2" placeholder="Your answer..."></textarea>
+                </div>
+              `;
+            });
+            questionsContainer.html(questionsHTML);
+          }
+        });
+      }
+    });
   }
 });
+
+
 
 function stringifyNumber(n) {
   var special = ['Zeroth', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth', 'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth', 'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth'];
@@ -723,14 +1105,26 @@ function validateEndDate(data){
   return !data;
 }
 
-function validateBestReferencesAndColleague(data) {
-  if (data.length === 0) {
-    return true;
-  }
-  const lastObject = data[data.length - 1];
-  const isBossValid = lastObject.best_boss_name && lastObject.best_boss_name.trim() !== '';
-  const isColleagueValid = lastObject.best_colleague_name && lastObject.best_colleague_name.trim() !== '';
-
-  return isBossValid && isColleagueValid;
-
-  }
+// Helper to generate Shoves and Tugs block HTML
+function get_shoves_tugs_html(company_no) {
+  return `<div class="shoves-tugs-block my-3 col-lg-12 col-md-12">
+    <div class="mb-3">
+      <label class="form-label">Shoves</label>
+      <small class="text-muted d-block" style="font-size: 0.75rem; line-height:1.1; margin-top:4px;">Factors that push you away from a job; Eg: toxic environment, no appreciation, no growth in a role</small>
+      <textarea
+        class="form-control shoves_input_${company_no}"
+        rows="2"
+        placeholder="Describe your shoves..."
+      ></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Tugs</label>
+      <small class="text-muted d-block" style="font-size: 0.75rem; line-height:1.1; margin-top:4px;">Factors that pull you towards a job; Eg: work-life balance, flexible hours, a good career move.</small>
+      <textarea
+        class="form-control tugs_input_${company_no}"
+        rows="2"
+        placeholder="Describe your tugs..."
+      ></textarea>
+    </div>
+  </div>`;
+}

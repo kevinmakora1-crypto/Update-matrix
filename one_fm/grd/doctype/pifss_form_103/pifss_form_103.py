@@ -94,12 +94,12 @@ class PIFSSForm103(Document):
 		"""
 		runs: `validate`
 		param: PIFSS_for_103 object
-		This method is fetching values of grd supervisor or pifss operator from GRD settings
+		This method is fetching values of grd supervisor or pifss operator from HR Settings
 		"""
 		if not self.grd_supervisor:
-			self.grd_supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
+			self.grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
 		if not self.grd_operator:
-			self.grd_operator = frappe.db.get_single_value("GRD Settings", "default_grd_operator_pifss")
+			self.grd_operator = frappe.db.get_single_value("HR Settings", "default_grd_operator_pifss")
 
 	def set_date(self):
 		"""
@@ -270,8 +270,8 @@ def notification_reminder(pifss_103_list):
 		pifss_103_list ([list of objects]): [list of objects having `Awaiting Response` workflow state]
 	"""
 	message_list=[]
-	grd_user = frappe.db.get_single_value("GRD Settings", "default_grd_operator_pifss")
-	grd_supervisor = frappe.db.get_single_value("GRD Settings", "default_grd_supervisor")
+	grd_user = frappe.db.get_single_value("HR Settings", "default_grd_operator_pifss")
+	grd_supervisor = frappe.db.get_single_value("HR Settings", "default_grd_supervisor")
 	for pifss_103 in pifss_103_list:
 		page_link = get_url(pifss_103.get_url())
 		message = "<a href='{0}'>{1}</a>".format(page_link, pifss_103.civil_id)

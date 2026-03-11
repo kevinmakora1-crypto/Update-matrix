@@ -1,5 +1,6 @@
 # Copyright (c) 2024, ONE FM and contributors
 # For license information, please see license.txt
+import calendar
 import frappe
 from collections import defaultdict
 from frappe.model.document import Document
@@ -8,15 +9,38 @@ from frappe.query_builder import DocType
 from frappe.query_builder.functions import Count
 from frappe.utils import getdate, get_first_day, get_last_day, add_days, add_months, nowdate
 
+
+def get_weekend_reliever_threshold(month_date):
+	"""
+	Dynamically compute the Weekend Reliever threshold based on the total days
+	in the calendar month of *month_date*.
+
+	- Month with 31 days  (Jan, Mar, May, Jul, Aug, Oct, Dec) → 27
+	- Month with ≤ 30 days (Feb, Apr, Jun, Sep, Nov)           → 26
+
+	This value overrides the static 'weekend_reliever_default_shift_checker_threshold'
+	stored in ONEFM General Setting.
+	"""
+	date = getdate(month_date)
+	_, days_in_month = calendar.monthrange(date.year, date.month)
+	return 27 if days_in_month == 31 else 26
+
 class DefaultShiftChecker(Document):
 	def on_submit(self):
 		self.update_employee_shift_details()
+
+	def before_submit(self):
+		if self.status != "Completed":
+			frappe.throw(_("Please ensure that the status is set to Completed"))
 
 	def update_employee_shift_details(self):
 		"""
 			Updates the employee's shift or reliever status based on the action type.
 		"""
 		employee = frappe.get_doc("Employee", self.employee)
+
+		if self.action_type == "Update Employee's Roster":
+			return # No action needed for roster update
 
 		field_updates = {
 			"Shift Allocation Update": {
@@ -42,8 +66,6 @@ class DefaultShiftChecker(Document):
 		if self.action_type in field_updates:
 			employee.update(field_updates[self.action_type])
 			employee.save()
-
-		self.db_set("status", "Completed")
 
 
 def create_default_shift_checker():
@@ -87,8 +109,12 @@ def create_checker(start_date, end_date, is_day_off_reliever=False, is_weekend_r
 	if is_day_off_reliever: threshold_field = "day_off_reliever_default_shift_checker_threshold"
 	elif is_weekend_reliever: threshold_field = "weekend_reliever_default_shift_checker_threshold"
 
-
 	threshold = frappe.db.get_single_value("ONEFM General Setting", threshold_field) or 0
+
+	# For Weekend Relievers, override the static setting with a dynamic threshold
+	# that accounts for the actual number of days in the relevant month.
+	if is_weekend_reliever:
+		threshold = get_weekend_reliever_threshold(start_date)
 	child_table_field_name = "reliever_assigned_to_the_same_shift" if is_reliever else "assigned_shifts_outside_default_shift"
 
 	# Start building conditions
@@ -127,7 +153,7 @@ def create_checker(start_date, end_date, is_day_off_reliever=False, is_weekend_r
 		)
 		.where(conditions)
 		.groupby(Employee.name)
-		.having(Count(EmployeeSchedule.shift) > threshold)
+		.having(Count(EmployeeSchedule.shift) >= threshold)
 	)
 
 	# Create Default Shift Checker records
@@ -149,27 +175,33 @@ def create_checker(start_date, end_date, is_day_off_reliever=False, is_weekend_r
 			doc.start_date = start_date
 			doc.end_date = end_date
 			doc.repeat_count = (yesterday_repeat_count or 0) + 1
-			doc.site_supervisor = frappe.db.get_value("Operations Site", employee.default_site, "account_supervisor")
-
-			if is_day_off_reliever:
-				doc.is_day_off_reliever = 1
-			if is_weekend_reliever:
-				doc.is_weekend_reliever = 1
+			doc.site_supervisor = frappe.db.get_value("Operations Site", employee.default_site, "site_supervisor")
 
 			# Determine shift condition
 			shift_condition = (EmployeeSchedule.shift == employee.default_shift) if is_reliever else (EmployeeSchedule.shift != employee.default_shift)
 			shifts = get_shift_assignments(employee.employee, shift_condition, start_date, end_date, EmployeeSchedule)
 
+			count = 0
 			for shift_name, data in shifts.items():
+				count += data["count"]
 				doc.append(child_table_field_name, {
 					"operations_shift": shift_name,
 					"schedule_dates": data["dates"],
 					"count": data["count"]
 				})
 
+			if is_day_off_reliever:
+				doc.is_day_off_reliever = 1
+				doc.comment = f"The Day OFF Reliever is scheduled for {count} day(s) in the same shift. Either re-assign the excess days to a different shift or if the current assignment is long-term, remove the employee from the Day OFF Reliever role."
+			elif is_weekend_reliever:
+				doc.is_weekend_reliever = 1
+				doc.comment = f"The Weekend Reliever is scheduled for {count} day(s) in the same shift. Either re-assign the excess days to a different shift or if the current assignment is long-term, remove the employee from the Weekend Reliever role."
+			else:
+				doc.comment = f"Employee is scheduled {count} day(s) outside their defined default shift allocation. Either relocate the shift to match the employee's default shift allocation or update the employee's default shift allocation."
+
 			doc.insert()
 		except Exception as e:
-			frappe.log_error("Default Shift Checker Error", str(e))
+			frappe.log_error(title="Default Shift Checker Error", message=str(e))
 
 
 def get_shift_assignments(employee_id, shift_condition, start_date, end_date, EmployeeSchedule):

@@ -582,6 +582,8 @@ def create_employee_schedule_from_request(doc, date):
 
 
 def assign_day_off(shift_request):
+    current_user = frappe.session.user
+    frappe.set_user("Administrator")
     shift_assignment = frappe.get_list('Shift Assignment',
                                        {'employee': shift_request.employee, 'start_date': shift_request.from_date, 'roster_type': "Basic"},
                                        ['name', "start_date"])
@@ -596,6 +598,8 @@ def assign_day_off(shift_request):
     if employee_schedule:
         for es in employee_schedule:
             schedule = frappe.get_doc("Employee Schedule", es.name)
+            schedule.reference_doctype = "Shift Request"
+            schedule.reference_docname = shift_request.name
             schedule.employee_availability = 'Day Off'
             schedule.save(ignore_permissions=True)
     else:
@@ -606,9 +610,12 @@ def assign_day_off(shift_request):
             schedule = frappe.new_doc("Employee Schedule")
             schedule.employee = shift_request.employee
             schedule.date = start_date
+            schedule.reference_doctype = "Shift Request"
+            schedule.reference_docname = shift_request.name
             schedule.employee_availability = 'Day Off'
             schedule.save(ignore_permissions=True)
             start_date += delta
+    frappe.set_user(current_user)
     frappe.db.commit()
 
 def assign_client_day_off(shift_request):

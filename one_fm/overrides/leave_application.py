@@ -85,9 +85,20 @@ def is_app_user(emp):
 
 class LeaveApplicationOverride(LeaveApplication):
     def onload(self):
-        leave_attendances = frappe.db.get_all("Attendance", {"leave_application": self.name}, "name")
+        super(LeaveApplicationOverride, self).onload()
+        leave_attendances_count = 0
+        if self.from_date and self.to_date and self.employee:
+            leave_attendances_count = frappe.db.count(
+                "Attendance",
+                {
+                    "employee": self.employee,
+                    "attendance_date": ["between", (self.from_date, self.to_date)],
+                    "leave_application": self.name,
+                    "docstatus": ["<", 2]
+                }
+            )
         attendance_not_created = False
-        if self.total_leave_days > len(leave_attendances):
+        if flt(self.total_leave_days) > leave_attendances_count:
             attendance_not_created = True
         self.set_onload("attendance_not_created", attendance_not_created)
 

@@ -25,7 +25,8 @@
   "post_description",
   "section_break_14",
   "skills",
-  "designations"
+  "designations",
+  "operations_post_activation"
  ],
  "fields": [
   {
@@ -101,7 +102,8 @@
    "fieldtype": "Link",
    "label": "Operations Role",
    "options": "Operations Role",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "depends_on": "site_shift",
@@ -151,7 +153,8 @@
    "default": "Today",
    "fieldname": "start_date",
    "fieldtype": "Date",
-   "label": "Start Date"
+   "label": "Start Date",
+   "mandatory_depends_on": "eval:doc.status==\"Active\""
   },
   {
    "fetch_from": "project.expected_end_date",
@@ -159,14 +162,22 @@
    "fieldname": "end_date",
    "fieldtype": "Date",
    "label": "End Date"
+  },
+  {
+   "fieldname": "operations_post_activation",
+   "fieldtype": "Table",
+   "label": "Operations Post Activation",
+   "options": "Operations Post Activation",
+   "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "links": [],
- "modified": "2025-07-04 10:48:37.464794",
+ "modified": "2026-03-10 15:50:39.869781",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Operations Post",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -260,6 +271,7 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "search_fields": "site_shift, post_template",
  "sort_field": "modified",
  "sort_order": "DESC",

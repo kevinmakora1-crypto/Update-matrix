@@ -38,11 +38,24 @@ class OperationsPost(Document):
         if (self.status=='Active' and frappe.db.exists("Operations Site", {'name':self.site, 'status':'Inactive'})):
             frappe.throw(f"You cannot make this post active because Operations Site '{self.site}' is Inactive.")
 
+        self.update_post_activation_date()
 
     def validate_operations_role_status(self):
         if self.status == 'Active' and self.post_template \
             and frappe.db.get_value('Operations Role', self.post_template, 'status') != 'Active':
             frappe.throw(_("The Operations Role <br/>'<b>{0}</b>' selected in the Post '<b>{1}</b>' is <b>Inactive</b>. <br/> To make the Post atcive first make the Role active".format(self.post_template, self.name)))
+
+    def update_post_activation_date(self):
+        if not self.is_new() and self.has_value_changed("status"):
+            old_status = self.get_doc_before_save().status
+            if old_status == "Active" and self.status == "Inactive":
+                if self.start_date or self.end_date:
+                    self.append("operations_post_activation", {
+                        "operations_post_start_date": self.start_date,
+                        "operations_post_end_date": self.end_date
+                    })
+                    self.start_date = None
+                    self.end_date = None
 
     def on_update(self):
         self.validate_name()

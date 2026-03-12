@@ -106,8 +106,26 @@ class ClientEvent(Document):
 	def on_cancel(self):
 		self.validate_workflow_transition()
 
+	def on_submit(self):
+		if self.workflow_state == "Approved":
+			self.generate_employee_schedules()
+
 	def on_update_after_submit(self):
 		self.validate_workflow_transition()
+		if self.has_value_changed("workflow_state") and self.workflow_state == "Approved":
+			self.generate_employee_schedules()
+
+	def generate_employee_schedules(self):
+		event_staffs = frappe.get_all(
+			"Event Staff",
+			filters={"client_event": self.name, "docstatus": 1},
+			fields=["name"]
+		)
+		if not event_staffs:
+			return
+		for event_staff in event_staffs:
+			event_staff_doc = frappe.get_doc("Event Staff", event_staff.name)
+			event_staff_doc.process_employee_schedules()
 
 	@frappe.whitelist()
 	def add_event_staff(self, staff):

@@ -16,19 +16,19 @@ class ClientEvent(Document):
 			return
 		if self.workflow_state == "Approved":
 			return
-		now = now_datetime()
+		today_date = getdate(today())
 
-		# Rule 1: Start Date or Start Datetime must be in the future
-		if self.start_date and get_datetime(self.start_date) < now:
-			frappe.throw("The scheduled event time must be a future date/time. Please adjust the event details.")
-		if self.event_start_datetime and get_datetime(self.event_start_datetime) < now:
-			frappe.throw("The scheduled event time must be a future date/time. Please adjust the event details.")
+		# Rule 1: Start Date or Start Datetime must be current or future date
+		if self.start_date and getdate(self.start_date) < today_date:
+			frappe.throw("The scheduled event time must be current or future date/time. Please adjust the event details.")
+		if self.event_start_datetime and getdate(self.event_start_datetime) < today_date:
+			frappe.throw("The scheduled event time must be current or future date/time. Please adjust the event details.")
 
-		# Rule 2: End Date or End Datetime must be in the future
-		if self.end_date and get_datetime(self.end_date) < now:
-			frappe.throw("The scheduled end date/time must be a future date/time. Please adjust the event details.")
-		if self.event_end_datetime and get_datetime(self.event_end_datetime) < now:
-			frappe.throw("The scheduled end date/time must be a future date/time. Please adjust the event details.")
+		# Rule 2: End Date or End Datetime must be current or future date
+		if self.end_date and getdate(self.end_date) < today_date:
+			frappe.throw("The scheduled end date/time must be current or future date/time. Please adjust the event details.")
+		if self.event_end_datetime and getdate(self.event_end_datetime) < today_date:
+			frappe.throw("The scheduled end date/time must be current or future date/time. Please adjust the event details.")
 
 		# Rule 3: End must be after Start
 		if self.start_date and self.end_date and get_datetime(self.end_date) < get_datetime(self.start_date):

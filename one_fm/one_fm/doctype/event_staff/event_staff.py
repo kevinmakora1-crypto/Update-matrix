@@ -139,6 +139,11 @@ class EventStaff(Document):
 			"post_abbrv": None,
 		}
 
+	def before_update_after_submit(self):
+		if self.has_value_changed("end_date"):
+			if getdate(self.end_date) < getdate(today()):
+				frappe.throw("Past dates cannot be provided in End Date field.")
+
 	def on_update_after_submit(self):
 		old_doc = self.get_doc_before_save()
 		if getdate(self.end_date) < getdate(old_doc.end_date):

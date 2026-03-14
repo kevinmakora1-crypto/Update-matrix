@@ -120,6 +120,11 @@ class ClientEvent(Document):
 			doc.roster_type = record.get("roster_type")
 			doc.day_off_ot = record.get("day_off_ot")
 			doc.operations_shift = record.get("operations_shift")
+			# Explicitly copy date/datetime fields (no longer auto-fetched)
+			doc.start_date = self.start_date
+			doc.end_date = self.end_date
+			doc.start_datetime = self.event_start_datetime
+			doc.end_datetime = self.event_end_datetime
 			doc.save(ignore_permissions=True)
 			doc.submit()
 		return True

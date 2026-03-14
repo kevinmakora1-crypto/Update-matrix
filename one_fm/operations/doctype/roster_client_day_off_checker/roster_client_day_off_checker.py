@@ -265,7 +265,14 @@ def check_roster_client_day_off():
 def generate_client_day_off_checker():
 	"""
 	Whitelisted function to manually trigger Client Day Off checker generation.
+	Only accessible by Operations Admin, Operations Manager, Projects Manager, and System Manager.
 	Enqueues the check_roster_client_day_off function to run in the background.
 	"""
+	allowed_roles = ["Operation Admin", "Operations Manager", "Projects Manager", "System Manager"]
+	if not any(frappe.db.exists("Has Role", {"parent": frappe.session.user, "role": role}) for role in allowed_roles):
+		frappe.throw(
+			title=_("Not Permitted"),
+			message=_("You do not have permission to run the Client Day Off Checker. Required role: Operation Admin, Operations Manager, or Projects Manager.")
+		)
 	frappe.enqueue(check_roster_client_day_off, queue="long", timeout=4000)
 

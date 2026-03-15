@@ -3,20 +3,16 @@
 
 frappe.ui.form.on("Temporary Deployment", {
     refresh(frm) {
-        // Prevent creation of Temporary Post from the Connections badge (+) button
-        frm.sidebar.linked_with && frm.sidebar.linked_with.wrapper
-            && frm.sidebar.linked_with.wrapper
-                .find('[data-doctype="Temporary Post"] .btn-new')
+        // Hide the (+) button for Temporary Post in the form's Connections dashboard section.
+        // The connections section (rendered from the DocType's `links` array) lives in
+        // frm.dashboard.wrapper — run immediately and after a delay for async rendering.
+        function hide_new_btn() {
+            frm.dashboard.wrapper
+                .find('[data-doctype="Temporary Post"]')
+                .find('.btn-new-doc, .btn-new, .link-new-doc')
                 .hide();
-    },
-
-    onload_post_render(frm) {
-        // Also hide after the connections panel fully renders
-        setTimeout(() => {
-            frm.sidebar.linked_with && frm.sidebar.linked_with.wrapper
-                && frm.sidebar.linked_with.wrapper
-                    .find('[data-doctype="Temporary Post"] .btn-new')
-                    .hide();
-        }, 500);
+        }
+        hide_new_btn();
+        setTimeout(hide_new_btn, 500);
     }
 });

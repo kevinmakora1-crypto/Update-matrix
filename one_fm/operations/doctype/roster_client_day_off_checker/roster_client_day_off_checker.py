@@ -272,8 +272,9 @@ def generate_client_day_off_checker():
 	allowed_roles = ["Operation Admin", "Operations Manager", "Projects Manager", "System Manager"]
 	if not any(frappe.db.exists("Has Role", {"parent": frappe.session.user, "role": role}) for role in allowed_roles):
 		frappe.throw(
+			msg=_("You do not have permission to run the Client Day Off Checker. Required role: Operation Admin, Operations Manager, or Projects Manager."),
 			title=_("Not Permitted"),
-			message=_("You do not have permission to run the Client Day Off Checker. Required role: Operation Admin, Operations Manager, or Projects Manager.")
+			exc=frappe.PermissionError,
 		)
 	frappe.enqueue(check_roster_client_day_off, queue="long", timeout=4000)
 

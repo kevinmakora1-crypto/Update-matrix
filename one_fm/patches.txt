@@ -325,3 +325,4 @@ one_fm.patches.v15_0.add_roster_client_day_off_checker_assignment_rules
 one_fm.patches.v15_0.add_hd_ticket_doctype_related_fields #2
 one_fm.patches.v15_0.populate_site_transport_stop_location_name
 one_fm.patches.v15_0.add_workflow_resignation_withdrawal
+one_fm.patches.v15_0.add_assignment_rule_employee_resignation_withdrawal

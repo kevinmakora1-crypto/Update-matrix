@@ -136,7 +136,7 @@ def create_shift_request(employee_id: str, purpose: str, from_date: str, to_date
         approver = get_approver(employee.name)
         approver_user_id = get_employee_user_id(approver)
         shift_req.approver = approver_user_id
-        shift_req.insert()
+        shift_req.insert(ignore_permissions=True)
         shift_req.db_set('workflow_state',"Pending Approval")
         frappe.db.commit()
         

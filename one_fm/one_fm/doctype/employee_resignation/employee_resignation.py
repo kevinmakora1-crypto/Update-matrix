@@ -51,3 +51,49 @@ class EmployeeResignation(Document):
 				user_id = frappe.db.get_value("Employee", project_manager, "user_id")
 				if user_id:
 					self.supervisor = user_id
+
+	def on_submit(self):
+		if self.employee and self.relieving_date:
+			frappe.db.set_value("Employee", self.employee, "relieving_date", self.relieving_date)
+
+		if self.replacement_required == "Yes":
+			pmr = frappe.new_doc("Project Manpower Request")
+			pmr.reason = "Exit"
+			pmr.employee_resignation = self.name
+			pmr.priority = self.replacement_priority
+			pmr.count = 1
+			pmr.employment_type = self.employment_type
+			pmr.designation = self.designation
+			pmr.department = self.department
+			pmr.ojt_days = self.ojt_days
+			pmr.project_allocation = self.project_allocation
+			pmr.site_allocation = self.site_allocation
+			pmr.shift_allocation = self.shift_allocation
+			pmr.operations_role_allocation = self.operations_role_allocation
+			pmr.gender = self.replacement_gender
+			pmr.nationality = self.replacement_nationality
+			pmr.salary = self.replacement_salary
+			
+			for row in self.get("language_requirements"):
+				new_row = pmr.append("language_requirements", {})
+				row_dict = row.as_dict().copy()
+				for field in ("name", "parent", "parentfield", "parenttype", "creation", "modified", "modified_by", "owner"):
+					row_dict.pop(field, None)
+				new_row.update(row_dict)
+				
+			for row in self.get("skill_requirements"):
+				new_row = pmr.append("skill_requirements", {})
+				row_dict = row.as_dict().copy()
+				for field in ("name", "parent", "parentfield", "parenttype", "creation", "modified", "modified_by", "owner"):
+					row_dict.pop(field, None)
+				new_row.update(row_dict)
+				
+			for row in self.get("certification_requirements"):
+				new_row = pmr.append("certification_requirements", {})
+				row_dict = row.as_dict().copy()
+				for field in ("name", "parent", "parentfield", "parenttype", "creation", "modified", "modified_by", "owner"):
+					row_dict.pop(field, None)
+				new_row.update(row_dict)
+				
+			pmr.insert(ignore_permissions=True)
+

@@ -11,8 +11,9 @@ from frappe.model.workflow import apply_workflow
 def shift_request_list(employee_id: str, from_date: str = None, to_date: str = None, 
                        purpose: str = None, status: str = None) -> dict:
     """
-    Retrieves list of shift requests for both employee and reports to.
-    Reports to is based on custom_reports_to field in Shift Request.
+    Retrieves list of shift requests for both the employee and a manager/reviewer view.
+    The manager/reviewer view ("reports_to") includes requests where the employee's user is
+    set as either the `approver` or `custom_project_manager_user` on the Shift Request.
     """
     try:
         if not employee_id:

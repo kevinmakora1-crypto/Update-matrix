@@ -1012,8 +1012,11 @@ def send_contract_reminders(is_scheduled_event=True):
             contracts_due_internal_notification_list = [[i.contract_termination_decision_period,i.contract_end_internal_notification,\
                 get_date_str(i.contract_termination_decision_period_date) if i.contract_termination_decision_period_date else None,i.name,get_date_str(i.start_date),get_date_str(i.contract_end_internal_notification_date) if i.contract_end_internal_notification_date else None,\
                 get_date_str(i.end_date),i.duration,i.client,i.contract] for i in contracts_due_internal_notification]
+
+            # Build a list of all contract contexts to render in a single grouped email
+            contracts_list = []
             for each in contracts_due_internal_notification_list:
-                context = {
+                contracts_list.append({
                     "project": each[8],
                     "contract_end_internal_notif_period": get_field_with_label("Contracts", "contract_end_internal_notification", each[1]),
                     "start_date": each[4],
@@ -1025,9 +1028,12 @@ def send_contract_reminders(is_scheduled_event=True):
                     "document_id": each[3],
                     "link": frappe.utils.get_url_to_form("Contracts", each[3]),
                     "attachment": frappe.utils.get_url(each[9]) if each[9] else None
-                }
-                msg = frappe.render_template('one_fm/templates/emails/contracts_reminder.html', context=context)
-                sendemail(recipients=users, subject="Expiring Contracts", content=msg, is_scheduler_email=is_scheduled_event)
+                })
+
+            # Render all expiring contracts into a single email and send once to all recipients
+            context = {"contracts_list": contracts_list}
+            msg = frappe.render_template('one_fm/templates/emails/contracts_reminder.html', context=context)
+            sendemail(recipients=users, subject="Contract Internal Notification Period for Expiring Contracts", content=msg, is_scheduler_email=is_scheduled_event)
     except Exception as e:
         frappe.log_error(message=str(e), title="Contract Reminder Error")
 

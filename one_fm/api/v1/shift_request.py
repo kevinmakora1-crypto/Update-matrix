@@ -1,5 +1,5 @@
 import frappe
-from one_fm.api.v1.utils import response
+from one_fm.api.v1.utils import response, validate_date
 from frappe.utils import getdate, add_months
 from one_fm.utils import (
     get_approver
@@ -23,8 +23,21 @@ def shift_request_list(employee_id: str, from_date: str = None, to_date: str = N
         if not employee:
             return response("error", 404, {}, "No employee record found for {employee_id}".format(employee_id=employee_id))
         
-        # Default date range if not provided (last 12 months)
-        if not (from_date and to_date):
+        # Validate and normalize date range
+        if from_date and to_date:
+            try:
+                validate_date(from_date)
+                validate_date(to_date)
+            except Exception:
+                return response("error", 400, {}, "Invalid date format for from_date or to_date.")
+
+            from_date = getdate(from_date)
+            to_date = getdate(to_date)
+
+            if from_date > to_date:
+                return response("error", 400, {}, "`from_date` cannot be after `to_date`.")
+        else:
+            # Default date range if not provided (last 12 months)
             from_date = add_months(getdate(), -12)
             to_date = getdate()
             

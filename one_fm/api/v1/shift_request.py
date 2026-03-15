@@ -27,9 +27,10 @@ def shift_request_list(employee_id: str, from_date: str = None, to_date: str = N
             from_date = add_months(getdate(), -12)
             to_date = getdate()
             
+        # Use overlap logic: request.from_date <= to_date AND request.to_date >= from_date
         base_filters = {
-            "from_date": ["between", [from_date, to_date]],
-            "to_date": ["between", [from_date, to_date]],
+            "from_date": ["<=", to_date],
+            "to_date": [">=", from_date],
             "purpose": ["in", ["Assign Day Off", "Day Off Overtime"]]
         }
         if purpose:

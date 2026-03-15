@@ -428,3 +428,165 @@ class TestLeaveApplicationOverride(FrappeTestCase):
         # Verify no new comment created
         self.assertEqual(comments_before, comments_after,
                         "No comment should be created if status unchanged")
+    @patch("frappe.sendmail")
+    def test_reliever_assignment_created(self, mock_sendmail):
+        """Test 10: Reliever assignment ToDo is created on Pending Reliever state"""
+        mock_sendmail.return_value = None
+
+        # Create a reliever employee
+        reliever = get_test_employee()
+
+        from_date = add_days(nowdate(), 1)
+        leave_application = make_leave_application(
+            self.employee.name,
+            from_date,
+            add_days(from_date, 2),
+            self.leave_type.name
+        )
+        leave_application.custom_reliever_ = reliever.name
+        leave_application.save()
+
+        # Change state to Pending Reliever
+        apply_workflow(leave_application, "Submit for Reliever Approval")
+
+        # Check if ToDo was created for the reliever
+        todo = frappe.db.get_value("ToDo", {
+            "reference_type": "Leave Application",
+            "reference_name": leave_application.name,
+            "allocated_to": reliever.user_id,
+            "status": "Open"
+        }, "name")
+
+        self.assertTrue(todo, "ToDo should be created for the reliever")
+
+    @patch("frappe.sendmail")
+    def test_reliever_assignment_closed(self, mock_sendmail):
+        """Test 11: Reliever assignment ToDo is closed when state changes from Pending Reliever"""
+        mock_sendmail.return_value = None
+
+        reliever = get_test_employee()
+        from_date = add_days(nowdate(), 1)
+        leave_application = make_leave_application(
+            self.employee.name,
+            from_date,
+            add_days(from_date, 2),
+            self.leave_type.name
+        )
+        leave_application.custom_reliever_ = reliever.name
+        leave_application.save()
+
+        # Move to Pending Reliever
+        apply_workflow(leave_application, "Submit for Reliever Approval")
+
+        # Now move to next state (e.g. Approve Reliever -> Pending Approval)
+        apply_workflow(leave_application, "Approve Reliever")
+
+        # Check if ToDo is closed
+        todo_status = frappe.db.get_value("ToDo", {
+            "reference_type": "Leave Application",
+            "reference_name": leave_application.name,
+            "allocated_to": reliever.user_id
+        }, "status")
+
+        self.assertEqual(todo_status, "Closed", "ToDo for reliever should be closed")
+
+    @patch("frappe.sendmail")
+    def test_leave_approver_assignment_rule_triggers(self, mock_sendmail):
+        """Test 12: Leave Approver Assignment rule creates ToDo on Pending Approval"""
+        mock_sendmail.return_value = None
+
+        from_date = add_days(nowdate(), 1)
+        leave_application = make_leave_application(
+            self.employee.name,
+            from_date,
+            add_days(from_date, 2),
+            self.leave_type.name
+        )
+        leave_application.save()
+
+        # Set low assurance to allow Pending Approval
+        frappe.db.set_value("Employee", self.employee.name, "custom_civil_id_assurance_level", "Low")
+
+        # Move to Pending Approval
+        apply_workflow(leave_application, "Submit for Review")
+        from frappe.automation.doctype.assignment_rule.assignment_rule import apply
+        apply(leave_application, "Leave Application")
+
+        # Check if ToDo is created for leave_approver based on assignment rule logic
+        todo = frappe.db.get_value("ToDo", {
+            "reference_type": "Leave Application",
+            "reference_name": leave_application.name,
+            "allocated_to": leave_application.leave_approver,
+            "status": "Open"
+        }, "name")
+
+        self.assertTrue(todo, "ToDo should be created for the leave approver via rule/logic")
+
+    @patch("frappe.sendmail")
+    def test_leave_application_pending_hr_assignment_rule(self, mock_sendmail):
+        """Test 13: Leave Application - Pending HR assignment rule triggers"""
+        mock_sendmail.return_value = None
+
+        # Setup HR operator
+        hr_operator = "hr_operator@test.com"
+        frappe.db.set_single_value("HR and Payroll Additional Settings", "default_leave_application_operator", hr_operator)
+
+        from_date = add_days(nowdate(), 1)
+        leave_application = make_leave_application(
+            self.employee.name,
+            from_date,
+            add_days(from_date, 2),
+            self.leave_type.name
+        )
+        leave_application.save()
+
+        # Set low assurance to allow Pending Approval and then Pending HR
+        frappe.db.set_value("Employee", self.employee.name, "custom_civil_id_assurance_level", "Low")
+
+        # Move through workflow to Pending HR
+        apply_workflow(leave_application, "Submit for Review")
+        apply_workflow(leave_application, "Approve") # Moves to Pending HR if Low Assurance
+
+        # Trigger assignment rules manually for testing if it's not automatically hooked in tests
+        from frappe.automation.doctype.assignment_rule.assignment_rule import apply
+        apply(leave_application, "Leave Application")
+
+        # Check ToDo
+        todo = frappe.db.get_value("ToDo", {
+            "reference_type": "Leave Application",
+            "reference_name": leave_application.name,
+            "allocated_to": hr_operator,
+            "status": "Open"
+        }, "name")
+
+        self.assertTrue(todo, "ToDo should be created for HR operator on Pending HR state")
+
+
+    @patch("frappe.sendmail")
+    def test_leave_application_pending_hr_assignment_rule_manual(self, mock_sendmail):
+        """Test 14: manual HR operator Assignment"""
+        mock_sendmail.return_value = None
+
+        hr_operator = "hr_operator@test.com"
+        frappe.db.set_single_value("HR and Payroll Additional Settings", "default_leave_application_operator", hr_operator)
+
+        from_date = add_days(nowdate(), 1)
+        leave_application = make_leave_application(
+            self.employee.name,
+            from_date,
+            add_days(from_date, 2),
+            self.leave_type.name
+        )
+        leave_application.save()
+
+        from frappe.automation.doctype.assignment_rule.assignment_rule import apply
+        leave_application.db_set('workflow_state', 'Pending HR')
+        apply(leave_application, "Leave Application")
+
+        todo = frappe.db.get_value("ToDo", {
+            "reference_type": "Leave Application",
+            "reference_name": leave_application.name,
+            "allocated_to": hr_operator,
+            "status": "Open"
+        }, "name")
+        self.assertTrue(todo, "ToDo should be created for HR operator manually on Pending HR state")

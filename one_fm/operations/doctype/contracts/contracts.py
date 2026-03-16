@@ -1002,12 +1002,8 @@ def send_contract_reminders(is_scheduled_event=True):
         contracts_due_internal_notification = frappe.get_all("Contracts",{'contract_end_internal_notification_date':getdate(), 'workflow_state': 'Active'},['contract_end_internal_notification',\
             'contract_end_internal_notification_date', 'contract_termination_decision_period','contract_termination_decision_period_date','name','start_date','end_date','duration','client', 'contract'])
 
-        relevant_roles = ["Finance Manager",'Legal Manager','Projects Manager','Operations Manager']
-        active_users = frappe.get_all("User",{'enabled':1})
-        active_users_ = [i.name for i in active_users] if active_users else []
-        active_users_.remove("Administrator")
-        relevant_users = frappe.get_all("Has Role",{'role':['IN',relevant_roles],'parent':['IN',active_users_]},['distinct parent'])
-        users = [i.parent for i in relevant_users]
+        action_users = frappe.get_all("Action User", {"parent": "ONEFM General Setting", "parenttype": "ONEFM General Setting"}, pluck="user")
+        users = list(set(action_users))
         if contracts_due_internal_notification:
             contracts_due_internal_notification_list = [[i.contract_termination_decision_period,i.contract_end_internal_notification,\
                 get_date_str(i.contract_termination_decision_period_date) if i.contract_termination_decision_period_date else None,i.name,get_date_str(i.start_date),get_date_str(i.contract_end_internal_notification_date) if i.contract_end_internal_notification_date else None,\

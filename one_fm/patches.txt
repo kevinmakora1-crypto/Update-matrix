@@ -332,3 +332,4 @@ one_fm.patches.v15_0.add_assignment_rule_employee_resignation_pending_operations
 one_fm.patches.v15_0.add_workflow_resignation_withdrawal
 one_fm.patches.v15_0.update_client_event_workflow_state
 one_fm.patches.v15_0.delete_attendance_checks_mar18_2026 #2
+one_fm.patches.v15_0.add_contract_notification_recipients #1

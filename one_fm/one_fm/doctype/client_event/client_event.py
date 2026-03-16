@@ -12,7 +12,7 @@ class ClientEvent(Document):
 		self.validate_workflow_transition()
 
 	def validate_date_time(self):
-		if not self.is_new() and self.workflow_state not in ("Pending Approval", None):
+		if not self.is_new() and self.workflow_state not in ("Pending Operations Manager", None):
 			return
 		if self.workflow_state == "Approved":
 			return
@@ -44,7 +44,7 @@ class ClientEvent(Document):
 		if self.workflow_state == "Approved":
 			return
 
-		# Only act on transitions away from Pending Approval
+		# Only act on transitions away from Pending Operations Manager
 		if self.workflow_state not in ("Draft", "Rejected", "Cancelled"):
 			return
 

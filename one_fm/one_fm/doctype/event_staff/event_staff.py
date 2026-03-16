@@ -177,6 +177,21 @@ class EventStaff(Document):
 			"post_abbrv": None,
 		}
 
+	def before_update_after_submit(self):
+		if self.has_value_changed("end_date"):
+			if getdate(self.end_date) < getdate(today()):
+				frappe.throw("Past dates cannot be provided in End Date field.")
+
+			if getdate(self.end_date) < getdate(self.start_date):
+				frappe.throw("End Date cannot be before Start Date.")
+
+			# Sync the date portion of end_datetime to the new end_date,
+			# keeping the original time component intact.
+			if self.end_datetime:
+				original_time = frappe.utils.get_datetime(self.end_datetime).time()
+				new_end_datetime = datetime.datetime.combine(getdate(self.end_date), original_time)
+				self.end_datetime = new_end_datetime
+
 	def on_update_after_submit(self):
 		client_event_state = frappe.db.get_value("Client Event", self.client_event, "workflow_state")
 		if client_event_state != "Approved":

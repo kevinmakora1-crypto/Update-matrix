@@ -9,7 +9,41 @@ from frappe.model.document import Document
 class EmployeeResignationWithdrawal(Document):
 	def on_update(self):
 		self.validate_rejection_reason()
-		
+		self.process_withdrawal_approval()
+
+	def process_withdrawal_approval(self):
+		if not self.is_new():
+			old_doc = self.get_doc_before_save()
+			if (
+				old_doc
+				and old_doc.workflow_state in ["Accepted by Supervisor", "Rejected By Supervisor"]
+				and self.workflow_state == "Approved"
+			):
+				# 1 & 2. Set Employee Resignation State and Workflow State to "Withdrawn"
+				if self.employee_resignation:
+					resignation = frappe.get_doc("Employee Resignation", self.employee_resignation)
+					resignation.db_set("status", "Withdrawn")
+					
+
+					if frappe.db.has_column("Employee Resignation", "workflow_state"):
+						resignation.db_set("workflow_state", "Withdrawn")
+				
+				# 3. Clear Relieving Date on Employee record
+				if self.employee:
+					frappe.db.set_value("Employee", self.employee, "relieving_date", None)
+				
+				# 4. Set Project Manpower Request to "Withdrawn" if it exists
+				if self.employee_resignation and frappe.db.exists("DocType", "Project Manpower Request"):
+					pmr_list = frappe.get_all(
+						"Project Manpower Request",
+						filters={"employee_resignation": self.employee_resignation},
+						pluck="name"
+					)
+					for pmr_name in pmr_list:
+						pmr = frappe.get_doc("Project Manpower Request", pmr_name)
+						pmr.db_set("status", "Withdrawn")
+						if frappe.db.has_column("Project Manpower Request", "workflow_state"):
+							pmr.db_set("workflow_state", "Withdrawn")
 
 	def validate(self):
 		self.set_approver()
@@ -19,8 +53,8 @@ class EmployeeResignationWithdrawal(Document):
 			old_doc = self.get_doc_before_save()
 			if (
 				old_doc
-				and old_doc.workflow_state == "Pending Supervisor"
-				and self.workflow_state == "Rejected By Supervisor"
+				and old_doc.workflow_state in ["Pending Supervisor", "Accepted by Supervisor","Rejected By Supervisor"]
+				and self.workflow_state in ["Rejected By Supervisor","Rejected"]
 			):
 				if not self.reason_for_rejection:
 					frappe.throw(_("Please provide Reason for Rejection"))

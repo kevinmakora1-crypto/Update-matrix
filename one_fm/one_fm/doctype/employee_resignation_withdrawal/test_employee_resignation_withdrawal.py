@@ -57,6 +57,61 @@ class TestEmployeeResignationWithdrawal(FrappeTestCase):
 		erw.save(ignore_permissions=True)
 		self.assertEqual(erw.workflow_state, "Rejected By Supervisor")
 
+	def test_process_withdrawal_approval(self):
+		# Create a PMR tied to the resignation if the doctype exists
+		pmr = None
+		if frappe.db.exists("DocType", "Project Manpower Request"):
+			pmr = frappe.get_doc({
+				"doctype": "Project Manpower Request",
+				"employee_resignation": self.resignation.name,
+				"project": _get_or_create_project(),
+				"title": "Test PMR"
+			}).insert(ignore_permissions=True)
+
+		# Set an initial relieving date on the employee to verify it gets cleared
+		frappe.db.set_value("Employee", self.employee.name, "relieving_date", frappe.utils.today())
+
+		erw = frappe.get_doc({
+			"doctype": "Employee Resignation Withdrawal",
+			"employee_resignation": self.resignation.name,
+			"reason": "Changed my mind",
+			"resignation_withdrawal_letter": "/files/test.txt",
+			"workflow_state": "Pending Supervisor"
+		}).insert(ignore_permissions=True)
+
+		# Transition 1
+		erw.workflow_state = "Accepted by Supervisor"
+		erw.save(ignore_permissions=True)
+
+		# Trigger withdrawal approval
+		erw.workflow_state = "Approved"
+		erw.save(ignore_permissions=True)
+
+		# Assertions
+		self.employee.reload()
+		self.resignation.reload()
+
+		self.assertEqual(self.resignation.status, "Withdrawn")
+		if frappe.db.has_column("Employee Resignation", "workflow_state"):
+			self.assertEqual(self.resignation.workflow_state, "Withdrawn")
+		
+		self.assertIsNone(self.employee.relieving_date)
+		
+		if pmr:
+			pmr.reload()
+			self.assertEqual(pmr.status, "Withdrawn")
+			if frappe.db.has_column("Project Manpower Request", "workflow_state"):
+				self.assertEqual(pmr.workflow_state, "Withdrawn")
+
+def _get_or_create_project():
+	project_name = "Test Project"
+	if not frappe.db.exists("Project", project_name):
+		frappe.get_doc({
+			"doctype": "Project",
+			"project_name": project_name
+		}).insert(ignore_permissions=True)
+	return project_name
+
 def _make_employee(employee_id, employee_name):
 	company = frappe.db.get_single_value("Global Defaults", "default_company") or frappe.get_all("Company", limit=1)[0].name
 	existing = frappe.db.get_value("Employee", {"employee": employee_id})

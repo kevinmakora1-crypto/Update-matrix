@@ -3659,7 +3659,7 @@ def get_sender_email() -> str | None:
 
 @frappe.whitelist()
 def send_birthday_reminders():
-    """Send Employee birthday reminders if no 'Stop Birthday Reminders' is not set."""
+    """Send employee birthday reminders when birthday reminders are enabled."""
     from hrms.controllers.employee_reminders import send_birthday_reminder, get_employees_who_are_born_today, get_birthday_reminder_text_and_message
 
     to_send = cint(frappe.db.get_single_value("HR Settings", "send_birthday_reminders")) or is_scheduler_emails_enabled()

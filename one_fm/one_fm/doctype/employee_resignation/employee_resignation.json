@@ -1,15 +1,8 @@
 {
-    "actions": [
-        {
-            "action": "/app/employee-resignation-withdrawal/new",
-            "action_type": "Route",
-            "group": "Create",
-            "label": "Resignation Withdrawal"
-        }
-    ],
+    "actions": [],
     "allow_rename": 1,
-    "autoname": "naming_series: naming_series",
-    "custom": 1,
+    "autoname": "naming_series:naming_series",
+    "creation": "2026-02-18 08:35:12.413498",
     "doctype": "DocType",
     "engine": "InnoDB",
     "field_order": [
@@ -315,21 +308,28 @@
     "is_submittable": 1,
     "links": [
         {
+            "hidden": 0,
+            "is_child_table": 0,
             "link_doctype": "Project Manpower Request",
             "link_fieldname": "employee_resignation"
         },
         {
+            "hidden": 0,
+            "is_child_table": 0,
             "link_doctype": "Employee Resignation Withdrawal",
             "link_fieldname": "employee_resignation"
         }
     ],
     "modified": "2026-03-10 17:13:24.921113",
+    "modified_by": "Administrator",
     "module": "One Fm",
     "name": "Employee Resignation",
     "naming_rule": "By \"Naming Series\" field",
+    "owner": "Administrator",
     "permissions": [
         {
             "amend": 1,
+            "cancel": 0,
             "create": 1,
             "delete": 1,
             "email": 1,
@@ -343,6 +343,8 @@
             "write": 1
         },
         {
+            "amend": 0,
+            "cancel": 0,
             "create": 1,
             "delete": 1,
             "email": 1,
@@ -352,10 +354,13 @@
             "report": 1,
             "role": "Offboarding Officer",
             "share": 1,
+            "submit": 0,
             "write": 1
         },
         {
+            "amend": 0,
             "cancel": 1,
+            "create": 0,
             "delete": 1,
             "email": 1,
             "export": 1,
@@ -368,6 +373,10 @@
             "write": 1
         },
         {
+            "amend": 0,
+            "cancel": 0,
+            "create": 0,
+            "delete": 0,
             "email": 1,
             "export": 1,
             "print": 1,
@@ -375,6 +384,7 @@
             "report": 1,
             "role": "Operations Manager",
             "share": 1,
+            "submit": 0,
             "write": 1
         }
     ],

@@ -2,12 +2,28 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 
 class EmployeeResignationWithdrawal(Document):
+	def on_update(self):
+		self.validate_rejection_reason()
+		
+
 	def validate(self):
 		self.set_approver()
+
+	def validate_rejection_reason(self):
+		if not self.is_new():
+			old_doc = self.get_doc_before_save()
+			if (
+				old_doc
+				and old_doc.workflow_state == "Pending Supervisor"
+				and self.workflow_state == "Rejected By Supervisor"
+			):
+				if not self.reason_for_rejection:
+					frappe.throw(_("Please provide Reason for Rejection"))
 
 	def set_approver(self):
 		if not self.employee:

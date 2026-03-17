@@ -41,7 +41,7 @@
         },
         {
             "state": "Rejected",
-            "doc_status": "0",
+            "doc_status": "1",
             "style": "Inverse",
             "is_optional_state": 0,
             "avoid_status_override": 0,

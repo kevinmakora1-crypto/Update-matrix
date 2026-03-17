@@ -1,13 +1,5 @@
 {
-    "actions": [
-        {
-            "action": "/app/employee-resignation-withdrawal/new",
-            "action_type": "Route",
-            "group": "Create",
-            "hidden": 0,
-            "label": "Resignation Withdrawal"
-        }
-    ],
+    "actions": [],
     "allow_rename": 1,
     "autoname": "naming_series:naming_series",
     "creation": "2026-02-18 08:35:12.413498",

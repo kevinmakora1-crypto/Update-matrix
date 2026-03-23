@@ -1,5 +1,5 @@
 import frappe
-from one_fm.api.v1.utils import response
+from one_fm.api.v1.utils import response, validate_date
 from frappe.utils import getdate, add_months
 from one_fm.utils import (
     get_approver
@@ -11,8 +11,9 @@ from frappe.model.workflow import apply_workflow
 def shift_request_list(employee_id: str, from_date: str = None, to_date: str = None, 
                        purpose: str = None, status: str = None) -> dict:
     """
-    Retrieves list of shift requests for both employee and reports to.
-    Reports to is based on custom_reports_to field in Shift Request.
+    Retrieves list of shift requests for both the employee and a manager/reviewer view.
+    The manager/reviewer view ("reports_to") includes requests where the employee's user is
+    set as either the `approver` or `custom_project_manager_user` on the Shift Request.
     """
     try:
         if not employee_id:
@@ -22,14 +23,28 @@ def shift_request_list(employee_id: str, from_date: str = None, to_date: str = N
         if not employee:
             return response("error", 404, {}, "No employee record found for {employee_id}".format(employee_id=employee_id))
         
-        # Default date range if not provided (last 12 months)
-        if not (from_date and to_date):
+        # Validate and normalize date range
+        if from_date and to_date:
+            try:
+                validate_date(from_date)
+                validate_date(to_date)
+            except Exception:
+                return response("error", 400, {}, "Invalid date format for from_date or to_date.")
+
+            from_date = getdate(from_date)
+            to_date = getdate(to_date)
+
+            if from_date > to_date:
+                return response("error", 400, {}, "`from_date` cannot be after `to_date`.")
+        else:
+            # Default date range if not provided (last 12 months)
             from_date = add_months(getdate(), -12)
             to_date = getdate()
             
+        # Use overlap logic: request.from_date <= to_date AND request.to_date >= from_date
         base_filters = {
-            "from_date": ["between", [from_date, to_date]],
-            "to_date": ["between", [from_date, to_date]],
+            "from_date": ["<=", to_date],
+            "to_date": [">=", from_date],
             "purpose": ["in", ["Assign Day Off", "Day Off Overtime"]]
         }
         if purpose:
@@ -121,7 +136,7 @@ def create_shift_request(employee_id: str, purpose: str, from_date: str, to_date
         approver = get_approver(employee.name)
         approver_user_id = get_employee_user_id(approver)
         shift_req.approver = approver_user_id
-        shift_req.insert()
+        shift_req.insert(ignore_permissions=True)
         shift_req.db_set('workflow_state',"Pending Approval")
         frappe.db.commit()
         

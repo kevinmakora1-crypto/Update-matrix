@@ -12,16 +12,19 @@ import math
 class PostSchedulerChecker(Document):
 	pass
 
-def get_post_schedules(project, post, first_day, last_day):
-	return frappe.db.count(
-		"Post Schedule",
-		filters={
-			"date": ['BETWEEN', [first_day, last_day]],
-			"project": project,
-			"post": post.name,
-			"post_status": 'Planned'
-		}
-	)
+def get_post_schedules(project, post, first_day, last_day, include_client_post_off=False):
+	filters = {
+		"date": ['BETWEEN', [first_day, last_day]],
+		"project": project,
+		"post": post.name
+	}
+
+	if include_client_post_off:
+		filters["post_status"] = ['in', ['Planned', 'Client Post Off']]
+	else:
+		filters["post_status"] = 'Planned'
+
+	return frappe.db.count("Post Schedule", filters=filters)
 
 def get_working_site_supervisor(project, date):
 	try:
@@ -46,9 +49,9 @@ def get_post_scheduler_items(contract, project):
 
 	items = []
 
-	for item in contract.items:
+	for item in contract.contract_items_operation:
 		# Skip items of type "Items" as they don't require post scheduling validation
-		if item.item_type == "Items" or (item.item_type == "Service" and item.is_daily_operation_handled_by_us == "No"):
+		if item.is_daily_operation_handled_by_us == "No":
 			continue
 
 		item_message = ""
@@ -119,11 +122,18 @@ def get_post_scheduler_items(contract, project):
 					if item.off_type == 'Days Off':
 						expected -= item.no_of_days_off
 
+					include_client_post_off = False
+					if item.off_type == 'Full Month':
+						include_client_post_off = True
+					elif item.off_type == 'Days Off' and item.days_off_category in ['Monthly', 'Weekly']:
+						include_client_post_off = True
+
 					post_schedules = get_post_schedules(
 						project=contract.project,
 						post=post,
 						first_day=first_day,
-						last_day=last_day
+						last_day=last_day,
+						include_client_post_off=include_client_post_off
 					)
 
 					post_message = ""

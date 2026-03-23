@@ -117,6 +117,20 @@ def get_vehicle_custom_fields():
                 "fieldname": "image",
                 "fieldtype": "Attach Image",
                 "label": "Image"
-            }
+            },
+            {
+                "fieldname": "seats",
+                "fieldtype": "Int",
+                "label": "Seats",
+                "insert_after": "doors",
+                "reqd": 1
+            },
+            {
+                "fieldname": "transport_stop_vehicle",
+                "fieldtype": "Check",
+                "label": "Transport Stop Vehicle",
+                "insert_after": "image",
+                "default": 0
+            },
         ]
     }

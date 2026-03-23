@@ -2,20 +2,20 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Accommodation', {
-	onload_post_render: function(frm){
-			$('[data-fieldname="map_html"]').append(`<div style='width:100%; height:500px' id='map'></div>`);
-			let {latitude, longitude}= frm.doc;
-			window.markers = [];
-			window.circles = [];
-			// JS API is loaded and available
-			console.log("Called")
-			window.map = new google.maps.Map(document.getElementById('map'), {
-					center: {lat: 29.338394, lng: 48.005958},
-					zoom: 17
-			});
-			loadGoogleMap(frm);
+	onload_post_render: function (frm) {
+		$('[data-fieldname="map_html"]').append(`<div style='width:100%; height:500px' id='map'></div>`);
+		let { latitude, longitude } = frm.doc;
+		window.markers = [];
+		window.circles = [];
+		// JS API is loaded and available
+		console.log("Called")
+		window.map = new google.maps.Map(document.getElementById('map'), {
+			center: { lat: 29.338394, lng: 48.005958 },
+			zoom: 17
+		});
+		loadGoogleMap(frm);
 	},
-	refresh: function(frm) {
+	refresh: function (frm) {
 		set_qr_code(frm);
 		set_contact_html(frm);
 		frm.set_query('area', function () {
@@ -39,10 +39,17 @@ frappe.ui.form.on('Accommodation', {
 				}
 			};
 		});
+		frm.set_query('transport_stop_location', function () {
+			return {
+				filters: {
+					'location_type': 'Stop Location'
+				}
+			};
+		});
 	}
 });
 
-var set_qr_code = function(frm) {
+var set_qr_code = function (frm) {
 	let qr_code_html = `{%if doc.name%}
 	<div style="display: inline-block;padding: 5%;">
 	<div class="qr_code_print" id="qr_code_print">
@@ -67,74 +74,74 @@ var set_qr_code = function(frm) {
 	var url = frappe.urllib.get_full_url("/api/method/one_fm.accommodation.utils.accommodation_qr_code_live_details?"
 		+ "docname=" + encodeURIComponent(doc.name))
 	var qr_details = __('{0}<br/>Code: {1}', [doc.accommodation, doc.name])
-	var qr_code = frappe.render_template(qr_code_html,{"doc":doc, "qr_details": qr_details, "url": url});
+	var qr_code = frappe.render_template(qr_code_html, { "doc": doc, "qr_details": qr_details, "url": url });
 	$(frm.fields_dict["accommodation_qr"].wrapper).html(qr_code);
 	refresh_field("accommodation_qr")
 };
 
-function loadGoogleMap(frm){
-    let lat = 29.338394;
-    let lng = 48.005958;
-    if(frm.doc.name == '01'){
-        lat = 29.269929000;
-        lng = 47.966612800;
-    }
-    else if(frm.doc.name == '02'){
-        lat = 29.152381700;
-        lng = 48.121065800;
-    }
-    else if(frm.doc.name == '03'){
-        lat = 29.152044100;
-        lng = 48.121005200;
-    }
-    let radius = frm.doc.geofence_radius;
-    if(lat !== undefined && lng !== undefined){
-        let marker = new google.maps.Marker({
-            position: {lat, lng},
-            map: map,
-            title: frm.doc.location_name
-        });
-        marker.setMap(map);
-        map.setCenter({lat, lng});
-        markers.push(marker);
+function loadGoogleMap(frm) {
+	let lat = 29.338394;
+	let lng = 48.005958;
+	if (frm.doc.name == '01') {
+		lat = 29.269929000;
+		lng = 47.966612800;
+	}
+	else if (frm.doc.name == '02') {
+		lat = 29.152381700;
+		lng = 48.121065800;
+	}
+	else if (frm.doc.name == '03') {
+		lat = 29.152044100;
+		lng = 48.121005200;
+	}
+	let radius = frm.doc.geofence_radius;
+	if (lat !== undefined && lng !== undefined) {
+		let marker = new google.maps.Marker({
+			position: { lat, lng },
+			map: map,
+			title: frm.doc.location_name
+		});
+		marker.setMap(map);
+		map.setCenter({ lat, lng });
+		markers.push(marker);
 
-        if(radius){
-            let geofence_circle = new google.maps.Circle({
-                strokeColor: '#FF0000',
-                strokeOpacity: 0.8,
-                strokeWeight: 2,
-                fillColor: '#FF0000',
-                fillOpacity: 0.35,
-                map: map,
-                center: {lat, lng},
-                radius: radius,
-                clickable: false
-            });
-            circles.push(geofence_circle);
-        }
-    }
+		if (radius) {
+			let geofence_circle = new google.maps.Circle({
+				strokeColor: '#FF0000',
+				strokeOpacity: 0.8,
+				strokeWeight: 2,
+				fillColor: '#FF0000',
+				fillOpacity: 0.35,
+				map: map,
+				center: { lat, lng },
+				radius: radius,
+				clickable: false
+			});
+			circles.push(geofence_circle);
+		}
+	}
 };
 
-var set_contact_html = function(frm) {
+var set_contact_html = function (frm) {
 	var contact_fields = ['owner_contact', 'legal_authorization_contact', 'legal_representative_contact',
 		'other_primary_point_of_contact'];
 	contact_fields.forEach((contact_field) => {
-		let contact_html_field = contact_field+'_html';
-		let contact_list_field = contact_field+'_list';
+		let contact_html_field = contact_field + '_html';
+		let contact_list_field = contact_field + '_list';
 
-		if(frm.fields_dict[contact_html_field] && contact_list_field in frm.doc.__onload) {
-			frappe.dynamic_link = {'doc': frm.doc, 'fieldname': 'name', 'doctype': frm.doc.doctype};
+		if (frm.fields_dict[contact_html_field] && contact_list_field in frm.doc.__onload) {
+			frappe.dynamic_link = { 'doc': frm.doc, 'fieldname': 'name', 'doctype': frm.doc.doctype };
 
 			$(frm.fields_dict[contact_html_field].wrapper)
 				.html(frappe.render_template(contact_show_html,
-					{'contact_list': frm.doc.__onload[contact_list_field]}))
-				.find(".btn-contact").on("click", function() {
+					{ 'contact_list': frm.doc.__onload[contact_list_field] }))
+				.find(".btn-contact").on("click", function () {
 					frappe.route_options = {
 						"one_fm_doc_contact_field": contact_field
 					}
 					frappe.new_doc("Contact");
 				}
-			);
+				);
 		}
 	});
 };

@@ -112,14 +112,12 @@ one_fm.patches.v15_0.update_project_start_end_date_from_contracts
 one_fm.patches.v15_0.revert_reliever_assignments
 one_fm.patches.v15_0.update_designation_disabled_field
 one_fm.patches.v15_0.update_hr_settings_leave_threshold
-one_fm.patches.v15_0.add_roster_index
 one_fm.patches.v15_0.add_roster_index #03-06-2025
 one_fm.patches.v15_0.delete_all_roaster_day_off_checker_records
 one_fm.patches.v15_0.update_operation_post_start_and_end_date
 one_fm.patches.v15_0.add_custom_process_field_property_setter #2025-09-28
 one_fm.patches.v15_0.add_update_property_setter #2025-05-28
 one_fm.patches.v15_0.add_update_assignment_rule #2025-09-30
-one_fm.patches.v15_0.add_update_workflow #2025-10-01
 one_fm.patches.v15_0.update_attendance_check_client_day_off
 one_fm.patches.v15_0.update_erf_in_job_applicant_and_offer
 one_fm.patches.v15_0.delete_employee_schedule_for_employee_on_leave #2025-07-17 rerun
@@ -234,6 +232,7 @@ one_fm.patches.v15_0.set_conversion_factor_precision
 one_fm.patches.v15_0.add_buying_settings_custom_field
 one_fm.patches.v15_0.create_process_task_for_medical_reminders
 one_fm.patches.v15_0.add_assignment_rule_action_attendance_check_approver
+one_fm.patches.v15_0.clean_orphaned_attendance_check_todos
 one_fm.patches.v15_0.update_existing_attendance_checks
 one_fm.patches.v15_0.add_process_task_agency_expiry_actions
 one_fm.patches.v15_0.add_process_task_demand_letter_expiry
@@ -248,9 +247,26 @@ one_fm.patches.v15_0.add_employee_project_manager_name_custom_field
 one_fm.patches.v15_0.create_attendance_for_event_shifts
 one_fm.patches.v15_0.backfill_refundable_from_rfm_to_chain
 one_fm.patches.v15_0.update_contract_items_consolidated #rerun
+one_fm.patches.v15_0.migrate_contract_item_to_operations #2026-03-05
 one_fm.patches.v15_0.update_leave_application_properties
 one_fm.patches.v15_0.add_supplier_name_in_arabic_field
 one_fm.patches.v15_0.update_leave_extension_attendance
+one_fm.patches.v15_0.adjust_vehicle_fields
+one_fm.patches.v15_0.update_shift_permission_approver_assignment_rule #2026-03-04
+one_fm.patches.v15_0.add_customer_custom_fields
+one_fm.patches.v15_0.add_seats_field_to_vehicle
+one_fm.patches.v15_0.add_workflow_contracts #1
+one_fm.patches.v15_0.add_workflow_temporary_deployment
+one_fm.patches.v15_0.add_assignment_rule_assigning_operations_manager_for_approval_temporary_deployment
+one_fm.patches.v15_0.add_assignment_rule_returning_to_operations_supervisor_of_temporary_deployment
+one_fm.patches.v15_0.process_task_for_mark_temporary_posts_as_completed
+one_fm.patches.v15_0.add_assignment_rule_contracts_finance_manager #2
+one_fm.patches.v15_0.add_assignment_rule_contracts_legal_manager #2
+one_fm.patches.v15_0.add_assignment_rule_contracts_operation_admin #2
+one_fm.patches.v15_0.add_assignment_rule_contracts_sales_manager #2
+one_fm.patches.v15_0.add_transport_stop_vehicle_field
+one_fm.patches.v15_0.add_location_type_field
+one_fm.patches.v15_0.add_day_off_preference #2
 one_fm.patches.v15_0.update_job_offer_for_ERF_2026_00004
 one_fm.patches.v15_0.add_index_to_leave_application_in_attendance
 one_fm.patches.v15_0.update_attendance_request_assignment_rule
@@ -273,7 +289,6 @@ one_fm.patches.v15_0.add_assignment_rule_assign_rfp_owner_on_rfp_return_to_draft
 one_fm.patches.v15_0.add_assignment_rule_for_client_interview_shortlist_process_task_based
 one_fm.patches.v15_0.create_attendance_check_process_task #re run again
 one_fm.patches.v15_0.add_task_assignment_rule
-one_fm.patches.v15_0.attendance_check_create
 one_fm.patches.v15_0.add_values_to_rank_factor_table
 one_fm.patches.v15_0.update_existing_designation_to_main_head_hunt_doctype
 one_fm.patches.v15_0.attendance_check_create #09-09-2025
@@ -306,4 +321,5 @@ one_fm.patches.v15_0.populate_abbreviation_data #1-2
 one_fm.patches.v15_0.rename_accommodation_hierarchy #1-2
 one_fm.patches.v15_0.add_roster_client_day_off_checker_assignment_rules
 one_fm.patches.v15_0.add_hd_ticket_doctype_related_fields #2
+one_fm.patches.v15_0.populate_site_transport_stop_location_name
 one_fm.patches.v15_0.delete_attendance_checks_mar18_2026 #2

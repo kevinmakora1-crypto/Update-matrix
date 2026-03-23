@@ -15,6 +15,7 @@
   "shift_details_section",
   "shift_number",
   "shift_type",
+  "day_off_ot_allowed",
   "automate_roster",
   "supervisor",
   "supervisor_name",
@@ -25,7 +26,9 @@
   "end_time",
   "column_break_15",
   "duration",
-  "shift_classification"
+  "shift_classification",
+  "accommodation_details_section",
+  "accommodations"
  ],
  "fields": [
   {
@@ -167,6 +170,23 @@
    "fieldtype": "Table",
    "label": "Shift Supervisor",
    "options": "Operations Shift Supervisor"
+  },
+  {
+   "fieldname": "accommodation_details_section",
+   "fieldtype": "Section Break",
+   "label": "Accommodation Details"
+  },
+  {
+   "fieldname": "accommodations",
+   "fieldtype": "Table",
+   "label": "Accommodations",
+   "options": "Operations Shift Accommodation"
+  },
+  {
+   "default": "0",
+   "fieldname": "day_off_ot_allowed",
+   "fieldtype": "Check",
+   "label": "Day Off OT Allowed"
   }
  ],
  "links": [
@@ -176,7 +196,7 @@
    "link_fieldname": "shift"
   }
  ],
- "modified": "2024-12-17 16:34:20.846883",
+ "modified": "2026-03-05 20:20:22.004307",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Operations Shift",
@@ -196,6 +216,7 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "search_fields": "site, project",
  "sort_field": "modified",
  "sort_order": "DESC",

@@ -7,6 +7,7 @@ from one_fm.tests.utils import (
     create_test_company
 )
 from one_fm.one_fm.doctype.leave_acknowledgement_form.leave_acknowledgement_form import generate_leave_acknowledgement
+from frappe.automation.doctype.assignment_rule.assignment_rule import apply as apply_assignment_rule
 
 class TestLeaveAcknowledgementForm(FrappeTestCase):
     def setUp(self):
@@ -52,8 +53,8 @@ class TestLeaveAcknowledgementForm(FrappeTestCase):
         allocation = create_test_leave_allocation(
             employee=self.employee,
             leave_type=self.leave_type,
-            from_date=add_days(nowdate(), -30),
-            to_date=add_days(nowdate(), 30),
+            from_date=add_days(nowdate(), -365),
+            to_date=add_days(nowdate(), 365),
             new_leaves_allocated=amount
         )
         # Ensure it is considered as carry forward in Ledger to match generator logic
@@ -73,6 +74,16 @@ class TestLeaveAcknowledgementForm(FrappeTestCase):
 
         self.assertEqual(len(forms), 1, "Form should be generated for leaves above threshold")
         self.assertEqual(forms[0].workflow_state, "Pending Confirmation", "High assurance should result in Pending Confirmation state")
+
+        # Check if ToDo is created for employee based on assignment rule logic
+        todo = frappe.db.get_value("ToDo", {
+            "reference_type": "Leave Acknowledgement Form",
+            "reference_name": forms[0].name,
+            "allocated_to": self.employee.user_id,
+            "status": "Open"
+        }, "name")
+
+        self.assertTrue(todo, "ToDo should be created for the employee via rule/logic")
 
     def test_generate_leave_acknowledgement_low_assurance(self):
         frappe.db.set_value("Employee", self.employee.name, "custom_civil_id_assurance_level", "Low")
@@ -97,35 +108,4 @@ class TestLeaveAcknowledgementForm(FrappeTestCase):
 
         forms = frappe.get_all("Leave Acknowledgement Form", filters={"employee": self.employee.name})
         self.assertEqual(len(forms), 0, "No form should be generated if below threshold")
-
-    def test_assignment_rule_pending_confirmation(self):
-        # Create temporary rule just for test to avoid dependency on global patch state
-        if not frappe.db.exists("Assignment Rule", "LAF - Pending Confirmation Test"):
-            rule = frappe.get_doc({
-                "doctype": "Assignment Rule",
-                "name": "LAF - Pending Confirmation Test",
-                "document_type": "Leave Acknowledgement Form",
-                "assign_condition": "workflow_state == 'Pending Confirmation'",
-                "rule": "Based on Field",
-                "field": "employee_user_id"
-            }).insert(ignore_permissions=True)
-
-        form = frappe.get_doc({
-            "doctype": "Leave Acknowledgement Form",
-            "employee": self.employee.name,
-            "date": nowdate()
-        }).insert(ignore_permissions=True)
-
-        frappe.db.set_value("Leave Acknowledgement Form", form.name, "workflow_state", "Pending Confirmation")
-        form.reload()
-
-        # Trigger assignment manually as set_value overrides might bypass standard hooks
-        form.run_method("execute_assignment_rule")
-
-        todos = frappe.get_all("ToDo", filters={
-            "reference_type": "Leave Acknowledgement Form",
-            "reference_name": form.name,
-            "status": "Open"
-        })
-
-        self.assertTrue(len(todos) > 0, "ToDo should be created matching the Pending Confirmation assignment rule")
+        

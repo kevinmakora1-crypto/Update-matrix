@@ -603,8 +603,8 @@ def assign_day_off(shift_request):
             schedule.employee_availability = 'Day Off'
             schedule.save(ignore_permissions=True)
     else:
-        start_date = datetime.datetime.strptime(shift_request.from_date, '%Y-%m-%d')
-        end_date = datetime.datetime.strptime(shift_request.to_date, '%Y-%m-%d')
+        start_date = getdate(shift_request.from_date)
+        end_date = getdate(shift_request.to_date)
         delta = datetime.timedelta(days=1)
         while start_date <= end_date:
             schedule = frappe.new_doc("Employee Schedule")
@@ -636,8 +636,8 @@ def assign_client_day_off(shift_request):
             else:
                 frappe.delete_doc("Employee Schedule", es.name)
     else:
-        start_date = datetime.datetime.strptime(shift_request.from_date, '%Y-%m-%d')
-        end_date = datetime.datetime.strptime(shift_request.to_date, '%Y-%m-%d')
+        start_date = getdate(shift_request.from_date)
+        end_date = getdate(shift_request.to_date)
         delta = datetime.timedelta(days=1)
         while start_date <= end_date:
             schedule = frappe.new_doc("Employee Schedule")

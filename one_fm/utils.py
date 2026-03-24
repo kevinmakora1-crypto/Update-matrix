@@ -4557,6 +4557,15 @@ def create_process_task(process_name, erp_document, task_description, process_de
     if frequency == "Cron" and not cron_format:
         frappe.throw("Please provide a valid cron format for the task frequency.")
 
+    employee_data = frappe.db.get_value("Employee", employee, ["employee_name", "user_id", "department"], as_dict=True)
+    employee_name = ""
+    employee_user = ""
+    department = ""
+    if employee_data:
+        employee_name = employee_data.employee_name
+        employee_user = employee_data.user_id
+        department = employee_data.department
+
     return frappe.get_doc({
         "naming_series": "P-TASK-.YYYY.-",
         "process_name": process_name,
@@ -4573,6 +4582,9 @@ def create_process_task(process_name, erp_document, task_description, process_de
         "hours_per_frequency": 0.0,
         "coordination_needed": "No",
         "employee": employee,
+        "employee_name": employee_name,
+        "employee_user": employee_user,
+        "department": department,
         "start_date": today(),
         "report_frequency": "",
         "doctype": "Process Task",

@@ -50,7 +50,116 @@ def get_stock_entries(stock_entry_type: str = None, from_date: str = None, to_da
 		filters=filters,
 		fields=["name", "stock_entry_type", "from_warehouse", "to_warehouse", "posting_date", "docstatus"],
 		order_by="posting_date desc, name desc",
-		limit=200
+		limit=300
 	)
 
 	return stock_entries
+
+@frappe.whitelist(methods=["GET"])
+def get_stock_entry_detail(name: str):
+	"""
+	Fetch a detailed Stock Entry record including site supervisor name and items.
+	"""
+	doc = frappe.get_doc("Stock Entry", name)
+	doc.check_permission("read")
+	
+	# Fetch site supervisor name if custom_site_supervisor is set
+	site_supervisor_name = ""
+	if doc.get("custom_site_supervisor"):
+		site_supervisor_name = frappe.db.get_value("User", doc.custom_site_supervisor, "full_name")
+	
+	# Convert items to list of dicts for the frontend
+	items = []
+	for d in doc.items:
+		items.append({
+			"item_code": d.item_code,
+			"item_name": d.item_name,
+			"stock_uom": d.stock_uom,
+			"qty": d.qty,
+			"s_warehouse": d.s_warehouse,
+			"t_warehouse": d.t_warehouse,
+			"name": d.name
+		})
+
+	return {
+		"name": doc.name,
+		"stock_entry_type": doc.stock_entry_type,
+		"from_warehouse": doc.from_warehouse,
+		"to_warehouse": doc.to_warehouse,
+		"posting_date": doc.posting_date,
+		"docstatus": doc.docstatus,
+		"custom_site_supervisor": doc.get("custom_site_supervisor"),
+		"custom_site_supervisor_name": site_supervisor_name,
+		"items": items
+	}
+
+@frappe.whitelist(methods=["POST"])
+def get_warehouse_stock_balances(items: list | str, warehouses: list | str, posting_date: str = None):
+	"""
+	Fetch stock balances for a list of items and warehouses.
+	Returns a map: { warehouse: { item_code: balance } }
+	"""
+	import json
+	
+	if isinstance(items, str):
+		try:
+			items = json.loads(items) if items else []
+		except json.JSONDecodeError:
+			# Fallback for comma-separated string if any
+			items = [i.strip() for i in items.split(",")] if items else []
+	
+	if isinstance(warehouses, str):
+		try:
+			warehouses = json.loads(warehouses) if warehouses else []
+		except json.JSONDecodeError:
+			warehouses = [w.strip() for w in warehouses.split(",")] if warehouses else []
+
+	if not items or not warehouses:
+		return {}
+
+	if not posting_date:
+		from frappe.utils import nowdate
+		posting_date = nowdate()
+
+	# Fetch actual_qty from Bin for current balance (fastest)
+	# Or from SLE if a specific date is required (slower)
+	
+	Bin = frappe.qb.DocType("Bin")
+	query = (
+		frappe.qb.from_(Bin)
+		.select(Bin.warehouse, Bin.item_code, Bin.actual_qty)
+		.where(Bin.item_code.isin(items))
+		.where(Bin.warehouse.isin(warehouses))
+	)
+	
+	results = query.run(as_dict=True)
+	
+	balance_map = {}
+	for res in results:
+		wh = res["warehouse"]
+		it = res["item_code"]
+		qty = res["actual_qty"]
+		
+		if wh not in balance_map:
+			balance_map[wh] = {}
+		
+		balance_map[wh][it] = float(qty)
+	
+	return balance_map
+
+@frappe.whitelist(methods=["GET"])
+def get_stock_items():
+	"""
+	Fetch all items that are not disabled, not variants, and maintain stock.
+	Used for client-side search caching.
+	"""
+	items = frappe.get_list("Item",
+		filters={
+			"disabled": 0,
+			"has_variants": 0,
+			"is_stock_item": 1
+		},
+		fields=["name", "item_code", "item_name", "stock_uom"]
+	)
+	return items
+

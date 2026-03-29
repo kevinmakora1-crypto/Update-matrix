@@ -23,14 +23,8 @@ class GenerateContractComplianceChecker:
 		self.today = getdate(frappe.utils.today())
 
 	def get_contract_items_list(self):
-		ci = frappe.qb.DocType("Contract Items Operation")
-		c = frappe.qb.DocType("Contracts")
-		from frappe.query_builder.functions import IfNull
-		
-		return (
-			frappe.qb.from_(ci)
-			.inner_join(c).on(ci.parent == c.name)
-			.select(
+		return frappe.db.sql("""
+			SELECT
 				ci.name, 
 				ci.idx,
 				ci.parent,
@@ -50,13 +44,12 @@ class GenerateContractComplianceChecker:
 				ci.friday,
 				ci.saturday,
 				c.project
-			)
-			.where(
-				(c.workflow_state == "Active")
-				& (ci.item_code.isnotnull())
-				& (IfNull(ci.item_type, "") != "Items")
-			)
-		).run(as_dict=True)
+			FROM `tabContract Items Operation` ci
+			INNER JOIN `tabContracts` c ON ci.parent = c.name
+			WHERE c.workflow_state = %s
+				AND ci.item_code IS NOT NULL
+				AND ci.item_type != %s
+		""", ("Active", "Items"), as_dict=1)
 	
 	def count_selected_days_in_range(self, contract_data, start_date, end_date):
 		weekday_fields = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']

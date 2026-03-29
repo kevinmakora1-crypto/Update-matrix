@@ -206,7 +206,8 @@ def upload_image():
                 if(k=="given_names" and v):
                     # Mindee V2 may return given_names as a list (e.g. ['JOHN', 'DOE'])
                     # or as a space-separated string — handle both to avoid AttributeError
-                    # that would silently prevent gender and passport_holder_of from being saved.
+                    # that would abort passport processing and prevent later fields
+                    # (gender, passport_holder_of) from being saved.
                     if isinstance(v, list):
                         given_names = [str(n) for n in v if n]
                     else:

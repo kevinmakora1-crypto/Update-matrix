@@ -205,8 +205,8 @@ class JobOfferOverride(JobOffer):
         if auto_email_settings.auto_email_hiring_method not in [hiring_method, 'All Recruitment']:
             return
 
-        # Guard: skip if a sent Communication already exists for this Job Offer
-        # to avoid missing or double-sending when multiple applicants share the same email.
+        # Guard: skip if a sent Communication already exists for this specific Job Offer
+        # to prevent duplicate emails when on_update fires multiple times for the same document.
         if frappe.db.exists('Communication', {
             'reference_doctype': 'Job Offer',
             'reference_name': self.name,
@@ -224,8 +224,7 @@ class JobOfferOverride(JobOffer):
             "subject": 'Job Offer: {0} [{1}]'.format(self.applicant_name, self.job_applicant),
             "attachments": [attachment],
             "reference_doctype": 'Job Offer',
-            "reference_name": self.name,
-            "now": True
+            "reference_name": self.name
         }
         frappe.sendmail(**email_args)
 

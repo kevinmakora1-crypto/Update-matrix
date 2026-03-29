@@ -324,3 +324,4 @@ one_fm.patches.v15_0.add_hd_ticket_doctype_related_fields #2
 one_fm.patches.v15_0.populate_site_transport_stop_location_name
 one_fm.patches.v15_0.delete_attendance_checks_mar18_2026 #2
 one_fm.patches.v15_0.sync_contract_item_type_to_operations
+one_fm.patches.v15_0.delete_pending_off_day_attendance_checks

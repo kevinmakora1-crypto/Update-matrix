@@ -29,7 +29,7 @@ def execute():
             
             if availability in ["Client Day Off", "Day Off"]:
                 # If the schedule indicates a day off, delete the attendance check
-                frappe.delete_doc("Attendance Check", ac.name, force=1)
+                frappe.delete_doc("Attendance Check", ac.name, force=True, ignore_permissions=True)
                 deleted_count += 1
                 frappe.db.commit()
                 

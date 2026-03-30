@@ -377,7 +377,7 @@ frappe.ui.form.on('Contracts', {
 					ops_grid.grid.cannot_add_rows = true;
 					ops_grid.grid.cannot_delete_rows = true;
 					
-					if (!user_roles.includes('Operation Admin')) {
+					if (user_roles.includes('Operation Admin')) {
 						['item_code', 'count', 'rate_type', 'uom'].forEach(fieldname => {
 							ops_grid.grid.update_docfield_property(fieldname, 'read_only', 1);
 						});

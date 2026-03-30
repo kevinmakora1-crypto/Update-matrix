@@ -1,6 +1,8 @@
 import frappe
 from frappe import _
+from one_fm.api.v1.utils import response
 import json
+
 @frappe.whitelist(methods=["POST"])
 def get_stock_entries(stock_entry_type: str = None, from_date: str = None, to_date: str = None):
 	"""
@@ -28,7 +30,7 @@ def get_stock_entries(stock_entry_type: str = None, from_date: str = None, to_da
 				filters["stock_entry_type"] = ["in", valid_types]
 		else:
 			if stock_entry_type not in ["Material Transfer", "Material Issue"]:
-				frappe.throw(_("Invalid Stock Entry Type: {0}").format(stock_entry_type))
+				return response(_("Invalid Stock Entry Type: {0}").format(stock_entry_type), 400)
 			filters["stock_entry_type"] = stock_entry_type
 	else:
 		# If no type is provided, still restrict to these two as per requirements
@@ -52,15 +54,22 @@ def get_stock_entries(stock_entry_type: str = None, from_date: str = None, to_da
 		limit=300
 	)
 
-	return stock_entries
+	return response(_("Successful"), 200, stock_entries)
 
 @frappe.whitelist(methods=["GET"])
 def get_stock_entry_detail(name: str):
 	"""
 	Fetch a detailed Stock Entry record including site supervisor name and items.
 	"""
-	doc = frappe.get_doc("Stock Entry", name)
-	doc.check_permission("read")
+	try:
+		doc = frappe.get_doc("Stock Entry", name)
+		doc.check_permission("read")
+	except frappe.DoesNotExistError:
+		return response(_("Stock Entry {0} does not exist").format(name), 404)
+	except frappe.PermissionError:
+		return response(_("Insufficient Permission for Stock Entry {0}").format(name), 403)
+	except Exception as e:
+		return response(str(e), 500)
 	
 	# Fetch site supervisor name if custom_site_supervisor is set
 	site_supervisor_name = ""
@@ -81,7 +90,7 @@ def get_stock_entry_detail(name: str):
 			"name": d.name
 		})
 
-	return {
+	return response(_("Successful"), 200, {
 		"name": doc.name,
 		"stock_entry_type": doc.stock_entry_type,
 		"from_warehouse": doc.from_warehouse,
@@ -91,7 +100,7 @@ def get_stock_entry_detail(name: str):
 		"custom_site_supervisor": doc.get("custom_site_supervisor"),
 		"custom_site_supervisor_name": site_supervisor_name,
 		"items": items
-	}
+	})
 
 @frappe.whitelist(methods=["POST"])
 def get_warehouse_stock_balances(items: list | str, warehouses: list | str, posting_date: str = None):
@@ -115,7 +124,7 @@ def get_warehouse_stock_balances(items: list | str, warehouses: list | str, post
 			warehouses = [w.strip() for w in warehouses.split(",")] if warehouses else []
 
 	if not items or not warehouses:
-		return {}
+		return response(_("Missing items or warehouses"), 400, {})
 
 	if not posting_date:
 		from frappe.utils import nowdate
@@ -145,7 +154,7 @@ def get_warehouse_stock_balances(items: list | str, warehouses: list | str, post
 		
 		balance_map[wh][it] = float(qty)
 	
-	return balance_map
+	return response(_("Successful"), 200, balance_map)
 
 @frappe.whitelist(methods=["GET"])
 def get_stock_items():
@@ -161,5 +170,5 @@ def get_stock_items():
 		},
 		fields=["name", "item_code", "item_name", "stock_uom"]
 	)
-	return items
+	return response(_("Successful"), 200, items)
 

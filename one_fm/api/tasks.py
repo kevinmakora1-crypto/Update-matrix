@@ -874,21 +874,21 @@ def resolve_shift_type(shift_type_name, shift_types_dict, default_shift, date):
 	"""Resolve a shift type with computed start_datetime/end_datetime.
 	First checks the pre-filtered dict, then looks up from DB (and caches), then falls back to default.
 	"""
-	_shift_type = shift_types_dict.get(shift_type_name)
-	if not _shift_type:
-		_st = frappe.db.get_value("Shift Type", shift_type_name, ["name", "shift_type", "start_time", "end_time"], as_dict=True)
-		if _st:
-			_st.start_datetime = f"{date} {(datetime.min + _st.start_time).time()}"
-			if _st.end_time.total_seconds() < _st.start_time.total_seconds():
-				_st.end_datetime = f"{add_days(date, 1)} {(datetime.min + _st.end_time).time()}"
+	matched_shift = shift_types_dict.get(shift_type_name)
+	if not matched_shift:
+		fetched_shift = frappe.db.get_value("Shift Type", shift_type_name, ["name", "shift_type", "start_time", "end_time"], as_dict=True)
+		if fetched_shift:
+			fetched_shift.start_datetime = f"{date} {(datetime.min + fetched_shift.start_time).time()}"
+			if fetched_shift.end_time.total_seconds() < fetched_shift.start_time.total_seconds():
+				fetched_shift.end_datetime = f"{add_days(date, 1)} {(datetime.min + fetched_shift.end_time).time()}"
 			else:
-				_st.end_datetime = f"{date} {(datetime.min + _st.end_time).time()}"
-			_shift_type = _st
+				fetched_shift.end_datetime = f"{date} {(datetime.min + fetched_shift.end_time).time()}"
+			matched_shift = fetched_shift
 		else:
-			_shift_type = default_shift
+			matched_shift = default_shift
 		# Cache so the same shift type is not looked up again
-		shift_types_dict[shift_type_name] = _shift_type
-	return _shift_type
+		shift_types_dict[shift_type_name] = matched_shift
+	return matched_shift
 
 def create_shift_assignment(roster, date, time):
 	try:

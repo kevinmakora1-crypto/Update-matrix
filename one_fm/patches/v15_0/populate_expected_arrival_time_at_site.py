@@ -12,5 +12,5 @@ def execute():
 	frappe.db.sql("""
 		UPDATE `tabOperations Shift`
 		SET expected_arrival_time_at_site = end_time
-		WHERE expected_arrival_time_at_site IS NULL OR expected_arrival_time_at_site = ''
+		WHERE expected_arrival_time_at_site IS NULL
 	""")

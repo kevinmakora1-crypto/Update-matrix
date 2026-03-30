@@ -886,12 +886,6 @@ def create_shift_assignment(roster, date, time):
 				i.end_datetime = f"{date} {(datetime.min + i.end_time).time()}"
 			shift_types_dict[i.name] = i
 		default_shift = frappe.get_doc("Shift Type", '"Standard|Morning|08:00:00-17:00:00|9 hours"').as_dict()
-		# Compute start_datetime/end_datetime for default_shift so the fallback uses actual shift times
-		default_shift.start_datetime = f"{date} {(datetime.min + default_shift.start_time).time()}"
-		if default_shift.end_time.total_seconds() < default_shift.start_time.total_seconds():
-			default_shift.end_datetime = f"{add_days(date, 1)} {(datetime.min + default_shift.end_time).time()}"
-		else:
-			default_shift.end_datetime = f"{date} {(datetime.min + default_shift.end_time).time()}"
 
 
 		existing_shift = frappe.db.get_list("Shift Assignment", filters={

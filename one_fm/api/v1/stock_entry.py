@@ -172,3 +172,24 @@ def get_stock_items():
 	)
 	return response(_("Successful"), 200, items)
 
+@frappe.whitelist(methods=["GET"])
+def get_warehouses():
+	"""
+	Fetch all warehouses that are not disabled and associated with the current company.
+	"""
+	warehouses = frappe.get_list("Warehouse",
+		filters={"disabled": 0},
+		fields=["name", "warehouse_name", "is_group", "parent_warehouse"]
+	)
+	return response(_("Successful"), 200, warehouses)
+
+@frappe.whitelist(methods=["GET"])
+def get_uoms():
+	"""
+	Fetch all UOMs.
+	"""
+	uoms = frappe.get_list("UOM",
+		fields=["name", "uom_name"]
+	)
+	return response(_("Successful"), 200, uoms)
+

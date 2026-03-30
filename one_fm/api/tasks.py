@@ -968,7 +968,19 @@ def create_shift_assignment(roster, date, time):
 							"{_shift_request.operations_shift or ''}", "{_shift_request.operations_role or ''}", "{r.post_abbrv or ''}", "{_shift_request.roster_type}",
 							"{owner}", "{owner}", "{creation}", "{creation}", "{_shift_request.name}", "{_shift_request.check_in_site}", "{_shift_request.check_out_site}","{_day_off_ot}", "{r.name}", "{r.on_the_job_training if r.employee_availability == 'On-the-job Training' else ''}"),"""
 					else:
-						_shift_type = shift_types_dict.get(r.shift_type) or default_shift
+						_shift_type = shift_types_dict.get(r.shift_type)
+						if not _shift_type:
+							# Shift type not in pre-filtered dict — look up actual shift type and compute datetime
+							_st = frappe.db.get_value("Shift Type", r.shift_type, ["name", "shift_type", "start_time", "end_time"], as_dict=True)
+							if _st:
+								_st.start_datetime = f"{date} {(datetime.min + _st.start_time).time()}"
+								if _st.end_time.total_seconds() < _st.start_time.total_seconds():
+									_st.end_datetime = f"{add_days(date, 1)} {(datetime.min + _st.end_time).time()}"
+								else:
+									_st.end_datetime = f"{date} {(datetime.min + _st.end_time).time()}"
+								_shift_type = _st
+							else:
+								_shift_type = default_shift
 						query_body += f"""
 						(
 							"HR-SHA-{date}-{r.employee}", "{frappe.defaults.get_user_default('company')}", 1, "{r.employee}", "{r.employee_name}", '{r.shift_type}',

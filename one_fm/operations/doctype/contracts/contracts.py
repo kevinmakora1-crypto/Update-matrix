@@ -145,7 +145,8 @@ class Contracts(Document):
             sales_invoice_doc.contracts = self.name
 
             for item in self.items:
-                if item.item_type == "Manpower":
+                print(item, "\n\n\n\n\n\n\n\n")
+                if item.item_type == "Service":
                     post_schedules = get_post_schedules_for_item(item.item_code, self.project, selected_period_start_date, selected_period_end_date)
 
                     if item.rate_type == "Monthly" and len(post_schedules) == 0:

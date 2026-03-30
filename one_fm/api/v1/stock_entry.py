@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-
+import json
 @frappe.whitelist(methods=["POST"])
 def get_stock_entries(stock_entry_type: str = None, from_date: str = None, to_date: str = None):
 	"""
@@ -15,7 +15,6 @@ def get_stock_entries(stock_entry_type: str = None, from_date: str = None, to_da
 		if isinstance(stock_entry_type, str):
 			if stock_entry_type.startswith("["):
 				try:
-					import json
 					stock_entry_type = json.loads(stock_entry_type)
 				except Exception:
 					pass

@@ -951,7 +951,7 @@ def create_shift_assignment(roster, date, time):
 		if roster:
 			query_head = """
 				INSERT INTO `tabShift Assignment` (`name`, `company`, `docstatus`, `employee`, `employee_name`, `shift_type`, `site`, `project`, `status`,
-				`shift_classification`, `site_location`, `start_date`, `start_datetime`, `end_datetime`, `department`,
+				`shift_classification`, `site_location`, `start_date`, `end_date`, `start_datetime`, `end_datetime`, `department`,
 				`shift`, `operations_role`, `post_abbrv`, `roster_type`, `owner`, `modified_by`, `creation`, `modified`,
 				`shift_request`, `check_in_site`, `check_out_site`,`custom_day_off_ot`, `employee_schedule`, `custom_on_the_job_training`)
 				VALUES
@@ -977,7 +977,7 @@ def create_shift_assignment(roster, date, time):
 						query_body += f"""
 						(
 							"HR-SHA-{date}-{r.employee}", "{frappe.defaults.get_user_default('company')}", 1, "{r.employee}", "{r.employee_name}", '{_shift_request.shift_type}',
-							"{_shift_request.site or ''}", "{_project_r or ''}", 'Active', '{_shift_request.shift_type}', "{sites_list_dict.get(_shift_request.site) or ''}", "{date}",
+							"{_shift_request.site or ''}", "{_project_r or ''}", 'Active', '{_shift_request.shift_type}', "{sites_list_dict.get(_shift_request.site) or ''}", "{date}", "{add_days(date, 1) if _shift_type.start_time > _shift_type.end_time else date}",
 							"{shift_r_start_time or str(date)+' 08:00:00'}", "{shift_r_end_time or str(date)+' 17:00:00'}", "{r.department}",
 							"{_shift_request.operations_shift or ''}", "{_shift_request.operations_role or ''}", "{r.post_abbrv or ''}", "{_shift_request.roster_type}",
 							"{owner}", "{owner}", "{creation}", "{creation}", "{_shift_request.name}", "{_shift_request.check_in_site}", "{_shift_request.check_out_site}","{_day_off_ot}", "{r.name}", "{r.on_the_job_training if r.employee_availability == 'On-the-job Training' else ''}"),"""
@@ -986,7 +986,7 @@ def create_shift_assignment(roster, date, time):
 						query_body += f"""
 						(
 							"HR-SHA-{date}-{r.employee}", "{frappe.defaults.get_user_default('company')}", 1, "{r.employee}", "{r.employee_name}", '{r.shift_type}',
-							"{r.site or ''}", "{r.project or ''}", 'Active', '{_shift_type.shift_type}', "{sites_list_dict.get(r.site) or ''}", "{date}",
+							"{r.site or ''}", "{r.project or ''}", 'Active', '{_shift_type.shift_type}', "{sites_list_dict.get(r.site) or ''}", "{date}", "{add_days(date, 1) if _shift_type.end_time.total_seconds() < _shift_type.start_time.total_seconds() else date}",
 							"{_shift_type.start_datetime or str(date)+' 08:00:00'}",
 							"{_shift_type.end_datetime or str(date)+' 17:00:00'}", "{r.department}", "{r.shift or ''}", "{r.operations_role or ''}", "{r.post_abbrv or ''}", "{r.roster_type}",
 							"{owner}", "{owner}", "{creation}", "{creation}", '', '', '',"{_day_off_ot}", '{r.name}', "{r.on_the_job_training if r.employee_availability == 'On-the-job Training' else ''}"),"""
@@ -1012,6 +1012,7 @@ def create_shift_assignment(roster, date, time):
 					site_location = VALUES(site_location),
 					start_datetime = VALUES(start_datetime),
 					end_datetime = VALUES(end_datetime),
+					end_date = VALUES(end_date),
 					department = VALUES(department),
 					shift_request = VALUES(shift_request),
 					check_in_site = VALUES(check_in_site),

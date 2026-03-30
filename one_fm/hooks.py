@@ -405,6 +405,9 @@ doc_events = {
 		"validate": "one_fm.overrides.interview.update_interview_rounds_in_job_applicant",
         "after_insert": "one_fm.overrides.interview.update_from_to_date_null",
 	},
+	"Interview Round": {
+		"validate": "one_fm.one_fm.one_fm.interview_utils.calculate_matrix_weights"
+	},
 	"Issue": {
 		"after_insert": [
 			"one_fm.utils.assign_issue",
@@ -826,16 +829,21 @@ scheduler_events = {
 # ]
 
 fixtures = [
-	# {
-	# 	"dt": "Custom Field",
-	# 	'filters': [['dt', 'in', ['Shift Request', 'Shift Permission', 'Employee', 'Project', 'Location', 'Employee Checkin', 'Shift Assignment', 'Shift Type', 'Operations Site']]]
-	# },
 	{
 		"dt": "Email Template"
 	},
 	{
 		"dt": "HD Ticket Template",
 		"filters": [["name", "in",["Default"]]]
+	},
+	{
+		"dt": "DocType"
+	},
+	{
+		"dt": "Custom Field"
+	},
+	{
+		"dt": "Property Setter"
 	},
 ]
 

@@ -75,6 +75,7 @@ def get_stock_entry_detail(name: str):
 			"item_code": d.item_code,
 			"item_name": d.item_name,
 			"stock_uom": d.stock_uom,
+			"uom": d.uom,
 			"qty": d.qty,
 			"s_warehouse": d.s_warehouse,
 			"t_warehouse": d.t_warehouse,

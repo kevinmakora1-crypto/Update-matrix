@@ -1,6 +1,7 @@
 import frappe
 from frappe import _
 from one_fm.api.v1.utils import response
+from frappe.query_builder import DocType
 import json
 
 @frappe.whitelist(methods=["POST"])
@@ -133,7 +134,7 @@ def get_warehouse_stock_balances(items: list | str, warehouses: list | str, post
 	# Fetch actual_qty from Bin for current balance (fastest)
 	# Or from SLE if a specific date is required (slower)
 	
-	Bin = frappe.qb.DocType("Bin")
+	Bin = DocType("Bin")
 	query = (
 		frappe.qb.from_(Bin)
 		.select(Bin.warehouse, Bin.item_code, Bin.actual_qty)
@@ -156,20 +157,35 @@ def get_warehouse_stock_balances(items: list | str, warehouses: list | str, post
 	
 	return response(_("Successful"), 200, balance_map)
 
-@frappe.whitelist(methods=["GET"])
-def get_stock_items():
+@frappe.whitelist(methods=["GET", "POST"])
+def get_stock_items(warehouse: str = None):
 	"""
 	Fetch all items that are not disabled, not variants, and maintain stock.
-	Used for client-side search caching.
+	If warehouse is provided, returns only items with actual_qty > 0 in that warehouse.
 	"""
-	items = frappe.get_list("Item",
-		filters={
-			"disabled": 0,
-			"has_variants": 0,
-			"is_stock_item": 1
-		},
-		fields=["name", "item_code", "item_name", "stock_uom"]
-	)
+	if warehouse:
+		Bin = DocType("Bin")
+		Item = DocType("Item")
+		query = (
+			frappe.qb.from_(Item)
+			.join(Bin).on(Item.name == Bin.item_code)
+			.select(Item.name, Item.item_code, Item.item_name, Item.stock_uom, Bin.actual_qty.as_("available_qty"))
+			.where(Bin.warehouse == warehouse)
+			.where(Bin.actual_qty > 0)
+			.where(Item.disabled == 0)
+			.where(Item.has_variants == 0)
+			.where(Item.is_stock_item == 1)
+		)
+		items = query.run(as_dict=True)
+	else:
+		items = frappe.get_list("Item",
+			filters={
+				"disabled": 0,
+				"has_variants": 0,
+				"is_stock_item": 1
+			},
+			fields=["name", "item_code", "item_name", "stock_uom"]
+		)
 	return response(_("Successful"), 200, items)
 
 @frappe.whitelist(methods=["GET"])

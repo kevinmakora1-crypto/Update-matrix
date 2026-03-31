@@ -1324,7 +1324,7 @@ var set_country_field_empty_on_load = function(frm) {
 };
 
 var hide_job_applicant_existing_fields = function(frm) {
-	let fields = ['applicant_name', 'email_id', 'cover_letter', 'resume_attachment', 'section_break_6', 'one_fm_height','one_fm_applicant_civil_id','one_fm_passport_applicant_number','one_fm_previous_company_authorized_signatory','Resume Link'];
+	let fields = ['applicant_name', 'email_id', 'cover_letter', 'resume_attachment', 'section_break_6','one_fm_applicant_civil_id','one_fm_passport_applicant_number','one_fm_previous_company_authorized_signatory','Resume Link'];
 	set_hidden_fields(frm, fields, true);
 };
 

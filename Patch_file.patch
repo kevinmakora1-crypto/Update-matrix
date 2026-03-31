@@ -260,7 +260,7 @@ new file mode 100644
 index 000000000..e69de29bb
 diff --git a/one_fm/one_fm/page/interview_console/interview_console.html b/one_fm/one_fm/page/interview_console/interview_console.html
 new file mode 100755
-index 000000000..4451a9861
+index 000000000..140083d6e
 --- /dev/null
 +++ b/one_fm/one_fm/page/interview_console/interview_console.html
 @@ -0,0 +1,72 @@
@@ -283,8 +283,8 @@ index 000000000..4451a9861
 +                <div id="ic-age" class="ic-header-value-box">-</div>
 +            </div>
 +            <div class="ic-header-field">
-+                <div class="ic-header-label">HEIGHT</div>
-+                <div class="ic-header-value-box">cm</div>
++                <div class="ic-header-label">HEIGHT (cm)</div>
++                <input type="number" id="ic-height" class="ic-header-value-box" style="width:70px;text-align:center;border:1px solid #e2e8f0;outline:none;" placeholder="-" min="100" max="250" step="1">
 +            </div>
 +            <div class="ic-header-field" style="margin-left: 10px;">
 +                <div class="ic-header-label">TOTAL SCORE</div>
@@ -338,10 +338,10 @@ index 000000000..4451a9861
 +
 diff --git a/one_fm/one_fm/page/interview_console/interview_console.js b/one_fm/one_fm/page/interview_console/interview_console.js
 new file mode 100755
-index 000000000..6412fadd8
+index 000000000..314c98bcf
 --- /dev/null
 +++ b/one_fm/one_fm/page/interview_console/interview_console.js
-@@ -0,0 +1,937 @@
+@@ -0,0 +1,939 @@
 +/**
 + * INTERVIEW CONSOLE - GOLD STANDARD (M3)
 + * 
@@ -973,8 +973,9 @@ index 000000000..6412fadd8
 +			method: "one_fm.one_fm.page.interview_console.interview_console.get_applicant_data",
 +			args: { applicant: app.name },
 +			callback: function (r) {
-+				var data = r.message || { age: "--", remarks: "", score: 0, status: "Open", job_offers: 0, matrix: [] };
++				var data = r.message || { age: "--", height: "", remarks: "", score: 0, status: "Open", job_offers: 0, matrix: [] };
 +				$w('#ic-age').text(data.age);
++				$w('#ic-height').val(data.height || "");
 +				$w('#ic-remarks').val(data.remarks);
 +				$w('#ic-score-pill').text(data.score + '/100');
 +				$w('#ic-job-offers-count').text(data.job_offers || 0);
@@ -1238,7 +1239,8 @@ index 000000000..6412fadd8
 +				remarks: $w('#ic-remarks').val(),
 +				status: status,
 +				scores_detail: JSON.stringify(scores_detail),
-+				interview_round: state.interview_round || ""
++				interview_round: state.interview_round || "",
++				height: $w('#ic-height').val() || ""
 +			},
 +			callback: function () { }
 +		});
@@ -1312,10 +1314,10 @@ index 000000000..c87997f3a
 \ No newline at end of file
 diff --git a/one_fm/one_fm/page/interview_console/interview_console.py b/one_fm/one_fm/page/interview_console/interview_console.py
 new file mode 100644
-index 000000000..659f2d474
+index 000000000..4a540eb4a
 --- /dev/null
 +++ b/one_fm/one_fm/page/interview_console/interview_console.py
-@@ -0,0 +1,383 @@
+@@ -0,0 +1,389 @@
 +import frappe
 +from frappe.utils import getdate, nowdate
 +
@@ -1345,12 +1347,15 @@ index 000000000..659f2d474
 +    Returns age, remarks, score, status, and dynamic interview matrix.
 +    """
 +    valid_fields = get_valid_fields()
-+    res = {"age": "--", "remarks": "", "score": 0, "status": "Open", "matrix": []}
++    res = {"age": "--", "height": "", "remarks": "", "score": 0, "status": "Open", "matrix": []}
 +    
 +    # Fetch Applicant details
 +    applicant_doc = frappe.get_doc('Job Applicant', applicant)
 +    designation = applicant_doc.designation
 +    nationality = applicant_doc.get('one_fm_nationality')
++
++    # Height
++    res["height"] = applicant_doc.get('one_fm_height') or ""
 +
 +    # Discovery for DOB (Updated with user's specific fields)
 +    found_dob = next((f for f in ['one_fm_date_of_birth', 'date_of_birth', 'dob', 'birth_date', 'custom_date_of_birth'] if f in valid_fields), None)
@@ -1439,7 +1444,7 @@ index 000000000..659f2d474
 +    return res
 +
 +@frappe.whitelist()
-+def save_interview_data(applicant, score, remarks, status, scores_detail=None, interview_round=None):
++def save_interview_data(applicant, score, remarks, status, scores_detail=None, interview_round=None, height=None):
 +    """
 +    Saves interview results by creating/updating an Interview document.
 +    Also updates Job Applicant status.
@@ -1461,6 +1466,9 @@ index 000000000..659f2d474
 +    
 +    doc = frappe.get_doc("Job Applicant", applicant)
 +    doc.update(update_dict)
++    # Save height if provided
++    if height:
++        doc.one_fm_height = float(height)
 +    doc.save(ignore_permissions=True)
 +    
 +    # --- 2. Map console status to Interview status ---

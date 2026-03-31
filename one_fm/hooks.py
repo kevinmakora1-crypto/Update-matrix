@@ -835,13 +835,19 @@ fixtures = [
 		"filters": [["name", "in",["Default"]]]
 	},
 	{
-		"dt": "DocType"
+		"dt": "DocType",
+		"filters": [["module", "=", "One Fm"], ["custom", "=", 1]]
 	},
 	{
-		"dt": "Custom Field"
+		"dt": "Custom Field",
+		"filters": [["module", "in", ["One Fm", "one_fm", ""]]]
 	},
 	{
-		"dt": "Property Setter"
+		"dt": "Property Setter",
+		"filters": [["doc_type", "in", [
+			"Job Applicant", "Job Offer", "Interview", "Interview Feedback",
+			"Job Opening", "Employee", "Shift Type", "Shift Assignment"
+		]]]
 	},
 ]
 

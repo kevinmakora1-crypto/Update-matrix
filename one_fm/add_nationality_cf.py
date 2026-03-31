@@ -10,7 +10,7 @@ def execute():
             'fieldtype': 'Link',
             'options': 'Nationality',
             'insert_after': 'designation',
-            'module': 'one_fm'
+            'module': 'One Fm'
         })
         print("Successfully added one_fm_nationality to Interview Round.")
     else:

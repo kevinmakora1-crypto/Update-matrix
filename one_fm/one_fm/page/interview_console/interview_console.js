@@ -12,7 +12,6 @@ frappe.pages['interview_console'].on_page_load = function (wrapper) {
 			$('head').append('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap">');
 		}
 
-		// CSS loaded via hooks.py app_include_css
 
 		// 2. Initialize Page Structure
 		var page = frappe.ui.make_app_page({

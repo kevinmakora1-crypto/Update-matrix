@@ -1,15 +1,11 @@
 /**
- * INTERVIEW CONSOLE - GOLD STANDARD (M3)
- * 
- * PREVENTION MECHANISM FOR "6-HOUR BLANK SCREEN" ISSUE:
- * 1. CSS is kept entirely in JS (frappe.dom.set_style) to prevent 
- *    the Page loader from misinterpreting CSS @import/rules as JS identifiers.
- * 2. HTML template is kept as pure structural markup.
- * 3. Page initialization uses page.main for direct rendering.
+ * Interview Console - Bulk Recruitment Evaluation Interface
+ *
+ * CSS is injected via frappe.dom.set_style to ensure proper loading
+ * within the Frappe Page lifecycle.
  */
 frappe.pages['interview_console'].on_page_load = function (wrapper) {
 	try {
-		console.log("--- Interview Console Init (Direct Injection Mode) ---");
 
 		// 1. Dynamic Font & CSS Loading
 		if (!$('link[href*="Roboto"]').length) {

@@ -1,8 +1,9 @@
 """
 Patch: Setup Interview Console Custom Fields & DocTypes
-Run on production: bench --site site_name run-patch one_fm.patches.v15_0.setup_interview_console
+Run: bench --site site_name run-patch one_fm.patches.v15_0.setup_interview_console
 """
 import frappe
+from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
 def execute():
@@ -29,81 +30,54 @@ def execute():
             ]
         })
         doc.insert(ignore_permissions=True)
-        print("✅ Created DocType: Interview Evaluation Detail")
-
-        # Create DB table
-        frappe.db.sql("""CREATE TABLE IF NOT EXISTS `tabInterview Evaluation Detail` (
-            name varchar(140) NOT NULL,
-            creation datetime(6) DEFAULT NULL,
-            modified datetime(6) DEFAULT NULL,
-            modified_by varchar(140) DEFAULT NULL,
-            owner varchar(140) DEFAULT NULL,
-            docstatus int(1) NOT NULL DEFAULT 0,
-            parent varchar(140) DEFAULT NULL,
-            parentfield varchar(140) DEFAULT NULL,
-            parenttype varchar(140) DEFAULT NULL,
-            idx int(8) NOT NULL DEFAULT 0,
-            category varchar(140) DEFAULT NULL,
-            question text DEFAULT NULL,
-            weight decimal(18,6) DEFAULT 0.000000,
-            rating int(11) DEFAULT 0,
-            max_rating int(11) DEFAULT 5,
-            PRIMARY KEY (name),
-            KEY parent (parent)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""")
-        print("✅ Created DB table: tabInterview Evaluation Detail")
+        # Let Frappe create the DB table via its schema manager
+        frappe.db.updatedb("Interview Evaluation Detail")
+        frappe.db.commit()
+        print("Created DocType: Interview Evaluation Detail")
 
     # --- 2. Custom Fields on Interview Feedback ---
-    feedback_fields = [
-        {
-            "fieldname": "custom_evaluation_criteria",
-            "fieldtype": "Table",
-            "label": "Evaluation Criteria",
-            "options": "Interview Evaluation Detail",
-            "insert_after": "feedback",
-            "read_only": 1,
-        },
-        {
-            "fieldname": "custom_remarks",
-            "fieldtype": "Small Text",
-            "label": "Remarks",
-            "insert_after": "custom_evaluation_criteria",
-        },
-    ]
-
-    for field in feedback_fields:
-        if not frappe.db.exists("Custom Field", {"dt": "Interview Feedback", "fieldname": field["fieldname"]}):
-            cf = frappe.get_doc({"doctype": "Custom Field", "dt": "Interview Feedback", **field})
-            cf.insert(ignore_permissions=True)
-            print(f"✅ Created Custom Field: Interview Feedback.{field['fieldname']}")
+    create_custom_fields({
+        "Interview Feedback": [
+            {
+                "fieldname": "custom_evaluation_criteria",
+                "fieldtype": "Table",
+                "label": "Evaluation Criteria",
+                "options": "Interview Evaluation Detail",
+                "insert_after": "feedback",
+                "read_only": 1,
+            },
+            {
+                "fieldname": "custom_remarks",
+                "fieldtype": "Small Text",
+                "label": "Remarks",
+                "insert_after": "custom_evaluation_criteria",
+            },
+        ]
+    }, update=True)
 
     # --- 3. Custom Fields on Interview ---
-    interview_fields = [
-        {
-            "fieldname": "interview_summary_render",
-            "fieldtype": "HTML",
-            "label": "Interview Summary",
-            "insert_after": "interview_details",
-        },
-        {
-            "fieldname": "total_interview_score",
-            "fieldtype": "Float",
-            "label": "Total Score",
-            "insert_after": "average_rating",
-        },
-        {
-            "fieldname": "custom_hiring_method",
-            "fieldtype": "Data",
-            "label": "Hiring Method",
-            "insert_after": "designation",
-        },
-    ]
-
-    for field in interview_fields:
-        if not frappe.db.exists("Custom Field", {"dt": "Interview", "fieldname": field["fieldname"]}):
-            cf = frappe.get_doc({"doctype": "Custom Field", "dt": "Interview", **field})
-            cf.insert(ignore_permissions=True)
-            print(f"✅ Created Custom Field: Interview.{field['fieldname']}")
+    create_custom_fields({
+        "Interview": [
+            {
+                "fieldname": "interview_summary_render",
+                "fieldtype": "HTML",
+                "label": "Interview Summary",
+                "insert_after": "interview_details",
+            },
+            {
+                "fieldname": "total_interview_score",
+                "fieldtype": "Float",
+                "label": "Total Score",
+                "insert_after": "average_rating",
+            },
+            {
+                "fieldname": "custom_hiring_method",
+                "fieldtype": "Data",
+                "label": "Hiring Method",
+                "insert_after": "designation",
+            },
+        ]
+    }, update=True)
 
     frappe.db.commit()
-    print("\n🎉 Interview Console setup complete!")
+    print("Interview Console setup complete!")

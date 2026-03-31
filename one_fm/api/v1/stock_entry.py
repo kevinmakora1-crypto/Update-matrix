@@ -73,9 +73,10 @@ def get_stock_entry_detail(name: str):
 	
 	# Fetch site supervisor name if custom_site_supervisor is set
 	site_supervisor_name = ""
-	if doc.get("custom_site_supervisor"):
-		site_supervisor_name = frappe.db.get_value("User", doc.custom_site_supervisor, "full_name")
-	
+	if doc.get("custom_site_supervisor_name"):
+		site_supervisor_name =doc.get("custom_site_supervisor_name")
+	else:
+		site_supervisor_name = frappe.db.get_value("User", doc.owner, "full_name")
 	# Convert items to list of dicts for the frontend
 	items = []
 	for d in doc.items:
@@ -97,7 +98,6 @@ def get_stock_entry_detail(name: str):
 		"to_warehouse": doc.to_warehouse,
 		"posting_date": doc.posting_date,
 		"docstatus": doc.docstatus,
-		"custom_site_supervisor": doc.get("custom_site_supervisor"),
 		"custom_site_supervisor_name": site_supervisor_name,
 		"items": items
 	})

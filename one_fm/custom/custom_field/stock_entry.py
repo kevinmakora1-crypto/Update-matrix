@@ -6,15 +6,6 @@ def get_stock_entry_custom_fields():
                 "fieldname": "custom_site_supervisor_name",
                 "insert_after": "custom_site_supervisor",
                 "fieldtype": "Data",
-                "fetch_from": "custom_site_supervisor.full_name",
-                "read_only": 1,
-            },
-            {
-                "label": "Site Supervisor",
-                "fieldname": "custom_site_supervisor",
-                "insert_after": "remarks",
-                "fieldtype": "Link",
-                "options": "User",
                 "read_only": 1,
             },
             {

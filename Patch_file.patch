@@ -22,9 +22,18 @@ index 000000000..a16997639
 +    else:
 +        print("Field already exists.")
 diff --git a/one_fm/hooks.py b/one_fm/hooks.py
-index 643176293..d27b74867 100644
+index 643176293..e99ed5788 100644
 --- a/one_fm/hooks.py
 +++ b/one_fm/hooks.py
+@@ -28,7 +28,7 @@ website_context = {
+ email_brand_image = "/assets/one_fm/assets/img/logo-img/ONEFM_Identity_Gray.png"
+ 
+ # include js, css files in header of desk.html
+-app_include_css = "/assets/one_fm/css/one_fm.css"
++app_include_css = ["/assets/one_fm/css/one_fm.css", "/assets/one_fm/css/interview_console.css"]
+ app_include_js = [
+ 		"/assets/one_fm/js/maps.js",
+ 		"/assets/one_fm/js/desk.js",
 @@ -405,6 +405,7 @@ doc_events = {
  		"validate": "one_fm.overrides.interview.update_interview_rounds_in_job_applicant",
          "after_insert": "one_fm.overrides.interview.update_from_to_date_null",
@@ -337,10 +346,10 @@ index 000000000..140083d6e
 +
 diff --git a/one_fm/one_fm/page/interview_console/interview_console.js b/one_fm/one_fm/page/interview_console/interview_console.js
 new file mode 100755
-index 000000000..f6654a07b
+index 000000000..73ce852c7
 --- /dev/null
 +++ b/one_fm/one_fm/page/interview_console/interview_console.js
-@@ -0,0 +1,647 @@
+@@ -0,0 +1,644 @@
 +/**
 + * Interview Console - Bulk Recruitment Evaluation Interface
 + *
@@ -355,10 +364,7 @@ index 000000000..f6654a07b
 +			$('head').append('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap">');
 +		}
 +
-+		// Load Interview Console CSS from external file (cacheable by browser)
-+		if (!$('link[href*="interview_console.css"]').length) {
-+			$('head').append('<link rel="stylesheet" href="/assets/one_fm/css/interview_console.css">');
-+		}
++		// CSS loaded via hooks.py app_include_css
 +
 +		// 2. Initialize Page Structure
 +		var page = frappe.ui.make_app_page({
@@ -1566,10 +1572,10 @@ index 000000000..a974afc6c
 +        print("All standard Offer Terms already exist — no changes made.")
 diff --git a/one_fm/patches/v15_0/setup_interview_console.py b/one_fm/patches/v15_0/setup_interview_console.py
 new file mode 100644
-index 000000000..dfdf10c64
+index 000000000..168e6e73f
 --- /dev/null
 +++ b/one_fm/patches/v15_0/setup_interview_console.py
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,82 @@
 +"""
 +Patch: Setup Interview Console Custom Fields & DocTypes
 +Run: bench --site site_name run-patch one_fm.patches.v15_0.setup_interview_console
@@ -1581,30 +1587,31 @@ index 000000000..dfdf10c64
 +def execute():
 +    # --- 1. Create child doctype: Interview Evaluation Detail ---
 +    if not frappe.db.exists("DocType", "Interview Evaluation Detail"):
-+        doc = frappe.get_doc({
-+            "doctype": "DocType",
-+            "name": "Interview Evaluation Detail",
-+            "module": "One Fm",
-+            "custom": 1,
-+            "istable": 1,
-+            "editable_grid": 1,
-+            "fields": [
-+                {"fieldname": "category", "fieldtype": "Data", "label": "Category",
-+                 "in_list_view": 1, "columns": 2},
-+                {"fieldname": "question", "fieldtype": "Small Text", "label": "Question",
-+                 "in_list_view": 1, "columns": 4},
-+                {"fieldname": "weight", "fieldtype": "Float", "label": "Weight",
-+                 "in_list_view": 1, "columns": 1, "precision": 2},
-+                {"fieldname": "rating", "fieldtype": "Int", "label": "Rating",
-+                 "in_list_view": 1, "columns": 1, "description": "Score 1-5"},
-+                {"fieldname": "max_rating", "fieldtype": "Int", "label": "Max Rating",
-+                 "in_list_view": 1, "columns": 1, "default": "5"},
-+            ]
-+        })
-+        doc.insert(ignore_permissions=True)
-+        # Let Frappe create the DB table via its schema manager
-+        frappe.db.updatedb("Interview Evaluation Detail")
-+        print("Created DocType: Interview Evaluation Detail")
++        try:
++            doc = frappe.get_doc({
++                "doctype": "DocType",
++                "name": "Interview Evaluation Detail",
++                "module": "One Fm",
++                "custom": 1,
++                "istable": 1,
++                "editable_grid": 1,
++                "fields": [
++                    {"fieldname": "category", "fieldtype": "Data", "label": "Category",
++                     "in_list_view": 1, "columns": 2},
++                    {"fieldname": "question", "fieldtype": "Small Text", "label": "Question",
++                     "in_list_view": 1, "columns": 4},
++                    {"fieldname": "weight", "fieldtype": "Float", "label": "Weight",
++                     "in_list_view": 1, "columns": 1, "precision": 2},
++                    {"fieldname": "rating", "fieldtype": "Int", "label": "Rating",
++                     "in_list_view": 1, "columns": 1, "description": "Score 1-5"},
++                    {"fieldname": "max_rating", "fieldtype": "Int", "label": "Max Rating",
++                     "in_list_view": 1, "columns": 1, "default": "5"},
++                ]
++            })
++            doc.insert(ignore_permissions=True)
++            print("Created DocType: Interview Evaluation Detail")
++        except frappe.DuplicateEntryError:
++            pass
 +
 +    # --- 2. Custom Fields on Interview Feedback ---
 +    create_custom_fields({

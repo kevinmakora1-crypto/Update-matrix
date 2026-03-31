@@ -63,15 +63,12 @@ index 643176293..77bef822c 100644
  # before_tests = "one_fm.install.before_tests"
 diff --git a/one_fm/one_fm/doctype/evaluation_template_question/__init__.py b/one_fm/one_fm/doctype/evaluation_template_question/__init__.py
 new file mode 100644
-index 000000000..c2e6a931e
+index 000000000..ee7dc0ac4
 --- /dev/null
 +++ b/one_fm/one_fm/doctype/evaluation_template_question/__init__.py
-@@ -0,0 +1,5 @@
-+import frappe
-+from frappe.model.document import Document
-+
-+class _Uinit__(Document):
-+	pass
+@@ -0,0 +1,2 @@
++# Copyright (c) 2026, One FM and contributors
++# For license information, please see license.txt
 diff --git a/one_fm/one_fm/doctype/evaluation_template_question/evaluation_template_question.json b/one_fm/one_fm/doctype/evaluation_template_question/evaluation_template_question.json
 new file mode 100644
 index 000000000..03f3af241
@@ -181,15 +178,12 @@ index c51001641..69dc19042 100755
   "name": "Interview Questions",
 diff --git a/one_fm/one_fm/doctype/nationality_question_weight/__init__.py b/one_fm/one_fm/doctype/nationality_question_weight/__init__.py
 new file mode 100644
-index 000000000..c2e6a931e
+index 000000000..ee7dc0ac4
 --- /dev/null
 +++ b/one_fm/one_fm/doctype/nationality_question_weight/__init__.py
-@@ -0,0 +1,5 @@
-+import frappe
-+from frappe.model.document import Document
-+
-+class _Uinit__(Document):
-+	pass
+@@ -0,0 +1,2 @@
++# Copyright (c) 2026, One FM and contributors
++# For license information, please see license.txt
 diff --git a/one_fm/one_fm/doctype/nationality_question_weight/nationality_question_weight.json b/one_fm/one_fm/doctype/nationality_question_weight/nationality_question_weight.json
 new file mode 100644
 index 000000000..cd1cac27d
@@ -338,22 +332,18 @@ index 000000000..140083d6e
 +
 diff --git a/one_fm/one_fm/page/interview_console/interview_console.js b/one_fm/one_fm/page/interview_console/interview_console.js
 new file mode 100755
-index 000000000..314c98bcf
+index 000000000..bf264d57a
 --- /dev/null
 +++ b/one_fm/one_fm/page/interview_console/interview_console.js
-@@ -0,0 +1,939 @@
+@@ -0,0 +1,935 @@
 +/**
-+ * INTERVIEW CONSOLE - GOLD STANDARD (M3)
-+ * 
-+ * PREVENTION MECHANISM FOR "6-HOUR BLANK SCREEN" ISSUE:
-+ * 1. CSS is kept entirely in JS (frappe.dom.set_style) to prevent 
-+ *    the Page loader from misinterpreting CSS @import/rules as JS identifiers.
-+ * 2. HTML template is kept as pure structural markup.
-+ * 3. Page initialization uses page.main for direct rendering.
++ * Interview Console - Bulk Recruitment Evaluation Interface
++ *
++ * CSS is injected via frappe.dom.set_style to ensure proper loading
++ * within the Frappe Page lifecycle.
 + */
 +frappe.pages['interview_console'].on_page_load = function (wrapper) {
 +	try {
-+		console.log("--- Interview Console Init (Direct Injection Mode) ---");
 +
 +		// 1. Dynamic Font & CSS Loading
 +		if (!$('link[href*="Roboto"]').length) {
@@ -1707,26 +1697,6 @@ index 000000000..4a540eb4a
 +    return applicants
 +
 +
-diff --git a/one_fm/one_fm/page/interview_console/test_status.py b/one_fm/one_fm/page/interview_console/test_status.py
-new file mode 100644
-index 000000000..2487b0b13
---- /dev/null
-+++ b/one_fm/one_fm/page/interview_console/test_status.py
-@@ -0,0 +1,14 @@
-+import sys
-+sys.path.append('../../..')
-+import frappe
-+
-+frappe.init(site='restoredmaster')
-+frappe.connect()
-+
-+docs = frappe.get_all('Job Applicant', filters={'applicant_name': ['like', '%Kumar%']}, fields=['name', 'applicant_name', 'status'])
-+for d in docs:
-+    doc = frappe.get_doc('Job Applicant', d.name)
-+    val_status = doc.get('status')
-+    val_custom = doc.get('one_fm_applicant_status')
-+    val_wf = doc.get('workflow_state')
-+    print(f"{d.applicant_name}: status='{val_status}', custom='{val_custom}', wf='{val_wf}'")
 diff --git a/one_fm/overrides/job_offer.py b/one_fm/overrides/job_offer.py
 index 7cd93f442..113854987 100644
 --- a/one_fm/overrides/job_offer.py
@@ -1870,15 +1840,16 @@ index 000000000..a974afc6c
 +        print("All standard Offer Terms already exist — no changes made.")
 diff --git a/one_fm/patches/v15_0/setup_interview_console.py b/one_fm/patches/v15_0/setup_interview_console.py
 new file mode 100644
-index 000000000..136ba2604
+index 000000000..f265b2e28
 --- /dev/null
 +++ b/one_fm/patches/v15_0/setup_interview_console.py
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,83 @@
 +"""
 +Patch: Setup Interview Console Custom Fields & DocTypes
-+Run on production: bench --site site_name run-patch one_fm.patches.v15_0.setup_interview_console
++Run: bench --site site_name run-patch one_fm.patches.v15_0.setup_interview_console
 +"""
 +import frappe
++from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 +
 +
 +def execute():
@@ -1905,84 +1876,57 @@ index 000000000..136ba2604
 +            ]
 +        })
 +        doc.insert(ignore_permissions=True)
-+        print("✅ Created DocType: Interview Evaluation Detail")
-+
-+        # Create DB table
-+        frappe.db.sql("""CREATE TABLE IF NOT EXISTS `tabInterview Evaluation Detail` (
-+            name varchar(140) NOT NULL,
-+            creation datetime(6) DEFAULT NULL,
-+            modified datetime(6) DEFAULT NULL,
-+            modified_by varchar(140) DEFAULT NULL,
-+            owner varchar(140) DEFAULT NULL,
-+            docstatus int(1) NOT NULL DEFAULT 0,
-+            parent varchar(140) DEFAULT NULL,
-+            parentfield varchar(140) DEFAULT NULL,
-+            parenttype varchar(140) DEFAULT NULL,
-+            idx int(8) NOT NULL DEFAULT 0,
-+            category varchar(140) DEFAULT NULL,
-+            question text DEFAULT NULL,
-+            weight decimal(18,6) DEFAULT 0.000000,
-+            rating int(11) DEFAULT 0,
-+            max_rating int(11) DEFAULT 5,
-+            PRIMARY KEY (name),
-+            KEY parent (parent)
-+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""")
-+        print("✅ Created DB table: tabInterview Evaluation Detail")
++        # Let Frappe create the DB table via its schema manager
++        frappe.db.updatedb("Interview Evaluation Detail")
++        frappe.db.commit()
++        print("Created DocType: Interview Evaluation Detail")
 +
 +    # --- 2. Custom Fields on Interview Feedback ---
-+    feedback_fields = [
-+        {
-+            "fieldname": "custom_evaluation_criteria",
-+            "fieldtype": "Table",
-+            "label": "Evaluation Criteria",
-+            "options": "Interview Evaluation Detail",
-+            "insert_after": "feedback",
-+            "read_only": 1,
-+        },
-+        {
-+            "fieldname": "custom_remarks",
-+            "fieldtype": "Small Text",
-+            "label": "Remarks",
-+            "insert_after": "custom_evaluation_criteria",
-+        },
-+    ]
-+
-+    for field in feedback_fields:
-+        if not frappe.db.exists("Custom Field", {"dt": "Interview Feedback", "fieldname": field["fieldname"]}):
-+            cf = frappe.get_doc({"doctype": "Custom Field", "dt": "Interview Feedback", **field})
-+            cf.insert(ignore_permissions=True)
-+            print(f"✅ Created Custom Field: Interview Feedback.{field['fieldname']}")
++    create_custom_fields({
++        "Interview Feedback": [
++            {
++                "fieldname": "custom_evaluation_criteria",
++                "fieldtype": "Table",
++                "label": "Evaluation Criteria",
++                "options": "Interview Evaluation Detail",
++                "insert_after": "feedback",
++                "read_only": 1,
++            },
++            {
++                "fieldname": "custom_remarks",
++                "fieldtype": "Small Text",
++                "label": "Remarks",
++                "insert_after": "custom_evaluation_criteria",
++            },
++        ]
++    }, update=True)
 +
 +    # --- 3. Custom Fields on Interview ---
-+    interview_fields = [
-+        {
-+            "fieldname": "interview_summary_render",
-+            "fieldtype": "HTML",
-+            "label": "Interview Summary",
-+            "insert_after": "interview_details",
-+        },
-+        {
-+            "fieldname": "total_interview_score",
-+            "fieldtype": "Float",
-+            "label": "Total Score",
-+            "insert_after": "average_rating",
-+        },
-+        {
-+            "fieldname": "custom_hiring_method",
-+            "fieldtype": "Data",
-+            "label": "Hiring Method",
-+            "insert_after": "designation",
-+        },
-+    ]
-+
-+    for field in interview_fields:
-+        if not frappe.db.exists("Custom Field", {"dt": "Interview", "fieldname": field["fieldname"]}):
-+            cf = frappe.get_doc({"doctype": "Custom Field", "dt": "Interview", **field})
-+            cf.insert(ignore_permissions=True)
-+            print(f"✅ Created Custom Field: Interview.{field['fieldname']}")
++    create_custom_fields({
++        "Interview": [
++            {
++                "fieldname": "interview_summary_render",
++                "fieldtype": "HTML",
++                "label": "Interview Summary",
++                "insert_after": "interview_details",
++            },
++            {
++                "fieldname": "total_interview_score",
++                "fieldtype": "Float",
++                "label": "Total Score",
++                "insert_after": "average_rating",
++            },
++            {
++                "fieldname": "custom_hiring_method",
++                "fieldtype": "Data",
++                "label": "Hiring Method",
++                "insert_after": "designation",
++            },
++        ]
++    }, update=True)
 +
 +    frappe.db.commit()
-+    print("\n🎉 Interview Console setup complete!")
++    print("Interview Console setup complete!")
 diff --git a/one_fm/public/js/doctype_js/interview.js b/one_fm/public/js/doctype_js/interview.js
 index b5eb91dd4..191fa347d 100644
 --- a/one_fm/public/js/doctype_js/interview.js

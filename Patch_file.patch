@@ -2054,7 +2054,7 @@ index b5eb91dd4..191fa347d 100644
  		let fields = frm.events.get_fields_for_feedback();
  		fields.push({
 diff --git a/one_fm/public/js/doctype_js/job_applicant.js b/one_fm/public/js/doctype_js/job_applicant.js
-index b3decc1ab..cb18fd2d8 100644
+index b3decc1ab..93eb742b4 100644
 --- a/one_fm/public/js/doctype_js/job_applicant.js
 +++ b/one_fm/public/js/doctype_js/job_applicant.js
 @@ -227,30 +227,11 @@ frappe.ui.form.on('Job Applicant', {
@@ -2093,6 +2093,15 @@ index b3decc1ab..cb18fd2d8 100644
  			});
  		}
  	},
+@@ -1343,7 +1324,7 @@ var set_country_field_empty_on_load = function(frm) {
+ };
+ 
+ var hide_job_applicant_existing_fields = function(frm) {
+-	let fields = ['applicant_name', 'email_id', 'cover_letter', 'resume_attachment', 'section_break_6', 'one_fm_height','one_fm_applicant_civil_id','one_fm_passport_applicant_number','one_fm_previous_company_authorized_signatory','Resume Link'];
++	let fields = ['applicant_name', 'email_id', 'cover_letter', 'resume_attachment', 'section_break_6','one_fm_applicant_civil_id','one_fm_passport_applicant_number','one_fm_previous_company_authorized_signatory','Resume Link'];
+ 	set_hidden_fields(frm, fields, true);
+ };
+ 
 diff --git a/one_fm/public/js/doctype_js/job_offer.js b/one_fm/public/js/doctype_js/job_offer.js
 index bfbf0a7df..859e995bd 100644
 --- a/one_fm/public/js/doctype_js/job_offer.js

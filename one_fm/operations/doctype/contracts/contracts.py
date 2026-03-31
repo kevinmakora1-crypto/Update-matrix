@@ -145,7 +145,7 @@ class Contracts(Document):
             sales_invoice_doc.contracts = self.name
 
             for item in self.items:
-                if item.item_type == "Manpower":
+                if item.item_type == "Service":
                     post_schedules = get_post_schedules_for_item(item.item_code, self.project, selected_period_start_date, selected_period_end_date)
 
                     if item.rate_type == "Monthly" and len(post_schedules) == 0:
@@ -348,12 +348,14 @@ class Contracts(Document):
                 ops_row = existing_ops_map[item.item_code]
                 ops_row.count = item.count
                 ops_row.rate_type = item.rate_type
+                ops_row.item_type = item.item_type
             else:
                 # Append a new row to contract_items_operation
                 self.append('contract_items_operation', {
                     'item_code': item.item_code,
                     'count': item.count,
                     'rate_type': item.rate_type,
+                    'item_type': item.item_type,
                 })
 
         self.save(ignore_permissions=True)

@@ -111,29 +111,35 @@ def get_warehouse_stock_balances(items: list | str, warehouses: list | str, post
 	"""
 	import json
 	
+	# Ensure we have lists
 	if isinstance(items, str):
 		try:
-			items = json.loads(items) if items else []
-		except json.JSONDecodeError:
-			# Fallback for comma-separated string if any
-			items = [i.strip() for i in items.split(",")] if items else []
-	
+			items = json.loads(items)
+		except Exception:
+			items = [items]
+	elif not isinstance(items, list):
+		items = [items] if items else []
+
 	if isinstance(warehouses, str):
 		try:
-			warehouses = json.loads(warehouses) if warehouses else []
-		except json.JSONDecodeError:
-			warehouses = [w.strip() for w in warehouses.split(",")] if warehouses else []
+			warehouses = json.loads(warehouses)
+		except Exception:
+			warehouses = [warehouses]
+	elif not isinstance(warehouses, list):
+		warehouses = [warehouses] if warehouses else []
+
+	# Support comma separated if still needed (fallback)
+	if items and isinstance(items[0], str) and "," in items[0] and len(items) == 1:
+		items = [i.strip() for i in items[0].split(",")]
+	if warehouses and isinstance(warehouses[0], str) and "," in warehouses[0] and len(warehouses) == 1:
+		warehouses = [w.strip() for w in warehouses[0].split(",")]
 
 	if not items or not warehouses:
 		return response(_("Missing items or warehouses"), 400, {})
 
-	if not posting_date:
-		from frappe.utils import nowdate
-		posting_date = nowdate()
+	# Log for debugging (temporary)
+	# frappe.log_error(message=f"Items: {items}, Warehouses: {warehouses}", title="Debug Balances")
 
-	# Fetch actual_qty from Bin for current balance (fastest)
-	# Or from SLE if a specific date is required (slower)
-	
 	Bin = DocType("Bin")
 	query = (
 		frappe.qb.from_(Bin)

@@ -27,12 +27,15 @@ def get_applicant_data(applicant):
     Returns age, remarks, score, status, and dynamic interview matrix.
     """
     valid_fields = get_valid_fields()
-    res = {"age": "--", "remarks": "", "score": 0, "status": "Open", "matrix": []}
+    res = {"age": "--", "height": "", "remarks": "", "score": 0, "status": "Open", "matrix": []}
     
     # Fetch Applicant details
     applicant_doc = frappe.get_doc('Job Applicant', applicant)
     designation = applicant_doc.designation
     nationality = applicant_doc.get('one_fm_nationality')
+
+    # Height
+    res["height"] = applicant_doc.get('one_fm_height') or ""
 
     # Discovery for DOB (Updated with user's specific fields)
     found_dob = next((f for f in ['one_fm_date_of_birth', 'date_of_birth', 'dob', 'birth_date', 'custom_date_of_birth'] if f in valid_fields), None)
@@ -121,7 +124,7 @@ def get_applicant_data(applicant):
     return res
 
 @frappe.whitelist()
-def save_interview_data(applicant, score, remarks, status, scores_detail=None, interview_round=None):
+def save_interview_data(applicant, score, remarks, status, scores_detail=None, interview_round=None, height=None):
     """
     Saves interview results by creating/updating an Interview document.
     Also updates Job Applicant status.
@@ -143,6 +146,9 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
     
     doc = frappe.get_doc("Job Applicant", applicant)
     doc.update(update_dict)
+    # Save height if provided
+    if height:
+        doc.one_fm_height = float(height)
     doc.save(ignore_permissions=True)
     
     # --- 2. Map console status to Interview status ---

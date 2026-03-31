@@ -629,8 +629,9 @@ function init_interview_console(wrapper, page) {
 			method: "one_fm.one_fm.page.interview_console.interview_console.get_applicant_data",
 			args: { applicant: app.name },
 			callback: function (r) {
-				var data = r.message || { age: "--", remarks: "", score: 0, status: "Open", job_offers: 0, matrix: [] };
+				var data = r.message || { age: "--", height: "", remarks: "", score: 0, status: "Open", job_offers: 0, matrix: [] };
 				$w('#ic-age').text(data.age);
+				$w('#ic-height').val(data.height || "");
 				$w('#ic-remarks').val(data.remarks);
 				$w('#ic-score-pill').text(data.score + '/100');
 				$w('#ic-job-offers-count').text(data.job_offers || 0);
@@ -894,7 +895,8 @@ function init_interview_console(wrapper, page) {
 				remarks: $w('#ic-remarks').val(),
 				status: status,
 				scores_detail: JSON.stringify(scores_detail),
-				interview_round: state.interview_round || ""
+				interview_round: state.interview_round || "",
+				height: $w('#ic-height').val() || ""
 			},
 			callback: function () { }
 		});

@@ -12,10 +12,7 @@ frappe.pages['interview_console'].on_page_load = function (wrapper) {
 			$('head').append('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap">');
 		}
 
-		// Load Interview Console CSS from external file (cacheable by browser)
-		if (!$('link[href*="interview_console.css"]').length) {
-			$('head').append('<link rel="stylesheet" href="/assets/one_fm/css/interview_console.css">');
-		}
+		// CSS loaded via hooks.py app_include_css
 
 		// 2. Initialize Page Structure
 		var page = frappe.ui.make_app_page({

@@ -28,7 +28,7 @@ website_context = {
 email_brand_image = "/assets/one_fm/assets/img/logo-img/ONEFM_Identity_Gray.png"
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/one_fm/css/one_fm.css"
+app_include_css = ["/assets/one_fm/css/one_fm.css", "/assets/one_fm/css/interview_console.css"]
 app_include_js = [
 		"/assets/one_fm/js/maps.js",
 		"/assets/one_fm/js/desk.js",

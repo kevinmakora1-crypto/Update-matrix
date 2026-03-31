@@ -1,3 +1,27 @@
+diff --git a/one_fm/add_nationality_cf.py b/one_fm/add_nationality_cf.py
+new file mode 100644
+index 000000000..653324b2f
+--- /dev/null
++++ b/one_fm/add_nationality_cf.py
+@@ -0,0 +1,18 @@
++import frappe
++from frappe.custom.doctype.custom_field.custom_field import create_custom_field
++
++def execute():
++    # Check if the field already exists
++    if not frappe.db.exists('Custom Field', {'dt': 'Interview Round', 'fieldname': 'one_fm_nationality'}):
++        create_custom_field('Interview Round', {
++            'fieldname': 'one_fm_nationality',
++            'label': 'Nationality',
++            'fieldtype': 'Link',
++            'options': 'Nationality',
++            'insert_after': 'designation',
++            'module': 'one_fm'
++        })
++        frappe.db.commit()
++        print("Successfully added one_fm_nationality to Interview Round.")
++    else:
++        print("Field already exists.")
 diff --git a/one_fm/hooks.py b/one_fm/hooks.py
 index 643176293..77bef822c 100644
 --- a/one_fm/hooks.py
@@ -37,6 +61,74 @@ index 643176293..77bef822c 100644
  ]
  
  # before_tests = "one_fm.install.before_tests"
+diff --git a/one_fm/one_fm/doctype/evaluation_template_question/__init__.py b/one_fm/one_fm/doctype/evaluation_template_question/__init__.py
+new file mode 100644
+index 000000000..c2e6a931e
+--- /dev/null
++++ b/one_fm/one_fm/doctype/evaluation_template_question/__init__.py
+@@ -0,0 +1,5 @@
++import frappe
++from frappe.model.document import Document
++
++class _Uinit__(Document):
++	pass
+diff --git a/one_fm/one_fm/doctype/evaluation_template_question/evaluation_template_question.json b/one_fm/one_fm/doctype/evaluation_template_question/evaluation_template_question.json
+new file mode 100644
+index 000000000..03f3af241
+--- /dev/null
++++ b/one_fm/one_fm/doctype/evaluation_template_question/evaluation_template_question.json
+@@ -0,0 +1,40 @@
++{
++ "actions": [],
++ "creation": "2026-03-30 01:32:00.000000",
++ "doctype": "DocType",
++ "editable_grid": 1,
++ "engine": "InnoDB",
++ "field_order": [
++  "question",
++  "category"
++ ],
++ "fields": [
++  {
++   "fieldname": "question",
++   "fieldtype": "Small Text",
++   "in_list_view": 1,
++   "label": "Question",
++   "reqd": 1
++  },
++  {
++   "fieldname": "category",
++   "fieldtype": "Select",
++   "in_list_view": 1,
++   "label": "Category",
++   "options": "PHYSICAL\nCulture / Attitude\nMotivation\nKnowledge / Skillset\nCommunication",
++   "reqd": 1
++  }
++ ],
++ "istable": 1,
++ "links": [],
++ "modified": "2026-03-30 01:32:00.000000",
++ "modified_by": "Administrator",
++ "module": "One Fm",
++ "name": "Evaluation Template Question",
++ "owner": "Administrator",
++ "permissions": [],
++ "quick_entry": 1,
++ "sort_field": "modified",
++ "sort_order": "DESC",
++ "track_changes": 1
++}
+diff --git a/one_fm/one_fm/doctype/evaluation_template_question/evaluation_template_question.py b/one_fm/one_fm/doctype/evaluation_template_question/evaluation_template_question.py
+new file mode 100644
+index 000000000..24a602762
+--- /dev/null
++++ b/one_fm/one_fm/doctype/evaluation_template_question/evaluation_template_question.py
+@@ -0,0 +1,5 @@
++import frappe
++from frappe.model.document import Document
++
++class EvaluationTemplateQuestion(Document):
++	pass
 diff --git a/one_fm/one_fm/doctype/interview_questions/interview_questions.json b/one_fm/one_fm/doctype/interview_questions/interview_questions.json
 index c51001641..69dc19042 100755
 --- a/one_fm/one_fm/doctype/interview_questions/interview_questions.json
@@ -87,6 +179,82 @@ index c51001641..69dc19042 100755
   "modified_by": "Administrator",
   "module": "One Fm",
   "name": "Interview Questions",
+diff --git a/one_fm/one_fm/doctype/nationality_question_weight/__init__.py b/one_fm/one_fm/doctype/nationality_question_weight/__init__.py
+new file mode 100644
+index 000000000..c2e6a931e
+--- /dev/null
++++ b/one_fm/one_fm/doctype/nationality_question_weight/__init__.py
+@@ -0,0 +1,5 @@
++import frappe
++from frappe.model.document import Document
++
++class _Uinit__(Document):
++	pass
+diff --git a/one_fm/one_fm/doctype/nationality_question_weight/nationality_question_weight.json b/one_fm/one_fm/doctype/nationality_question_weight/nationality_question_weight.json
+new file mode 100644
+index 000000000..cd1cac27d
+--- /dev/null
++++ b/one_fm/one_fm/doctype/nationality_question_weight/nationality_question_weight.json
+@@ -0,0 +1,48 @@
++{
++ "actions": [],
++ "creation": "2026-03-30 01:34:00.000000",
++ "doctype": "DocType",
++ "editable_grid": 1,
++ "engine": "InnoDB",
++ "field_order": [
++  "question",
++  "category",
++  "weight"
++ ],
++ "fields": [
++  {
++   "fieldname": "question",
++   "fieldtype": "Small Text",
++   "in_list_view": 1,
++   "label": "Question",
++   "read_only": 1,
++   "reqd": 1
++  },
++  {
++   "fieldname": "category",
++   "fieldtype": "Data",
++   "in_list_view": 1,
++   "label": "Category",
++   "read_only": 1
++  },
++  {
++   "fieldname": "weight",
++   "fieldtype": "Float",
++   "in_list_view": 1,
++   "label": "Weight %",
++   "reqd": 1
++  }
++ ],
++ "istable": 1,
++ "links": [],
++ "modified": "2026-03-30 01:34:00.000000",
++ "modified_by": "Administrator",
++ "module": "One Fm",
++ "name": "Nationality Question Weight",
++ "owner": "Administrator",
++ "permissions": [],
++ "quick_entry": 1,
++ "sort_field": "modified",
++ "sort_order": "DESC",
++ "track_changes": 1
++}
+diff --git a/one_fm/one_fm/doctype/nationality_question_weight/nationality_question_weight.py b/one_fm/one_fm/doctype/nationality_question_weight/nationality_question_weight.py
+new file mode 100644
+index 000000000..314140dab
+--- /dev/null
++++ b/one_fm/one_fm/doctype/nationality_question_weight/nationality_question_weight.py
+@@ -0,0 +1,5 @@
++import frappe
++from frappe.model.document import Document
++
++class NationalityQuestionWeight(Document):
++	pass
 diff --git a/one_fm/one_fm/page/interview_console/__init__.py b/one_fm/one_fm/page/interview_console/__init__.py
 new file mode 100644
 index 000000000..e69de29bb
@@ -1551,6 +1719,262 @@ index 000000000..2487b0b13
 +    val_custom = doc.get('one_fm_applicant_status')
 +    val_wf = doc.get('workflow_state')
 +    print(f"{d.applicant_name}: status='{val_status}', custom='{val_custom}', wf='{val_wf}'")
+diff --git a/one_fm/overrides/job_offer.py b/one_fm/overrides/job_offer.py
+index 7cd93f442..113854987 100644
+--- a/one_fm/overrides/job_offer.py
++++ b/one_fm/overrides/job_offer.py
+@@ -89,14 +89,23 @@ class JobOfferOverride(JobOffer):
+                     self.job_offer_term_template = target_offer_template
+                     # Clear existing offer_terms
+                     self.set("offer_terms", [])
+-                    # Add new offer_terms
+-                    offer_terms = frappe.get_all("Job Offer Term", filters={"parent": target_offer_template}, fields=['offer_term', 'value'])
++                    # Add new offer_terms from the Offer Terms Table Template child table
++                    offer_terms = frappe.get_all(
++                        "Offer Terms Table Template",
++                        filters={"parent": target_offer_template, "parenttype": "Job Offer Templates"},
++                        fields=["offer_term", "offer_value"],
++                        order_by="idx asc"
++                    )
+                     for item in offer_terms:
+                         self.append("offer_terms", {
+                             "offer_term": item.offer_term,
+-                            "value": item.value,
++                            "value": item.offer_value,
+                         })
+ 
++            # Ensure standard terms (Annual Leave, Probation Period) are present
++            if self.docstatus == 0:
++                self._ensure_standard_offer_terms()
++
+             if not self.select_terms:
+                 default_terms = frappe.db.get_single_value('Hiring Settings', 'default_terms_and_conditions') or 'Job Offer Acceptance'
+                 self.select_terms = default_terms
+@@ -119,6 +128,42 @@ class JobOfferOverride(JobOffer):
+                 'company': self.company
+             })
+ 
++    def _ensure_standard_offer_terms(self):
++        """
++        Ensures that 'Annual Leave' and 'Probation Period' standard terms are always
++        present in the offer_terms table. Values are sourced from the linked ERF document
++        (vacation_days, shift_hours) with sensible defaults when not available.
++        """
++        # Collect terms that already exist, to avoid duplicates
++        existing_terms = {row.offer_term for row in (self.offer_terms or [])}
++
++        # Fetch ERF data if available
++        vacation_days = 30
++        shift_hours = 9
++        if self.one_fm_erf:
++            erf_data = frappe.db.get_value(
++                'ERF', self.one_fm_erf,
++                ['vacation_days', 'shift_hours'],
++                as_dict=True
++            )
++            if erf_data:
++                vacation_days = erf_data.vacation_days or vacation_days
++                shift_hours = erf_data.shift_hours or shift_hours
++
++        # Add 'Annual Leave' if missing
++        if 'Annual Leave' not in existing_terms:
++            self.append('offer_terms', {
++                'offer_term': 'Annual Leave',
++                'value': '({0}) days paid leave, as per Kuwait Labor Law (Private Sector)'.format(int(vacation_days)),
++            })
++
++        # Add 'Probation Period' if missing
++        if 'Probation Period' not in existing_terms:
++            self.append('offer_terms', {
++                'offer_term': 'Probation Period',
++                'value': '(100) working days',
++            })
++
+     def on_update_after_submit(self):
+         # update terms if applicant name changes
+         if self.has_value_changed("applicant_name"):
+diff --git a/one_fm/overrides/queries.py b/one_fm/overrides/queries.py
+index 496952918..ef2084448 100644
+--- a/one_fm/overrides/queries.py
++++ b/one_fm/overrides/queries.py
+@@ -105,8 +105,7 @@ def designation_query(doctype, txt, searchfield, start, page_len, filters):
+     return frappe.db.sql("""
+         SELECT name
+         FROM `tabDesignation`
+-        WHERE disabled = 0
+-        AND name LIKE %(txt)s
++        WHERE name LIKE %(txt)s
+         ORDER BY name
+         LIMIT %(start)s, %(page_len)s
+     """, {
+diff --git a/one_fm/patches/v15_0/create_missing_offer_terms.py b/one_fm/patches/v15_0/create_missing_offer_terms.py
+new file mode 100644
+index 000000000..a974afc6c
+--- /dev/null
++++ b/one_fm/patches/v15_0/create_missing_offer_terms.py
+@@ -0,0 +1,47 @@
++"""
++Patch to create standard Offer Term records required by the Job Offer workflow.
++
++The `offer_term` field in the `Job Offer Term` child table is a mandatory Link field
++pointing to the `Offer Term` DocType. When records like "Annual Leave" and "Probation Period"
++don't exist in that DocType, Frappe throws a "Could not find Row #X: Offer Term: ..." error
++whenever a Job Offer is saved or submitted.
++
++This patch ensures all standard terms used by one_fm's Job Offer automation are present.
++"""
++import frappe
++
++
++STANDARD_OFFER_TERMS = [
++    "Mobile with Line",
++    "Health Insurance",
++    "Company Insurance",
++    "Personal Laptop",
++    "Personal Vehicle",
++    "Accommodation",
++    "Transportation",
++    "Working Hours",
++    "Annual Leave",
++    "Probation Period",
++    "Kuwait Visa processing Fees",
++    "Kuwait Residency Fees",
++    "Kuwait insurance Fees",
++]
++
++
++def execute():
++    created = []
++    for term_name in STANDARD_OFFER_TERMS:
++        if not frappe.db.exists("Offer Term", term_name):
++            doc = frappe.get_doc({
++                "doctype": "Offer Term",
++                "offer_term": term_name,
++            })
++            doc.insert(ignore_permissions=True)
++            created.append(term_name)
++
++    frappe.db.commit()
++
++    if created:
++        print(f"Created {len(created)} Offer Term records: {', '.join(created)}")
++    else:
++        print("All standard Offer Terms already exist — no changes made.")
+diff --git a/one_fm/patches/v15_0/setup_interview_console.py b/one_fm/patches/v15_0/setup_interview_console.py
+new file mode 100644
+index 000000000..136ba2604
+--- /dev/null
++++ b/one_fm/patches/v15_0/setup_interview_console.py
+@@ -0,0 +1,109 @@
++"""
++Patch: Setup Interview Console Custom Fields & DocTypes
++Run on production: bench --site site_name run-patch one_fm.patches.v15_0.setup_interview_console
++"""
++import frappe
++
++
++def execute():
++    # --- 1. Create child doctype: Interview Evaluation Detail ---
++    if not frappe.db.exists("DocType", "Interview Evaluation Detail"):
++        doc = frappe.get_doc({
++            "doctype": "DocType",
++            "name": "Interview Evaluation Detail",
++            "module": "One Fm",
++            "custom": 1,
++            "istable": 1,
++            "editable_grid": 1,
++            "fields": [
++                {"fieldname": "category", "fieldtype": "Data", "label": "Category",
++                 "in_list_view": 1, "columns": 2},
++                {"fieldname": "question", "fieldtype": "Small Text", "label": "Question",
++                 "in_list_view": 1, "columns": 4},
++                {"fieldname": "weight", "fieldtype": "Float", "label": "Weight",
++                 "in_list_view": 1, "columns": 1, "precision": 2},
++                {"fieldname": "rating", "fieldtype": "Int", "label": "Rating",
++                 "in_list_view": 1, "columns": 1, "description": "Score 1-5"},
++                {"fieldname": "max_rating", "fieldtype": "Int", "label": "Max Rating",
++                 "in_list_view": 1, "columns": 1, "default": "5"},
++            ]
++        })
++        doc.insert(ignore_permissions=True)
++        print("✅ Created DocType: Interview Evaluation Detail")
++
++        # Create DB table
++        frappe.db.sql("""CREATE TABLE IF NOT EXISTS `tabInterview Evaluation Detail` (
++            name varchar(140) NOT NULL,
++            creation datetime(6) DEFAULT NULL,
++            modified datetime(6) DEFAULT NULL,
++            modified_by varchar(140) DEFAULT NULL,
++            owner varchar(140) DEFAULT NULL,
++            docstatus int(1) NOT NULL DEFAULT 0,
++            parent varchar(140) DEFAULT NULL,
++            parentfield varchar(140) DEFAULT NULL,
++            parenttype varchar(140) DEFAULT NULL,
++            idx int(8) NOT NULL DEFAULT 0,
++            category varchar(140) DEFAULT NULL,
++            question text DEFAULT NULL,
++            weight decimal(18,6) DEFAULT 0.000000,
++            rating int(11) DEFAULT 0,
++            max_rating int(11) DEFAULT 5,
++            PRIMARY KEY (name),
++            KEY parent (parent)
++        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""")
++        print("✅ Created DB table: tabInterview Evaluation Detail")
++
++    # --- 2. Custom Fields on Interview Feedback ---
++    feedback_fields = [
++        {
++            "fieldname": "custom_evaluation_criteria",
++            "fieldtype": "Table",
++            "label": "Evaluation Criteria",
++            "options": "Interview Evaluation Detail",
++            "insert_after": "feedback",
++            "read_only": 1,
++        },
++        {
++            "fieldname": "custom_remarks",
++            "fieldtype": "Small Text",
++            "label": "Remarks",
++            "insert_after": "custom_evaluation_criteria",
++        },
++    ]
++
++    for field in feedback_fields:
++        if not frappe.db.exists("Custom Field", {"dt": "Interview Feedback", "fieldname": field["fieldname"]}):
++            cf = frappe.get_doc({"doctype": "Custom Field", "dt": "Interview Feedback", **field})
++            cf.insert(ignore_permissions=True)
++            print(f"✅ Created Custom Field: Interview Feedback.{field['fieldname']}")
++
++    # --- 3. Custom Fields on Interview ---
++    interview_fields = [
++        {
++            "fieldname": "interview_summary_render",
++            "fieldtype": "HTML",
++            "label": "Interview Summary",
++            "insert_after": "interview_details",
++        },
++        {
++            "fieldname": "total_interview_score",
++            "fieldtype": "Float",
++            "label": "Total Score",
++            "insert_after": "average_rating",
++        },
++        {
++            "fieldname": "custom_hiring_method",
++            "fieldtype": "Data",
++            "label": "Hiring Method",
++            "insert_after": "designation",
++        },
++    ]
++
++    for field in interview_fields:
++        if not frappe.db.exists("Custom Field", {"dt": "Interview", "fieldname": field["fieldname"]}):
++            cf = frappe.get_doc({"doctype": "Custom Field", "dt": "Interview", **field})
++            cf.insert(ignore_permissions=True)
++            print(f"✅ Created Custom Field: Interview.{field['fieldname']}")
++
++    frappe.db.commit()
++    print("\n🎉 Interview Console setup complete!")
 diff --git a/one_fm/public/js/doctype_js/interview.js b/one_fm/public/js/doctype_js/interview.js
 index b5eb91dd4..191fa347d 100644
 --- a/one_fm/public/js/doctype_js/interview.js
@@ -1661,3 +2085,20 @@ index b3decc1ab..cb18fd2d8 100644
  			});
  		}
  	},
+diff --git a/one_fm/public/js/doctype_js/job_offer.js b/one_fm/public/js/doctype_js/job_offer.js
+index bfbf0a7df..859e995bd 100644
+--- a/one_fm/public/js/doctype_js/job_offer.js
++++ b/one_fm/public/js/doctype_js/job_offer.js
+@@ -214,7 +214,11 @@ var set_job_applicant_details = function(frm) {
+ var set_erf_details = function(frm, erf) {
+   frm.set_value('designation', erf.designation);
+   set_salary_details(frm, erf);
+-  // set_other_benefits_to_terms(frm, erf);
++  // Only populate offer_terms from ERF if the table is empty
++  // (backend will handle this on save, but this provides immediate feedback)
++  if (!frm.doc.offer_terms || frm.doc.offer_terms.length === 0) {
++    set_other_benefits_to_terms(frm, erf);
++  }
+ };
+ 
+ var set_salary_details = function(frm, erf) {

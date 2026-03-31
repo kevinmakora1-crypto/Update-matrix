@@ -1,6 +1,0 @@
-node_modules
-.DS_Store
-dist
-dist-ssr
-job_applicant_magic_link/node_modules
-*.local

@@ -341,3 +341,4 @@ one_fm.patches.v15_0.add_contract_notification_recipients #1
 one_fm.patches.v15_0.populate_expected_arrival_time_at_site
 one_fm.patches.v15_0.sync_contract_item_type_to_operations
 one_fm.patches.v15_0.delete_pending_off_day_attendance_checks
+one_fm.patches.v15_0.add_stock_entry_custom_fields

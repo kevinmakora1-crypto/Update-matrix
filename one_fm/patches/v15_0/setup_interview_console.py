@@ -32,7 +32,6 @@ def execute():
         doc.insert(ignore_permissions=True)
         # Let Frappe create the DB table via its schema manager
         frappe.db.updatedb("Interview Evaluation Detail")
-        frappe.db.commit()
         print("Created DocType: Interview Evaluation Detail")
 
     # --- 2. Custom Fields on Interview Feedback ---
@@ -79,5 +78,4 @@ def execute():
         ]
     }, update=True)
 
-    frappe.db.commit()
     print("Interview Console setup complete!")

@@ -12,7 +12,6 @@ def execute():
             'insert_after': 'designation',
             'module': 'one_fm'
         })
-        frappe.db.commit()
         print("Successfully added one_fm_nationality to Interview Round.")
     else:
         print("Field already exists.")

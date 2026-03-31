@@ -139,13 +139,19 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
     valid_fields = get_valid_fields()
     
     # --- 1. Update Job Applicant Status ---
-    if status == "Shortlisted":
-        update_dict = {"one_fm_applicant_status": "Shortlisted"}
-    else:
-        update_dict = {"status": status}
-    
     doc = frappe.get_doc("Job Applicant", applicant)
-    doc.update(update_dict)
+
+    # Check if a Workflow is active on Job Applicant
+    has_workflow = frappe.get_all("Workflow", filters={"document_type": "Job Applicant", "is_active": 1}, limit=1)
+
+    if status == "Shortlisted":
+        doc.one_fm_applicant_status = "Shortlisted"
+    elif has_workflow:
+        # Update workflow_state to avoid read-only status conflicts
+        doc.workflow_state = status
+    else:
+        doc.status = status
+
     # Save height if provided
     if height:
         doc.one_fm_height = float(height)
@@ -346,10 +352,11 @@ def clear_interview_data(applicant):
     return "Success"
 
 @frappe.whitelist()
-def get_applicant_list(hiring_method=None):
+def get_applicant_list(hiring_method=None, start=0, page_length=200):
     """
     Returns the list of applicants with discovered score fields.
     Optionally filtered by hiring method (e.g., 'Bulk Recruitment').
+    Supports pagination via start and page_length.
     """
     valid_fields = get_valid_fields()
     # Fields that are guaranteed to exist
@@ -371,7 +378,9 @@ def get_applicant_list(hiring_method=None):
     if hiring_method and 'one_fm_hiring_method' in valid_fields:
         filters['one_fm_hiring_method'] = hiring_method
             
-    applicants = frappe.get_all('Job Applicant', fields=fields, filters=filters, limit=100, order_by='creation desc')
+    applicants = frappe.get_all('Job Applicant', fields=fields, filters=filters,
+                                limit_start=int(start), limit_page_length=int(page_length),
+                                order_by='creation desc')
     
     # Resolve Job Opening title and override status
     for app in applicants:

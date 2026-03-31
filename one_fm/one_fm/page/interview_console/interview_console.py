@@ -5,6 +5,22 @@ def get_valid_fields():
     meta = frappe.get_meta('Job Applicant')
     return [df.fieldname for df in meta.fields]
 
+def _ensure_skill_exists(skill_name):
+    """Create a Skill document if it doesn't exist, return the skill name."""
+    if not skill_name:
+        skill_name = "General"
+    # Truncate to max 140 chars (Frappe Link field limit)
+    skill_name = skill_name[:140]
+    if not frappe.db.exists("Skill", skill_name):
+        try:
+            frappe.get_doc({
+                "doctype": "Skill",
+                "skill_name": skill_name
+            }).insert(ignore_permissions=True)
+        except frappe.DuplicateEntryError:
+            pass
+    return skill_name
+
 @frappe.whitelist()
 def get_applicant_data(applicant):
     """
@@ -47,44 +63,14 @@ def get_applicant_data(applicant):
             if custom_status in ["Accepted", "Job Offer Issued", "Shortlisted", "Hired", "Hold", "Rejected"]:
                 res["status"] = custom_status
             
-    # Fetch Dynamic Matrix
-    # NEW logic: Search for Nationality Evaluation Matrix first (Template-based)
-    # OLD logic: Fall back to Interview Round (HRMS-based)
+    # Fetch Dynamic Matrix from Interview Round
+    # Lookup priority: designation + nationality → designation only → round_name
     
     applicant_designation = applicant_doc.get('designation') or applicant_doc.get('one_fm_designation')
     
     matrix_data = []
     
-    # 1. Try NEW Nationality Evaluation Matrix
-    if applicant_designation and nationality:
-        # Step A: Find the Template for this designation
-        template = frappe.db.get_value("Interview Evaluation Template", {"designation": applicant_designation}, "name")
-        if template:
-            # Step B: Find the Weightage record for this template and nationality
-            weight_record = frappe.db.get_value("Nationality Evaluation Matrix", {
-                "template": template,
-                "nationality": nationality
-            }, "name")
-            
-            if weight_record:
-                matrix_doc = frappe.get_doc("Nationality Evaluation Matrix", weight_record)
-                for w in matrix_doc.weights:
-                    matrix_data.append({
-                        "category": w.category or "General",
-                        "category_weight": "", # Optional category total can be added here
-                        "question": w.question,
-                        "weight": w.weight or 0,
-                        "ratings": [
-                            "Excellent",
-                            "Good",
-                            "Average",
-                            "Fair",
-                            "Poor"
-                        ]
-                    })
-
-    # 2. Fallback to Interview Round if matrix_data is still empty
-    if not matrix_data and applicant_designation:
+    if applicant_designation:
         interview_round = None
         if nationality:
             interview_round = frappe.db.get_value("Interview Round", {
@@ -121,6 +107,7 @@ def get_applicant_data(applicant):
                     })
     
     res["matrix"] = matrix_data
+    res["interview_round"] = interview_round if applicant_designation else None
     
     # Check for Job Offers
     try:
@@ -134,46 +121,236 @@ def get_applicant_data(applicant):
     return res
 
 @frappe.whitelist()
-def save_interview_data(applicant, score, remarks, status):
+def save_interview_data(applicant, score, remarks, status, scores_detail=None, interview_round=None):
     """
-    Safely saves interview results using discovered field names.
+    Saves interview results by creating/updating an Interview document.
+    Also updates Job Applicant status.
+    
+    Args:
+        scores_detail: JSON string of [{question, category, score, weight}, ...]
+        interview_round: Name of the Interview Round used
     """
+    import json
+    from frappe.utils import nowdate, nowtime
+    
     valid_fields = get_valid_fields()
-    # Handle status - If Shortlisted, update one_fm_applicant_status, else update status
+    
+    # --- 1. Update Job Applicant Status ---
     if status == "Shortlisted":
         update_dict = {"one_fm_applicant_status": "Shortlisted"}
     else:
         update_dict = {"status": status}
     
-    # Discovery for Score
-    score_fields = ['interview_score', 'custom_interview_score', 'total_score']
-    found_score = next((f for f in score_fields if f in valid_fields), None)
-    if found_score:
-        update_dict[found_score] = score
-        
-    # Discovery for Remarks
-    remarks_fields = ['interview_remarks', 'remarks', 'custom_remarks', 'notes']
-    found_remarks = next((f for f in remarks_fields if f in valid_fields), None)
-    if found_remarks:
-        update_dict[found_remarks] = remarks
-        
-    # Use get_doc and save to trigger hooks (like magic links for Accepted)
     doc = frappe.get_doc("Job Applicant", applicant)
     doc.update(update_dict)
     doc.save(ignore_permissions=True)
+    
+    # --- 2. Map console status to Interview status ---
+    interview_status_map = {
+        "Accepted": "Cleared",
+        "Shortlisted": "Cleared",
+        "Rejected": "Rejected",
+        "Hold": "Under Review",
+    }
+    interview_status = interview_status_map.get(status, "Under Review" if int(score or 0) > 0 else "Pending")
+    
+    # --- 3. Parse scores detail for later use ---
+    parsed_details = []
+    if scores_detail:
+        try:
+            parsed_details = json.loads(scores_detail) if isinstance(scores_detail, str) else scores_detail
+        except Exception:
+            pass
+    
+    # --- 4. Find or Create Interview (interview_summary left blank) ---
+    existing_interview = frappe.db.get_value("Interview", {
+        "job_applicant": applicant,
+        "interview_round": interview_round,
+        "docstatus": ["<", 2]
+    }, "name") if interview_round else None
+    
+    if not existing_interview:
+        existing_interview = frappe.db.get_value("Interview", {
+            "job_applicant": applicant,
+            "docstatus": ["<", 2]
+        }, "name")
+    
+    if existing_interview:
+        interview_doc = frappe.get_doc("Interview", existing_interview)
+        
+        if interview_doc.docstatus == 1:
+            frappe.db.set_value("Interview", existing_interview, {
+                "status": interview_status,
+                "interview_summary": "",
+                "interview_round": interview_round or interview_doc.interview_round
+            }, update_modified=True)
+        else:
+            interview_doc.status = interview_status
+            interview_doc.interview_summary = ""
+            if interview_round:
+                interview_doc.interview_round = interview_round
+            interview_doc.save(ignore_permissions=True)
+            interview_doc.submit()
+    else:
+        interview_doc = frappe.new_doc("Interview")
+        interview_doc.interview_round = interview_round or ""
+        interview_doc.job_applicant = applicant
+        interview_doc.designation = doc.designation
+        interview_doc.status = interview_status
+        interview_doc.scheduled_on = nowdate()
+        interview_doc.from_time = nowtime()
+        interview_doc.to_time = nowtime()
+        
+        if interview_round:
+            try:
+                round_doc = frappe.get_doc("Interview Round", interview_round)
+                for interviewer in round_doc.interviewers:
+                    interview_doc.append("interview_details", {
+                        "interviewer": interviewer.user
+                    })
+            except Exception:
+                pass
+        
+        interview_doc.insert(ignore_permissions=True)
+        interview_doc.submit()
+    # --- 6. Auto-create/update Interview Feedback ---
+    interview_name = existing_interview or interview_doc.name
+    feedback_result = ""
+    if status in ["Accepted", "Shortlisted"]:
+        feedback_result = "Cleared"
+    elif status == "Rejected":
+        feedback_result = "Rejected"
+    
+    # Calculate average_rating (0-1 scale = 0-5 stars)
+    avg_rating = float(score or 0) / 100.0
+    avg_rating = min(max(avg_rating, 0), 1)
+    
+    # Build per-category average scores for skill circles
+    category_scores = {}
+    for d in parsed_details:
+        cat = d.get("category", "General")
+        q_score = float(d.get("score", 0))
+        if cat not in category_scores:
+            category_scores[cat] = {"total": 0, "count": 0}
+        category_scores[cat]["total"] += q_score
+        category_scores[cat]["count"] += 1
+    
+    # Convert to list of {skill, rating} for skill_assessment
+    skill_rows = []
+    for cat, data in category_scores.items():
+        cat_avg = data["total"] / data["count"] if data["count"] > 0 else 0
+        cat_rating = cat_avg / 5.0  # Convert 0-5 score to 0-1 rating
+        skill_name = _ensure_skill_exists(cat)
+        skill_rows.append({"skill": skill_name, "rating": min(max(cat_rating, 0), 1)})
+    
+    existing_feedback = frappe.db.get_value("Interview Feedback", {
+        "interview": interview_name,
+        "interviewer": frappe.session.user,
+        "docstatus": ["<", 2]
+    }, "name")
+    
+    if existing_feedback:
+        fb_doc = frappe.get_doc("Interview Feedback", existing_feedback)
+        if fb_doc.docstatus == 1:
+            # Cancel and delete the submitted one, create fresh
+            fb_doc.cancel()
+            frappe.delete_doc("Interview Feedback", fb_doc.name, force=True, ignore_permissions=True)
+            existing_feedback = None
+        else:
+            fb_doc.result = feedback_result
+            fb_doc.feedback = ""
+            fb_doc.custom_remarks = remarks or ""
+            fb_doc.skill_assessment = []
+            for row in skill_rows:
+                fb_doc.append("skill_assessment", row)
+            # Populate structured child table
+            fb_doc.custom_evaluation_criteria = []
+            for d in parsed_details:
+                fb_doc.append("custom_evaluation_criteria", {
+                    "category": d.get("category", "General"),
+                    "question": d.get("question", ""),
+                    "weight": float(d.get("weight", 0)),
+                    "rating": int(d.get("score", 0)),
+                    "max_rating": 5
+                })
+            fb_doc.save(ignore_permissions=True)
+            fb_doc.submit()
+            # Force average_rating from console score
+            fb_doc.db_set("average_rating", avg_rating)
+    
+    if not existing_feedback:
+        fb = frappe.new_doc("Interview Feedback")
+        fb.interview = interview_name
+        fb.interview_round = interview_round or ""
+        fb.job_applicant = applicant
+        fb.interviewer = frappe.session.user
+        fb.result = feedback_result
+        fb.feedback = ""
+        fb.custom_remarks = remarks or ""
+        for row in skill_rows:
+            fb.append("skill_assessment", row)
+        # Populate structured child table
+        for d in parsed_details:
+            fb.append("custom_evaluation_criteria", {
+                "category": d.get("category", "General"),
+                "question": d.get("question", ""),
+                "weight": float(d.get("weight", 0)),
+                "rating": int(d.get("score", 0)),
+                "max_rating": 5
+            })
+        fb.insert(ignore_permissions=True)
+        fb.submit()
+        # Force average_rating from console score
+        fb.db_set("average_rating", avg_rating)
+    
+    # --- 7. Update Interview doc's average_rating so the Feedback tab shows correct stars ---
+    frappe.db.set_value("Interview", interview_name, {
+        "average_rating": avg_rating,
+        "total_interview_score": float(score or 0),
+    }, update_modified=False)
+    
     frappe.db.commit()
     return "Success"
 
 @frappe.whitelist()
-def get_applicant_list():
+def clear_interview_data(applicant):
+    """
+    Cancels and deletes Interview Feedback and Interview documents for the applicant.
+    Called when the Reset button is clicked in the Interview Console.
+    """
+    # Delete feedbacks first (child reference)
+    feedbacks = frappe.get_all("Interview Feedback", filters={
+        "job_applicant": applicant, "docstatus": ["<", 2]
+    }, fields=["name", "docstatus"])
+    for fb in feedbacks:
+        if fb.docstatus == 1:
+            frappe.get_doc("Interview Feedback", fb.name).cancel()
+        frappe.delete_doc("Interview Feedback", fb.name, force=True, ignore_permissions=True)
+    
+    # Delete interviews
+    interviews = frappe.get_all("Interview", filters={
+        "job_applicant": applicant, "docstatus": ["<", 2]
+    }, fields=["name", "docstatus"])
+    for iv in interviews:
+        if iv.docstatus == 1:
+            frappe.get_doc("Interview", iv.name).cancel()
+        frappe.delete_doc("Interview", iv.name, force=True, ignore_permissions=True)
+    
+    frappe.db.commit()
+    return "Success"
+
+@frappe.whitelist()
+def get_applicant_list(hiring_method=None):
     """
     Returns the list of applicants with discovered score fields.
+    Optionally filtered by hiring method (e.g., 'Bulk Recruitment').
     """
     valid_fields = get_valid_fields()
     # Fields that are guaranteed to exist
-    fields = ['name', 'applicant_name', 'status']
+    fields = ['name', 'applicant_name', 'status', 'job_title', 'designation']
     
-    # Discovery for Score
+    # Discovery for Score - removed since score now lives on Interview
+    # Still check for any legacy score fields
     score_fields = ['interview_score', 'custom_interview_score', 'total_score']
     found_score = next((f for f in score_fields if f in valid_fields), None)
     
@@ -183,14 +360,24 @@ def get_applicant_list():
     for custom_field in ['workflow_state', 'one_fm_applicant_status']:
         if custom_field in valid_fields:
             fields.append(custom_field)
+
+    filters = {}
+    if hiring_method and 'one_fm_hiring_method' in valid_fields:
+        filters['one_fm_hiring_method'] = hiring_method
             
-    applicants = frappe.get_all('Job Applicant', fields=fields, limit=100, order_by='creation desc')
+    applicants = frappe.get_all('Job Applicant', fields=fields, filters=filters, limit=100, order_by='creation desc')
     
-    # Override standard status with custom status to ensure UI correctly reflects Accepted
+    # Resolve Job Opening title and override status
     for app in applicants:
+        # Get Job Opening title
+        if app.get('job_title'):
+            opening_title = frappe.db.get_value('Job Opening', app.job_title, 'job_title')
+            app['job_opening_title'] = opening_title or app.job_title
+        
         for custom_field in ['workflow_state', 'one_fm_applicant_status']:
             if app.get(custom_field) in ["Accepted", "Job Offer Issued", "Shortlisted", "Hired", "Hold", "Rejected"]:
                 app['status'] = app[custom_field]
                 
     return applicants
+
 

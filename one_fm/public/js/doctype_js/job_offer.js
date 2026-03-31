@@ -214,7 +214,11 @@ var set_job_applicant_details = function(frm) {
 var set_erf_details = function(frm, erf) {
   frm.set_value('designation', erf.designation);
   set_salary_details(frm, erf);
-  // set_other_benefits_to_terms(frm, erf);
+  // Only populate offer_terms from ERF if the table is empty
+  // (backend will handle this on save, but this provides immediate feedback)
+  if (!frm.doc.offer_terms || frm.doc.offer_terms.length === 0) {
+    set_other_benefits_to_terms(frm, erf);
+  }
 };
 
 var set_salary_details = function(frm, erf) {

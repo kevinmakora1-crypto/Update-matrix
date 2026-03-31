@@ -405,9 +405,7 @@ doc_events = {
 		"validate": "one_fm.overrides.interview.update_interview_rounds_in_job_applicant",
         "after_insert": "one_fm.overrides.interview.update_from_to_date_null",
 	},
-	"Interview Round": {
-		"validate": "one_fm.one_fm.one_fm.interview_utils.calculate_matrix_weights"
-	},
+
 	"Issue": {
 		"after_insert": [
 			"one_fm.utils.assign_issue",

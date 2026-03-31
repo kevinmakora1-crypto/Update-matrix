@@ -89,13 +89,22 @@ class JobOfferOverride(JobOffer):
                     self.job_offer_term_template = target_offer_template
                     # Clear existing offer_terms
                     self.set("offer_terms", [])
-                    # Add new offer_terms
-                    offer_terms = frappe.get_all("Job Offer Term", filters={"parent": target_offer_template}, fields=['offer_term', 'value'])
+                    # Add new offer_terms from the Offer Terms Table Template child table
+                    offer_terms = frappe.get_all(
+                        "Offer Terms Table Template",
+                        filters={"parent": target_offer_template, "parenttype": "Job Offer Templates"},
+                        fields=["offer_term", "offer_value"],
+                        order_by="idx asc"
+                    )
                     for item in offer_terms:
                         self.append("offer_terms", {
                             "offer_term": item.offer_term,
-                            "value": item.value,
+                            "value": item.offer_value,
                         })
+
+            # Ensure standard terms (Annual Leave, Probation Period) are present
+            if self.docstatus == 0:
+                self._ensure_standard_offer_terms()
 
             if not self.select_terms:
                 default_terms = frappe.db.get_single_value('Hiring Settings', 'default_terms_and_conditions') or 'Job Offer Acceptance'
@@ -117,6 +126,42 @@ class JobOfferOverride(JobOffer):
                 'applicant_name': self.applicant_name,
                 'designation': self.designation,
                 'company': self.company
+            })
+
+    def _ensure_standard_offer_terms(self):
+        """
+        Ensures that 'Annual Leave' and 'Probation Period' standard terms are always
+        present in the offer_terms table. Values are sourced from the linked ERF document
+        (vacation_days, shift_hours) with sensible defaults when not available.
+        """
+        # Collect terms that already exist, to avoid duplicates
+        existing_terms = {row.offer_term for row in (self.offer_terms or [])}
+
+        # Fetch ERF data if available
+        vacation_days = 30
+        shift_hours = 9
+        if self.one_fm_erf:
+            erf_data = frappe.db.get_value(
+                'ERF', self.one_fm_erf,
+                ['vacation_days', 'shift_hours'],
+                as_dict=True
+            )
+            if erf_data:
+                vacation_days = erf_data.vacation_days or vacation_days
+                shift_hours = erf_data.shift_hours or shift_hours
+
+        # Add 'Annual Leave' if missing
+        if 'Annual Leave' not in existing_terms:
+            self.append('offer_terms', {
+                'offer_term': 'Annual Leave',
+                'value': '({0}) days paid leave, as per Kuwait Labor Law (Private Sector)'.format(int(vacation_days)),
+            })
+
+        # Add 'Probation Period' if missing
+        if 'Probation Period' not in existing_terms:
+            self.append('offer_terms', {
+                'offer_term': 'Probation Period',
+                'value': '(100) working days',
             })
 
     def on_update_after_submit(self):

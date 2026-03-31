@@ -48,9 +48,9 @@ frappe.pages['interview_console'].on_page_load = function (wrapper) {
                 padding: 12px 16px !important; box-sizing: border-box;
             }
             .ic-sidebar {
-                width: 260px; min-width: 260px; max-width: 260px;
-                flex: 0 0 260px;
-                background: #eef0f6; /* Subtle cool-grey/blue Surface Variant */
+                width: 280px; min-width: 280px; max-width: 280px;
+                flex: 0 0 280px;
+                background: #f6f8fc;
                 display: flex; flex-direction: column; padding: 12px 0 12px 12px;
                 border: none;
                 border-radius: 16px 0 0 16px;
@@ -59,10 +59,10 @@ frappe.pages['interview_console'].on_page_load = function (wrapper) {
                 box-shadow: none;
                 transition: width 0.4s cubic-bezier(0.2, 0, 0, 1), min-width 0.4s cubic-bezier(0.2, 0, 0, 1), flex 0.4s cubic-bezier(0.2, 0, 0, 1), background 0.4s ease;
             }
-            /* When a selection is made, sidebar shrinks slightly and shifts background */
+            /* When a selection is made, sidebar shrinks slightly */
             #ic-root.has-selection .ic-sidebar {
-                width: 240px; min-width: 240px; max-width: 240px; flex: 0 0 240px;
-                background: #eef5ff; /* Primary Container tint */
+                width: 260px; min-width: 260px; max-width: 260px; flex: 0 0 260px;
+                background: #f6f8fc;
             }
             .ic-search-wrap { 
                 margin-bottom: 12px; margin-right: 12px; background: #ffffff; border: 1px solid #c4c6d0; 
@@ -91,12 +91,14 @@ frappe.pages['interview_console'].on_page_load = function (wrapper) {
                 transform: none;
             }
             .ic-item.selected .ic-item-name { color: #001d35 !important; font-weight: 700; }
-            .ic-item.selected .ic-item-id { color: #004a77 !important; }
+            .ic-item.selected .ic-item-sub { color: #004a77 !important; }
             
-            .ic-item-name { font-size: 11px; font-weight: 600; color: #1e293b; margin-bottom: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.3s ease; }
-            .ic-item-id { font-size: 9px; font-weight: 500; color: #64748b; transition: color 0.3s ease; }
-            
-            .ic-sb-score { float: right; background: #ffffff; padding: 2px 6px; border-radius: 8px; font-weight: 700; font-size: 9px; color: #475569; position: absolute; right: 12px; top: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+            .ic-item-name { font-size: 13px; font-weight: 600; color: #1e293b; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.3s ease; cursor: pointer; flex: 1; }
+            .ic-item-name:hover { text-decoration: underline; }
+            .ic-item-sub { font-size: 10px; font-weight: 400; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.3s ease; line-height: 1.4; }
+            .ic-item-link { color: #1a73e8; cursor: pointer; font-size: inherit; }
+            .ic-item-link:hover { text-decoration: underline; }
+            .ic-item-right { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
             
             .ic-status-pill { 
                 font-size: 9px; font-weight: 600; padding: 2px 6px; 
@@ -153,13 +155,13 @@ frappe.pages['interview_console'].on_page_load = function (wrapper) {
             .ic-clear-btn:active, .ic-clear-btn.expanded { transform: scale(0.9); transition-duration: 0.1s; }
             .ic-actions-right { margin-left: auto; display: flex; gap: 12px; align-items: center; }
             .ic-btn-circular { 
-                width: 48px; height: 48px; min-width: 48px; max-width: 48px;
-                border-radius: 24px; padding: 0; 
+                width: 38px; height: 38px; min-width: 38px; max-width: 38px;
+                border-radius: 19px; padding: 0; 
                 display: flex; align-items: center; justify-content: center; 
                 cursor: pointer; transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
                 border: 1px solid transparent; position: relative; overflow: hidden;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1); box-sizing: border-box;
-                background: #f1f5f9; color: #475569;
+                background: #f1f5f9; color: #475569; font-size: 14px;
             }
             .ic-btn-circular:hover { 
                 transform: scale(1.08) translateY(-1px); 
@@ -172,15 +174,25 @@ frappe.pages['interview_console'].on_page_load = function (wrapper) {
             .ic-btn-circular .btn-text { 
                 max-width: 0; opacity: 0; margin-left: 0; font-size: 13px; 
                 transition: all 0.3s ease; text-transform: capitalize; 
-                font-weight: 600; white-space: nowrap; 
+                font-weight: 600; white-space: nowrap; display: none;
             }
-            .ic-btn-circular:active .btn-text, .ic-btn-circular.expanded .btn-text { 
-                max-width: 80px; opacity: 1; margin-left: 10px; 
+            .ic-btn-circular.expanded .btn-text { 
+                max-width: 80px; opacity: 1; margin-left: 10px; display: inline;
             }
             .btn-reject { background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
             .btn-hold   { background: #fffcf0; color: #d97706; border: 1px solid #fef3c7; }
             .btn-accept { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
-            .ic-btn-circular.disabled { background: #f1f5f9 !important; color: #cbd5e1 !important; border: 1px solid #e2e8f0 !important; cursor: not-allowed; pointer-events: none; box-shadow: none; }
+            .ic-btn-circular.active-state { box-shadow: 0 0 0 3px currentColor; font-weight: 700; }
+            .btn-reject.active-state { background: #dc2626; color: #ffffff; border-color: #dc2626; }
+            .btn-hold.active-state   { background: #d97706; color: #ffffff; border-color: #d97706; }
+            .btn-accept.active-state { background: #16a34a; color: #ffffff; border-color: #16a34a; }
+            .ic-btn-circular.active-state .btn-text { max-width: 80px; opacity: 1; margin-left: 8px; display: inline; }
+            .ic-btn-circular.disabled { opacity: 0.25; cursor: not-allowed; pointer-events: none; box-shadow: none; }
+            .ic-btn-circular.active-state.disabled { 
+                opacity: 1; cursor: not-allowed; pointer-events: none; 
+                min-width: 120px; max-width: none; width: auto; border-radius: 12px;
+                padding: 0 16px; transform: scale(1.05);
+            }
             .ic-dashboard-link {
                 background: #f0f9ff; color: #0369a1; border: 1px solid #e0f2fe;
                 padding: 6px 16px; border-radius: 50px; font-size: 13px;
@@ -334,6 +346,16 @@ frappe.pages['interview_console'].on_page_load = function (wrapper) {
 	}
 };
 
+// Handle re-navigation to the page (e.g., from Job Applicant button)
+frappe.pages['interview_console'].on_page_show = function (wrapper) {
+	if (frappe.route_options && frappe.route_options.applicant && wrapper._ic_state) {
+		var target = frappe.route_options.applicant;
+		frappe.route_options = null; // Consume the option
+		// Re-fetch with the auto-select target
+		wrapper._ic_fetch_applicants(target);
+	}
+};
+
 function init_interview_console(wrapper, page) {
 	var $w = function (selector) { return $(wrapper).find(selector); };
 
@@ -365,8 +387,19 @@ function init_interview_console(wrapper, page) {
 	};
 
 	function init() {
-		fetch_applicants();
+		// Check for deep-link: if arriving from Job Applicant with applicant route_option
+		var auto_select_applicant = null;
+		if (frappe.route_options && frappe.route_options.applicant) {
+			auto_select_applicant = frappe.route_options.applicant;
+			frappe.route_options = null; // Consume the option
+		}
+		fetch_applicants(auto_select_applicant);
 		setup_handlers();
+
+		// Expose for on_page_show re-navigation
+		wrapper._ic_state = state;
+		wrapper._ic_select_applicant = select_applicant;
+		wrapper._ic_fetch_applicants = fetch_applicants;
 	}
 
 	function render_dynamic_matrix(matrix) {
@@ -397,27 +430,28 @@ function init_interview_console(wrapper, page) {
 		
 		// Row 1: Categories
 		var categoryColors = {
-			"PHYSICAL": "#dcfce7", // Original Green
-			"Culture / Attitude": "#fff9c4", // Original Yellow/Gold
-			"Motivation": "#f3e8ff", // Original Purple
-			"Knowledge / Skillset": "#fee2e2", // Original Pink/Red
-			"Communication": "#e0f2fe"  // Original Sky Blue
+			"PHYSICAL": "#dcfce7",
+			"CULTURE / ATTITUDE": "#fff9c4",
+			"MOTIVATION": "#f3e8ff",
+			"KNOWLEDGE / SKILLSET": "#fee2e2",
+			"COMMUNICATION": "#e0f2fe"
 		};
 		var categoryTextColors = {
 			"PHYSICAL": "#166534",
-			"Culture / Attitude": "#854d0e",
-			"Motivation": "#6b21a8",
-			"Knowledge / Skillset": "#991b1b",
-			"Communication": "#0369a1"
+			"CULTURE / ATTITUDE": "#854d0e",
+			"MOTIVATION": "#6b21a8",
+			"KNOWLEDGE / SKILLSET": "#991b1b",
+			"COMMUNICATION": "#0369a1"
 		};
 
 		for (var j = 0; j < categories.length; j++) {
 			var cat = categories[j];
-			var bg = categoryColors[cat.name] || "#f1f5f9";
-			var text = categoryTextColors[cat.name] || "#475569";
+			var catKey = cat.name.trim().toUpperCase();
+			var bg = categoryColors[catKey] || "#f1f5f9";
+			var text = categoryTextColors[catKey] || "#475569";
 			
-			// Capitalize only first letter of the category name
-			var display_name = cat.name.charAt(0).toUpperCase() + cat.name.slice(1).toLowerCase();
+			// Use the original category name as-is for display
+			var display_name = cat.name.trim();
 			
 			headerHtml += '<th colspan="' + cat.count + '">';
 			headerHtml += '<div class="ic-category-pill" style="background-color: ' + bg + '; color: ' + text + ';">' + 
@@ -430,7 +464,7 @@ function init_interview_console(wrapper, page) {
 			var q = matrix[k];
 			var question_name = q.question;
 			var cat_name = q.category || "General";
-			var full_color = categoryTextColors[cat_name] || "#475569";
+			var full_color = categoryTextColors[cat_name.trim().toUpperCase()] || "#475569";
 			var bg_tint = "#ffffff";
 			
 			// Overwrite wording if mapping exists (using fuzzy matching for robustness)
@@ -443,7 +477,7 @@ function init_interview_console(wrapper, page) {
 				question_name = standard_q_key;
 			}
 			
-			headerHtml += '<th style="background-color: ' + bg_tint + ' !important; border-top: 1.5px solid ' + full_color + ' !important; color: #1e293b !important; font-weight: 600; font-size: 8.5px; line-height: 1.1;">' + 
+			headerHtml += '<th style="background-color: #f0f1f5 !important; border-top: 1.5px solid ' + full_color + ' !important; color: #0f172a !important; font-weight: 800; font-size: 10px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.02em;">' + 
 						  question_name + '</th>';
 		}
 		headerHtml += '</tr>';
@@ -470,17 +504,30 @@ function init_interview_console(wrapper, page) {
 		}
 	}
 
-	function fetch_applicants() {
+	function fetch_applicants(auto_select_name) {
 		frappe.call({
 			method: 'one_fm.one_fm.page.interview_console.interview_console.get_applicant_list',
+			args: { hiring_method: 'Bulk Recruitment' },
 			callback: function (r) {
 				if (r.message) {
 					state.applicants = r.message;
 					$w('#ic-candidate-count').text(state.applicants.length);
 					render_list(state.applicants);
-					// Load first applicant's matrix silently to avoid "blank" look
-					if (state.applicants.length > 0) {
-						load_matrix_silent(state.applicants[0].name);
+
+					// If auto-select target was provided, find and select the applicant
+					if (auto_select_name) {
+						var target_app = state.applicants.find(function(a) { return a.name === auto_select_name; });
+						if (target_app) {
+							select_applicant(target_app);
+						} else {
+							frappe.show_alert({ message: 'Applicant ' + auto_select_name + ' not found in list', indicator: 'orange' });
+							if (state.applicants.length > 0) load_matrix_silent(state.applicants[0].name);
+						}
+					} else {
+						// Default: load first applicant's matrix silently to avoid "blank" look
+						if (state.applicants.length > 0) {
+							load_matrix_silent(state.applicants[0].name);
+						}
 					}
 				} else {
 					$w('#ic-list').html('<div style="padding:10px;font-size:11px;color:#94a3b8;">No applicants found.</div>');
@@ -520,18 +567,44 @@ function init_interview_console(wrapper, page) {
 			if (display_status === "Hold") status_class = "status-hold";
 			if (["Accepted", "Job Offer Issued", "Shortlisted", "Hired"].indexOf(display_status) !== -1) status_class = "status-accepted";
 
+			var job_code = app.job_title || '';
+			var desg = app.designation || '';
+			var job_html = job_code ? '<span class="ic-item-link" data-job="' + job_code + '">' + job_code + '</span>' : '';
+			var sub_text = desg + (job_html ? ' · ' : '');
+
 			html += '<div class="ic-item" data-name="' + app.name + '">' +
-				'<div class="ic-sb-score">' + score + '</div>' +
-				'<div class="ic-item-name">' + app.applicant_name + '</div>' +
-				'<div style="display:flex; align-items:center; gap:6px;">' +
-				'<span class="ic-item-id">' + app.name + '</span>' +
+				'<div class="ic-item-right">' +
 				'<span class="ic-status-pill ' + status_class + '">' + display_status + '</span>' +
+				'<span style="font-size:9px;font-weight:700;color:#475569;">' + score + '</span>' +
+				'</div>' +
+				'<div class="ic-item-name"><a class="ic-name-link" data-applicant="' + app.name + '" style="cursor:pointer;color:inherit;text-decoration:none;">' + app.applicant_name + '</a></div>' +
+				'<div class="ic-item-sub">' + sub_text + 
+				(job_code ? '<a class="ic-job-link" data-job="' + job_code + '" title="Open Job Opening" style="cursor:pointer;color:#0369a1;text-decoration:underline;font-size:inherit;">' + job_code + '</a>' : '') +
 				'</div>' +
 				'</div>';
 		}
 		$w('#ic-list').html(html);
 
-		$w('.ic-item').off('click').on('click', function () {
+		$w('.ic-item').off('click').on('click', function (e) {
+			// If clicking the candidate name, open Job Applicant form
+			if ($(e.target).hasClass('ic-name-link')) {
+				e.stopPropagation();
+				var applicant_id = $(e.target).data('applicant');
+				if (applicant_id) {
+					window.open('/app/job-applicant/' + applicant_id, '_blank');
+				}
+				return;
+			}
+			// If clicking job opening link, open Job Opening form
+			if ($(e.target).hasClass('ic-job-link')) {
+				e.stopPropagation();
+				var job_id = $(e.target).data('job');
+				if (job_id) {
+					window.open('/app/job-opening/' + job_id, '_blank');
+				}
+				return;
+			}
+			// Everything else selects the candidate
 			var name = $(this).data('name');
 			var app = state.applicants.find(function (a) { return a.name === name; });
 			select_applicant(app);
@@ -544,6 +617,13 @@ function init_interview_console(wrapper, page) {
         $w('#ic-root').addClass('has-selection');
 		$w('.ic-item').removeClass('selected');
 		$w('.ic-item[data-name="' + app.name + '"]').addClass("selected");
+
+		// Reset buttons, then set state based on existing status
+		enable_action_buttons();
+		var st = app.status || '';
+		if (st === 'Rejected') disable_action_buttons('ic-reject-btn');
+		else if (st === 'Hold') disable_action_buttons('ic-hold-btn');
+		else if (['Accepted', 'Job Offer Issued', 'Shortlisted', 'Hired'].indexOf(st) !== -1) disable_action_buttons('ic-save-btn');
 
 		frappe.call({
 			method: "one_fm.one_fm.page.interview_console.interview_console.get_applicant_data",
@@ -559,6 +639,7 @@ function init_interview_console(wrapper, page) {
 				state.selected_applicant.status = data.status;
 				state.selected_applicant.job_offer_id = data.job_offer_id || null;
 				state.matrix = data.matrix || [];
+				state.interview_round = data.interview_round || null;
 				
 				// Render dynamic matrix
 				render_dynamic_matrix(state.matrix);
@@ -569,7 +650,7 @@ function init_interview_console(wrapper, page) {
 
 				// Update Sidebar UI
 				var $item = $w('.ic-item[data-name="' + app.name + '"]');
-				$item.find('.ic-sb-score').text(data.score);
+				$item.find('.ic-item-right span:last').text(data.score);
 
 				var display_status = data.status;
 				if (["Accepted", "Job Offer Issued", "Shortlisted", "Hired", "Rejected", "Hold"].indexOf(data.status) === -1) {
@@ -616,17 +697,27 @@ function init_interview_console(wrapper, page) {
 		});
 
 		$w('#ic-reset-btn').on('click', function () {
+			if (!state.selected_applicant) return;
 			state.scores = new Array(state.matrix.length).fill(0);
 			$w('.ic-cell').removeClass('selected');
 			update_and_save();
+			// Also clear Interview + Feedback documents
+			frappe.call({
+				method: "one_fm.one_fm.page.interview_console.interview_console.clear_interview_data",
+				args: { applicant: state.selected_applicant.name },
+				callback: function () { }
+			});
 		});
 
 		$w('#ic-search').on('input', function () {
 			var val = ($(this).val() || "").toLowerCase();
 			var filtered = state.applicants.filter(function (a) {
 				var name = (a.applicant_name || "").toLowerCase();
-				var id = (a.name || "").toLowerCase();
-				return name.indexOf(val) !== -1 || id.indexOf(val) !== -1;
+				var job = (a.job_opening_title || a.job_title || "").toLowerCase();
+				var job_id = (a.job_opening || a.job_title || "").toLowerCase();
+				var desg = (a.designation || "").toLowerCase();
+				var app_id = (a.name || "").toLowerCase();
+				return name.indexOf(val) !== -1 || job.indexOf(val) !== -1 || job_id.indexOf(val) !== -1 || desg.indexOf(val) !== -1 || app_id.indexOf(val) !== -1;
 			});
 			render_list(filtered);
 		});
@@ -658,14 +749,16 @@ function init_interview_console(wrapper, page) {
 				frappe.show_alert({ message: "Select a candidate first", indicator: "orange" });
 				return;
 			}
-			update_status("Rejected"); 
+			update_status("Rejected");
+			disable_action_buttons('ic-reject-btn');
 		});
 		$w('#ic-hold-btn').on('click', function () { 
 			if (!state.selected_applicant) {
 				frappe.show_alert({ message: "Select a candidate first", indicator: "orange" });
 				return;
 			}
-			update_status("Hold"); 
+			update_status("Hold");
+			disable_action_buttons('ic-hold-btn');
 		});
 		$w('#ic-save-btn').on('click', function () {
 			if (!state.selected_applicant) {
@@ -686,6 +779,7 @@ function init_interview_console(wrapper, page) {
 				primary_action: function () {
 					update_status("Accepted");
 					d.hide();
+					disable_action_buttons('ic-save-btn');
 					frappe.show_alert({
 						message: __("Applicant Accepted. Magic Link sent to candidate."),
 						indicator: "green"
@@ -754,20 +848,53 @@ function init_interview_console(wrapper, page) {
 		if (["Accepted", "Job Offer Issued", "Shortlisted", "Hired"].indexOf(display_status) !== -1) status_class = "status-accepted";
 
 		var $item = $w('.ic-item[data-name="' + state.selected_applicant.name + '"]');
-		$item.find('.ic-sb-score').text(percentage);
+		$item.find('.ic-item-right span:last').text(percentage);
 		$item.find('.ic-status-pill').text(display_status)
 			.removeClass('status-scored status-rejected status-hold status-accepted status-not-scored')
 			.addClass(status_class);
 	}
 
+	function disable_action_buttons(active_id) {
+		// Highlight the clicked button with high contrast AND disable it
+		var $btn = $w('#' + active_id);
+		$btn.addClass('active-state disabled');
+		// Change text to past tense
+		var labels = { 'ic-reject-btn': 'Rejected', 'ic-hold-btn': 'On Hold', 'ic-save-btn': 'Accepted' };
+		if (labels[active_id]) {
+			$btn.find('.btn-text').text(labels[active_id]);
+		}
+	}
+
+	function enable_action_buttons() {
+		// Re-enable all buttons and restore original text
+		$w('#ic-reject-btn, #ic-hold-btn, #ic-save-btn')
+			.removeClass('disabled active-state');
+		$w('#ic-reject-btn .btn-text').text('Reject');
+		$w('#ic-hold-btn .btn-text').text('Hold');
+		$w('#ic-save-btn .btn-text').text('Accept');
+	}
 	function save_to_db(score, status) {
+		// Build per-question scores detail for Interview summary
+		var scores_detail = [];
+		if (state.matrix && state.scores) {
+			for (var i = 0; i < state.matrix.length; i++) {
+				scores_detail.push({
+					question: state.matrix[i].question,
+					category: state.matrix[i].category || "General",
+					score: state.scores[i] || 0,
+					weight: state.matrix[i].weight || 0
+				});
+			}
+		}
 		frappe.call({
 			method: "one_fm.one_fm.page.interview_console.interview_console.save_interview_data",
 			args: {
 				applicant: state.selected_applicant.name,
 				score: score,
 				remarks: $w('#ic-remarks').val(),
-				status: status
+				status: status,
+				scores_detail: JSON.stringify(scores_detail),
+				interview_round: state.interview_round || ""
 			},
 			callback: function () { }
 		});

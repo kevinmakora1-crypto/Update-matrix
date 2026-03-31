@@ -1,9 +1,9 @@
 diff --git a/one_fm/add_nationality_cf.py b/one_fm/add_nationality_cf.py
 new file mode 100644
-index 000000000..653324b2f
+index 000000000..a16997639
 --- /dev/null
 +++ b/one_fm/add_nationality_cf.py
-@@ -0,0 +1,18 @@
+@@ -0,0 +1,17 @@
 +import frappe
 +from frappe.custom.doctype.custom_field.custom_field import create_custom_field
 +
@@ -18,7 +18,6 @@ index 000000000..653324b2f
 +            'insert_after': 'designation',
 +            'module': 'one_fm'
 +        })
-+        frappe.db.commit()
 +        print("Successfully added one_fm_nationality to Interview Round.")
 +    else:
 +        print("Field already exists.")
@@ -1304,10 +1303,10 @@ index 000000000..c87997f3a
 \ No newline at end of file
 diff --git a/one_fm/one_fm/page/interview_console/interview_console.py b/one_fm/one_fm/page/interview_console/interview_console.py
 new file mode 100644
-index 000000000..4a540eb4a
+index 000000000..0b5dc9881
 --- /dev/null
 +++ b/one_fm/one_fm/page/interview_console/interview_console.py
-@@ -0,0 +1,389 @@
+@@ -0,0 +1,398 @@
 +import frappe
 +from frappe.utils import getdate, nowdate
 +
@@ -1449,13 +1448,19 @@ index 000000000..4a540eb4a
 +    valid_fields = get_valid_fields()
 +    
 +    # --- 1. Update Job Applicant Status ---
-+    if status == "Shortlisted":
-+        update_dict = {"one_fm_applicant_status": "Shortlisted"}
-+    else:
-+        update_dict = {"status": status}
-+    
 +    doc = frappe.get_doc("Job Applicant", applicant)
-+    doc.update(update_dict)
++
++    # Check if a Workflow is active on Job Applicant
++    has_workflow = frappe.get_all("Workflow", filters={"document_type": "Job Applicant", "is_active": 1}, limit=1)
++
++    if status == "Shortlisted":
++        doc.one_fm_applicant_status = "Shortlisted"
++    elif has_workflow:
++        # Update workflow_state to avoid read-only status conflicts
++        doc.workflow_state = status
++    else:
++        doc.status = status
++
 +    # Save height if provided
 +    if height:
 +        doc.one_fm_height = float(height)
@@ -1656,10 +1661,11 @@ index 000000000..4a540eb4a
 +    return "Success"
 +
 +@frappe.whitelist()
-+def get_applicant_list(hiring_method=None):
++def get_applicant_list(hiring_method=None, start=0, page_length=200):
 +    """
 +    Returns the list of applicants with discovered score fields.
 +    Optionally filtered by hiring method (e.g., 'Bulk Recruitment').
++    Supports pagination via start and page_length.
 +    """
 +    valid_fields = get_valid_fields()
 +    # Fields that are guaranteed to exist
@@ -1681,7 +1687,9 @@ index 000000000..4a540eb4a
 +    if hiring_method and 'one_fm_hiring_method' in valid_fields:
 +        filters['one_fm_hiring_method'] = hiring_method
 +            
-+    applicants = frappe.get_all('Job Applicant', fields=fields, filters=filters, limit=100, order_by='creation desc')
++    applicants = frappe.get_all('Job Applicant', fields=fields, filters=filters,
++                                limit_start=int(start), limit_page_length=int(page_length),
++                                order_by='creation desc')
 +    
 +    # Resolve Job Opening title and override status
 +    for app in applicants:
@@ -1840,10 +1848,10 @@ index 000000000..a974afc6c
 +        print("All standard Offer Terms already exist — no changes made.")
 diff --git a/one_fm/patches/v15_0/setup_interview_console.py b/one_fm/patches/v15_0/setup_interview_console.py
 new file mode 100644
-index 000000000..f265b2e28
+index 000000000..dfdf10c64
 --- /dev/null
 +++ b/one_fm/patches/v15_0/setup_interview_console.py
-@@ -0,0 +1,83 @@
+@@ -0,0 +1,81 @@
 +"""
 +Patch: Setup Interview Console Custom Fields & DocTypes
 +Run: bench --site site_name run-patch one_fm.patches.v15_0.setup_interview_console
@@ -1878,7 +1886,6 @@ index 000000000..f265b2e28
 +        doc.insert(ignore_permissions=True)
 +        # Let Frappe create the DB table via its schema manager
 +        frappe.db.updatedb("Interview Evaluation Detail")
-+        frappe.db.commit()
 +        print("Created DocType: Interview Evaluation Detail")
 +
 +    # --- 2. Custom Fields on Interview Feedback ---
@@ -1925,7 +1932,6 @@ index 000000000..f265b2e28
 +        ]
 +    }, update=True)
 +
-+    frappe.db.commit()
 +    print("Interview Console setup complete!")
 diff --git a/one_fm/public/js/doctype_js/interview.js b/one_fm/public/js/doctype_js/interview.js
 index b5eb91dd4..191fa347d 100644

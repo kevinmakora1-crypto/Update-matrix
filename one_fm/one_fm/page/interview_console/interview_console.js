@@ -487,7 +487,7 @@ function init_interview_console(wrapper, page) {
 					{
 						fieldname: "info",
 						fieldtype: "HTML",
-						options: `<p>How would you like to proceed with <b>${state.selected_applicant.applicant_name}</b>?</p>`
+						options: `<p>How would you like to proceed with <b>${esc(state.selected_applicant.applicant_name)}</b>?</p>`
 					}
 				],
 				primary_action_label: __("Accept & Issue Job Offer"),

@@ -51,10 +51,12 @@ def get_applicant_data(applicant):
     if found_remarks:
         res["remarks"] = applicant_doc.get(found_remarks) or ""
         
-    # Discovery for Score
-    found_score = next((f for f in ['interview_score', 'custom_interview_score', 'total_score'] if f in valid_fields), None)
-    if found_score:
-        res["score"] = applicant_doc.get(found_score) or 0
+    # Fetch score from Interview document (where save_interview_data stores it)
+    interview_score = frappe.db.get_value("Interview", {
+        "job_applicant": applicant,
+        "docstatus": ["<", 2]
+    }, "total_interview_score") or 0
+    res["score"] = interview_score
         
     # Standard Status
     res["status"] = applicant_doc.status or "Open"
@@ -362,14 +364,6 @@ def get_applicant_list(hiring_method=None, start=0, page_length=200):
     # Fields that are guaranteed to exist
     fields = ['name', 'applicant_name', 'status', 'job_title', 'designation']
     
-    # Discovery for Score - removed since score now lives on Interview
-    # Still check for any legacy score fields
-    score_fields = ['interview_score', 'custom_interview_score', 'total_score']
-    found_score = next((f for f in score_fields if f in valid_fields), None)
-    
-    if found_score:
-        fields.append(f"{found_score} as interview_score")
-    
     for custom_field in ['workflow_state', 'one_fm_applicant_status']:
         if custom_field in valid_fields:
             fields.append(custom_field)
@@ -382,12 +376,18 @@ def get_applicant_list(hiring_method=None, start=0, page_length=200):
                                 limit_start=int(start), limit_page_length=int(page_length),
                                 order_by='creation desc')
     
-    # Resolve Job Opening title and override status
+    # Resolve Job Opening title, score from Interview, and override status
     for app in applicants:
         # Get Job Opening title
         if app.get('job_title'):
             opening_title = frappe.db.get_value('Job Opening', app.job_title, 'job_title')
             app['job_opening_title'] = opening_title or app.job_title
+        
+        # Fetch score from Interview document
+        app['interview_score'] = frappe.db.get_value("Interview", {
+            "job_applicant": app.name,
+            "docstatus": ["<", 2]
+        }, "total_interview_score") or 0
         
         for custom_field in ['workflow_state', 'one_fm_applicant_status']:
             if app.get(custom_field) in ["Accepted", "Job Offer Issued", "Shortlisted", "Hired", "Hold", "Rejected"]:

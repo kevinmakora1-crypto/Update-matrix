@@ -283,8 +283,7 @@ function init_interview_console(wrapper, page) {
 
 			var job_code = app.job_title || '';
 			var desg = app.designation || '';
-			var job_html = job_code ? '<span class="ic-item-link" data-job="' + esc(job_code) + '">' + esc(job_code) + '</span>' : '';
-			var sub_text = esc(desg) + (job_html ? ' · ' : '');
+			var sub_text = esc(desg) + (job_code ? ' · ' : '');
 
 			html += '<div class="ic-item" data-name="' + esc(app.name) + '">' +
 				'<div class="ic-item-right">' +

@@ -42,13 +42,6 @@ def execute():
                 "fieldtype": "Float",
                 "label": "Total Score",
                 "insert_after": "average_rating",
-            },
-            {
-                "fieldname": "custom_hiring_method",
-                "fieldtype": "Data",
-                "label": "Hiring Method",
-                "insert_after": "designation",
-            },
         ]
     }, update=True)
 

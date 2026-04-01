@@ -20,6 +20,12 @@
   },
   {
    "role": "HR User"
+  },
+  {
+   "role": "Recruiter"
+  },
+  {
+   "role": "Senior Recruiter"
   }
  ],
  "script": null,

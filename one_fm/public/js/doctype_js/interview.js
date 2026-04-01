@@ -12,7 +12,7 @@ frappe.ui.form.on('Interview', {
 				frm.toggle_display('interview_summary_render', false);
 				frm.set_df_property('interview_summary', 'label', 'Interview Summary');
 			} else {
-				// Non-Bulk: show standard Submit Feedback button
+				// Non-Bulk: remove standard Submit Feedback and conditionally add custom Submit Interview Feedback
 				frm.remove_custom_button('Submit Feedback');
 				remove_custom_button_from_mobile_view(frm, "Submit Feedback");
 

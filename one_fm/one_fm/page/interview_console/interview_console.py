@@ -266,10 +266,40 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
     if existing_feedback:
         fb_doc = frappe.get_doc("Interview Feedback", existing_feedback)
         if fb_doc.docstatus == 1:
-            # Cancel and delete the submitted one, create fresh
-            fb_doc.cancel()
-            frappe.delete_doc("Interview Feedback", fb_doc.name, force=True, ignore_permissions=True)
-            existing_feedback = None
+            # Update submitted feedback in-place: update skill ratings and average
+            # Delete old skill_assessment rows and insert new ones
+            frappe.db.sql("DELETE FROM `tabSkill Assessment` WHERE parent=%s", existing_feedback)
+            for idx, row in enumerate(skill_rows, 1):
+                frappe.get_doc({
+                    "doctype": "Skill Assessment",
+                    "parent": existing_feedback,
+                    "parenttype": "Interview Feedback",
+                    "parentfield": "skill_assessment",
+                    "idx": idx,
+                    "skill": row["skill"],
+                    "rating": row["rating"]
+                }).db_insert()
+            # Update evaluation criteria
+            frappe.db.sql("DELETE FROM `tabInterview Evaluation Detail` WHERE parent=%s", existing_feedback)
+            for idx, d in enumerate(parsed_details, 1):
+                frappe.get_doc({
+                    "doctype": "Interview Evaluation Detail",
+                    "parent": existing_feedback,
+                    "parenttype": "Interview Feedback",
+                    "parentfield": "custom_evaluation_criteria",
+                    "idx": idx,
+                    "category": d.get("category", "General"),
+                    "question": d.get("question", ""),
+                    "weight": float(d.get("weight", 0)),
+                    "rating": int(d.get("score", 0)),
+                    "max_rating": 5
+                }).db_insert()
+            # Update average_rating and result
+            frappe.db.set_value("Interview Feedback", existing_feedback, {
+                "average_rating": avg_rating,
+                "result": feedback_result,
+                "custom_remarks": remarks or ""
+            }, update_modified=True)
         else:
             fb_doc.result = feedback_result
             fb_doc.feedback = ""

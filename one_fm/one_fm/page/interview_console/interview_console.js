@@ -563,7 +563,8 @@ function init_interview_console(wrapper, page) {
 	}
 
 	function disable_action_buttons(active_id) {
-		// Highlight the clicked button with high contrast AND disable it
+		// First reset all buttons, then highlight only the active one
+		enable_action_buttons();
 		var $btn = $w('#' + active_id);
 		$btn.addClass('active-state disabled');
 		// Change text to past tense

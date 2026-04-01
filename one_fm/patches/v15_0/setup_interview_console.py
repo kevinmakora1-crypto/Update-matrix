@@ -42,6 +42,7 @@ def execute():
                 "fieldtype": "Float",
                 "label": "Total Score",
                 "insert_after": "average_rating",
+            },
         ]
     }, update=True)
 

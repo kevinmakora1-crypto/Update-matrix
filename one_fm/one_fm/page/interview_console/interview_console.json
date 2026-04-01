@@ -13,6 +13,9 @@
  "page_name": "interview_console",
  "roles": [
   {
+   "role": "System Manager"
+  },
+  {
    "role": "HR Manager"
   },
   {
@@ -20,6 +23,12 @@
   },
   {
    "role": "HR User"
+  },
+  {
+   "role": "Recruiter"
+  },
+  {
+   "role": "Senior Recruiter"
   }
  ],
  "script": null,

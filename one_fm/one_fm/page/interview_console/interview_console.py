@@ -1,6 +1,13 @@
 import frappe
 from frappe.utils import getdate, nowdate
 
+ALLOWED_ROLES = {"System Manager", "HR Manager", "Interviewer", "HR User", "Recruiter", "Senior Recruiter"}
+
+def _check_console_access():
+    """Check if the current user has at least one allowed role."""
+    if not ALLOWED_ROLES.intersection(set(frappe.get_roles())):
+        frappe.throw("You are not permitted to access this console.", frappe.PermissionError)
+
 def get_valid_fields():
     meta = frappe.get_meta('Job Applicant')
     return [df.fieldname for df in meta.fields]
@@ -26,6 +33,7 @@ def get_applicant_data(applicant):
     """
     Returns age, remarks, score, status, and dynamic interview matrix.
     """
+    _check_console_access()
     valid_fields = get_valid_fields()
     res = {"age": "--", "height": "", "remarks": "", "score": 0, "status": "Open", "matrix": []}
     
@@ -137,7 +145,7 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
     """
     import json
     from frappe.utils import nowdate, nowtime
-    frappe.only_for(["System Manager", "HR Manager", "Interviewer", "HR User", "Recruiter", "Senior Recruiter"])
+    _check_console_access()
     
     valid_fields = get_valid_fields()
     
@@ -368,7 +376,7 @@ def clear_interview_data(applicant):
     Cancels and deletes Interview Feedback and Interview documents for the applicant.
     Called when the Reset button is clicked in the Interview Console.
     """
-    frappe.only_for(["System Manager", "HR Manager", "Interviewer", "HR User", "Recruiter", "Senior Recruiter"])
+    _check_console_access()
     # Delete feedbacks first (child reference)
     feedbacks = frappe.get_all("Interview Feedback", filters={
         "job_applicant": applicant, "docstatus": ["<", 2]
@@ -402,6 +410,7 @@ def get_applicant_list(hiring_method=None, start=0, page_length=200):
     Optionally filtered by hiring method (e.g., 'Bulk Recruitment').
     Supports pagination via start and page_length.
     """
+    _check_console_access()
     valid_fields = get_valid_fields()
     # Fields that are guaranteed to exist
     fields = ['name', 'applicant_name', 'status', 'job_title', 'designation']

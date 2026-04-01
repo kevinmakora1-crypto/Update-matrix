@@ -387,6 +387,11 @@ def clear_interview_data(applicant):
             frappe.get_doc("Interview", iv.name).cancel()
         frappe.delete_doc("Interview", iv.name, force=True, ignore_permissions=True)
     
+    # Reset Job Applicant status to Open
+    doc = frappe.get_doc("Job Applicant", applicant)
+    doc.status = "Open"
+    doc.save(ignore_permissions=True)
+
     frappe.db.commit()
     return "Success"
 

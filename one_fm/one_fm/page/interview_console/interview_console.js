@@ -414,12 +414,17 @@ function init_interview_console(wrapper, page) {
 			if (!state.selected_applicant) return;
 			state.scores = new Array(state.matrix.length).fill(0);
 			$w('.ic-cell').removeClass('selected');
-			update_and_save();
-			// Also clear Interview + Feedback documents
+			// Clear Interview + Feedback documents and reset applicant status
 			frappe.call({
 				method: "one_fm.one_fm.page.interview_console.interview_console.clear_interview_data",
 				args: { applicant: state.selected_applicant.name },
-				callback: function () { }
+				callback: function () {
+					state.selected_applicant.status = 'Open';
+					state.selected_applicant.interview_score = 0;
+					enable_action_buttons();
+					update_total_score();
+					load_applicants();
+				}
 			});
 		});
 

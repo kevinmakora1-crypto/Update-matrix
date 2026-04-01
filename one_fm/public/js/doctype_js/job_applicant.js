@@ -230,7 +230,7 @@ frappe.ui.form.on('Job Applicant', {
 			// Redirect to Interview Console with this candidate pre-selected
 			frm.add_custom_button(__('Submit Interview and Feedback'), function() {
 				frappe.route_options = { applicant: frm.doc.name };
-				frappe.set_route('interview-console');
+				frappe.set_route('interview_console');
 			});
 		}
 	},

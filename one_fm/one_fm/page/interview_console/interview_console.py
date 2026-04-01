@@ -413,19 +413,28 @@ def get_applicant_list(hiring_method=None, start=0, page_length=200):
                                 limit_start=int(start), limit_page_length=int(page_length),
                                 order_by='creation desc')
     
-    # Resolve Job Opening title, score from Interview, and override status
+    # Batch-fetch interview scores to avoid N+1 queries
+    applicant_names = [app.name for app in applicants]
+    interview_scores_map = {}
+    if applicant_names:
+        interview_rows = frappe.get_all(
+            "Interview",
+            filters={"job_applicant": ["in", applicant_names], "docstatus": ["<", 2]},
+            fields=["job_applicant", "total_interview_score"],
+        )
+        for row in interview_rows:
+            key = row.get("job_applicant")
+            if key and key not in interview_scores_map:
+                interview_scores_map[key] = row.get("total_interview_score") or 0
+
+    # Resolve Job Opening title, apply batched scores, and override status
     for app in applicants:
-        # Get Job Opening title
         if app.get('job_title'):
             opening_title = frappe.db.get_value('Job Opening', app.job_title, 'job_title')
             app['job_opening_title'] = opening_title or app.job_title
-        
-        # Fetch score from Interview document
-        app['interview_score'] = frappe.db.get_value("Interview", {
-            "job_applicant": app.name,
-            "docstatus": ["<", 2]
-        }, "total_interview_score") or 0
-        
+
+        app['interview_score'] = interview_scores_map.get(app.name, 0)
+
         for custom_field in ['workflow_state', 'one_fm_applicant_status']:
             if app.get(custom_field) in ["Accepted", "Job Offer Issued", "Shortlisted", "Hired", "Hold", "Rejected"]:
                 app['status'] = app[custom_field]

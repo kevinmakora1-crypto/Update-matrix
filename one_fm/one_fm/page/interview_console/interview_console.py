@@ -137,6 +137,7 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
     """
     import json
     from frappe.utils import nowdate, nowtime
+    frappe.only_for(["HR Manager", "Interviewer", "HR User"])
     
     valid_fields = get_valid_fields()
     
@@ -367,6 +368,7 @@ def clear_interview_data(applicant):
     Cancels and deletes Interview Feedback and Interview documents for the applicant.
     Called when the Reset button is clicked in the Interview Console.
     """
+    frappe.only_for(["HR Manager", "Interviewer", "HR User"])
     # Delete feedbacks first (child reference)
     feedbacks = frappe.get_all("Interview Feedback", filters={
         "job_applicant": applicant, "docstatus": ["<", 2]

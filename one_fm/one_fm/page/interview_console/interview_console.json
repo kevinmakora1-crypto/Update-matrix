@@ -13,7 +13,13 @@
  "page_name": "interview_console",
  "roles": [
   {
-   "role": "All"
+   "role": "HR Manager"
+  },
+  {
+   "role": "Interviewer"
+  },
+  {
+   "role": "HR User"
   }
  ],
  "script": null,

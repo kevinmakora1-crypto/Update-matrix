@@ -4,6 +4,13 @@
  * CSS is injected via frappe.dom.set_style to ensure proper loading
  * within the Frappe Page lifecycle.
  */
+
+	// HTML escape helper to prevent XSS
+	function esc(str) {
+		if (!str) return '';
+		return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+	}
+
 frappe.pages['interview_console'].on_page_load = function (wrapper) {
 	try {
 
@@ -276,17 +283,17 @@ function init_interview_console(wrapper, page) {
 
 			var job_code = app.job_title || '';
 			var desg = app.designation || '';
-			var job_html = job_code ? '<span class="ic-item-link" data-job="' + job_code + '">' + job_code + '</span>' : '';
-			var sub_text = desg + (job_html ? ' · ' : '');
+			var job_html = job_code ? '<span class="ic-item-link" data-job="' + esc(job_code) + '">' + esc(job_code) + '</span>' : '';
+			var sub_text = esc(desg) + (job_html ? ' · ' : '');
 
-			html += '<div class="ic-item" data-name="' + app.name + '">' +
+			html += '<div class="ic-item" data-name="' + esc(app.name) + '">' +
 				'<div class="ic-item-right">' +
-				'<span class="ic-status-pill ' + status_class + '">' + display_status + '</span>' +
-				'<span style="font-size:9px;font-weight:700;color:#475569;">' + score + '</span>' +
+				'<span class="ic-status-pill ' + status_class + '">' + esc(display_status) + '</span>' +
+				'<span style="font-size:9px;font-weight:700;color:#475569;">' + esc(score) + '</span>' +
 				'</div>' +
-				'<div class="ic-item-name"><a class="ic-name-link" data-applicant="' + app.name + '" style="cursor:pointer;color:inherit;text-decoration:none;">' + app.applicant_name + '</a></div>' +
+				'<div class="ic-item-name"><a class="ic-name-link" data-applicant="' + esc(app.name) + '" style="cursor:pointer;color:inherit;text-decoration:none;">' + esc(app.applicant_name) + '</a></div>' +
 				'<div class="ic-item-sub">' + sub_text + 
-				(job_code ? '<a class="ic-job-link" data-job="' + job_code + '" title="Open Job Opening" style="cursor:pointer;color:#0369a1;text-decoration:underline;font-size:inherit;">' + job_code + '</a>' : '') +
+				(job_code ? '<a class="ic-job-link" data-job="' + esc(job_code) + '" title="Open Job Opening" style="cursor:pointer;color:#0369a1;text-decoration:underline;font-size:inherit;">' + esc(job_code) + '</a>' : '') +
 				'</div>' +
 				'</div>';
 		}

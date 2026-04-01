@@ -13,6 +13,9 @@
  "page_name": "interview_console",
  "roles": [
   {
+   "role": "System Manager"
+  },
+  {
    "role": "HR Manager"
   },
   {

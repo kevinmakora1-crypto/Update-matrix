@@ -235,9 +235,7 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
     elif status == "Rejected":
         feedback_result = "Rejected"
     
-    # Calculate average_rating (0-1 scale = 0-5 stars)
-    avg_rating = float(score or 0) / 100.0
-    avg_rating = min(max(avg_rating, 0), 1)
+    # avg_rating will be calculated from category averages after building skill_rows
     
     # Build per-category average scores for skill circles
     category_scores = {}
@@ -256,6 +254,13 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
         cat_rating = cat_avg / 5.0  # Convert 0-5 score to 0-1 rating
         skill_name = _ensure_skill_exists(cat)
         skill_rows.append({"skill": skill_name, "rating": min(max(cat_rating, 0), 1)})
+    
+    # Calculate avg_rating from category averages (matches Feedback Summary circles)
+    if skill_rows:
+        avg_rating = sum(r["rating"] for r in skill_rows) / len(skill_rows)
+    else:
+        avg_rating = float(score or 0) / 100.0
+    avg_rating = min(max(avg_rating, 0), 1)
     
     existing_feedback = frappe.db.get_value("Interview Feedback", {
         "interview": interview_name,

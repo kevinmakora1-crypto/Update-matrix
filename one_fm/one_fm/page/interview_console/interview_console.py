@@ -69,12 +69,13 @@ def get_applicant_data(applicant):
     res["feedbacks"] = all_feedbacks
 
     if all_feedbacks:
-        # total_interview_score is stored per-Interview; use it if available
-        interview_score = frappe.db.get_value("Interview", {
-            "job_applicant": applicant,
-            "docstatus": ["<", 2]
-        }, "total_interview_score") or 0
-        res["score"] = interview_score
+        # Compute score as average of all non-null Interview Feedback ratings
+        ratings = [fb.get("average_rating") for fb in all_feedbacks if fb.get("average_rating") is not None]
+        if ratings:
+            avg_rating = sum(ratings) / len(ratings)
+            res["score"] = round(avg_rating * 100)
+        else:
+            res["score"] = 0
     else:
         res["score"] = 0
         

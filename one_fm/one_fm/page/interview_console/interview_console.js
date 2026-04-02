@@ -116,10 +116,12 @@ function init_interview_console(wrapper, page) {
 		wrapper._ic_fetch_applicants = fetch_applicants;
 	}
 
-	function render_dynamic_matrix(matrix) {
+	function render_dynamic_matrix(matrix, errorMsg) {
 		if (!matrix || matrix.length === 0) {
 			$w('.ic-table').hide();
-			$w('#ic-no-matrix-msg').show();
+			$w('#ic-no-matrix-msg').text(
+				errorMsg || 'No Interview Round setup found for this nationality and designation.'
+			).show();
 			return;
 		}
 
@@ -356,8 +358,8 @@ function init_interview_console(wrapper, page) {
 				state.matrix = data.matrix || [];
 				state.interview_round = data.interview_round || null;
 				
-				// Render dynamic matrix
-				render_dynamic_matrix(state.matrix);
+				// Render dynamic matrix (pass error message if any)
+				render_dynamic_matrix(state.matrix, data.matrix_error || null);
 
 				// Reset state scores for this matrix
 				state.scores = new Array(state.matrix.length).fill(0);

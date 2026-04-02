@@ -85,7 +85,10 @@ def get_applicant_data(applicant):
     
     if applicant_designation:
         interview_round = None
-        if nationality:
+        # Only filter by nationality if the custom field exists on Interview Round
+        round_meta = frappe.get_meta("Interview Round")
+        has_nationality = round_meta.has_field("one_fm_nationality")
+        if nationality and has_nationality:
             interview_round = frappe.db.get_value("Interview Round", {
                 "designation": applicant_designation,
                 "one_fm_nationality": nationality

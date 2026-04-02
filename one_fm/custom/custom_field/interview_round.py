@@ -2,6 +2,14 @@ def get_interview_round_custom_fields():
     return {
         "Interview Round": [
             {
+                "fieldname": "one_fm_nationality",
+                "fieldtype": "Link",
+                "label": "Nationality",
+                "options": "Nationality",
+                "insert_after": "designation",
+                "description": "Used by Interview Console to match applicant nationality to the correct round.",
+            },
+            {
                 "fieldname": "interview_questions_sb",
                 "fieldtype": "Section Break",
                 "insert_after": "expected_skill_set",

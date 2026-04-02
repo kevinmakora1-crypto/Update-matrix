@@ -90,32 +90,28 @@ def get_applicant_data(applicant):
                 res["status"] = custom_status
             
     # Fetch Dynamic Matrix from Interview Round
-    # Lookup priority: designation + nationality → designation only → round_name
+    # STRICT: require BOTH designation AND nationality to match
     
     applicant_designation = applicant_doc.get('designation') or applicant_doc.get('one_fm_designation')
     
     matrix_data = []
+    interview_round = None
     
-    if applicant_designation:
-        interview_round = None
-        # Only filter by nationality if the custom field exists on Interview Round
-        round_meta = frappe.get_meta("Interview Round")
-        has_nationality = round_meta.has_field("one_fm_nationality")
-        if nationality and has_nationality:
-            interview_round = frappe.db.get_value("Interview Round", {
-                "designation": applicant_designation,
-                "one_fm_nationality": nationality
-            }, "name")
-        
-        if not interview_round:
-            interview_round = frappe.db.get_value("Interview Round", {
-                "designation": applicant_designation
-            }, "name")
-            
-        if not interview_round:
-            interview_round = frappe.db.get_value("Interview Round", {
-                "round_name": applicant_designation
-            }, "name")
+    if not applicant_designation or not nationality:
+        # Missing one of the required pair — show error
+        missing = []
+        if not applicant_designation:
+            missing.append("Designation")
+        if not nationality:
+            missing.append("Nationality")
+        res["matrix"] = []
+        res["interview_round"] = None
+        res["matrix_error"] = "Cannot load evaluation matrix: {} missing on the Job Applicant.".format(" and ".join(missing))
+    else:
+        interview_round = frappe.db.get_value("Interview Round", {
+            "designation": applicant_designation,
+            "one_fm_nationality": nationality
+        }, "name")
 
         if interview_round:
             round_doc = frappe.get_doc("Interview Round", interview_round)
@@ -134,9 +130,13 @@ def get_applicant_data(applicant):
                             q.answer_1 or "Very Poor"
                         ]
                     })
-    
-    res["matrix"] = matrix_data
-    res["interview_round"] = interview_round if applicant_designation else None
+        else:
+            res["matrix_error"] = "No Interview Round found for Designation '{}' + Nationality '{}'.".format(
+                applicant_designation, nationality
+            )
+
+        res["matrix"] = matrix_data
+        res["interview_round"] = interview_round
     
     # Check for Job Offers
     try:
@@ -287,7 +287,16 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
         avg_rating = float(score or 0) / 100.0
     avg_rating = min(max(avg_rating, 0), 1)
     
-    # --- 6. Always create a NEW Interview Feedback (accumulate, don't overwrite) ---
+    # --- 6. Clean up drafts, then create a NEW Interview Feedback ---
+    # Delete any draft (docstatus=0) feedbacks from this user for this interview
+    draft_feedbacks = frappe.get_all("Interview Feedback", filters={
+        "interview": interview_name,
+        "interviewer": frappe.session.user,
+        "docstatus": 0
+    }, pluck="name")
+    for dfb in draft_feedbacks:
+        frappe.delete_doc("Interview Feedback", dfb, force=True, ignore_permissions=True)
+
     fb = frappe.new_doc("Interview Feedback")
     fb.interview = interview_name
     fb.interview_round = interview_round or ""
@@ -306,6 +315,8 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
             "rating": int(d.get("score", 0)),
             "max_rating": 5
         })
+    # Skip HRMS duplicate validation — we intentionally accumulate feedbacks
+    fb.flags.ignore_validate = True
     fb.insert(ignore_permissions=True)
     fb.submit()
     fb.db_set("average_rating", avg_rating)

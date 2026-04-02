@@ -1246,6 +1246,9 @@ var set_job_applicant_email_id = function(frm) {
 };
 
 var set_height_field_property_from_gender = function(frm) {
+	// Bulk Recruitment always shows height as mandatory — skip ERF-based logic
+	if (frm.doc.one_fm_hiring_method === 'Bulk Recruitment') return;
+
 	if(frm.doc.one_fm_erf && frm.doc.one_fm_gender){
 		frappe.call({
 			method: 'frappe.client.get',
@@ -1311,6 +1314,11 @@ var set_mandatory_fields_of_job_applicant = function(frm) {
 		'one_fm_marital_status', 'one_fm_passport_holder_of', 'one_fm_passport_issued', 'one_fm_passport_expire',
 		'one_fm_gender', 'one_fm_religion', 'one_fm_date_of_birth', 'one_fm_educational_qualification', 'one_fm_university'];
 	set_mandatory_fields(frm, fields, true);
+
+	// Height: mandatory + visible only for Bulk Recruitment
+	var is_bulk = frm.doc.one_fm_hiring_method === 'Bulk Recruitment';
+	frm.set_df_property('one_fm_height', 'hidden', !is_bulk);
+	frm.set_df_property('one_fm_height', 'reqd', is_bulk ? 1 : 0);
 };
 
 var set_country_field_empty_on_load = function(frm) {
@@ -1323,7 +1331,7 @@ var set_country_field_empty_on_load = function(frm) {
 };
 
 var hide_job_applicant_existing_fields = function(frm) {
-	let fields = ['applicant_name', 'email_id', 'cover_letter', 'resume_attachment', 'section_break_6', 'one_fm_height','one_fm_applicant_civil_id','one_fm_passport_applicant_number','one_fm_previous_company_authorized_signatory','Resume Link'];
+	let fields = ['applicant_name', 'email_id', 'cover_letter', 'resume_attachment', 'section_break_6','one_fm_applicant_civil_id','one_fm_passport_applicant_number','one_fm_previous_company_authorized_signatory','Resume Link'];
 	set_hidden_fields(frm, fields, true);
 };
 

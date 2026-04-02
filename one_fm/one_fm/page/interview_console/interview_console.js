@@ -348,6 +348,7 @@ function init_interview_console(wrapper, page) {
 				$w('#ic-remarks').val(data.remarks);
 				$w('#ic-score-pill').text(data.score + '/100');
 				$w('#ic-job-offers-count').text(data.job_offers || 0);
+				$w('#ic-feedback-count').text(data.feedback_count || 0);
 
 				state.selected_applicant.interview_score = data.score;
 				state.selected_applicant.status = data.status;
@@ -461,6 +462,16 @@ function init_interview_console(wrapper, page) {
 			var $btn = $(this);
 			$btn.addClass('expanded');
 			setTimeout(function () { $btn.removeClass('expanded'); }, 800);
+		});
+
+		$w('#ic-feedbacks-pill').on('click', function () {
+			if (!state.selected_applicant) return;
+			var count = parseInt($w('#ic-feedback-count').text()) || 0;
+			if (count > 0) {
+				frappe.set_route('List', 'Interview Feedback', { job_applicant: state.selected_applicant.name });
+			} else {
+				frappe.show_alert({ message: "No feedbacks yet for this candidate.", indicator: "orange" });
+			}
 		});
 
 		$w('#ic-reject-btn').on('click', function () { 

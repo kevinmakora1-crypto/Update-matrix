@@ -61,7 +61,7 @@ def get_applicant_data(applicant):
         
     # Fetch score as AVERAGE of all Interview Feedback scores for this applicant
     all_feedbacks = frappe.get_all("Interview Feedback",
-        filters={"job_applicant": applicant, "docstatus": ["<", 2]},
+        filters={"job_applicant": applicant, "docstatus": 1},
         fields=["name", "interviewer", "average_rating", "result", "custom_remarks", "creation"],
         order_by="creation desc"
     )
@@ -312,7 +312,7 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
 
     # --- 7. Recalculate total score as AVERAGE of all feedbacks for this applicant ---
     all_fb_scores = frappe.get_all("Interview Feedback",
-        filters={"job_applicant": applicant, "docstatus": ["<", 2]},
+        filters={"job_applicant": applicant, "docstatus": 1},
         fields=["average_rating"]
     )
     if all_fb_scores:

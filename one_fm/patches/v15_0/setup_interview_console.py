@@ -46,6 +46,7 @@ def execute():
                 "options": "Nationality",
                 "insert_after": "designation",
                 "description": "Used by Interview Console to match applicant nationality to the correct round.",
+                "reqd": 1,
             },
         ]
     }, update=True)

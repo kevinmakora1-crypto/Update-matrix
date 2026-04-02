@@ -464,6 +464,7 @@ const submitForm = () => {
           one_fm_gender: $("#gender option:selected").text(),
           one_fm_religion: $("#religion option:selected").text(),
           one_fm_date_of_birth: $('#dob').val(),
+          one_fm_height: $('#height').val(),
           one_fm_place_of_birth: $('#placeOfBirth').val(),
           one_fm_marital_status: $('#MaritalStatus option:selected').text(),
           one_fm_email_id: $('#email').val(),

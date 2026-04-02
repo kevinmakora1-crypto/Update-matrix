@@ -35,7 +35,7 @@ def get_applicant_data(applicant):
     """
     _check_console_access()
     valid_fields = get_valid_fields()
-    res = {"age": "--", "height": "", "remarks": "", "score": 0, "status": "Open", "matrix": []}
+    res = {"age": "--", "height": "", "remarks": "", "score": 0, "status": "Open", "matrix": [], "feedbacks": [], "feedback_count": 0}
     
     # Fetch Applicant details
     applicant_doc = frappe.get_doc('Job Applicant', applicant)
@@ -59,12 +59,24 @@ def get_applicant_data(applicant):
     if found_remarks:
         res["remarks"] = applicant_doc.get(found_remarks) or ""
         
-    # Fetch score from Interview document (where save_interview_data stores it)
-    interview_score = frappe.db.get_value("Interview", {
-        "job_applicant": applicant,
-        "docstatus": ["<", 2]
-    }, "total_interview_score") or 0
-    res["score"] = interview_score
+    # Fetch score as AVERAGE of all Interview Feedback scores for this applicant
+    all_feedbacks = frappe.get_all("Interview Feedback",
+        filters={"job_applicant": applicant, "docstatus": ["<", 2]},
+        fields=["name", "interviewer", "average_rating", "result", "custom_remarks", "creation"],
+        order_by="creation desc"
+    )
+    res["feedback_count"] = len(all_feedbacks)
+    res["feedbacks"] = all_feedbacks
+
+    if all_feedbacks:
+        # total_interview_score is stored per-Interview; use it if available
+        interview_score = frappe.db.get_value("Interview", {
+            "job_applicant": applicant,
+            "docstatus": ["<", 2]
+        }, "total_interview_score") or 0
+        res["score"] = interview_score
+    else:
+        res["score"] = 0
         
     # Standard Status
     res["status"] = applicant_doc.status or "Open"
@@ -274,100 +286,44 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
         avg_rating = float(score or 0) / 100.0
     avg_rating = min(max(avg_rating, 0), 1)
     
-    existing_feedback = frappe.db.get_value("Interview Feedback", {
-        "interview": interview_name,
-        "interviewer": frappe.session.user,
-        "docstatus": ["<", 2]
-    }, "name")
-    
-    if existing_feedback:
-        fb_doc = frappe.get_doc("Interview Feedback", existing_feedback)
-        if fb_doc.docstatus == 1:
-            # Update submitted feedback in-place: update skill ratings and average
-            # Delete old skill_assessment rows and insert new ones
-            frappe.db.sql("DELETE FROM `tabSkill Assessment` WHERE parent=%s", existing_feedback)
-            for idx, row in enumerate(skill_rows, 1):
-                frappe.get_doc({
-                    "doctype": "Skill Assessment",
-                    "parent": existing_feedback,
-                    "parenttype": "Interview Feedback",
-                    "parentfield": "skill_assessment",
-                    "idx": idx,
-                    "skill": row["skill"],
-                    "rating": row["rating"]
-                }).db_insert()
-            # Update evaluation criteria
-            frappe.db.sql("DELETE FROM `tabInterview Evaluation Detail` WHERE parent=%s", existing_feedback)
-            for idx, d in enumerate(parsed_details, 1):
-                frappe.get_doc({
-                    "doctype": "Interview Evaluation Detail",
-                    "parent": existing_feedback,
-                    "parenttype": "Interview Feedback",
-                    "parentfield": "custom_evaluation_criteria",
-                    "idx": idx,
-                    "category": d.get("category", "General"),
-                    "question": d.get("question", ""),
-                    "weight": float(d.get("weight", 0)),
-                    "rating": int(d.get("score", 0)),
-                    "max_rating": 5
-                }).db_insert()
-            # Update average_rating and result
-            frappe.db.set_value("Interview Feedback", existing_feedback, {
-                "average_rating": avg_rating,
-                "result": feedback_result,
-                "custom_remarks": remarks or ""
-            }, update_modified=True)
-        else:
-            fb_doc.result = feedback_result
-            fb_doc.feedback = ""
-            fb_doc.custom_remarks = remarks or ""
-            fb_doc.skill_assessment = []
-            for row in skill_rows:
-                fb_doc.append("skill_assessment", row)
-            # Populate structured child table
-            fb_doc.custom_evaluation_criteria = []
-            for d in parsed_details:
-                fb_doc.append("custom_evaluation_criteria", {
-                    "category": d.get("category", "General"),
-                    "question": d.get("question", ""),
-                    "weight": float(d.get("weight", 0)),
-                    "rating": int(d.get("score", 0)),
-                    "max_rating": 5
-                })
-            fb_doc.save(ignore_permissions=True)
-            fb_doc.submit()
-            # Force average_rating from console score
-            fb_doc.db_set("average_rating", avg_rating)
-    
-    if not existing_feedback:
-        fb = frappe.new_doc("Interview Feedback")
-        fb.interview = interview_name
-        fb.interview_round = interview_round or ""
-        fb.job_applicant = applicant
-        fb.interviewer = frappe.session.user
-        fb.result = feedback_result
-        fb.feedback = ""
-        fb.custom_remarks = remarks or ""
-        for row in skill_rows:
-            fb.append("skill_assessment", row)
-        # Populate structured child table
-        for d in parsed_details:
-            fb.append("custom_evaluation_criteria", {
-                "category": d.get("category", "General"),
-                "question": d.get("question", ""),
-                "weight": float(d.get("weight", 0)),
-                "rating": int(d.get("score", 0)),
-                "max_rating": 5
-            })
-        fb.insert(ignore_permissions=True)
-        fb.submit()
-        # Force average_rating from console score
-        fb.db_set("average_rating", avg_rating)
-    
-    # --- 7. Update Interview doc's average_rating so the Feedback tab shows correct stars ---
+    # --- 6. Always create a NEW Interview Feedback (accumulate, don't overwrite) ---
+    fb = frappe.new_doc("Interview Feedback")
+    fb.interview = interview_name
+    fb.interview_round = interview_round or ""
+    fb.job_applicant = applicant
+    fb.interviewer = frappe.session.user
+    fb.result = feedback_result
+    fb.feedback = ""
+    fb.custom_remarks = remarks or ""
+    for row in skill_rows:
+        fb.append("skill_assessment", row)
+    for d in parsed_details:
+        fb.append("custom_evaluation_criteria", {
+            "category": d.get("category", "General"),
+            "question": d.get("question", ""),
+            "weight": float(d.get("weight", 0)),
+            "rating": int(d.get("score", 0)),
+            "max_rating": 5
+        })
+    fb.insert(ignore_permissions=True)
+    fb.submit()
+    fb.db_set("average_rating", avg_rating)
+
+    # --- 7. Recalculate total score as AVERAGE of all feedbacks for this applicant ---
+    all_fb_scores = frappe.get_all("Interview Feedback",
+        filters={"job_applicant": applicant, "docstatus": ["<", 2]},
+        fields=["average_rating"]
+    )
+    if all_fb_scores:
+        avg_all = sum(f.average_rating or 0 for f in all_fb_scores) / len(all_fb_scores)
+        total_score = round(avg_all * 100, 0)
+    else:
+        avg_all = avg_rating
+        total_score = float(score or 0)
+
     frappe.db.set_value("Interview", interview_name, {
-        "average_rating": avg_rating,
-        "total_interview_score": float(score or 0),
+        "average_rating": avg_all,
+        "total_interview_score": total_score,
     }, update_modified=False)
     
     frappe.db.commit()

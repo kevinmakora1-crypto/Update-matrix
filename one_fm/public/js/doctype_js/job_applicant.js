@@ -1246,6 +1246,9 @@ var set_job_applicant_email_id = function(frm) {
 };
 
 var set_height_field_property_from_gender = function(frm) {
+	// Bulk Recruitment always shows height as mandatory — skip ERF-based logic
+	if (frm.doc.one_fm_hiring_method === 'Bulk Recruitment') return;
+
 	if(frm.doc.one_fm_erf && frm.doc.one_fm_gender){
 		frappe.call({
 			method: 'frappe.client.get',

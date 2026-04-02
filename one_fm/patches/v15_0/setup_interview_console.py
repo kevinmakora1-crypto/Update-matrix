@@ -31,6 +31,7 @@ def execute():
                 "fieldtype": "Section Break",
                 "label": "Interview Questions",
                 "insert_after": "expected_skill_set",
+                "module": "one_fm",
             },
             {
                 "fieldname": "interview_question",
@@ -38,6 +39,7 @@ def execute():
                 "label": "Interview Question",
                 "options": "Interview Questions",
                 "insert_after": "interview_questions_sb",
+                "module": "one_fm",
             },
             {
                 "fieldname": "one_fm_nationality",
@@ -47,6 +49,7 @@ def execute():
                 "insert_after": "designation",
                 "description": "Used by Interview Console to match applicant nationality to the correct round.",
                 "reqd": 1,
+                "module": "one_fm",
             },
         ]
     }, update=True)

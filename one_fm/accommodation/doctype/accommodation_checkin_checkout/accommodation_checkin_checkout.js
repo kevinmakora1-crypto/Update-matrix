@@ -67,7 +67,15 @@ var transfer_accommodation_dialoge = function(frm) {
 	var dialog = new frappe.ui.Dialog({
 		title: 'Transfer Accommodation',
 		fields: [
-			{fieldtype: "Link", label: "Accommodation", fieldname: "accommodation", read_only: 1, options: "Accommodation"},
+			{
+				fieldtype: "Check",
+				label: __("Transfer Out of Current Accommodation"),
+				fieldname: "transfer_out_of_current",
+				onchange: function() {
+					dialog.set_df_property("accommodation", "read_only", dialog.get_value("transfer_out_of_current") ? 0 : 1);
+				}
+			},
+			{fieldtype: "Link", label: __("Accommodation"), fieldname: "accommodation", read_only: 1, options: "Accommodation"},
 			{fieldtype: "Link", label: "Floor", fieldname: "floor", reqd: 1, options: "Floor",
 				get_query: function(){
 					return {

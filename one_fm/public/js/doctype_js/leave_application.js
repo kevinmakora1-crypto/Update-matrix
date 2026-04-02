@@ -141,6 +141,15 @@ frappe.ui.form.on("Leave Application", {
 					freeze_message: __("Creating Leave Handover...")
 				});
 			}, __('Create'));
+
+			if (frm.doc.custom_in_accommodation) {
+				frm.add_custom_button(__('Accommodation Leave Movement'), function() {
+					frappe.new_doc('Accommodation Leave Movement', {
+						leave_application: frm.doc.name,
+						employee: frm.doc.employee
+					});
+				}, __('Create'));
+			}
 		}
     },
     onload: function(frm) {

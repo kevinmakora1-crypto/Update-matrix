@@ -73,10 +73,10 @@ class ClientInterviewShortlist(Document):
 				employee_name = frappe.db.get_value("Employee", employee, "employee_name") or employee
 				frappe.throw(
 					_(
-						"{0}'s Attendance has been marked for this Client Interview Shortlist record. "
-						"Cancellation aborted to prevent data mismatch."
-					).format(employee_name)
-				)
+						"{0} already has attendance marked on {1}. "
+						"This shift assignment cannot be deleted to avoid inconsistencies."
+					).format(employee_name, self.interview_date)
+				)	
 
 			# Cancel submitted shift assignments before deleting
 			if sa.docstatus == 1:

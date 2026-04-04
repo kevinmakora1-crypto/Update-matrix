@@ -344,3 +344,7 @@ one_fm.patches.v15_0.delete_pending_off_day_attendance_checks
 one_fm.patches.v15_0.add_stock_entry_custom_fields
 one_fm.patches.v15_0.setup_interview_console #2026-04-02
 one_fm.patches.v15_0.add_interview_round_property_setter #2026-04-02
+one_fm.patches.v15_0.update_workflow_client_interview_shortlist #2026-04-05
+one_fm.patches.v15_0.add_assignment_rule_client_interview_shortlist_draft #2026-04-05
+one_fm.patches.v15_0.add_assignment_rule_client_interview_shortlist_pending_operations_supervisor #2026-04-05
+one_fm.patches.v15_0.add_assignment_rule_client_interview_shortlist_pending_operations_manager #2026-04-05

@@ -2624,3 +2624,68 @@ def get_all_projects():
         fields=["name"],
         limit_page_length=1000
     )
+
+@frappe.whitelist()
+def suspend_employee_action(employees, selected_dates_only=0, repeat=0, repeat_freq=None, repeat_till=None, project_end_date=0, week_days=None):
+	from dateutil.relativedelta import relativedelta
+	try:
+		employees = json.loads(employees)
+		if week_days:
+			week_days = json.loads(week_days)
+		
+		for employee_item in employees:
+			emp_name = employee_item["employee"]
+			base_date = getdate(employee_item["date"])
+			
+			if cint(selected_dates_only):
+				target_dates = [base_date]
+			else:
+				# Find end date
+				if cint(project_end_date):
+					proj = frappe.db.get_value("Employee", emp_name, "project")
+					if proj:
+						end_date = frappe.db.get_value("Project", proj, "expected_end_date")
+					if not proj or not end_date:
+						end_date = get_last_day(base_date) # Fallback to end of month
+				elif repeat_till:
+					end_date = getdate(repeat_till)
+				else:
+					end_date = base_date
+				
+				target_dates = []
+				if repeat_freq == "Weekly" and week_days:
+					for date_item in pd.date_range(start=base_date, end=end_date):
+						if date_item.strftime("%A") in week_days:
+							target_dates.append(date_item.date())
+				elif repeat_freq == "Monthly":
+					current_date = base_date
+					while current_date <= getdate(end_date):
+						target_dates.append(current_date)
+						current_date = current_date + relativedelta(months=1)
+				else:
+					target_dates = [base_date]
+
+			for target_date in target_dates:
+				date_str = str(target_date)
+				sch = frappe.db.get_value("Employee Schedule", {"employee": emp_name, "date": date_str, "roster_type": "Basic"}, "name")
+				if sch:
+					doc = frappe.get_doc("Employee Schedule", sch)
+					doc.employee_availability = "Suspended"
+					doc.save(ignore_permissions=True)
+				else:
+					emp_doc = frappe.get_doc("Employee", emp_name)
+					doc = frappe.new_doc("Employee Schedule")
+					doc.employee = emp_name
+					doc.employee_name = emp_doc.employee_name
+					doc.department = emp_doc.department
+					doc.date = date_str
+					doc.employee_availability = "Suspended"
+					doc.roster_type = "Basic"
+					doc.start_datetime = f"{date_str} 00:00:00"
+					doc.end_datetime = f"{date_str} 23:59:59"
+					doc.insert(ignore_permissions=True)
+		frappe.db.commit()
+		response("Success", 200, {"message": "Suspension logic scheduled successfully."})
+	except Exception as e:
+		frappe.log_error(message=frappe.get_traceback(), title="Suspend Employee Error")
+		response("Error", 200, None, str(e))

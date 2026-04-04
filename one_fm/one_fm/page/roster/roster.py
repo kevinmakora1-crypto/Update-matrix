@@ -2626,7 +2626,7 @@ def get_all_projects():
     )
 
 @frappe.whitelist()
-def suspend_employee_action(employees, selected_dates_only=0, repeat=0, repeat_freq=None, repeat_till=None, project_end_date=0, week_days=None):
+def suspend_employee_action(employees, selected_dates=0, repeat=0, repeat_freq=None, repeat_till=None, project_end_date=0, week_days=None):
 	from dateutil.relativedelta import relativedelta
 	try:
 		employees = json.loads(employees)
@@ -2637,7 +2637,7 @@ def suspend_employee_action(employees, selected_dates_only=0, repeat=0, repeat_f
 			emp_name = employee_item["employee"]
 			base_date = getdate(employee_item["date"])
 			
-			if cint(selected_dates_only):
+			if cint(selected_dates):
 				target_dates = [base_date]
 			else:
 				# Find end date

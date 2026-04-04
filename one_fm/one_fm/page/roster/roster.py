@@ -567,7 +567,7 @@ def schedule_staff(employees, shift, operations_role, otRoster, start_date, proj
 				query_params = {
 					"employee": obj,
 					"employee_name": emp_name,
-					"purpose": "Assign Day Off OT",
+					"purpose": "Day Off Overtime",
 					"from_date": from_date,
 					"to_date": to_date,
 					"status": "Draft"

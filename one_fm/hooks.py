@@ -857,9 +857,10 @@ override_whitelisted_methods = {
     "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_receipt":"one_fm.overrides.purchase_order.make_purchase_receipt",
     "erpnext.accounts.doctype.purchase_invoice.purchase_invoice.make_purchase_receipt":"one_fm.overrides.purchase_invoice.make_purchase_receipt",
     "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_invoice":"one_fm.overrides.purchase_order.make_purchase_invoice",
-    "frappe.desk.form.utils.get_next": "one_fm.utils.get_next"
-
+    "frappe.desk.form.utils.get_next": "one_fm.utils.get_next",
+	"frappe.desk.query_report.get_script": "one_fm.overrides.reports.stock_balance_override.custom_get_script",
 }
+
 
 
 override_doctype_dashboards = {

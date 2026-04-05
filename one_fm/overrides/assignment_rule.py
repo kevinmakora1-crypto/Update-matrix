@@ -84,7 +84,8 @@ def do_assignment(self, doc):
     active_assignments = frappe.get_all(
         "ToDo",
         fields=["name", "allocated_to"],
-        filters={"reference_type": doc.get("doctype"), "reference_name": doc.get("name"), "status": "Open"}
+        filters={"reference_type": doc.get("doctype"), "reference_name": doc.get("name"), "status": "Open"},
+        ignore_permissions=True,
     )
     for assignment in active_assignments:
         assign_to.set_status(

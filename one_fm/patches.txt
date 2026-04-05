@@ -277,6 +277,7 @@ one_fm.patches.v15_0.add_assignment_rule_for_leave_acknowledgement_form_process_
 one_fm.patches.v15_0.add_custom_field_reliever_user_id_in_leave_application
 one_fm.patches.v15_0.add_workflow_leave_application
 one_fm.patches.v15_0.add_assignment_rule_leave_application_pending_reliever
+one_fm.patches.v15_0.migrate_pathfinder_log_hd_ticket_to_comment #2026-04-05
 
 [post_model_sync]
 one_fm.patches.v15_0.process_task_for_wiki_employee_task
@@ -349,6 +350,5 @@ one_fm.patches.v15_0.update_workflow_client_interview_shortlist #2026-04-05
 one_fm.patches.v15_0.add_assignment_rule_client_interview_shortlist_draft #2026-04-05
 one_fm.patches.v15_0.add_assignment_rule_client_interview_shortlist_pending_operations_supervisor #2026-04-05
 one_fm.patches.v15_0.add_assignment_rule_client_interview_shortlist_pending_operations_manager #2026-04-05
-one_fm.patches.v15_0.migrate_pathfinder_log_hd_ticket_to_comment #2026-04-05
 one_fm.patches.v15_0.add_hd_ticket_type_custom_field #2026-04-05
 one_fm.patches.v15_0.add_assignment_rule_process_change_request_business_analyst #2026-04-05

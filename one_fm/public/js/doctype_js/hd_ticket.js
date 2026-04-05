@@ -81,7 +81,7 @@ const add_process_change_request_button = (frm) => {
                 if (r.message) {
                   frappe.msgprint({
                     message: __(
-                      "Process Change Request <a href='/app/process-change-request/{0}'>{0}</a> created. Validate against Process Change Request duplication.",
+                      "Process Change Request <a href='/app/process-change-request/{0}'>{0}</a> has been created successfully.",
                       [r.message]
                     ),
                     title: __("Process Change Request Created"),

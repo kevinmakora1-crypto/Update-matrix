@@ -1,4 +1,5 @@
 import frappe
+from frappe.utils import get_url_to_form
 
 
 def execute():
@@ -13,12 +14,13 @@ def execute():
 	)
 
 	for log in logs_with_tickets:
+		ticket_url = get_url_to_form("HD Ticket", log.hd_ticket)
 		frappe.get_doc({
 			"doctype": "Comment",
 			"comment_type": "Info",
 			"reference_doctype": "Pathfinder Log",
 			"reference_name": log.name,
-			"content": f"HD Ticket link migrated: <a href='/app/hd-ticket/{log.hd_ticket}'>{log.hd_ticket}</a>",
+			"content": f"HD Ticket link migrated: <a href='{ticket_url}'>{log.hd_ticket}</a>",
 		}).insert(ignore_permissions=True)
 
 	if logs_with_tickets:

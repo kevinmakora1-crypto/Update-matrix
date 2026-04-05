@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.model.mapper import get_mapped_doc
 
 class AccommodationLeaveMovement(Document):
 	def autoname(self):
@@ -13,6 +14,14 @@ class AccommodationLeaveMovement(Document):
 		
 		from frappe.model.naming import make_autoname
 		self.name = make_autoname(self.naming_series)
+
+	def on_submit(self):
+		if self.type == "IN" and self.checkin_reference:
+			frappe.db.set_value("Accommodation Leave Movement", self.checkin_reference, "checked_out", 1)
+
+	def on_cancel(self):
+		if self.type == "IN" and self.checkin_reference:
+			frappe.db.set_value("Accommodation Leave Movement", self.checkin_reference, "checked_out", 0)
 
 @frappe.whitelist()
 def get_last_active_checkin(employee: str):
@@ -35,3 +44,29 @@ def get_last_active_checkin(employee: str):
 	)
 	
 	return checkins[0] if checkins else None
+
+@frappe.whitelist()
+def make_checkin_from_checkout(source_name: str):
+	"""
+	Maps fields from an 'OUT' Accommodation Leave Movement to a new 'IN' one.
+	"""
+	target_doc = get_mapped_doc(
+		"Accommodation Leave Movement",
+		source_name,
+		{
+			"Accommodation Leave Movement": {
+				"doctype": "Accommodation Leave Movement",
+				"validation": {
+					"docstatus": ["=", 1],
+					"type": ["=", "OUT"]
+				}
+			}
+		},
+		ignore_permissions=False,
+	)
+	
+	target_doc.type = "IN"
+	target_doc.checkin_reference = source_name
+	target_doc.checkin_checkout_date_time = frappe.utils.now_datetime()
+	
+	return target_doc

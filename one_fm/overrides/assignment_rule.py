@@ -78,8 +78,21 @@ def do_assignment(self, doc):
     # clear existing assignment, to reassign
     if frappe.session.user == "Guest":
         frappe.set_user('Administrator')
-    assign_to.clear(doc.get("doctype"), doc.get("name"))
-
+        
+    active_assignments = frappe.get_all(
+        "ToDo",
+        fields=["name", "allocated_to"],
+        filters={"reference_type": doc.get("doctype"), "reference_name": doc.get("name"), "status": "Open", "assignment_rule": self.name}
+    )
+    for assignment in active_assignments:
+        assign_to.set_status(
+            doc.get("doctype"), 
+            doc.get("name"), 
+            todo=assignment.name, 
+            assign_to=assignment.allocated_to, 
+            status="Cancelled", 
+            ignore_permissions=True
+        )
 
     user = self.get_user(doc)
 

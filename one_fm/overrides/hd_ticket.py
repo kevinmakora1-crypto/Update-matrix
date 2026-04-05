@@ -27,6 +27,27 @@ class HDTicketOverride(HDTicket):
         super().on_update()
         self.apply_ticket_escalation()
         self.notify_ticket_raiser_of_resolution_details()
+        self.handle_routing_field_reassignment()
+
+    def handle_routing_field_reassignment(self):
+        from frappe.desk.form import assign_to
+        if not self.is_new():
+            old_doc = self.get_doc_before_save()
+            if old_doc:
+                # Handle custom_process_owner change
+                if old_doc.custom_process_owner != self.custom_process_owner:
+                    if old_doc.custom_process_owner:
+                        # Only clear if the old assignment is still Open
+                        active = frappe.db.get_value("ToDo", {"reference_type": self.doctype, "reference_name": self.name, "allocated_to": old_doc.custom_process_owner, "status": "Open"}, "name")
+                        if active:
+                            assign_to.remove(self.doctype, self.name, old_doc.custom_process_owner, ignore_permissions=True)
+
+                # Handle custom_bug_buster change
+                if old_doc.custom_bug_buster != self.custom_bug_buster:
+                    if old_doc.custom_bug_buster:
+                        active = frappe.db.get_value("ToDo", {"reference_type": self.doctype, "reference_name": self.name, "allocated_to": old_doc.custom_bug_buster, "status": "Open"}, "name")
+                        if active:
+                            assign_to.remove(self.doctype, self.name, old_doc.custom_bug_buster, ignore_permissions=True)
 
     def after_insert(self):
         super().after_insert()

@@ -15,7 +15,6 @@
   "column_break_ojgt",
   "initiated_on",
   "type",
-  "hd_ticket",
   "stakeholders_section",
   "process_owner_user",
   "process_owner_name",
@@ -51,13 +50,7 @@
    "label": "Goal Description",
    "reqd": 1
   },
-  {
-   "fieldname": "hd_ticket",
-   "fieldtype": "Link",
-   "label": "HD Ticket",
-   "options": "HD Ticket",
-   "read_only": 1
-  },
+
   {
    "fieldname": "column_break_ojgt",
    "fieldtype": "Column Break"

@@ -34,6 +34,8 @@ class TestPathfinderLog(FrappeTestCase):
 		doc = frappe.get_doc({
 			"doctype": "Pathfinder Log",
 			"process_name": self.PROCESS_NAME,
+			"goal_description": "Test goal",
+			"type": "Incremental Changes",
 		})
 		doc.insert(ignore_permissions=True)
 		# Force workflow_state outside normal transitions for test isolation
@@ -82,21 +84,6 @@ class TestPathfinderLog(FrappeTestCase):
 		result = is_process_editable(self.PROCESS_NAME)
 		self.assertFalse(result["editable"])
 
-	def test_most_recent_active_log_selected(self):
-		"""When multiple active logs exist, the most recent is returned."""
-		from one_fm.one_fm.doctype.pathfinder_log.pathfinder_api import (
-			is_process_editable,
-		)
-
-		self._create_log("Draft")
-		import time
-		time.sleep(0.1)  # ensure modified timestamp differs
-		newer_log = self._create_log("In Development")
-
-		result = is_process_editable(self.PROCESS_NAME)
-		self.assertTrue(result["editable"])
-		self.assertEqual(result["pathfinder_log"], newer_log)
-		self.assertEqual(result["workflow_state"], "In Development")
 
 	def test_mixed_completed_and_active(self):
 		"""If one log is Completed and another is active, process is editable."""

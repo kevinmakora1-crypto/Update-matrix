@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import now_datetime
 
@@ -43,3 +44,54 @@ class PathfinderLog(Document):
 				"start_time": now_datetime()
 			}
 		)
+
+
+@frappe.whitelist()
+def get_open_change_requests(pathfinder_log: str) -> int:
+	"""Fetch open Process Change Requests for the same process and append them.
+
+	Finds all Process Change Request documents that:
+	- belong to the same Process as the Pathfinder Log
+	- have status "Open"
+	- are not already present in the Pathfinder Log's change_requests child table
+
+	Appends matching requests, saves the document, and returns the count added.
+	"""
+	doc = frappe.get_doc("Pathfinder Log", pathfinder_log)
+	doc.check_permission("write")
+
+	# Collect change requests already linked in this Pathfinder Log
+	existing_cr_names = {
+		row.change_request for row in (doc.change_requests or [])
+	}
+
+	# Fetch open PCRs for the same process
+	open_pcrs = frappe.get_all(
+		"Process Change Request",
+		filters={
+			"process_name": doc.process_name,
+			"status": "Open",
+		},
+		fields=["name", "request_date", "requirement_summary", "status"],
+		order_by="request_date asc",
+	)
+
+	# Filter out those already in the child table
+	new_pcrs = [pcr for pcr in open_pcrs if pcr.name not in existing_cr_names]
+
+	if not new_pcrs:
+		frappe.msgprint(_("No new change requests found."))
+		return 0
+
+	for pcr in new_pcrs:
+		doc.append("change_requests", {
+			"change_request": pcr.name,
+			"request_date": pcr.request_date,
+			"requirement_summary": pcr.requirement_summary,
+			"status": pcr.status,
+		})
+
+	doc.save()
+
+	frappe.msgprint(_("{0} new change requests added.").format(len(new_pcrs)))
+	return len(new_pcrs)

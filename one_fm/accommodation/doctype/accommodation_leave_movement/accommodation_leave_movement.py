@@ -31,7 +31,7 @@ def get_last_active_checkin(employee: str):
 			"checked_out": 0
 		},
 		fields=["bed", "accommodation", "floor", "accommodation_unit", "accommodation_space"],
-		order_by="creation desc",
+		order_by="checkin_checkout_date_time desc, creation desc",
 		limit=1
 	)
 	

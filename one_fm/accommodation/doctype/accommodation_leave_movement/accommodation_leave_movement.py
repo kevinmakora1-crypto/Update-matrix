@@ -15,6 +15,14 @@ class AccommodationLeaveMovement(Document):
 		from frappe.model.naming import make_autoname
 		self.name = make_autoname(self.naming_series)
 
+	def on_submit(self):
+		if self.type == "IN" and self.checkin_reference:
+			frappe.db.set_value("Accommodation Leave Movement", self.checkin_reference, "checked_out", 1)
+
+	def on_cancel(self):
+		if self.type == "IN" and self.checkin_reference:
+			frappe.db.set_value("Accommodation Leave Movement", self.checkin_reference, "checked_out", 0)
+
 @frappe.whitelist()
 def get_last_active_checkin(employee: str):
 	"""

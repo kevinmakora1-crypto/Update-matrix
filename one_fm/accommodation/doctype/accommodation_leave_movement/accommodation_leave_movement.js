@@ -5,7 +5,7 @@ frappe.ui.form.on("Accommodation Leave Movement", {
 	refresh: function(frm) {
 		frm.set_df_property("employee", "read_only", frm.doc.leave_application ? 1 : 0);
 
-		if (frm.doc.docstatus == 1 && frm.doc.type == "OUT") {
+		if (frm.doc.docstatus == 1 && frm.doc.type == "OUT" && !frm.doc.checked_out) {
 			frm.add_custom_button(__("Create Check-In"), function() {
 				frappe.model.with_doctype("Accommodation Leave Movement", function() {
 					frappe.call({

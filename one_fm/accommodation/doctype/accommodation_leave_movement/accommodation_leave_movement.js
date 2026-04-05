@@ -3,6 +3,8 @@
 
 frappe.ui.form.on("Accommodation Leave Movement", {
 	refresh: function(frm) {
+		frm.set_df_property("employee", "read_only", frm.doc.leave_application ? 1 : 0);
+
 		if (frm.doc.docstatus == 1 && frm.doc.type == "OUT") {
 			frm.add_custom_button(__("Create Check-In"), function() {
 				frappe.model.with_doctype("Accommodation Leave Movement", function() {
@@ -21,6 +23,9 @@ frappe.ui.form.on("Accommodation Leave Movement", {
 				});
 			}, __("Create"));
 		}
+	},
+	leave_application: function(frm) {
+		frm.set_df_property("employee", "read_only", frm.doc.leave_application ? 1 : 0);
 	},
 	onload: function(frm) {
 		if (frm.is_new()) {

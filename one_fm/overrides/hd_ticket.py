@@ -29,25 +29,36 @@ class HDTicketOverride(HDTicket):
         self.notify_ticket_raiser_of_resolution_details()
         self.handle_routing_field_reassignment()
 
+    def _can_bypass_assignment_permissions(self):
+        return frappe.session.user == "Administrator" or "System Manager" in frappe.get_roles()
+
     def handle_routing_field_reassignment(self):
         from frappe.desk.form import assign_to
         if not self.is_new():
             old_doc = self.get_doc_before_save()
             if old_doc:
+                can_bypass_assignment_permissions = self._can_bypass_assignment_permissions()
+
                 # Handle custom_process_owner change
                 if old_doc.custom_process_owner != self.custom_process_owner:
                     if old_doc.custom_process_owner:
                         # Only clear if the old assignment is still Open
                         active = frappe.db.get_value("ToDo", {"reference_type": self.doctype, "reference_name": self.name, "allocated_to": old_doc.custom_process_owner, "status": "Open"}, "name")
                         if active:
-                            assign_to.remove(self.doctype, self.name, old_doc.custom_process_owner, ignore_permissions=True)
+                            if can_bypass_assignment_permissions:
+                                assign_to.remove(self.doctype, self.name, old_doc.custom_process_owner, ignore_permissions=True)
+                            else:
+                                assign_to.remove(self.doctype, self.name, old_doc.custom_process_owner)
 
                 # Handle custom_bug_buster change
                 if old_doc.custom_bug_buster != self.custom_bug_buster:
                     if old_doc.custom_bug_buster:
                         active = frappe.db.get_value("ToDo", {"reference_type": self.doctype, "reference_name": self.name, "allocated_to": old_doc.custom_bug_buster, "status": "Open"}, "name")
                         if active:
-                            assign_to.remove(self.doctype, self.name, old_doc.custom_bug_buster, ignore_permissions=True)
+                            if can_bypass_assignment_permissions:
+                                assign_to.remove(self.doctype, self.name, old_doc.custom_bug_buster, ignore_permissions=True)
+                            else:
+                                assign_to.remove(self.doctype, self.name, old_doc.custom_bug_buster)
 
     def after_insert(self):
         super().after_insert()

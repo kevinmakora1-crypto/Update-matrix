@@ -102,13 +102,15 @@ function init_interview_console(wrapper, page) {
 	function render_dynamic_matrix(matrix, errorMsg) {
 		if (!matrix || matrix.length === 0) {
 			$w('.ic-table').hide();
-			$w('#ic-no-matrix-msg').text(
-				errorMsg || 'No Interview Round setup found for this nationality and designation.'
-			).show();
+			$w('.ic-remarks-area').hide();
+			var errMsg = 'Click the <span style="display:inline-flex; align-items:center; justify-content:center; padding:4px; margin:0 2px; color:#64748b; background:transparent; vertical-align:middle;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"></line><line x1="3" y1="12" x2="21" y2="12"></line></svg></span> button above and <strong style="color:#0f172a; font-weight:800;">select a round</strong> to launch the evaluation matrix.';
+			$w('#ic-no-matrix-msg-text').html(errMsg);
+			$w('#ic-no-matrix-msg').css('display', 'flex');
 			return;
 		}
 
 		$w('.ic-table').show();
+		$w('.ic-remarks-area').show();
 		$w('#ic-no-matrix-msg').hide();
 
 		// Group Matrix by Category
@@ -180,7 +182,7 @@ function init_interview_console(wrapper, page) {
 				var cellText = matrix[c].ratings[r] || "";
 				// If cellText is empty and weight is > 0, we could auto-calculate if we wanted, 
 				// but let's stick to showing the value from DB for now as per the existing logic.
-				bodyHtml += '<td><div class="ic-cell" data-score="' + rowNum + '" data-index="' + c + '">' + cellText + '</div></td>';
+				bodyHtml += '<td><div class="ic-cell" tabindex="0" data-score="' + rowNum + '" data-index="' + c + '">' + cellText + '</div></td>';
 			}
 			bodyHtml += '</tr>';
 		}
@@ -233,6 +235,27 @@ function init_interview_console(wrapper, page) {
 			callback: function (r) {
 				if (r.message && r.message.matrix) {
 					render_dynamic_matrix(r.message.matrix);
+				}
+			}
+		});
+	}
+	
+	function load_matrix_for_round(applicant_name, round_name) {
+		frappe.call({
+			method: "one_fm.one_fm.page.interview_console.interview_console.get_applicant_data",
+			args: { applicant: applicant_name, interview_round_name: round_name },
+			callback: function (r) {
+				var data = r.message;
+				if (data) {
+					state.matrix = data.matrix || [];
+					state.interview_round = data.interview_round || null;
+					render_dynamic_matrix(state.matrix, data.matrix_error || null);
+					state.scores = new Array(state.matrix.length).fill(0);
+					$w('.ic-cell').removeClass('selected');
+					$w('#ic-score-pill').text('0/100');
+					
+					// Flash visual feedback that round changed
+					frappe.show_alert({message: "Switched to round: " + round_name, indicator: "blue"});
 				}
 			}
 		});
@@ -321,8 +344,19 @@ function init_interview_console(wrapper, page) {
 				$w('#ic-height').val(data.height || "");
 				$w('#ic-remarks').val(data.remarks);
 				$w('#ic-score-pill').text(data.score + '/100');
+				
+				// Reset photo thumbnail and data
+				$w('#ic-photo-thumbnail-container').hide();
+				$w('#ic-photo-thumbnail').attr('src', '');
+				state.selected_applicant.photo_data_url = "";
+				
 				$w('#ic-job-offers-count').text(data.job_offers || 0);
 				$w('#ic-feedback-count').text(data.interview_count || 0);
+				
+				// Photo Attachments Counter
+				if (data.photo_count !== undefined) {
+					$w('#ic-photo-count').text(data.photo_count || 0);
+				}
 
 				state.selected_applicant.interview_score = data.score;
 				state.selected_applicant.status = data.status;
@@ -336,6 +370,27 @@ function init_interview_console(wrapper, page) {
 				// Reset state scores for this matrix
 				state.scores = new Array(state.matrix.length).fill(0);
 				$w('.ic-cell').removeClass('selected');
+				
+				// Populate Available Rounds Dropdown
+				var roundsHtml = '';
+				if(data.available_rounds && data.available_rounds.length > 0) {
+					data.available_rounds.forEach(function(round_name) {
+						roundsHtml += '<div class="ic-dropdown-item" style="padding:10px 12px; border-bottom:1px solid #f1f5f9; cursor:pointer; font-size:12px; color:#334155; transition:background 0.2s;">' + esc(round_name) + '</div>';
+					});
+				} else {
+					roundsHtml = '<div style="padding:10px 12px; font-size:11px; color:#94a3b8; text-align:center;">No rounds available</div>';
+				}
+				$w('#ic-interview-dropdown-list').html(roundsHtml);
+
+				// Bind Dropdown Items securely
+				$w('.ic-dropdown-item').hover(
+					function() { $(this).css('background', '#f8fafc'); },
+					function() { $(this).css('background', 'transparent'); }
+				).off('click').on('click', function() {
+					$w('#ic-interview-dropdown').hide();
+					var selected_round = $(this).text();
+					load_matrix_for_round(app.name, selected_round);
+				});
 
 				// Update Sidebar UI
 				var $item = $w('.ic-item[data-name="' + app.name + '"]');
@@ -365,6 +420,44 @@ function init_interview_console(wrapper, page) {
 	}
 
 	function setup_handlers() {
+		// Cell Keyboard Navigation (Arrow Keys + Enter)
+		$w('#ic-tbody').off('keydown', '.ic-cell').on('keydown', '.ic-cell', function (e) {
+			if (!state.selected_applicant) return;
+            
+			// Enter key to select
+			if (e.key === "Enter" || e.keyCode === 13) {
+				e.preventDefault();
+				$(this).click();
+				return;
+			}
+            
+			// Arrow Key Navigation
+			if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) !== -1) {
+				e.preventDefault();
+				var currentScore = parseInt($(this).data('score'));
+				var currentIndex = parseInt($(this).data('index'));
+                
+				var targetScore = currentScore;
+				var targetIndex = currentIndex;
+                
+				if (e.key === "ArrowUp") {
+					targetScore = currentScore < 5 ? currentScore + 1 : 1; 
+				} else if (e.key === "ArrowDown") {
+					targetScore = currentScore > 1 ? currentScore - 1 : 5;
+				} else if (e.key === "ArrowLeft") {
+					targetIndex = currentIndex > 0 ? currentIndex - 1 : state.matrix.length - 1;
+				} else if (e.key === "ArrowRight") {
+					var maxIndex = state.matrix.length - 1;
+					targetIndex = currentIndex < maxIndex ? currentIndex + 1 : 0;
+				}
+                
+				var targetCell = $w('.ic-cell[data-score="' + targetScore + '"][data-index="' + targetIndex + '"]');
+				if (targetCell.length) {
+					targetCell.focus();
+				}
+			}
+		});
+
 		// Cell Click Handler (Delegated since matrix is dynamic)
 		$w('#ic-tbody').off('click', '.ic-cell').on('click', '.ic-cell', function () {
 			if (!state.selected_applicant) {
@@ -433,10 +526,118 @@ function init_interview_console(wrapper, page) {
 			}
 		});
 
-		$w('.ic-btn-circular, .ic-clear-btn, .ic-dashboard-link').on('click', function () {
+		$w('.ic-btn-circular, .ic-clear-btn, .ic-dashboard-link, #ic-camera-btn').on('click', function () {
 			var $btn = $(this);
 			$btn.addClass('expanded');
 			setTimeout(function () { $btn.removeClass('expanded'); }, 800);
+		});
+
+		// Dropdown logic for Plus Button
+		$w('#ic-add-interview-btn').off('click').on('click', function(e) {
+			e.stopPropagation();
+			var dropdown = $w('#ic-interview-dropdown');
+			if (dropdown.is(':visible')) {
+				dropdown.hide();
+			} else {
+				dropdown.show();
+			}
+		});
+
+		// Hide dropdown if clicked outside
+		$(document).on('click', function(e) {
+			if (!$(e.target).closest('#ic-add-interview-btn, #ic-interview-dropdown').length) {
+				$w('#ic-interview-dropdown').hide();
+			}
+		});
+		
+		// Camera Photo Counter Navigation
+		$w('#ic-photo-count-btn').off('click').on('click', function(e) {
+			e.stopPropagation();
+			if (!state.selected_applicant) return;
+			// Route to the global File List pre-filtered by this exact Applicant
+			frappe.set_route('List', 'File', {
+				attached_to_doctype: 'Job Applicant', 
+				attached_to_name: state.selected_applicant.name 
+			});
+		});
+
+		// Camera Setup Helpers
+		let stream = null;
+		
+		function stopCamera() {
+			if (stream) {
+				stream.getTracks().forEach(track => track.stop());
+				stream = null;
+			}
+			$w('#ic-camera-modal').hide();
+		}
+		
+		$w('#ic-camera-btn').on('click', function() {
+			if (!state.selected_applicant) {
+				frappe.show_alert({ message: "Select a candidate first.", indicator: "orange" });
+				return;
+			}
+			$w('#ic-camera-modal').css('display', 'flex');
+			$w('#ic-photo-preview-large').hide();
+			$w('#ic-video-stream').show();
+			$w('#ic-camera-capture-btn').show();
+			$w('#ic-camera-retake-btn').hide();
+			$w('#ic-camera-save-btn').hide();
+			
+			navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+				.then(function(mediaStream) {
+					stream = mediaStream;
+					var video = document.getElementById('ic-video-stream');
+					video.srcObject = stream;
+					video.play();
+				})
+				.catch(function(err) {
+					frappe.show_alert({ message: "Camera access denied or unavailable: " + err, indicator: "red" });
+					stopCamera();
+				});
+		});
+		
+		$w('#ic-camera-capture-btn').on('click', function() {
+			var video = document.getElementById('ic-video-stream');
+			var canvas = document.getElementById('ic-video-canvas');
+			canvas.width = video.videoWidth;
+			canvas.height = video.videoHeight;
+			canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+			
+			var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+			$w('#ic-photo-preview-large').attr('src', dataUrl).show();
+			$w('#ic-video-stream').hide();
+			
+			$(this).hide();
+			$w('#ic-camera-retake-btn').show();
+			$w('#ic-camera-save-btn').show();
+		});
+		
+		$w('#ic-camera-retake-btn').on('click', function() {
+			$w('#ic-photo-preview-large').hide();
+			$w('#ic-video-stream').show();
+			$w('#ic-camera-capture-btn').show();
+			$w('#ic-camera-retake-btn').hide();
+			$w('#ic-camera-save-btn').hide();
+		});
+		
+		$w('#ic-camera-close-btn').on('click', stopCamera);
+		
+		$w('#ic-camera-save-btn').on('click', function() {
+			var dataUrl = $w('#ic-photo-preview-large').attr('src');
+			state.selected_applicant.photo_data_url = dataUrl;
+			$w('#ic-photo-thumbnail').attr('src', dataUrl);
+			$w('#ic-photo-thumbnail-container').css('display', 'flex');
+			stopCamera();
+			update_and_save(); // Immediately save when photo is attached
+		});
+		
+		$w('#ic-remove-photo').on('click', function(e) {
+			e.stopPropagation();
+			state.selected_applicant.photo_data_url = "";
+			$w('#ic-photo-thumbnail').attr('src', '');
+			$w('#ic-photo-thumbnail-container').hide();
+			update_and_save();
 		});
 
 		$w('#ic-feedbacks-pill').on('click', function () {
@@ -601,7 +802,8 @@ function init_interview_console(wrapper, page) {
 				status: status,
 				scores_detail: JSON.stringify(scores_detail),
 				interview_round: state.interview_round || "",
-				height: $w('#ic-height').val() || ""
+				height: $w('#ic-height').val() || "",
+				photo_data: state.selected_applicant.photo_data_url || ""
 			},
 			callback: function () {
 				if (state.selected_applicant) {

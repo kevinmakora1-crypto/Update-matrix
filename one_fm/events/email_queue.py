@@ -11,8 +11,13 @@ def after_insert(doc, event):
 	if len(doc.recipients) >= 20:
 		found = False
 	if found:
-		# It will send the email immediately
-		doc.send()
+		# Enqueue it safely in the background rather than blocking the main transaction
+		frappe.enqueue(
+			send_now,
+			docname=doc.name,
+			now=frappe.flags.in_test,
+			enqueue_after_commit=True
+		)
 
 def flush_emails():
     """

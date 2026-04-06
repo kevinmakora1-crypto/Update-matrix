@@ -19,7 +19,7 @@ frappe.pages['interview_console'].on_page_load = function (wrapper) {
 			$('head').append('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap">');
 		}
 		if (!$('link[href*="interview_console.css"]').length) {
-			$('head').append('<link rel="stylesheet" href="/assets/one_fm/css/interview_console.css">');
+			$('head').append('<link rel="stylesheet" href="/assets/one_fm/css/interview_console.css?v=' + new Date().getTime() + '">');
 		}
 
 
@@ -73,25 +73,8 @@ frappe.pages['interview_console'].on_page_show = function (wrapper) {
 function init_interview_console(wrapper, page) {
 	var $w = function (selector) { return $(wrapper).find(selector); };
 
-	// Helper for fuzzy matching question names
-	var get_standard_key = function(str) {
-		return (str || "").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-	};
+	// Helper to ensure scores structure holds the right size
 
-	var MASTER_WORD_MAPPING = {
-		"Physical / Body Build (Fitness & Stature)": ["Tall, athletic, well-built.", "Fit, well-proportioned.", "Neutral, average build.", "Fatigued, poor posture.", "Unhealthy, physically brittle."],
-		"Quality of Appearance (Grooming & Presence)": ["Crisp, clean, inviting.", "Clean, tidy attire.", "Standard, basic grooming.", "Scruffy or inappropriate.", "Unhygienic or aggressive."],
-		"Tell me about a Difficult Situation?": ["Solves complex problems.", "Solves average problems.", "Solves simple problems.", "No solution provided.", "No situation stated."],
-		"Tell me about a Difficult Customer you faced?": ["Expert crowd control.", "Manages groups effectively.", "Basic crowd control.", "No crowd control.", "Careless; no control."],
-		"Hard Worker (Can you work 12 hours, 16 hours, 24 hours? Can you work 30days without a day off? can you work 2 years without vacation? can you work 1 year without sick leave?)": ["Full 24/7 availability.", "16hr/ takes sick leave.", "Limited shift availability.", "Cannot work 30- days.", "Minimal shift capacity."],
-		"Work History (Promotion)": ["International experience.", "Local security promotions.", "Basic security experience.", "Non-security experience.", "No work history."],
-		"A customer comes to asking for directions and you do not know the direction what do you do?": ["Guides customer personally.", "Researches then guides.", "Refers to supervisor.", "Defers to others.", "Claims no knowledge."],
-		"Technical (Incident Fire + Theft)": ["Full emergency response.", "Follows basic protocols.", "Partial protocol knowledge.", "Major protocol gaps.", "Fails technical check."],
-		"English Written": ["Perfect grammar/structure.", "Good; minor errors.", "Readable; limited vocab.", "Poor; many errors.", "Cannot write."],
-		"English Read": ["Clear; no skips.", "Reads without hesitation.", "Skips/repeats words.", "Barely reads sentences.", "Cannot read."],
-		"English Comprehension": ["Perfect understanding.", "Few clarifications needed.", "Needs many repetitions.", "Poor understanding.", "No understanding."],
-		"English Speak": ["Eloquent natural speaker.", "Fluent English speech.", "Reasonable speaking clarity.", "Broken English speech.", "Cannot speak English."]
-	};
 
 	var state = {
 		selected_applicant: null,
@@ -182,17 +165,6 @@ function init_interview_console(wrapper, page) {
 			var cat_name = q.category || "General";
 			var full_color = categoryTextColors[cat_name.trim().toUpperCase()] || "#475569";
 			var bg_tint = "#ffffff";
-			
-			// Overwrite wording if mapping exists (using fuzzy matching for robustness)
-			var standard_q_key = Object.keys(MASTER_WORD_MAPPING).find(key => 
-				get_standard_key(key) === get_standard_key(question_name)
-			);
-			
-			if (standard_q_key) {
-				q.ratings = MASTER_WORD_MAPPING[standard_q_key];
-				question_name = standard_q_key;
-			}
-			
 			headerHtml += '<th style="background-color: #f0f1f5 !important; border-top: 1.5px solid ' + full_color + ' !important; color: #0f172a !important; font-weight: 800; font-size: 10px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.02em;">' + 
 						  question_name + '</th>';
 		}
@@ -350,7 +322,7 @@ function init_interview_console(wrapper, page) {
 				$w('#ic-remarks').val(data.remarks);
 				$w('#ic-score-pill').text(data.score + '/100');
 				$w('#ic-job-offers-count').text(data.job_offers || 0);
-				$w('#ic-feedback-count').text(data.feedback_count || 0);
+				$w('#ic-feedback-count').text(data.interview_count || 0);
 
 				state.selected_applicant.interview_score = data.score;
 				state.selected_applicant.status = data.status;
@@ -439,7 +411,8 @@ function init_interview_console(wrapper, page) {
 				var job_id = (a.job_opening || a.job_title || "").toLowerCase();
 				var desg = (a.designation || "").toLowerCase();
 				var app_id = (a.name || "").toLowerCase();
-				return name.indexOf(val) !== -1 || job.indexOf(val) !== -1 || job_id.indexOf(val) !== -1 || desg.indexOf(val) !== -1 || app_id.indexOf(val) !== -1;
+				var passport = (a.one_fm_passport_number || "").toLowerCase();
+				return name.indexOf(val) !== -1 || job.indexOf(val) !== -1 || job_id.indexOf(val) !== -1 || desg.indexOf(val) !== -1 || app_id.indexOf(val) !== -1 || passport.indexOf(val) !== -1;
 			});
 			render_list(filtered);
 		});
@@ -470,9 +443,9 @@ function init_interview_console(wrapper, page) {
 			if (!state.selected_applicant) return;
 			var count = parseInt($w('#ic-feedback-count').text()) || 0;
 			if (count > 0) {
-				frappe.set_route('List', 'Interview Feedback', { job_applicant: state.selected_applicant.name });
+				frappe.set_route('List', 'Interview', { job_applicant: state.selected_applicant.name });
 			} else {
-				frappe.show_alert({ message: "No feedbacks yet for this candidate.", indicator: "orange" });
+				frappe.show_alert({ message: "No interviews yet for this candidate.", indicator: "orange" });
 			}
 		});
 
@@ -630,7 +603,19 @@ function init_interview_console(wrapper, page) {
 				interview_round: state.interview_round || "",
 				height: $w('#ic-height').val() || ""
 			},
-			callback: function () { }
+			callback: function () {
+				if (state.selected_applicant) {
+					frappe.call({
+						method: "one_fm.one_fm.page.interview_console.interview_console.get_applicant_data",
+						args: { applicant: state.selected_applicant.name },
+						callback: function (r) {
+							if (r.message && r.message.interview_count !== undefined) {
+								$w('#ic-feedback-count').text(r.message.interview_count);
+							}
+						}
+					});
+				}
+			}
 		});
 	}
 

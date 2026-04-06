@@ -114,19 +114,28 @@ body.ic-active .navbar {
 }
 .ic-header-value-box { 
     background: white; border: 1px solid #c4c6d0; border-radius: 50px; 
-    padding: 6px 18px; font-size: 18px; font-weight: 500; min-width: 60px; 
+    padding: 0 16px; font-size: 16px; font-weight: 500; min-width: 60px; 
     color: #1c1b1f; display: flex; align-items: center; justify-content: center;
+    height: 38px !important; min-height: 38px !important; max-height: 38px !important; 
+    box-sizing: border-box !important; line-height: 1;
 }
+#ic-age.ic-header-value-box { width: 60px !important; min-width: 60px !important; max-width: 60px !important; }
+#ic-height.ic-header-value-box { width: 115px !important; min-width: 115px !important; max-width: 115px !important; }
 .ic-score-pill { 
     background: #d3e3fd; color: #041e49; border-radius: 50px; 
-    padding: 8px 30px; font-size: 18px; font-weight: 600; border: none; 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    padding: 0; font-size: 16px; font-weight: 600; border: 1px solid transparent !important; 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+    height: 38px !important; min-height: 38px !important; max-height: 38px !important; 
+    width: 115px !important; min-width: 115px !important; max-width: 115px !important;
+    box-sizing: border-box !important; line-height: 1;
+    display: flex !important; align-items: center !important; justify-content: center !important; text-align: center;
 }
 .ic-clear-btn { 
-    background: white; border: 1px solid #e2e8f0; width: 36px; height: 36px; border-radius: 18px; 
+    background: white; border: 1px solid #e2e8f0; border-radius: 50px; 
+    width: 38px !important; height: 38px !important; min-height: 38px !important; max-height: 38px !important;
     display: flex; align-items: center; justify-content: center; cursor: pointer; color: #94a3b8; 
     font-size: 16px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); box-sizing: border-box !important; line-height: 1;
 }
 .ic-clear-btn:hover { 
     color: #ef4444; border-color: #fecaca; background: #fef2f2; 
@@ -136,8 +145,9 @@ body.ic-active .navbar {
 .ic-clear-btn:active, .ic-clear-btn.expanded { transform: scale(0.9); transition-duration: 0.1s; }
 .ic-actions-right { margin-left: auto; display: flex; gap: 12px; align-items: center; }
 .ic-btn-circular { 
-    width: 38px; height: 38px; min-width: 38px; max-width: 38px;
-    border-radius: 19px; padding: 0; 
+    width: 38px; min-width: 38px; max-width: 38px; 
+    height: 38px !important; min-height: 38px !important; max-height: 38px !important;
+    border-radius: 50px; padding: 0; 
     display: flex; align-items: center; justify-content: center; 
     cursor: pointer; transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid transparent; position: relative; overflow: hidden;
@@ -176,11 +186,12 @@ body.ic-active .navbar {
 }
 .ic-dashboard-link {
     background: #f0f9ff; color: #0369a1; border: 1px solid #e0f2fe;
-    padding: 6px 16px; border-radius: 50px; font-size: 13px;
-    font-weight: 600; display: flex; align-items: center; gap: 8px;
-    margin-left: 8px; height: 36px; cursor: pointer;
+    padding: 0 16px; border-radius: 50px; font-size: 13px;
+    font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-left: 8px; cursor: pointer;
+    height: 38px !important; min-height: 38px !important; max-height: 38px !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); box-sizing: border-box !important; line-height: 1;
 }
 .ic-dashboard-link:hover {
     background: #e0f2fe; transform: scale(1.05);
@@ -195,6 +206,20 @@ body.ic-active .navbar {
     font-size: 11px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 .ic-dashboard-link .link-text { margin-left: 0; }
+/* Feedbacks pill - professional warm neutral */
+.ic-feedbacks-link {
+    background: #f5f0ff !important; color: #5b21b6 !important; border: 1px solid #ede9fe !important;
+}
+.ic-feedbacks-link:hover {
+    background: #ede9fe !important; transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(91, 33, 182, 0.1) !important;
+}
+.ic-feedbacks-link:active, .ic-feedbacks-link.expanded {
+    transform: scale(0.96); background: #ddd6fe !important;
+}
+.ic-feedbacks-link .count-circle {
+    background: #7c3aed !important; color: #ffffff !important;
+}
 .ic-matrix-container { 
     flex: 1 1 0%; min-width: 0;
     padding: 16px 20px; margin: 12px 20px 20px 20px; 
@@ -216,7 +241,16 @@ body.ic-active .navbar {
 }
 table.ic-table { 
     width: 100%; height: 100%; border-collapse: separate; 
-    border-spacing: 8px 8px; table-layout: fixed;
+    border-spacing: 6px 6px; table-layout: fixed;
+}
+table.ic-table td {
+    height: 20%; /* Distribute 5 rows evenly */
+    padding: 0;
+    vertical-align: stretch;
+}
+table.ic-table td .ic-cell {
+    height: 100%;
+    box-sizing: border-box;
 }
 .ic-table th { 
     padding: 6px 4px; font-size: 10px; font-weight: 600; color: #44474e; 
@@ -265,13 +299,21 @@ tr:nth-child(2) th {
 }
 .ic-row-num { width: 24px; font-size: 10px; font-weight: 800; color: #94a3b8; text-align: center; font-family: monospace; }
 .ic-cell { 
-    padding: 4px; border: 1px solid #e1e2ec; border-radius: 4px; 
-    min-height: unset; height: 100%; font-size: 10px; font-weight: 500; color: #1c1b1f; 
+    padding: 6px 5px; border: 1px solid #e1e2ec; border-radius: 4px; 
+    min-height: unset; height: 100%; font-size: 9px; font-weight: 500; color: #1c1b1f; 
     text-align: center; cursor: pointer; transition: all 0.2s ease-out; 
-    display: flex; align-items: center; justify-content: center; 
-    line-height: 1.25; background: #ffffff; position: relative; overflow: visible;
-    word-break: break-word;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    overflow-y: auto; overflow-x: hidden;
+    line-height: 1.3; background: #ffffff; position: relative;
+    word-break: break-word; max-height: 100%;
 }
+/* Thin custom scrollbar for cell text */
+.ic-cell::-webkit-scrollbar { width: 3px; }
+.ic-cell::-webkit-scrollbar-track { background: transparent; }
+.ic-cell::-webkit-scrollbar-thumb { background: #c4c6d0; border-radius: 3px; }
+.ic-cell::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+/* Firefox scrollbar */
+.ic-cell { scrollbar-width: thin; scrollbar-color: #c4c6d0 transparent; }
 .ic-cell:hover::after {
     content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background-color: #0369a1; opacity: 0.04; pointer-events: none;
@@ -286,5 +328,5 @@ tr:nth-child(2) th {
     background-color: #22c55e; opacity: 0.12; pointer-events: none;
 }
 .ic-remarks-area { padding: 0; margin-top: 0; background: #ffffff; }
-.ic-remarks-row { padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; margin: 0 4px 20px 48px; }
-.ic-remarks-input { width: 100%; height: 120px; border: none; font-size: 13px; font-weight: 400; color: #1e293b; outline: none; resize: none; background: transparent; font-family: 'Roboto', sans-serif; }
+.ic-remarks-row { padding: 6px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 0 4px 10px 48px; }
+.ic-remarks-input { width: 100%; height: 24px; border: none; font-size: 12px; font-weight: 400; color: #1e293b; outline: none; resize: none; background: transparent; font-family: 'Roboto', sans-serif; line-height: 24px; }

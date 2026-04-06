@@ -65,6 +65,9 @@ def get_applicant_data(applicant):
         fields=["name", "interviewer", "average_rating", "result", "custom_remarks", "creation"],
         order_by="creation desc"
     )
+    all_interviews = frappe.db.count("Interview", {"job_applicant": applicant, "docstatus": ["<", 2]})
+    res["interview_count"] = all_interviews
+    
     res["feedback_count"] = len(all_feedbacks)
     res["feedbacks"] = all_feedbacks
 
@@ -115,19 +118,33 @@ def get_applicant_data(applicant):
 
         if interview_round:
             round_doc = frappe.get_doc("Interview Round", interview_round)
+            
+            matrix_map = {}
+            if round_doc.get("interview_matrix"):
+                for m in round_doc.interview_matrix:
+                    if m.question:
+                        matrix_map[m.question] = {
+                            "score_5": m.score_5 or "",
+                            "score_4": m.score_4 or "",
+                            "score_3": m.score_3 or "",
+                            "score_2": m.score_2 or "",
+                            "score_1": m.score_1 or ""
+                        }
+
             if round_doc.get("interview_question"):
                 for q in round_doc.interview_question:
+                    ans = matrix_map.get(q.questions, {})
                     matrix_data.append({
                         "category": q.get("category") or "General",
                         "category_weight": q.get("category_weight") or "",
                         "question": q.questions,
                         "weight": q.weight or 0,
                         "ratings": [
-                            q.answer_5 or "Excellent",
-                            q.answer_4 or "Good",
-                            q.answer_3 or "Average",
-                            q.answer_2 or "Poor",
-                            q.answer_1 or "Very Poor"
+                            ans.get("score_5", q.answer_5 or "Excellent"),
+                            ans.get("score_4", q.answer_4 or "Good"),
+                            ans.get("score_3", q.answer_3 or "Average"),
+                            ans.get("score_2", q.answer_2 or "Poor"),
+                            ans.get("score_1", q.answer_1 or "Very Poor")
                         ]
                     })
         else:
@@ -229,7 +246,8 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
             if interview_round:
                 interview_doc.interview_round = interview_round
             interview_doc.save(ignore_permissions=True)
-            interview_doc.submit()
+            if interview_doc.status in ["Cleared", "Rejected"]:
+                interview_doc.submit()
     else:
         interview_doc = frappe.new_doc("Interview")
         interview_doc.interview_round = interview_round or ""
@@ -251,7 +269,8 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
                 pass
         
         interview_doc.insert(ignore_permissions=True)
-        interview_doc.submit()
+        if interview_doc.status in ["Cleared", "Rejected"]:
+            interview_doc.submit()
     # --- 6. Auto-create/update Interview Feedback ---
     interview_name = existing_interview or interview_doc.name
     feedback_result = ""
@@ -259,6 +278,8 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
         feedback_result = "Cleared"
     elif status == "Rejected":
         feedback_result = "Rejected"
+    else:
+        feedback_result = "Cleared" if int(score or 0) >= 50 else "Rejected"
     
     # avg_rating will be calculated from category averages after building skill_rows
     
@@ -308,12 +329,10 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
     for row in skill_rows:
         fb.append("skill_assessment", row)
     for d in parsed_details:
-        fb.append("custom_evaluation_criteria", {
-            "category": d.get("category", "General"),
-            "question": d.get("question", ""),
+        fb.append("interview_question_assessment", {
+            "questions": d.get("question", ""),
             "weight": float(d.get("weight", 0)),
-            "rating": int(d.get("score", 0)),
-            "max_rating": 5
+            "score": int(d.get("score", 0))
         })
     # Skip HRMS duplicate validation — we intentionally accumulate feedbacks
     fb.flags.ignore_validate = True
@@ -386,7 +405,7 @@ def get_applicant_list(hiring_method=None, start=0, page_length=200):
     # Fields that are guaranteed to exist
     fields = ['name', 'applicant_name', 'status', 'job_title', 'designation']
     
-    for custom_field in ['workflow_state', 'one_fm_applicant_status']:
+    for custom_field in ['workflow_state', 'one_fm_applicant_status', 'one_fm_passport_number']:
         if custom_field in valid_fields:
             fields.append(custom_field)
 

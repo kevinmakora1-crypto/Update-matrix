@@ -1,4 +1,48 @@
 <div id="ic-root">
+<style>
+    /* FORCED CACHE-BUSTING SIZES - ABSOLUTE HEIGHT LOCK */
+    .ic-header * { box-sizing: border-box !important; }
+
+    #ic-age, #ic-height, #ic-score-pill,
+    .ic-header .ic-dashboard-link, 
+    .ic-header .ic-btn-circular,
+    .ic-header .ic-clear-btn {
+        height: 38px !important;
+        min-height: 38px !important;
+        max-height: 38px !important;
+        box-sizing: border-box !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        overflow: hidden !important;
+    }
+
+    /* Force uniform 115px width ONLY on Height and Score */
+    #ic-height, #ic-score-pill {
+        width: 115px !important;
+        min-width: 115px !important;
+        max-width: 115px !important;
+    }
+
+    /* Force specific width for Age to be shorter */
+    #ic-age {
+        width: 60px !important;
+        min-width: 60px !important;
+        max-width: 60px !important;
+    }
+
+    /* Force centering on Score Pill */
+    #ic-score-pill {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        text-align: center !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        border: 1px solid transparent !important;
+    }
+</style>
     <div class="ic-sidebar">
         <div class="ic-search-wrap">
             <input type="text" id="ic-search" class="ic-search-input" placeholder="Search candidates...">
@@ -12,21 +56,24 @@
 
     <div class="ic-main">
         <div class="ic-header">
-            <div class="ic-header-field">
-                <div class="ic-header-label">AGE</div>
+            <div class="ic-header-field" style="display: flex; align-items: center; gap: 6px;" title="Age">
+                <i class="fa fa-calendar" style="color: #94a3b8; font-size: 16px;"></i>
                 <div id="ic-age" class="ic-header-value-box">-</div>
             </div>
-            <div class="ic-header-field">
-                <div class="ic-header-label">HEIGHT (cm)</div>
-                <input type="number" id="ic-height" class="ic-header-value-box" style="width:70px;text-align:center;border:1px solid #e2e8f0;outline:none;" placeholder="-" min="100" max="250" step="1">
+            <div class="ic-header-field" style="display: flex; align-items: center; gap: 6px; margin-left: 4px;" title="Height (cm)">
+                <i class="fa fa-arrows-v" style="color: #94a3b8; font-size: 16px;"></i>
+                <input type="number" id="ic-height" class="ic-header-value-box" style="width:70px;text-align:center;border:1px solid #e2e8f0;outline:none;" placeholder="cm" min="100" max="250" step="1">
             </div>
-            <div class="ic-header-field" style="margin-left: 10px;">
-                <div class="ic-header-label">TOTAL SCORE</div>
+            <div class="ic-header-field" style="display: flex; align-items: center; gap: 6px; margin-left: 8px;" title="Total Score">
+                <i class="fa fa-star" style="color: var(--yellow-500, #f5b041); font-size: 16px;"></i>
                 <div id="ic-score-pill" class="ic-score-pill">0/100</div>
             </div>
-            <div class="ic-header-field">
-                <div class="ic-header-label">RESET</div>
-                <div id="ic-reset-btn" class="ic-clear-btn">↻</div>
+            <div id="ic-feedbacks-pill" class="ic-dashboard-link ic-feedbacks-link" title="View Interviews" style="margin-left: 8px;">
+                <span class="link-text">Interviews</span>
+                <span class="count-circle" id="ic-feedback-count">0</span>
+            </div>
+            <div class="ic-header-field" style="display: flex; align-items: center; margin-left: 8px;" title="Reset Console">
+                <div id="ic-reset-btn" class="ic-clear-btn" title="Reset">↻</div>
             </div>
             
             <div class="ic-actions-right">
@@ -46,10 +93,7 @@
                     <span class="link-text">Job Offers</span>
                     <span class="count-circle" id="ic-job-offers-count">0</span>
                 </div>
-                <div id="ic-feedbacks-pill" class="ic-dashboard-link" title="View Feedbacks" style="margin-left:8px;">
-                    <span class="link-text">Feedbacks</span>
-                    <span class="count-circle" id="ic-feedback-count">0</span>
-                </div>
+
             </div>
         </div>
 

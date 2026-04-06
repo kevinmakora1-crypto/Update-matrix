@@ -168,8 +168,8 @@ def get_other_condition(args, budget, for_doc):
 
 def set_site_supervisor(doc):
 	#Set the Site supervisor name in a stock entry if the site supevisor is set
-	if doc.get('custom_site_supervisor') and not doc.get('custom_site_supervisor_name'):
-		doc.custom_site_supervisor_name = frappe.db.get_value("User", doc.get('custom_site_supervisor'), "full_name")
+	if doc.get('owner') and not doc.get('custom_site_supervisor_name'):
+		doc.custom_site_supervisor_name = frappe.db.get_value("User", doc.get('owner'), "full_name")
 
 def validate_stock_entry_items(doc, method):
 	set_site_supervisor(doc)

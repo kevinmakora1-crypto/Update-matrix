@@ -77,7 +77,7 @@ def get_open_change_requests(pathfinder_log: str) -> int:
 
 	# Collect change requests already linked in this Pathfinder Log
 	existing_cr_names = {
-		row.change_request for row in (doc.change_requests or [])
+		row.process_change_request for row in (doc.change_requests or [])
 	}
 
 	# Fetch open PCRs for the same process
@@ -87,7 +87,7 @@ def get_open_change_requests(pathfinder_log: str) -> int:
 			"process_name": doc.process_name,
 			"status": "Open",
 		},
-		fields=["name", "request_date", "requirement_summary", "status"],
+		fields=["name", "request_date", "requirement_summary", "hd_ticket"],
 		order_by="request_date asc",
 	)
 
@@ -100,12 +100,13 @@ def get_open_change_requests(pathfinder_log: str) -> int:
 
 	for pcr in new_pcrs:
 		doc.append("change_requests", {
-			"change_request": pcr.name,
+			"process_change_request": pcr.name,
 			"request_date": pcr.request_date,
+			"hd_ticket": pcr.hd_ticket,
 			"requirement_summary": pcr.requirement_summary,
-			"status": pcr.status,
 		})
 
+	doc.flags.ignore_mandatory = True
 	doc.save()
 
 	frappe.msgprint(_("{0} new change requests added.").format(len(new_pcrs)))

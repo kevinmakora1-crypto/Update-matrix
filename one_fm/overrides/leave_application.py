@@ -10,6 +10,11 @@ from frappe.utils import (
 )
 
 from hrms.hr.doctype.leave_application.leave_application import *
+import hrms.hr.doctype.leave_application.leave_application
+from one_fm.api.doc_methods.leave_application_calculation import custom_get_number_of_leave_days
+
+hrms.hr.doctype.leave_application.leave_application.get_number_of_leave_days = custom_get_number_of_leave_days
+
 from one_fm.processor import sendemail
 from erpnext.crm.utils import get_open_todos
 from one_fm.api.api import push_notification_rest_api_for_leave_application

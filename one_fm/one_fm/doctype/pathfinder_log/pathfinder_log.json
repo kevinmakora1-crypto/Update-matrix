@@ -28,7 +28,7 @@
   "change_requests",
   "timelines_tab",
   "section_break_gumx",
-  "timeline_tracker"
+  "time_log"
  ],
  "fields": [
   {
@@ -183,10 +183,11 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "timeline_tracker",
+   "fieldname": "time_log",
    "fieldtype": "Table",
-   "label": "Timeline Tracker",
-   "options": "Timeline Tracker"
+   "label": "Time Log",
+   "options": "Pathfinder Log Time",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,

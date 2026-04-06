@@ -23,8 +23,6 @@
   "mobile_model",
   "screenshot",
   "other_reason",
-  "raised_issue_to_support_team",
-  "support_ticket_no",
   "penalty_serial_no",
   "employee_checkin_details_section",
   "checkin_record",
@@ -97,7 +95,7 @@
    "fieldtype": "Select",
    "label": "Justification",
    "mandatory_depends_on": "eval:doc.attendance_status=='Present'",
-   "options": "\nMobile isn't supporting the app\nOut-of-site location\nUser not assigned to shift\nEmployees insist that he/she did check in or out\nChecked in and out at the same time\nForgot to check in\nOther\nApproved by Administrator\nApplication is missing geolocation permissions"
+   "options": "\nMobile isn't supporting the app\nOut-of-site location\nUser not assigned to shift\nChecked in and out at the same time\nForgot to check in\nOther\nApproved by Administrator\nApplication is missing geolocation permissions"
   },
   {
    "fieldname": "attendance_status",
@@ -279,12 +277,12 @@
    "mandatory_depends_on": "eval:doc.justification == \"Mobile isn't supporting the app\""
   },
   {
-   "depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\", \"Application is missing geolocation permissions\"].includes(doc.justification)",
+   "depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Other\", \"Checked in and out at the same time\", \"Application is missing geolocation permissions\"].includes(doc.justification)",
    "description": "Upload screenshot with the same issue!",
    "fieldname": "screenshot",
    "fieldtype": "Attach",
    "label": "Screenshot",
-   "mandatory_depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Employees insist that he/she did check in or out\", \"Other\", \"Checked in and out at the same time\", \"Application is missing geolocation permissions\"].includes(doc.justification)"
+   "mandatory_depends_on": "eval:[\"User not assigned to shift\",\"Out-of-site location\",\"Forgot to check in\", \"Mobile isn't supporting the app\", \"Other\", \"Checked in and out at the same time\", \"Application is missing geolocation permissions\"].includes(doc.justification)"
   },
   {
    "depends_on": "eval:doc.justification == \"Other\"",
@@ -304,22 +302,6 @@
    "fieldtype": "Check",
    "label": "Attendance By Timesheet",
    "read_only": 1
-  },
-  {
-   "depends_on": "eval:doc.justification == \"Employees insist that he/she did check in or out\"",
-   "fieldname": "raised_issue_to_support_team",
-   "fieldtype": "Select",
-   "label": "Raised issue to Support Team?",
-   "mandatory_depends_on": "eval:doc.justification == \"Employees insist that he/she did check in or out\"",
-   "options": "Yes\nNo"
-  },
-  {
-   "depends_on": "eval:doc.justification == \"Employees insist that he/she did check in or out\"",
-   "fieldname": "support_ticket_no",
-   "fieldtype": "Link",
-   "label": "Support Ticket No",
-   "mandatory_depends_on": "eval:doc.raised_issue_to_support_team == \"Yes\" && doc.justification == \"Employees insist that he/she did check in or out\"",
-   "options": "HD Ticket"
   },
   {
    "depends_on": "eval:[\"Forgot to check in\",\"Checked in and out at the same time\"].includes(doc.justification)",

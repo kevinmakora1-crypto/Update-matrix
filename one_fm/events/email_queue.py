@@ -14,7 +14,7 @@ def after_insert(doc, event):
 		# Enqueue it safely in the background rather than blocking the main transaction
 		frappe.enqueue(
 			send_now,
-			docname=doc.name,
+			name=doc.name,
 			now=frappe.flags.in_test,
 			enqueue_after_commit=True
 		)

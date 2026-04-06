@@ -867,6 +867,7 @@ override_doctype_dashboards = {
     'Project': 'one_fm.overrides.project_dashboard.get_data',
     'HD Ticket': 'one_fm.overrides.hd_ticket_dashboard.get_data',
     'Item': 'one_fm.overrides.item_dashboard.get_data',
+    'Leave Application': 'one_fm.overrides.leave_application_dashboard.get_data',
     'Sales Invoice': 'one_fm.overrides.sales_invoice_dashboard.get_data',
     "Purchase Invoice": "one_fm.overrides.purchase_invoice_dashboard.get_data",
     "Job Applicant": "one_fm.overrides.job_applicant_dashboard.get_data"

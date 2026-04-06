@@ -1,6 +1,7 @@
 import frappe
 from frappe import _
 from one_fm.api.v1.utils import response
+from frappe.query_builder import DocType
 import json
 
 @frappe.whitelist(methods=["POST"])
@@ -73,9 +74,10 @@ def get_stock_entry_detail(name: str):
 	
 	# Fetch site supervisor name if custom_site_supervisor is set
 	site_supervisor_name = ""
-	if doc.get("custom_site_supervisor"):
-		site_supervisor_name = frappe.db.get_value("User", doc.custom_site_supervisor, "full_name")
-	
+	if doc.get("custom_site_supervisor_name"):
+		site_supervisor_name =doc.get("custom_site_supervisor_name")
+	else:
+		site_supervisor_name = frappe.db.get_value("User", doc.owner, "full_name")
 	# Convert items to list of dicts for the frontend
 	items = []
 	for d in doc.items:
@@ -97,7 +99,6 @@ def get_stock_entry_detail(name: str):
 		"to_warehouse": doc.to_warehouse,
 		"posting_date": doc.posting_date,
 		"docstatus": doc.docstatus,
-		"custom_site_supervisor": doc.get("custom_site_supervisor"),
 		"custom_site_supervisor_name": site_supervisor_name,
 		"items": items
 	})
@@ -110,30 +111,36 @@ def get_warehouse_stock_balances(items: list | str, warehouses: list | str, post
 	"""
 	import json
 	
+	# Ensure we have lists
 	if isinstance(items, str):
 		try:
-			items = json.loads(items) if items else []
-		except json.JSONDecodeError:
-			# Fallback for comma-separated string if any
-			items = [i.strip() for i in items.split(",")] if items else []
-	
+			items = json.loads(items)
+		except Exception:
+			items = [items]
+	elif not isinstance(items, list):
+		items = [items] if items else []
+
 	if isinstance(warehouses, str):
 		try:
-			warehouses = json.loads(warehouses) if warehouses else []
-		except json.JSONDecodeError:
-			warehouses = [w.strip() for w in warehouses.split(",")] if warehouses else []
+			warehouses = json.loads(warehouses)
+		except Exception:
+			warehouses = [warehouses]
+	elif not isinstance(warehouses, list):
+		warehouses = [warehouses] if warehouses else []
+
+	# Support comma separated if still needed (fallback)
+	if items and isinstance(items[0], str) and "," in items[0] and len(items) == 1:
+		items = [i.strip() for i in items[0].split(",")]
+	if warehouses and isinstance(warehouses[0], str) and "," in warehouses[0] and len(warehouses) == 1:
+		warehouses = [w.strip() for w in warehouses[0].split(",")]
 
 	if not items or not warehouses:
 		return response(_("Missing items or warehouses"), 400, {})
 
-	if not posting_date:
-		from frappe.utils import nowdate
-		posting_date = nowdate()
+	# Log for debugging (temporary)
+	# frappe.log_error(message=f"Items: {items}, Warehouses: {warehouses}", title="Debug Balances")
 
-	# Fetch actual_qty from Bin for current balance (fastest)
-	# Or from SLE if a specific date is required (slower)
-	
-	Bin = frappe.qb.DocType("Bin")
+	Bin = DocType("Bin")
 	query = (
 		frappe.qb.from_(Bin)
 		.select(Bin.warehouse, Bin.item_code, Bin.actual_qty)
@@ -156,20 +163,35 @@ def get_warehouse_stock_balances(items: list | str, warehouses: list | str, post
 	
 	return response(_("Successful"), 200, balance_map)
 
-@frappe.whitelist(methods=["GET"])
-def get_stock_items():
+@frappe.whitelist(methods=["GET", "POST"])
+def get_stock_items(warehouse: str = None):
 	"""
 	Fetch all items that are not disabled, not variants, and maintain stock.
-	Used for client-side search caching.
+	If warehouse is provided, returns only items with actual_qty > 0 in that warehouse.
 	"""
-	items = frappe.get_list("Item",
-		filters={
-			"disabled": 0,
-			"has_variants": 0,
-			"is_stock_item": 1
-		},
-		fields=["name", "item_code", "item_name", "stock_uom"]
-	)
+	if warehouse:
+		Bin = DocType("Bin")
+		Item = DocType("Item")
+		query = (
+			frappe.qb.from_(Item)
+			.join(Bin).on(Item.name == Bin.item_code)
+			.select(Item.name, Item.item_code, Item.item_name, Item.stock_uom, Bin.actual_qty.as_("available_qty"))
+			.where(Bin.warehouse == warehouse)
+			.where(Bin.actual_qty > 0)
+			.where(Item.disabled == 0)
+			.where(Item.has_variants == 0)
+			.where(Item.is_stock_item == 1)
+		)
+		items = query.run(as_dict=True)
+	else:
+		items = frappe.get_list("Item",
+			filters={
+				"disabled": 0,
+				"has_variants": 0,
+				"is_stock_item": 1
+			},
+			fields=["name", "item_code", "item_name", "stock_uom"]
+		)
 	return response(_("Successful"), 200, items)
 
 @frappe.whitelist(methods=["GET"])

@@ -79,12 +79,10 @@ def do_assignment(self, doc):
     if frappe.session.user == "Guest":
         frappe.set_user('Administrator')
 
-    # Safe clear: Only clear Open assignments to prevent resending unassignment
-    # notifications for already Closed/Cancelled assignments when rules overlap.
     active_assignments = frappe.get_all(
         "ToDo",
         fields=["name", "allocated_to"],
-        filters={"reference_type": doc.get("doctype"), "reference_name": doc.get("name"), "status": "Open"},
+        filters={"reference_type": doc.get("doctype"), "reference_name": doc.get("name"), "status": "Open", "assignment_rule": self.name},
         ignore_permissions=True,
     )
     for assignment in active_assignments:

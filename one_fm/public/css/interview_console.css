@@ -1,5 +1,26 @@
 body.ic-active .page-head, body.ic-active .page-head-content, body.ic-active .page-title { display: none !important; }
 
+/* --------------------
+   + INTERVIEW DROPDOWN BUTTON 
+   -------------------- */
+.ic-add-interview-btn {
+    margin-left: 4px; 
+    margin-top: 2px; 
+    background: transparent; 
+    border: none; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    padding: 4px; 
+    box-shadow: none; 
+    color: #64748b; 
+    transition: color 0.1s ease;
+}
+.ic-add-interview-btn:hover {
+    color: #0f172a;
+}
+
 /* FORCE FULL-WIDTH: Override Frappe's .container and .layout-main-section max-width */
 body.ic-active .layout-main-section, 
 body.ic-active .page-content, 
@@ -206,20 +227,7 @@ body.ic-active .navbar {
     font-size: 11px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 .ic-dashboard-link .link-text { margin-left: 0; }
-/* Feedbacks pill - professional warm neutral */
-.ic-feedbacks-link {
-    background: #f5f0ff !important; color: #5b21b6 !important; border: 1px solid #ede9fe !important;
-}
-.ic-feedbacks-link:hover {
-    background: #ede9fe !important; transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(91, 33, 182, 0.1) !important;
-}
-.ic-feedbacks-link:active, .ic-feedbacks-link.expanded {
-    transform: scale(0.96); background: #ddd6fe !important;
-}
-.ic-feedbacks-link .count-circle {
-    background: #7c3aed !important; color: #ffffff !important;
-}
+/* Removed custom feedback pill colors; unifies with .ic-dashboard-link blue style */
 .ic-matrix-container { 
     flex: 1 1 0%; min-width: 0;
     padding: 16px 20px; margin: 12px 20px 20px 20px; 
@@ -306,6 +314,11 @@ tr:nth-child(2) th {
     overflow-y: auto; overflow-x: hidden;
     line-height: 1.3; background: #ffffff; position: relative;
     word-break: break-word; max-height: 100%;
+}
+.ic-cell:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px #0284c7 !important;
+    border-color: #0ea5e9 !important;
 }
 /* Thin custom scrollbar for cell text */
 .ic-cell::-webkit-scrollbar { width: 3px; }

@@ -29,13 +29,15 @@ def _ensure_skill_exists(skill_name):
     return skill_name
 
 @frappe.whitelist()
-def get_applicant_data(applicant):
+def get_applicant_data(applicant, interview_round_name=None):
     """
     Returns age, remarks, score, status, and dynamic interview matrix.
+    If interview_round_name is passed, forces that specific round.
+    Otherwise loads the default round for the designation.
     """
     _check_console_access()
     valid_fields = get_valid_fields()
-    res = {"age": "--", "height": "", "remarks": "", "score": 0, "status": "Open", "matrix": [], "feedbacks": [], "feedback_count": 0}
+    res = {"age": "--", "height": "", "remarks": "", "score": 0, "status": "Open", "matrix": [], "feedbacks": [], "feedback_count": 0, "available_rounds": []}
     
     # Fetch Applicant details
     applicant_doc = frappe.get_doc('Job Applicant', applicant)
@@ -82,6 +84,12 @@ def get_applicant_data(applicant):
     else:
         res["score"] = 0
         
+    # Count File Attachments (Photos)
+    res["photo_count"] = frappe.db.count("File", {
+        "attached_to_doctype": "Job Applicant", 
+        "attached_to_name": applicant
+    })
+        
     # Standard Status
     res["status"] = applicant_doc.status or "Open"
     
@@ -97,24 +105,27 @@ def get_applicant_data(applicant):
     
     applicant_designation = applicant_doc.get('designation') or applicant_doc.get('one_fm_designation')
     
+    if applicant_designation:
+        res["available_rounds"] = frappe.get_all(
+            "Interview Round",
+            filters={"designation": applicant_designation},
+            pluck="name"
+        )
+        
     matrix_data = []
-    interview_round = None
+    interview_round = interview_round_name
     
-    if not applicant_designation or not nationality:
-        # Missing one of the required pair — show error
-        missing = []
-        if not applicant_designation:
-            missing.append("Designation")
-        if not nationality:
-            missing.append("Nationality")
+    if not applicant_designation:
         res["matrix"] = []
         res["interview_round"] = None
-        res["matrix_error"] = "Cannot load evaluation matrix: {} missing on the Job Applicant.".format(" and ".join(missing))
+        res["matrix_error"] = "Cannot load evaluation matrix: Designation missing on the Job Applicant."
     else:
-        interview_round = frappe.db.get_value("Interview Round", {
-            "designation": applicant_designation,
-            "one_fm_nationality": nationality
-        }, "name")
+        if not interview_round and res.get("available_rounds"):
+            # Only auto-assign the first round if the candidate has actual prior history
+            if res.get("interview_count", 0) > 0:
+                interview_round = res["available_rounds"][0]
+            else:
+                interview_round = None
 
         if interview_round:
             round_doc = frappe.get_doc("Interview Round", interview_round)
@@ -148,9 +159,7 @@ def get_applicant_data(applicant):
                         ]
                     })
         else:
-            res["matrix_error"] = "No Interview Round found for Designation '{}' + Nationality '{}'.".format(
-                applicant_designation, nationality
-            )
+            res["matrix_error"] = "No Interview Round found for Designation '{}'.".format(applicant_designation)
 
         res["matrix"] = matrix_data
         res["interview_round"] = interview_round
@@ -167,7 +176,7 @@ def get_applicant_data(applicant):
     return res
 
 @frappe.whitelist()
-def save_interview_data(applicant, score, remarks, status, scores_detail=None, interview_round=None, height=None):
+def save_interview_data(applicant, score, remarks, status, scores_detail=None, interview_round=None, height=None, photo_data=None):
     """
     Saves interview results by creating/updating an Interview document.
     Also updates Job Applicant status.
@@ -358,6 +367,26 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
     }, update_modified=False)
     
     frappe.db.commit()
+    
+    # --- 8. Save Photo if provided ---
+    if photo_data and photo_data.startswith("data:image"):
+        try:
+            head, base64_str = photo_data.split(',', 1)
+            import base64
+            from frappe.utils.file_manager import save_file
+            
+            # Use native frappe API to safely store and link the file
+            file_doc = save_file(
+                fname=f"Photo_{applicant}.jpg",
+                content=base64.b64decode(base64_str),
+                dt="Job Applicant",
+                dn=applicant,
+                is_private=0
+            )
+            frappe.db.commit()
+        except Exception as e:
+            frappe.log_error(title="Console Camera Error", message=str(e))
+            
     return "Success"
 
 @frappe.whitelist()

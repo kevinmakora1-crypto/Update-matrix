@@ -425,12 +425,17 @@ class AttendanceCheck(Document):
         )
 
     def mark_attendance(self):
-        if self.workflow_state == 'Approved':
+        attendance = None
+        if getattr(self, "attendance", None):
+            attendance = frappe.db.get_value("Attendance", self.attendance, ["status", "name"], as_dict=1)
+
+        if not attendance:
             attendance = self.get_existing_attendance()
-            if attendance and len(attendance) > 0:
-                self.update_existing_attendance_record(attendance)
-            else:
-                self.create_new_attendance_record()
+
+        if attendance:
+            self.update_existing_attendance_record(attendance)
+        else:
+            self.create_new_attendance_record()
 
     def get_existing_attendance(self):
         return frappe.db.get_value(
@@ -448,21 +453,13 @@ class AttendanceCheck(Document):
     def update_existing_attendance_record(self, attendance):
         if attendance.status != self.attendance_status:
             working_hours = self.get_shift_working_hours(self.shift_assignment)
-            frappe.db.sql(f"""
-                update
-                    `tabAttendance`
-                set
-                    status = '{self.attendance_status}',
-                    reference_doctype='{self.doctype}',
-                    reference_docname='{self.name}',
-                    modified='{str(now())}',
-                    working_hours={working_hours},
-                    modified_by='{frappe.session.user}',
-                    comment="Created from Attendance Check"
-                where
-                    name = '{attendance.name}'
-            """)
-            frappe.db.commit()
+            frappe.db.set_value("Attendance", attendance.name, {
+                "status": self.attendance_status,
+                "reference_doctype": self.doctype,
+                "reference_docname": self.name,
+                "working_hours": working_hours,
+                "comment": "Updated from Attendance Check"
+            }, update_modified=True)
 
     def create_new_attendance_record(self):
         attendance = frappe.new_doc("Attendance")

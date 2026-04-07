@@ -19,7 +19,7 @@ frappe.pages['interview_console'].on_page_load = function (wrapper) {
 			$('head').append('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap">');
 		}
 		if (!$('link[href*="interview_console.css"]').length) {
-			$('head').append('<link rel="stylesheet" href="/assets/one_fm/css/interview_console.css?v=' + new Date().getTime() + '">');
+			$('head').append('<link rel="stylesheet" href="/assets/one_fm/css/interview_console.css">');
 		}
 
 

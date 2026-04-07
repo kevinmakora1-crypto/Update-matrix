@@ -312,7 +312,7 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
     elif status == "Rejected":
         feedback_result = "Rejected"
     else:
-        feedback_result = "Pending"
+        feedback_result = ""
     
     # avg_rating will be calculated from category averages after building skill_rows
     

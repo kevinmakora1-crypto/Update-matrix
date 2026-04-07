@@ -175,9 +175,17 @@ def get_leave_application_custom_fields():
                 "allow_on_submit": 1
             },
             {
-                "fieldname": "return_ticket_submitted",
+                "fieldname": "outcome",
                 "fieldtype": "Select",
                 "insert_after": "resumption_confirmation_details",
+                "label": "Outcome",
+                "options": "\nConfirmed\nTry again\nResignation\nExtension Request",
+                "allow_on_submit": 1
+            },
+            {
+                "fieldname": "return_ticket_submitted",
+                "fieldtype": "Select",
+                "insert_after": "outcome",
                 "label": "Return Ticket Submitted",
                 "options": "\nYes\nNo",
                 "allow_on_submit": 1,

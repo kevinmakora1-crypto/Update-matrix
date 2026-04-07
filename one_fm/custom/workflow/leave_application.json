@@ -30,7 +30,7 @@
       "doctype": "Workflow Document State"
     },
     {
-      "state": "Pending Approval",
+      "state": "Pending Approver",
       "doc_status": "0",
       "update_field": "",
       "update_value": "",
@@ -102,7 +102,7 @@
     {
       "state": "Draft",
       "action": "Submit for Review",
-      "next_state": "Pending Approval",
+      "next_state": "Pending Approver",
       "allowed": "Employee",
       "allow_self_approval": 1,
       "send_email_to_creator": 0,
@@ -132,7 +132,7 @@
     {
       "state": "Pending Reliever",
       "action": "Approve",
-      "next_state": "Pending Approval",
+      "next_state": "Pending Approver",
       "allowed": "Employee",
       "allow_self_approval": 1,
       "send_email_to_creator": 0,
@@ -160,7 +160,7 @@
       "doctype": "Workflow Transition"
     },
     {
-      "state": "Pending Approval",
+      "state": "Pending Approver",
       "action": "Approve",
       "next_state": "Approved",
       "allowed": "Employee",
@@ -175,7 +175,7 @@
       "doctype": "Workflow Transition"
     },
     {
-      "state": "Pending Approval",
+      "state": "Pending Approver",
       "action": "Approve",
       "next_state": "Pending HR",
       "allowed": "Employee",
@@ -190,7 +190,7 @@
       "doctype": "Workflow Transition"
     },
     {
-      "state": "Pending Approval",
+      "state": "Pending Approver",
       "action": "Approve",
       "next_state": "Pending Confirmation",
       "allowed": "Employee",
@@ -205,7 +205,7 @@
       "doctype": "Workflow Transition"
     },
     {
-      "state": "Pending Approval",
+      "state": "Pending Approver",
       "action": "Propose New Dates",
       "next_state": "New Dates Proposed",
       "allowed": "Employee",
@@ -266,7 +266,7 @@
     {
       "state": "New Dates Proposed",
       "action": "Submit for Review",
-      "next_state": "Pending Approval",
+      "next_state": "Pending Approver",
       "allowed": "Employee",
       "allow_self_approval": 1,
       "send_email_to_creator": 0,

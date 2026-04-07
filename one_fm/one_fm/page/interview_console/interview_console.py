@@ -29,13 +29,13 @@ def _ensure_skill_exists(skill_name):
     return skill_name
 
 @frappe.whitelist()
-def get_applicant_data(applicant):
+def get_applicant_data(applicant, interview_round_name=None):
     """
     Returns age, remarks, score, status, and dynamic interview matrix.
     """
     _check_console_access()
     valid_fields = get_valid_fields()
-    res = {"age": "--", "height": "", "remarks": "", "score": 0, "status": "Open", "matrix": [], "feedbacks": [], "feedback_count": 0}
+    res = {"age": "--", "height": "", "remarks": "", "score": 0, "status": "Open", "matrix": [], "feedbacks": [], "feedback_count": 0, "available_rounds": []}
     
     # Fetch Applicant details
     applicant_doc = frappe.get_doc('Job Applicant', applicant)
@@ -93,67 +93,55 @@ def get_applicant_data(applicant):
                 res["status"] = custom_status
             
     # Fetch Dynamic Matrix from Interview Round
-    # STRICT: require BOTH designation AND nationality to match
-    
     applicant_designation = applicant_doc.get('designation') or applicant_doc.get('one_fm_designation')
     
+    # Gather ALL available rounds for this designation to populate the UI dropdown
+    if applicant_designation:
+        available_rounds = frappe.get_all("Interview Round", filters={"designation": applicant_designation}, pluck="name")
+        res["available_rounds"] = available_rounds
+
     matrix_data = []
     interview_round = None
     
-    if not applicant_designation or not nationality:
-        # Missing one of the required pair — show error
-        missing = []
-        if not applicant_designation:
-            missing.append("Designation")
-        if not nationality:
-            missing.append("Nationality")
-        res["matrix"] = []
-        res["interview_round"] = None
-        res["matrix_error"] = "Cannot load evaluation matrix: {} missing on the Job Applicant.".format(" and ".join(missing))
-    else:
-        interview_round = frappe.db.get_value("Interview Round", {
-            "designation": applicant_designation,
-            "one_fm_nationality": nationality
-        }, "name")
+    if interview_round_name:
+        interview_round = interview_round_name
+        round_doc = frappe.get_doc("Interview Round", interview_round)
+        
+        matrix_map = {}
+        if round_doc.get("interview_matrix"):
+            for m in round_doc.interview_matrix:
+                if m.question:
+                    matrix_map[m.question] = {
+                        "score_5": m.score_5 or "",
+                        "score_4": m.score_4 or "",
+                        "score_3": m.score_3 or "",
+                        "score_2": m.score_2 or "",
+                        "score_1": m.score_1 or ""
+                    }
 
-        if interview_round:
-            round_doc = frappe.get_doc("Interview Round", interview_round)
-            
-            matrix_map = {}
-            if round_doc.get("interview_matrix"):
-                for m in round_doc.interview_matrix:
-                    if m.question:
-                        matrix_map[m.question] = {
-                            "score_5": m.score_5 or "",
-                            "score_4": m.score_4 or "",
-                            "score_3": m.score_3 or "",
-                            "score_2": m.score_2 or "",
-                            "score_1": m.score_1 or ""
-                        }
-
-            if round_doc.get("interview_question"):
-                for q in round_doc.interview_question:
-                    ans = matrix_map.get(q.questions, {})
-                    matrix_data.append({
-                        "category": q.get("category") or "General",
-                        "category_weight": q.get("category_weight") or "",
-                        "question": q.questions,
-                        "weight": q.weight or 0,
-                        "ratings": [
-                            ans.get("score_5", q.answer_5 or "Excellent"),
-                            ans.get("score_4", q.answer_4 or "Good"),
-                            ans.get("score_3", q.answer_3 or "Average"),
-                            ans.get("score_2", q.answer_2 or "Poor"),
-                            ans.get("score_1", q.answer_1 or "Very Poor")
-                        ]
-                    })
-        else:
-            res["matrix_error"] = "No Interview Round found for Designation '{}' + Nationality '{}'.".format(
-                applicant_designation, nationality
-            )
-
+        if round_doc.get("interview_question"):
+            for q in round_doc.interview_question:
+                ans = matrix_map.get(q.questions, {})
+                matrix_data.append({
+                    "category": q.get("category") or "General",
+                    "category_weight": q.get("category_weight") or "",
+                    "question": q.questions,
+                    "weight": q.weight or 0,
+                    "ratings": [
+                        ans.get("score_5", q.answer_5 or "Excellent"),
+                        ans.get("score_4", q.answer_4 or "Good"),
+                        ans.get("score_3", q.answer_3 or "Average"),
+                        ans.get("score_2", q.answer_2 or "Poor"),
+                        ans.get("score_1", q.answer_1 or "Very Poor")
+                    ]
+                })
+        
         res["matrix"] = matrix_data
         res["interview_round"] = interview_round
+    else:
+        # If no round explicitly requested, leave matrix empty so UI shows the empty state graphic
+        res["matrix"] = []
+        res["interview_round"] = None
     
     # Check for Job Offers
     try:

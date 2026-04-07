@@ -206,6 +206,25 @@ body.ic-active .navbar {
     font-size: 11px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 .ic-dashboard-link .link-text { margin-left: 0; }
+
+.ic-add-interview-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    margin-left: 6px;
+    color: #64748b;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+.ic-add-interview-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
 /* Feedbacks pill - professional warm neutral */
 .ic-feedbacks-link {
     background: #f5f0ff !important; color: #5b21b6 !important; border: 1px solid #ede9fe !important;

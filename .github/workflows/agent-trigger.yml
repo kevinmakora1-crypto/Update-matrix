@@ -9,6 +9,11 @@ on:
         description: 'Issue number to solve (e.g. 94)'
         required: true
         type: string
+      base_branch:
+        description: 'Base branch (default: staging)'
+        required: false
+        default: 'staging'
+        type: string
 
 jobs:
   invoke-agent:
@@ -17,11 +22,11 @@ jobs:
       group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.issue_number || github.event.issue.number }}
       cancel-in-progress: true
 
-    # Only run if 'onefm_developer' label is present OR if manually triggered via workflow_dispatch
+    # Run if onefm_developer_staging or onefm_developer_hotfix label is present, or if manually triggered
     if: >-
       github.event_name == 'workflow_dispatch' || 
-      (github.event_name == 'issues' && github.event.action != 'labeled' && contains(github.event.issue.labels.*.name, 'onefm_developer')) ||
-      (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'onefm_developer')
+      (github.event_name == 'issues' && github.event.action != 'labeled' && (contains(github.event.issue.labels.*.name, 'onefm_developer_staging') || contains(github.event.issue.labels.*.name, 'onefm_developer_hotfix'))) ||
+      (github.event_name == 'issues' && github.event.action == 'labeled' && (github.event.label.name == 'onefm_developer_staging' || github.event.label.name == 'onefm_developer_hotfix'))
     
     # Run on standard GitHub-hosted runner for Cloud Run invocation
     runs-on: ubuntu-latest
@@ -67,8 +72,17 @@ jobs:
             exit 1
           fi
 
+          # Determine base branch from label or workflow_dispatch input
+          BASE_BRANCH="staging"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            BASE_BRANCH="${{ github.event.inputs.base_branch }}"
+          elif [[ "${{ github.event.label.name }}" == "onefm_developer_hotfix" ]] || \
+               echo '${{ toJSON(github.event.issue.labels.*.name) }}' | jq -e '. | index("onefm_developer_hotfix")' > /dev/null 2>&1; then
+            BASE_BRANCH="version-15"
+          fi
+
           echo "Connecting to: $CLOUD_RUN_URL"
-          echo "Requesting fix for Issue #$ISSUE_NUM"
+          echo "Requesting fix for Issue #$ISSUE_NUM (base: $BASE_BRANCH)"
           echo ""
           echo "💡 NOTE: The AI agent can take 2-15 minutes to complete its reasoning loop."
           echo "📖 VIEW REAL-TIME LOGS HERE:"
@@ -76,8 +90,11 @@ jobs:
           echo ""
           echo "Waiting for agent to finish..."
 
-          # Use jq to build JSON safely and avoid format issues
-          PAYLOAD=$(jq -n --arg input "Solve GitHub issue #$ISSUE_NUM" --arg requester "$ACTOR" '{input: $input, requester: $requester}')
+          PAYLOAD=$(jq -n \
+            --arg input "Solve GitHub issue #$ISSUE_NUM" \
+            --arg requester "$ACTOR" \
+            --arg base_branch "$BASE_BRANCH" \
+            '{input: $input, requester: $requester, base_branch: $base_branch}')
 
           curl --fail-with-body -sS -X POST "${CLOUD_RUN_URL}/query" \
             -H "Authorization: Bearer $GCP_ID_TOKEN" \

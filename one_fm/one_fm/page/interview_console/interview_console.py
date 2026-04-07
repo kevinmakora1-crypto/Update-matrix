@@ -151,11 +151,15 @@ def get_applicant_data(applicant, interview_round_name=None):
             res["job_offer_id"] = offers[0].name
     except Exception:
         res["job_offers"] = 0
+    try:
+        res["photo_count"] = frappe.db.count("File", {"attached_to_doctype": "Job Applicant", "attached_to_name": applicant})
+    except Exception:
+        res["photo_count"] = 0
         
     return res
 
 @frappe.whitelist()
-def save_interview_data(applicant, score, remarks, status, scores_detail=None, interview_round=None, height=None):
+def save_interview_data(applicant, score, remarks, status, scores_detail=None, interview_round=None, height=None, photo_data=None):
     """
     Saves interview results by creating/updating an Interview document.
     Also updates Job Applicant status.
@@ -168,6 +172,26 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
     from frappe.utils import nowdate, nowtime
     _check_console_access()
     
+    if photo_data:
+        import base64
+        try:
+            head, base64_data = photo_data.split(",", 1)
+            ext = head.split(";")[0].split("/")[1]
+            if ext == 'jpeg': ext = 'jpg'
+            
+            from frappe.utils import random_string
+            file_name = f"{applicant}_photo_{random_string(5)}.{ext}"
+            
+            _file = frappe.new_doc("File")
+            _file.file_name = file_name
+            _file.attached_to_doctype = "Job Applicant"
+            _file.attached_to_name = applicant
+            _file.content = base64.b64decode(base64_data)
+            _file.is_private = 1
+            _file.insert(ignore_permissions=True)
+        except Exception:
+            frappe.log_error(title="Interview Console Photo Error", message=frappe.get_traceback())
+
     valid_fields = get_valid_fields()
     
     # --- 1. Update Job Applicant Status ---
@@ -207,17 +231,8 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
             pass
     
     # --- 4. Find or Create Interview (interview_summary left blank) ---
-    existing_interview = frappe.db.get_value("Interview", {
-        "job_applicant": applicant,
-        "interview_round": interview_round,
-        "docstatus": ["<", 2]
-    }, "name") if interview_round else None
-    
-    if not existing_interview:
-        existing_interview = frappe.db.get_value("Interview", {
-            "job_applicant": applicant,
-            "docstatus": ["<", 2]
-        }, "name")
+    # --- 4. Always Create New Interview ---
+    existing_interview = None
     
     if existing_interview:
         interview_doc = frappe.get_doc("Interview", existing_interview)

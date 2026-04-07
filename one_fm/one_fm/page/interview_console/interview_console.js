@@ -807,12 +807,16 @@ function init_interview_console(wrapper, page) {
 			},
 			callback: function () {
 				if (state.selected_applicant) {
+					state.selected_applicant.photo_data_url = "";
 					frappe.call({
 						method: "one_fm.one_fm.page.interview_console.interview_console.get_applicant_data",
 						args: { applicant: state.selected_applicant.name },
 						callback: function (r) {
 							if (r.message && r.message.interview_count !== undefined) {
 								$w('#ic-feedback-count').text(r.message.interview_count);
+							}
+							if (r.message && r.message.photo_count !== undefined) {
+								$w('#ic-photo-count').text(r.message.photo_count);
 							}
 						}
 					});

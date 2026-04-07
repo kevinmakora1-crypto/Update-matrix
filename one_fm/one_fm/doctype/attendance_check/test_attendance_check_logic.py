@@ -31,7 +31,8 @@ class TestAttendanceCheckLogic(FrappeTestCase):
             "employee": self.employee,
             "attendance_date": "2024-01-01",
             "status": "Absent",
-            "company": "ONE FM"
+            "company": "ONE FM",
+            "roster_type": "Basic"
         })
         attendance.insert(ignore_permissions=True)
         attendance.submit()

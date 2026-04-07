@@ -46,7 +46,7 @@ class TestAttendanceCheckLogic(FrappeTestCase):
             "roster_type": "Basic",
             "justification": "Other",
             "other_reason": "Test",
-            "workflow_state": "Some Other State" # Should still work now
+            "workflow_state": "Pending Approval" # Valid non-approved workflow state
         })
         ac.insert(ignore_permissions=True)
         

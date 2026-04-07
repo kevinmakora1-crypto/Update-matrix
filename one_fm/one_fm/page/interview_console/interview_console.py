@@ -369,7 +369,7 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
         })
     # Skip HRMS duplicate validation — we intentionally accumulate feedbacks
     fb.flags.ignore_validate = True
-    fb.insert(ignore_permissions=True)
+    fb.insert(ignore_permissions=True, ignore_mandatory=True)
     if status != "Pending":
         fb.submit()
     fb.db_set("average_rating", avg_rating)

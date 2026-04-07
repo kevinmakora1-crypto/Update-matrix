@@ -427,7 +427,14 @@ class AttendanceCheck(Document):
     def mark_attendance(self):
         attendance = None
         if getattr(self, "attendance", None):
-            attendance = frappe.db.get_value("Attendance", self.attendance, ["status", "name"], as_dict=1)
+            linked_attendance = frappe.db.get_value(
+                "Attendance",
+                self.attendance,
+                ["status", "name", "docstatus"],
+                as_dict=1
+            )
+            if linked_attendance and linked_attendance.docstatus < 2:
+                attendance = linked_attendance
 
         if not attendance:
             attendance = self.get_existing_attendance()

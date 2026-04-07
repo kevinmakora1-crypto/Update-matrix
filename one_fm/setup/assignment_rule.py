@@ -22,7 +22,7 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("shift_request_draft.json"))
 	create_assignment_rule(get_assignment_rule_json_file("default_shift_checker_site_supervisor.json"))
 	create_assignment_rule(get_assignment_rule_json_file("remove_blocker_assigned_to.json"))
-	create_assignment_rule(get_assignment_rule_json_file("leave_approver_assignment.json"))
+	create_assignment_rule(get_assignment_rule_json_file("leave_application_pending_approver.json"))
 	create_assignment_rule(get_assignment_rule_json_file("career_history.json"))
 	create_assignment_rule(get_assignment_rule_json_file("leave_extension_request_approver.json"))
 	create_assignment_rule(get_assignment_rule_json_file("hd_ticket_process_owner.json"))
@@ -67,6 +67,8 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("leave_acknowledgement_form_pending_confirmation.json"))
 	create_assignment_rule(get_assignment_rule_json_file("leave_application_pending_reliever.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_process_change_request_business_analyst.json"))
+	create_assignment_rule(get_assignment_rule_json_file("leave_application_new_dates_proposed.json"))
+	create_assignment_rule(get_assignment_rule_json_file("leave_application_pending_confirmation.json"))
 
 def delete_assignment_rules():
 	delete_assignment_rule(get_assignment_rule_json_file("roster_post_action_site_supervisor.json"))
@@ -85,7 +87,7 @@ def delete_assignment_rules():
 	delete_assignment_rule(get_assignment_rule_json_file("shift_request_draft.json"))
 	delete_assignment_rule(get_assignment_rule_json_file("default_shift_checker_site_supervisor.json"))
 	delete_assignment_rule(get_assignment_rule_json_file("remove_blocker_assigned_to.json"))
-	delete_assignment_rule(get_assignment_rule_json_file("leave_approver_assignment.json"))
+	delete_assignment_rule(get_assignment_rule_json_file("leave_application_pending_approver.json"))
 	delete_assignment_rule(get_assignment_rule_json_file("career_history.json"))
 	delete_assignment_rule(get_assignment_rule_json_file("leave_extension_request_approver.json"))
 	delete_assignment_rule(get_assignment_rule_json_file("hd_ticket_process_owner.json"))

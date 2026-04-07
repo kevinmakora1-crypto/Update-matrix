@@ -1,7 +1,6 @@
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from one_fm.one_fm.doctype.attendance_check.attendance_check import AttendanceCheck
 
 class TestAttendanceCheckLogic(FrappeTestCase):
     def setUp(self):

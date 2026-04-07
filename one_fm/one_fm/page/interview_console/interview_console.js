@@ -103,7 +103,7 @@ function init_interview_console(wrapper, page) {
 		if (!matrix || matrix.length === 0) {
 			$w('.ic-table').hide();
 			$w('.ic-remarks-area').hide();
-			var errMsg = 'Click the <span style="display:inline-flex; align-items:center; justify-content:center; padding:4px; margin:0 2px; color:#64748b; background:transparent; vertical-align:middle;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"></line><line x1="3" y1="12" x2="21" y2="12"></line></svg></span> button above and <strong style="color:#0f172a; font-weight:800;">select a round</strong> to launch the evaluation matrix.';
+			var errMsg = errorMsg || 'Click the <span style="display:inline-flex; align-items:center; justify-content:center; padding:4px; margin:0 2px; color:#64748b; background:transparent; vertical-align:middle;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"></line><line x1="3" y1="12" x2="21" y2="12"></line></svg></span> button above and <strong style="color:#0f172a; font-weight:800;">select a round</strong> to launch the evaluation matrix.';
 			$w('#ic-no-matrix-msg-text').html(errMsg);
 			$w('#ic-no-matrix-msg').css('display', 'flex');
 			return;
@@ -371,16 +371,21 @@ function init_interview_console(wrapper, page) {
 				state.scores = new Array(state.matrix.length).fill(0);
 				$w('.ic-cell').removeClass('selected');
 				
-				// Populate Available Rounds Dropdown
+				// Populate Available Rounds Dropdown only when provided by the backend
 				var roundsHtml = '';
-				if(data.available_rounds && data.available_rounds.length > 0) {
+				var has_available_rounds = Array.isArray(data.available_rounds) && data.available_rounds.length > 0;
+				if (has_available_rounds) {
 					data.available_rounds.forEach(function(round_name) {
 						roundsHtml += '<div class="ic-dropdown-item" style="padding:10px 12px; border-bottom:1px solid #f1f5f9; cursor:pointer; font-size:12px; color:#334155; transition:background 0.2s;">' + esc(round_name) + '</div>';
 					});
+					$w('#ic-interview-dropdown-list').html(roundsHtml);
+					$w('#ic-interview-dropdown-list').show();
+					$w('#ic-interview-round-selector, #ic-interview-round-dropdown-trigger').show();
 				} else {
-					roundsHtml = '<div style="padding:10px 12px; font-size:11px; color:#94a3b8; text-align:center;">No rounds available</div>';
+					$w('#ic-interview-dropdown-list').empty().hide();
+					$w('#ic-interview-dropdown').hide();
+					$w('#ic-interview-round-selector, #ic-interview-round-dropdown-trigger').hide();
 				}
-				$w('#ic-interview-dropdown-list').html(roundsHtml);
 
 				// Bind Dropdown Items securely
 				$w('.ic-dropdown-item').hover(
@@ -544,11 +549,13 @@ function init_interview_console(wrapper, page) {
 		});
 
 		// Hide dropdown if clicked outside
-		$(document).on('click', function(e) {
-			if (!$(e.target).closest('#ic-add-interview-btn, #ic-interview-dropdown').length) {
-				$w('#ic-interview-dropdown').hide();
-			}
-		});
+		$(document)
+			.off('click.ic_interview_dropdown')
+			.on('click.ic_interview_dropdown', function(e) {
+				if (!$(e.target).closest('#ic-add-interview-btn, #ic-interview-dropdown').length) {
+					$w('#ic-interview-dropdown').hide();
+				}
+			});
 		
 		// Camera Photo Counter Navigation
 		$w('#ic-photo-count-btn').off('click').on('click', function(e) {
@@ -572,7 +579,7 @@ function init_interview_console(wrapper, page) {
 			$w('#ic-camera-modal').hide();
 		}
 		
-		$w('#ic-camera-btn').on('click', function() {
+		$w('#ic-camera-btn').off('click').on('click', function() {
 			if (!state.selected_applicant) {
 				frappe.show_alert({ message: "Select a candidate first.", indicator: "orange" });
 				return;
@@ -597,7 +604,7 @@ function init_interview_console(wrapper, page) {
 				});
 		});
 		
-		$w('#ic-camera-capture-btn').on('click', function() {
+		$w('#ic-camera-capture-btn').off('click').on('click', function() {
 			var video = document.getElementById('ic-video-stream');
 			var canvas = document.getElementById('ic-video-canvas');
 			canvas.width = video.videoWidth;
@@ -613,7 +620,7 @@ function init_interview_console(wrapper, page) {
 			$w('#ic-camera-save-btn').show();
 		});
 		
-		$w('#ic-camera-retake-btn').on('click', function() {
+		$w('#ic-camera-retake-btn').off('click').on('click', function() {
 			$w('#ic-photo-preview-large').hide();
 			$w('#ic-video-stream').show();
 			$w('#ic-camera-capture-btn').show();
@@ -621,9 +628,9 @@ function init_interview_console(wrapper, page) {
 			$w('#ic-camera-save-btn').hide();
 		});
 		
-		$w('#ic-camera-close-btn').on('click', stopCamera);
+		$w('#ic-camera-close-btn').off('click').on('click', stopCamera);
 		
-		$w('#ic-camera-save-btn').on('click', function() {
+		$w('#ic-camera-save-btn').off('click').on('click', function() {
 			var dataUrl = $w('#ic-photo-preview-large').attr('src');
 			state.selected_applicant.photo_data_url = dataUrl;
 			$w('#ic-photo-thumbnail').attr('src', dataUrl);
@@ -632,7 +639,7 @@ function init_interview_console(wrapper, page) {
 			update_and_save(); // Immediately save when photo is attached
 		});
 		
-		$w('#ic-remove-photo').on('click', function(e) {
+		$w('#ic-remove-photo').off('click').on('click', function(e) {
 			e.stopPropagation();
 			state.selected_applicant.photo_data_url = "";
 			$w('#ic-photo-thumbnail').attr('src', '');
@@ -640,7 +647,7 @@ function init_interview_console(wrapper, page) {
 			update_and_save();
 		});
 
-		$w('#ic-feedbacks-pill').on('click', function () {
+		$w('#ic-feedbacks-pill').off('click').on('click', function () {
 			if (!state.selected_applicant) return;
 			var count = parseInt($w('#ic-feedback-count').text()) || 0;
 			if (count > 0) {
@@ -650,7 +657,7 @@ function init_interview_console(wrapper, page) {
 			}
 		});
 
-		$w('#ic-reject-btn').on('click', function () { 
+		$w('#ic-reject-btn').off('click').on('click', function () {
 			if (!state.selected_applicant) {
 				frappe.show_alert({ message: "Select a candidate first", indicator: "orange" });
 				return;
@@ -658,7 +665,7 @@ function init_interview_console(wrapper, page) {
 			update_status("Rejected");
 			disable_action_buttons('ic-reject-btn');
 		});
-		$w('#ic-hold-btn').on('click', function () { 
+		$w('#ic-hold-btn').off('click').on('click', function () {
 			if (!state.selected_applicant) {
 				frappe.show_alert({ message: "Select a candidate first", indicator: "orange" });
 				return;
@@ -666,7 +673,7 @@ function init_interview_console(wrapper, page) {
 			update_status("Hold");
 			disable_action_buttons('ic-hold-btn');
 		});
-		$w('#ic-save-btn').on('click', function () {
+		$w('#ic-save-btn').off('click').on('click', function () {
 			if (!state.selected_applicant) {
 				frappe.show_alert({ message: "Select a candidate first", indicator: "orange" });
 				return;

@@ -174,23 +174,46 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
     
     if photo_data:
         import base64
+        import binascii
+        from frappe.utils import random_string
+        from frappe.utils.file_manager import save_file
         try:
+            allowed_mime_types = {
+                "image/jpeg": "jpg",
+                "image/png": "png",
+            }
+            max_photo_size_bytes = 5 * 1024 * 1024
+            max_base64_size_chars = ((max_photo_size_bytes + 2) // 3) * 4
+            if "," not in photo_data:
+                frappe.throw("Invalid photo format.")
             head, base64_data = photo_data.split(",", 1)
-            ext = head.split(";")[0].split("/")[1]
-            if ext == 'jpeg': ext = 'jpg'
+            if not head.startswith("data:") or not head.endswith(";base64"):
+                frappe.throw("Photo must be a base64-encoded JPEG or PNG image.")
+            mime_type = head[5:-7]
+            ext = allowed_mime_types.get(mime_type)
+            if not ext:
+                frappe.throw("Only JPEG and PNG photos are allowed.")
+            base64_data = "".join(base64_data.split())
+            if not base64_data or len(base64_data) > max_base64_size_chars:
+                frappe.throw("Photo exceeds the maximum allowed size of 5 MB.")
+            try:
+                content = base64.b64decode(base64_data, validate=True)
+            except (binascii.Error, ValueError):
+                frappe.throw("Invalid base64-encoded photo data.")
+            if len(content) > max_photo_size_bytes:
+                frappe.throw("Photo exceeds the maximum allowed size of 5 MB.")
             
-            from frappe.utils import random_string
             file_name = f"{applicant}_photo_{random_string(5)}.{ext}"
-            
-            _file = frappe.new_doc("File")
-            _file.file_name = file_name
-            _file.attached_to_doctype = "Job Applicant"
-            _file.attached_to_name = applicant
-            _file.content = base64.b64decode(base64_data)
-            _file.is_private = 1
-            _file.insert(ignore_permissions=True)
+            save_file(
+                file_name,
+                content,
+                "Job Applicant",
+                applicant,
+                is_private=1,
+            )
         except Exception:
             frappe.log_error(title="Interview Console Photo Error", message=frappe.get_traceback())
+            raise
 
     valid_fields = get_valid_fields()
     
@@ -231,8 +254,15 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
             pass
     
     # --- 4. Find or Create Interview (interview_summary left blank) ---
-    # --- 4. Always Create New Interview ---
-    existing_interview = None
+    # --- 4. Find Draft or Create Interview ---
+    filters = {
+        "job_applicant": applicant,
+        "docstatus": 0
+    }
+    if interview_round:
+        filters["interview_round"] = interview_round
+        
+    existing_interview = frappe.db.get_value("Interview", filters, "name")
     
     if existing_interview:
         interview_doc = frappe.get_doc("Interview", existing_interview)
@@ -282,7 +312,7 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
     elif status == "Rejected":
         feedback_result = "Rejected"
     else:
-        feedback_result = "Cleared" if int(score or 0) >= 50 else "Rejected"
+        feedback_result = "Pending"
     
     # avg_rating will be calculated from category averages after building skill_rows
     
@@ -340,7 +370,8 @@ def save_interview_data(applicant, score, remarks, status, scores_detail=None, i
     # Skip HRMS duplicate validation — we intentionally accumulate feedbacks
     fb.flags.ignore_validate = True
     fb.insert(ignore_permissions=True)
-    fb.submit()
+    if status != "Pending":
+        fb.submit()
     fb.db_set("average_rating", avg_rating)
 
     # --- 7. Recalculate total score as AVERAGE of all feedbacks for this applicant ---

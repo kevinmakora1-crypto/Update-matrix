@@ -1,46 +1,44 @@
 <div id="ic-root">
 <style>
-    /* FORCED CACHE-BUSTING SIZES - ABSOLUTE HEIGHT LOCK */
-    .ic-header * { box-sizing: border-box !important; }
-
-    #ic-age, #ic-height, #ic-score-pill,
-    .ic-header .ic-dashboard-link, 
-    .ic-header .ic-btn-circular,
-    .ic-header .ic-clear-btn {
-        height: 38px !important;
-        min-height: 38px !important;
-        max-height: 38px !important;
-        box-sizing: border-box !important;
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-        overflow: hidden !important;
+    /* Keep interview console sizing scoped to this page root. */
+    #ic-root .ic-header * {
+        box-sizing: border-box;
     }
-
-    /* Force uniform 115px width ONLY on Height and Score */
-    #ic-height, #ic-score-pill {
-        width: 115px !important;
-        min-width: 115px !important;
-        max-width: 115px !important;
+    #ic-root #ic-age,
+    #ic-root #ic-height,
+    #ic-root #ic-score-pill,
+    #ic-root .ic-header .ic-dashboard-link,
+    #ic-root .ic-header .ic-btn-circular,
+    #ic-root .ic-header .ic-clear-btn {
+        height: 38px;
+        min-height: 38px;
+        max-height: 38px;
+        box-sizing: border-box;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-top: 0;
+        margin-bottom: 0;
+        overflow: hidden;
     }
-
-    /* Force specific width for Age to be shorter */
-    #ic-age {
-        width: 60px !important;
-        min-width: 60px !important;
-        max-width: 60px !important;
+    #ic-root #ic-height,
+    #ic-root #ic-score-pill {
+        width: 115px;
+        min-width: 115px;
+        max-width: 115px;
     }
-
-    /* Force centering on Score Pill */
-    #ic-score-pill {
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        text-align: center !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-        border: 1px solid transparent !important;
+    #ic-root #ic-age {
+        width: 60px;
+        min-width: 60px;
+        max-width: 60px;
+    }
+    #ic-root #ic-score-pill {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding-left: 0;
+        padding-right: 0;
+        border: 1px solid transparent;
     }
 </style>
     <div class="ic-sidebar">

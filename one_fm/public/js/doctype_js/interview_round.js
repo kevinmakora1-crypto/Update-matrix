@@ -1,32 +1,56 @@
 function sync_matrix(frm) {
-    let source_questions = frm.doc.interview_question || [];
+    let source_questions = (frm.doc.interview_question || [])
+        .map(function(source) {
+            return source.questions;
+        })
+        .filter(function(question) {
+            return !!question;
+        });
     let target_matrix = frm.doc.interview_matrix || [];
-    
-    // Create a map of existing matrix rows by question so we don't lose typed data
+    // Reuse existing matrix rows by question so row identities and typed data are preserved
     let matrix_map = {};
     target_matrix.forEach(function(row) {
-        if (row.question) {
+        if (row.question && !matrix_map[row.question]) {
             matrix_map[row.question] = row;
         }
     });
-    
-    // Clear and rebuild the matrix to stay 1-to-1 horizontally synced
-    frm.clear_table("interview_matrix");
-    
-    source_questions.forEach(function(source) {
-        if (!source.questions) return;
-        
-        let new_row = frm.add_child("interview_matrix");
-        new_row.question = source.questions;
-        
-        // Restore old typed scores if they existed for this exact question
-        if (matrix_map[source.questions]) {
-            new_row.score_5 = matrix_map[source.questions].score_5;
-            new_row.score_4 = matrix_map[source.questions].score_4;
-            new_row.score_3 = matrix_map[source.questions].score_3;
-            new_row.score_2 = matrix_map[source.questions].score_2;
-            new_row.score_1 = matrix_map[source.questions].score_1;
+    // Skip updates if the matrix is already in sync and in the right order
+    let current_questions = target_matrix
+        .map(function(row) {
+            return row.question;
+        })
+        .filter(function(question) {
+            return !!question;
+        });
+    let is_same_length = current_questions.length === source_questions.length;
+    let is_same_order = is_same_length && source_questions.every(function(question, index) {
+        return current_questions[index] === question;
+    });
+    if (is_same_order) {
+        frm.refresh_field("interview_matrix");
+        return;
+    }
+    // Remove only rows that no longer exist in the source question list
+    target_matrix
+        .filter(function(row) {
+            return row.question && source_questions.indexOf(row.question) === -1;
+        })
+        .forEach(function(row) {
+            frappe.model.clear_doc(row.doctype, row.name);
+        });
+    // Build the matrix in source order, reusing existing rows where possible
+    let next_matrix = source_questions.map(function(question) {
+        let existing_row = matrix_map[question];
+        if (existing_row) {
+            return existing_row;
         }
+        let new_row = frm.add_child("interview_matrix");
+        new_row.question = question;
+        return new_row;
+    });
+    frm.doc.interview_matrix = next_matrix;
+    frm.doc.interview_matrix.forEach(function(row, index) {
+        row.idx = index + 1;
     });
     
     frm.refresh_field("interview_matrix");

@@ -24,6 +24,21 @@ def get_interview_round_custom_fields():
                 "insert_after": "interview_questions_sb",
                 "options": "Interview Questions",
                 "module": "one_fm",
+            },
+            {
+                "fieldname": "interview_matrix_sb",
+                "fieldtype": "Section Break",
+                "label": "Evaluation Matrix Config",
+                "insert_after": "expected_average_rating",
+                "module": "one_fm"
+            },
+            {
+                "fieldname": "interview_matrix",
+                "fieldtype": "Table",
+                "label": "Interview Questions Setup",
+                "options": "Interview Matrix Question",
+                "insert_after": "interview_matrix_sb",
+                "module": "one_fm"
             }
         ]
     }

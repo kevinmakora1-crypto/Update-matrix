@@ -211,19 +211,24 @@ body.ic-active .navbar {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 4px;
+    padding: 0;
     margin-left: 6px;
-    color: #64748b;
-    background: transparent;
+    color: #ffffff;
+    background: #0ea5e9;
     border: none;
-    border-radius: 4px;
+    border-radius: 50%;
     cursor: pointer;
     vertical-align: middle;
-    transition: background 0.2s ease, color 0.2s ease;
+    box-shadow: 0 2px 4px rgba(14, 165, 233, 0.3);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.2s ease;
 }
 .ic-add-interview-btn:hover {
-    background: #f1f5f9;
-    color: #0f172a;
+    background: #0284c7;
+    transform: scale(1.1);
+    box-shadow: 0 4px 6px rgba(14, 165, 233, 0.4);
+}
+.ic-add-interview-btn:active {
+    transform: scale(0.95);
 }
 /* Feedbacks pill - professional warm neutral */
 .ic-feedbacks-link {

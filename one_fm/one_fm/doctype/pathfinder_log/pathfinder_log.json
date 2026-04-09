@@ -15,6 +15,7 @@
   "column_break_ojgt",
   "initiated_on",
   "type",
+  "status",
   "stakeholders_section",
   "process_owner_user",
   "process_owner_name",
@@ -100,6 +101,15 @@
    "label": "Type",
    "options": "\nInitial Process Implementation\nMajor Update\nIncremental Changes",
    "reqd": 1
+  },
+  {
+   "default": "Backlog",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Backlog\nUpcoming\nActive\nOn Hold\nDeployed"
   },
   {
    "fieldname": "stakeholders_section",
@@ -242,23 +252,23 @@
  "states": [
   {
    "color": "Red",
-   "title": "Pending Definition"
+   "title": "Backlog"
   },
   {
    "color": "Orange",
-   "title": "Pending BA Review"
-  },
-  {
-   "color": "Purple",
-   "title": "In Development"
+   "title": "Upcoming"
   },
   {
    "color": "Blue",
-   "title": "In Staging"
+   "title": "Active"
+  },
+  {
+   "color": "Yellow",
+   "title": "On Hold"
   },
   {
    "color": "Green",
-   "title": "In Production"
+   "title": "Deployed"
   }
  ],
  "track_changes": 1

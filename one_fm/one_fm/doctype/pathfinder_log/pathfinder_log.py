@@ -42,7 +42,10 @@ class PathfinderLog(Document):
 			if self.time_log:
 				last_log = self.time_log[-1]
 
-			if last_log and last_log.state == old_doc.status and not last_log.end_time:
+			# Close the last open row regardless of state label match.
+			# Legacy rows may contain old workflow_state values (e.g.
+			# "In Development") that won't match the migrated status.
+			if last_log and not last_log.end_time:
 				last_log.end_time = now_datetime()
 				last_log.duration = frappe.utils.time_diff_in_seconds(
 					last_log.end_time, last_log.start_time

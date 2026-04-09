@@ -175,6 +175,19 @@
       "doctype": "Workflow Transition"
     },
     {
+      "state": "Pending Review",
+      "action": "Return",
+      "next_state": "Pending Process Definition",
+      "allowed": "Business Analyst",
+      "allow_self_approval": 1,
+      "send_email_to_creator": 0,
+      "skip_multiple_action": 0,
+      "skip_creation_of_workflow_action": 0,
+      "custom_confirm_transition": 0,
+      "require_digital_signature": 0,
+      "doctype": "Workflow Transition"
+    },
+    {
       "state": "Pending Story Definition",
       "action": "Confirm User Story",
       "next_state": "In Development",

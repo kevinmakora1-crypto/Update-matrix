@@ -694,16 +694,24 @@ def get_interview_skill_and_question_set(interview_round, interviewer=False, int
 
 @frappe.whitelist()
 def create_interview_and_feedback(data, interview_round, interviewer, job_applicant, method='save', feedback_exists=False, interview_name=False, child_name=False):
-	if not feedback_exists:
-		interview = frappe.new_doc('Interview')
-		interview.interview_round = interview_round
-		interview.job_applicant = job_applicant
-		interview.scheduled_on = today()
-		interview.from_time = now()
-		interview.to_time = now()
-		interview.append('interview_details', {'interviewer': interviewer})
-		interview.save(ignore_permissions=True)
-		interview_name = interview.name
+	if not interview_name:
+		existing_interview = frappe.db.exists("Interview", {"interview_round": interview_round, "job_applicant": job_applicant})
+		if existing_interview:
+			interview_name = existing_interview
+		else:
+			interview = frappe.new_doc('Interview')
+			interview.interview_round = interview_round
+			interview.job_applicant = job_applicant
+			interview.scheduled_on = today()
+			interview.from_time = now()
+			interview.to_time = now()
+			interview.append('interview_details', {'interviewer': interviewer})
+			interview.save(ignore_permissions=True)
+			interview_name = interview.name
+
+	if interview_name and not feedback_exists:
+		feedback_exists = frappe.db.exists("Interview Feedback", {"interview": interview_name, "interviewer": interviewer, "docstatus": ["!=", 2]})
+
 	if interview_name:
 		create_interview_feedback(data, interview_name, interviewer, job_applicant, method, feedback_exists)
 		if method == 'submit':
@@ -711,7 +719,8 @@ def create_interview_and_feedback(data, interview_round, interviewer, job_applic
 				data = frappe._dict(json.loads(data))
 			interview = frappe.get_doc('Interview', interview_name)
 			interview.status = data.result
-			interview.submit()
+			if interview.docstatus == 0:
+				interview.submit()
 		if child_name:
 			frappe.db.set_value('Job Applicant Interview Round', child_name, 'interview', interview_name)
 
@@ -722,6 +731,9 @@ def create_interview_feedback(data, interview_name, interviewer, job_applicant, 
 
 	if frappe.session.user != interviewer:
 		frappe.throw(_('Only Interviewer Are allowed to submit Interview Feedback'))
+
+	if not feedback_exists:
+		feedback_exists = frappe.db.exists("Interview Feedback", {"interview": interview_name, "interviewer": interviewer, "docstatus": ["!=", 2]})
 
 	interview_feedback = False
 
@@ -767,6 +779,15 @@ def create_interview_feedback(data, interview_name, interviewer, job_applicant, 
 		get_link_to_form('Interview Feedback', interview_feedback.name), method.title()))
 
 def calculate_interview_feedback_average_rating(doc, method):
+	if doc.interview and doc.interviewer:
+		existing = frappe.db.exists("Interview Feedback", {
+			"interview": doc.interview,
+			"interviewer": doc.interviewer,
+			"name": ("!=", doc.name)
+		})
+		if existing:
+			frappe.throw("An Interview Feedback already exists for this Interview and Interviewer.")
+
 	total_rating = 0
 	for d in doc.skill_assessment:
 		if d.rating:
@@ -778,16 +799,23 @@ def calculate_interview_feedback_average_rating(doc, method):
 
 	total_question_rating = 0
 	if doc.interview_question_assessment and len(doc.interview_question_assessment) > 0:
-		total_rating = 0
-		for d in doc.interview_question_assessment:
-			d.weight = d.weight if d.weight else 0
-			if d.weight > 0 and d.score:
-				total_rating += get_rating_from_the_score(d.score, d.weight)
-
-		total_question_rating = flt(total_rating / len(doc.interview_question_assessment))
+		total_weight = sum(flt(d.weight) for d in doc.interview_question_assessment)
+		if total_weight > 0:
+			# Each score is 1-5. Multiply its fraction (score/5) by its weight.
+			weighted_score_sum = sum((flt(d.score) / 5.0) * flt(d.weight) for d in doc.interview_question_assessment)
+			total_score_out_of_100 = (weighted_score_sum / total_weight) * 100.0
+			total_question_rating = flt(total_score_out_of_100 / 100.0)
+		else:
+			# Fallback if weights are not configured
+			active_cols = sum(1 for d in doc.interview_question_assessment if flt(d.score) > 0)
+			if active_cols > 0:
+				total_question_rating = (sum(flt(d.score) for d in doc.interview_question_assessment if flt(d.score) > 0) / active_cols) / 5.0
 
 	if total_question_rating > 0:
-		doc.average_rating = (total_skill_rating + total_question_rating) / 2
+		if len(doc.skill_assessment) > 0:
+			doc.average_rating = (total_skill_rating + total_question_rating) / 2
+		else:
+			doc.average_rating = total_question_rating
 	else:
 		doc.average_rating = total_skill_rating
 

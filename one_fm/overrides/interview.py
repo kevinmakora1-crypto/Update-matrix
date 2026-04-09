@@ -42,8 +42,8 @@ def validate_interview_overlap(self):
         frappe.throw(overlapping_details, title=_("Overlap"))
 
 def update_interview_rounds_in_job_applicant(doc, method):
-    if doc.interview_round_child_ref:
-        frappe.db.set_value('Job Applicant Interview Round', doc.interview_round_child_ref, 'interview', doc.name)
+    if doc.get('interview_round_child_ref'):
+        frappe.db.set_value('Job Applicant Interview Round', doc.get('interview_round_child_ref'), 'interview', doc.name)
     if not doc.interview_details:
         doc.append('interview_details', {'interviewer': frappe.session.user})
 
@@ -110,6 +110,6 @@ def update_job_applicant_status(args):
 		)
 
 def update_from_to_date_null(doc, method):
-    if doc.custom_hiring_method == "A la carte Recruitment":
+    if doc.get("custom_hiring_method") == "A la carte Recruitment":
         doc.from_time = None
         doc.to_time = None

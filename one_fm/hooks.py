@@ -131,7 +131,8 @@ doctype_js = {
     "ToDo": "public/js/doctype_js/todo.js",
     "Loan": "public/js/doctype_js/loan.js",
     "Quality Feedback": "public/js/doctype_js/quality_feedback.js",
-    "Quality Feedback Template": "public/js/doctype_js/quality_feedback_template.js"
+    "Quality Feedback Template": "public/js/doctype_js/quality_feedback_template.js",
+    "Interview Round": "public/js/doctype_js/interview_round.js"
 }
 doctype_list_js = {
 	"Job Applicant" : "public/js/doctype_js/job_applicant_list.js",
@@ -847,6 +848,7 @@ fixtures = [
 override_whitelisted_methods = {
     "frappe.model.workflow.get_transitions":"one_fm.overrides.workflow.get_transitions",
 	"frappe.model.workflow.apply_workflow":"one_fm.overrides.workflow.apply_workflow",
+    "hrms.hr.doctype.leave_application.leave_application.get_number_of_leave_days": "one_fm.api.doc_methods.leave_application_calculation.custom_get_number_of_leave_days",
 	"hrms.hr.doctype.leave_application.leave_application.get_leave_approver" : "one_fm.overrides.leave_application.get_leave_approver",
 	"hrms.hr.doctype.leave_application.leave_application.get_leave_details" : "one_fm.overrides.leave_application.get_leave_details",
     "frappe.desk.form.load.getdoc": "one_fm.permissions.getdoc",
@@ -857,15 +859,17 @@ override_whitelisted_methods = {
     "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_receipt":"one_fm.overrides.purchase_order.make_purchase_receipt",
     "erpnext.accounts.doctype.purchase_invoice.purchase_invoice.make_purchase_receipt":"one_fm.overrides.purchase_invoice.make_purchase_receipt",
     "erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_invoice":"one_fm.overrides.purchase_order.make_purchase_invoice",
-    "frappe.desk.form.utils.get_next": "one_fm.utils.get_next"
-
+    "frappe.desk.form.utils.get_next": "one_fm.utils.get_next",
+	"frappe.desk.query_report.get_script": "one_fm.overrides.reports.stock_balance_override.custom_get_script",
 }
+
 
 
 override_doctype_dashboards = {
     'Project': 'one_fm.overrides.project_dashboard.get_data',
     'HD Ticket': 'one_fm.overrides.hd_ticket_dashboard.get_data',
     'Item': 'one_fm.overrides.item_dashboard.get_data',
+    'Leave Application': 'one_fm.overrides.leave_application_dashboard.get_data',
     'Sales Invoice': 'one_fm.overrides.sales_invoice_dashboard.get_data',
     "Purchase Invoice": "one_fm.overrides.purchase_invoice_dashboard.get_data",
     "Job Applicant": "one_fm.overrides.job_applicant_dashboard.get_data"

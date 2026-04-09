@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:SC-{subcontractor_name}",
+ "autoname": "format:SC-{subcontractor_name}-.#####",
  "creation": "2026-04-09 00:22:55.595487",
  "doctype": "DocType",
  "editable_grid": 1,

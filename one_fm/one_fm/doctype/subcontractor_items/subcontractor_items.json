@@ -27,7 +27,7 @@
    "options": "Item"
   },
   {
-   "fetch_from": "item_code.description",
+   "fetch_from": "item_code.item_name",
    "fieldname": "item_name",
    "fieldtype": "Data",
    "label": "Item Name",
@@ -52,7 +52,7 @@
    "read_only": 1
   },
   {
-   "fetch_from": "item_code.item_type",
+   "fetch_from": "item_code.description",
    "fieldname": "item_description",
    "fieldtype": "Data",
    "label": "Item Description",
@@ -87,7 +87,6 @@
   },
   {
    "columns": 2,
-   "fetch_from": "item_price.price_list_rate",
    "fieldname": "rate",
    "fieldtype": "Currency",
    "in_list_view": 1,

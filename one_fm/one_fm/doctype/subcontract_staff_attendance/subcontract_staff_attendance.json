@@ -93,16 +93,6 @@
    "fieldtype": "Table",
    "label": "Subcontract Staff Attendance Details",
    "options": "Subcontractor Staff Attendance Item"
-  },
-  {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Subcontract Staff Attendance",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
   }
  ],
  "grid_page_length": 50,

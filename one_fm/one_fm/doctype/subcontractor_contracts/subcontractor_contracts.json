@@ -22,7 +22,7 @@
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",
-   "options": "Contracts",
+   "options": "Subcontractor Contracts",
    "read_only": 1
   },
   {

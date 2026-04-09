@@ -29,19 +29,20 @@ class TestPathfinderLog(FrappeTestCase):
 		)
 		frappe.db.commit()
 
-	def _create_log(self, workflow_state="Draft"):
-		"""Helper to create a Pathfinder Log with a given workflow_state."""
+	def _create_log(self, status="Backlog"):
+		"""Helper to create a Pathfinder Log with a given status."""
 		doc = frappe.get_doc({
 			"doctype": "Pathfinder Log",
 			"process_name": self.PROCESS_NAME,
 			"goal_description": "Test goal",
 			"type": "Incremental Changes",
+			"status": status,
 		})
 		doc.insert(ignore_permissions=True)
-		# Force workflow_state outside normal transitions for test isolation
+		# Force status outside normal flow for test isolation
 		frappe.db.set_value(
 			"Pathfinder Log", doc.name,
-			"workflow_state", workflow_state,
+			"status", status,
 			update_modified=True,
 		)
 		frappe.db.commit()
@@ -58,41 +59,41 @@ class TestPathfinderLog(FrappeTestCase):
 		result = is_process_editable(self.PROCESS_NAME)
 		self.assertFalse(result["editable"])
 		self.assertIsNone(result["pathfinder_log"])
-		self.assertIsNone(result["workflow_state"])
+		self.assertIsNone(result["status"])
 
 	def test_active_log_returns_editable(self):
-		"""Process with a non-Completed log should be editable."""
+		"""Process with a non-Deployed log should be editable."""
 		from one_fm.one_fm.doctype.pathfinder_log.pathfinder_api import (
 			is_process_editable,
 		)
 
-		log_name = self._create_log("In Development")
+		log_name = self._create_log("Active")
 
 		result = is_process_editable(self.PROCESS_NAME)
 		self.assertTrue(result["editable"])
 		self.assertEqual(result["pathfinder_log"], log_name)
-		self.assertEqual(result["workflow_state"], "In Development")
+		self.assertEqual(result["status"], "Active")
 
 	def test_completed_log_returns_not_editable(self):
-		"""Process where all logs are Completed should not be editable."""
+		"""Process where all logs are Deployed should not be editable."""
 		from one_fm.one_fm.doctype.pathfinder_log.pathfinder_api import (
 			is_process_editable,
 		)
 
-		self._create_log("Completed")
+		self._create_log("Deployed")
 
 		result = is_process_editable(self.PROCESS_NAME)
 		self.assertFalse(result["editable"])
 
 
 	def test_mixed_completed_and_active(self):
-		"""If one log is Completed and another is active, process is editable."""
+		"""If one log is Deployed and another is active, process is editable."""
 		from one_fm.one_fm.doctype.pathfinder_log.pathfinder_api import (
 			is_process_editable,
 		)
 
-		self._create_log("Completed")
-		active_log = self._create_log("In Staging")
+		self._create_log("Deployed")
+		active_log = self._create_log("Active")
 
 		result = is_process_editable(self.PROCESS_NAME)
 		self.assertTrue(result["editable"])
@@ -107,7 +108,7 @@ class TestPathfinderLog(FrappeTestCase):
 		)
 		import json
 
-		self._create_log("In Development")
+		self._create_log("Active")
 
 		result = bulk_check_process_editable(
 			json.dumps([self.PROCESS_NAME, "Nonexistent Process"])
@@ -139,7 +140,7 @@ class TestPathfinderLog(FrappeTestCase):
 
 
 class TestSingleActiveLogValidation(FrappeTestCase):
-	"""Ensure only one active (non-Completed) Pathfinder Log per process."""
+	"""Ensure only one active (non-Deployed) Pathfinder Log per process."""
 
 	PROCESS_A = "_Test Process Single Active A"
 	PROCESS_B = "_Test Process Single Active B"
@@ -160,44 +161,45 @@ class TestSingleActiveLogValidation(FrappeTestCase):
 			frappe.db.delete("Pathfinder Log", {"process_name": proc})
 		frappe.db.commit()
 
-	def _create_log(self, process_name, workflow_state="Draft"):
+	def _create_log(self, process_name, status="Backlog"):
 		doc = frappe.get_doc({
 			"doctype": "Pathfinder Log",
 			"process_name": process_name,
 			"goal_description": "Test goal",
 			"type": "Incremental Changes",
+			"status": status,
 		})
 		doc.insert(ignore_permissions=True)
-		if workflow_state != "Draft":
+		if status != "Backlog":
 			frappe.db.set_value(
 				"Pathfinder Log", doc.name,
-				"workflow_state", workflow_state,
+				"status", status,
 				update_modified=True,
 			)
 			frappe.db.commit()
 		return doc.name
 
 	def test_first_log_succeeds(self):
-		"""Creating the first non-Completed log for a process should succeed."""
+		"""Creating the first non-Deployed log for a process should succeed."""
 		name = self._create_log(self.PROCESS_A)
 		self.assertTrue(frappe.db.exists("Pathfinder Log", name))
 
 	def test_second_active_log_blocked(self):
-		"""A second non-Completed log for the same process should be blocked."""
-		self._create_log(self.PROCESS_A, "In Development")
+		"""A second non-Deployed log for the same process should be blocked."""
+		self._create_log(self.PROCESS_A, "Active")
 		with self.assertRaises(frappe.ValidationError) as ctx:
 			self._create_log(self.PROCESS_A)
 		self.assertIn("Only 1 active Pathfinder Log is allowed", str(ctx.exception))
 
 	def test_allowed_after_completion(self):
-		"""After the first log is Completed, a new one should be allowed."""
-		self._create_log(self.PROCESS_A, "Completed")
+		"""After the first log is Deployed, a new one should be allowed."""
+		self._create_log(self.PROCESS_A, "Deployed")
 		name = self._create_log(self.PROCESS_A)
 		self.assertTrue(frappe.db.exists("Pathfinder Log", name))
 
 	def test_resave_existing_active_log(self):
 		"""Re-saving an already active log should not block itself."""
-		name = self._create_log(self.PROCESS_A, "In Development")
+		name = self._create_log(self.PROCESS_A, "Active")
 		doc = frappe.get_doc("Pathfinder Log", name)
 		doc.save(ignore_permissions=True)  # should not raise
 

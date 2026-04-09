@@ -1,11 +1,10 @@
 function sync_matrix(frm) {
-    let source_questions = (frm.doc.interview_question || [])
-        .map(function(source) {
-            return source.questions;
-        })
-        .filter(function(question) {
-            return !!question;
-        });
+    let source_objects = (frm.doc.interview_question || []).filter(function(row) {
+        return !!row.questions;
+    });
+    
+    let source_questions = source_objects.map(function(row) { return row.questions; });
+    
     let target_matrix = frm.doc.interview_matrix || [];
     // Reuse existing matrix rows by question so row identities and typed data are preserved
     let matrix_map = {};
@@ -14,22 +13,19 @@ function sync_matrix(frm) {
             matrix_map[row.question] = row;
         }
     });
-    // Skip updates if the matrix is already in sync and in the right order
-    let current_questions = target_matrix
-        .map(function(row) {
-            return row.question;
-        })
-        .filter(function(question) {
-            return !!question;
-        });
-    let is_same_length = current_questions.length === source_questions.length;
-    let is_same_order = is_same_length && source_questions.every(function(question, index) {
-        return current_questions[index] === question;
+
+    // Skip updates if the matrix is already strictly in sync
+    let is_consistent = target_matrix.length === source_objects.length && source_objects.every(function(s_row, index) {
+        let t_row = target_matrix[index];
+        if (!t_row) return false;
+        return t_row.question === s_row.questions && t_row.category === s_row.category && t_row.weight === s_row.weight;
     });
-    if (is_same_order) {
+
+    if (is_consistent) {
         frm.refresh_field("interview_matrix");
         return;
     }
+
     // Remove only rows that no longer exist in the source question list
     target_matrix
         .filter(function(row) {
@@ -38,14 +34,19 @@ function sync_matrix(frm) {
         .forEach(function(row) {
             frappe.model.clear_doc(row.doctype, row.name);
         });
-    // Build the matrix in source order, reusing existing rows where possible
-    let next_matrix = source_questions.map(function(question) {
-        let existing_row = matrix_map[question];
+
+    // Build the matrix in source order, reusing existing rows and updating metadata where possible
+    let next_matrix = source_objects.map(function(s_row) {
+        let existing_row = matrix_map[s_row.questions];
         if (existing_row) {
+            existing_row.category = s_row.category;
+            existing_row.weight = s_row.weight;
             return existing_row;
         }
         let new_row = frm.add_child("interview_matrix");
-        new_row.question = question;
+        new_row.question = s_row.questions;
+        new_row.category = s_row.category;
+        new_row.weight = s_row.weight;
         return new_row;
     });
     frm.doc.interview_matrix = next_matrix;

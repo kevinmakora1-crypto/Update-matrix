@@ -29,7 +29,7 @@ def get_interview_round_custom_fields():
                 "fieldname": "interview_matrix_sb",
                 "fieldtype": "Section Break",
                 "label": "Evaluation Matrix Config",
-                "insert_after": "expected_average_rating",
+                "insert_after": "interview_question",
                 "module": "one_fm"
             },
             {

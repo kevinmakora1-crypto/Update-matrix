@@ -804,12 +804,12 @@ def calculate_interview_feedback_average_rating(doc, method):
 			# Each score is 1-5. Multiply its fraction (score/5) by its weight.
 			weighted_score_sum = sum((flt(d.score) / 5.0) * flt(d.weight) for d in doc.interview_question_assessment)
 			total_score_out_of_100 = (weighted_score_sum / total_weight) * 100.0
-			total_question_rating = flt((total_score_out_of_100 / 100.0) * 5.0)
+			total_question_rating = flt(total_score_out_of_100 / 100.0)
 		else:
 			# Fallback if weights are not configured
 			active_cols = sum(1 for d in doc.interview_question_assessment if flt(d.score) > 0)
 			if active_cols > 0:
-				total_question_rating = sum(flt(d.score) for d in doc.interview_question_assessment if flt(d.score) > 0) / active_cols
+				total_question_rating = (sum(flt(d.score) for d in doc.interview_question_assessment if flt(d.score) > 0) / active_cols) / 5.0
 
 	if total_question_rating > 0:
 		if len(doc.skill_assessment) > 0:

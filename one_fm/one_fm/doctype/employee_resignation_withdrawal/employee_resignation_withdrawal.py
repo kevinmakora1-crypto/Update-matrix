@@ -41,9 +41,13 @@ class EmployeeResignationWithdrawal(Document):
 					)
 					for pmr_name in pmr_list:
 						pmr = frappe.get_doc("Project Manpower Request", pmr_name)
-						pmr.db_set("status", "Withdrawn")
+						pmr.db_set("status", "Withdrawal Resignation")
 						if frappe.db.has_column("Project Manpower Request", "workflow_state"):
 							pmr.db_set("workflow_state", "Withdrawn")
+						
+						# Reduce the ERF count because the replacement is no longer needed
+						if pmr.erf and pmr.docstatus == 1:
+							pass
 
 	def validate(self):
 		self.set_approver()

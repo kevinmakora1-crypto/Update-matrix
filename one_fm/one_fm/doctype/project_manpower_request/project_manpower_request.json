@@ -12,7 +12,7 @@
     "editable_grid": 0,
     "track_changes": 0,
     "module": "One Fm",
-    "autoname": "naming_series: naming_series",
+    "autoname": "",
     "sort_field": "modified",
     "sort_order": "DESC",
     "description": "",
@@ -41,7 +41,8 @@
     "show_preview_popup": 0,
     "index_web_pages_for_search": 1,
     "is_calendar_and_gantt": 0,
-    "naming_rule": "By \"Naming Series\" field",
+    "title_field": "project_request_code",
+    "naming_rule": "",
     "make_attachments_public": 0,
     "show_title_field_in_link": 0,
     "translated_doctype": 0,
@@ -58,6 +59,16 @@
             "label": "Details",
             "fieldtype": "Section Break",
             "doctype": "DocField"
+        },
+        {
+            "fieldname": "project_request_code",
+            "label": "Project Request Code",
+            "fieldtype": "Data",
+            "read_only": 1,
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "doctype": "DocField",
+            "allow_on_submit": 1
         },
         {
             "fieldname": "reason",
@@ -89,8 +100,8 @@
             "fieldtype": "Int",
             "reqd": 1,
             "non_negative": 1,
-            "fetch_from": "erf.number_of_candidates_required",
-            "doctype": "DocField"
+            "doctype": "DocField",
+            "allow_on_submit": 1
         },
         {
             "fieldname": "employment_type",
@@ -132,7 +143,6 @@
             "label": "ERF",
             "fieldtype": "Link",
             "options": "ERF",
-            "reqd": 1,
             "in_list_view": 1,
             "in_standard_filter": 1,
             "description": "Employee Requisition Form for this designation",
@@ -146,17 +156,95 @@
             "doctype": "DocField"
         },
         {
-            "fieldname": "column_break_pdtv",
+            "fieldname": "column_break_status",
             "label": "",
             "fieldtype": "Column Break",
             "doctype": "DocField"
         },
         {
+            "fieldname": "status",
+            "label": "Final Status",
+            "fieldtype": "Select",
+            "options": "Open\nPending\nIn Process\nCompleted\nCancelled\nInternal Fulfilled\nFulfilled by OT\nFulfilled by Sub-con\nFulfilled by OT & Sub\nWithdrawal Resignation",
+            "allow_on_submit": 1,
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "doctype": "DocField"
+        },
+        {
+            "fieldname": "cancelled_qty",
+            "label": "Cancelled Qty",
+            "fieldtype": "Int",
+            "non_negative": 1,
+            "allow_on_submit": 1,
+            "doctype": "DocField",
+            "hidden": 1,
+            "print_hide": 1
+        },
+        {
+            "fieldname": "managed_by_ot_qty",
+            "label": "Managed by OT",
+            "fieldtype": "Int",
+            "non_negative": 1,
+            "allow_on_submit": 1,
+            "doctype": "DocField",
+            "hidden": 1,
+            "print_hide": 1
+        },
+        {
+            "fieldname": "managed_by_subcontractor_qty",
+            "label": "Managed by SubContractor",
+            "fieldtype": "Int",
+            "non_negative": 1,
+            "allow_on_submit": 1,
+            "doctype": "DocField",
+            "hidden": 1,
+            "print_hide": 1
+        },
+        {
+            "fieldname": "internal_transfer_qty",
+            "label": "Internal Transfer",
+            "fieldtype": "Int",
+            "non_negative": 1,
+            "allow_on_submit": 1,
+            "doctype": "DocField",
+            "hidden": 1,
+            "print_hide": 1
+        },
+        {
+            "fieldname": "resignation_withdrawal_qty",
+            "label": "Resignation Withdrawal",
+            "fieldtype": "Int",
+            "non_negative": 1,
+            "allow_on_submit": 1,
+            "doctype": "DocField",
+            "hidden": 1,
+            "print_hide": 1
+        },
+        {
+            "fieldname": "remaining_qty",
+            "label": "Remaining Qty",
+            "fieldtype": "Int",
+            "read_only": 1,
+            "allow_on_submit": 1,
+            "doctype": "DocField",
+            "hidden": 0
+        },
+        {
+            "fieldname": "number_to_hire",
+            "label": "Number to Hire",
+            "fieldtype": "Int",
+            "read_only": 1,
+            "allow_on_submit": 1,
+            "doctype": "DocField"
+        },
+        {
             "fieldname": "project_allocation",
-            "label": "Project Allocation",
+            "label": "Project",
             "fieldtype": "Link",
             "options": "Project",
-            "fetch_from": "employee_resignation.project_allocation",
+            "reqd": 1,
+            "allow_on_submit": 1,
             "doctype": "DocField"
         },
         {
@@ -165,6 +253,8 @@
             "fieldtype": "Link",
             "options": "Operations Site",
             "fetch_from": "employee_resignation.site_allocation",
+            "allow_on_submit": 1,
+            "depends_on": "eval: doc.reason == 'Exit'",
             "doctype": "DocField"
         },
         {
@@ -173,6 +263,8 @@
             "fieldtype": "Link",
             "options": "Operations Shift",
             "fetch_from": "employee_resignation.shift_allocation",
+            "allow_on_submit": 1,
+            "depends_on": "eval: doc.reason == 'Exit'",
             "doctype": "DocField"
         },
         {
@@ -181,6 +273,8 @@
             "fieldtype": "Link",
             "options": "Operations Role",
             "fetch_from": "employee_resignation.operations_role_allocation",
+            "allow_on_submit": 1,
+            "depends_on": "eval: doc.reason == 'Exit'",
             "doctype": "DocField"
         },
         {
@@ -223,7 +317,7 @@
         },
         {
             "fieldname": "salary",
-            "label": "Salary",
+            "label": "Salary Sample",
             "fieldtype": "Currency",
             "doctype": "DocField"
         },
@@ -261,13 +355,6 @@
             "doctype": "DocField"
         },
         {
-            "fieldname": "status",
-            "label": "Status",
-            "fieldtype": "Select",
-            "options": "Open\nWithdrawn\nClosed",
-            "doctype": "DocField"
-        },
-        {
             "fieldname": "column_break_txvy",
             "label": "",
             "fieldtype": "Column Break",
@@ -279,6 +366,8 @@
             "fieldtype": "Select",
             "options": "HR-PMR-.YYYY.-.MM.-",
             "read_only": 1,
+            "hidden": 1,
+            "print_hide": 1,
             "doctype": "DocField"
         },
         {
@@ -297,6 +386,42 @@
             "no_copy": 1,
             "search_index": 1,
             "doctype": "DocField"
+        },
+        {
+            "fieldname": "qty_added_to_erf",
+            "label": "Qty Added to ERF",
+            "fieldtype": "Int",
+            "hidden": 1,
+            "doctype": "DocField"
+        },
+        {
+            "fieldname": "section_linked_candidates",
+            "fieldtype": "Section Break",
+            "label": "Linked Candidates",
+            "allow_on_submit": 1,
+            "doctype": "DocField"
+        },
+        {
+            "fieldname": "linked_candidates",
+            "fieldtype": "Table",
+            "label": "Candidates linked to this PR",
+            "options": "PMR Linked Candidate",
+            "allow_on_submit": 1,
+            "doctype": "DocField"
+        },
+        {
+            "fieldname": "section_closure",
+            "fieldtype": "Section Break",
+            "label": "Closure & Fulfillment Details",
+            "doctype": "DocField"
+        },
+        {
+            "fieldname": "fulfilled_by_employees",
+            "fieldtype": "Table",
+            "label": "Closed By Employees",
+            "options": "PMR Fulfilled Employee",
+            "doctype": "DocField",
+            "allow_on_submit": 1
         }
     ],
     "permissions": [
@@ -315,11 +440,27 @@
             "email": 1
         },
         {
+            "role": "Administrator",
+            "read": 1,
+            "write": 1,
+            "create": 1,
+            "submit": 1,
+            "delete": 1,
+            "amend": 1,
+            "report": 1,
+            "export": 1,
+            "share": 1,
+            "print": 1,
+            "email": 1
+        },
+        {
             "role": "Offboarding Officer",
             "read": 1,
             "write": 1,
             "create": 1,
+            "submit": 1,
             "delete": 1,
+            "amend": 1,
             "report": 1,
             "export": 1,
             "share": 1,
@@ -333,6 +474,49 @@
             "create": 1,
             "submit": 1,
             "delete": 1,
+            "amend": 1,
+            "report": 1,
+            "export": 1,
+            "share": 1,
+            "print": 1,
+            "email": 1
+        },
+        {
+            "role": "Senior Recruiter",
+            "read": 1,
+            "write": 1,
+            "create": 1,
+            "submit": 1,
+            "delete": 1,
+            "amend": 1,
+            "report": 1,
+            "export": 1,
+            "share": 1,
+            "print": 1,
+            "email": 1
+        },
+        {
+            "role": "Recruitment Coordinator",
+            "read": 1,
+            "write": 1,
+            "create": 1,
+            "submit": 1,
+            "delete": 1,
+            "amend": 1,
+            "report": 1,
+            "export": 1,
+            "share": 1,
+            "print": 1,
+            "email": 1
+        },
+        {
+            "role": "Recruitment Team Leader",
+            "read": 1,
+            "write": 1,
+            "create": 1,
+            "submit": 1,
+            "delete": 1,
+            "amend": 1,
             "report": 1,
             "export": 1,
             "share": 1,

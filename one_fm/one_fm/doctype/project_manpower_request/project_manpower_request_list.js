@@ -4,12 +4,18 @@
 frappe.listview_settings['Project Manpower Request'] = {
 	add_fields: ["status"],
 	get_indicator: function (doc) {
-		if (doc.status === "Open") {
-			return [__("Open"), "orange", "status,=,Open"];
-		} else if (doc.status === "Closed") {
-			return [__("Closed"), "green", "status,=,Closed"];
-		} else if (doc.status === "Withdrawn") {
-			return [__("Withdrawn"), "gray", "status,=,Withdrawn"];
-		}
+		const status_colors = {
+			"Open": "orange",
+			"Pending": "gray",
+			"In Process": "blue",
+			"Completed": "green",
+			"Cancelled": "red",
+			"Internal Fulfilled": "light-green",
+			"Fulfilled by OT": "blue",
+			"Fulfilled by Sub-con": "purple",
+			"Fulfilled by OT & Sub": "darkgray",
+			"Withdrawal Resignation": "yellow"
+		};
+		return [__(doc.status), status_colors[doc.status] || "gray", "status,=," + doc.status];
 	}
 };

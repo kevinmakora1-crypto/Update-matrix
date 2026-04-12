@@ -155,7 +155,6 @@ class SubcontractStaffAttendance(Document):
 		# Build Purchase Invoice
 		pi = frappe.new_doc("Purchase Invoice")
 		pi.supplier = self.subcontractor_name
-		pi.custom_subcontract_staff_attendance = self.name
 		pi.posting_date = frappe.utils.today()
 
 		# For monthly required days

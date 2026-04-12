@@ -6,22 +6,22 @@ from frappe import _
 
 
 def _get_active_log_for_process(process_name: str) -> dict | None:
-	"""Return the most recent non-Completed Pathfinder Log for a process.
+	"""Return the most recent non-Deployed Pathfinder Log for a process.
 
 	Uses ``frappe.get_list`` which respects DocType permissions, so
 	callers without read access to Pathfinder Log will receive an empty
 	result instead of leaking data.
 
 	Returns:
-		A dict with ``name`` and ``workflow_state``, or ``None``.
+		A dict with ``name`` and ``status``, or ``None``.
 	"""
 	logs = frappe.get_list(
 		"Pathfinder Log",
 		filters={
 			"process_name": process_name,
-			"workflow_state": ["!=", "Completed"],
+			"status": ["!=", "Deployed"],
 		},
-		fields=["name", "workflow_state"],
+		fields=["name", "status"],
 		order_by="modified desc",
 		limit_page_length=1,
 	)
@@ -34,25 +34,25 @@ def _format_editability(active_log: dict | None) -> dict:
 		return {
 			"editable": True,
 			"pathfinder_log": active_log["name"],
-			"workflow_state": active_log["workflow_state"],
+			"status": active_log["status"],
 		}
 	return {
 		"editable": False,
 		"pathfinder_log": None,
-		"workflow_state": None,
+		"status": None,
 	}
 
 
 @frappe.whitelist()
 def is_process_editable(process_name: str) -> dict:
 	"""
-	Check if a process has an active (non-Completed) Pathfinder Log.
+	Check if a process has an active (non-Deployed) Pathfinder Log.
 
 	Called by the BA site to determine whether the Processa editor
 	should allow editing for a given process.
 
 	A process is editable only if there is at least one Pathfinder Log
-	linked to it whose workflow_state is NOT 'Completed'.
+	linked to it whose status is NOT 'Deployed'.
 
 	Args:
 		process_name: The name of the Process record.
@@ -61,7 +61,7 @@ def is_process_editable(process_name: str) -> dict:
 		dict with:
 			- editable (bool): True if an active Pathfinder Log exists
 			- pathfinder_log (str|None): Name of the most recent active log
-			- workflow_state (str|None): Current workflow state of that log
+			- status (str|None): Current status of that log
 	"""
 	if not process_name:
 		frappe.throw(_("Process name is required"))
@@ -107,9 +107,9 @@ def bulk_check_process_editable(process_names: str) -> dict:
 		"Pathfinder Log",
 		filters={
 			"process_name": ["in", process_names],
-			"workflow_state": ["!=", "Completed"],
+			"status": ["!=", "Deployed"],
 		},
-		fields=["name", "workflow_state", "process_name"],
+		fields=["name", "status", "process_name"],
 		order_by="modified desc",
 	)
 

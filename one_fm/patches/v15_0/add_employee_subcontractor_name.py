@@ -1,4 +1,3 @@
-import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 from one_fm.custom.custom_field.employee import get_employee_custom_fields
 

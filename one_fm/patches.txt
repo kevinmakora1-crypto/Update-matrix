@@ -361,3 +361,8 @@ one_fm.patches.v15_0.add_subcontract_staff_attendance_workflow
 one_fm.patches.v15_0.add_employee_subcontractor_name
 one_fm.patches.v15_0.resync_matrix_layout #2026-04-09
 one_fm.patches.v15_0.remove_pathfinder_log_workflow #2026-04-09
+one_fm.patches.v15_0.add_assignment_rule_subcontract_ops_supervisor #2026-04-12
+one_fm.patches.v15_0.add_assignment_rule_subcontract_ops_manager #2026-04-12
+one_fm.patches.v15_0.add_assignment_rule_subcontract_finance_manager #2026-04-12
+one_fm.patches.v15_0.add_assignment_rule_subcontract_subcontractor #2026-04-12
+one_fm.patches.v15_0.add_subcontractor_contracts_workflow #2026-04-12

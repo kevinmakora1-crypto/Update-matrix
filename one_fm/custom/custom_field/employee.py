@@ -987,6 +987,14 @@ def get_employee_custom_fields():
 			"label": "Day Off Preference",
 			"insert_after": "leave_policy",
 			"options": "\nDay Off\nDay Off OT"
+			},
+			{
+				"depends_on": "eval:doc.employment_type == \"Subcontractor\"",
+				"fieldname": "custom_subcontractor_name",
+				"fieldtype": "Link",
+				"insert_after": "employee_number",
+				"label": "Subcontractor Name",
+				"options": "Supplier",
 			}
 		]
 	}

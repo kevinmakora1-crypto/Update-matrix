@@ -4,7 +4,7 @@ frappe.web_form.after_load = function() {
 		method: "one_fm.api.doc_methods.user.get_my_supplier",
 		callback: function(r) {
 			if (r.message) {
-				$('[data-fieldname="subcontractor_name"] .control-value').html(r.message);
+				$('[data-fieldname="subcontractor_name"] .control-value').text(r.message);
 				frappe.web_form.supplier_name = r.message; // store it for the fetch button
 			}
 		}

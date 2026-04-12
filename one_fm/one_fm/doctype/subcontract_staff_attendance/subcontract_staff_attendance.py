@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import getdate
 
 
 class SubcontractStaffAttendance(Document):
@@ -49,6 +50,8 @@ def api_fetch_subcontractor_staff(subcontractor_name, from_date, to_date, attend
 		frappe.throw("Please select a Subcontractor Name first.")
 	if not from_date or not to_date:
 		frappe.throw("Please specify From Date and To Date.")
+	if to_date < from_date:
+		frappe.throw("To Date must be greater than or equal to From Date.")
 
 	employees = frappe.get_all(
 		"Employee",
@@ -79,7 +82,7 @@ def api_fetch_subcontractor_staff(subcontractor_name, from_date, to_date, attend
 	attendance_map = {}
 	for att in attendances:
 		emp = att.employee
-		day = att.attendance_date.day
+		day = getdate(att.attendance_date).day
 		
 		if emp not in attendance_map:
 			attendance_map[emp] = {}
@@ -90,7 +93,6 @@ def api_fetch_subcontractor_staff(subcontractor_name, from_date, to_date, attend
 		}
 
 	items = []
-	from frappe.utils import getdate
 	
 	for emp in employees:
 		item = {

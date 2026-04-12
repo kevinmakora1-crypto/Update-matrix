@@ -175,7 +175,10 @@ class SubcontractStaffAttendance(Document):
 
 			# Story 5 Validation
 			if c_item.rate_type == "Monthly" and (accepted_qty > c_item.count or (accepted_qty - c_item.count > 0.001)):
-				frappe.throw(f"Message: Can not bill more than Contract's mentioned Count for each Item. (Item: {item_code}, Calculated Qty: {accepted_qty}, Contract Count: {c_item.count})")
+				frappe.throw(
+					f"Cannot bill more than the contract count for item {item_code}. "
+					f"(Calculated Qty: {accepted_qty}, Contract Count: {c_item.count})"
+				)
 
 			pi.append("items", {
 				"item_code": item_code,

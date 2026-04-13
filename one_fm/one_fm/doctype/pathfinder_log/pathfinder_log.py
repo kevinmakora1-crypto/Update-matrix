@@ -16,7 +16,7 @@ class PathfinderLog(Document):
 			"Pathfinder Log",
 			{
 				"process_name": self.process_name,
-				"workflow_state": ["!=", "Completed"],
+				"status": "Active",
 				"name": ["!=", self.name],
 			},
 		)
@@ -37,25 +37,25 @@ class PathfinderLog(Document):
 		if self.is_new():
 			return
 		old_doc = self.get_doc_before_save()
-		if old_doc and old_doc.workflow_state != self.workflow_state:
+		if old_doc and old_doc.status != self.status:
 			last_log = None
 			if self.time_log:
 				last_log = self.time_log[-1]
 
-			if last_log and last_log.state == old_doc.workflow_state and not last_log.end_time:
+			if last_log and last_log.state == old_doc.status and not last_log.end_time:
 				last_log.end_time = now_datetime()
 				last_log.duration = frappe.utils.time_diff_in_seconds(
 					last_log.end_time, last_log.start_time
 				)
 
-			if self.workflow_state != "Completed":
+			if self.status != "Deployed":
 				self.add_time_log()
 
 	def add_time_log(self):
 		self.append(
 			"time_log",
 			{
-				"state": self.workflow_state,
+				"state": self.status,
 				"start_time": now_datetime()
 			}
 		)

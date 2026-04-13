@@ -19,7 +19,7 @@ def _get_active_log_for_process(process_name: str) -> dict | None:
 		"Pathfinder Log",
 		filters={
 			"process_name": process_name,
-			"status": ["!=", "Deployed"],
+			"status": "Active",
 		},
 		fields=["name", "status"],
 		order_by="modified desc",
@@ -107,11 +107,12 @@ def bulk_check_process_editable(process_names: str) -> dict:
 		"Pathfinder Log",
 		filters={
 			"process_name": ["in", process_names],
-			"status": ["!=", "Deployed"],
+			"status": "Active",
 		},
 		fields=["name", "status", "process_name"],
 		order_by="modified desc",
 	)
+	print(all_active_logs, "all_active_logs")
 
 	# Group by process_name, keeping only the most recent (first) per process
 	best_log_by_process = {}

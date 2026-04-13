@@ -16,7 +16,7 @@ class PathfinderLog(Document):
 			"Pathfinder Log",
 			{
 				"process_name": self.process_name,
-				"status": ["!=", "Deployed"],
+				"status": "Active",
 				"name": ["!=", self.name],
 			},
 		)

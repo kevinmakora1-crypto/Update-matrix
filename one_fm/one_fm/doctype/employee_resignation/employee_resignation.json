@@ -197,7 +197,7 @@
    "fieldname": "replacement_required",
    "fieldtype": "Select",
    "label": "Is a Replacement Required?",
-   "mandatory_depends_on": "eval:!doc.__islocal && doc.workflow_state === \"Pending Supervisor\"",
+   "mandatory_depends_on": "eval:!doc.__islocal && doc.workflow_state === \"Pending Operations Manager\"",
    "options": "\nYes\nNo"
   },
   {

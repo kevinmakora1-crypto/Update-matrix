@@ -7,16 +7,16 @@ frappe.ui.form.on("Employee Resignation", {
 		frm.toggle_display("relieving_date", show_header);
 		
 		// Hide Operational Impact until Operations Manager stage
-		let is_ops_manager_stage = frm.doc.workflow_state === "Pending Operations Manager";
-		frm.toggle_display("operational_impact_section", is_ops_manager_stage && frappe.user.has_role("Operations Manager"));
+		let show_ops_impact = ["Pending Operations Manager", "Approved"].includes(frm.doc.workflow_state);
+		frm.toggle_display("operational_impact_section", show_ops_impact);
 	},
 
 	refresh: function (frm) {
 		let show_header = !frm.doc.__islocal && frm.doc.workflow_state && (!["Draft", ""].includes(frm.doc.workflow_state));
 		frm.toggle_display("relieving_date", show_header);
 		
-		let is_ops_manager_stage = frm.doc.workflow_state === "Pending Operations Manager";
-		frm.toggle_display("operational_impact_section", is_ops_manager_stage && frappe.user.has_role("Operations Manager"));
+		let show_ops_impact = ["Pending Operations Manager", "Approved"].includes(frm.doc.workflow_state);
+		frm.toggle_display("operational_impact_section", show_ops_impact);
 		
 		// Hide Withdrawal Status column strictly for initial entry
 		if (frm.fields_dict.employees && frm.fields_dict.employees.grid) {

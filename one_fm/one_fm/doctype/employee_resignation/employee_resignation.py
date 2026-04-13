@@ -66,7 +66,7 @@ class EmployeeResignation(Document):
 				frappe.throw("<b>Relieving Date</b> is mandatory at this stage. The Supervisor must specify the final date before pushing to Operations Manager.")
 
 		# Enforce replacement_required explicitly for Operations Manager
-		if self.get("workflow_state") == "Pending Operations Manager" and not self.replacement_required:
+		if self.get("workflow_state") == "Approved" and not self.replacement_required:
 			frappe.throw("You must explicitly select <b>Yes</b> or <b>No</b> for 'Is a Replacement Required?' before you can save or approve.")
 
 	def set_supervisor(self):

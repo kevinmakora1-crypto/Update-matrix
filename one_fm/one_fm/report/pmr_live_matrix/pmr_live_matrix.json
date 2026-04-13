@@ -16,10 +16,9 @@
  "name": "PMR Live Matrix",
  "owner": "Administrator",
  "prepared_report": 0,
- "query": "SELECT\n    project_request_code as \"Project Request Code\",\n    status as \"Status\",\n    reason as \"Manpower Type\",\n    project_allocation as \"Project\",\n    designation as \"Designation\",\n    nationality as \"Nationality\",\n    gender as \"Gender\",\n    count as \"Total Qty\",\n    cancelled_qty as \"Cancelled\",\n    managed_by_ot_qty as \"Managed by OT\",\n    number_to_hire as \"Number to Hire\"\nFROM\n    `tabProject Manpower Request`\nWHERE\n    docstatus < 2\nORDER BY\n    modified DESC",
  "ref_doctype": "Project Manpower Request",
  "report_name": "PMR Live Matrix",
- "report_type": "Query Report",
+ "report_type": "Script Report",
  "roles": [],
  "timeout": 0
 }

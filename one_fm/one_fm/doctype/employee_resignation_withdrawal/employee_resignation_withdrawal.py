@@ -24,18 +24,18 @@ class EmployeeResignationWithdrawal(Document):
 				# Step 1: Process every remaining explicitly grouped candidate in the grid (only those who actually had a reason/attachment provided)
 				if self.get("employees"):
 					for row in self.employees:
-					    if row.reason and row.attachment:
-    						approved_count += 1
-    						
-    						# A. Clear Relieving Date on the actual Employee profile
-    						if row.employee:
-    							frappe.db.set_value("Employee", row.employee, "relieving_date", None)
-    							
-    						# B. Mark the original Resignation row as Approved
-    						if self.employee_resignation:
-    							item_name = frappe.db.get_value("Employee Resignation Item", {"parent": self.employee_resignation, "employee": row.employee}, "name")
-    							if item_name:
-    								frappe.db.set_value("Employee Resignation Item", item_name, "withdrawal_status", "Approved")
+						if row.reason and row.attachment:
+							approved_count += 1
+							
+							# A. Clear Relieving Date on the actual Employee profile
+							if row.employee:
+								frappe.db.set_value("Employee", row.employee, "relieving_date", None)
+								
+							# B. Mark the original Resignation row as Approved
+							if self.employee_resignation:
+								item_name = frappe.db.get_value("Employee Resignation Item", {"parent": self.employee_resignation, "employee": row.employee}, "name")
+								if item_name:
+									frappe.db.set_value("Employee Resignation Item", item_name, "withdrawal_status", "Approved")
 
 				# Step 2: Handle PMR counters mathematically and gracefully sync status
 				if self.employee_resignation and approved_count > 0:
@@ -70,7 +70,7 @@ class EmployeeResignationWithdrawal(Document):
 							
 							# If ENTIRE roster is withdrawn, gracefully flag the PMR status
 							if total_withdrawn_count >= total_in_batch:
-								pmr.status = "Approved"
+								pmr.workflow_state = "Approved"
 								will_withdraw = True
 							
 							# Save document structurally so math functions natively resolve
@@ -143,11 +143,16 @@ class EmployeeResignationWithdrawal(Document):
 
 @frappe.whitelist()
 def get_batch_employees(doctype, txt, searchfield, start, page_len, filters):
-    employee_resignation = filters.get('employee_resignation')
-    if not employee_resignation:
-        return []
-    return frappe.db.sql("""
-        select t1.employee, t1.employee_name
-        from `tabEmployee Resignation Item` t1
-        where t1.parent = %s and t1.employee like %s
-    """, (employee_resignation, f"%%{txt}%%"))
+	employee_resignation = filters.get('employee_resignation')
+	if not employee_resignation:
+		return []
+	
+	page_len = frappe.utils.cint(page_len) or 20
+	start = frappe.utils.cint(start) or 0
+	
+	return frappe.db.sql("""
+		select t1.employee, t1.employee_name
+		from `tabEmployee Resignation Item` t1
+		where t1.parent = %s and t1.employee like %s
+		limit %s offset %s
+	""", (employee_resignation, f"%%{txt}%%", page_len, start))

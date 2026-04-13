@@ -3,7 +3,7 @@
 
 frappe.listview_settings['Project Manpower Request'] = {
 	hide_name_column: true,
-	add_fields: ["status"],
+	add_fields: ["workflow_state"],
 	get_indicator: function (doc) {
 		const status_colors = {
 			"Open": "orange",
@@ -17,6 +17,6 @@ frappe.listview_settings['Project Manpower Request'] = {
 			"Fulfilled by OT & Sub": "darkgray",
 			"Withdrawal Resignation": "yellow"
 		};
-		return [__(doc.status), status_colors[doc.status] || "gray", "status,=," + doc.status];
+		return [__(doc.workflow_state), status_colors[doc.workflow_state] || "gray", "workflow_state,=," + doc.workflow_state];
 	}
 };

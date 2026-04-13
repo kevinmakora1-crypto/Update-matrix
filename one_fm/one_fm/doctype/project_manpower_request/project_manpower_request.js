@@ -45,7 +45,8 @@ frappe.ui.form.on('Project Manpower Request', {
 		}
 
 		let hired_count = frm.doc.fulfilled_by_employees ? frm.doc.fulfilled_by_employees.length : 0;
-		let expected_to_hire = Math.max(0, expected_remaining - hired_count);
+		let historically_joined = frm.doc.historically_joined_qty || 0;
+		let expected_to_hire = Math.max(0, expected_remaining - hired_count - historically_joined);
 		if (frm.doc.number_to_hire !== expected_to_hire) {
 			frm.set_value('number_to_hire', expected_to_hire);
 		}

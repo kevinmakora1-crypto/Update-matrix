@@ -3,7 +3,7 @@ import frappe
 def execute(filters=None):
 	columns = [
 		{"fieldname": "project_request_code", "label": "Project Request Code", "fieldtype": "Data"},
-		{"fieldname": "status", "label": "Status", "fieldtype": "Data"},
+		{"fieldname": "workflow_state", "label": "Status", "fieldtype": "Data"},
 		{"fieldname": "priority", "label": "Priority", "fieldtype": "Data"},
 		{"fieldname": "reason", "label": "Manpower Type", "fieldtype": "Data"},
 		{"fieldname": "project", "label": "Project", "fieldtype": "Data"},
@@ -30,7 +30,7 @@ def execute(filters=None):
 		return f" AND {field} = {frappe.db.escape(str(filter_val))}"
 
 	if filters:
-		conditions += build_condition('status', filters.get('status'))
+		conditions += build_condition('workflow_state', filters.get('workflow_state'))
 		conditions += build_condition('reason', filters.get('reason'))
 		conditions += build_condition('project_request_code', filters.get('project_request_code'), True)
 		conditions += build_condition('project_allocation', filters.get('project_allocation'))
@@ -40,7 +40,7 @@ def execute(filters=None):
 
 	sql_query = f"""
 		SELECT
-			project_request_code, status, priority, reason, project_allocation AS project,
+			project_request_code, workflow_state, priority, reason, project_allocation AS project,
 			designation, nationality, gender, count AS qty, cancelled_qty AS cancelled,
 			managed_by_ot_qty AS managed_by_ot, remaining_qty, erf, number_to_hire
 		FROM

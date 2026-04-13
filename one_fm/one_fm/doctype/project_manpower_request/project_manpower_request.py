@@ -132,7 +132,7 @@ class ProjectManpowerRequest(Document):
 
 		# If it is Draft or Rejected, its contribution should be 0.
 		active_statuses = ["In Process", "Completed", "Awaiting Recruiter Approval", "Pending OM Approval"]
-		target_contribution = self.remaining_qty if getattr(self, "workflow_state", None) in active_statuses else 0
+		target_contribution = self.number_to_hire if getattr(self, "workflow_state", None) in active_statuses else 0
 
 		current_contribution = self.qty_added_to_erf or 0
 		delta = target_contribution - current_contribution

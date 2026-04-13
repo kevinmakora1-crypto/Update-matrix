@@ -2,6 +2,7 @@
 // For license information, please see license.txt
 
 frappe.listview_settings["Employee Resignation"] = {
+	add_fields: ["project_allocation", "designation"],
 	onload: function(listview) {
 		listview.page.add_actions_menu_item(__('Create PR'), function() {
 			let selected = listview.get_checked_items();

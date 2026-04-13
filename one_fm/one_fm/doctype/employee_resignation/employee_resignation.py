@@ -152,3 +152,9 @@ class EmployeeResignation(Document):
 				new_row.update(row_dict)
 				
 			pmr.insert(ignore_permissions=True)
+			
+			frappe.msgprint(
+				_("Project Manpower Request generated successfully: <a href='/app/project-manpower-request/{0}'><b>{0}</b></a> (Click to open)").format(pmr.name),
+				title=_("PMR Created"),
+				indicator="green"
+			)

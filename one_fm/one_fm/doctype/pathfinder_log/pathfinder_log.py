@@ -7,6 +7,21 @@ from frappe.utils import now_datetime
 
 
 class PathfinderLog(Document):
+	def validate(self):
+		self.validate_single_active_log()
+
+	def validate_single_active_log(self):
+		existing = frappe.db.exists(
+			"Pathfinder Log",
+			{
+				"process_name": self.process_name,
+				"status": "Active",
+				"name": ["!=", self.name],
+			},
+		)
+		if existing:
+			frappe.throw(_("Only 1 active Pathfinder Log is allowed"))
+
 	def before_save(self):
 		self.set_initial_time_log()
 		self.update_time_log()

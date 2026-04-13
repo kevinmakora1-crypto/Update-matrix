@@ -270,7 +270,7 @@ def _find_or_create_interview(applicant: str, interview_round: str | None, inter
         return interview_doc.name
 
 def _create_feedback(interview_name: str, applicant: str, interview_round: str | None, status: str, remarks: str, parsed_details: list, score: str) -> float:
-    feedback_result = "Cleared" if status in ["Accepted", "Shortlisted"] else ("Rejected" if status == "Rejected" else "")
+    feedback_result = "Rejected" if status == "Rejected" else "Cleared"
     
     category_scores = {}
     for d in parsed_details:

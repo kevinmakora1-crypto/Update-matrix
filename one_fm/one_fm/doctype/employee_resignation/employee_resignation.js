@@ -92,6 +92,20 @@ frappe.ui.form.on("Employee Resignation", {
 				}
 			});
 		}
+
+		if (frm.selected_workflow_action === "Approve") {
+			if (!frm.doc.replacement_required) {
+				frappe.msgprint({
+					title: __('Missing Replacement Decision'),
+					message: __('You must explicitly select <b>Yes</b> or <b>No</b> for "Is a Replacement Required?" before approving this resignation.'),
+					indicator: 'red'
+				});
+				setTimeout(() => {
+					frappe.dom.unfreeze();
+				}, 100);
+				return Promise.reject("Missing Replacement Decision");
+			}
+		}
 	},
 
 	after_workflow_action: function(frm) {

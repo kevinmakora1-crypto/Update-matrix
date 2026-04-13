@@ -95,7 +95,7 @@ frappe.ui.form.on("Employee Resignation", {
 	},
 
 	after_workflow_action: function(frm) {
-		if (frm.doc.replacement_required === "Yes" && frm.selected_workflow_action === "Approve") {
+		if (frm.doc.replacement_required === "Yes" && frm.doc.workflow_state === "Approved") {
 			// Find the newly created PR and jump to it
 			frappe.call({
 				method: 'frappe.client.get_value',

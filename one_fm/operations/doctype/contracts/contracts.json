@@ -111,7 +111,8 @@
   {
    "fieldname": "ownership_proof",
    "fieldtype": "Attach",
-   "label": "Ownership Proof"
+   "label": "Ownership Proof",
+   "mandatory_depends_on": "eval:doc.__islocal"
   },
   {
    "fieldname": "column_break_pzrn",
@@ -200,8 +201,7 @@
    "fieldname": "contract_date",
    "fieldtype": "Table",
    "label": "Contract Date",
-   "options": "Contracts Date",
-   "read_only": 1
+   "options": "Contracts Date"
   },
   {
    "fieldname": "section_break_26",
@@ -322,7 +322,7 @@
   }
  ],
  "links": [],
- "modified": "2026-03-03 16:49:06.754014",
+ "modified": "2026-04-13 09:11:42.736578",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Contracts",

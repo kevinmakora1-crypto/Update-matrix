@@ -8,32 +8,27 @@ from one_fm.templates.pages.applicant_docs import send_applicant_doc_magic_link
 def validate_interview_overlap(self):
     interviewers = [entry.interviewer for entry in self.interview_details] or [""]
 
-    query = """
-        SELECT interview.name
-        FROM `tabInterview` as interview
-        INNER JOIN `tabInterview Detail` as detail
-        WHERE
-        interview.scheduled_on = %s and interview.name != %s and interview.docstatus != 2
-        and (interview.job_applicant = %s and detail.interviewer IN %s) and
-        ((from_time < %s and to_time > %s) or
-        (from_time > %s and to_time < %s) or
-        (from_time = %s))
-    """
+    iv = frappe.qb.DocType("Interview")
+    detail = frappe.qb.DocType("Interview Detail")
 
-    overlaps = frappe.db.sql(
-        query,
-        (
-        self.scheduled_on,
-        self.name,
-        self.job_applicant,
-        interviewers,
-        self.from_time,
-        self.to_time,
-        self.from_time,
-        self.to_time,
-        self.from_time,
-        ),
+    query = (
+        frappe.qb.from_(iv)
+        .inner_join(detail)
+        .on(iv.name == detail.parent)
+        .select(iv.name)
+        .where(iv.scheduled_on == self.scheduled_on)
+        .where(iv.name != self.name)
+        .where(iv.docstatus != 2)
+        .where(iv.job_applicant == self.job_applicant)
+        .where(detail.interviewer.isin(interviewers))
+        .where(
+            ((iv.from_time < self.from_time) & (iv.to_time > self.to_time))
+            | ((iv.from_time > self.from_time) & (iv.to_time < self.to_time))
+            | (iv.from_time == self.from_time)
+        )
     )
+
+    overlaps = query.run()
 
     if overlaps:
         overlapping_details = _("Interview overlaps with {0}").format(
@@ -81,6 +76,7 @@ class InterviewOverride(Interview):
 
 
 @frappe.whitelist()
+@frappe.only_for(["HR Manager", "System Manager"])
 def update_job_applicant_status(args):
     try:
         if isinstance(args, str):

@@ -145,18 +145,22 @@ function init_interview_console(wrapper, page) {
 			"COMMUNICATION": "#0369a1"
 		};
 
+		var categoryClassMap = {
+			"PHYSICAL": "ic-category-physical",
+			"CULTURE / ATTITUDE": "ic-category-culture",
+			"MOTIVATION": "ic-category-motivation",
+			"KNOWLEDGE / SKILLSET": "ic-category-knowledge",
+			"COMMUNICATION": "ic-category-communication"
+		};
+
 		for (var j = 0; j < categories.length; j++) {
 			var cat = categories[j];
 			var catKey = cat.name.trim().toUpperCase();
-			var bg = categoryColors[catKey] || "#f1f5f9";
-			var text = categoryTextColors[catKey] || "#475569";
-			
-			// Use the original category name as-is for display
+			var cssClass = categoryClassMap[catKey] || "ic-category-default";
 			var display_name = cat.name.trim();
 			
 			headerHtml += '<th colspan="' + cat.count + '">';
-			headerHtml += '<div class="ic-category-pill" style="background-color: ' + bg + '; color: ' + text + ';">' + 
-						  display_name + '</div></th>';
+			headerHtml += '<div class="ic-category-pill ' + cssClass + '">' + display_name + '</div></th>';
 		}
 		headerHtml += '</tr><tr>';
 
@@ -166,8 +170,7 @@ function init_interview_console(wrapper, page) {
 			var question_name = q.question;
 			var cat_name = q.category || "General";
 			var full_color = categoryTextColors[cat_name.trim().toUpperCase()] || "#475569";
-			var bg_tint = "#ffffff";
-			headerHtml += '<th style="background-color: #f0f1f5 !important; border-top: 1.5px solid ' + full_color + ' !important; color: #0f172a !important; font-weight: 800; font-size: 10px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.02em;">' + 
+			headerHtml += '<th class="ic-question-header" style="border-top-color: ' + full_color + ';">' + 
 						  question_name + '</th>';
 		}
 		headerHtml += '</tr>';
@@ -210,7 +213,7 @@ function init_interview_console(wrapper, page) {
 						if (target_app) {
 							select_applicant(target_app);
 						} else {
-							frappe.show_alert({ message: 'Applicant ' + auto_select_name + ' not found in list', indicator: 'orange' });
+							frappe.show_alert({ message: __('Applicant {0} not found in list', [auto_select_name]), indicator: 'orange' });
 							if (state.applicants.length > 0) load_matrix_silent(state.applicants[0].name);
 						}
 					} else {
@@ -255,7 +258,7 @@ function init_interview_console(wrapper, page) {
 					$w('#ic-score-pill').text('0/100');
 					
 					// Flash visual feedback that round changed
-					frappe.show_alert({message: "Switched to round: " + round_name, indicator: "blue"});
+					frappe.show_alert({message: __('Switched to round: {0}', [round_name]), indicator: "blue"});
 				}
 			}
 		});
@@ -376,7 +379,7 @@ function init_interview_console(wrapper, page) {
 				var has_available_rounds = Array.isArray(data.available_rounds) && data.available_rounds.length > 0;
 				if (has_available_rounds) {
 					data.available_rounds.forEach(function(round_name) {
-						roundsHtml += '<div class="ic-dropdown-item" style="padding:10px 12px; border-bottom:1px solid #f1f5f9; cursor:pointer; font-size:12px; color:#334155; transition:background 0.2s;">' + esc(round_name) + '</div>';
+						roundsHtml += '<div class="ic-dropdown-item">' + esc(round_name) + '</div>';
 					});
 					$w('#ic-interview-dropdown-list').html(roundsHtml);
 					$w('#ic-interview-dropdown-list').show();
@@ -388,10 +391,7 @@ function init_interview_console(wrapper, page) {
 				}
 
 				// Bind Dropdown Items securely
-				$w('.ic-dropdown-item').hover(
-					function() { $(this).css('background', '#f8fafc'); },
-					function() { $(this).css('background', 'transparent'); }
-				).off('click').on('click', function() {
+				$w('.ic-dropdown-item').off('click').on('click', function() {
 					$w('#ic-interview-dropdown').hide();
 					var selected_round = $(this).text();
 					load_matrix_for_round(app.name, selected_round);
@@ -466,7 +466,7 @@ function init_interview_console(wrapper, page) {
 		// Cell Click Handler (Delegated since matrix is dynamic)
 		$w('#ic-tbody').off('click', '.ic-cell').on('click', '.ic-cell', function () {
 			if (!state.selected_applicant) {
-				frappe.show_alert({ message: "Select a candidate first", indicator: "orange" });
+				frappe.show_alert({ message: __("Select a candidate first"), indicator: "orange" });
 				return;
 			}
 			var score = $(this).data('score'); // 1-5
@@ -495,8 +495,8 @@ function init_interview_console(wrapper, page) {
 					state.selected_applicant.status = 'Open';
 					state.selected_applicant.interview_score = 0;
 					enable_action_buttons();
-					update_total_score();
-					load_applicants();
+					$w("#ic-score-pill").text("0/100");
+					fetch_applicants();
 				}
 			});
 		});
@@ -581,7 +581,7 @@ function init_interview_console(wrapper, page) {
 		
 		$w('#ic-camera-btn').off('click').on('click', function() {
 			if (!state.selected_applicant) {
-				frappe.show_alert({ message: "Select a candidate first.", indicator: "orange" });
+				frappe.show_alert({ message: __("Select a candidate first."), indicator: "orange" });
 				return;
 			}
 			$w('#ic-camera-modal').css('display', 'flex');
@@ -659,7 +659,7 @@ function init_interview_console(wrapper, page) {
 
 		$w('#ic-reject-btn').off('click').on('click', function () {
 			if (!state.selected_applicant) {
-				frappe.show_alert({ message: "Select a candidate first", indicator: "orange" });
+				frappe.show_alert({ message: __("Select a candidate first"), indicator: "orange" });
 				return;
 			}
 			update_status("Rejected");
@@ -667,7 +667,7 @@ function init_interview_console(wrapper, page) {
 		});
 		$w('#ic-hold-btn').off('click').on('click', function () {
 			if (!state.selected_applicant) {
-				frappe.show_alert({ message: "Select a candidate first", indicator: "orange" });
+				frappe.show_alert({ message: __("Select a candidate first"), indicator: "orange" });
 				return;
 			}
 			update_status("Hold");
@@ -675,7 +675,7 @@ function init_interview_console(wrapper, page) {
 		});
 		$w('#ic-save-btn').off('click').on('click', function () {
 			if (!state.selected_applicant) {
-				frappe.show_alert({ message: "Select a candidate first", indicator: "orange" });
+				frappe.show_alert({ message: __("Select a candidate first"), indicator: "orange" });
 				return;
 			}
 

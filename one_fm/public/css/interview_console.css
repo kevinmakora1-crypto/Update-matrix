@@ -363,3 +363,50 @@ tr:nth-child(2) th {
 .ic-remarks-area { padding: 0; margin-top: 0; background: #ffffff; }
 .ic-remarks-row { padding: 6px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 0 4px 10px 48px; }
 .ic-remarks-input { width: 100%; height: 24px; border: none; font-size: 12px; font-weight: 400; color: #1e293b; outline: none; resize: none; background: transparent; font-family: 'Roboto', sans-serif; line-height: 24px; }
+
+/* JS Extracted Classes */
+.ic-category-physical { background-color: #dcfce7; color: #166534; }
+.ic-category-culture { background-color: #fff9c4; color: #854d0e; }
+.ic-category-motivation { background-color: #f3e8ff; color: #6b21a8; }
+.ic-category-knowledge { background-color: #fee2e2; color: #991b1b; }
+.ic-category-communication { background-color: #e0f2fe; color: #0369a1; }
+.ic-category-default { background-color: #f1f5f9; color: #475569; }
+
+.ic-question-header {
+    background-color: #f0f1f5 !important;
+    border-top: 1.5px solid !important;
+    color: #0f172a !important;
+    font-weight: 800; font-size: 10px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.02em;
+}
+
+.ic-dropdown-item {
+    padding: 10px 12px; border-bottom: 1px solid #f1f5f9; cursor: pointer; font-size: 12px; color: #334155; transition: background 0.2s;
+}
+.ic-dropdown-item:hover { background: #f8fafc; }
+
+/* HTML Extracted Classes */
+.ic-header-left { position: relative; display: flex; align-items: center; }
+
+.ic-dropdown-menu {
+    display: none; position: absolute; top: 44px; left: 0; background: #fff;
+    border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    width: 240px; z-index: 100; flex-direction: column; overflow: hidden;
+}
+
+.ic-empty-state {
+    position: relative; overflow: hidden; display: none; flex-direction: row;
+    align-items: center; justify-content: flex-start; padding: 40px;
+    min-height: 480px; background: #fafafa; border-radius: 12px;
+    border: 2px dashed #f1f5f9; gap: 10px;
+}
+
+.ic-camera-overlay {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15,23,42,0.85); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    z-index: 9999; justify-content: center; align-items: center; flex-direction: column;
+}
+
+.ic-camera-card {
+    background: #fff; padding: 20px 24px; border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); width: 450px; text-align: center;
+}

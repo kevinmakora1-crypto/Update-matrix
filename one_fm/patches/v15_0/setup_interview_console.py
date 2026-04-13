@@ -24,35 +24,8 @@ def execute():
     # ─── Interview Round ──────────────────────────────────────────────
     # Console reads round_doc.interview_question (child table of
     # "Interview Questions") and filters by one_fm_nationality + designation.
-    create_custom_fields({
-        "Interview Round": [
-            {
-                "fieldname": "interview_questions_sb",
-                "fieldtype": "Section Break",
-                "label": "Interview Questions",
-                "insert_after": "expected_skill_set",
-                "module": "one_fm",
-            },
-            {
-                "fieldname": "interview_question",
-                "fieldtype": "Table",
-                "label": "Interview Question",
-                "options": "Interview Questions",
-                "insert_after": "interview_questions_sb",
-                "module": "one_fm",
-            },
-            {
-                "fieldname": "one_fm_nationality",
-                "fieldtype": "Link",
-                "label": "Nationality",
-                "options": "Nationality",
-                "insert_after": "designation",
-                "description": "Used by Interview Console to match applicant nationality to the correct round.",
-                "reqd": 1,
-                "module": "one_fm",
-            },
-        ]
-    }, update=True)
+    from one_fm.custom.custom_field.interview_round import get_interview_round_custom_fields
+    create_custom_fields(get_interview_round_custom_fields(), update=True)
 
     # ─── Interview ────────────────────────────────────────────────────
     # Console: total_interview_score, interview_summary_render

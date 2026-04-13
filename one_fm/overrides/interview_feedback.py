@@ -17,5 +17,6 @@ class InterviewFeedbackOverride(InterviewFeedback):
         self.average_rating = flt((skill_assessment_avg + interview_assessment_avg) / divisor) / 5
     
     def before_save(self):
-        super().before_save()
+        if hasattr(super(), "before_save"):
+            super().before_save()
         frappe.db.set_value("Job Applicant", self.job_applicant, "applicant_rating", self.average_rating)

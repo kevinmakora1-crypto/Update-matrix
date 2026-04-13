@@ -276,6 +276,7 @@ def optimize_transportation_routes():
             shipment_employees,
             shipment_site_locations,
             shipment_shift_names,
+            pair_labels,
             global_bounds,
         )
         

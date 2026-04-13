@@ -12,14 +12,15 @@
   "employment_type",
   "project_allocation",
   "resignation_letter",
-  "withdrawal_status"
+  "withdrawal_status",
+  "employee_id"
  ],
  "fields": [
   {
    "fieldname": "employee",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Employee ID",
+   "label": "Employee",
    "options": "Employee",
    "reqd": 1
   },
@@ -64,11 +65,20 @@
    "label": "Withdrawal Status",
    "options": "\nApproved",
    "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fetch_from": "employee.employee_id",
+   "fieldname": "employee_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee ID",
+   "read_only": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-04-13 17:53:10.001472",
+ "modified": "2026-04-13 17:59:00.970848",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Employee Resignation Item",

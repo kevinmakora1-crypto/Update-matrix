@@ -106,11 +106,13 @@ frappe.ui.form.on("Employee Resignation", {
 				},
 				callback: function(r) {
 					if (r.message && r.message.name) {
-						frappe.set_route('Form', 'Project Manpower Request', r.message.name);
 						frappe.show_alert({
-							message: __('Auto-redirecting to Project Manpower Request for finalization...'),
+							message: __('Auto-redirecting to Project Manpower Request...'),
 							indicator: 'green'
 						});
+						setTimeout(() => {
+							frappe.set_route('Form', 'Project Manpower Request', r.message.name);
+						}, 2000);
 					}
 				}
 			});
@@ -129,11 +131,13 @@ frappe.ui.form.on("Employee Resignation", {
 				},
 				callback: function(r) {
 					if (r.message && r.message.name) {
-						frappe.set_route('Form', 'Project Manpower Request', r.message.name);
 						frappe.show_alert({
-							message: __('Auto-redirecting to Project Manpower Request for finalization...'),
+							message: __('Auto-redirecting to Project Manpower Request...'),
 							indicator: 'green'
 						});
+						setTimeout(() => {
+							frappe.set_route('Form', 'Project Manpower Request', r.message.name);
+						}, 2000);
 					}
 				}
 			});

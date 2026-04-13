@@ -411,12 +411,13 @@ function manage_leave_extension(frm) {
                 if(frm.doc.leave_type === 'Annual Leave' && frm.doc.status === 'Approved' && isWithinPermittedDateRange && !leaveExtensionRequest) {
                     frm.add_custom_button(__('Create Leave Extension Request'),
                         function () {                            
-                            frappe.prompt([
+                            let d = frappe.prompt([
                                 {
                                     fieldname: 'new_resumption_date',
                                     label: 'New Resumption Date',
                                     fieldtype: 'Date',
-                                    reqd: true
+                                    reqd: true,
+                                    description: `Expected Resumption Date: ${frappe.datetime.str_to_user(frm.doc.resumption_date)}`
                                 }
                             ],
                             function(values) {
@@ -434,7 +435,14 @@ function manage_leave_extension(frm) {
                                 })
                             },
                             'Leave Extension Request',
-                            'Submit')
+                            'Submit');
+
+                            if (frm.doc.resumption_date) {
+                                let min_date = frappe.datetime.add_days(frm.doc.resumption_date, 1);
+                                d.get_field('new_resumption_date').datepicker.update({
+                                    minDate: frappe.datetime.str_to_obj(min_date)
+                                });
+                            }
                         }
                     );
                 }

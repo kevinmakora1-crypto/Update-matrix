@@ -7,7 +7,7 @@ def execute():
     process_task = create_process_task(
         "Annual Leave",
         "Leave Acknowledgement Form",
-        process_description="Action Leave Acknowledgement Form - HR Operator",
+        "Action Leave Acknowledgement Form - HR Operator",
         employee="HR-EMP-02717",
         process_owner=None,
         business_analyst=None,

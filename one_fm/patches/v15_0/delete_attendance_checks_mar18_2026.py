@@ -17,7 +17,7 @@ def execute():
 		"Attendance Check",
 		filters={
 			"operations_site": ["in", sites],
-			"date": "2026-03-18",
+			"date": "2026-03-30",
 			"workflow_state": "Pending Approval"
 		},
 		pluck="name"

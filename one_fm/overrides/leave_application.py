@@ -10,8 +10,12 @@ from frappe.utils import (
 )
 
 from hrms.hr.doctype.leave_application.leave_application import *
+import hrms.hr.doctype.leave_application.leave_application
+from one_fm.api.doc_methods.leave_application_calculation import custom_get_number_of_leave_days
+
+hrms.hr.doctype.leave_application.leave_application.get_number_of_leave_days = custom_get_number_of_leave_days
+
 from one_fm.processor import sendemail
-from erpnext.crm.utils import get_open_todos
 from one_fm.api.api import push_notification_rest_api_for_leave_application
 from one_fm.overrides.employee import NotifyAttendanceManagerOnStatusChange
 from one_fm.utils import get_approver_user, leave_application_on_cancel, fetch_leave_types_update_employee_status, get_workflow_action_buttons_html, cancel_calendar_event, disable_out_of_office
@@ -336,7 +340,7 @@ class LeaveApplicationOverride(LeaveApplication):
         It's a action that takes place on update of Leave Application.
         """
         #If Leave Approver Exist
-        if self.workflow_state == "Pending Approval":
+        if self.workflow_state == "Pending Approver":
             try:
                 employee =  frappe.db.get_values("Employee", self.employee, ["employee_name_in_arabic", "employee_id"], as_dict=1)
                 line_manager = frappe.db.get_value("Employee", {"user_id": self.leave_approver}, "employee_name_in_arabic")
@@ -379,7 +383,6 @@ class LeaveApplicationOverride(LeaveApplication):
                 frappe.log_error(message=frappe.get_traceback(), title="Leave Notification")
 
     def after_insert(self):
-        self.assign_to_leave_approver()
         self.update_attachment_name()
         # self.enqueue_notification_method(self.notify_leave_approver)
         self.enqueue_notification_method(self.notify_employee)
@@ -397,29 +400,6 @@ class LeaveApplicationOverride(LeaveApplication):
 
     def validate_attendance(self):
         pass
-
-    def assign_to_leave_approver(self):
-        #This function is meant to create a TODO for the leave approver
-                try:
-                    if self.name and self.leave_type == "Sick Leave" and self.workflow_state == "Pending Approval":
-                        existing_assignment = frappe.get_all("ToDo",{'allocated_to':self.leave_approver,'reference_name':self.name})
-                        if not existing_assignment:
-                            frappe.get_doc(
-                                {
-                                    "doctype": "ToDo",
-                                    "allocated_to": self.leave_approver,
-                                    "reference_type": "Leave Application",
-                                    "reference_name": self.name,
-                                    "description": f'Please note that leave application {self.name} is awaiting your approval',
-                                    "priority": "Medium",
-                                    "status": "Open",
-                                    "date": nowdate(),
-                                    "assigned_by": frappe.session.user,
-                                }
-                            ).insert(ignore_permissions=True)
-                except:
-                    frappe.log_error(message=frappe.get_traceback(), title="Error assigning to User")
-                    frappe.throw("Error while assigning leave application")
 
     def validate_dates(self):
         if frappe.db.get_single_value("HR Settings", "restrict_backdated_leave_application"):
@@ -552,8 +532,8 @@ class LeaveApplicationOverride(LeaveApplication):
             self.approve_attendance_check()
         self.clear_employee_schedules()
 
-        # When workflow state changes from 'Draft' to 'Pending Approval'
-        if self.has_value_changed('workflow_state') and self.workflow_state == 'Pending Approval':
+        # When workflow state changes from 'Draft' to 'Pending Approver'
+        if self.has_value_changed('workflow_state') and self.workflow_state == 'Pending Approver':
             send_leave_details_email_to_employee(self)
             self.notify_leave_approver()
 

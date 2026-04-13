@@ -12,13 +12,14 @@ frappe.ui.form.on("Employee Resignation Withdrawal", {
 		frm.toggle_display("relieving_date", show_date);
 
 	    // Automatically fetch and map all employees from the parent resignation batch into the grid
-		if (frm.doc.employee_resignation) {
+		if (frm.doc.employee_resignation && frm.doc.__islocal) {
+			// Ensure it only overrides on creation
 			frappe.db.get_doc("Employee Resignation", frm.doc.employee_resignation)
 				.then(doc => {
 					frm.clear_table("employees");
 					(doc.employees || []).forEach(row => {
 					    // Only map employees who haven't already been seamlessly withdrawn
-					    if (row.withdrawal_status !== "Resignation Withdrawal") {
+					    if (row.withdrawal_status !== "Approved") {
 						    let child = frm.add_child("employees");
 						    child.employee = row.employee;
 						    child.employee_name = row.employee_name || "";
@@ -27,6 +28,16 @@ frappe.ui.form.on("Employee Resignation Withdrawal", {
 					frm.refresh_field("employees");
 				});
 		}
+
+		// Bring the standard workflow button to the front
+		setTimeout(() => {
+			if (frm.page.custom_buttons) {
+				let btn = frm.page.custom_buttons['Submit to Supervisor'];
+				if (btn) {
+					frm.page.change_custom_button_type('Submit to Supervisor', null, 'primary');
+				}
+			}
+		}, 200);
 	},
 
 	validate: function(frm) {

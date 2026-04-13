@@ -31,18 +31,18 @@ class EmployeeResignationWithdrawal(Document):
     						if row.employee:
     							frappe.db.set_value("Employee", row.employee, "relieving_date", None)
     							
-    						# B. Mark the original Resignation row as Withdrawn
+    						# B. Mark the original Resignation row as Approved
     						if self.employee_resignation:
     							item_name = frappe.db.get_value("Employee Resignation Item", {"parent": self.employee_resignation, "employee": row.employee}, "name")
     							if item_name:
-    								frappe.db.set_value("Employee Resignation Item", item_name, "withdrawal_status", "Resignation Withdrawal")
+    								frappe.db.set_value("Employee Resignation Item", item_name, "withdrawal_status", "Approved")
 
 				# Step 2: Handle PMR counters mathematically and gracefully sync status
 				if self.employee_resignation and approved_count > 0:
 					resignation = frappe.get_doc("Employee Resignation", self.employee_resignation)
 					total_in_batch = len(resignation.get("employees", []))
 					
-					total_withdrawn_count = frappe.db.count("Employee Resignation Item", filters={"parent": self.employee_resignation, "withdrawal_status": "Resignation Withdrawal"})
+					total_withdrawn_count = frappe.db.count("Employee Resignation Item", filters={"parent": self.employee_resignation, "withdrawal_status": "Approved"})
 					
 					pmr_name = frappe.db.get_value("Project Manpower Request", {"employee_resignation": self.employee_resignation}, "name")
 					if pmr_name:
@@ -70,7 +70,7 @@ class EmployeeResignationWithdrawal(Document):
 							
 							# If ENTIRE roster is withdrawn, gracefully flag the PMR status
 							if total_withdrawn_count >= total_in_batch:
-								pmr.status = "Withdrawal Resignation"
+								pmr.status = "Approved"
 								will_withdraw = True
 							
 							# Save document structurally so math functions natively resolve
@@ -78,14 +78,14 @@ class EmployeeResignationWithdrawal(Document):
 							
 							# Manually force workflow override behind the back of validation
 							if will_withdraw and frappe.db.has_column("Project Manpower Request", "workflow_state"):
-							    pmr.db_set("workflow_state", "Withdrawn")
+							    pmr.db_set("workflow_state", "Approved")
 					
 					# Step 3: Flag Parent Resignation if entirely withdrawn
 					if total_withdrawn_count >= total_in_batch:
-						# All employees withdrawn, mark parent as Resignation Withdrawal
-						resignation.db_set("status", "Resignation Withdrawal")
+						# All employees withdrawn, mark parent as Approved
+						resignation.db_set("status", "Approved")
 						if frappe.db.has_column("Employee Resignation", "workflow_state"):
-							resignation.db_set("workflow_state", "Withdrawn")
+							resignation.db_set("workflow_state", "Approved")
 
 	def validate(self):
 		self.set_approver()

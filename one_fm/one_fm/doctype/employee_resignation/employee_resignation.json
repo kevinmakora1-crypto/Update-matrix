@@ -273,11 +273,10 @@
    "label": "More Information"
   },
   {
-   "default": "In Process",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "In Process\nApproved\nResignation Withdrawal",
+   "options": "\nPending\nApproved\nWithdrawn",
    "read_only": 1
   },
   {
@@ -318,7 +317,7 @@
    "link_fieldname": "employee_resignation"
   }
  ],
- "modified": "2026-04-13 14:12:52.614060",
+ "modified": "2026-04-13 16:37:29.305437",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Employee Resignation",

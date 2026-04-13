@@ -55,7 +55,7 @@ class EmployeeResignation(Document):
 			for row in self.employees:
 				if not row.resignation_letter:
 					emp_name = frappe.db.get_value("Employee", row.employee, "employee_name") or row.employee
-					frappe.throw(_("Missing Attachment for <b>{0}</b>. Please click the pencil edit icon ✏️ on their row and attach the resignation letter before submitting.").format(emp_name))
+					frappe.throw("Missing Resignation Letter for " + str(emp_name))
 
 	def before_save(self):
 		self.set_supervisor()

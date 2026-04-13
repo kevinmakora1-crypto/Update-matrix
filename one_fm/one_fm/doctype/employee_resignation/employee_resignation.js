@@ -3,14 +3,35 @@
 
 frappe.ui.form.on("Employee Resignation", {
 	onload: function(frm) {
-		let show_date = !frm.doc.__islocal && frm.doc.workflow_state && frm.doc.workflow_state !== "Draft";
-		frm.toggle_display("relieving_date", show_date);
+		let show_header = !frm.doc.__islocal && frm.doc.workflow_state && (!["Draft", ""].includes(frm.doc.workflow_state));
+		frm.toggle_display("relieving_date", show_header);
+		
+		// Hide Operational Impact until Operations Manager stage
+		let is_ops_manager_stage = frm.doc.workflow_state === "Pending Operations Manager";
+		frm.toggle_display("operational_impact_section", is_ops_manager_stage && frappe.user.has_role("Operations Manager"));
 	},
 
 	refresh: function (frm) {
-		// Hide Relieving Date for Employees (Draft phase), show once assigned to Supervisor
-		let show_date = !frm.doc.__islocal && frm.doc.workflow_state && frm.doc.workflow_state !== "Draft";
-		frm.toggle_display("relieving_date", show_date);
+		let show_header = !frm.doc.__islocal && frm.doc.workflow_state && (!["Draft", ""].includes(frm.doc.workflow_state));
+		frm.toggle_display("relieving_date", show_header);
+		
+		let is_ops_manager_stage = frm.doc.workflow_state === "Pending Operations Manager";
+		frm.toggle_display("operational_impact_section", is_ops_manager_stage && frappe.user.has_role("Operations Manager"));
+		
+		// Hide Withdrawal Status column strictly for initial entry
+		if (frm.fields_dict.employees && frm.fields_dict.employees.grid) {
+			frm.fields_dict.employees.grid.set_column_disp("withdrawal_status", show_header);
+		}
+
+		// Bring the standard workflow button to the front
+		setTimeout(() => {
+			if (frm.page.custom_buttons) {
+				let btn = frm.page.custom_buttons['Submit to Supervisor'];
+				if (btn) {
+					frm.page.change_custom_button_type('Submit to Supervisor', null, 'primary');
+				}
+			}
+		}, 200);
 
 		if (!frm.doc.__islocal && frm.doc.docstatus < 2) {
 			// Check if any withdrawal already exists
@@ -32,7 +53,7 @@ frappe.ui.form.on("Employee Resignation", {
 	},
 	
 	validate: function(frm) {
-	    // Robust UI validator catch to ensure user knows EXACTLY what is blocking the save if it's the frontend!
+	    // Robust UI validator catch for minimal requirements
 	    if (!frm.doc.employees || frm.doc.employees.length === 0) {
 	        frappe.msgprint({
 	            title: __('Missing Information'),
@@ -42,46 +63,34 @@ frappe.ui.form.on("Employee Resignation", {
 	        frappe.validated = false;
 			return;
 	    }
+	},
 
-		// Prevent Workflow transition natively, stopping the save and elegantly preventing screen freezes.
-		if (frm.selected_workflow_action === "Submit to Supervisor") {
-			for (let row of frm.doc.employees) {
-				if (!row.resignation_letter) {
-					let emp_name = row.employee_name || row.employee;
-					frappe.msgprint({
-						title: __('Missing Attachment'),
-						message: __('Missing Attachment for <b>{0}</b>. Please click the pencil edit icon ✏️ on their row and attach the resignation letter before submitting.', [emp_name]),
-						indicator: 'red'
-					});
-					frappe.validated = false;
-					return;
-				}
-			}
-		}
+	after_save: function(frm) {
+	    // No longer automatic; user prefers clicking the button themselves
 	},
 
 	before_workflow_action: function(frm) {
 		if (frm.selected_workflow_action === "Submit to Supervisor") {
-			if (frm.doc.employees && frm.doc.employees.length > 0) {
-				for (let row of frm.doc.employees) {
-					if (!row.resignation_letter) {
-						let emp_name = row.employee_name || row.employee;
-						
-						frappe.msgprint({
-							title: __('Missing Attachment'),
-							message: __('Missing Attachment for <b>{0}</b>. Please click the pencil edit icon ✏️ on their row and attach the resignation letter before submitting.', [emp_name]),
-							indicator: 'red'
-						});
-
-						// Absolute guarantee to unlock the Frappe UI freeze right after Promise rejection
-						setTimeout(() => {
-							frappe.dom.unfreeze();
-						}, 100);
-
-						return Promise.reject("Missing Attachment");
-					}
+			return new Promise((resolve, reject) => {
+				let missing = [];
+				if (frm.doc.employees) {
+					frm.doc.employees.forEach(row => {
+						if (!row.resignation_letter) missing.push(row.employee_name || row.employee);
+					});
 				}
-			}
+
+				if (missing.length > 0) {
+					frappe.msgprint({
+						title: __('Missing Attachments'),
+						message: __('Missing Resignation Letter for <b>{0}</b>. Please click the pencil edit icon ✏️ on their row and attach the file before submitting.').replace('{0}', missing.join(", ")),
+						indicator: 'red'
+					});
+					frappe.dom.unfreeze();
+					reject();
+				} else {
+					resolve();
+				}
+			});
 		}
 	},
 

@@ -1,7 +1,26 @@
 frappe.ui.form.on('Project Manpower Request', {
+	onload: function(frm) {
+		// Catch bundled multiple resignations from list view
+		let bundled = localStorage.getItem('__bundled_resignations');
+		if (frm.is_new() && bundled) {
+			let names = bundled.split(",");
+			frm.clear_table('resignation_links');
+			names.forEach(name => {
+				let row = frm.add_child('resignation_links');
+				row.employee_resignation = name;
+			});
+			localStorage.removeItem('__bundled_resignations');
+			// Defer refresh and trigger until after standard UI elements load
+			setTimeout(() => {
+			    frm.refresh_field('resignation_links');
+			    frm.set_value('count', names.length);
+			    frm.set_df_property('count', 'read_only', true);
+			}, 500);
+		}
+	},
+	
 	refresh: function(frm) {
 		setup_status_indicator(frm);
-		setup_fulfillment_actions(frm);
 		
 		// Hide the individual backend quantity fields to keep the form clean
 		frm.toggle_display([
@@ -9,14 +28,16 @@ frappe.ui.form.on('Project Manpower Request', {
 			'managed_by_ot_qty',
 			'managed_by_subcontractor_qty',
 			'internal_transfer_qty',
-			'resignation_withdrawal_qty'
+			'resignation_withdrawal_qty',
+			'historically_joined_qty'
 		], false);
 
 		// Always ensure quantities visually recalculate correctly for existing documents
 		let count = frm.doc.count || 0;
-		let fulfilled = (frm.doc.cancelled_qty || 0) + (frm.doc.managed_by_ot_qty || 0) + 
-						(frm.doc.managed_by_subcontractor_qty || 0) + (frm.doc.internal_transfer_qty || 0) + 
-						(frm.doc.resignation_withdrawal_qty || 0);
+		let fulfilled = 0;
+		(frm.doc.fulfillment_actions || []).forEach(row => {
+			fulfilled += (row.qty || 0);
+		});
 		
 		let expected_remaining = Math.max(0, count - fulfilled);
 		if (frm.doc.remaining_qty !== expected_remaining) {
@@ -50,31 +71,44 @@ frappe.ui.form.on('Project Manpower Request', {
 			};
 		});
 		
-		// Track old status for reverting
-		frm.doc.__old_status = frm.doc.status;
+		// Track old state for reverting if needed
+		frm.doc.__old_status = frm.doc.workflow_state;
 		
-		// Enforce Exit count read-only lock
-		frm.set_df_property('count', 'read_only', frm.doc.reason === 'Exit');
+		// Enforce Exit count read-only lock based purely on having records or reason	
+		if (frm.doc.reason === 'Exit' && frm.doc.resignation_links && frm.doc.resignation_links.length > 0) {
+		    frm.set_df_property('count', 'read_only', true);
+		} else {
+		    frm.set_df_property('count', 'read_only', false);
+		}
+		
+		// Add Resignation Withdrawal button dynamically if applicable
+		if (!frm.is_new() && frm.doc.employee_resignation && frm.doc.docstatus < 2) {
+		    frm.add_custom_button(__("Resignation Withdrawal"), function () {
+		        frappe.new_doc("Employee Resignation Withdrawal", {
+		            employee_resignation: frm.doc.employee_resignation
+		        });
+		    });
+		}
 	},
 
-	status: function(frm) {
-		if (frm.doc.status === 'Completed') {
+	workflow_state: function(frm) {
+		if (frm.doc.workflow_state === 'Completed') {
 			let hired_count = frm.doc.fulfilled_by_employees ? frm.doc.fulfilled_by_employees.length : 0;
 			let required = frm.doc.remaining_qty || 0;
 			if (hired_count !== required) {
 				frappe.msgprint({
 					title: 'Action Blocked',
 					indicator: 'red',
-					message: `You cannot change the status to Completed. You must first link exactly <b>${required}</b> Employee(s) in the Closed By Employees table below.`
+					message: `You cannot change the state to Completed. You must first link exactly <b>${required}</b> Employee(s) in the Closed By Employees table below.`
 				});
 				setTimeout(() => {
-					frm.set_value('status', frm.doc.__old_status || 'In Process');
+					frm.set_value('workflow_state', frm.doc.__old_status || 'In Process');
 					setup_status_indicator(frm);
 				}, 10);
 				return;
 			}
 		}
-		frm.doc.__old_status = frm.doc.status;
+		frm.doc.__old_status = frm.doc.workflow_state;
 		setup_status_indicator(frm);
 	},
 
@@ -84,58 +118,13 @@ frappe.ui.form.on('Project Manpower Request', {
 
 	reason: function(frm) {
 		if (frm.doc.reason === 'Exit') {
-			frm.set_value('count', 1);
-		}
-		frm.set_df_property('count', 'read_only', frm.doc.reason === 'Exit');
-	},
-
-	before_submit: function(frm) {
-		if (!frm.doc.erf) {
-			frappe.validated = false;
-			frappe.call({
-				method: 'frappe.client.get_count',
-				args: {
-					doctype: 'ERF',
-					filters: {
-						designation: frm.doc.designation,
-						docstatus: 1,
-						status: ['not in', ['Cancelled', 'Closed']]
-					}
-				},
-				async: false,
-				callback: function(r) {
-					if (r.message === 0) {
-						frappe.msgprint({
-							title: __('No ERF Found'),
-							message: __('Please create an ERF for designation <b>{0}</b> before submitting this Project Manpower Request.', [frm.doc.designation]),
-							indicator: 'red'
-						});
-					} else {
-						frappe.msgprint({
-							title: __('ERF Required'),
-							message: __('Please select an ERF before submitting this Project Manpower Request.'),
-							indicator: 'orange'
-						});
-					}
-				}
-			});
-		}
-	},
-
-	validate: function(frm) {
-		if (frm.doc.status === 'Completed') {
-			let hired_count = frm.doc.fulfilled_by_employees ? frm.doc.fulfilled_by_employees.length : 0;
-			let required = frm.doc.remaining_qty || 0;
-			if (hired_count !== required) {
-				frappe.msgprint({
-					title: 'Missing Hired Candidates',
-					indicator: 'red',
-					message: `You cannot mark this PMR as Completed. You still have <b>${frm.doc.number_to_hire}</b> open slots! You must link exactly <b>${required}</b> Employee(s) in the Closed By Employees table below.`
-				});
-				frappe.validated = false;
+		    if (!frm.doc.count && (!frm.doc.resignation_links || frm.doc.resignation_links.length === 0)) {
+			    frm.set_value('count', 1);
 			}
 		}
 	},
+
+
 
 	fulfilled_by_employees_add: function(frm) {
 		calculate_hired_dynamically(frm);
@@ -145,84 +134,120 @@ frappe.ui.form.on('Project Manpower Request', {
 	}
 });
 
+frappe.ui.form.on('PMR Resignation Link', {
+    employee_resignation: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        if (row.project_allocation) {
+            let projects = [];
+            (frm.doc.resignation_links || []).forEach(r => {
+                if (r.project_allocation) projects.push(r.project_allocation);
+            });
+            let unique_projects = [...new Set(projects)];
+            
+            if (unique_projects.length > 1) {
+                frappe.msgprint({
+                    title: 'Project Mismatch',
+                    message: `All multiple resignations must strictly belong to the exact same Project! You cannot mix resignations from ${unique_projects.join(' and ')}.`,
+                    indicator: 'red'
+                });
+                frappe.model.set_value(cdt, cdn, 'employee_resignation', '');
+                return;
+            }
+            
+            if (unique_projects.length === 1 && frm.doc.project_allocation !== unique_projects[0]) {
+                frm.set_value('project_allocation', unique_projects[0]);
+            }
+        }
+        
+        let count = frm.doc.resignation_links ? frm.doc.resignation_links.length : 0;
+        if (count > 0) {
+            frm.set_value('count', count);
+            frm.set_df_property('count', 'read_only', true);
+        } else {
+            frm.set_df_property('count', 'read_only', false);
+        }
+    },
+    resignation_links_remove: function(frm) {
+        let count = frm.doc.resignation_links ? frm.doc.resignation_links.length : 0;
+        if (count > 0) {
+            frm.set_value('count', count);
+        } else {
+            frm.set_df_property('count', 'read_only', false);
+        }
+    }
+});
+
+frappe.ui.form.on('PMR Fulfillment Action', {
+	qty: function(frm, cdt, cdn) {
+		validate_and_calculate_fulfillment(frm, cdt, cdn);
+	},
+	fulfillment_actions_remove: function(frm) {
+		validate_and_calculate_fulfillment(frm);
+	}
+});
+
+function validate_and_calculate_fulfillment(frm, cdt, cdn) {
+	let count = frm.doc.count || 0;
+	
+	let fulfilled = 0;
+	(frm.doc.fulfillment_actions || []).forEach(row => {
+		fulfilled += (row.qty || 0);
+	});
+
+	if (fulfilled > count) {
+		frappe.msgprint({
+			title: 'Exceeds Allowed', 
+			indicator: 'red', 
+			message: `The total allocated fulfillment quantity (${fulfilled}) exceeds the original PMR count (${count}).`
+		});
+		
+		if (cdt && cdn) {
+			setTimeout(() => {
+				frappe.model.set_value(cdt, cdn, 'qty', 0);
+			}, 100);
+			return; 
+		}
+	}
+	
+	let expected_remaining = Math.max(0, count - fulfilled);
+	if (frm.doc.remaining_qty !== expected_remaining) {
+		frm.set_value('remaining_qty', expected_remaining);
+	}
+
+	calculate_hired_dynamically(frm);
+}
+
 function calculate_hired_dynamically(frm) {
 	let hired_count = frm.doc.fulfilled_by_employees ? frm.doc.fulfilled_by_employees.length : 0;
-	let expected_to_hire = Math.max(0, (frm.doc.remaining_qty || 0) - hired_count);
+	let historically_joined = frm.doc.historically_joined_qty || 0;
+	let expected_to_hire = Math.max(0, (frm.doc.remaining_qty || 0) - hired_count - historically_joined);
 	frm.set_value('number_to_hire', expected_to_hire);
 }
 
 function setup_status_indicator(frm) {
 	const status_colors = {
-		"Open": "gray",
-		"Pending": "gray",
-		"In Process": "blue",
+		"Draft": "red",
+		"Pending OM Approval": "orange",
+		"Awaiting Recruiter Approval": "light-blue",
+		"In Process": "green",
 		"Completed": "green",
-		"Cancelled": "red",
-		"Internal Fulfilled": "light-green",
-		"Fulfilled by OT": "blue",
-		"Fulfilled by Sub-con": "purple",
-		"Fulfilled by OT & Sub": "darkgray",
-		"Withdrawal Resignation": "yellow"
+		"Rejected": "red",
+		"Cancelled": "red"
 	};
-	if (frm.doc.status) {
-		frm.page.set_indicator(__(frm.doc.status), status_colors[frm.doc.status] || "gray");
+	if (frm.doc.workflow_state) {
+		frm.page.set_indicator(__(frm.doc.workflow_state), status_colors[frm.doc.workflow_state] || "gray");
 	}
 }
 
-function setup_fulfillment_actions(frm) {
-	// Only show fulfillment actions if the document is submitted and has an active status
-	if (frm.is_new() || frm.doc.docstatus === 0) return;
-	
-	const show_prompt = (field_name, title) => {
-		let current_qty = frm.doc[field_name] || 0;
-		let count = frm.doc.count || 0;
-		let fulfilled_by_others = (frm.doc.cancelled_qty || 0) + 
-								  (frm.doc.managed_by_ot_qty || 0) + 
-								  (frm.doc.managed_by_subcontractor_qty || 0) + 
-								  (frm.doc.internal_transfer_qty || 0) + 
-								  (frm.doc.resignation_withdrawal_qty || 0) - current_qty;
-		
-		let max_allowed = count - fulfilled_by_others;
+frappe.ui.form.on("Project Manpower Request", {
+	setup: function(frm) {
+		frm.set_query("erf", function() {
+			return {
+				filters: {
+					docstatus: 1
+				}
+			};
+		});
+	},
 
-		frappe.prompt([
-			{
-				label: `Total ${title}`,
-				fieldname: 'qty',
-				fieldtype: 'Int',
-				reqd: 0,
-				default: current_qty,
-				description: `Enter the revised total quantity. (Maximum Allowed: ${max_allowed})`
-			}
-		], (values) => {
-			let entered_qty = values.qty || 0;
-			
-			if (entered_qty < 0) {
-				frappe.msgprint({title: 'Invalid Qty', indicator: 'red', message: 'Quantity cannot be negative.'});
-				return;
-			}
-			
-			if (entered_qty > max_allowed) {
-				frappe.msgprint({
-					title: 'Exceeds Allowed', 
-					indicator: 'red', 
-					message: `You cannot allocate ${entered_qty}. Because of other fulfillment actions, you only have ${max_allowed} remaining out of the original count.`
-				});
-				return;
-			}
-			
-			if (entered_qty === current_qty) return;
-
-			frm.set_value(field_name, entered_qty);
-			
-			frm.save('Update').then(() => {
-				frappe.show_alert({message: `Updated ${title} to ${entered_qty}.`, indicator: 'green'});
-			});
-
-		}, `Edit: ${title}`, 'Update');
-	};
-
-	frm.add_custom_button('Cancelled', () => show_prompt('cancelled_qty', 'Cancelled'), 'Fulfillment Action');
-	frm.add_custom_button('Managed by OT', () => show_prompt('managed_by_ot_qty', 'Managed by OT'), 'Fulfillment Action');
-	frm.add_custom_button('Managed by SubContractor', () => show_prompt('managed_by_subcontractor_qty', 'Managed by SubContractor'), 'Fulfillment Action');
-	frm.add_custom_button('Internal Transfer', () => show_prompt('internal_transfer_qty', 'Internal Transfer'), 'Fulfillment Action');
-}
+});

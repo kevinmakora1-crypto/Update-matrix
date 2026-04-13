@@ -27,40 +27,66 @@ class ProjectManpowerRequest(Document):
 		self.project_request_code = self.name
 
 	def validate(self):
-		# An exit strictly replaces exactly 1 employee
 		if self.reason == "Exit":
-			self.count = 1
-			
+			if self.get("resignation_links"):
+				self.count = len(self.resignation_links)
+				projects = {r.project_allocation for r in self.resignation_links if r.project_allocation}
+				if len(projects) > 1:
+					frappe.throw(_("All grouped resignations must belong to exactly the same Project."))
+				if projects:
+					self.project_allocation = list(projects)[0]
+					
+		self.ensure_fulfillment_rows()
 		self.calculate_remaining_qty()
 		self.check_status_lock()
+		self.validate_erf_presence()
 		self.validate_completion()
+
+	def validate_erf_presence(self):
+		if getattr(self, "workflow_state", None) in ["Awaiting Recruiter Approval", "In Process", "Completed"]:
+			if not self.erf:
+				frappe.throw(
+					_("Please select an ERF before sending this Project Manpower Request for Recruitment.")
+				)
+			erf_designation = frappe.db.get_value("ERF", self.erf, "designation")
+			if erf_designation != self.designation:
+				frappe.throw(
+					_("The selected ERF ({0}) has designation '{1}' which does not match this PMR's designation '{2}'.").format(
+						self.erf, erf_designation, self.designation
+					)
+				)
+
+	def ensure_fulfillment_rows(self):
+		required_actions = [
+			"Cancelled", "Managed by OT", "Managed by SubContractor", 
+			"Internal Transfer", "Resignation Withdrawal"
+		]
+		
+		existing = set()
+		for row in self.get("fulfillment_actions"):
+			existing.add(row.action_type)
+			
+		for action in required_actions:
+			if action not in existing:
+				self.append("fulfillment_actions", {
+					"action_type": action,
+					"qty": 0
+				})
 
 	def check_status_lock(self):
 		if not self.is_new():
-			old_status = frappe.db.get_value("Project Manpower Request", self.name, "status")
-			terminal_statuses = ["Withdrawal Resignation", "Cancelled", "Completed"]
+			old_status = frappe.db.get_value("Project Manpower Request", self.name, "workflow_state")
+			terminal_statuses = ["Completed", "Rejected", "Cancelled"]
 			
-			if old_status in terminal_statuses and self.status != old_status:
+			if old_status in terminal_statuses and getattr(self, "workflow_state", None) != old_status:
 				frappe.throw(
 					_("The status cannot be changed further because it has already reached a terminal state: {0}").format(old_status)
 				)
 
-	def before_submit(self):
-		if not self.erf:
-			frappe.throw(
-				_("Please select an ERF before submitting this Project Manpower Request.")
-			)
 
-		erf_designation = frappe.db.get_value("ERF", self.erf, "designation")
-		if erf_designation != self.designation:
-			frappe.throw(
-				_("The selected ERF ({0}) has designation '{1}' which does not match this PMR's designation '{2}'.").format(
-					self.erf, erf_designation, self.designation
-				)
-			)
 
 	def validate_completion(self):
-		if self.status == "Completed":
+		if getattr(self, "workflow_state", None) == "Completed":
 			hired_count = len(self.get('fulfilled_by_employees', []))
 			if hired_count != self.remaining_qty:
 				frappe.throw(
@@ -70,13 +96,14 @@ class ProjectManpowerRequest(Document):
 				)
 
 	def on_submit(self):
-		self.db_set("status", "Open")
+		pass
 
 	def on_update(self):
 		self.update_erf_headcount()
 		
 	def before_update_after_submit(self):
 		self.calculate_remaining_qty()
+		self.validate_completion()
 
 	def on_update_after_submit(self):
 		# Explicitly commit the recalculated totals to the DB
@@ -88,28 +115,24 @@ class ProjectManpowerRequest(Document):
 		self.revert_erf_headcount()
 
 	def calculate_remaining_qty(self):
-		count = self.count or 0
-		fulfilled = (
-			(self.cancelled_qty or 0) +
-			(self.managed_by_ot_qty or 0) +
-			(self.managed_by_subcontractor_qty or 0) +
-			(self.internal_transfer_qty or 0) +
-			(self.resignation_withdrawal_qty or 0)
-		)
-		self.remaining_qty = max(0, count - fulfilled)
+		target = self.count or 0
 		
-		# Number to hire = Remaining Qty minus the actual employees linked in the child table
+		fulfilled = sum((row.qty or 0) for row in self.get("fulfillment_actions", []))
+
+		self.remaining_qty = max(0, target - fulfilled)
+		
+		# Number to hire = Remaining Qty minus the actual employees linked in the child table (and legacy joined)
 		hired_count = len(self.get('fulfilled_by_employees', []))
-		self.number_to_hire = max(0, self.remaining_qty - hired_count)
+		historically_joined = self.historically_joined_qty or 0
+		self.number_to_hire = max(0, self.remaining_qty - hired_count - historically_joined)
 
 	def update_erf_headcount(self):
 		if not self.erf:
 			return
 
-		# PMR only contributes to the ERF requirement if it is currently being processed or is historically completed.
-		# If it is Open, Cancelled, or Withdrawn, its contribution should be 0.
-		active_statuses = ["In Process", "Completed", "Internal Fulfilled", "Fulfilled by OT", "Fulfilled by Sub-con", "Fulfilled by OT & Sub"]
-		target_contribution = self.remaining_qty if self.status in active_statuses else 0
+		# If it is Draft or Rejected, its contribution should be 0.
+		active_statuses = ["In Process", "Completed", "Awaiting Recruiter Approval", "Pending OM Approval"]
+		target_contribution = self.remaining_qty if getattr(self, "workflow_state", None) in active_statuses else 0
 
 		current_contribution = self.qty_added_to_erf or 0
 		delta = target_contribution - current_contribution

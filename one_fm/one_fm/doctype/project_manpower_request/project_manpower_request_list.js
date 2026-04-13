@@ -2,6 +2,7 @@
 // For license information, please see license.txt
 
 frappe.listview_settings['Project Manpower Request'] = {
+	hide_name_column: true,
 	add_fields: ["status"],
 	get_indicator: function (doc) {
 		const status_colors = {

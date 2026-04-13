@@ -1,7 +1,7 @@
 import frappe
 
 PICKUP_BUFFER = 10             # minutes
-MAX_TRANSIT = 60               # minutes, CHANGED FROM 90 TO PREVENT WAITING
+MAX_TRANSIT = 60               # minutes
 
 def get_context(context):
     pass
@@ -505,7 +505,7 @@ def build_shipments_from_nested_map(nested_map: dict, config: object, global_bou
         for label, eids in all_shipment_employees.items()
     }
 
-    return shipments_by_accommodation, all_swap_keys, all_pair_labels, shipment_employees_named, all_shipment_site_locations, all_shipment_shift_names  # ← new return value
+    return shipments_by_accommodation, all_swap_keys, all_pair_labels, shipment_employees_named, all_shipment_site_locations, all_shipment_shift_names
 
 def create_shipment_pair(acc_name, shift, stop_location, acc_coords, stop_coords,
                           headcount, pickup_window_buffer, penalty_cost, global_bounds,

@@ -100,46 +100,5 @@ def execute():
     }, update=True)
 
     # ─── Interview Feedback ───────────────────────────────────────────
-    # Console: custom_evaluation_criteria (Interview Evaluation Detail), custom_remarks
-    # interview_feedback.py override + hiring/utils.py: interview_question_assessment (Interview Question Result)
-    create_custom_fields({
-        "Interview Feedback": [
-            {
-                "fieldname": "custom_evaluation_criteria",
-                "fieldtype": "Table",
-                "label": "Evaluation Criteria",
-                "options": "Interview Evaluation Detail",
-                "insert_after": "feedback",
-                "read_only": 1,
-            },
-            {
-                "fieldname": "custom_remarks",
-                "fieldtype": "Small Text",
-                "label": "Remarks",
-                "insert_after": "custom_evaluation_criteria",
-            },
-            {
-                "fieldname": "interview_question_assessment_sb",
-                "fieldtype": "Section Break",
-                "insert_after": "skill_assessment",
-            },
-            {
-                "fieldname": "interview_question_assessment",
-                "fieldtype": "Table",
-                "label": "Interview Question Assessment",
-                "options": "Interview Question Result",
-                "insert_after": "interview_question_assessment_sb",
-            },
-            {
-                "fieldname": "career_history",
-                "fieldtype": "Link",
-                "label": "Career History",
-                "options": "Career History",
-                "insert_after": "interview_round",
-                "read_only": 1,
-            },
-        ]
-    }, update=True)
-
-    frappe.db.commit()
-    print("✅ All interview custom fields installed on Interview Round, Interview, and Interview Feedback!")
+    from one_fm.custom.custom_field.interview_feedback import get_interview_feedback_custom_fields
+    create_custom_fields(get_interview_feedback_custom_fields(), update=True)

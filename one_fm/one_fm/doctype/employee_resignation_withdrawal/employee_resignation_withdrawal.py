@@ -70,15 +70,15 @@ class EmployeeResignationWithdrawal(Document):
 							
 							# If ENTIRE roster is withdrawn, gracefully flag the PMR status
 							if total_withdrawn_count >= total_in_batch:
-								pmr.workflow_state = "Approved"
 								will_withdraw = True
 							
 							# Save document structurally so math functions natively resolve
+							# Note: We do NOT set workflow_state before save to avoid native transition blocks
 							pmr.save(ignore_permissions=True)
 							
-							# Manually force workflow override behind the back of validation
+							# Manually force workflow override behind the back of validation to Cancelled
 							if will_withdraw and frappe.db.has_column("Project Manpower Request", "workflow_state"):
-							    pmr.db_set("workflow_state", "Approved")
+							    pmr.db_set("workflow_state", "Cancelled")
 					
 					# Step 3: Flag Parent Resignation if entirely withdrawn
 					if total_withdrawn_count >= total_in_batch:

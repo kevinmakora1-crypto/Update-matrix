@@ -204,8 +204,41 @@ body.ic-active .navbar {
     background: #0369a1; color: #ffffff; width: 22px; height: 22px;
     border-radius: 50%; display: flex; align-items: center; justify-content: center;
     font-size: 11px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background 0.2s ease;
+}
+.ic-dashboard-link:hover .count-circle {
+    transform: scale(1.15);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+}
+.ic-dashboard-link:active .count-circle {
+    transform: scale(0.95);
 }
 .ic-dashboard-link .link-text { margin-left: 0; }
+
+.ic-add-interview-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin-left: 6px;
+    color: #ffffff;
+    background: #0369a1;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    vertical-align: middle;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.2s ease;
+}
+.ic-add-interview-btn:hover {
+    background: #075985;
+    transform: scale(1.1);
+    box-shadow: 0 4px 6px rgba(3, 105, 161, 0.3);
+}
+.ic-add-interview-btn:active {
+    transform: scale(0.95);
+}
 /* Feedbacks pill - professional warm neutral */
 .ic-feedbacks-link {
     background: #f5f0ff !important; color: #5b21b6 !important; border: 1px solid #ede9fe !important;

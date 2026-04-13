@@ -268,7 +268,14 @@ def optimize_transportation_routes():
 
         shipments, swap_keys, pair_labels, shipment_employees, shipment_site_locations, shipment_shift_names = build_shipments_from_nested_map(nested_map, config, global_bounds)
 
-        results = process_accommodations(shipments, swap_keys, pair_labels, shipment_employees, shipment_site_locations, shipment_shift_names, config, global_bounds)
+        results = process_accommodations(
+            shipments,
+            swap_keys,
+            shipment_employees,
+            shipment_site_locations,
+            shipment_shift_names,
+            global_bounds,
+        )
         
         return results
         

@@ -28,6 +28,15 @@ let planData = null;
 let draggingCard = null;
 
 function init(wrapper) {
+    injectLoadingStyles();
+    // ── Show loading indicator ──
+    $(wrapper).html(`
+        <div id="rp-loading">
+            <div id="rp-loading-spinner"></div>
+            <div id="rp-loading-text">Loading Route Planner...</div>
+            <div id="rp-loading-sub">Fetching vehicles, shifts and employee data</div>
+        </div>
+    `);
     frappe.call({
         method: "one_fm.one_fm.page.route_planner.route_planner.get_route_planner_data",
         callback: function (r) {
@@ -41,6 +50,45 @@ function init(wrapper) {
             bindDragEvents();
         }
     });
+}
+
+function injectLoadingStyles() {
+    if (document.getElementById('rp-loading-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'rp-loading-styles';
+    style.textContent = `
+        #rp-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #f5f5f5;
+            font-family: 'Google Sans', Roboto, sans-serif;
+            gap: 16px;
+        }
+        #rp-loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #5e5c5bff;
+            border-radius: 50%;
+            animation: rp-spin 0.8s linear infinite;
+        }
+        @keyframes rp-spin {
+            to { transform: rotate(360deg); }
+        }
+        #rp-loading-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+        #rp-loading-sub {
+            font-size: 13px;
+            color: #888;
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 function renderPage(wrapper, data) {

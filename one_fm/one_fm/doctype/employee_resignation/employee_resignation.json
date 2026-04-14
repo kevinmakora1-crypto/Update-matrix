@@ -8,6 +8,7 @@
  "field_order": [
   "resigning_employees_section",
   "employees",
+  "resignation_initiation_date",
   "relieving_date",
   "section_break_xfjj",
   "employee",
@@ -110,6 +111,11 @@
   {
    "fieldname": "column_break_twru",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "resignation_initiation_date",
+   "fieldtype": "Date",
+   "label": "Resignation Initiation Date"
   },
   {
    "fieldname": "relieving_date",

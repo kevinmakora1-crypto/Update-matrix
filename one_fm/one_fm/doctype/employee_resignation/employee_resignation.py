@@ -11,6 +11,13 @@ class EmployeeResignation(Document):
 		self.set_supervisor()
 		self.validate_employees()
 		self.validate_resignation_letters()
+		self.validate_dates()
+
+	def validate_dates(self):
+		if self.resignation_initiation_date and self.relieving_date:
+			diff = frappe.utils.date_diff(self.relieving_date, self.resignation_initiation_date)
+			if diff != 90:
+				frappe.throw(_("The difference between Resignation Initiation Date and Relieving Date must be exactly 90 days. It is currently {0} day(s).").format(diff))
 
 	def validate_employees(self):
 		# Ensure all employees belong to the same project and designation

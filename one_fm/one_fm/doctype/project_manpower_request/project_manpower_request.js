@@ -32,25 +32,6 @@ frappe.ui.form.on('Project Manpower Request', {
 			'historically_joined_qty'
 		], false);
 
-		// Always ensure quantities visually recalculate correctly for existing documents
-		let count = frm.doc.count || 0;
-		let fulfilled = 0;
-		(frm.doc.fulfillment_actions || []).forEach(row => {
-			fulfilled += (row.qty || 0);
-		});
-		
-		let expected_remaining = Math.max(0, count - fulfilled);
-		if (frm.doc.remaining_qty !== expected_remaining) {
-			frm.set_value('remaining_qty', expected_remaining);
-		}
-
-		let hired_count = frm.doc.fulfilled_by_employees ? frm.doc.fulfilled_by_employees.length : 0;
-		let historically_joined = frm.doc.historically_joined_qty || 0;
-		let expected_to_hire = Math.max(0, expected_remaining - hired_count - historically_joined);
-		if (frm.doc.number_to_hire !== expected_to_hire) {
-			frm.set_value('number_to_hire', expected_to_hire);
-		}
-
 		// Set ERF filter
 		frm.set_query('erf', function() {
 			return {

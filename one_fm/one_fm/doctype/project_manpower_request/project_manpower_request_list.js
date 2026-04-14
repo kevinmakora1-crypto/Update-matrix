@@ -5,18 +5,29 @@ frappe.listview_settings['Project Manpower Request'] = {
 	hide_name_column: true,
 	add_fields: ["workflow_state"],
 	get_indicator: function (doc) {
-		const status_colors = {
-			"Open": "orange",
-			"Pending": "gray",
-			"In Process": "blue",
+		const workflow_state = doc.workflow_state || "";
+		const workflow_state_colors = {
+			"Draft": "gray",
+			"Pending OM Approval": "orange",
+			"Awaiting Recruiter Approval": "blue",
+			"Approved": "green",
 			"Completed": "green",
 			"Cancelled": "red",
+			"Rejected": "red",
 			"Internal Fulfilled": "light-green",
 			"Fulfilled by OT": "blue",
 			"Fulfilled by Sub-con": "purple",
 			"Fulfilled by OT & Sub": "darkgray",
 			"Withdrawal Resignation": "yellow"
 		};
-		return [__(doc.workflow_state), status_colors[doc.workflow_state] || "gray", "workflow_state,=," + doc.workflow_state];
+
+		const indicator_color = workflow_state_colors[workflow_state]
+			|| (/reject|cancel/i.test(workflow_state) ? "red"
+				: /approve|complete|fulfill/i.test(workflow_state) ? "green"
+					: /pending|awaiting|approval/i.test(workflow_state) ? "orange"
+						: /draft/i.test(workflow_state) ? "gray"
+							: "gray");
+
+		return [__(workflow_state), indicator_color, "workflow_state,=," + workflow_state];
 	}
 };

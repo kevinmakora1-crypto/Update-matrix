@@ -82,10 +82,10 @@ class EmployeeResignationWithdrawal(Document):
 					
 					# Step 3: Flag Parent Resignation if entirely withdrawn
 					if total_withdrawn_count >= total_in_batch:
-						# All employees withdrawn, mark parent as Approved
-						resignation.db_set("status", "Approved")
+						# All employees withdrawn, mark parent as Withdrawn
+						resignation.db_set("status", "Withdrawn")
 						if frappe.db.has_column("Employee Resignation", "workflow_state"):
-							resignation.db_set("workflow_state", "Approved")
+							resignation.db_set("workflow_state", "Withdrawn")
 
 	def validate(self):
 		self.set_approver()
@@ -145,6 +145,9 @@ class EmployeeResignationWithdrawal(Document):
 def get_batch_employees(doctype, txt, searchfield, start, page_len, filters):
 	employee_resignation = filters.get('employee_resignation')
 	if not employee_resignation:
+		return []
+		
+	if not frappe.has_permission("Employee Resignation", doc=employee_resignation, ptype="read"):
 		return []
 	
 	page_len = frappe.utils.cint(page_len) or 20

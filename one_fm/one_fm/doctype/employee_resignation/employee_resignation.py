@@ -53,7 +53,11 @@ class EmployeeResignation(Document):
 
 		if self.get("employees"):
 			for row in self.employees:
-				if not row.resignation_letter:
+				if not row.employee:
+					continue
+				
+				# Supervisor / HR should attach letter for manually added resignation
+				if not row.resignation_letter and frappe.session.user != row.employee:
 					emp_name = frappe.db.get_value("Employee", row.employee, "employee_name") or row.employee
 					frappe.throw("Missing Resignation Letter for " + str(emp_name))
 

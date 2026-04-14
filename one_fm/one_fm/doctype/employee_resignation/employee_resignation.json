@@ -113,15 +113,15 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.workflow_state && doc.workflow_state !== 'Draft'",
-   "mandatory_depends_on": "eval:doc.workflow_state && doc.workflow_state !== 'Draft'",
+   "depends_on": "eval:!doc.__islocal && doc.workflow_state && doc.workflow_state !== 'Draft'",
+   "mandatory_depends_on": "eval:!doc.__islocal && doc.workflow_state && doc.workflow_state !== 'Draft'",
    "fieldname": "resignation_initiation_date",
    "fieldtype": "Date",
    "label": "Resignation Initiation Date"
   },
   {
-   "depends_on": "eval:doc.workflow_state && doc.workflow_state !== 'Draft'",
-   "mandatory_depends_on": "eval:doc.workflow_state && doc.workflow_state !== 'Draft'",
+   "depends_on": "eval:!doc.__islocal && doc.workflow_state && doc.workflow_state !== 'Draft'",
+   "mandatory_depends_on": "eval:!doc.__islocal && doc.workflow_state && doc.workflow_state !== 'Draft'",
    "fieldname": "relieving_date",
    "fieldtype": "Date",
    "label": "Relieving Date"

@@ -203,7 +203,9 @@ class EmployeeResignation(Document):
 			pmr.gender = self.replacement_gender
 			pmr.nationality = self.replacement_nationality
 			pmr.salary = self.replacement_salary
-			pmr.deployment_date = self.relieving_date
+			if self.relieving_date:
+				ojt_days_val = frappe.utils.cint(self.ojt_days)
+				pmr.deployment_date = frappe.utils.add_days(self.relieving_date, -ojt_days_val)
 			
 			for row in self.get("language_requirements"):
 				new_row = pmr.append("language_requirements", {})

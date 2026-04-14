@@ -24,9 +24,16 @@ var set_country_process_details = function(frm) {
         d.notes_required = row.notes_required;
         d.reference_type = row.reference_type;
         d.reference_complete_status_field = row.reference_complete_status_field;
-				d.reference_complete_status_value = row.reference_complete_status_value;
+        d.reference_complete_status_value = row.reference_complete_status_value;
         d.expected_date = frappe.datetime.add_days(frm.doc.start_date, row.duration_in_days);
       });
+      
+      if(frm.doc.agency_process_details.length > 0) {
+        var last_step = frm.doc.agency_process_details[frm.doc.agency_process_details.length - 1];
+        frm.set_value("planned_eta", last_step.expected_date);
+        frm.set_value("live_plan_eta", last_step.expected_date);
+      }
+
       frm.refresh_field("agency_process_details");
     });
   }

@@ -98,9 +98,10 @@ class EmployeeResignationWithdrawal(Document):
 		if getattr(self, "owner", None):
 			recipients.add(self.owner)
 			
-		offboarding_officers = frappe.get_all("Has Role", filters={"role": "Offboarding Officer", "parenttype": "User"}, fields=["parent"])
+		from frappe.utils.user import get_users_with_role
+		offboarding_officers = get_users_with_role("Offboarding Officer")
 		for user in offboarding_officers:
-			recipients.add(user.parent)
+			recipients.add(user)
 			
 		subject = _("Employee Resignation Withdrawn: {0}").format(self.name)
 		message = _("The withdrawal request {0} for resignation {1} has been approved. The resignation is now withdrawn.").format(
@@ -121,10 +122,13 @@ class EmployeeResignationWithdrawal(Document):
 				message += "</ul>"
 				
 		if recipients:
-			frappe.sendmail(
+			from one_fm.processor import sendemail
+			sendemail(
 				recipients=list(recipients),
 				subject=subject,
-				message=message
+				message=message,
+				reference_doctype=self.doctype,
+				reference_name=self.name
 			)
 
 	def validate(self):

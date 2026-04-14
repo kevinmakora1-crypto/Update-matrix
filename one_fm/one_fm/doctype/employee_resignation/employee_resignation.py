@@ -78,7 +78,6 @@ class EmployeeResignation(Document):
 		if not self.is_new():
 			old_doc = self.get_doc_before_save()
 			if old_doc and old_doc.get("workflow_state") != "Approved" and self.get("workflow_state") == "Approved":
-				self.assign_to_offboarding_officer()
 				self.send_approval_notification()
 
 	def send_approval_notification(self):
@@ -89,9 +88,10 @@ class EmployeeResignation(Document):
 		if getattr(self, "owner", None):
 			recipients.add(self.owner)
 			
-		offboarding_officers = frappe.get_all("Has Role", filters={"role": "Offboarding Officer", "parenttype": "User"}, fields=["parent"])
+		from frappe.utils.user import get_users_with_role
+		offboarding_officers = get_users_with_role("Offboarding Officer")
 		for user in offboarding_officers:
-			recipients.add(user.parent)
+			recipients.add(user)
 
 		subject = _("Employee Resignation Approved: {0}").format(self.name)
 		message = _("The employee resignation {0} has been fully approved by the Operations Manager and is now ready for offboarding processing.").format(self.name)
@@ -118,28 +118,14 @@ class EmployeeResignation(Document):
 			message += "<br>" + _("<b>Approved Relieving Date:</b> {0}").format(frappe.utils.formatdate(self.relieving_date))
 
 		if recipients:
-			frappe.sendmail(
+			from one_fm.processor import sendemail
+			sendemail(
 				recipients=list(recipients),
 				subject=subject,
 				message=message,
 				reference_doctype=self.doctype,
 				reference_name=self.name
 			)
-
-	def assign_to_offboarding_officer(self):
-		users = frappe.get_all("Has Role", filters={"role": "Offboarding Officer", "parenttype": "User"}, fields=["parent"])
-		if users:
-			from frappe.desk.form.assign_to import add as add_assign
-			for user_doc in set([u.parent for u in users]):
-				try:
-					add_assign({
-						"assign_to": [user_doc],
-						"doctype": self.doctype,
-						"name": self.name,
-						"description": "Please process Offboarding for Resignation"
-					}, ignore_permissions=True)
-				except Exception:
-					pass
 
 	def before_save(self):
 		self.set_supervisor()

@@ -109,7 +109,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Backlog\nUpcoming\nActive\nOn Hold\nDeployed"
+   "options": "Backlog\nPending Process Classification\nUpcoming\nActive\nOn Hold\nDeployed"
   },
   {
    "fieldname": "stakeholders_section",
@@ -253,6 +253,10 @@
   {
    "color": "Red",
    "title": "Backlog"
+  },
+  {
+   "color": "Purple",
+   "title": "Pending Process Classification"
   },
   {
    "color": "Orange",

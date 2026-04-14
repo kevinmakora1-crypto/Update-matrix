@@ -66,6 +66,53 @@ class EmployeeResignation(Document):
 			old_doc = self.get_doc_before_save()
 			if old_doc and old_doc.get("workflow_state") != "Approved" and self.get("workflow_state") == "Approved":
 				self.assign_to_offboarding_officer()
+				self.send_approval_notification()
+
+	def send_approval_notification(self):
+		recipients = set()
+		if getattr(self, "supervisor", None):
+			recipients.add(self.supervisor)
+			
+		if getattr(self, "owner", None):
+			recipients.add(self.owner)
+			
+		offboarding_officers = frappe.get_all("Has Role", filters={"role": "Offboarding Officer", "parenttype": "User"}, fields=["parent"])
+		for user in offboarding_officers:
+			recipients.add(user.parent)
+
+		subject = _("Employee Resignation Approved: {0}").format(self.name)
+		message = _("The employee resignation {0} has been fully approved by the Operations Manager and is now ready for offboarding processing.").format(self.name)
+
+		if self.get("employees"):
+			emp_list = []
+			for row in self.employees:
+				if row.employee:
+					emp_name = frappe.db.get_value("Employee", row.employee, "employee_name") or row.employee
+					emp_list.append(emp_name)
+					# Optionally notify the employee directly if they have an active user ID
+					user_id = frappe.db.get_value("Employee", row.employee, "user_id")
+					if user_id:
+						recipients.add(user_id)
+			
+			if emp_list:
+				message += "<br><br>" + _("Employees involved:") + "<ul>"
+				for emp in emp_list:
+					message += "<li>{}</li>".format(emp)
+				message += "</ul>"
+				
+		if self.relieving_date:
+			# Needs frappe.utils inside or we can just str format
+			message += "<br>" + _("<b>Approved Relieving Date:</b> {0}").format(frappe.utils.formatdate(self.relieving_date))
+
+		if recipients:
+			frappe.sendmail(
+				recipients=list(recipients),
+				subject=subject,
+				message=message,
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+				now=True
+			)
 
 	def assign_to_offboarding_officer(self):
 		users = frappe.get_all("Has Role", filters={"role": "Offboarding Officer", "parenttype": "User"}, fields=["parent"])

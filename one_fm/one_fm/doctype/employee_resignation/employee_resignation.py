@@ -11,6 +11,12 @@ class EmployeeResignation(Document):
 		self.set_supervisor()
 		self.validate_employees()
 		self.validate_resignation_letters()
+
+		# Enforce relieving_date explicitly for Supervisor before forwarding
+		if self.get("workflow_state") in ("Pending Operations Manager", "Approved"):
+			if not self.relieving_date or not self.resignation_initiation_date:
+				frappe.throw(_("<b>Resignation Initiation Date</b> and <b>Relieving Date</b> are mandatory at this stage. The Supervisor must specify these before pushing to Operations Manager."))
+
 		self.validate_dates()
 
 	def validate_dates(self):
@@ -137,11 +143,6 @@ class EmployeeResignation(Document):
 
 	def before_save(self):
 		self.set_supervisor()
-		
-		# Enforce relieving_date explicitly for Supervisor before forwarding
-		if self.get("workflow_state") in ("Pending Operations Manager", "Approved"):
-			if not self.relieving_date:
-				frappe.throw("<b>Relieving Date</b> is mandatory at this stage. The Supervisor must specify the final date before pushing to Operations Manager.")
 
 		# Enforce replacement_required explicitly for Operations Manager
 		if self.get("workflow_state") == "Approved" and not self.replacement_required:

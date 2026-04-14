@@ -142,9 +142,9 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "ERF",
+   "mandatory_depends_on": "eval:in_list(['Awaiting Recruiter Approval', 'In Process', 'Completed'], doc.workflow_state)",
    "options": "ERF",
-   "search_index": 1,
-   "mandatory_depends_on": "eval:doc.workflow_state == 'Draft' || doc.workflow_state == 'Pending OM Approval'"
+   "search_index": 1
   },
   {
    "description": "The number of on-the-job-training days as agreed with the client.",

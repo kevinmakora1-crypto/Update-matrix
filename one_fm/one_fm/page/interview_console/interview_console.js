@@ -320,7 +320,17 @@ function init_interview_console(wrapper, page) {
         
         $w('#ic-root').addClass('has-selection');
 		$w('.ic-item').removeClass('selected');
-		$w('.ic-item[data-name="' + app.name + '"]').addClass("selected");
+		var $selected_item = $w('.ic-item[data-name="' + app.name + '"]');
+		$selected_item.addClass("selected");
+		
+		// Auto-scroll the sidebar to ensure the candidate is physically visible on the screen
+		if ($selected_item.length) {
+			var container = $w('.ic-left');
+			if (container.length) {
+				var offset = $selected_item.position().top + container.scrollTop() - (container.height() / 2) + ($selected_item.height() / 2);
+				container.animate({ scrollTop: offset }, 300);
+			}
+		}
 
 		// Reset buttons, then set state based on existing status
 		enable_action_buttons();

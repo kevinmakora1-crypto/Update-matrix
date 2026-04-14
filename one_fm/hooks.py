@@ -399,9 +399,7 @@ doc_events = {
 	"Expense Claim": {
 		"on_submit": "one_fm.api.doc_methods.expense_claim.on_submit",
 	},
-	"Interview Feedback": {
-		"validate": "one_fm.hiring.utils.calculate_interview_feedback_average_rating",
-	},
+
 	"Interview": {
 		"validate": "one_fm.overrides.interview.update_interview_rounds_in_job_applicant",
         "after_insert": "one_fm.overrides.interview.update_from_to_date_null",

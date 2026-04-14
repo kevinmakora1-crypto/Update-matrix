@@ -61,6 +61,27 @@ class EmployeeResignation(Document):
 					emp_name = frappe.db.get_value("Employee", row.employee, "employee_name") or row.employee
 					frappe.throw("Missing Resignation Letter for " + str(emp_name))
 
+	def on_update(self):
+		if not self.is_new():
+			old_doc = self.get_doc_before_save()
+			if old_doc and old_doc.get("workflow_state") != "Approved" and self.get("workflow_state") == "Approved":
+				self.assign_to_offboarding_officer()
+
+	def assign_to_offboarding_officer(self):
+		users = frappe.get_all("Has Role", filters={"role": "Offboarding Officer", "parenttype": "User"}, fields=["parent"])
+		if users:
+			from frappe.desk.form.assign_to import add as add_assign
+			for user_doc in set([u.parent for u in users]):
+				try:
+					add_assign({
+						"assign_to": [user_doc],
+						"doctype": self.doctype,
+						"name": self.name,
+						"description": "Please process Offboarding for Resignation"
+					}, ignore_permissions=True)
+				except Exception:
+					pass
+
 	def before_save(self):
 		self.set_supervisor()
 		

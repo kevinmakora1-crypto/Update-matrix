@@ -86,6 +86,47 @@ class EmployeeResignationWithdrawal(Document):
 						resignation.db_set("status", "Withdrawn")
 						if frappe.db.has_column("Employee Resignation", "workflow_state"):
 							resignation.db_set("workflow_state", "Withdrawn")
+				
+				# Step 4: Send Notification
+				self.send_withdrawal_notification()
+
+	def send_withdrawal_notification(self):
+		recipients = set()
+		if getattr(self, "supervisor", None):
+			recipients.add(self.supervisor)
+			
+		if getattr(self, "owner", None):
+			recipients.add(self.owner)
+			
+		offboarding_officers = frappe.get_all("Has Role", filters={"role": "Offboarding Officer", "parenttype": "User"}, fields=["parent"])
+		for user in offboarding_officers:
+			recipients.add(user.parent)
+			
+		subject = _("Employee Resignation Withdrawn: {0}").format(self.name)
+		message = _("The withdrawal request {0} for resignation {1} has been approved. The resignation is now withdrawn.").format(
+			self.name, self.employee_resignation or ""
+		)
+		
+		if self.get("employees"):
+			emp_list = []
+			for row in self.employees:
+				if row.employee:
+					emp_name = frappe.db.get_value("Employee", row.employee, "employee_name") or row.employee
+					emp_list.append(emp_name)
+			
+			if emp_list:
+				message += "<br><br>" + _("Employees involved:") + "<ul>"
+				for emp in emp_list:
+					message += "<li>{}</li>".format(emp)
+				message += "</ul>"
+				
+		if recipients:
+			frappe.sendmail(
+				recipients=list(recipients),
+				subject=subject,
+				message=message,
+				now=True
+			)
 
 	def validate(self):
 		self.set_approver()

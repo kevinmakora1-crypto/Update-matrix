@@ -29,7 +29,10 @@ class PathfinderLog(Document):
 		is_generic = frappe.db.get_value("Process", self.process_name, "is_generic")
 		if is_generic:
 			frappe.throw(
-				_("Please ensure that the actual process has been created and selected.")
+				_('The selected process "{0}" is marked as generic. '
+				  "Please ensure that the actual process has been created "
+				  "and selected before moving out of Pending Process Classification."
+				  ).format(self.process_name)
 			)
 
 	def validate_single_active_log(self):

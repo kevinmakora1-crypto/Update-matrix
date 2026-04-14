@@ -208,3 +208,92 @@ class TestSingleActiveLogValidation(FrappeTestCase):
 		self._create_log(self.PROCESS_A)
 		name_b = self._create_log(self.PROCESS_B)
 		self.assertTrue(frappe.db.exists("Pathfinder Log", name_b))
+
+
+class TestProcessClassificationValidation(FrappeTestCase):
+	"""Ensure transition from 'Pending Process Classification' is blocked when Process is generic."""
+
+	GENERIC_PROCESS = "_Test Generic Process"
+	SPECIFIC_PROCESS = "_Test Specific Process"
+
+	def setUp(self):
+		if not frappe.db.exists("Process", self.GENERIC_PROCESS):
+			frappe.get_doc({
+				"doctype": "Process",
+				"process_name": self.GENERIC_PROCESS,
+				"description": "A generic placeholder process",
+				"process_owner": "Administrator",
+				"business_analyst": "Administrator",
+				"is_generic": 1,
+			}).insert(ignore_permissions=True)
+
+		if not frappe.db.exists("Process", self.SPECIFIC_PROCESS):
+			frappe.get_doc({
+				"doctype": "Process",
+				"process_name": self.SPECIFIC_PROCESS,
+				"description": "An actual specific process",
+				"process_owner": "Administrator",
+				"business_analyst": "Administrator",
+				"is_generic": 0,
+			}).insert(ignore_permissions=True)
+
+	def tearDown(self):
+		for proc in (self.GENERIC_PROCESS, self.SPECIFIC_PROCESS):
+			frappe.db.delete("Pathfinder Log", {"process_name": proc})
+		frappe.db.commit()
+
+	def _create_log(self, process_name, status="Backlog"):
+		doc = frappe.get_doc({
+			"doctype": "Pathfinder Log",
+			"process_name": process_name,
+			"goal_description": "Test goal",
+			"type": "Incremental Changes",
+			"status": status,
+		})
+		doc.insert(ignore_permissions=True)
+		if status != "Backlog":
+			frappe.db.set_value(
+				"Pathfinder Log", doc.name,
+				"status", status,
+				update_modified=True,
+			)
+			frappe.db.commit()
+		return doc.name
+
+	def test_generic_process_blocks_transition(self):
+		"""Transitioning away from 'Pending Process Classification' with a generic process should fail."""
+		log_name = self._create_log(self.GENERIC_PROCESS, "Pending Process Classification")
+
+		doc = frappe.get_doc("Pathfinder Log", log_name)
+		doc.status = "Upcoming"
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			doc.save(ignore_permissions=True)
+		self.assertIn("is marked as generic", str(ctx.exception))
+
+	def test_specific_process_allows_transition(self):
+		"""Transitioning away from 'Pending Process Classification' with a non-generic process should succeed."""
+		log_name = self._create_log(self.SPECIFIC_PROCESS, "Pending Process Classification")
+
+		doc = frappe.get_doc("Pathfinder Log", log_name)
+		doc.status = "Upcoming"
+		doc.save(ignore_permissions=True)  # should not raise
+		self.assertEqual(doc.status, "Upcoming")
+
+	def test_resave_without_status_change_allowed(self):
+		"""Saving a log in 'Pending Process Classification' without changing status should always succeed."""
+		log_name = self._create_log(self.GENERIC_PROCESS, "Pending Process Classification")
+
+		doc = frappe.get_doc("Pathfinder Log", log_name)
+		doc.goal_description = "Updated goal"
+		doc.save(ignore_permissions=True)  # should not raise
+
+	def test_transition_allowed_after_switching_to_specific_process(self):
+		"""After switching from a generic to a specific process, transition should succeed."""
+		log_name = self._create_log(self.GENERIC_PROCESS, "Pending Process Classification")
+
+		doc = frappe.get_doc("Pathfinder Log", log_name)
+		doc.process_name = self.SPECIFIC_PROCESS
+		doc.status = "Upcoming"
+		doc.save(ignore_permissions=True)  # should not raise
+		self.assertEqual(doc.status, "Upcoming")
+

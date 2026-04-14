@@ -59,6 +59,9 @@ class SubcontractStaffAttendance(Document):
 			compare_against = baseline_data.get(row.employee, {})
 
 			new_logs = []
+			working_days = 0
+			off_days = 0
+
 			for i in range(1, 32):
 				field_type = "Attendance Status" if self.attendance_record_based_on == "Attendance Status" else "Shift Hours"
 				compare_field = f"day_{i}" if self.attendance_record_based_on == "Attendance Status" else f"day_{i}_hour"
@@ -72,6 +75,23 @@ class SubcontractStaffAttendance(Document):
 
 				if str(new_val) != str(old_val):
 					new_logs.append(f"{field_type} for Day {i} has been updated to [{new_val}] from [{old_val}].")
+					
+				# Recalculate totals dynamically
+				if self.attendance_record_based_on == "Attendance Status":
+					if new_val in ["Present", "Half Day", "Work From Home", "Holiday"]:
+						working_days += 1
+					elif new_val in ["Day Off", "Client Day Off"]:
+						off_days += 1
+				elif self.attendance_record_based_on == "Shift Hours":
+					try:
+						if float(new_val) > 0:
+							working_days += 1
+					except (ValueError, TypeError):
+						pass
+
+			# Commit recalculated values to the row
+			row.working_days = working_days
+			row.off_days = off_days
 
 			if new_logs:
 				row.comment = "\n".join(new_logs)

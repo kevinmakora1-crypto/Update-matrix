@@ -110,8 +110,7 @@ class EmployeeResignation(Document):
 				subject=subject,
 				message=message,
 				reference_doctype=self.doctype,
-				reference_name=self.name,
-				now=True
+				reference_name=self.name
 			)
 
 	def assign_to_offboarding_officer(self):

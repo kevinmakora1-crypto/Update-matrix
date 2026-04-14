@@ -124,8 +124,7 @@ class EmployeeResignationWithdrawal(Document):
 			frappe.sendmail(
 				recipients=list(recipients),
 				subject=subject,
-				message=message,
-				now=True
+				message=message
 			)
 
 	def validate(self):

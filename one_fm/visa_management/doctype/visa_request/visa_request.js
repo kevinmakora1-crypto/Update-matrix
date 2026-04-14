@@ -5,26 +5,16 @@ frappe.ui.form.on("Visa Request", {
 	before_workflow_action: async function(frm) {
 		try {
 			let action = frm.selected_workflow_action;
+			// run the modular checks; each helper returns a Promise to block the workflow when necessary
+			let result;
 
-			if (action === "Reject") {
-				try {
-					const state = frm.doc.workflow_state;
+			// consolidated check for required references/documents per workflow transition
+			result = validate_references(frm, action);
+			if (result) return result;
 
-					const handledStates = [
-						'Pending Initial Review',
-						'Pending GRD Manager Approval',
-						'Pending By PAM',
-						'Pending By MOI'
-					];
-
-					if (handledStates.includes(state)) {
-						return new Promise((resolve, reject) => {
-							show_rejection_dialog(frm, resolve, reject);
-						});
-					}
-				} catch (e) {
-					console.error('Error handling Reject before_workflow_action:', e);
-				}
+			// Reject handling
+			if (action === 'Reject') {
+				return set_rejection_remarks(frm);
 			}
 		} catch (e) {
 			console.error('Error in before_workflow_action (visa_request):', e);
@@ -32,8 +22,75 @@ frappe.ui.form.on("Visa Request", {
 	}
 });
 
+function validate_references(frm, action) {
+	// PAM -> MOI
+	if (action === 'Approve' && frm.doc.workflow_state === 'Pending By PAM') {
+		if (frm.doc.pam_reference_number) return;
+		return show_reference_validation(frm, 'pam_reference_number', __('PAM Reference Missing'), __('Please add PAM Reference Number before approving to MOI.'));
+	}
 
-function show_rejection_dialog(frm, resolve, reject) {
+	// MOI -> Pending Visa
+	if (action === 'Approve' && frm.doc.workflow_state === 'Pending By MOI') {
+		if (frm.doc.moi_reference_number) return;
+		return show_reference_validation(frm, 'moi_reference_number', __('MOI Reference Missing'), __('Please add MOI Reference Number before approving to Pending Visa.'));
+	}
+
+	// Pending Visa -> Submit to Recruiter: require visa_reference_number, payment_receipt and visa_document
+	if (action === 'Submit to Recruiter' && frm.doc.workflow_state === 'Pending Visa') {
+		const missing = [];
+		if (!frm.doc.visa_reference_number) missing.push({field: 'visa_reference_number', label: __('Visa Reference Number')});
+		if (!frm.doc.payment_receipt) missing.push({field: 'payment_receipt', label: __('Payment Receipt')});
+		if (!frm.doc.visa_document) missing.push({field: 'visa_document', label: __('Visa Document')});
+		if (missing.length) {
+			return show_reference_validation(frm, missing[0].field, __('Missing Required Fields'), __('Please add {0} before submitting to recruiter.', [missing.map(m => m.label).join(', ')]));
+		}
+	}
+}
+
+function show_reference_validation(frm, field, title, message) {
+	return new Promise((resolve, reject) => {
+		try {
+			frappe.dom.unfreeze();
+			// field may be a string or an array; if array, scroll to first
+			if (Array.isArray(field) && field.length) {
+				frm.scroll_to_field(field[0]);
+			} else if (typeof field === 'string' && field) {
+				frm.scroll_to_field(field);
+			}
+
+			frappe.msgprint({
+				title: title,
+				message: message,
+				indicator: 'red'
+			});
+		} catch (e) {
+			console.error('Error in block_and_reject:', e);
+		}
+		reject();
+	});
+}
+
+function set_rejection_remarks(frm) {
+	try {
+		const state = frm.doc.workflow_state;
+		const handledStates = [
+			'Pending Initial Review',
+			'Pending GRD Manager Approval',
+			'Pending By PAM',
+			'Pending By MOI'
+		];
+
+		if (handledStates.includes(state)) {
+			return new Promise((resolve, reject) => {
+				get_rejection_remarks(frm, resolve, reject);
+			});
+		}
+	} catch (e) {
+		console.error('Error handling Reject before_workflow_action:', e);
+	}
+}
+
+function get_rejection_remarks(frm, resolve, reject) {
 	frappe.dom.unfreeze();
 	frappe.prompt(
 		[
@@ -46,15 +103,6 @@ function show_rejection_dialog(frm, resolve, reject) {
 		],
 		function(values) {
 			try {
-				if (!values.reason || values.reason.length <= 10 || values.reason.trim() === "" || values.reason.trim().length < 3) {
-					frappe.msgprint({
-						title: __('Too Short'),
-						message: __('Please ensure to provide a description of the reason'),
-						indicator: 'red'
-					});
-					return;
-				}
-
 				const state = frm.doc.workflow_state;
 				let target_field = null;
 

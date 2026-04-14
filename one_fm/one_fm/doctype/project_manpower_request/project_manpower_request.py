@@ -43,7 +43,7 @@ class ProjectManpowerRequest(Document):
 		self.validate_completion()
 
 	def validate_erf_presence(self):
-		if getattr(self, "workflow_state", None) in ["Awaiting Recruiter Approval", "In Process", "Completed"]:
+		if getattr(self, "workflow_state", None) in ["Pending OM Approval", "Awaiting Recruiter Approval", "In Process", "Completed"]:
 			if not self.erf:
 				frappe.throw(
 					_("Please select an ERF before sending this Project Manpower Request for Recruitment.")

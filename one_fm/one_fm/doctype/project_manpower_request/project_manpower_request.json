@@ -308,7 +308,7 @@
   {
    "fieldname": "salary",
    "fieldtype": "Currency",
-   "label": "Salary Sample"
+   "label": "Salary"
   },
   {
    "fieldname": "section_break_tdav",

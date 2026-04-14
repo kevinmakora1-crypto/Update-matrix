@@ -9,14 +9,38 @@ from frappe.utils import now_datetime
 
 class PathfinderLog(Document):
 	def validate(self):
+		self.validate_process_classification()
 		self.validate_single_active_log()
+
+	def validate_process_classification(self):
+		"""Block transition from 'Pending Process Classification' when a generic process is selected."""
+		if self.is_new():
+			return
+
+		old_doc = self.get_doc_before_save()
+		if not old_doc or old_doc.status != "Pending Process Classification":
+			return
+
+		# Only check when the status is actually changing away from
+		# "Pending Process Classification".
+		if self.status == old_doc.status:
+			return
+
+		is_generic = frappe.db.get_value("Process", self.process_name, "is_generic")
+		if is_generic:
+			frappe.throw(
+				_('The selected process "{0}" is marked as generic. '
+				  "Please ensure that the actual process has been created "
+				  "and selected before moving out of Pending Process Classification."
+				  ).format(self.process_name)
+			)
 
 	def validate_single_active_log(self):
 		existing = frappe.db.exists(
 			"Pathfinder Log",
 			{
 				"process_name": self.process_name,
-				"workflow_state": ["!=", "Completed"],
+				"status": "Active",
 				"name": ["!=", self.name],
 			},
 		)
@@ -37,25 +61,28 @@ class PathfinderLog(Document):
 		if self.is_new():
 			return
 		old_doc = self.get_doc_before_save()
-		if old_doc and old_doc.workflow_state != self.workflow_state:
+		if old_doc and old_doc.status != self.status:
 			last_log = None
 			if self.time_log:
 				last_log = self.time_log[-1]
 
-			if last_log and last_log.state == old_doc.workflow_state and not last_log.end_time:
+			# Close the last open row regardless of state label match.
+			# Legacy rows may contain old workflow_state values (e.g.
+			# "In Development") that won't match the migrated status.
+			if last_log and not last_log.end_time:
 				last_log.end_time = now_datetime()
 				last_log.duration = frappe.utils.time_diff_in_seconds(
 					last_log.end_time, last_log.start_time
 				)
 
-			if self.workflow_state != "Completed":
+			if self.status != "Deployed":
 				self.add_time_log()
 
 	def add_time_log(self):
 		self.append(
 			"time_log",
 			{
-				"state": self.workflow_state,
+				"state": self.status,
 				"start_time": now_datetime()
 			}
 		)

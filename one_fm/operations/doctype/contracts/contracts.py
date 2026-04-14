@@ -93,6 +93,46 @@ class Contracts(Document):
                 if item.is_daily_operation_handled_by_us == "No" and item.off_type == "Full Month":
                     frappe.throw(_('Contract Items Operation Row {0} - Error: If Daily Operations are not handled by us, the Off Type must be set to \'Days Off\'.'.format(item.idx)))
 
+    def before_save(self):
+        """
+        Allow Legal Manager / Legal User to save changes to the two legal
+        notification fields while the contract is Active, without triggering
+        any workflow transition. All other roles follow the normal path.
+        """
+        legal_roles = {"Legal Manager", "Legal User"}
+        user_roles = set(frappe.get_roles(frappe.session.user))
+
+        if not (user_roles & legal_roles):
+            return  # not a legal role — normal save path
+
+        if self.workflow_state != "Active":
+            return  # only applies when currently Active
+
+        if self.is_new():
+            return  # does not apply to new docs
+
+        # Fields that are explicitly allowed to change without re-approval
+        MINOR_ONLY = {
+            "contract_end_internal_notification",
+            "contract_termination_decision_period",
+            "contract_end_internal_notification_date",
+            "contract_termination_decision_period_date",
+        }
+        SKIP_TYPES = {"Section Break", "Column Break", "HTML", "Tab Break", "Heading", "Table"}
+
+        non_minor_changed = any(
+            self.has_value_changed(f.fieldname)
+            for f in self.meta.fields
+            if f.fieldname not in MINOR_ONLY and f.fieldtype not in SKIP_TYPES
+        )
+
+        if non_minor_changed:
+            return  # significant change — let normal workflow handle it
+
+        # Only minor legal fields changed: bypass workflow and stay Active
+        self.flags.ignore_workflow = True
+        self.workflow_state = "Active"
+
     def before_submit(self):
         # check if items and poc exists
         if not (self.items and self.poc):

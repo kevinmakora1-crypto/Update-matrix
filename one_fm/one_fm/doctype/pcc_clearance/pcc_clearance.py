@@ -8,7 +8,20 @@ from frappe.model.document import Document
 
 class PCCClearance(Document):
     def validate(self):
+        self.auto_fetch_nationality()
         self.update_tracker_status()
+
+    def auto_fetch_nationality(self):
+        """Auto-fetch nationality from the Job Applicant linked via CCP."""
+        if self.nationality or not self.candidate_country_process:
+            return
+        job_applicant = frappe.db.get_value(
+            "Candidate Country Process", self.candidate_country_process, "job_applicant"
+        )
+        if job_applicant:
+            self.nationality = frappe.db.get_value(
+                "Job Applicant", job_applicant, "one_fm_nationality"
+            )
 
     def update_tracker_status(self):
         """Sync status back to the Candidate Country Process tracker row (non-recursive)."""

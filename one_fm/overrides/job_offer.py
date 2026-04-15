@@ -301,32 +301,36 @@ class JobOfferOverride(JobOffer):
         acp_doc = frappe.get_doc('Agency Country Process', agency_country_process)
 
         cumulative_days = 0
+        start = frappe.utils.getdate(ccp.start_date)
         for row in acp_doc.agency_process_details:
             d = ccp.append("agency_process_details", {})
             d.process_name = row.process_name
             d.responsible = row.responsible
             d.duration_in_days = row.duration_in_days
+            d.parallel_group = frappe.utils.cint(row.get("parallel_group") or 0)
             d.attachment_required = row.attachment_required
             d.notes_required = row.notes_required
             d.reference_type = row.reference_type
             d.reference_complete_status_field = row.reference_complete_status_field
             d.reference_complete_status_value = row.reference_complete_status_value
-            
+
             if row.process_name == "Job Offer Issuance":
                 # Retroactive evaluation: Job Offer is already created and accepted
                 created_date = frappe.utils.getdate(self.creation)
-                d.expected_date = frappe.utils.add_days(created_date, row.duration_in_days)
+                d.planned_date = frappe.utils.add_days(created_date, row.duration_in_days)
+                d.live_plan_date = d.planned_date
                 d.status = 'Offer Accepted'
                 d.actual_date = ccp.start_date
                 d.reference_name = self.name
             else:
                 cumulative_days += row.duration_in_days
-                d.expected_date = frappe.utils.add_days(ccp.start_date, cumulative_days)
-            
+                d.planned_date = frappe.utils.add_days(start, cumulative_days)
+                d.live_plan_date = d.planned_date
+
         if ccp.agency_process_details:
             last_step = ccp.agency_process_details[-1]
-            ccp.planned_eta = last_step.expected_date
-            ccp.live_plan_eta = last_step.expected_date
+            ccp.planned_eta = last_step.planned_date
+            ccp.live_plan_eta = last_step.planned_date
 
         ccp.save(ignore_permissions=True)
 

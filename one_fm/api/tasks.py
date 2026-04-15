@@ -2334,4 +2334,4 @@ def attendance_query_script():
 			)
 
 	except Exception as e:
-		frappe.log_error(title="Attendance Query Script Failed", message=str(e))
+		frappe.log_error(title="Attendance Query Script Failed", message=frappe.get_traceback())

@@ -8,15 +8,31 @@ from frappe.model.document import Document
 
 class VisaStamping(Document):
     def validate(self):
+        self.auto_link_pam_visa()
         self.update_tracker_status()
 
+    def auto_link_pam_visa(self):
+        """Auto-link PAM Visa from the same Candidate Country Process if not set."""
+        if self.pam_visa or not self.candidate_country_process:
+            return
+        pam_visa = frappe.db.get_value(
+            "PAM Visa",
+            {"candidate_country_process": self.candidate_country_process},
+            "name",
+        )
+        if pam_visa:
+            self.pam_visa = pam_visa
+
     def update_tracker_status(self):
-        """Sync status back to the Candidate Country Process tracker row (non-recursive)."""
+        """Sync status back to the Candidate Country Process tracker row."""
         if not self.candidate_country_process:
             return
         rows = frappe.get_all(
             "Candidate Country Process Details",
-            filters={"parent": self.candidate_country_process, "process_name": "Visa Stamping"},
+            filters={
+                "parent": self.candidate_country_process,
+                "process_name": "Visa Stamping",
+            },
             fields=["name"],
             limit=1,
         )
@@ -26,8 +42,12 @@ class VisaStamping(Document):
         updates = {"status": self.status}
         if self.stamping_date:
             updates["actual_date"] = self.stamping_date
-        elif self.application_date and self.status == "Applied":
-            updates["actual_date"] = self.application_date
 
         for field, value in updates.items():
-            frappe.db.set_value("Candidate Country Process Details", rows[0].name, field, value, update_modified=False)
+            frappe.db.set_value(
+                "Candidate Country Process Details",
+                rows[0].name,
+                field,
+                value,
+                update_modified=False,
+            )

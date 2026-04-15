@@ -53,3 +53,19 @@ class VisaStamping(Document):
                 value,
                 update_modified=False,
             )
+
+    def on_update(self):
+        """Notify the CCP engine to evaluate downstream triggers."""
+        if self.candidate_country_process and self.status in ("Stamped", "Rejected"):
+            self._notify_ccp()
+
+    def _notify_ccp(self):
+        """Reload and save the parent CCP so its dependency engine runs."""
+        try:
+            ccp = frappe.get_doc("Candidate Country Process", self.candidate_country_process)
+            ccp.save(ignore_permissions=True)
+        except Exception:
+            frappe.log_error(
+                f"Visa Stamping {self.name}: failed to notify CCP {self.candidate_country_process}",
+                "CCP Notify Error",
+            )

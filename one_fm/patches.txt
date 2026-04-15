@@ -369,3 +369,4 @@ one_fm.patches.v15_0.add_subcontractor_contracts_workflow #2026-04-12
 one_fm.patches.v15_0.backfill_candidate_process_planned_dates #2026-04-15
 one_fm.patches.v15_0.backfill_candidate_process_parallel_groups #2026-04-15
 one_fm.patches.v15_0.update_medical_reference_types
+one_fm.patches.v15_0.migrate_parallel_group_to_dependency_fields

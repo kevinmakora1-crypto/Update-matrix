@@ -11,85 +11,14 @@ class CandidateCountryProcess(Document):
         today = frappe.utils.getdate()
         rows = self.agency_process_details
 
-        # ── 1. PLANNED DATE: static sequential baseline set once at creation ──
-        # Only fill in rows that don't yet have a planned_date (first save).
-        anchor = frappe.utils.getdate(self.start_date) if self.start_date else None
-        for row in rows:
-            if not row.get("planned_date") and anchor and row.duration_in_days is not None:
-                row.planned_date = frappe.utils.add_days(anchor, row.duration_in_days)
-            if row.get("planned_date"):
-                anchor = frappe.utils.getdate(row.planned_date)
+        # ── 1. PLANNED DATE: static baseline set once at creation ─────────────
+        # Uses dependency graph (before_task) to compute planned dates.
+        self._compute_planned_dates(rows)
 
-        # ── 2. LIVE PLAN DATE: Track-based Fork-Join cascade ─────────────────
-        #
-        # parallel_group == 0  → standard sequential step
-        # parallel_group  > 0  → rows sharing the same group id form one TRACK.
-        #                         Within a track, rows run sequentially.
-        #                         Different group ids run as separate parallel tracks.
-        #                         After all tracks finish, the sequential anchor
-        #                         advances to MAX(effective end of each track).
-        #
-        # A row with status == "Skipped" is excluded from the track-end calculation.
-        #
-        live_anchor = frappe.utils.getdate(self.start_date) if self.start_date else None
-        i = 0
-        while i < len(rows):
-            row = rows[i]
-            group_id = frappe.utils.cint(row.get("parallel_group") or 0)
+        # ── 2. LIVE PLAN DATE: dynamic cascade using dependency graph ─────────
+        self._compute_live_plan_dates(rows)
 
-            if group_id == 0:
-                # ── Sequential step ──────────────────────────────────────────
-                if live_anchor and row.duration_in_days is not None:
-                    row.live_plan_date = frappe.utils.add_days(live_anchor, row.duration_in_days)
-
-                if row.actual_date:
-                    live_anchor = frappe.utils.getdate(row.actual_date)
-                elif row.get("live_plan_date"):
-                    live_anchor = frappe.utils.getdate(row.live_plan_date)
-
-                i += 1
-
-            else:
-                # ── Collect ALL rows inside the parallel section ─────────────
-                # Group consecutive non-zero rows into their respective tracks.
-                tracks = {}   # {group_id: [rows…]}
-                j = i
-                while j < len(rows) and frappe.utils.cint(rows[j].get("parallel_group") or 0) != 0:
-                    gid = frappe.utils.cint(rows[j].parallel_group)
-                    tracks.setdefault(gid, []).append(rows[j])
-                    j += 1
-
-                max_end = live_anchor  # will become the sequential anchor after the fork-join
-
-                for track_rows in tracks.values():
-                    track_anchor = live_anchor
-                    track_effective_end = live_anchor
-
-                    for tr in track_rows:
-                        # Skipped rows don't advance the track anchor
-                        if tr.get("status") == "Skipped":
-                            tr.live_plan_date = None
-                            continue
-
-                        if track_anchor and tr.duration_in_days is not None:
-                            tr.live_plan_date = frappe.utils.add_days(track_anchor, tr.duration_in_days)
-
-                        # Advance within the track: actual beats live plan
-                        if tr.actual_date:
-                            track_anchor = frappe.utils.getdate(tr.actual_date)
-                            track_effective_end = track_anchor
-                        elif tr.get("live_plan_date"):
-                            track_anchor = frappe.utils.getdate(tr.live_plan_date)
-                            track_effective_end = track_anchor
-
-                    # Join: take the latest of all track endings
-                    if track_effective_end and (max_end is None or track_effective_end > max_end):
-                        max_end = track_effective_end
-
-                live_anchor = max_end
-                i = j
-
-        # ── 3. ETA STATUS: planned date vs actual / today ────────────────────
+        # ── 3. ETA STATUS: planned date vs actual / today ─────────────────────
         for row in rows:
             if row.get("status") == "Skipped":
                 row.eta_status = ""
@@ -118,6 +47,128 @@ class CandidateCountryProcess(Document):
                 self.live_plan_eta = last.live_plan_date
             elif last.get("planned_date"):
                 self.live_plan_eta = last.planned_date
+
+    def _compute_planned_dates(self, rows):
+        """
+        Compute planned_date for each row based on the dependency graph.
+        Only fills in rows that don't yet have a planned_date (first save).
+
+        For rows with before_task dependencies:
+          - Sequential: starts after the latest before_task planned_date
+          - Parallel: starts at the same time as other parallel tasks
+                      sharing the same before_task
+        """
+        if not self.start_date:
+            return
+
+        start = frappe.utils.getdate(self.start_date)
+        row_map = {r.process_name: r for r in rows}
+
+        for row in rows:
+            if row.get("planned_date"):
+                continue  # Already set
+
+            if row.duration_in_days is None:
+                continue
+
+            anchor = self._get_dependency_anchor(row, row_map, "planned_date", start)
+            if anchor:
+                row.planned_date = frappe.utils.add_days(anchor, row.duration_in_days)
+
+    def _compute_live_plan_dates(self, rows):
+        """
+        Compute live_plan_date for each row based on actual completion
+        dates of dependencies (falls back to live_plan_date, then planned_date).
+        """
+        if not self.start_date:
+            return
+
+        start = frappe.utils.getdate(self.start_date)
+        row_map = {r.process_name: r for r in rows}
+
+        for row in rows:
+            if row.get("status") == "Skipped":
+                row.live_plan_date = None
+                continue
+
+            if row.duration_in_days is None:
+                continue
+
+            anchor = self._get_dependency_anchor_live(row, row_map, start)
+            if anchor:
+                row.live_plan_date = frappe.utils.add_days(anchor, row.duration_in_days)
+
+    def _get_dependency_anchor(self, row, row_map, date_field, default_start):
+        """
+        Get the anchor date for planned_date computation.
+
+        If before_task is set, returns the MAX of all before_task planned_dates.
+        If no before_task, returns default_start for the first task,
+        or the previous row's planned_date for sequential flow.
+        """
+        before_tasks = self._parse_task_list(row.get("before_task"))
+
+        if not before_tasks:
+            # First task in the chain — use start_date
+            return default_start
+
+        # Get the latest planned_date among all before_tasks
+        max_date = None
+        for task_name in before_tasks:
+            dep_row = row_map.get(task_name)
+            if not dep_row:
+                continue
+            dep_date = frappe.utils.getdate(dep_row.get(date_field)) if dep_row.get(date_field) else None
+            if dep_date and (max_date is None or dep_date > max_date):
+                max_date = dep_date
+
+        return max_date or default_start
+
+    def _get_dependency_anchor_live(self, row, row_map, default_start):
+        """
+        Get the anchor date for live_plan_date computation.
+
+        Uses actual_date if available, falls back to live_plan_date,
+        then planned_date of dependency tasks.
+        For parallel tasks sharing the same before_task, they all start
+        from the same anchor (the before_task's completion).
+        """
+        before_tasks = self._parse_task_list(row.get("before_task"))
+
+        if not before_tasks:
+            return default_start
+
+        # Get the latest effective date among all before_tasks
+        max_date = None
+        for task_name in before_tasks:
+            dep_row = row_map.get(task_name)
+            if not dep_row:
+                continue
+
+            # Skip dependencies that are Skipped
+            if dep_row.get("status") == "Skipped":
+                continue
+
+            # Prefer actual_date > live_plan_date > planned_date
+            dep_date = None
+            if dep_row.actual_date:
+                dep_date = frappe.utils.getdate(dep_row.actual_date)
+            elif dep_row.get("live_plan_date"):
+                dep_date = frappe.utils.getdate(dep_row.live_plan_date)
+            elif dep_row.get("planned_date"):
+                dep_date = frappe.utils.getdate(dep_row.planned_date)
+
+            if dep_date and (max_date is None or dep_date > max_date):
+                max_date = dep_date
+
+        return max_date or default_start
+
+    @staticmethod
+    def _parse_task_list(task_str):
+        """Parse a comma-separated task list into a list of stripped task names."""
+        if not task_str:
+            return []
+        return [t.strip() for t in task_str.split(",") if t.strip()]
 
     def autoname(self):
         if not self.candidate_name and self.job_applicant:
@@ -151,64 +202,30 @@ class CandidateCountryProcess(Document):
 
     def _auto_create_next_records(self):
         """
-        Trigger logic: When a process step's status matches its completion value,
-        auto-create records for the NEXT step(s) that don't already have a reference_name.
+        Data-driven trigger logic using before_task / after_task dependencies.
 
-        Example flow:
-          Job Offer → "Offer Accepted" → triggers: PAM Visa, Medical, PCC (parallel)
-          Medical "Fit" + PCC "Issued" → triggers: Visa Stamping
-          Visa Stamping "Approved" → triggers: Arrival & Deployment
+        When a task's status matches its reference_complete_status_value,
+        find all tasks whose before_task includes this task and auto-create
+        their linked records — but only if ALL of their before_task
+        dependencies are also complete.
         """
         rows = self.agency_process_details
         if not rows:
             return
 
-        # Map of which process triggers which next processes
-        # When the trigger process reaches its completion status,
-        # create records for all target processes
-        TRIGGER_MAP = {
-            # Step 1 → Step 2: Job Offer accepted → create PAM Visa
-            "Job Offer Issuance": {
-                "trigger_status": "Offer Accepted",
-                "creates": ["Visa Processing"]
-            },
-            # Step 2 → Steps 3+5: PAM Visa approved → create Medical + PCC (parallel)
-            "Visa Processing": {
-                "trigger_status": "Issued",
-                "creates": ["Medical Test", "PCC Clearance"]
-            },
-            # Parallel tracks: no direct creates, fork-join handles Visa Stamping
-            "Medical Test": {
-                "trigger_status": "Fit",
-                "creates": []
-            },
-            "Remedical Test": {
-                "trigger_status": "Fit",
-                "creates": []
-            },
-            "PCC Clearance": {
-                "trigger_status": "Issued",
-                "creates": []
-            },
-            # Step 6 → Step 7: Visa Stamping approved → create Arrival & Deployment
-            "Visa Stamping": {
-                "trigger_status": "Approved",
-                "creates": ["Arrival & Deployment"]
-            },
-        }
+        row_map = {r.process_name: r for r in rows}
 
-        # Check each row for triggers
         for row in rows:
-            trigger = TRIGGER_MAP.get(row.process_name)
-            if not trigger:
+            # Check if this row is "complete" per its configured status
+            if not row.reference_complete_status_value:
+                continue
+            if row.status != row.reference_complete_status_value:
                 continue
 
-            if row.status != trigger["trigger_status"]:
-                continue
-
-            # This step is complete — create records for target processes
-            for target_process in trigger["creates"]:
-                target_row = next((r for r in rows if r.process_name == target_process), None)
+            # This task is complete — find tasks that depend on it (after_task)
+            after_tasks = self._parse_task_list(row.get("after_task"))
+            for target_name in after_tasks:
+                target_row = row_map.get(target_name)
                 if not target_row or not target_row.reference_type:
                     continue
 
@@ -216,55 +233,44 @@ class CandidateCountryProcess(Document):
                 if target_row.reference_name:
                     continue
 
+                # Check ALL before_task dependencies of the target are complete
+                if not self._all_dependencies_met(target_row, row_map):
+                    continue
+
                 new_doc = self._create_linked_record(target_row)
                 if new_doc:
                     target_row.reference_name = new_doc.name
                     target_row.db_set("reference_name", new_doc.name, update_modified=False)
 
-        # Special: Check fork-join completion for Visa Stamping
-        self._check_fork_join_trigger(rows)
-
-    def _check_fork_join_trigger(self, rows):
+    def _all_dependencies_met(self, target_row, row_map):
         """
-        Visa Stamping should be auto-created when ALL parallel tracks
-        (Medical + PCC) are complete.
+        Check if ALL before_task dependencies of target_row are complete.
+        A dependency is "met" when its status matches its reference_complete_status_value,
+        or it is Skipped.
         """
-        visa_stamping_row = next(
-            (r for r in rows if r.process_name == "Visa Stamping"), None
-        )
-        if not visa_stamping_row or visa_stamping_row.reference_name:
-            return  # Already created or not configured
+        before_tasks = self._parse_task_list(target_row.get("before_task"))
+        if not before_tasks:
+            return True  # No dependencies — always ready
 
-        # Check Medical track (group 1)
-        medical_done = False
-        for r in rows:
-            if r.process_name == "Medical Test" and r.status in ("Fit", "Passed"):
-                medical_done = True
-                break
-            if r.process_name == "Remedical Test" and r.status in ("Fit", "Passed"):
-                medical_done = True
-                break
+        for dep_name in before_tasks:
+            dep_row = row_map.get(dep_name)
+            if not dep_row:
+                continue  # Missing dependency row — skip
 
-        # Check PCC track (group 2)
-        pcc_done = False
-        for r in rows:
-            if r.process_name == "PCC Clearance" and r.status == "Issued":
-                pcc_done = True
-                break
+            # Skipped counts as met
+            if dep_row.get("status") == "Skipped":
+                continue
 
-        # Check Visa Processing
-        visa_proc_done = False
-        for r in rows:
-            if r.process_name == "Visa Processing" and r.status == "Issued":
-                visa_proc_done = True
-                break
+            # Check if the dependency has reached its completion status
+            if dep_row.reference_complete_status_value:
+                if dep_row.status != dep_row.reference_complete_status_value:
+                    return False  # This dependency is not yet complete
+            else:
+                # No completion status configured — check if it has an actual_date
+                if not dep_row.actual_date:
+                    return False
 
-        if medical_done and pcc_done and visa_proc_done:
-            if visa_stamping_row.reference_type and not visa_stamping_row.reference_name:
-                new_doc = self._create_linked_record(visa_stamping_row)
-                if new_doc:
-                    visa_stamping_row.reference_name = new_doc.name
-                    visa_stamping_row.db_set("reference_name", new_doc.name, update_modified=False)
+        return True
 
     def _create_linked_record(self, row):
         """Create a new record of the linked DocType for this process step."""
@@ -275,7 +281,6 @@ class CandidateCountryProcess(Document):
         meta = frappe.get_meta(doctype)
 
         # Skip DocTypes that don't have candidate_country_process link
-        # (e.g., Medical Appointment uses 'employee' instead)
         if not meta.has_field("candidate_country_process"):
             return None
 
@@ -362,4 +367,3 @@ def update_candidate_country_process():
                                 ccp_doc.db_set('current_process_id', process_list.name)
                                 break
                     ccp_doc.save(ignore_permissions=True)
-

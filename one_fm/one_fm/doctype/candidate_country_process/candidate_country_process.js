@@ -13,6 +13,25 @@ var STATUS_MAP = {
 };
 
 frappe.ui.form.on('Candidate Country Process', {
+  setup: function() {
+    // ── Horizontal sidebar connections layout ──
+    if (!document.getElementById('ccp-sidebar-style')) {
+      var style = document.createElement('style');
+      style.id = 'ccp-sidebar-style';
+      style.textContent = [
+        '.form-sidebar .document-link {',
+        '  display: inline-flex !important;',
+        '  align-items: center;',
+        '  margin-right: 6px;',
+        '  margin-bottom: 6px;',
+        '}',
+        '.form-sidebar .document-link-badge {',
+        '  white-space: nowrap;',
+        '}'
+      ].join('\n');
+      document.head.appendChild(style);
+    }
+  },
   agency_country_process: function(frm) {
     set_country_process_details(frm);
   },

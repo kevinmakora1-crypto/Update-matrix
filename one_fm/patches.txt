@@ -367,3 +367,4 @@ one_fm.patches.v15_0.add_assignment_rule_subcontract_finance_manager #2026-04-12
 one_fm.patches.v15_0.add_assignment_rule_subcontract_subcontractor #2026-04-12
 one_fm.patches.v15_0.add_subcontractor_contracts_workflow #2026-04-12
 one_fm.patches.v15_0.add_workflow_visa_request
+one_fm.patches.v15_0.create_attendance_query_process_task

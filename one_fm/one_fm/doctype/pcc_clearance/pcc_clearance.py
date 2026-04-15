@@ -11,16 +11,23 @@ class PCCClearance(Document):
         self.update_tracker_status()
 
     def update_tracker_status(self):
-        """Sync status back to the Candidate Country Process tracker row."""
+        """Sync status back to the Candidate Country Process tracker row (non-recursive)."""
         if not self.candidate_country_process:
             return
-        ccp = frappe.get_doc("Candidate Country Process", self.candidate_country_process)
-        for row in ccp.agency_process_details:
-            if row.process_name == "PCC Clearance":
-                row.status = self.status
-                if self.clearance_date:
-                    row.actual_date = self.clearance_date
-                elif self.application_date and self.status == "Applied":
-                    row.actual_date = self.application_date
-                break
-        ccp.save(ignore_permissions=True)
+        rows = frappe.get_all(
+            "Candidate Country Process Details",
+            filters={"parent": self.candidate_country_process, "process_name": "PCC Clearance"},
+            fields=["name"],
+            limit=1,
+        )
+        if not rows:
+            return
+
+        updates = {"status": self.status}
+        if self.clearance_date:
+            updates["actual_date"] = self.clearance_date
+        elif self.application_date and self.status == "Applied":
+            updates["actual_date"] = self.application_date
+
+        for field, value in updates.items():
+            frappe.db.set_value("Candidate Country Process Details", rows[0].name, field, value, update_modified=False)

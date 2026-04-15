@@ -141,7 +141,13 @@ class CandidateCountryProcess(Document):
 
     def on_update(self):
         """Auto-create linked DocType records when a step reaches its trigger status."""
-        self._auto_create_next_records()
+        if getattr(self.flags, '_in_auto_create', False):
+            return
+        self.flags._in_auto_create = True
+        try:
+            self._auto_create_next_records()
+        finally:
+            self.flags._in_auto_create = False
 
     def _auto_create_next_records(self):
         """
@@ -260,13 +266,19 @@ class CandidateCountryProcess(Document):
         if not doctype:
             return None
 
+        meta = frappe.get_meta(doctype)
+
+        # Skip DocTypes that don't have candidate_country_process link
+        # (e.g., Medical Appointment uses 'employee' instead)
+        if not meta.has_field("candidate_country_process"):
+            return None
+
         # Build the new document with candidate_country_process link
         try:
             new_doc = frappe.new_doc(doctype)
             new_doc.candidate_country_process = self.name
 
             # Map common fields if they exist on the target DocType
-            meta = frappe.get_meta(doctype)
             field_map = {
                 "candidate_name": self.candidate_name,
                 "passport_number": self.passport_number,
@@ -274,11 +286,6 @@ class CandidateCountryProcess(Document):
             for field, value in field_map.items():
                 if meta.has_field(field) and value:
                     new_doc.set(field, value)
-
-            # For PAM Visa, also set the Job Offer link fields
-            if doctype == "PAM Visa":
-                if meta.has_field("passport_number") and self.passport_number:
-                    new_doc.passport_number = self.passport_number
 
             new_doc.flags.ignore_permissions = True
             new_doc.flags.ignore_mandatory = True

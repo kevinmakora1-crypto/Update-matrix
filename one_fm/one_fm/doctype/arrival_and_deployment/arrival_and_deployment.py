@@ -11,16 +11,23 @@ class ArrivalandDeployment(Document):
         self.update_tracker_status()
 
     def update_tracker_status(self):
-        """Sync status back to the Candidate Country Process tracker row."""
+        """Sync status back to the Candidate Country Process tracker row (non-recursive)."""
         if not self.candidate_country_process:
             return
-        ccp = frappe.get_doc("Candidate Country Process", self.candidate_country_process)
-        for row in ccp.agency_process_details:
-            if row.process_name == "Arrival & Deployment":
-                row.status = self.status
-                if self.status == "Completed" and self.deployment_date:
-                    row.actual_date = self.deployment_date
-                elif self.arrival_date:
-                    row.actual_date = self.arrival_date
-                break
-        ccp.save(ignore_permissions=True)
+        rows = frappe.get_all(
+            "Candidate Country Process Details",
+            filters={"parent": self.candidate_country_process, "process_name": "Arrival & Deployment"},
+            fields=["name"],
+            limit=1,
+        )
+        if not rows:
+            return
+
+        updates = {"status": self.status}
+        if self.status == "Completed" and self.deployment_date:
+            updates["actual_date"] = self.deployment_date
+        elif self.arrival_date:
+            updates["actual_date"] = self.arrival_date
+
+        for field, value in updates.items():
+            frappe.db.set_value("Candidate Country Process Details", rows[0].name, field, value, update_modified=False)

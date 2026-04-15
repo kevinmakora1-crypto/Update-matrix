@@ -43,7 +43,7 @@
   "place_of_study",
   "passport_details_section",
   "passport_number",
-  "pasport_holder_of",
+  "passport_holder_of",
   "place_of_issue",
   "column_break_wims",
   "passport_issued_on",
@@ -342,14 +342,6 @@
    "label": "Passport Details"
   },
   {
-   "fetch_from": "job_applicant.one_fm_passport_holder_of",
-   "fieldname": "pasport_holder_of",
-   "fieldtype": "Link",
-   "label": "Pasport Holder of",
-   "options": "Country",
-   "reqd": 1
-  },
-  {
    "fetch_from": "job_applicant.one_fm_passport_issued",
    "fieldname": "passport_issued_on",
    "fieldtype": "Date",
@@ -492,13 +484,21 @@
   {
    "fieldname": "column_break_cpvu",
    "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "job_applicant.one_fm_passport_holder_of",
+   "fieldname": "passport_holder_of",
+   "fieldtype": "Link",
+   "label": "Passport Holder of",
+   "options": "Country",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-14 18:49:02.047226",
+ "modified": "2026-04-15 07:27:21.125399",
  "modified_by": "Administrator",
  "module": "Visa Management",
  "name": "Visa Request",
@@ -512,7 +512,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "GRD User",
+   "role": "Government Relations Operator",
    "share": 1,
    "submit": 1,
    "write": 1

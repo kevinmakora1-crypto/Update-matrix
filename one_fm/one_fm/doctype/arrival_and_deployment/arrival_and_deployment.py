@@ -24,9 +24,7 @@ class ArrivalandDeployment(Document):
             return
 
         updates = {"status": self.status}
-        if self.status == "Completed" and self.deployment_date:
-            updates["actual_date"] = self.deployment_date
-        elif self.arrival_date:
+        if self.arrival_date:
             updates["actual_date"] = self.arrival_date
 
         for field, value in updates.items():

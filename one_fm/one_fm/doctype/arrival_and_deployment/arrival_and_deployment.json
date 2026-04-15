@@ -12,7 +12,6 @@
   "column_break_1",
   "status",
   "arrival_date",
-  "deployment_date",
   "section_break_flight",
   "flight_number",
   "airline",
@@ -20,9 +19,6 @@
   "column_break_2",
   "pickup_arranged",
   "pickup_contact",
-  "section_break_deploy",
-  "deployment_site",
-  "reporting_manager",
   "section_break_notes",
   "notes"
  ],
@@ -77,11 +73,6 @@
    "label": "Arrival Date"
   },
   {
-   "fieldname": "deployment_date",
-   "fieldtype": "Date",
-   "label": "Deployment Date"
-  },
-  {
    "fieldname": "section_break_flight",
    "fieldtype": "Section Break",
    "label": "Flight Details"
@@ -115,23 +106,6 @@
    "fieldname": "pickup_contact",
    "fieldtype": "Data",
    "label": "Pickup Contact Person"
-  },
-  {
-   "fieldname": "section_break_deploy",
-   "fieldtype": "Section Break",
-   "label": "Deployment Details"
-  },
-  {
-   "fieldname": "deployment_site",
-   "fieldtype": "Link",
-   "label": "Deployment Site",
-   "options": "Operations Site"
-  },
-  {
-   "fieldname": "reporting_manager",
-   "fieldtype": "Link",
-   "label": "Reporting Manager",
-   "options": "Employee"
   },
   {
    "fieldname": "section_break_notes",

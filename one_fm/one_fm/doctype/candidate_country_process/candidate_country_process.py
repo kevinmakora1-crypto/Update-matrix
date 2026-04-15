@@ -167,13 +167,20 @@ class CandidateCountryProcess(Document):
         # When the trigger process reaches its completion status,
         # create records for all target processes
         TRIGGER_MAP = {
+            # Step 1 → Step 2: Job Offer accepted → create PAM Visa
             "Job Offer Issuance": {
                 "trigger_status": "Offer Accepted",
-                "creates": ["Visa Processing", "Medical Test", "PCC Clearance"]
+                "creates": ["Visa Processing"]
             },
+            # Step 2 → Steps 3+5: PAM Visa approved → create Medical + PCC (parallel)
+            "Visa Processing": {
+                "trigger_status": "Issued",
+                "creates": ["Medical Test", "PCC Clearance"]
+            },
+            # Parallel tracks: no direct creates, fork-join handles Visa Stamping
             "Medical Test": {
                 "trigger_status": "Fit",
-                "creates": []  # Visa Stamping waits for BOTH Medical+PCC via fork-join
+                "creates": []
             },
             "Remedical Test": {
                 "trigger_status": "Fit",
@@ -183,8 +190,7 @@ class CandidateCountryProcess(Document):
                 "trigger_status": "Issued",
                 "creates": []
             },
-            # Visa Stamping is created when ALL parallel tracks complete
-            # We check if both Medical/Remedical AND PCC are done
+            # Step 6 → Step 7: Visa Stamping approved → create Arrival & Deployment
             "Visa Stamping": {
                 "trigger_status": "Approved",
                 "creates": ["Arrival & Deployment"]

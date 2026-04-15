@@ -40,8 +40,10 @@ class VisaStamping(Document):
             return
 
         updates = {"status": self.status}
-        if self.stamping_date:
-            updates["actual_date"] = self.stamping_date
+        if self.receiving_date:
+            updates["actual_date"] = self.receiving_date
+        elif self.submission_date:
+            updates["actual_date"] = self.submission_date
 
         for field, value in updates.items():
             frappe.db.set_value(

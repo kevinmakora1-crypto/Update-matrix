@@ -19,6 +19,14 @@ frappe.ui.form.on('Candidate Country Process', {
   refresh: function(frm) {
     candidate_country_process_flow_btn(frm);
     setup_inline_status_filter(frm);
+
+    if (!frm.is_new()) {
+      // ── "Apply Visa" button: manually trigger PAM Visa creation ──
+      add_apply_visa_button(frm);
+
+      // ── "Open Record" link on each child row that has reference_name ──
+      setup_open_record_links(frm);
+    }
   }
 });
 
@@ -148,4 +156,109 @@ var candidate_country_process_flow_btn = function(frm) {
       }
     });
   }
+};
+
+// ── "Apply Visa" button: manually create a PAM Visa from the tracker ─────────
+var add_apply_visa_button = function(frm) {
+  // Find the Visa Processing row
+  var visa_row = (frm.doc.agency_process_details || []).find(function(r) {
+    return r.process_name === "Visa Processing";
+  });
+
+  if (!visa_row) return;
+
+  // Only show button if no PAM Visa is linked yet
+  if (visa_row.reference_name) {
+    // Already linked — show "Open PAM Visa" instead
+    frm.add_custom_button(__('Open PAM Visa'), function() {
+      frappe.set_route('Form', 'PAM Visa', visa_row.reference_name);
+    }, __('Visa'));
+  } else {
+    // Check if Job Offer is accepted (prerequisite)
+    var jo_row = (frm.doc.agency_process_details || []).find(function(r) {
+      return r.process_name === "Job Offer Issuance";
+    });
+    var jo_done = jo_row && jo_row.status === "Offer Accepted";
+
+    if (jo_done) {
+      frm.add_custom_button(__('Apply Visa'), function() {
+        frappe.confirm(
+          __('Create a new PAM Visa application for <b>{0}</b>?', [frm.doc.candidate_name]),
+          function() {
+            frappe.call({
+              method: 'frappe.client.save',
+              args: {
+                doc: {
+                  doctype: 'PAM Visa',
+                  candidate_country_process: frm.doc.name
+                }
+              },
+              freeze: true,
+              freeze_message: __('Creating PAM Visa...'),
+              callback: function(r) {
+                if (r.message) {
+                  // Update the tracker row with the reference
+                  frappe.model.set_value(
+                    visa_row.doctype, visa_row.name,
+                    'reference_name', r.message.name
+                  );
+                  frm.dirty();
+                  frm.save().then(function() {
+                    frappe.show_alert({
+                      message: __('PAM Visa {0} created', [r.message.name]),
+                      indicator: 'green'
+                    });
+                    frappe.set_route('Form', 'PAM Visa', r.message.name);
+                  });
+                }
+              }
+            });
+          }
+        );
+      }, __('Visa'));
+
+      // Highlight the button in primary color
+      frm.change_custom_button_type(__('Apply Visa'), __('Visa'), 'primary');
+    }
+  }
+};
+
+// ── "Open Record" links: clickable reference_name in child rows ──────────────
+var setup_open_record_links = function(frm) {
+  var grid = frm.fields_dict.agency_process_details;
+  if (!grid || !grid.grid || !grid.grid.wrapper) return;
+
+  // Use event delegation — intercept clicks on the reference_name column
+  grid.grid.wrapper.off('click.open_record').on('click.open_record',
+    '.frappe-control[data-fieldname="reference_name"]', function(e) {
+      var $cell = $(this);
+      var $row = $cell.closest('[data-name]');
+      var docname = $row.attr('data-name');
+      if (!docname) return;
+
+      var row_data = locals['Candidate Country Process Details'][docname];
+      if (!row_data || !row_data.reference_type || !row_data.reference_name) return;
+
+      e.stopPropagation();
+      e.preventDefault();
+      frappe.set_route('Form', row_data.reference_type, row_data.reference_name);
+    }
+  );
+
+  // Style the reference_name cells as clickable links
+  setTimeout(function() {
+    (frm.doc.agency_process_details || []).forEach(function(row) {
+      if (row.reference_name && row.reference_type) {
+        var $row_el = grid.grid.wrapper.find('[data-name="' + row.name + '"]');
+        var $ref_cell = $row_el.find('.frappe-control[data-fieldname="reference_name"] .static-area');
+        if ($ref_cell.length && !$ref_cell.hasClass('linked')) {
+          $ref_cell.css({
+            'color': 'var(--primary-color, #2490EF)',
+            'cursor': 'pointer',
+            'text-decoration': 'underline'
+          }).addClass('linked');
+        }
+      }
+    });
+  }, 300);
 };

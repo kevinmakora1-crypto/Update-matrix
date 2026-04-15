@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "naming_series:",
- "creation": "2026-04-15 06:00:00.000000",
+ "creation": "2026-04-15 06:45:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -11,28 +11,30 @@
   "passport_number",
   "column_break_1",
   "status",
-  "submission_date",
-  "receiving_date",
-  "section_break_visa",
-  "pam_visa",
-  "visa_type",
-  "pam_file_number",
+  "appointment_date",
+  "result_date",
+  "section_break_details",
+  "reason_for_remedical",
+  "medical_center",
+  "medical_center_location",
   "column_break_2",
-  "nationality",
-  "pam_designation",
-  "section_break_notes",
-  "notes",
+  "original_medical_ref",
+  "country_of_examination",
+  "section_break_results",
+  "fit_for_employment",
+  "remarks",
   "section_break_attach",
-  "stamped_visa_copy"
+  "remedical_report",
+  "medical_certificate"
  ],
  "fields": [
   {
-   "default": "VS-.YYYY.-.#####",
+   "default": "OREM-.YYYY.-.#####",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
    "label": "Series",
-   "options": "VS-.YYYY.-.#####"
+   "options": "OREM-.YYYY.-.#####"
   },
   {
    "fieldname": "candidate_country_process",
@@ -67,72 +69,70 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nIn Progress\nStamped\nRejected",
+   "options": "Pending\nSkipped\nIn Process\nFit\nUnfit\nPassed\nFailed",
    "reqd": 1
   },
   {
-   "fieldname": "submission_date",
+   "fieldname": "appointment_date",
    "fieldtype": "Date",
-   "label": "Submission Date"
+   "label": "Appointment Date"
   },
   {
-   "fieldname": "receiving_date",
+   "fieldname": "result_date",
    "fieldtype": "Date",
-   "label": "Receiving Date"
+   "label": "Result Date"
   },
   {
-   "fieldname": "section_break_visa",
+   "fieldname": "section_break_details",
    "fieldtype": "Section Break",
-   "label": "Visa Details (from PAM Visa)"
+   "label": "Remedical Details"
   },
   {
-   "fieldname": "pam_visa",
-   "fieldtype": "Link",
-   "label": "PAM Visa",
-   "options": "PAM Visa",
-   "in_list_view": 1
+   "fieldname": "reason_for_remedical",
+   "fieldtype": "Small Text",
+   "label": "Reason for Remedical"
   },
   {
-   "fetch_from": "pam_visa.passport_type",
-   "fieldname": "visa_type",
+   "fieldname": "medical_center",
    "fieldtype": "Data",
-   "label": "Visa Type",
-   "read_only": 1
+   "label": "Medical Center"
   },
   {
-   "fetch_from": "pam_visa.pam_file_number",
-   "fieldname": "pam_file_number",
+   "fieldname": "medical_center_location",
    "fieldtype": "Data",
-   "label": "PAM File Number",
-   "read_only": 1
+   "label": "Medical Center Location"
   },
   {
    "fieldname": "column_break_2",
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "pam_visa.nationality",
-   "fieldname": "nationality",
-   "fieldtype": "Data",
-   "label": "Nationality",
-   "read_only": 1
+   "fieldname": "original_medical_ref",
+   "fieldtype": "Link",
+   "label": "Original Medical Appointment",
+   "options": "Overseas Medical Appointment WAFID"
   },
   {
-   "fetch_from": "pam_visa.pam_designation",
-   "fieldname": "pam_designation",
-   "fieldtype": "Data",
-   "label": "PAM Designation",
-   "read_only": 1
+   "fieldname": "country_of_examination",
+   "fieldtype": "Link",
+   "label": "Country of Examination",
+   "options": "Country"
   },
   {
-   "fieldname": "section_break_notes",
+   "fieldname": "section_break_results",
    "fieldtype": "Section Break",
-   "label": "Notes"
+   "label": "Results"
   },
   {
-   "fieldname": "notes",
+   "default": "0",
+   "fieldname": "fit_for_employment",
+   "fieldtype": "Check",
+   "label": "Fit for Employment"
+  },
+  {
+   "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Notes"
+   "label": "Remarks"
   },
   {
    "fieldname": "section_break_attach",
@@ -140,16 +140,21 @@
    "label": "Attachments"
   },
   {
-   "fieldname": "stamped_visa_copy",
+   "fieldname": "remedical_report",
    "fieldtype": "Attach",
-   "label": "Stamped Visa Copy"
+   "label": "Remedical Report"
+  },
+  {
+   "fieldname": "medical_certificate",
+   "fieldtype": "Attach",
+   "label": "Medical Certificate"
   }
  ],
  "links": [],
- "modified": "2026-04-15 06:31:00.000000",
+ "modified": "2026-04-15 06:45:00.000000",
  "modified_by": "Administrator",
  "module": "one_fm",
- "name": "Visa Stamping",
+ "name": "Overseas Remedical",
  "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [

@@ -139,6 +139,165 @@ class CandidateCountryProcess(Document):
                     self.db_set('current_process_id', agency_process_details.name)
                     break
 
+    def on_update(self):
+        """Auto-create linked DocType records when a step reaches its trigger status."""
+        self._auto_create_next_records()
+
+    def _auto_create_next_records(self):
+        """
+        Trigger logic: When a process step's status matches its completion value,
+        auto-create records for the NEXT step(s) that don't already have a reference_name.
+
+        Example flow:
+          Job Offer → "Offer Accepted" → triggers: PAM Visa, Medical, PCC (parallel)
+          Medical "Fit" + PCC "Issued" → triggers: Visa Stamping
+          Visa Stamping "Approved" → triggers: Arrival & Deployment
+        """
+        rows = self.agency_process_details
+        if not rows:
+            return
+
+        # Map of which process triggers which next processes
+        # When the trigger process reaches its completion status,
+        # create records for all target processes
+        TRIGGER_MAP = {
+            "Job Offer Issuance": {
+                "trigger_status": "Offer Accepted",
+                "creates": ["Visa Processing", "Medical Test", "PCC Clearance"]
+            },
+            "Medical Test": {
+                "trigger_status": "Fit",
+                "creates": []  # Visa Stamping waits for BOTH Medical+PCC via fork-join
+            },
+            "Remedical Test": {
+                "trigger_status": "Fit",
+                "creates": []
+            },
+            "PCC Clearance": {
+                "trigger_status": "Issued",
+                "creates": []
+            },
+            # Visa Stamping is created when ALL parallel tracks complete
+            # We check if both Medical/Remedical AND PCC are done
+            "Visa Stamping": {
+                "trigger_status": "Approved",
+                "creates": ["Arrival & Deployment"]
+            },
+        }
+
+        # Check each row for triggers
+        for row in rows:
+            trigger = TRIGGER_MAP.get(row.process_name)
+            if not trigger:
+                continue
+
+            if row.status != trigger["trigger_status"]:
+                continue
+
+            # This step is complete — create records for target processes
+            for target_process in trigger["creates"]:
+                target_row = next((r for r in rows if r.process_name == target_process), None)
+                if not target_row or not target_row.reference_type:
+                    continue
+
+                # Skip if record already exists
+                if target_row.reference_name:
+                    continue
+
+                new_doc = self._create_linked_record(target_row)
+                if new_doc:
+                    target_row.reference_name = new_doc.name
+                    target_row.db_set("reference_name", new_doc.name, update_modified=False)
+
+        # Special: Check fork-join completion for Visa Stamping
+        self._check_fork_join_trigger(rows)
+
+    def _check_fork_join_trigger(self, rows):
+        """
+        Visa Stamping should be auto-created when ALL parallel tracks
+        (Medical + PCC) are complete.
+        """
+        visa_stamping_row = next(
+            (r for r in rows if r.process_name == "Visa Stamping"), None
+        )
+        if not visa_stamping_row or visa_stamping_row.reference_name:
+            return  # Already created or not configured
+
+        # Check Medical track (group 1)
+        medical_done = False
+        for r in rows:
+            if r.process_name == "Medical Test" and r.status in ("Fit", "Passed"):
+                medical_done = True
+                break
+            if r.process_name == "Remedical Test" and r.status in ("Fit", "Passed"):
+                medical_done = True
+                break
+
+        # Check PCC track (group 2)
+        pcc_done = False
+        for r in rows:
+            if r.process_name == "PCC Clearance" and r.status == "Issued":
+                pcc_done = True
+                break
+
+        # Check Visa Processing
+        visa_proc_done = False
+        for r in rows:
+            if r.process_name == "Visa Processing" and r.status == "Issued":
+                visa_proc_done = True
+                break
+
+        if medical_done and pcc_done and visa_proc_done:
+            if visa_stamping_row.reference_type and not visa_stamping_row.reference_name:
+                new_doc = self._create_linked_record(visa_stamping_row)
+                if new_doc:
+                    visa_stamping_row.reference_name = new_doc.name
+                    visa_stamping_row.db_set("reference_name", new_doc.name, update_modified=False)
+
+    def _create_linked_record(self, row):
+        """Create a new record of the linked DocType for this process step."""
+        doctype = row.reference_type
+        if not doctype:
+            return None
+
+        # Build the new document with candidate_country_process link
+        try:
+            new_doc = frappe.new_doc(doctype)
+            new_doc.candidate_country_process = self.name
+
+            # Map common fields if they exist on the target DocType
+            meta = frappe.get_meta(doctype)
+            field_map = {
+                "candidate_name": self.candidate_name,
+                "passport_number": self.passport_number,
+            }
+            for field, value in field_map.items():
+                if meta.has_field(field) and value:
+                    new_doc.set(field, value)
+
+            # For PAM Visa, also set the Job Offer link fields
+            if doctype == "PAM Visa":
+                if meta.has_field("passport_number") and self.passport_number:
+                    new_doc.passport_number = self.passport_number
+
+            new_doc.flags.ignore_permissions = True
+            new_doc.flags.ignore_mandatory = True
+            new_doc.insert(ignore_permissions=True)
+
+            frappe.msgprint(
+                f"Auto-created {doctype}: <b>{new_doc.name}</b>",
+                indicator="green",
+                alert=True,
+            )
+            return new_doc
+
+        except Exception as e:
+            frappe.log_error(
+                f"Failed to auto-create {doctype} for {self.name}: {e}",
+                "CCP Auto-Create Error"
+            )
+            return None
+
     def on_submit(self):
         pass
 
@@ -190,3 +349,4 @@ def update_candidate_country_process():
                                 ccp_doc.db_set('current_process_id', process_list.name)
                                 break
                     ccp_doc.save(ignore_permissions=True)
+

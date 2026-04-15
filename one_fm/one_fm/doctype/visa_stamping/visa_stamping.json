@@ -1,0 +1,167 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-04-15 06:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "candidate_country_process",
+  "candidate_name",
+  "passport_number",
+  "column_break_1",
+  "status",
+  "application_date",
+  "stamping_date",
+  "section_break_visa",
+  "visa_type",
+  "visa_number",
+  "issuing_authority",
+  "column_break_2",
+  "visa_start_date",
+  "visa_end_date",
+  "section_break_notes",
+  "notes",
+  "section_break_attach",
+  "stamped_visa_copy"
+ ],
+ "fields": [
+  {
+   "default": "VS-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "VS-.YYYY.-.#####"
+  },
+  {
+   "fieldname": "candidate_country_process",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Candidate Country Process",
+   "options": "Candidate Country Process",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "candidate_country_process.candidate_name",
+   "fieldname": "candidate_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Candidate Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "candidate_country_process.passport_number",
+   "fieldname": "passport_number",
+   "fieldtype": "Data",
+   "label": "Passport Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nApplied\nIssued\nApproved\nRejected",
+   "reqd": 1
+  },
+  {
+   "fieldname": "application_date",
+   "fieldtype": "Date",
+   "label": "Application Date"
+  },
+  {
+   "fieldname": "stamping_date",
+   "fieldtype": "Date",
+   "label": "Stamping Date"
+  },
+  {
+   "fieldname": "section_break_visa",
+   "fieldtype": "Section Break",
+   "label": "Visa Details"
+  },
+  {
+   "fieldname": "visa_type",
+   "fieldtype": "Data",
+   "label": "Visa Type"
+  },
+  {
+   "fieldname": "visa_number",
+   "fieldtype": "Data",
+   "label": "Visa Number"
+  },
+  {
+   "fieldname": "issuing_authority",
+   "fieldtype": "Data",
+   "label": "Issuing Authority"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "visa_start_date",
+   "fieldtype": "Date",
+   "label": "Visa Start Date"
+  },
+  {
+   "fieldname": "visa_end_date",
+   "fieldtype": "Date",
+   "label": "Visa End Date"
+  },
+  {
+   "fieldname": "section_break_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "section_break_attach",
+   "fieldtype": "Section Break",
+   "label": "Attachments"
+  },
+  {
+   "fieldname": "stamped_visa_copy",
+   "fieldtype": "Attach",
+   "label": "Stamped Visa Copy"
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-15 06:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "one_fm",
+ "name": "Visa Stamping",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1,
+   "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1
+  },
+  {
+   "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1,
+   "read": 1, "report": 1, "role": "HR Manager", "share": 1, "write": 1
+  },
+  {
+   "create": 1, "email": 1, "export": 1, "print": 1,
+   "read": 1, "report": 1, "role": "HR User", "write": 1
+  },
+  {
+   "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1,
+   "read": 1, "report": 1, "role": "Recruitment Manager", "share": 1, "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

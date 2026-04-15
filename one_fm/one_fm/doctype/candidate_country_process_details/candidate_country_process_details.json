@@ -147,8 +147,9 @@
   },
   {
    "fieldname": "reference_name",
-   "fieldtype": "Data",
+   "fieldtype": "Dynamic Link",
    "label": "Reference Name",
+   "options": "reference_type",
    "read_only": 1
   },
   {

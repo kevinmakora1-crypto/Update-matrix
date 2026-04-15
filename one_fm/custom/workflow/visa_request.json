@@ -89,7 +89,7 @@
     {
       "state": "Pending Initial Review",
       "action": "Reject",
-      "next_state": "Draft",
+      "next_state": "Rejected By Operator",
       "allowed": "Government Relations Operator",
       "allow_self_approval": 1,
       "send_email_to_creator": 0,

@@ -1,37 +1,100 @@
 // Copyright (c) 2020, ONE FM and contributors
 // For license information, please see license.txt
 
+// ── Status options per process name ──────────────────────────────────────────
+var STATUS_MAP = {
+  "Job Offer Issuance": ["Pending", "Offer Accepted", "Rejected"],
+  "Visa Processing": ["Pending", "Applied", "Issued", "Rejected"],
+  "Medical Test": ["Pending", "In Process", "Fit", "Unfit", "Passed", "Failed"],
+  "Remedical Test": ["Pending", "Skipped", "In Process", "Fit", "Unfit", "Passed", "Failed"],
+  "PCC Clearance": ["Pending", "Applied", "Issued", "Rejected"],
+  "Visa Stamping": ["Pending", "Applied", "Issued", "Approved", "Rejected"],
+  "Arrival & Deployment": ["Pending", "Arriving", "Completed"]
+};
+
 frappe.ui.form.on('Candidate Country Process', {
   agency_country_process: function(frm) {
     set_country_process_details(frm);
   },
-  refresh:  function(frm){
+  refresh: function(frm) {
     candidate_country_process_flow_btn(frm);
-	}
-});
-
-frappe.ui.form.on('Candidate Country Process Details', {
-  form_render: function(frm, cdt, cdn) {
-    var row = frappe.get_doc(cdt, cdn);
-    set_status_options(frm, row);
+    setup_inline_status_filter(frm);
   }
 });
 
-var set_status_options = function(frm, row) {
-  var status_map = {
-    "Job Offer Issuance": ["Pending", "Offer Accepted", "Rejected"],
-    "Visa Processing": ["Pending", "Applied", "Issued", "Rejected"],
-    "Medical Test": ["Pending", "In Process", "Fit", "Unfit", "Passed", "Failed"],
-    "Remedical Test": ["Pending", "Skipped", "In Process", "Fit", "Unfit", "Passed", "Failed"],
-    "PCC Clearance": ["Pending", "Applied", "Issued", "Rejected"],
-    "Visa Stamping": ["Pending", "Applied", "Issued", "Approved", "Rejected"],
-    "Arrival & Deployment": ["Pending", "Arriving", "Completed"]
-  };
+frappe.ui.form.on('Candidate Country Process Details', {
+  // ── Expanded row edit form: filter status options ──
+  form_render: function(frm, cdt, cdn) {
+    var row = locals[cdt][cdn];
+    var options = STATUS_MAP[row.process_name] || ["Pending", "In Process", "Completed"];
+    var grid_row = frm.fields_dict.agency_process_details.grid.grid_rows_by_docname[cdn];
+    if (grid_row && grid_row.grid_form) {
+      var status_field = grid_row.grid_form.fields_dict.status;
+      if (status_field) {
+        status_field.df.options = options.join('\n');
+        status_field.refresh();
+      }
+    }
+  },
 
-  var options = status_map[row.process_name] || ["Pending", "In Process", "Completed", "Rejected", "Skipped"];
-  
-  // Set the field property for the specific row's form
-  frm.set_df_property("agency_process_details", "options", options, frm.doc.name, "status", row.name);
+  // ── Validate status on change ──
+  status: function(frm, cdt, cdn) {
+    var row = locals[cdt][cdn];
+    var allowed = STATUS_MAP[row.process_name];
+    if (allowed && !allowed.includes(row.status)) {
+      frappe.msgprint({
+        title: __('Invalid Status'),
+        message: __('"{0}" is not valid for {1}. Allowed: {2}',
+          [row.status, row.process_name, allowed.join(', ')]),
+        indicator: 'red'
+      });
+      frappe.model.set_value(cdt, cdn, 'status', 'Pending');
+    }
+  }
+});
+
+// ── Inline grid: intercept click on status cell and filter <select> options ──
+var setup_inline_status_filter = function(frm) {
+  var grid = frm.fields_dict.agency_process_details;
+  if (!grid || !grid.grid || !grid.grid.wrapper) return;
+
+  grid.grid.wrapper.off('click.status_filter').on('click.status_filter',
+    '.frappe-control[data-fieldname="status"]', function() {
+      var $cell = $(this);
+      var $row = $cell.closest('.rows .frappe-control').length
+        ? $cell.closest('[data-name]')
+        : $cell.closest('.grid-row');
+      if (!$row.length) {
+        $row = $cell.closest('[data-name]');
+      }
+      var docname = $row.attr('data-name');
+      if (!docname) return;
+
+      var row_data = locals['Candidate Country Process Details'][docname];
+      if (!row_data) return;
+
+      var allowed = STATUS_MAP[row_data.process_name]
+        || ["Pending", "In Process", "Completed"];
+
+      // Wait for Frappe to render the <select>, then filter it
+      setTimeout(function() {
+        var $select = $cell.find('select');
+        if (!$select.length) return;
+
+        var current_val = $select.val();
+        $select.find('option').each(function() {
+          var opt_val = $(this).val();
+          if (opt_val && !allowed.includes(opt_val)) {
+            $(this).remove();
+          }
+        });
+        // Restore current value if still valid
+        if (allowed.includes(current_val)) {
+          $select.val(current_val);
+        }
+      }, 50);
+    }
+  );
 };
 
 var set_country_process_details = function(frm) {
@@ -50,7 +113,6 @@ var set_country_process_details = function(frm) {
         d.reference_type = row.reference_type;
         d.reference_complete_status_field = row.reference_complete_status_field;
         d.reference_complete_status_value = row.reference_complete_status_value;
-        // Planned date logic will be handled by backend validate
       });
       
       frm.refresh_field("agency_process_details");

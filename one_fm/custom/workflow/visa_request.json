@@ -141,7 +141,7 @@
     {
       "state": "Pending By PAM",
       "action": "Approve",
-      "next_state": "Pending by MOI",
+      "next_state": "Pending By MOI",
       "allowed": "Government Relations Operator",
       "allow_self_approval": 1,
       "send_email_to_creator": 0,
@@ -165,7 +165,7 @@
       "doctype": "Workflow Transition"
     },
     {
-      "state": "Pending by MOI",
+      "state": "Pending By MOI",
       "action": "Approve",
       "next_state": "Pending Visa",
       "allowed": "Government Relations Operator",
@@ -178,7 +178,7 @@
       "doctype": "Workflow Transition"
     },
     {
-      "state": "Pending by MOI",
+      "state": "Pending By MOI",
       "action": "Reject",
       "next_state": "Rejected By MOI",
       "allowed": "Government Relations Operator",
@@ -319,7 +319,7 @@
       "doctype": "Workflow Document State"
     },
     {
-      "state": "Pending by MOI",
+      "state": "Pending By MOI",
       "doc_status": "0",
       "update_field": "",
       "update_value": "",

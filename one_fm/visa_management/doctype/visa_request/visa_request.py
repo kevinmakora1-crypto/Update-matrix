@@ -11,8 +11,8 @@ class VisaRequest(Document):
 		self.validate_references()
 
 	def validate_workflow_transitions(self):
-		# PAM -> MOI: require pam_reference_number when workflow becomes Pending by MOI
-		if (self.workflow_state in ("Pending by MOI", "Pending By MOI")) and (not self.get("pam_reference_number")):
+		# PAM -> MOI: require pam_reference_number when workflow becomes Pending By MOI
+		if (self.workflow_state in ("Pending By MOI", "Pending By MOI")) and (not self.get("pam_reference_number")):
 			frappe.throw(
 				"PAM Reference Number is required before submitting to MOI.",
 				title="Missing PAM Reference Number",

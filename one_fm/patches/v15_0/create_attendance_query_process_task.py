@@ -30,7 +30,7 @@ def execute():
             "doctype": "Task Type"
         }).insert(ignore_permissions=True)
 
-    task_desc = "Attendance Query Check"
+    task_desc = "Attendance Absence Check"
     if not frappe.db.exists("Process Task", {"task": task_desc}):
         frappe.get_doc({
             "naming_series": "P-TASK-.YYYY.-",

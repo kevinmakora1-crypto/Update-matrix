@@ -14,18 +14,9 @@
   "appointment_date",
   "result_date",
   "section_break_details",
-  "reason_for_remedical",
-  "medical_center",
-  "medical_center_location",
-  "column_break_2",
-  "original_medical_ref",
-  "country_of_examination",
-  "section_break_results",
-  "fit_for_employment",
   "remarks",
   "section_break_attach",
-  "remedical_report",
-  "medical_certificate"
+  "remedical_report"
  ],
  "fields": [
   {
@@ -69,65 +60,25 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nSkipped\nIn Process\nFit\nUnfit\nPassed\nFailed",
+   "options": "Pending\nIn Process\nFit\nUnfit\nPassed\nFailed",
    "reqd": 1
   },
   {
    "fieldname": "appointment_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
    "label": "Appointment Date"
   },
   {
    "fieldname": "result_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
    "label": "Result Date"
   },
   {
    "fieldname": "section_break_details",
    "fieldtype": "Section Break",
-   "label": "Remedical Details"
-  },
-  {
-   "fieldname": "reason_for_remedical",
-   "fieldtype": "Small Text",
-   "label": "Reason for Remedical"
-  },
-  {
-   "fieldname": "medical_center",
-   "fieldtype": "Data",
-   "label": "Medical Center"
-  },
-  {
-   "fieldname": "medical_center_location",
-   "fieldtype": "Data",
-   "label": "Medical Center Location"
-  },
-  {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "original_medical_ref",
-   "fieldtype": "Link",
-   "label": "Original Medical Appointment",
-   "options": "Overseas Medical Appointment WAFID"
-  },
-  {
-   "fieldname": "country_of_examination",
-   "fieldtype": "Link",
-   "label": "Country of Examination",
-   "options": "Country"
-  },
-  {
-   "fieldname": "section_break_results",
-   "fieldtype": "Section Break",
-   "label": "Results"
-  },
-  {
-   "default": "0",
-   "fieldname": "fit_for_employment",
-   "fieldtype": "Check",
-   "label": "Fit for Employment"
+   "label": "Details"
   },
   {
    "fieldname": "remarks",
@@ -143,15 +94,16 @@
    "fieldname": "remedical_report",
    "fieldtype": "Attach",
    "label": "Remedical Report"
-  },
-  {
-   "fieldname": "medical_certificate",
-   "fieldtype": "Attach",
-   "label": "Medical Certificate"
   }
  ],
- "links": [],
- "modified": "2026-04-15 06:45:00.000000",
+ "links": [
+  {
+   "group": "Related",
+   "link_doctype": "Overseas Medical Appointment WAFID",
+   "link_fieldname": "candidate_country_process"
+  }
+ ],
+ "modified": "2026-04-15 07:10:00.000000",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Overseas Remedical",

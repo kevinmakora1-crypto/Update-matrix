@@ -13,21 +13,10 @@
   "status",
   "appointment_date",
   "result_date",
-  "section_break_wafid",
-  "wafid_number",
-  "medical_center",
-  "medical_center_location",
-  "column_break_2",
-  "gamca_slip_number",
-  "country_of_examination",
-  "section_break_results",
-  "blood_group",
-  "fit_for_employment",
-  "column_break_3",
+  "section_break_details",
   "remarks",
   "section_break_attach",
-  "wafid_report",
-  "medical_certificate"
+  "wafid_medical_report"
  ],
  "fields": [
   {
@@ -77,68 +66,19 @@
   {
    "fieldname": "appointment_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
    "label": "Appointment Date"
   },
   {
    "fieldname": "result_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
    "label": "Result Date"
   },
   {
-   "fieldname": "section_break_wafid",
+   "fieldname": "section_break_details",
    "fieldtype": "Section Break",
-   "label": "WAFID / GAMCA Details"
-  },
-  {
-   "fieldname": "wafid_number",
-   "fieldtype": "Data",
-   "label": "WAFID Number"
-  },
-  {
-   "fieldname": "medical_center",
-   "fieldtype": "Data",
-   "label": "Medical Center"
-  },
-  {
-   "fieldname": "medical_center_location",
-   "fieldtype": "Data",
-   "label": "Medical Center Location"
-  },
-  {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "gamca_slip_number",
-   "fieldtype": "Data",
-   "label": "GAMCA Slip Number"
-  },
-  {
-   "fieldname": "country_of_examination",
-   "fieldtype": "Link",
-   "label": "Country of Examination",
-   "options": "Country"
-  },
-  {
-   "fieldname": "section_break_results",
-   "fieldtype": "Section Break",
-   "label": "Results"
-  },
-  {
-   "fieldname": "blood_group",
-   "fieldtype": "Select",
-   "label": "Blood Group",
-   "options": "\nA+\nA-\nB+\nB-\nAB+\nAB-\nO+\nO-"
-  },
-  {
-   "default": "0",
-   "fieldname": "fit_for_employment",
-   "fieldtype": "Check",
-   "label": "Fit for Employment"
-  },
-  {
-   "fieldname": "column_break_3",
-   "fieldtype": "Column Break"
+   "label": "Details"
   },
   {
    "fieldname": "remarks",
@@ -151,18 +91,19 @@
    "label": "Attachments"
   },
   {
-   "fieldname": "wafid_report",
+   "fieldname": "wafid_medical_report",
    "fieldtype": "Attach",
-   "label": "WAFID Report"
-  },
-  {
-   "fieldname": "medical_certificate",
-   "fieldtype": "Attach",
-   "label": "Medical Certificate"
+   "label": "WAFID Medical Report"
   }
  ],
- "links": [],
- "modified": "2026-04-15 06:45:00.000000",
+ "links": [
+  {
+   "group": "Related",
+   "link_doctype": "Overseas Remedical",
+   "link_fieldname": "candidate_country_process"
+  }
+ ],
+ "modified": "2026-04-15 07:10:00.000000",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Overseas Medical Appointment WAFID",

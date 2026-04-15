@@ -115,7 +115,33 @@
    "label": "PCC Certificate"
   }
  ],
- "links": [],
+ "links": [
+  {
+   "group": "Process Documents",
+   "link_doctype": "Candidate Country Process",
+   "link_fieldname": "name"
+  },
+  {
+   "group": "Process Documents",
+   "link_doctype": "Overseas Medical Appointment WAFID",
+   "link_fieldname": "candidate_country_process"
+  },
+  {
+   "group": "Process Documents",
+   "link_doctype": "Overseas Remedical",
+   "link_fieldname": "candidate_country_process"
+  },
+  {
+   "group": "Process Documents",
+   "link_doctype": "Visa Stamping",
+   "link_fieldname": "candidate_country_process"
+  },
+  {
+   "group": "Process Documents",
+   "link_doctype": "Arrival and Deployment",
+   "link_fieldname": "candidate_country_process"
+  }
+ ],
  "modified": "2026-04-15 06:22:00.000000",
  "modified_by": "Administrator",
  "module": "one_fm",

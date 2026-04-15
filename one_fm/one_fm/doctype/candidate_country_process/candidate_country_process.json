@@ -143,7 +143,33 @@
    "label": "Live Plan ETA"
   }
  ],
- "links": [],
+ "links": [
+  {
+   "group": "Process Documents",
+   "link_doctype": "Overseas Medical Appointment WAFID",
+   "link_fieldname": "candidate_country_process"
+  },
+  {
+   "group": "Process Documents",
+   "link_doctype": "Overseas Remedical",
+   "link_fieldname": "candidate_country_process"
+  },
+  {
+   "group": "Process Documents",
+   "link_doctype": "PCC Clearance",
+   "link_fieldname": "candidate_country_process"
+  },
+  {
+   "group": "Process Documents",
+   "link_doctype": "Visa Stamping",
+   "link_fieldname": "candidate_country_process"
+  },
+  {
+   "group": "Process Documents",
+   "link_doctype": "Arrival and Deployment",
+   "link_fieldname": "candidate_country_process"
+  }
+ ],
  "modified": "2026-04-14 20:11:26.273487",
  "modified_by": "Administrator",
  "module": "one_fm",

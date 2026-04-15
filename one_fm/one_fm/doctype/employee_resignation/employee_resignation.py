@@ -8,7 +8,6 @@ from frappe.model.document import Document
 
 class EmployeeResignation(Document):
 	def validate(self):
-		self.set_supervisor()
 		self.validate_employees()
 		self.validate_resignation_letters()
 
@@ -128,51 +127,12 @@ class EmployeeResignation(Document):
 			)
 
 	def before_save(self):
-		self.set_supervisor()
 
 		# Enforce replacement_required explicitly for Operations Manager
 		if self.get("workflow_state") == "Approved" and not self.replacement_required:
 			frappe.throw("You must explicitly select <b>Yes</b> or <b>No</b> for 'Is a Replacement Required?' before you can save or approve.")
 
-	def set_supervisor(self):
-		# We base supervisor routing on the FIRST employee
-		if not self.get("employees"):
-			return
-			
-		first_emp = self.employees[0].employee
-		if not first_emp:
-			return
 
-		# 1. Reports To
-		reports_to = frappe.db.get_value("Employee", first_emp, "reports_to")
-		if reports_to:
-			user_id = frappe.db.get_value("Employee", reports_to, "user_id")
-			if user_id and frappe.db.exists("User", user_id):
-				self.supervisor = user_id
-				return
-
-		# 2. Site Supervisor
-		site = frappe.db.get_value("Employee", first_emp, "site")
-		if site:
-			site_supervisor = frappe.db.get_value("Operations Site", site, "site_supervisor")
-			if site_supervisor:
-				user_id = frappe.db.get_value("Employee", site_supervisor, "user_id")
-				if user_id and frappe.db.exists("User", user_id):
-					self.supervisor = user_id
-					return
-
-		# 3. Project Manager
-		project = frappe.db.get_value("Employee", first_emp, "project")
-		if project:
-			project_manager = frappe.db.get_value("Project", project, "project_manager")
-			if project_manager:
-				user_id = frappe.db.get_value("Employee", project_manager, "user_id")
-				if user_id and frappe.db.exists("User", user_id):
-					self.supervisor = user_id
-					return
-		
-		# Blank supervisor if ghost or completely empty
-		self.supervisor = None
 
 	def on_submit(self):
 		if self.get("employees") and self.relieving_date:

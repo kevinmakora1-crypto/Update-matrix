@@ -8,8 +8,12 @@
  "field_order": [
   "resigning_employees_section",
   "employees",
+  "section_break_dates",
   "resignation_initiation_date",
   "relieving_date",
+  "column_break_ops_mgr",
+  "operations_manager",
+  "offboarding_officer",
   "section_break_xfjj",
   "employee",
   "full_name_in_english",
@@ -201,7 +205,8 @@
    "fieldtype": "Link",
    "label": "Supervisor",
    "options": "User",
-   "read_only": 1
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "fieldname": "replacement_required",
@@ -305,6 +310,24 @@
    "fieldtype": "Column Break"
   },
   {
+   "fieldname": "operations_manager",
+   "fieldtype": "Link",
+   "label": "Operations Manager",
+   "options": "User",
+   "reqd": 0,
+   "depends_on": "eval:!doc.__islocal && doc.workflow_state && doc.workflow_state !== 'Draft'",
+   "mandatory_depends_on": "eval:!doc.__islocal && doc.workflow_state && doc.workflow_state !== 'Draft'"
+  },
+  {
+   "fieldname": "offboarding_officer",
+   "fieldtype": "Link",
+   "label": "Offboarding Officer",
+   "options": "User",
+   "depends_on": "eval: doc.workflow_state && (doc.workflow_state == 'Pending Operations Manager' || doc.workflow_state == 'Approved')",
+   "reqd": 0,
+   "mandatory_depends_on": "eval: doc.workflow_state && (doc.workflow_state == 'Pending Operations Manager' || doc.workflow_state == 'Approved')"
+  },
+  {
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",
@@ -313,6 +336,15 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "column_break_ops_mgr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_dates",
+   "fieldtype": "Section Break",
+   "hide_border": 1
   }
  ],
  "grid_page_length": 50,

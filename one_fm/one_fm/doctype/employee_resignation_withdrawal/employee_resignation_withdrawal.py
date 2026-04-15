@@ -132,7 +132,7 @@ class EmployeeResignationWithdrawal(Document):
 			)
 
 	def validate(self):
-		self.set_approver()
+		pass
 
 	def validate_rejection_reason(self):
 		if not self.is_new():
@@ -144,45 +144,6 @@ class EmployeeResignationWithdrawal(Document):
 			):
 				if not getattr(self, "reason_for_rejection", None):
 					frappe.throw(_("Please provide Reason for Rejection"))
-
-	def set_approver(self):
-		if not self.get("employees"):
-			return
-			
-		# Derive supervisor from the FIRST employee listed (same logic as resignation)
-		first_employee = self.employees[0].employee
-		if not first_employee:
-			return
-
-		employee_details = frappe.db.get_value(
-			"Employee", first_employee, ["reports_to", "site", "project"], as_dict=True
-		)
-
-		if not employee_details:
-			return
-
-		approver_employee = None
-
-		# 1. Reports to
-		if employee_details.reports_to:
-			approver_employee = employee_details.reports_to
-
-		# 2. Site Supervisor
-		if not approver_employee and employee_details.site:
-			approver_employee = frappe.db.get_value("Operations Site", employee_details.site, "site_supervisor")
-
-		# 3. Project Manager
-		if not approver_employee and employee_details.project:
-			approver_employee = frappe.db.get_value("Project", employee_details.project, "project_manager")
-
-		if approver_employee:
-			approver_user = frappe.db.get_value("Employee", approver_employee, "user_id")
-			if approver_user and frappe.db.exists("User", approver_user):
-				if frappe.db.has_column("Employee Resignation Withdrawal", "supervisor"):
-				    self.supervisor = approver_user
-			else:
-			    if frappe.db.has_column("Employee Resignation Withdrawal", "supervisor"):
-			        self.supervisor = None
 
 
 @frappe.whitelist()

@@ -10,6 +10,30 @@ frappe.ui.form.on('Candidate Country Process', {
 	}
 });
 
+frappe.ui.form.on('Candidate Country Process Details', {
+  form_render: function(frm, cdt, cdn) {
+    var row = frappe.get_doc(cdt, cdn);
+    set_status_options(frm, row);
+  }
+});
+
+var set_status_options = function(frm, row) {
+  var status_map = {
+    "Job Offer Issuance": ["Pending", "Offer Accepted", "Rejected"],
+    "Visa Processing": ["Pending", "Applied", "Issued", "Rejected"],
+    "Medical Test": ["Pending", "In Process", "Fit", "Unfit", "Passed", "Failed"],
+    "Remedical Test": ["Pending", "Skipped", "In Process", "Fit", "Unfit", "Passed", "Failed"],
+    "PCC Clearance": ["Pending", "Applied", "Issued", "Rejected"],
+    "Visa Stamping": ["Pending", "Applied", "Issued", "Approved", "Rejected"],
+    "Arrival & Deployment": ["Pending", "Arriving", "Completed"]
+  };
+
+  var options = status_map[row.process_name] || ["Pending", "In Process", "Completed", "Rejected", "Skipped"];
+  
+  // Set the field property for the specific row's form
+  frm.set_df_property("agency_process_details", "options", options, frm.doc.name, "status", row.name);
+};
+
 var set_country_process_details = function(frm) {
   if(frm.doc.agency_country_process){
     frm.doc.agency_process_details = [];
@@ -20,20 +44,15 @@ var set_country_process_details = function(frm) {
         d.process_name = row.process_name;
         d.responsible = row.responsible;
         d.duration_in_days = row.duration_in_days;
+        d.parallel_group = row.parallel_group || 0;
         d.attachment_required = row.attachment_required;
         d.notes_required = row.notes_required;
         d.reference_type = row.reference_type;
         d.reference_complete_status_field = row.reference_complete_status_field;
         d.reference_complete_status_value = row.reference_complete_status_value;
-        d.expected_date = frappe.datetime.add_days(frm.doc.start_date, row.duration_in_days);
+        // Planned date logic will be handled by backend validate
       });
       
-      if(frm.doc.agency_process_details.length > 0) {
-        var last_step = frm.doc.agency_process_details[frm.doc.agency_process_details.length - 1];
-        frm.set_value("planned_eta", last_step.expected_date);
-        frm.set_value("live_plan_eta", last_step.expected_date);
-      }
-
       frm.refresh_field("agency_process_details");
     });
   }

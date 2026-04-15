@@ -8,12 +8,15 @@
   "process_name",
   "responsible",
   "duration_in_days",
+  "parallel_group",
   "column_break_4",
-  "expected_date",
+  "planned_date",
+  "live_plan_date",
   "actual_date",
   "reference_complete_status_field",
   "reference_complete_status_value",
   "status",
+  "eta_status",
   "section_break_7",
   "item",
   "amount",
@@ -25,8 +28,7 @@
   "attachment_required",
   "attachment",
   "notes_required",
-  "notes",
-  "eta_status"
+  "notes"
  ],
  "fields": [
   {
@@ -45,10 +47,37 @@
    "read_only": 1
   },
   {
-   "depends_on": "notes_required",
-   "fieldname": "notes",
-   "fieldtype": "Text Editor",
-   "label": "Notes"
+   "fieldname": "duration_in_days",
+   "fieldtype": "Int",
+   "label": "Duration in Days",
+   "read_only": 1
+  },
+  {
+   "fieldname": "parallel_group",
+   "fieldtype": "Int",
+   "label": "Parallel Group",
+   "read_only": 1,
+   "description": "0 = sequential. Rows sharing the same non-zero value run in parallel from the same anchor date."
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 2,
+   "fieldname": "planned_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Planned Date",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "live_plan_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Live Plan Date",
+   "read_only": 1
   },
   {
    "columns": 2,
@@ -58,12 +87,14 @@
    "label": "Actual Date"
   },
   {
-   "columns": 2,
-   "fieldname": "expected_date",
-   "fieldtype": "Date",
-   "in_list_view": 1,
-   "label": "Expected Date",
-   "read_only": 1
+   "fieldname": "reference_complete_status_field",
+   "fieldtype": "Data",
+   "label": "Reference Complete Status Field"
+  },
+  {
+   "fieldname": "reference_complete_status_value",
+   "fieldtype": "Data",
+   "label": "Reference Complete Status Value"
   },
   {
    "columns": 1,
@@ -75,8 +106,17 @@
    "options": "Pending\nOffer Accepted\nIn Process\nApplied\nIssued\nRejected\nFit\nUnfit\nPassed\nFailed\nSubmitted\nApproved\nArriving\nCompleted"
   },
   {
-   "fieldname": "column_break_4",
-   "fieldtype": "Column Break"
+   "columns": 2,
+   "fieldname": "eta_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "ETA Status",
+   "options": "\nStill Within Time frame\nLate\nCompleted Early\nCompleted on time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_7",
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "item",
@@ -89,10 +129,6 @@
    "label": "Amount"
   },
   {
-   "fieldname": "section_break_7",
-   "fieldtype": "Section Break"
-  },
-  {
    "depends_on": "eval: doc.amount > 0",
    "fieldname": "proof_of_payment",
    "fieldtype": "Data",
@@ -101,12 +137,6 @@
   {
    "fieldname": "column_break_10",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "duration_in_days",
-   "fieldtype": "Int",
-   "label": "Duration in Days",
-   "read_only": 1
   },
   {
    "fieldname": "reference_type",
@@ -146,28 +176,15 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "reference_complete_status_field",
-   "fieldtype": "Data",
-   "label": "Reference Complete Status Field"
-  },
-  {
-   "fieldname": "reference_complete_status_value",
-   "fieldtype": "Data",
-   "label": "Reference Complete Status Value"
-  },
-  {
-   "columns": 2,
-   "fieldname": "eta_status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "ETA Status",
-   "options": "\nStill Within Time frame\nLate\nCompleted Early\nCompleted on time",
-   "read_only": 1
+   "depends_on": "notes_required",
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-04-14 20:17:04.206562",
+ "modified": "2026-04-15 05:17:00.000000",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Candidate Country Process Details",

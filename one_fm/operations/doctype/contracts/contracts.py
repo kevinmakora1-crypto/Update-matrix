@@ -23,6 +23,11 @@ class Contracts(Document):
         self.validate_no_of_days_off()
         self.validate_off_type_with_daily_operations()
         self.update_contract_dates()
+        self.validate_items_on_active_transition()
+
+    def validate_items_on_active_transition(self):
+        if self.workflow_state == "Active" and not self.items:
+            frappe.throw(_("At least one Contract Item is required to set the contract as Active."))
 
 
     def on_update(self):

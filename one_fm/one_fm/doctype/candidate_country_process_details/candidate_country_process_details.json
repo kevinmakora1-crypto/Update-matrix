@@ -103,7 +103,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nOffer Accepted\nIn Process\nApplied\nIssued\nRejected\nFit\nUnfit\nPassed\nFailed\nSubmitted\nApproved\nArriving\nCompleted"
+   "options": "Pending\nSkipped\nOffer Accepted\nIn Process\nApplied\nIssued\nRejected\nFit\nUnfit\nPassed\nFailed\nSubmitted\nApproved\nArriving\nCompleted"
   },
   {
    "columns": 2,

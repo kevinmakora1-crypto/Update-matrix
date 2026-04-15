@@ -11,24 +11,26 @@ class CandidateCountryProcess(Document):
         today = frappe.utils.getdate()
         rows = self.agency_process_details
 
-        # ── 1. PLANNED DATE: static single-pass sequential cascade ────────────
-        # Only recalculate if the row has no planned_date yet (first creation).
-        # Never overwrite a planned_date that already exists.
+        # ── 1. PLANNED DATE: static sequential baseline set once at creation ──
+        # Only fill in rows that don't yet have a planned_date (first save).
         anchor = frappe.utils.getdate(self.start_date) if self.start_date else None
         for row in rows:
             if not row.get("planned_date") and anchor and row.duration_in_days is not None:
                 row.planned_date = frappe.utils.add_days(anchor, row.duration_in_days)
-            # Advance anchor sequentially (parallel rows share the same anchor;
-            # the master template already accounts for this via duration)
             if row.get("planned_date"):
                 anchor = frappe.utils.getdate(row.planned_date)
 
-        # ── 2. LIVE PLAN DATE: Fork-Join dynamic cascade ──────────────────────
-        # Rules:
-        #   • parallel_group == 0  → sequential step
-        #   • parallel_group  > 0  → rows sharing the same group id run in
-        #     parallel from the same live_anchor
-        #   • After a parallel group the live_anchor = MAX(all tracks' end dates)
+        # ── 2. LIVE PLAN DATE: Track-based Fork-Join cascade ─────────────────
+        #
+        # parallel_group == 0  → standard sequential step
+        # parallel_group  > 0  → rows sharing the same group id form one TRACK.
+        #                         Within a track, rows run sequentially.
+        #                         Different group ids run as separate parallel tracks.
+        #                         After all tracks finish, the sequential anchor
+        #                         advances to MAX(effective end of each track).
+        #
+        # A row with status == "Skipped" is excluded from the track-end calculation.
+        #
         live_anchor = frappe.utils.getdate(self.start_date) if self.start_date else None
         i = 0
         while i < len(rows):
@@ -40,7 +42,6 @@ class CandidateCountryProcess(Document):
                 if live_anchor and row.duration_in_days is not None:
                     row.live_plan_date = frappe.utils.add_days(live_anchor, row.duration_in_days)
 
-                # Advance live anchor: actual beats live plan
                 if row.actual_date:
                     live_anchor = frappe.utils.getdate(row.actual_date)
                 elif row.get("live_plan_date"):
@@ -49,37 +50,51 @@ class CandidateCountryProcess(Document):
                 i += 1
 
             else:
-                # ── Parallel group: collect all consecutive rows in this group ─
-                group_rows = []
+                # ── Collect ALL rows inside the parallel section ─────────────
+                # Group consecutive non-zero rows into their respective tracks.
+                tracks = {}   # {group_id: [rows…]}
                 j = i
-                while j < len(rows) and frappe.utils.cint(rows[j].get("parallel_group") or 0) == group_id:
-                    group_rows.append(rows[j])
+                while j < len(rows) and frappe.utils.cint(rows[j].get("parallel_group") or 0) != 0:
+                    gid = frappe.utils.cint(rows[j].parallel_group)
+                    tracks.setdefault(gid, []).append(rows[j])
                     j += 1
 
-                group_start = live_anchor
-                max_end = group_start
+                max_end = live_anchor  # will become the sequential anchor after the fork-join
 
-                for gr in group_rows:
-                    if group_start and gr.duration_in_days is not None:
-                        gr.live_plan_date = frappe.utils.add_days(group_start, gr.duration_in_days)
+                for track_rows in tracks.values():
+                    track_anchor = live_anchor
+                    track_effective_end = live_anchor
 
-                    # Each track's effective end date
-                    if gr.actual_date:
-                        track_end = frappe.utils.getdate(gr.actual_date)
-                    elif gr.get("live_plan_date"):
-                        track_end = frappe.utils.getdate(gr.live_plan_date)
-                    else:
-                        track_end = group_start
+                    for tr in track_rows:
+                        # Skipped rows don't advance the track anchor
+                        if tr.get("status") == "Skipped":
+                            tr.live_plan_date = None
+                            continue
 
-                    if track_end and (max_end is None or track_end > max_end):
-                        max_end = track_end
+                        if track_anchor and tr.duration_in_days is not None:
+                            tr.live_plan_date = frappe.utils.add_days(track_anchor, tr.duration_in_days)
 
-                # After the parallel group, live anchor = latest of all tracks
+                        # Advance within the track: actual beats live plan
+                        if tr.actual_date:
+                            track_anchor = frappe.utils.getdate(tr.actual_date)
+                            track_effective_end = track_anchor
+                        elif tr.get("live_plan_date"):
+                            track_anchor = frappe.utils.getdate(tr.live_plan_date)
+                            track_effective_end = track_anchor
+
+                    # Join: take the latest of all track endings
+                    if track_effective_end and (max_end is None or track_effective_end > max_end):
+                        max_end = track_effective_end
+
                 live_anchor = max_end
                 i = j
 
-        # ── 3. ETA STATUS: based on planned date vs actual / today ───────────
+        # ── 3. ETA STATUS: planned date vs actual / today ────────────────────
         for row in rows:
+            if row.get("status") == "Skipped":
+                row.eta_status = ""
+                continue
+
             planned = frappe.utils.getdate(row.get("planned_date")) if row.get("planned_date") else None
             actual  = frappe.utils.getdate(row.actual_date) if row.actual_date else None
 

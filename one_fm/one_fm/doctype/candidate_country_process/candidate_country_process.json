@@ -145,27 +145,27 @@
  ],
  "links": [
   {
-   "group": "Process Documents",
+   "group": "Medical",
    "link_doctype": "Overseas Medical Appointment WAFID",
    "link_fieldname": "candidate_country_process"
   },
   {
-   "group": "Process Documents",
+   "group": "Medical",
    "link_doctype": "Overseas Remedical",
    "link_fieldname": "candidate_country_process"
   },
   {
-   "group": "Process Documents",
+   "group": "Clearance",
    "link_doctype": "PCC Clearance",
    "link_fieldname": "candidate_country_process"
   },
   {
-   "group": "Process Documents",
+   "group": "Clearance",
    "link_doctype": "Visa Stamping",
    "link_fieldname": "candidate_country_process"
   },
   {
-   "group": "Process Documents",
+   "group": "Deployment",
    "link_doctype": "Arrival and Deployment",
    "link_fieldname": "candidate_country_process"
   }

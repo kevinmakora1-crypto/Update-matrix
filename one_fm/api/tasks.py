@@ -2259,7 +2259,7 @@ def attendance_query_script():
 		absent_records = frappe.db.sql("""
 			SELECT employee, attendance_date
 			FROM `tabAttendance`
-			WHERE docstatus < 2
+			WHERE docstatus = 1
 			AND status = 'Absent'
 			AND attendance_date BETWEEN %s AND %s
 			AND employee IN %s

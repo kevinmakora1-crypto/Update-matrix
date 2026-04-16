@@ -369,3 +369,5 @@ one_fm.patches.v15_0.add_assignment_rule_subcontract_subcontractor #2026-04-12
 one_fm.patches.v15_0.add_subcontractor_contracts_workflow #2026-04-12
 one_fm.patches.v15_0.add_workflow_visa_request
 one_fm.patches.v15_0.create_attendance_query_process_task
+one_fm.patches.v15_0.add_formal_hearing_process_tasks_and_assignment_rules
+one_fm.patches.v15_0.add_absence_case_hr_officer_process_task_and_assignment_rule

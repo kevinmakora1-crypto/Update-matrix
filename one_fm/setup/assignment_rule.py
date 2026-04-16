@@ -72,6 +72,7 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("formal_hearing_operations_manager.json"))
 	create_assignment_rule(get_assignment_rule_json_file("formal_hearing_hr_manager.json"))
 	create_assignment_rule(get_assignment_rule_json_file("formal_hearing_general_manager.json"))
+	create_assignment_rule(get_assignment_rule_json_file("absence_case_hr_officer.json"))
 
 def delete_assignment_rules():
 	delete_assignment_rule(get_assignment_rule_json_file("roster_post_action_site_supervisor.json"))
@@ -108,3 +109,4 @@ def delete_assignment_rules():
 	delete_assignment_rule(get_assignment_rule_json_file("formal_hearing_operations_manager.json"))
 	delete_assignment_rule(get_assignment_rule_json_file("formal_hearing_hr_manager.json"))
 	delete_assignment_rule(get_assignment_rule_json_file("formal_hearing_general_manager.json"))
+	delete_assignment_rule(get_assignment_rule_json_file("absence_case_hr_officer.json"))

@@ -2312,6 +2312,13 @@ def attendance_query_script():
 
 		manager_full_name = frappe.db.get_value("User", manager_email, "full_name") or "Attendance Officer"
 
+		# Generate Absence Cases for flagged employees
+		for emp in flagged_7_days:
+			create_absence_case(emp["employee_id"], "7 Days Consecutive Absence")
+
+		for emp in flagged_21_days:
+			create_absence_case(emp["employee_id"], "21 Days Absence in a Year")
+
 		if flagged_7_days:
 			message_7 = frappe.render_template(
 				'one_fm/templates/emails/seven_day_absence_notification.html',
@@ -2333,13 +2340,6 @@ def attendance_query_script():
 				subject="Action Required: 21 Days Annual Absence",
 				message=message_21
 			)
-
-		# Generate Absence Cases for flagged employees
-		for emp in flagged_7_days:
-			create_absence_case(emp["employee_id"], "7 Days Consecutive Absence")
-
-		for emp in flagged_21_days:
-			create_absence_case(emp["employee_id"], "21 Days Absence in a Year")
 
 	except Exception as e:
 		frappe.log_error(title="Attendance Query Script Failed", message=frappe.get_traceback())

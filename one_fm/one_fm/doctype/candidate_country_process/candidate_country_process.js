@@ -13,31 +13,17 @@ var STATUS_MAP = {
 };
 
 frappe.ui.form.on('Candidate Country Process', {
-  setup: function() {
-    // ── Horizontal sidebar connections layout ──
-    if (!document.getElementById('ccp-sidebar-style')) {
-      var style = document.createElement('style');
-      style.id = 'ccp-sidebar-style';
-      style.textContent = [
-        '.form-sidebar .document-link {',
-        '  display: inline-flex !important;',
-        '  align-items: center;',
-        '  margin-right: 6px;',
-        '  margin-bottom: 6px;',
-        '}',
-        '.form-sidebar .document-link-badge {',
-        '  white-space: nowrap;',
-        '}'
-      ].join('\n');
-      document.head.appendChild(style);
-    }
-  },
   agency_country_process: function(frm) {
     set_country_process_details(frm);
   },
   refresh: function(frm) {
     candidate_country_process_flow_btn(frm);
     setup_inline_status_filter(frm);
+
+    // Hide Seq Type column — defined per-row, not needed in grid view
+    if (frm.fields_dict['agency_process_details']) {
+      frm.fields_dict['agency_process_details'].grid.set_column_disp('sequence_type', false);
+    }
 
     if (!frm.is_new()) {
       // ── "Apply Visa" button: manually trigger PAM Visa creation ──

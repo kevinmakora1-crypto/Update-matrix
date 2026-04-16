@@ -33,6 +33,8 @@
   "governorate",
   "location_of_work",
   "employment_type",
+  "recruiter",
+  "additional_recruiter",
   "attendance_by_timesheet",
   "column_break_14",
   "travel_required_html",
@@ -129,7 +131,10 @@
   "job_description_section",
   "description",
   "close_with_section",
-  "erf_employee"
+  "erf_employee",
+  "approvers_section",
+  "supervisor",
+  "operations_manager"
  ],
  "fields": [
   {
@@ -1020,6 +1025,38 @@
    "label": "ERF Employee",
    "no_copy": 1,
    "options": "ERF Employee"
+  },
+  {
+   "fieldname": "approvers_section",
+   "fieldtype": "Section Break",
+   "label": "Workflow Approvers"
+  },
+  {
+   "fieldname": "supervisor",
+   "fieldtype": "Link",
+   "label": "Supervisor",
+   "options": "User"
+  },
+  {
+   "fieldname": "operations_manager",
+   "fieldtype": "Link",
+   "label": "Operations Manager",
+   "options": "User"
+  },
+  {
+   "fieldname": "recruiter",
+   "fieldtype": "Link",
+   "label": "Recruiter",
+   "options": "User",
+   "description": "Senior Recruiter",
+   "reqd": 1,
+   "mandatory_depends_on": "eval: doc.workflow_state == 'Submit to Recruitment Manager'"
+  },
+  {
+   "fieldname": "additional_recruiter",
+   "fieldtype": "Link",
+   "label": "Additional Recruiter",
+   "options": "User"
   }
  ],
  "is_submittable": 1,

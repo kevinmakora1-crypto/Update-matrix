@@ -1,0 +1,44 @@
+{
+    "name": "ERF - Submit to Recruitment Manager",
+    "document_type": "ERF",
+    "priority": 0,
+    "disabled": 0,
+    "description": "<p>Please review {{ doctype }}({{ name }}).</p>",
+    "is_assignment_rule_with_workflow": 0,
+    "assign_condition": "workflow_state == \"Submit to Recruitment Manager\"",
+    "unassign_condition": "workflow_state != \"Submit to Recruitment Manager\"",
+    "rule": "Based on Field",
+    "field": "recruiter",
+    "doctype": "Assignment Rule",
+    "users": [],
+    "assignment_days": [
+        {
+            "day": "Monday",
+            "doctype": "Assignment Rule Day"
+        },
+        {
+            "day": "Tuesday",
+            "doctype": "Assignment Rule Day"
+        },
+        {
+            "day": "Wednesday",
+            "doctype": "Assignment Rule Day"
+        },
+        {
+            "day": "Thursday",
+            "doctype": "Assignment Rule Day"
+        },
+        {
+            "day": "Friday",
+            "doctype": "Assignment Rule Day"
+        },
+        {
+            "day": "Saturday",
+            "doctype": "Assignment Rule Day"
+        },
+        {
+            "day": "Sunday",
+            "doctype": "Assignment Rule Day"
+        }
+    ]
+}

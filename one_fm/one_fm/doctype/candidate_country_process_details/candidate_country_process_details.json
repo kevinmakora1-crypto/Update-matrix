@@ -58,7 +58,6 @@
    "columns": 2,
    "fieldname": "before_task",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Before Task",
    "read_only": 1,
    "description": "The task that must complete before this one can start."
@@ -68,7 +67,6 @@
    "default": "Sequential",
    "fieldname": "sequence_type",
    "fieldtype": "Select",
-   "in_list_view": 1,
    "label": "Seq Type",
    "options": "Sequential\nParallel",
    "read_only": 1
@@ -77,7 +75,6 @@
    "columns": 2,
    "fieldname": "after_task",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "After Task",
    "read_only": 1,
    "description": "The task that starts after this one completes."
@@ -103,7 +100,7 @@
    "read_only": 1
   },
   {
-   "columns": 1,
+   "columns": 2,
    "fieldname": "actual_date",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -120,7 +117,7 @@
    "label": "Reference Complete Status Value"
   },
   {
-   "columns": 1,
+   "columns": 2,
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
@@ -129,7 +126,7 @@
    "options": "Pending\nSkipped\nOffer Accepted\nIn Process\nApplied\nIssued\nRejected\nFit\nUnfit\nPassed\nFailed\nSubmitted\nApproved\nArriving\nCompleted"
   },
   {
-   "columns": 1,
+   "columns": 2,
    "fieldname": "eta_status",
    "fieldtype": "Select",
    "in_list_view": 1,

@@ -28,10 +28,10 @@ website_context = {
 email_brand_image = "/assets/one_fm/assets/img/logo-img/ONEFM_Identity_Gray.png"
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/one_fm/css/one_fm.css"
+app_include_css = "/assets/one_fm/css/one_fm.css?v=2"
 app_include_js = [
 		"/assets/one_fm/js/maps.js",
-		"/assets/one_fm/js/desk.js",
+		"/assets/one_fm/js/desk.js?v=2",
         "/assets/one_fm/js/showdown.min.js",
 		"/assets/one_fm/js/form_overrides/workflow_override.js",
         "text_editor.bundle.js",

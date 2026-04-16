@@ -16,7 +16,7 @@
             "is_optional_state": 0,
             "avoid_status_override": 0,
             "allow_edit": "Employee",
-            "send_email": 1,
+            "send_email": 0,
             "doctype": "Workflow Document State"
         },
         {
@@ -26,7 +26,7 @@
             "is_optional_state": 0,
             "avoid_status_override": 0,
             "allow_edit": "Operations Manager",
-            "send_email": 1,
+            "send_email": 0,
             "doctype": "Workflow Document State"
         },
         {
@@ -38,7 +38,7 @@
             "is_optional_state": 0,
             "avoid_status_override": 0,
             "allow_edit": "Offboarding Officer",
-            "send_email": 1,
+            "send_email": 0,
             "doctype": "Workflow Document State"
         },
         {
@@ -50,7 +50,7 @@
             "is_optional_state": 0,
             "avoid_status_override": 0,
             "allow_edit": "System Manager",
-            "send_email": 1,
+            "send_email": 0,
             "doctype": "Workflow Document State"
         }
     ],

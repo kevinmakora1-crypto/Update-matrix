@@ -14,6 +14,8 @@
   "priority",
   "count",
   "employment_type",
+  "recruiter",
+  "additional_recruiter",
   "column_break_twru",
   "designation",
   "department",
@@ -48,6 +50,9 @@
   "column_break_txvy",
   "naming_series",
   "column_break_qast",
+  "approvers_section",
+  "supervisor",
+  "operations_manager",
   "amended_from",
   "qty_added_to_erf",
   "section_fulfillment_actions",
@@ -356,6 +361,31 @@
    "fieldtype": "Column Break"
   },
   {
+   "fieldname": "approvers_section",
+   "fieldtype": "Section Break",
+   "label": "Workflow Approvers"
+  },
+  {
+   "fieldname": "supervisor",
+   "fieldtype": "Link",
+   "label": "Supervisor",
+   "options": "User"
+  },
+  {
+   "fieldname": "operations_manager",
+   "fieldtype": "Link",
+   "label": "Operations Manager",
+   "options": "User"
+  },
+  {
+   "fieldname": "recruiter",
+   "fieldtype": "Link",
+   "label": "Recruiter",
+   "options": "User",
+   "description": "Senior Recruiter",
+   "reqd": 1
+  },
+  {
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",
@@ -416,6 +446,12 @@
    "hidden": 1,
    "label": "Resignations Log",
    "options": "PMR Resignation Link"
+  },
+  {
+   "fieldname": "additional_recruiter",
+   "fieldtype": "Link",
+   "label": "Additional Recruiter",
+   "options": "User"
   }
  ],
  "grid_page_length": 50,

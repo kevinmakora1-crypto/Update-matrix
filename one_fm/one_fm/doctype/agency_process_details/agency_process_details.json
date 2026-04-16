@@ -60,6 +60,7 @@
    "options": "Sequential\nParallel",
    "description": "Sequential = waits for before_task to finish. Parallel = starts at the same time as other parallel tasks sharing the same before_task."
   },
+
   {
    "fieldname": "after_task",
    "fieldtype": "Data",

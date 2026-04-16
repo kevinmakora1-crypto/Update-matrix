@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "naming_series:",
- "creation": "2026-04-15 06:00:00.000000",
+ "creation": "2026-04-15 06:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -81,7 +81,7 @@
   {
    "fieldname": "clearance_date",
    "fieldtype": "Date",
-   "label": "Clearance Date"
+   "label": "Result Date"
   },
   {
    "fieldname": "section_break_details",
@@ -142,7 +142,7 @@
    "link_fieldname": "candidate_country_process"
   }
  ],
- "modified": "2026-04-15 06:22:00.000000",
+ "modified": "2026-04-15 14:45:32.615912",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "PCC Clearance",
@@ -150,24 +150,58 @@
  "owner": "Administrator",
  "permissions": [
   {
-   "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1,
-   "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
   },
   {
-   "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1,
-   "read": 1, "report": 1, "role": "HR Manager", "share": 1, "write": 1
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
   },
   {
-   "create": 1, "email": 1, "export": 1, "print": 1,
-   "read": 1, "report": 1, "role": "HR User", "write": 1
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User",
+   "write": 1
   },
   {
-   "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1,
-   "read": 1, "report": 1, "role": "Recruitment Manager", "share": 1, "write": 1
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Recruitment Manager",
+   "share": 1,
+   "write": 1
   }
  ],
+ "row_format": "Dynamic",
+ "search_fields": "candidate_name,passport_number",
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "candidate_name",
  "track_changes": 1
 }

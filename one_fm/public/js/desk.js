@@ -1,4 +1,33 @@
 
+// ── Inject horizontal connections CSS ──────────────────────────────
+// Proven via browser test to flatten the Process Documents badges
+// in the form dashboard connections section across all doctypes.
+(function() {
+  var s = document.createElement('style');
+  s.id = 'one-fm-horizontal-connections';
+  s.textContent = [
+    'body .form-links .form-documents .row > [class*="col-md"] {',
+    '  flex: 0 0 100% !important;',
+    '  max-width: 100% !important;',
+    '  display: flex !important;',
+    '  flex-wrap: wrap !important;',
+    '  align-items: center !important;',
+    '  column-gap: 8px !important;',
+    '  row-gap: 6px !important;',
+    '}',
+    'body .form-links .form-documents .form-link-title {',
+    '  width: 100% !important;',
+    '  flex-basis: 100% !important;',
+    '}',
+    'body .form-links .document-link {',
+    '  display: inline-flex !important;',
+    '  flex: none !important;',
+    '  width: auto !important;',
+    '}'
+  ].join('\n');
+  document.head.appendChild(s);
+})();
+
 // dom ready
 document.addEventListener("DOMContentLoaded", (event)=>{
   // Add knowledge base to help button

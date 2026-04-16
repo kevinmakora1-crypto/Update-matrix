@@ -170,7 +170,7 @@
    "link_fieldname": "candidate_country_process"
   }
  ],
- "modified": "2026-04-14 20:11:26.273487",
+ "modified": "2026-04-15 13:26:49.188583",
  "modified_by": "Administrator",
  "module": "one_fm",
  "name": "Candidate Country Process",
@@ -231,8 +231,11 @@
   }
  ],
  "row_format": "Dynamic",
+ "search_fields": "candidate_name,passport_number",
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "candidate_name",
  "track_changes": 1
 }

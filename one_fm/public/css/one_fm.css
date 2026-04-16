@@ -1,3 +1,30 @@
 #page-stock-balance-1 .dashboard-list-item {
   padding: 5px 15px;
 }
+
+/* ── Horizontal dashboard connections ──────────────────────────────
+   Makes the document-link badges in the form dashboard Connections
+   section flow left-to-right (inline) instead of stacking vertically.
+   Uses body-prefixed selectors for high specificity to override
+   Bootstrap grid and Frappe's compiled SCSS rules.
+   ────────────────────────────────────────────────────────────────── */
+body .form-links .form-documents .row > [class*="col-md"] {
+  flex: 0 0 100% !important;
+  max-width: 100% !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  column-gap: 8px !important;
+  row-gap: 6px !important;
+}
+
+body .form-links .form-documents .form-link-title {
+  width: 100% !important;
+  flex-basis: 100% !important;
+}
+
+body .form-links .document-link {
+  display: inline-flex !important;
+  flex: none !important;
+  width: auto !important;
+}

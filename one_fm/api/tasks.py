@@ -21,6 +21,7 @@ from one_fm.utils import get_current_shift, fetch_attendance_manager_user
 from one_fm.processor import sendemail
 from one_fm.api.api import push_notification_for_checkin, push_notification_rest_api_for_checkin
 from hrms.hr.utils import get_holidays_for_employee
+from hrms.hr.doctype.leave_application.leave_application import get_leave_balance_on
 
 class DeltaTemplate(Template):
 	delimiter = "%"
@@ -2333,5 +2334,47 @@ def attendance_query_script():
 				message=message_21
 			)
 
+		# Generate Absence Cases for flagged employees
+		for emp in flagged_7_days:
+			create_absence_case(emp["employee_id"], "7 Days Consecutive Absence")
+
+		for emp in flagged_21_days:
+			create_absence_case(emp["employee_id"], "21 Days Absence in a Year")
+
 	except Exception as e:
 		frappe.log_error(title="Attendance Query Script Failed", message=frappe.get_traceback())
+
+
+
+def create_absence_case(employee, absence_type):
+	"""
+	Generate a new Absence Case for flagged employees if an active one doesn't exist.
+	"""
+	# Check if an active Absence Case already exists for this employee and type within the last 15 days
+	# to avoid duplicate generation during the same absence streak.
+	existing_case = frappe.db.exists("Absence Case", {
+		"employee": employee,
+		"absence_type": absence_type,
+		"docstatus": ["<", 2], # Not cancelled
+		"creation": [">", add_days(today(), -15)]
+	})
+
+	if existing_case:
+		return
+
+	# Get Paid Annual Leave balance
+	leave_type = frappe.db.get_value("Leave Type", {"one_fm_is_paid_annual_leave": 1}, "name")
+	
+	balance = 0
+	if leave_type:
+		balance = get_leave_balance_on(employee, leave_type, today())
+
+	doc = frappe.get_doc({
+		"doctype": "Absence Case",
+		"employee": employee,
+		"posting_date": today(),
+		"absence_type": absence_type,
+		"annual_leave_balance": balance,
+		"status": "Draft"
+	})
+	doc.insert(ignore_permissions=True)

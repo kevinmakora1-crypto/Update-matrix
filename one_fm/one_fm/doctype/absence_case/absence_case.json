@@ -1,7 +1,7 @@
 {
  "actions": [
   {
-   "action": "app/formal-hearing/new",
+   "action": "/app/formal-hearing/new",
    "action_type": "Route",
    "group": "Create",
    "label": "Formal Hearing"

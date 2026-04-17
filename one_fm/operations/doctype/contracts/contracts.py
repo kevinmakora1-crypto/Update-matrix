@@ -443,7 +443,10 @@ def get_contracts_items(contracts):
 def get_item_variant_attributes(item_code: str) -> dict:
     """Fetch Gender, Working Days, and Working Hours from Item Variant Attribute table."""
     attributes = frappe.get_all("Item Variant Attribute",
-        filters={"parent": item_code},
+        filters={
+            "parent": item_code,
+            "attribute": ["in", ["Gender", "Working Days", "Working Hours"]]
+        },
         fields=["attribute", "attribute_value"]
     )
 

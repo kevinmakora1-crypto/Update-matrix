@@ -1263,7 +1263,6 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                 },
                 fields=day_fields
             )
-            print(basic_attendance_records, "\n\n\n\n")
             
             overtime_attendance_records = frappe.db.get_all(
                 "Attendance Amendment OT Item",

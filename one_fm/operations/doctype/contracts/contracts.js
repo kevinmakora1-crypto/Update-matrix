@@ -549,16 +549,23 @@ frappe.ui.form.on('Contract Item', {
 			frappe.model.set_value(d.doctype, d.name, "item_price", null);
 			frappe.model.set_value(d.doctype, d.name, "price_list_rate", 0);
 			frappe.model.set_value(d.doctype, d.name, "rate", 0);
+			frappe.model.set_value(d.doctype, d.name, "gender", null);
+			frappe.model.set_value(d.doctype, d.name, "working_days", null);
+			frappe.model.set_value(d.doctype, d.name, "working_hours", null);
 
 			// Fetch variant attributes (Gender, Working Days, Working Hours)
 			frappe.call({
 				method: "one_fm.operations.doctype.contracts.contracts.get_item_variant_attributes",
 				args: { item_code: d.item_code },
 				callback: function(r) {
-					if (r.message) {
+					if (!r.exc && r.message) {
 						frappe.model.set_value(d.doctype, d.name, "gender", r.message.gender);
 						frappe.model.set_value(d.doctype, d.name, "working_days", r.message.working_days);
 						frappe.model.set_value(d.doctype, d.name, "working_hours", r.message.working_hours);
+					} else {
+						frappe.model.set_value(d.doctype, d.name, "gender", null);
+						frappe.model.set_value(d.doctype, d.name, "working_days", null);
+						frappe.model.set_value(d.doctype, d.name, "working_hours", null);
 					}
 				}
 			});

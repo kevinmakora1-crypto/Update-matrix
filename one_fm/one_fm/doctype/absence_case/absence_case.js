@@ -2,6 +2,7 @@ frappe.ui.form.on("Absence Case", {
 	refresh(frm) {
 		set_leave_application_query(frm);
 		setup_leave_extension_button(frm);
+		setup_unpaid_leave_buttons(frm);
 	},
 
 	validate(frm) {
@@ -12,6 +13,9 @@ frappe.ui.form.on("Absence Case", {
 	},
 	formal_hearing_end_datetime(frm) {
 		validate_formal_hearing_datetime(frm);
+	},
+	unpaid_leave_request_decision(frm) {
+		setup_unpaid_leave_buttons(frm);
 	}
 });
 
@@ -33,6 +37,28 @@ function setup_leave_extension_button(frm) {
 				"leave_application": frm.doc.leave_application
 			});
 		}, __("Create"));
+	}
+}
+
+function setup_unpaid_leave_buttons(frm) {
+	frm.remove_custom_button(__("Unpaid Leave"), __("Create"));
+	frm.remove_custom_button(__("Resignation by Law"), __("Create"));
+
+	if (frm.doc.docstatus === 1 && flt(frm.doc.annual_leave_balance) === 0) {
+		if (frm.doc.unpaid_leave_request_decision === "Approve") {
+			frm.add_custom_button(__("Unpaid Leave"), function() {
+				frappe.new_doc("Leave Application", {
+					"employee": frm.doc.employee,
+					"leave_type": "Leave without Pay"
+				});
+			}, __("Create"));
+		} else if (frm.doc.unpaid_leave_request_decision === "Reject") {
+			frm.add_custom_button(__("Resignation by Law"), function() {
+				frappe.new_doc("Employee Resignation", {
+					"employee": frm.doc.employee
+				});
+			}, __("Create"));
+		}
 	}
 }
 

@@ -6,6 +6,7 @@
 from __future__ import unicode_literals
 import frappe, json
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 import calendar
 from frappe.model.document import Document
 
@@ -144,17 +145,31 @@ class Contracts(Document):
             frappe.throw(_("Contracts Items and POC must be set before document is submitted"))
 
     def calculate_contract_duration(self):
-        duration_in_days = date_diff(self.end_date, self.start_date)
+        start_date = getdate(self.start_date)
+        end_date = getdate(self.end_date)
+        
+        # Duration in days (non-inclusive as per user feedback)
+        duration_in_days = date_diff(end_date, start_date)
         self.duration_in_days = cstr(duration_in_days)
-        full_months = month_diff(self.end_date, self.start_date)
-        years = int(full_months / 12)
-        months = int(full_months % 12)
-        if(years > 0):
-            self.duration = cstr(years) + ' year'
-        if(years > 0 and months > 0):
-            self.duration += ' and ' + cstr(months) + ' month'
-        if(years < 1 and months > 0):
-            self.duration = cstr(months) + ' month'
+        
+        # Duration string (Years and Months)
+        # Use relativedelta for accurate calculation. 
+        diff = relativedelta(end_date, start_date)
+        
+        parts = []
+        if diff.years > 0:
+            parts.append(f"{diff.years} {'year' if diff.years == 1 else 'years'}")
+        
+        if diff.months > 0:
+            parts.append(f"{diff.months} {'month' if diff.months == 1 else 'months'}")
+            
+        if diff.days > 0:
+            parts.append(f"{diff.days} {'day' if diff.days == 1 else 'days'}")
+
+        if parts:
+            self.duration = " and ".join(parts)
+        else:
+            self.duration = "0 days"
 
     @frappe.whitelist()
     def generate_sales_invoice(self, month, year):

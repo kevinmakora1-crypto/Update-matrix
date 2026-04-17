@@ -456,6 +456,33 @@ def get_contracts_items(contracts):
     return contracts_item_list
 
 @frappe.whitelist()
+def get_item_variant_attributes(item_code: str) -> dict:
+    """Fetch Gender, Working Days, and Working Hours from Item Variant Attribute table."""
+    attributes = frappe.get_all("Item Variant Attribute",
+        filters={
+            "parent": item_code,
+            "attribute": ["in", ["Gender", "Working Days", "Working Hours"]]
+        },
+        fields=["attribute", "attribute_value"]
+    )
+
+    result = {
+        "gender": None,
+        "working_days": None,
+        "working_hours": None
+    }
+
+    for attr in attributes:
+        if attr.attribute == "Gender":
+            result["gender"] = attr.attribute_value
+        elif attr.attribute == "Working Days":
+            result["working_days"] = attr.attribute_value
+        elif attr.attribute == "Working Hours":
+            result["working_hours"] = attr.attribute_value
+
+    return result
+
+@frappe.whitelist()
 def insert_login_credential(url, user_name, password, client):
     password_management_name = client+'-'+user_name
     password_management = frappe.new_doc('Password Management')

@@ -9,8 +9,45 @@ from frappe.utils import now_datetime
 
 class PathfinderLog(Document):
 	def validate(self):
+		self._validate_active_status_conditions()
 		self.validate_process_classification()
 		self.validate_single_active_log()
+
+	def _validate_active_status_conditions(self):
+		"""Block saving with status 'Active' when any classification prerequisite is unmet.
+
+		Blocking conditions:
+		  1. The selected process has 'Is Generic' checked.
+		  2. The Process Folder Link is not set.
+		  3. The Epic is not set.
+		"""
+		if self.status != "Active":
+			return
+
+		errors = []
+
+		if self.process_is_generic:
+			errors.append(
+				_('The selected process "{0}" is marked as <b>Generic</b>. '
+				  "Please ensure the actual (non-generic) process has been selected."
+				  ).format(self.process_name)
+			)
+
+		if not self.epic:
+			errors.append(_(
+				"The <b>Epic</b> must be set before marking this log as Active."
+			))
+
+		if not self.process_folder_link:
+			errors.append(_(
+				"The <b>Process Folder Link</b> must be set before marking this log as Active."
+			))
+
+		if errors:
+			frappe.throw(
+				"<br>".join(errors),
+				title=_("Cannot Set Status to Active"),
+			)
 
 	def validate_process_classification(self):
 		"""Block transition from 'Pending Process Classification' when a generic process is selected."""

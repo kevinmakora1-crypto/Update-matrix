@@ -89,7 +89,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Backlog\nPending Process Classification\nUpcoming\nActive\nOn Hold\nDeployed"
+   "options": "Backlog\nPending Process Classification\nUpcoming\nActive\nOn Hold\nDeployed",
+   "read_only_depends_on": "eval: doc.process_is_generic || !doc.epic || !doc.process_folder_link"
   },
   {
    "fieldname": "stakeholders_section",

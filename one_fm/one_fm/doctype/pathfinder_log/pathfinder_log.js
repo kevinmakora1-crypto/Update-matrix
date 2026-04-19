@@ -3,6 +3,10 @@
 
 frappe.ui.form.on("Pathfinder Log", {
 	refresh(frm) {
+		// Hide Status on new documents — it always defaults to Backlog
+		// and cannot be meaningfully interacted with until the doc is saved.
+		frm.toggle_display("status", !frm.is_new());
+
 		if (!frm.is_new()) {
 			frm.add_custom_button(
 				__("Get Open Change Requests"),

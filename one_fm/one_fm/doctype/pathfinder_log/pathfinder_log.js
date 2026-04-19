@@ -3,6 +3,10 @@
 
 frappe.ui.form.on("Pathfinder Log", {
 	refresh(frm) {
+		// Hide Status on new documents — it always defaults to Backlog
+		// and cannot be meaningfully interacted with until the doc is saved.
+		frm.toggle_display("status", !frm.is_new());
+
 		// Restrict Epic link field to Work Items of type "Epic" only
 		frm.set_query("epic", function () {
 			return {

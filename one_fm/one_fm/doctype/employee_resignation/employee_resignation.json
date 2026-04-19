@@ -8,6 +8,7 @@
  "field_order": [
   "resigning_employees_section",
   "employees",
+  "resignation_initiation_date",
   "relieving_date",
   "section_break_xfjj",
   "employee",

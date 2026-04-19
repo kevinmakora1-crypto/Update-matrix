@@ -3,6 +3,7 @@ frappe.ui.form.on("Absence Case", {
 		set_leave_application_query(frm);
 		setup_leave_extension_button(frm);
 		setup_unpaid_leave_buttons(frm);
+		setup_location_status_buttons(frm);
 	},
 
 	validate(frm) {
@@ -37,6 +38,30 @@ function setup_leave_extension_button(frm) {
 				"leave_application": frm.doc.leave_application
 			});
 		}, __("Create"));
+	}
+}
+
+function setup_location_status_buttons(frm) {
+	if (frm.doc.docstatus === 1 && frm.doc.location_status === "Outside Kuwait" && frm.doc.has_contact_been_made === 0) {
+		if (frm.doc.retain_the_employee === 0) {
+			frm.add_custom_button(__("Resignation by Law"), function() {
+				frappe.new_doc("Employee Resignation", {
+					"employee": frm.doc.employee
+				});
+			}, __("Create"));
+		} else if (frm.doc.retain_the_employee === 1) {
+			frm.add_custom_button(__("Leave Extension"), function() {
+				frappe.new_doc("Leave Application", {
+					"employee": frm.doc.employee
+				});
+			}, __("Create"));
+			frm.add_custom_button(__("Unpaid Leave"), function() {
+				frappe.new_doc("Leave Application", {
+					"employee": frm.doc.employee,
+					"leave_type": "Leave without Pay"
+				});
+			}, __("Create"));
+		}
 	}
 }
 

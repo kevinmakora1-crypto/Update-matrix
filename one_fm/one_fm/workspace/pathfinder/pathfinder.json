@@ -17,7 +17,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Pathfinder",
-   "link_count": 4,
+   "link_count": 5,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -48,6 +48,16 @@
    "label": "Pathfinder Log",
    "link_count": 0,
    "link_to": "Pathfinder Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Process Roadmap",
+   "link_count": 0,
+   "link_to": "Process Roadmap",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"

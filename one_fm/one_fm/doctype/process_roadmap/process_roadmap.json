@@ -64,11 +64,11 @@
 			"label": "More Information"
 		},
 		{
-			"default": "PBR-PR-.YYYY.-.MM.-.",
+			"default": "PBR-PR-.YYYY.-.MM.-",
 			"fieldname": "naming_series",
 			"fieldtype": "Select",
 			"label": "Naming Series",
-			"options": "PBR-PR-.YYYY.-.MM.-.",
+			"options": "PBR-PR-.YYYY.-.MM.-",
 			"read_only": 1
 		},
 		{

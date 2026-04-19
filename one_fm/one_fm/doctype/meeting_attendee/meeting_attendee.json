@@ -30,7 +30,8 @@
 			"ignore_user_permissions": 1,
 			"in_list_view": 1,
 			"label": "Employee",
-			"options": "Employee"
+			"options": "Employee",
+			"reqd": 1
 		},
 		{
 			"columns": 3,

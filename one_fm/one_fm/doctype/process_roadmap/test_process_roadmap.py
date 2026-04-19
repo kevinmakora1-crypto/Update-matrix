@@ -3,17 +3,19 @@
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from one_fm.tests.utils import get_test_employee
 
 
 def make_process_roadmap(**kwargs):
 	"""Factory function to create a test Process Roadmap document."""
+	employee = get_test_employee()
 	defaults = {
 		"doctype": "Process Roadmap",
 		"date": frappe.utils.today(),
 		"meeting_attendee": [
 			{
 				"doctype": "Meeting Attendee",
-				"employee": "_T-Employee-00001",
+				"employee": employee.name,
 			}
 		],
 	}

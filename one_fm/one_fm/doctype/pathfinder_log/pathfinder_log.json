@@ -6,7 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "checklist",
-  "process_map_and_guideline_section",
+  "section_break_esrh",
   "process_name",
   "process_is_generic",
   "column_break_iarv",
@@ -45,7 +45,7 @@
    "read_only": 1
   },
   {
-   "fieldname": "process_map_and_guideline_section",
+   "fieldname": "section_break_esrh",
    "fieldtype": "Section Break",
    "label": "Process Classification"
   },
@@ -73,7 +73,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "All user stories under this process needs to be added under this epic.",
+   "description": "All user stories under this process need to be added under this epic.",
    "fieldname": "epic",
    "fieldtype": "Link",
    "label": "Epic",
@@ -87,7 +87,8 @@
    "description": "Add the link to the process folder in the shared Google Drive.",
    "fieldname": "process_folder_link",
    "fieldtype": "Data",
-   "label": "Process Folder Link"
+   "label": "Process Folder Link",
+   "options": "URL"
   },
   {
    "fieldname": "section_break_wx0s",
@@ -129,8 +130,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Backlog\nPending Process Classification\nUpcoming\nActive\nOn Hold\nDeployed",
-   "read_only_depends_on": "eval: doc.process_is_generic || !doc.epic || !doc.process_folder_link"
+   "options": "Backlog\nPending Process Classification\nUpcoming\nActive\nOn Hold\nDeployed"
   },
   {
    "fieldname": "stakeholders_section",

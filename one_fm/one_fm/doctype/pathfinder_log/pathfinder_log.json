@@ -5,12 +5,15 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "process_map_and_guideline_section",
-  "process_map",
-  "column_break_teht",
   "checklist",
-  "section_break_wx0s",
+  "process_map_and_guideline_section",
   "process_name",
+  "process_is_generic",
+  "column_break_iarv",
+  "epic",
+  "column_break_cccw",
+  "process_folder_link",
+  "section_break_wx0s",
   "goal_description",
   "column_break_ojgt",
   "initiated_on",
@@ -33,23 +36,6 @@
  ],
  "fields": [
   {
-   "fieldname": "process_map_and_guideline_section",
-   "fieldtype": "Section Break",
-   "label": "Process Map and Guideline"
-  },
-  {
-   "fetch_from": "process_name.process_map",
-   "fieldname": "process_map",
-   "fieldtype": "Small Text",
-   "label": "Process Map",
-   "options": "URL",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_teht",
-   "fieldtype": "Column Break"
-  },
-  {
    "bold": 1,
    "description": "Click to navigate to the checklist that must be followed for the current task.",
    "fieldname": "checklist",
@@ -59,9 +45,9 @@
    "read_only": 1
   },
   {
-   "fieldname": "section_break_wx0s",
+   "fieldname": "process_map_and_guideline_section",
    "fieldtype": "Section Break",
-   "label": "Increment Details"
+   "label": "Process Classification"
   },
   {
    "description": "Only the processes that have gone through Pathfinder are listed. If your process is not listed in the options, select \"Others\".",
@@ -73,6 +59,40 @@
    "options": "Process",
    "remember_last_selected_value": 1,
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "process_name.is_generic",
+   "fieldname": "process_is_generic",
+   "fieldtype": "Check",
+   "label": "Process is Generic",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_iarv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "All user stories under this process needs to be added under this epic.",
+   "fieldname": "epic",
+   "fieldtype": "Link",
+   "label": "Epic",
+   "options": "Work Item"
+  },
+  {
+   "fieldname": "column_break_cccw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Add the link to the process folder in the shared Google Drive.",
+   "fieldname": "process_folder_link",
+   "fieldtype": "Data",
+   "label": "Process Folder Link"
+  },
+  {
+   "fieldname": "section_break_wx0s",
+   "fieldtype": "Section Break",
+   "label": "Increment Details"
   },
   {
    "description": "A brief description of what this update is meant to achieve.",
@@ -109,7 +129,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Backlog\nPending Process Classification\nUpcoming\nActive\nOn Hold\nDeployed"
+   "options": "Backlog\nPending Process Classification\nUpcoming\nActive\nOn Hold\nDeployed",
+   "read_only_depends_on": "eval: doc.process_is_generic || !doc.epic || !doc.process_folder_link"
   },
   {
    "fieldname": "stakeholders_section",
@@ -203,7 +224,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-05 13:02:00.000000",
+ "modified": "2026-04-19 09:58:00.000000",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Pathfinder Log",

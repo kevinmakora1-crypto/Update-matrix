@@ -1,18 +1,5 @@
 {
- "actions": [
-  {
-   "action": "/app/employee-resignation/new",
-   "action_type": "Route",
-   "group": "Create",
-   "label": "Resignation by Law"
-  },
-  {
-   "action": "/app/leave-application/new",
-   "action_type": "Route",
-   "group": "Create",
-   "label": "Leave Application"
-  }
- ],
+ "actions": [],
  "allow_rename": 1,
  "autoname": "format:FH-{employee_name}-{MM}-{YYYY}-{###}",
  "creation": "2026-04-15 13:54:12.294344",

@@ -11,7 +11,6 @@
   "goal_description",
   "column_break_ojgt",
   "initiated_on",
-  "type",
   "status",
   "stakeholders_section",
   "process_owner_user",
@@ -73,14 +72,6 @@
    "in_list_view": 1,
    "label": "Initiated On",
    "read_only": 1
-  },
-  {
-   "description": "(1) Initial Process Implementation: The process is being taken through Pathfinder for the first time. (2) Major Update: May include the addition or deletion of tasks and/or activities. (3) Incremental Changes: Involves small changes, usually within a task.",
-   "fieldname": "type",
-   "fieldtype": "Select",
-   "label": "Type",
-   "options": "\nInitial Process Implementation\nMajor Update\nIncremental Changes",
-   "reqd": 1
   },
   {
    "default": "Backlog",

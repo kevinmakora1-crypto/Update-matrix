@@ -7,6 +7,15 @@ frappe.ui.form.on("Pathfinder Log", {
 		// and cannot be meaningfully interacted with until the doc is saved.
 		frm.toggle_display("status", !frm.is_new());
 
+		// Restrict Epic link field to Work Items of type "Epic" only
+		frm.set_query("epic", function () {
+			return {
+				filters: {
+					work_item_type: "Epic",
+				},
+			};
+		});
+
 		if (!frm.is_new()) {
 			frm.add_custom_button(
 				__("Get Open Change Requests"),

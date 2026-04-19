@@ -1,18 +1,5 @@
 {
- "actions": [
-  {
-   "action": "/app/employee-resignation/new",
-   "action_type": "Route",
-   "group": "Create",
-   "label": "Resignation by Law"
-  },
-  {
-   "action": "/app/leave-application/new",
-   "action_type": "Route",
-   "group": "Create",
-   "label": "Leave Application"
-  }
- ],
+ "actions": [],
  "allow_rename": 1,
  "autoname": "format:FH-{employee_name}-{MM}-{YYYY}-{###}",
  "creation": "2026-04-15 13:54:12.294344",
@@ -117,7 +104,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.under_company_residency == 1",
+   "depends_on": "eval:doc.under_company_accommodation == 1",
    "fieldname": "did_not_attend_first_hearing",
    "fieldtype": "Check",
    "label": "Did not Attend First Hearing?"
@@ -134,7 +121,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.under_company_residency == 1",
+   "depends_on": "eval:doc.under_company_accommodation == 1",
    "fieldname": "reason_for_absence",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -209,7 +196,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-15 22:49:05.801643",
+ "modified": "2026-04-19 12:18:21.187354",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Formal Hearing",

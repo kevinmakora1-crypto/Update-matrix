@@ -104,7 +104,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.under_company_residency == 1",
+   "depends_on": "eval:doc.under_company_accommodation == 1",
    "fieldname": "did_not_attend_first_hearing",
    "fieldtype": "Check",
    "label": "Did not Attend First Hearing?"

@@ -25,6 +25,15 @@ frappe.ui.form.on("Formal Hearing", {
 	}
 });
 
+function has_not_attended_at_all(frm) {
+	if (frm.doc.location_status === "Inside Kuwait") {
+		// Based on exact requirement, when employee did not attend at all, both these fields are False (0).
+		return frm.doc.did_not_attend_first_hearing == 0 && frm.doc.did_not_attend_rescheduled_hearing == 0;
+	} else {
+		return frm.doc.did_not_attend_first_hearing == 0;
+	}
+}
+
 function toggle_create_options(frm) {
 	// Initially remove all custom buttons from "Create" group to avoid duplicates
 	frm.remove_custom_button(__("Leave Extension"), __("Create"));
@@ -54,10 +63,20 @@ function toggle_create_options(frm) {
 	}
 
 	// Case 2: Found + Work Issue
-	// Phase 2: Show only when Workflow State is "Submitted"
+	// Show only when Workflow State is "Submitted"
 	if (is_found && reason === "Work Issue" && frm.doc.workflow_state === "Submitted") {
 		show_leave = true;
 		show_transfer = true;
+	}
+
+	// Case 3: Employee has not attended at all
+	if (has_not_attended_at_all(frm) && frm.doc.workflow_state === "Submitted") {
+		if (hr_decision === "Do not Terminate" || gm_decision === "Do not Terminate") {
+			show_leave = true;
+		}
+		if (gm_decision === "Terminate") {
+			show_resignation = true;
+		}
 	}
 
 	// Legacy Case: If they missed the hearing (keeping it as a fallback if needed, but user request is specific)

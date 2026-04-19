@@ -5,9 +5,6 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "process_map_and_guideline_section",
-  "process_map",
-  "column_break_teht",
   "checklist",
   "section_break_wx0s",
   "process_name",
@@ -32,23 +29,6 @@
   "time_log"
  ],
  "fields": [
-  {
-   "fieldname": "process_map_and_guideline_section",
-   "fieldtype": "Section Break",
-   "label": "Process Map and Guideline"
-  },
-  {
-   "fetch_from": "process_name.process_map",
-   "fieldname": "process_map",
-   "fieldtype": "Small Text",
-   "label": "Process Map",
-   "options": "URL",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_teht",
-   "fieldtype": "Column Break"
-  },
   {
    "bold": 1,
    "description": "Click to navigate to the checklist that must be followed for the current task.",
@@ -203,7 +183,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-05 13:02:00.000000",
+ "modified": "2026-04-19 09:58:00.000000",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Pathfinder Log",

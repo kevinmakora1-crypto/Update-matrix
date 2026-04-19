@@ -66,8 +66,8 @@ def execute():
 			"name": "Resignation - Pending Offboarding Officer",
 			"document_type": "Employee Resignation",
 			"description": "Please review this resignation as Offboarding Officer.",
-			"assign_condition": "workflow_state == 'Pending Offboarding Officer'",
-			"unassign_condition": "workflow_state != 'Pending Offboarding Officer'",
+			"assign_condition": "doc.workflow_state == 'Pending Offboarding Officer'",
+			"unassign_condition": "doc.workflow_state != 'Pending Offboarding Officer'",
 			"rule": "Round Robin",
 			"assign_to_role": "Offboarding Officer"
 		},
@@ -75,8 +75,8 @@ def execute():
 			"name": "Resignation - Pending Supervisor",
 			"document_type": "Employee Resignation",
 			"description": "Please review the Resignation and Relieving date.",
-			"assign_condition": "workflow_state == 'Pending Supervisor'",
-			"unassign_condition": "workflow_state != 'Pending Supervisor'",
+			"assign_condition": "doc.workflow_state == 'Pending Supervisor'",
+			"unassign_condition": "doc.workflow_state != 'Pending Supervisor'",
 			"rule": "Based on Field",
 			"field": "supervisor",
 			"assign_to": []
@@ -85,8 +85,8 @@ def execute():
 			"name": "Resignation - Pending Operations Manager",
 			"document_type": "Employee Resignation",
 			"description": "Please review and approve this Resignation.",
-			"assign_condition": "workflow_state == 'Pending Operations Manager'",
-			"unassign_condition": "workflow_state != 'Pending Operations Manager'",
+			"assign_condition": "doc.workflow_state == 'Pending Operations Manager'",
+			"unassign_condition": "doc.workflow_state != 'Pending Operations Manager'",
 			"rule": "Based on Field",
 			"field": "operations_manager",
 			"assign_to": []
@@ -95,8 +95,8 @@ def execute():
 			"name": "Resignation - Relieving Date Correction",
 			"document_type": "Employee Resignation",
 			"description": "Your supervisor has requested an adjustment to your Relieving Date.",
-			"assign_condition": "workflow_state == 'Pending Relieving Date Correction'",
-			"unassign_condition": "workflow_state != 'Pending Relieving Date Correction'",
+			"assign_condition": "doc.workflow_state == 'Pending Relieving Date Correction'",
+			"unassign_condition": "doc.workflow_state != 'Pending Relieving Date Correction'",
 			"rule": "Based on Field",
 			"field": "owner",
 			"assign_to": []
@@ -112,7 +112,7 @@ def execute():
 			for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]:
 				doc.append("assignment_days", {"day": day})
 				
-			if getattr(ar, "assign_to_role", None) or "assign_to_role" in ar:
+			if "assign_to_role" in ar and ar["assign_to_role"]:
 				users_with_role = frappe.get_all("Has Role", filters={"role": ar["assign_to_role"]}, fields=["parent"])
 				for u in users_with_role:
 					doc.append("users", {"user": u.parent})
@@ -123,13 +123,19 @@ def execute():
 			doc.is_assignment_rule_with_workflow = 1
 			try:
 				doc.insert(ignore_permissions=True)
-			except Exception:
-				pass
+			except Exception as e:
+				frappe.log_error(
+					message=frappe.get_traceback(),
+					title=f"Assignment Rule Creation Failed: {target_name}"
+				)
 		else:
 			doc = frappe.get_doc("Assignment Rule", target_name)
 			try:
 				doc_dict = {k:v for k,v in ar.items() if k not in ("name", "assign_to", "assign_to_role")}
 				doc.update(doc_dict)
 				doc.save(ignore_permissions=True)
-			except Exception:
-				pass
+			except Exception as e:
+				frappe.log_error(
+					message=frappe.get_traceback(),
+					title=f"Assignment Rule Update Failed: {target_name}"
+				)

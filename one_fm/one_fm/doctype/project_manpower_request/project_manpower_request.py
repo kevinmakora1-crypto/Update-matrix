@@ -104,21 +104,39 @@ class ProjectManpowerRequest(Document):
 		self.assign_recruiter()
 
 	def assign_recruiter(self):
-		if self.recruiter:
-			# Check if already assigned to this recruiter
-			is_assigned = frappe.db.exists("ToDo", {
-				"reference_type": self.doctype,
-				"reference_name": self.name,
-				"allocated_to": self.recruiter,
-				"status": "Open"
-			})
-			if not is_assigned:
+		if not self.recruiter:
+			return
+
+		if not self.is_new():
+			old_doc = self.get_doc_before_save()
+			if old_doc and old_doc.recruiter and old_doc.recruiter != self.recruiter:
+				try:
+					from frappe.desk.form.assign_to import remove as remove_assignment
+					remove_assignment(self.doctype, self.name, old_doc.recruiter)
+				except Exception:
+					pass
+
+		# Check if already assigned to this recruiter
+		is_assigned = frappe.db.exists("ToDo", {
+			"reference_type": self.doctype,
+			"reference_name": self.name,
+			"allocated_to": self.recruiter,
+			"status": "Open"
+		})
+		
+		if not is_assigned:
+			try:
 				add_assignment({
 					"doctype": self.doctype,
 					"name": self.name,
 					"assign_to": [self.recruiter],
 					"description": _("Assigned for Recruitment processing"),
 				})
+			except Exception as e:
+				frappe.log_error(
+					message=f"Error assigning recruiter for {self.name}: {str(e)}",
+					title="PMR Recruiter Assignment Error"
+				)
 		
 	def before_update_after_submit(self):
 		self.calculate_remaining_qty()

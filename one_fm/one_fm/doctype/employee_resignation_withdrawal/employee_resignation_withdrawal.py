@@ -26,9 +26,6 @@ class EmployeeResignationWithdrawal(Document):
 				if recipients:
 					self.__notified_offboarding = True
 					subject = _("Attention: Resignation Withdrawal Initiated - {0}").format(self.name)
-				
-				if recipients:
-					subject = _("Attention: Resignation Withdrawal Initiated - {0}").format(self.name)
 					message = _("A resignation withdrawal request <b>{0}</b> has been submitted to the supervisor. Please hold any offboarding processing for the involved employees.").format(self.name)
 					
 					from one_fm.processor import sendemail
@@ -94,6 +91,8 @@ class EmployeeResignationWithdrawal(Document):
 							# Recalculate remaining quantities automatically
 							if hasattr(pmr, 'calculate_remaining_qty'):
 								pmr.calculate_remaining_qty()
+								# Only do this if you are SURE it runs in a system/background context
+								frappe.only_for("System Manager")
 								pmr.save(ignore_permissions=True)
 								
 								# Auto-close/set status if entirely withdrawn

@@ -15,7 +15,10 @@ class EmployeeResignation(Document):
 		# Enforce relieving_date explicitly for Supervisor before forwarding
 		if self.get("workflow_state") in ("Pending Operations Manager", "Approved"):
 			if not self.relieving_date or not self.resignation_initiation_date:
-				frappe.throw(_("<b>Resignation Initiation Date</b> and <b>Relieving Date</b> are mandatory at this stage. The Supervisor must specify these before pushing to Operations Manager."))
+				frappe.throw(
+					_("Resignation Initiation Date and Relieving Date are mandatory at this stage. The Supervisor must specify these before pushing to Operations Manager."),
+					title=_("Missing Required Fields")
+				)
 
 		self.validate_dates()
 
@@ -74,9 +77,11 @@ class EmployeeResignation(Document):
 					frappe.throw(_("Missing Resignation Letter for <b>{0}</b>. Please click the pencil edit icon ✏️ on their row and attach the file before submitting.").format(str(emp_name)), title=_("Missing Attachments"))
 
 	def on_update(self):
-		self.sync_status_to_employees()
+		old_doc = self.get_doc_before_save()
+		if not old_doc or old_doc.get("workflow_state") != self.workflow_state:
+			self.sync_status_to_employees()
+			
 		if not self.is_new():
-			old_doc = self.get_doc_before_save()
 			if old_doc and old_doc.get("workflow_state") != "Approved" and self.get("workflow_state") == "Approved":
 				self.send_approval_notification()
 

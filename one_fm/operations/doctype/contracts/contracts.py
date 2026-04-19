@@ -212,13 +212,22 @@ class Contracts(Document):
                         post_schedules = get_post_schedules_for_item(item.item_code, self.project, selected_period_start_date, selected_period_end_date)
 
                         if item.rate_type == "Monthly" and len(post_schedules) == 0:
-                            frappe.throw(f"Post Schedules are missing for {item.item_code}")
+                            post_name = get_post_name_for_item(item.item_code, self.project)
+                            frappe.throw(_(f"Post Schedule missing for {post_name}"))
 
                         quantity = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project,
                                                                    selected_period_start_date, selected_period_end_date)
 
                         if item.rate_type == "Monthly" and quantity > item.count:
-                            frappe.throw("Can not bill more than Contract's mentioned count for each Operations Role.")
+                            frappe.msgprint(
+                                _(f"Warning: Calculated Qty ({quantity}) exceeds the Contract Item Count ({item.count}) for {item.item_code}."),
+                                indicator="orange",
+                                alert=True
+                            )
+                            frappe.throw(
+                                _(f"Cannot create Sales Invoice: Calculated Qty ({quantity}) for '{item.item_code}' exceeds the contracted count of {item.count}."),
+                                title=_("Invoice Quantity Exceeded")
+                            )
 
                         if post_schedules:
                             sales_invoice_doc.append('items', {
@@ -259,13 +268,22 @@ class Contracts(Document):
                         post_schedules = get_post_schedules_for_item(item.item_code, self.project, selected_period_start_date, selected_period_end_date)
 
                         if item.rate_type == "Monthly" and len(post_schedules) == 0:
-                            frappe.throw(f"Post Schedules are missing for {item.item_code}")
+                            post_name = get_post_name_for_item(item.item_code, self.project)
+                            frappe.throw(_(f"Post Schedule missing for {post_name}"))
 
                         quantity = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project,
                                                                    selected_period_start_date, selected_period_end_date)
 
                         if item.rate_type == "Monthly" and quantity > item.count:
-                            frappe.throw("Can not bill more than Contract's mentioned count for each Operations Role.")
+                            frappe.msgprint(
+                                _(f"Warning: Calculated Qty ({quantity}) exceeds the Contract Item Count ({item.count}) for {item.item_code}."),
+                                indicator="orange",
+                                alert=True
+                            )
+                            frappe.throw(
+                                _(f"Cannot create Sales Invoice: Calculated Qty ({quantity}) for '{item.item_code}' exceeds the contracted count of {item.count}."),
+                                title=_("Invoice Quantity Exceeded")
+                            )
 
                         if post_schedules and quantity > 0:
                             sales_invoice_doc = frappe.new_doc("Sales Invoice")
@@ -326,7 +344,8 @@ class Contracts(Document):
                         post_schedules = get_post_schedules_for_item(item.item_code, self.project, selected_period_start_date, selected_period_end_date)
 
                         if item.rate_type == "Monthly" and len(post_schedules) == 0:
-                            frappe.throw(f"Post Schedules are missing for {item.item_code}")
+                            post_name = get_post_name_for_item(item.item_code, self.project)
+                            frappe.throw(_(f"Post Schedule missing for {post_name}"))
 
                         site_quantities = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project,
                                                                    selected_period_start_date, selected_period_end_date, group_by_site=True)
@@ -1433,6 +1452,24 @@ def get_post_schedules_for_item(item_code, project, start_date, end_date):
         fields=["name", "project", "site"]
     )
 
+def get_post_name_for_item(item_code, project):
+    """Return a human-readable post identifier for error messages.
+    Finds the first active Operations Post linked to this item's Operations Role."""
+    operation_roles = frappe.db.get_list(
+        "Operations Role",
+        filters={"sale_item": item_code, "status": "Active", "project": project},
+        pluck="name"
+    )
+    if not operation_roles:
+        return item_code
+
+    post_name = frappe.db.get_value(
+        "Operations Post",
+        filters={"project": project, "post_template": ["in", operation_roles], "status": "Active"},
+        fieldname="name"
+    )
+    return post_name or item_code
+
 def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, project, start_date, end_date, group_by_site=False):
     """Get billable quantity for a given item code, rate type, count, post schedules, project, and date range."""
 
@@ -1556,9 +1593,10 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                 else:
                     site_quantity += frappe.db.count("Attendance", attendance_filters)
 
-        # Pro-rata calculation for Monthly rate type
+        # For Monthly rate type: Required Days = count of Planned Post Schedule rows for this site.
+        # The attendance-based site_quantity is only used for Daily/Hourly.
         if rate_type == "Monthly":
-            site_quantity = (site_quantity / len(post_schedules)) * count
+            site_quantity = len([ps for ps in post_schedules if ps.get("site") == site])
 
         site_quantities[site] = site_quantity
         

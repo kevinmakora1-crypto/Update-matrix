@@ -1471,8 +1471,14 @@ def get_post_name_for_item(item_code, project):
     return post_name or item_code
 
 def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, project, start_date, end_date, group_by_site=False):
-    """Get billable quantity for a given item code, rate type, count, post schedules, project, and date range."""
+    """Get billable quantity for a given item code and date range.
 
+    Returns the total billable quantity as a number by default. When
+    ``group_by_site=True``, returns a dict mapping each site name to its
+    billable quantity instead. If there are no matching post schedules or
+    sites, the function returns ``0`` for the default case or ``{}`` when
+    grouping by site.
+    """
     if not post_schedules:
         return {} if group_by_site else 0
 

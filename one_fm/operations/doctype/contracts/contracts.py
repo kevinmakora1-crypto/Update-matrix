@@ -350,6 +350,12 @@ class Contracts(Document):
                         site_quantities = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project,
                                                                    selected_period_start_date, selected_period_end_date, group_by_site=True)
 
+                        if item.rate_type == "Monthly" and sum(site_quantities.values()) > item.count:
+                            frappe.throw(
+                                _("Total billed quantity across all sites for {0} cannot exceed the contract count of {1}.").format(
+                                    item.item_code, item.count
+                                )
+                            )
                         for site, quantity in site_quantities.items():
                             if quantity > 0:
                                 if site not in site_invoices_data:

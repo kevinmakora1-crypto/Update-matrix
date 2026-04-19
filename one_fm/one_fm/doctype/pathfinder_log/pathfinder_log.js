@@ -3,6 +3,15 @@
 
 frappe.ui.form.on("Pathfinder Log", {
 	refresh(frm) {
+		// Restrict Epic link field to Work Items of type "Epic" only
+		frm.set_query("epic", function () {
+			return {
+				filters: {
+					work_item_type: "Epic",
+				},
+			};
+		});
+
 		if (!frm.is_new()) {
 			frm.add_custom_button(
 				__("Get Open Change Requests"),

@@ -139,7 +139,10 @@ class EmployeeResignation(Document):
 		# Enforce relieving_date explicitly for Supervisor before forwarding
 		if self.get("workflow_state") in ("Pending Operations Manager", "Approved"):
 			if not self.relieving_date:
-				frappe.throw("<b>Relieving Date</b> is mandatory at this stage. The Supervisor must specify the final date before pushing to Operations Manager.")
+				frappe.throw(
+					_("Relieving Date is mandatory at this stage. The Supervisor must specify the final date before pushing to Operations Manager."),
+					title=_("Missing Relieving Date")
+				)
 
 		# Enforce Operations Manager and Offboarding Officer only during Managerial stages
 		# EXPLICITLY ignore Draft and Empty states
@@ -154,7 +157,10 @@ class EmployeeResignation(Document):
 		# Enforce replacement_required explicitly for Operations Manager
 		if self.get("workflow_state") == "Approved" and self.docstatus == 1:
 			if not self.replacement_required:
-				frappe.throw("You must explicitly select <b>Yes</b> or <b>No</b> for 'Is a Replacement Required?' before you can save or approve.")
+				frappe.throw(
+					_("You must explicitly select Yes or No for 'Is a Replacement Required?' before you can save or approve."),
+					title=_("Replacement Required")
+				)
 
 	def set_supervisor(self):
 		# We base supervisor routing on the FIRST employee
@@ -205,16 +211,12 @@ class EmployeeResignation(Document):
 						file_name = row.resignation_letter.split('/')[-1] if '/' in row.resignation_letter else row.resignation_letter
 						
 						if not frappe.db.exists("File", {"attached_to_doctype": "Employee", "attached_to_name": row.employee, "file_url": row.resignation_letter}):
-							file_doc = frappe.get_doc({
-								"doctype": "File",
-								"file_url": row.resignation_letter,
-								"attached_to_doctype": "Employee",
-								"attached_to_name": row.employee,
-								"file_name": file_name,
-								"is_private": 0
-							})
-							file_doc.insert(ignore_permissions=True)
-
+							try:
+								from frappe.utils.file_manager import save_url
+								save_url(row.resignation_letter, file_name, "Employee", row.employee, "Home/Attachments", 0)
+							except Exception as e:
+								frappe.log_error("Error attaching resignation file to Employee", str(e))
+					
 					frappe.db.set_value("Employee", row.employee, {
 						"resignation_date": self.resignation_initiation_date,
 						"relieving_date": self.relieving_date,
@@ -262,6 +264,8 @@ class EmployeeResignation(Document):
 					row_dict.pop(field, None)
 				new_row.update(row_dict)
 				
+			if not frappe.has_permission("Project Manpower Request", "create"):
+				frappe.throw(_("You do not have permission to create a Project Manpower Request. Please contact system administrator."))
 			pmr.insert(ignore_permissions=True)
 			
 			frappe.msgprint(

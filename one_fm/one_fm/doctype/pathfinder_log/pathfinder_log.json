@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "format:PAT-LOG-{initiated_on}-{##}",
+ "autoname": "naming_series:",
  "creation": "2025-10-06 12:34:11.847152",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -20,6 +20,7 @@
   "business_analyst_user",
   "business_analyst_name",
   "section_break_qrox",
+  "naming_series",
   "amended_from",
   "change_requests_tab",
   "section_break_gamf",
@@ -139,6 +140,14 @@
    "fieldtype": "Section Break"
   },
   {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "no_copy": 1,
+   "options": "PAT-LOG-.YYYY.-.MM.-.####",
+   "set_only_once": 1
+  },
+  {
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",
@@ -187,7 +196,7 @@
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Pathfinder Log",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {

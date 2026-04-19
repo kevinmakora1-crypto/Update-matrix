@@ -11,6 +11,7 @@
   "client",
   "column_break_d7ug",
   "project",
+  "currency_",
   "section_break_8",
   "contact_html",
   "poc",
@@ -319,10 +320,15 @@
    "label": "Password Management",
    "options": "Password Management",
    "read_only": 1
+  },
+  {
+   "fieldname": "currency_",
+   "fieldtype": "Currency",
+   "label": "Currency"
   }
  ],
  "links": [],
- "modified": "2026-04-13 09:11:42.736578",
+ "modified": "2026-04-19 10:44:06.895045",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Contracts",

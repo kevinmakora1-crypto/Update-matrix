@@ -24,6 +24,7 @@ function set_leave_application_query(frm) {
 	frm.set_query("leave_application", function() {
 		return {
 			filters: {
+				"employee": frm.doc.employee,
 				"leave_type": "Annual Leave"
 			}
 		};

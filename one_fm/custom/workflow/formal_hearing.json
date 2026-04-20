@@ -20,7 +20,8 @@
       "custom_confirm_transition": 0,
       "require_digital_signature": 0,
       "workflow_builder_id": "action-1",
-      "doctype": "Workflow Transition"
+      "doctype": "Workflow Transition",
+      "condition": "not doc.did_not_attend_first_hearing and not doc.did_not_attend_rescheduled_hearing" 
     },
     {
       "state": "Pending HR Manager",
@@ -48,7 +49,8 @@
       "custom_confirm_transition": 0,
       "require_digital_signature": 0,
       "workflow_builder_id": "action-7",
-      "doctype": "Workflow Transition"
+      "doctype": "Workflow Transition",
+      "condition": "doc.did_not_attend_first_hearing or doc.did_not_attend_rescheduled_hearing"
     },
     {
       "state": "Pending Operations Manager",

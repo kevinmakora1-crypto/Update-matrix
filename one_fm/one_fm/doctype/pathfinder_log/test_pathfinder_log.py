@@ -297,3 +297,107 @@ class TestProcessClassificationValidation(FrappeTestCase):
 		doc.save(ignore_permissions=True)  # should not raise
 		self.assertEqual(doc.status, "Upcoming")
 
+
+class TestActiveStatusValidation(FrappeTestCase):
+	"""Unit tests for _validate_active_status_conditions().
+
+	Calls the method directly on in-memory docs so tests remain fast and
+	independent of link-field validation (epic is a Link to Work Item; we
+	only need the truthy/falsy check that the method itself performs).
+	"""
+
+	PROCESS = "_Test Active Status Val Process"
+
+	def setUp(self):
+		if not frappe.db.exists("Process", self.PROCESS):
+			frappe.get_doc({
+				"doctype": "Process",
+				"process_name": self.PROCESS,
+				"description": "Process for active-status validation tests",
+				"process_owner": "Administrator",
+				"business_analyst": "Administrator",
+				"is_generic": 0,
+			}).insert(ignore_permissions=True)
+
+	def tearDown(self):
+		frappe.db.delete("Pathfinder Log", {"process_name": self.PROCESS})
+		frappe.db.commit()
+
+	def _make_doc(self, **overrides):
+		"""Return an in-memory Pathfinder Log with all prerequisites satisfied by default."""
+		doc = frappe.new_doc("Pathfinder Log")
+		doc.process_name = self.PROCESS
+		doc.goal_description = "Test goal"
+		doc.type = "Incremental Changes"
+		doc.status = "Active"
+		doc.process_is_generic = 0
+		# A non-empty string satisfies the truthy check; no link lookup is
+		# done inside _validate_active_status_conditions itself.
+		doc.epic = "FAKE-EPIC-REF"
+		doc.process_folder_link = "https://drive.google.com/test-folder"
+		for key, val in overrides.items():
+			setattr(doc, key, val)
+		return doc
+
+	# ── Blocking scenarios ───────────────────────────────────────────────────
+
+	def test_generic_process_blocks_active(self):
+		"""Active is blocked when the selected process is marked Generic."""
+		doc = self._make_doc(process_is_generic=1)
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			doc._validate_active_status_conditions()
+		self.assertIn("Generic", str(ctx.exception))
+
+	def test_missing_epic_blocks_active(self):
+		"""Active is blocked when the Epic field is empty."""
+		doc = self._make_doc(epic="")
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			doc._validate_active_status_conditions()
+		self.assertIn("Epic", str(ctx.exception))
+
+	def test_missing_folder_link_blocks_active(self):
+		"""Active is blocked when the Process Folder Link field is empty."""
+		doc = self._make_doc(process_folder_link="")
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			doc._validate_active_status_conditions()
+		self.assertIn("Process Folder Link", str(ctx.exception))
+
+	def test_all_three_conditions_failing_single_throw(self):
+		"""All three failing conditions must appear together in one ValidationError."""
+		doc = self._make_doc(
+			process_is_generic=1,
+			epic="",
+			process_folder_link="",
+		)
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			doc._validate_active_status_conditions()
+		error_msg = str(ctx.exception)
+		self.assertIn("Generic", error_msg)
+		self.assertIn("Epic", error_msg)
+		self.assertIn("Process Folder Link", error_msg)
+
+	# ── Allowed scenarios ────────────────────────────────────────────────────
+
+	def test_all_prerequisites_met_allows_active(self):
+		"""No exception must be raised when all three prerequisites are satisfied."""
+		doc = self._make_doc()  # all good by default
+		doc._validate_active_status_conditions()  # must not raise
+
+	def test_non_active_status_skips_validation(self):
+		"""Guard must not fire for any status other than 'Active'."""
+		blocking_overrides = dict(
+			process_is_generic=1,
+			epic="",
+			process_folder_link="",
+		)
+		non_active_statuses = [
+			"Backlog",
+			"Pending Process Classification",
+			"Upcoming",
+			"On Hold",
+			"Deployed",
+		]
+		for status in non_active_statuses:
+			with self.subTest(status=status):
+				doc = self._make_doc(status=status, **blocking_overrides)
+				doc._validate_active_status_conditions()  # must not raise

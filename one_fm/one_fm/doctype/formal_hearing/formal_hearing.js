@@ -3,6 +3,14 @@
 
 frappe.ui.form.on("Formal Hearing", {
 	refresh(frm) {
+		frm.set_query("leave_application", function() {
+			return {
+				filters: {
+					employee: frm.doc.employee,
+					leave_type: "Annual Leave"
+				}
+			};
+		});
 		toggle_create_options(frm);
 	},
 	under_company_accommodation(frm) {
@@ -22,6 +30,12 @@ frappe.ui.form.on("Formal Hearing", {
 	},
 	did_not_attend_rescheduled_hearing(frm) {
 		toggle_create_options(frm);
+	},
+	received_leave_extension_request(frm) {
+		toggle_create_options(frm);
+	},
+	leave_application(frm) {
+		toggle_create_options(frm);
 	}
 });
 
@@ -37,6 +51,7 @@ function has_not_attended_at_all(frm) {
 function toggle_create_options(frm) {
 	// Initially remove all custom buttons from "Create" group to avoid duplicates
 	frm.remove_custom_button(__("Leave Extension"), __("Create"));
+	frm.remove_custom_button(__("Leave Extension Request"), __("Create"));
 	frm.remove_custom_button(__("Unpaid Leave"), __("Create"));
 	frm.remove_custom_button(__("Resignation By Law"), __("Create"));
 	frm.remove_custom_button(__("Site Transfer"), __("Create"));
@@ -94,6 +109,10 @@ function toggle_create_options(frm) {
 	}
 	if (show_transfer) {
 		add_site_transfer_button(frm);
+	}
+
+	if (frm.doc.workflow_state === "Submitted" && frm.doc.received_leave_extension_request == 1 && frm.doc.leave_application) {
+		add_leave_extension_request_button(frm);
 	}
 }
 
@@ -162,6 +181,15 @@ function add_site_transfer_button(frm) {
 					cur_frm.scroll_to_field("shift_working_html");
 				}
 			}, 1000);
+		});
+	}, __("Create"));
+}
+
+function add_leave_extension_request_button(frm) {
+	frm.add_custom_button(__("Leave Extension Request"), () => {
+		frappe.new_doc("Leave Extension Request", {
+			"employee": frm.doc.employee,
+			"leave_application": frm.doc.leave_application
 		});
 	}, __("Create"));
 }

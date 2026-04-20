@@ -76,13 +76,36 @@ function init_interview_console(wrapper, page) {
 	const SAVE_DEBOUNCE_MS = 500;
 	let saveTimeoutId = null;
 	let pendingSaveFn = null;
+	let save_in_flight = false;
+	let queued_save_fn = null;
+
+	function run_serialized_save(saveFn) {
+		if (!saveFn) return;
+		if (save_in_flight) {
+			queued_save_fn = saveFn;
+			return;
+		}
+		save_in_flight = true;
+		Promise.resolve(saveFn())
+			.catch(function (err) {
+				console.error("Interview score save failed:", err);
+			})
+			.finally(function () {
+				save_in_flight = false;
+				if (queued_save_fn) {
+					var nextFn = queued_save_fn;
+					queued_save_fn = null;
+					run_serialized_save(nextFn);
+				}
+			});
+	}
 
 	function flush_pending_save() {
 		if (saveTimeoutId) {
 			clearTimeout(saveTimeoutId);
 			saveTimeoutId = null;
 			if (pendingSaveFn) {
-				pendingSaveFn();
+				run_serialized_save(pendingSaveFn);
 				pendingSaveFn = null;
 			}
 		}
@@ -773,18 +796,19 @@ function init_interview_console(wrapper, page) {
 		if (saveTimeoutId) clearTimeout(saveTimeoutId);
 		
 		pendingSaveFn = function() {
-			save_to_db(percentage, status);
+			return save_to_db(percentage, status);
 		};
 
 		saveTimeoutId = setTimeout(function() {
 			saveTimeoutId = null;
 			if (state.selected_applicant && state.selected_applicant.name === currentApplicantName) {
 				if (pendingSaveFn) {
-					pendingSaveFn();
+					run_serialized_save(pendingSaveFn);
 					pendingSaveFn = null;
 				}
 			} else {
 				pendingSaveFn = null;
+				queued_save_fn = null;
 			}
 		}, SAVE_DEBOUNCE_MS);
 
@@ -842,7 +866,7 @@ function init_interview_console(wrapper, page) {
 				});
 			}
 		}
-		frappe.call({
+		return frappe.call({
 			method: "one_fm.one_fm.page.interview_console.interview_console.save_interview_data",
 			args: {
 				applicant: state.selected_applicant.name,
@@ -888,7 +912,10 @@ function init_interview_console(wrapper, page) {
 		var score = parseInt(score_text) || 0;
 
 		state.selected_applicant.status = status;
-		save_to_db(score, status);
+		
+		run_serialized_save(function() {
+			return save_to_db(score, status);
+		});
 
 		// Immediate UI update
 		var display_status = status;

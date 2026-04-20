@@ -75,6 +75,18 @@ function init_interview_console(wrapper, page) {
 	};
 	const SAVE_DEBOUNCE_MS = 500;
 	let saveTimeoutId = null;
+	let pendingSaveFn = null;
+
+	function flush_pending_save() {
+		if (saveTimeoutId) {
+			clearTimeout(saveTimeoutId);
+			saveTimeoutId = null;
+			if (pendingSaveFn) {
+				pendingSaveFn();
+				pendingSaveFn = null;
+			}
+		}
+	}
 
 	function init() {
 		// Check for deep-link: if arriving from Job Applicant with applicant route_option
@@ -83,6 +95,10 @@ function init_interview_console(wrapper, page) {
 			auto_select_applicant = frappe.route_options.applicant;
 			frappe.route_options = null; // Consume the option
 		}
+		
+		window.addEventListener('beforeunload', flush_pending_save);
+		if (frappe.router) frappe.router.on('change', flush_pending_save);
+
 		fetch_applicants(auto_select_applicant);
 		setup_handlers();
 
@@ -318,6 +334,7 @@ function init_interview_console(wrapper, page) {
 	}
 
 	function select_applicant(app) {
+		flush_pending_save();
 		state.selected_applicant = app;
         
         $w('#ic-root').addClass('has-selection');
@@ -754,9 +771,20 @@ function init_interview_console(wrapper, page) {
 
 		const currentApplicantName = state.selected_applicant && state.selected_applicant.name;
 		if (saveTimeoutId) clearTimeout(saveTimeoutId);
+		
+		pendingSaveFn = function() {
+			save_to_db(percentage, status);
+		};
+
 		saveTimeoutId = setTimeout(function() {
+			saveTimeoutId = null;
 			if (state.selected_applicant && state.selected_applicant.name === currentApplicantName) {
-				save_to_db(percentage, status);
+				if (pendingSaveFn) {
+					pendingSaveFn();
+					pendingSaveFn = null;
+				}
+			} else {
+				pendingSaveFn = null;
 			}
 		}, SAVE_DEBOUNCE_MS);
 

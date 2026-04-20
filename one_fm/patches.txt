@@ -283,6 +283,7 @@ one_fm.patches.v15_0.add_assignment_rule_leave_application_new_dates_proposed
 one_fm.patches.v15_0.add_assignment_rule_leave_application_pending_confirmation
 one_fm.patches.v15_0.add_leave_application_outcome_custom_field
 one_fm.patches.v15_0.add_formal_hearing_process_tasks_and_assignment_rules
+one_fm.patches.v15_0.update_subcontract_staff_attendance_web_form
 
 [post_model_sync]
 one_fm.patches.v15_0.process_task_for_wiki_employee_task

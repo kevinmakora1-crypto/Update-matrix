@@ -752,9 +752,12 @@ function init_interview_console(wrapper, page) {
 		$w('#ic-score-pill').text(percentage + '/100').css({ 'background': '#e0f2fe', 'color': '#0369a1' });
 		if (percentage > 0 && status === "Open") status = "Replied";
 
+		const currentApplicantName = state.selected_applicant && state.selected_applicant.name;
 		if (saveTimeoutId) clearTimeout(saveTimeoutId);
 		saveTimeoutId = setTimeout(function() {
-			save_to_db(percentage, status);
+			if (state.selected_applicant && state.selected_applicant.name === currentApplicantName) {
+				save_to_db(percentage, status);
+			}
 		}, SAVE_DEBOUNCE_MS);
 
 		state.selected_applicant.interview_score = percentage;

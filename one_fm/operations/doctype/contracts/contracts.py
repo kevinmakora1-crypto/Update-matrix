@@ -41,12 +41,6 @@ class Contracts(Document):
         ):
             self.submit_to_operations_admin()
 
-        # Sync Item Prices in background
-        # frappe.enqueue(
-        #     sync_contract_item_prices,
-        #     contract_name=self.name,
-        #     enqueue_after_commit=True
-        # )
 
         sync_contract_item_prices(self.name)
 

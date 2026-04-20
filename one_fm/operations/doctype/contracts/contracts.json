@@ -322,13 +322,15 @@
    "read_only": 1
   },
   {
+   "default": "KWD",
    "fieldname": "currency_",
-   "fieldtype": "Currency",
-   "label": "Currency"
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
   }
  ],
  "links": [],
- "modified": "2026-04-19 10:44:06.895045",
+ "modified": "2026-04-20 22:56:28.002093",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Contracts",

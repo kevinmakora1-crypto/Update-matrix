@@ -119,8 +119,15 @@ function init_interview_console(wrapper, page) {
 			frappe.route_options = null; // Consume the option
 		}
 		
-		window.addEventListener('beforeunload', flush_pending_save);
-		if (frappe.router) frappe.router.on('change', flush_pending_save);
+		if (!wrapper._ic_handlers_bound) {
+			window.addEventListener('visibilitychange', function() {
+				if (document.visibilityState === 'hidden') {
+					flush_pending_save();
+				}
+			});
+			if (frappe.router) frappe.router.on('change', flush_pending_save);
+			wrapper._ic_handlers_bound = true;
+		}
 
 		fetch_applicants(auto_select_applicant);
 		setup_handlers();

@@ -42,11 +42,13 @@ class Contracts(Document):
             self.submit_to_operations_admin()
 
         # Sync Item Prices in background
-        frappe.enqueue(
-            sync_contract_item_prices,
-            contract_name=self.name,
-            enqueue_after_commit=True
-        )
+        # frappe.enqueue(
+        #     sync_contract_item_prices,
+        #     contract_name=self.name,
+        #     enqueue_after_commit=True
+        # )
+
+        sync_contract_item_prices(self.name)
 
     def sync_item_prices(self):
         """
@@ -61,9 +63,8 @@ class Contracts(Document):
 
             attrs = get_item_variant_attributes(row.item_code)
             gender = attrs.get("gender")
-            shift_hours = attrs.get("working_hours")
-            # days_off is a custom field on Item Price, might exist on Contract Item too or be default "0"
-            days_off = row.get("days_off") or "0"
+            shift_hours = attrs.get("working_hours") or 0
+            days_off = row.get("days_off") or 0
             
             uom = row.uom or frappe.db.get_value("Item", row.item_code, "stock_uom")
             currency = self.currency_ or "KWD"
@@ -93,14 +94,17 @@ class Contracts(Document):
                 "customer": customer,
                 "uom": uom,
                 "currency": currency,
-                "gender": gender,
-                "shift_hours": shift_hours,
-                "days_off": days_off
             }
+            if gender:
+                filters["gender"] = gender
+            if shift_hours:
+                filters["shift_hours"] = shift_hours
+            if days_off and str(days_off) != "0":
+                filters["days_off"] = days_off
 
             # Search for existing record using standard get_value
             # Note: We use name to get the doc later if update is needed
-            existing_item_price = frappe.db.get_value("Item Price", filters, "name")
+            existing_item_price = frappe.db.get_value("Item Price", {k: v for k, v in filters.items() if v is not None and v != ""}, "name")
 
             if existing_item_price:
                 ip_doc = frappe.get_doc("Item Price", existing_item_price)

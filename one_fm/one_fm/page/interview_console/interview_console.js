@@ -101,7 +101,7 @@ function init_interview_console(wrapper, page) {
 	}
 
 	function flush_pending_save() {
-		if (saveTimeoutId) {
+		if (saveTimeoutId !== null) {
 			clearTimeout(saveTimeoutId);
 			saveTimeoutId = null;
 			if (pendingSaveFn) {
@@ -793,7 +793,7 @@ function init_interview_console(wrapper, page) {
 		if (percentage > 0 && status === "Open") status = "Replied";
 
 		const currentApplicantName = state.selected_applicant && state.selected_applicant.name;
-		if (saveTimeoutId) clearTimeout(saveTimeoutId);
+		if (saveTimeoutId !== null) clearTimeout(saveTimeoutId);
 		
 		pendingSaveFn = function() {
 			return save_to_db(percentage, status);
@@ -902,7 +902,7 @@ function init_interview_console(wrapper, page) {
 		if (!state.selected_applicant) return frappe.msgprint("Select a candidate");
 		
 		// Cancel any pending debounced save to prevent it from overwriting this hard save in the future
-		if (saveTimeoutId) {
+		if (saveTimeoutId !== null) {
 			clearTimeout(saveTimeoutId);
 			saveTimeoutId = null;
 			pendingSaveFn = null;

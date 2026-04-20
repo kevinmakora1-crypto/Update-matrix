@@ -876,6 +876,14 @@ function init_interview_console(wrapper, page) {
 
 	function update_status(status) {
 		if (!state.selected_applicant) return frappe.msgprint("Select a candidate");
+		
+		// Cancel any pending debounced save to prevent it from overwriting this hard save in the future
+		if (saveTimeoutId) {
+			clearTimeout(saveTimeoutId);
+			saveTimeoutId = null;
+			pendingSaveFn = null;
+		}
+
 		var score_text = $w('#ic-score-pill').text();
 		var score = parseInt(score_text) || 0;
 

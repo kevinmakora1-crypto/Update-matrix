@@ -64,6 +64,7 @@ function show_attendance_preview(frm) {
 
 	if (days_in_range > 31) {
 		frappe.msgprint(__("Date range exceeds 31 days. Matrix view is limited to one month."));
+		return;
 	}
 
 	const status_map = {

@@ -349,3 +349,4 @@ one_fm.patches.v15_0.update_workflow_client_interview_shortlist #2026-04-05
 one_fm.patches.v15_0.add_assignment_rule_client_interview_shortlist_draft #2026-04-05
 one_fm.patches.v15_0.add_assignment_rule_client_interview_shortlist_pending_operations_supervisor #2026-04-05
 one_fm.patches.v15_0.add_assignment_rule_client_interview_shortlist_pending_operations_manager #2026-04-05
+one_fm.patches.v15_4.grant_interviewer_workflow_rights.execute

@@ -10,7 +10,7 @@ def execute():
     process_task = create_process_task(
         process_name="Visa",
         erp_document="Visa Request",
-        task_description="Assign Government Relation Operator",
+        task_description="Assign Government Relations Operator",
         employee="HR-EMP-00775",
         task_type="Repetitive",
         is_routine_task=0

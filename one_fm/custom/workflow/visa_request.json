@@ -257,8 +257,8 @@
     },
     {
       "state": "Pending Cancel Work Permit",
-      "action": "Complete",
-      "next_state": "Completed",
+      "action": "Cancel Work Permit",
+      "next_state": "Canceled",
       "allowed": "Government Relations Operator",
       "allow_self_approval": 1,
       "send_email_to_creator": 0,
@@ -451,10 +451,20 @@
     {
       "state": "Rejected for Re Issue",
       "doc_status": "0",
-      "style": "Success",
+      "style": "Inverse",
       "is_optional_state": 0,
       "avoid_status_override": 0,
       "allow_edit": "Recruiter",
+      "send_email": 1,
+      "doctype": "Workflow Document State"
+    },
+    {
+      "state": "Canceled",
+      "doc_status": "0",
+      "style": "Danger",
+      "is_optional_state": 0,
+      "avoid_status_override": 0,
+      "allow_edit": "Government Relations Operator",
       "send_email": 1,
       "doctype": "Workflow Document State"
     }

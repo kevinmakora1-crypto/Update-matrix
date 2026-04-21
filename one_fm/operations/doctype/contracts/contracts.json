@@ -11,7 +11,6 @@
   "client",
   "column_break_d7ug",
   "project",
-  "currency_",
   "section_break_8",
   "contact_html",
   "poc",
@@ -39,6 +38,7 @@
   "column_break_obib",
   "price_list",
   "section_break_35",
+  "currency_",
   "items",
   "create_sales_invoice_as",
   "invoice_frequency",
@@ -322,6 +322,7 @@
    "read_only": 1
   },
   {
+   "default": "KWD",
    "fieldname": "currency_",
    "fieldtype": "Link",
    "label": "Currency",
@@ -329,7 +330,7 @@
   }
  ],
  "links": [],
- "modified": "2026-04-20 22:56:28.002093",
+ "modified": "2026-04-21 14:23:04.023731",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Contracts",

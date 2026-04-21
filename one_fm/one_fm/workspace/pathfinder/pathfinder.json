@@ -1,7 +1,7 @@
 {
  "charts": [],
  "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Pathfinder</span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Pathfinder\",\"col\":4}}]",
- "creation": "2026-04-14 00:10:00",
+ "creation": "2026-04-14 00:10:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",

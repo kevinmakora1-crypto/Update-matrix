@@ -5,7 +5,7 @@
 # days_off was hidden because it reset to 0 on save for no reason
 from __future__ import unicode_literals
 import frappe, json
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import calendar
 from frappe.model.document import Document
@@ -237,27 +237,26 @@ class Contracts(Document):
     def calculate_contract_duration(self):
         start_date = getdate(self.start_date)
         end_date = getdate(self.end_date)
-        
-        # Duration in days (non-inclusive as per user feedback)
-        duration_in_days = date_diff(end_date, start_date)
+
+        duration_in_days = date_diff(end_date, start_date) + 1
         self.duration_in_days = cstr(duration_in_days)
-        
-        # Duration string (Years and Months)
-        # Use relativedelta for accurate calculation. 
-        diff = relativedelta(end_date, start_date)
-        
+
+        diff = relativedelta(end_date + timedelta(days=1), start_date)
+
         parts = []
         if diff.years > 0:
             parts.append(f"{diff.years} {'year' if diff.years == 1 else 'years'}")
-        
+
         if diff.months > 0:
             parts.append(f"{diff.months} {'month' if diff.months == 1 else 'months'}")
-            
+
         if diff.days > 0:
             parts.append(f"{diff.days} {'day' if diff.days == 1 else 'days'}")
 
-        if parts:
-            self.duration = " and ".join(parts)
+        if len(parts) > 1:
+            self.duration = ", ".join(parts[:-1]) + " and " + parts[-1]
+        elif parts:
+            self.duration = parts[0]
         else:
             self.duration = "0 days"
 

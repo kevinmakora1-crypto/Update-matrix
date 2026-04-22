@@ -4,6 +4,7 @@ frappe.ui.form.on("Absence Case", {
 		setup_leave_extension_button(frm);
 		setup_unpaid_leave_buttons(frm);
 		setup_location_status_buttons(frm);
+		setup_formal_hearing_button(frm);
 	},
 
 	validate(frm) {
@@ -122,5 +123,16 @@ function validate_formal_hearing_datetime(frm) {
 				frappe.validated = false;
 			}
 		}
+	}
+}
+
+function setup_formal_hearing_button(frm) {
+	if (frm.doc.docstatus === 1 && frm.doc.location_status === "Inside Kuwait") {
+		frm.add_custom_button(__("Formal Hearing"), function() {
+			frappe.model.open_mapped_doc({
+				method: "one_fm.one_fm.doctype.absence_case.absence_case.make_formal_hearing",
+				frm: frm
+			});
+		}, __("Create"));
 	}
 }

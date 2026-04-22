@@ -126,6 +126,22 @@
    "read_only_depends_on": "eval: doc.process_is_generic || !doc.epic || !doc.process_folder_link"
   },
   {
+   "default": "Backlog",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Backlog\nUpcoming\nActive\nOn Hold\nDeployed"
+  },
+  {
+   "fieldname": "hd_ticket",
+   "fieldtype": "Link",
+   "label": "HD Ticket",
+   "options": "HD Ticket",
+   "read_only": 1
+  },
+  {
    "fieldname": "stakeholders_section",
    "fieldtype": "Section Break",
    "label": "Stakeholders"

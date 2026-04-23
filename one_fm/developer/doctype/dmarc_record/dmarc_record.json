@@ -9,11 +9,19 @@
   "engine": "InnoDB",
   "field_order": [
     "source_ip",
-    "count",
+    "source_country",
+    "source_reverse_dns",
+    "source_base_domain",
+    "message_count",
+    "spf_aligned",
+    "dkim_aligned",
+    "dmarc_aligned",
     "disposition",
-    "dkim_evaluated",
-    "spf_evaluated",
-    "header_from"
+    "spf_result",
+    "dkim_result",
+    "header_from",
+    "envelope_from",
+    "policy_override_reasons"
   ],
   "fields": [
     {
@@ -23,41 +31,79 @@
       "in_list_view": 1
     },
     {
-      "fieldname": "count",
+      "fieldname": "source_country",
+      "fieldtype": "Data",
+      "label": "Source Country",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "source_reverse_dns",
+      "fieldtype": "Data",
+      "label": "Source Reverse DNS"
+    },
+    {
+      "fieldname": "source_base_domain",
+      "fieldtype": "Data",
+      "label": "Source Base Domain",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "message_count",
       "fieldtype": "Int",
-      "label": "Count",
+      "label": "Message Count",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "spf_aligned",
+      "fieldtype": "Check",
+      "label": "SPF Aligned"
+    },
+    {
+      "fieldname": "dkim_aligned",
+      "fieldtype": "Check",
+      "label": "DKIM Aligned"
+    },
+    {
+      "fieldname": "dmarc_aligned",
+      "fieldtype": "Check",
+      "label": "DMARC Aligned",
       "in_list_view": 1
     },
     {
       "fieldname": "disposition",
-      "fieldtype": "Select",
+      "fieldtype": "Data",
       "label": "Disposition",
-      "options": "\nnone\nquarantine\nreject",
       "in_list_view": 1
     },
     {
-      "fieldname": "dkim_evaluated",
-      "fieldtype": "Select",
-      "label": "DKIM Evaluated",
-      "options": "\npass\nfail",
-      "in_list_view": 1
+      "fieldname": "spf_result",
+      "fieldtype": "Data",
+      "label": "SPF Result"
     },
     {
-      "fieldname": "spf_evaluated",
-      "fieldtype": "Select",
-      "label": "SPF Evaluated",
-      "options": "\npass\nfail",
-      "in_list_view": 1
+      "fieldname": "dkim_result",
+      "fieldtype": "Data",
+      "label": "DKIM Result"
     },
     {
       "fieldname": "header_from",
       "fieldtype": "Data",
       "label": "Header From"
+    },
+    {
+      "fieldname": "envelope_from",
+      "fieldtype": "Data",
+      "label": "Envelope From"
+    },
+    {
+      "fieldname": "policy_override_reasons",
+      "fieldtype": "Small Text",
+      "label": "Policy Override Reasons"
     }
   ],
   "index_web_pages_for_search": 0,
   "istable": 1,
-  "modified": "2026-04-23 16:39:00.000000",
+  "modified": "2026-04-23 16:50:00.000000",
   "modified_by": "Administrator",
   "module": "Developer",
   "name": "DMARC Record",

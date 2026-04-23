@@ -269,6 +269,7 @@
    "fieldtype": "Section Break",
    "label": "DMARC Report Fetching"
   },
+  {
    "default": "imap.gmail.com",
    "description": "IMAP server hostname",
    "fieldname": "imap_host",

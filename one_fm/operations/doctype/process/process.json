@@ -166,7 +166,8 @@
    "fieldname": "predecessor_count",
    "fieldtype": "Int",
    "label": "Predecessor Count",
-   "non_negative": 1
+   "non_negative": 1,
+   "read_only": 1
   },
   {
    "fieldname": "is_required_for",
@@ -178,7 +179,8 @@
    "fieldname": "successor_count",
    "fieldtype": "Int",
    "label": "Successor Count",
-   "non_negative": 1
+   "non_negative": 1,
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -190,7 +192,7 @@
    "link_fieldname": "process_name"
   }
  ],
- "modified": "2026-04-23 13:19:51.307236",
+ "modified": "2026-04-23 13:33:51.892808",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Process",

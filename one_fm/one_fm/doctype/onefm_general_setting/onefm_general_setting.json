@@ -41,7 +41,17 @@
   "google_tab",
   "google_task_section",
   "google_task_synchronization_enabled",
-  "sync_google_tasks_btn"
+  "sync_google_tasks_btn",
+  "dmarc_settings_tab",
+  "dmarc_fetching_section",
+  "enabled",
+  "imap_host",
+  "imap_port",
+  "column_break_dmarc",
+  "email_account",
+  "email_password",
+  "archive_folder",
+  "last_fetch_time"
  ],
  "fields": [
   {
@@ -249,6 +259,68 @@
    "fieldtype": "Table MultiSelect",
    "label": "Notify Contract Expiry Users",
    "options": "Action User"
+  },
+  {
+   "fieldname": "dmarc_settings_tab",
+   "fieldtype": "Tab Break",
+   "label": "DMARC Settings"
+  },
+  {
+   "fieldname": "dmarc_fetching_section",
+   "fieldtype": "Section Break",
+   "label": "DMARC Report Fetching"
+  },
+  {
+   "default": "0",
+   "description": "Enable/disable automatic report fetching",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "default": "imap.gmail.com",
+   "description": "IMAP server hostname",
+   "fieldname": "imap_host",
+   "fieldtype": "Data",
+   "label": "IMAP Host"
+  },
+  {
+   "default": "993",
+   "description": "IMAP port",
+   "fieldname": "imap_port",
+   "fieldtype": "Int",
+   "label": "IMAP Port"
+  },
+  {
+   "fieldname": "column_break_dmarc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "notifications@one-fm.com",
+   "description": "Email address to fetch reports from",
+   "fieldname": "email_account",
+   "fieldtype": "Data",
+   "label": "Email Account"
+  },
+  {
+   "description": "App Password for IMAP access",
+   "fieldname": "email_password",
+   "fieldtype": "Password",
+   "label": "Email Password"
+  },
+  {
+   "default": "DMARC/Processed",
+   "description": "IMAP folder to move processed emails to",
+   "fieldname": "archive_folder",
+   "fieldtype": "Data",
+   "label": "Archive Folder"
+  },
+  {
+   "description": "Timestamp of last successful fetch",
+   "fieldname": "last_fetch_time",
+   "fieldtype": "Datetime",
+   "label": "Last Fetch Time",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,

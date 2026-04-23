@@ -44,7 +44,6 @@
   "sync_google_tasks_btn",
   "dmarc_settings_tab",
   "dmarc_fetching_section",
-  "enabled",
   "imap_host",
   "imap_port",
   "column_break_dmarc",
@@ -270,14 +269,6 @@
    "fieldtype": "Section Break",
    "label": "DMARC Report Fetching"
   },
-  {
-   "default": "0",
-   "description": "Enable/disable automatic report fetching",
-   "fieldname": "enabled",
-   "fieldtype": "Check",
-   "label": "Enabled"
-  },
-  {
    "default": "imap.gmail.com",
    "description": "IMAP server hostname",
    "fieldname": "imap_host",

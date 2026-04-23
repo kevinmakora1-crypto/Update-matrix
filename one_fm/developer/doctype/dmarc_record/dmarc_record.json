@@ -1,0 +1,68 @@
+{
+  "actions": [],
+  "allow_copy": 1,
+  "allow_import": 1,
+  "allow_rename": 0,
+  "creation": "2026-04-23 16:39:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "source_ip",
+    "count",
+    "disposition",
+    "dkim_evaluated",
+    "spf_evaluated",
+    "header_from"
+  ],
+  "fields": [
+    {
+      "fieldname": "source_ip",
+      "fieldtype": "Data",
+      "label": "Source IP",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "count",
+      "fieldtype": "Int",
+      "label": "Count",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "disposition",
+      "fieldtype": "Select",
+      "label": "Disposition",
+      "options": "\nnone\nquarantine\nreject",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "dkim_evaluated",
+      "fieldtype": "Select",
+      "label": "DKIM Evaluated",
+      "options": "\npass\nfail",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "spf_evaluated",
+      "fieldtype": "Select",
+      "label": "SPF Evaluated",
+      "options": "\npass\nfail",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "header_from",
+      "fieldtype": "Data",
+      "label": "Header From"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "istable": 1,
+  "modified": "2026-04-23 16:39:00.000000",
+  "modified_by": "Administrator",
+  "module": "Developer",
+  "name": "DMARC Record",
+  "owner": "Administrator",
+  "permissions": [],
+  "sort_field": "creation",
+  "sort_order": "DESC"
+}

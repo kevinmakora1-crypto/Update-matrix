@@ -26,12 +26,16 @@
   "column_break_hgui",
   "deduction_type",
   "salary_deduction_days",
+  "salary_deduction_amount",
+  "section_break_ezlt",
+  "employee_rejection_remark",
   "incident_file",
   "investigation_requiref",
   "description",
   "evidence",
   "witness",
   "supervisor_remarks",
+  "supervisor_rejection_reason",
   "decision",
   "hr_remarks",
   "general_manager_decision",
@@ -131,12 +135,14 @@
   {
    "fieldname": "description",
    "fieldtype": "Small Text",
-   "label": "Description"
+   "label": "Description",
+   "mandatory_depends_on": "eval:doc.investigation_requiref"
   },
   {
    "fieldname": "evidence",
    "fieldtype": "Attach",
-   "label": "Evidence"
+   "label": "Evidence",
+   "mandatory_depends_on": "eval:doc.investigation_requiref"
   },
   {
    "fieldname": "witness",
@@ -209,13 +215,32 @@
    "fieldtype": "Link",
    "label": "Project",
    "options": "Project"
+  },
+  {
+   "fieldname": "salary_deduction_amount",
+   "fieldtype": "Currency",
+   "label": "Salary Deduction Amount"
+  },
+  {
+   "fieldname": "section_break_ezlt",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "employee_rejection_remark",
+   "fieldtype": "Small Text",
+   "label": "Employee Rejection Remark"
+  },
+  {
+   "fieldname": "supervisor_rejection_reason",
+   "fieldtype": "Small Text",
+   "label": "Supervisor Rejection Reason"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-24 00:21:10.786133",
+ "modified": "2026-04-24 17:19:38.311482",
  "modified_by": "c.akeru@one-fm.com",
  "module": "Legal",
  "name": "Penalty And Investigation",

@@ -8,6 +8,27 @@ class PenaltyAndInvestigation(Document):
 	def validate(self):
 		self.validate_duplicate_penalty()
 		self.calculate_offence_count()
+		self.validate_workflow_transition()
+
+	def validate_workflow_transition(self):
+		if not self.workflow_state:
+			return
+
+		old_state = self.get_db_value("workflow_state")
+		if not old_state:
+			return
+
+		# Trim to handle trailing spaces in state names (e.g. "Pending Legal Investigation ")
+		curr_state_trimmed = self.workflow_state.strip()
+		old_state_trimmed = old_state.strip()
+
+		if old_state_trimmed == "Pending GM Decision" and curr_state_trimmed == "Pending Legal Investigation":
+			if not self.general_manager_decision:
+				frappe.throw(_("General Manager Decision is required before moving to Pending Legal Investigation"))
+
+		if old_state_trimmed == "Pending HR Review" and curr_state_trimmed == "Pending GM Decision":
+			if not self.hr_remarks:
+				frappe.throw(_("HR Remarks are required before moving to Pending GM Decision"))
 
 	def validate_duplicate_penalty(self):
 		if not self.employee or not self.applied_penalty_code or not self.incident_date:

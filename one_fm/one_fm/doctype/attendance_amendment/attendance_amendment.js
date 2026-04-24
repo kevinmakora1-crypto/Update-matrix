@@ -219,45 +219,80 @@ function show_attendance_preview_modal(frm) {
     }
     html += `</tr></thead><tbody>`;
 
+    const is_shift_hours = frm.doc.attendance_based_on === "Shift Hours";
+    const format_preview_total = (value) => {
+        let numeric_value = Number(value) || 0;
+        return Number.isInteger(numeric_value)
+            ? String(numeric_value)
+            : numeric_value.toFixed(2).replace(/\.?0+$/, "");
+    };
+
     for (let row of items) {
         html += `<tr>`;
         html += `<td>${row.employee_id || ''}</td>`;
         html += `<td style="text-align: left;">${row.employee_name || ''}</td>`;
         
-        let working_days = 0;
+        let working_total = 0;
         let days_off = 0;
 
         for (let i = 1; i <= days_in_month; i++) {
             let d = new Date(year, month_idx, i);
             let is_friday = d.getDay() === 5;
             let bg_color = is_friday ? '#f1f5f9' : '';
-            
-            let val = row['day_' + i] || '';
-            let val_short = val;
-            
-            if (val === "Present") {
-                val_short = "P";
-                working_days++;
-            } else if (val === "Absent") {
-                val_short = "A";
-            } else if (val === "Work From Home") {
-                val_short = "WFH";
-                working_days++;
-            } else if (val === "Half Day") {
-                val_short = "HD";
-                working_days += 0.5;
-            } else if (val === "Day Off") {
-                val_short = "DO";
-                days_off++;
-            } else if (val === "Client Day Off") {
-                val_short = "CDO";
-                days_off++;
+            let status_val = row['day_' + i] || '';
+            let hour_val = row['day_' + i + '_hour'];
+            let val_short = '';
+
+            if (is_shift_hours) {
+                if (status_val === "Day Off") {
+                    val_short = "DO";
+                    days_off++;
+                } else if (status_val === "Client Day Off") {
+                    val_short = "CDO";
+                    days_off++;
+                } else if (hour_val !== undefined && hour_val !== null && hour_val !== "") {
+                    val_short = format_preview_total(hour_val);
+                    working_total += Number(hour_val) || 0;
+                } else if (status_val === "Absent") {
+                    val_short = "A";
+                } else if (status_val === "Half Day") {
+                    val_short = "HD";
+                    working_total += 0.5;
+                } else if (status_val === "Present") {
+                    val_short = "P";
+                    working_total++;
+                } else if (status_val === "Work From Home") {
+                    val_short = "WFH";
+                    working_total++;
+                }
+            } else {
+                let val = status_val;
+                val_short = val;
+                
+                if (val === "Present") {
+                    val_short = "P";
+                    working_total++;
+                } else if (val === "Absent") {
+                    val_short = "A";
+                } else if (val === "Work From Home") {
+                    val_short = "WFH";
+                    working_total++;
+                } else if (val === "Half Day") {
+                    val_short = "HD";
+                    working_total += 0.5;
+                } else if (val === "Day Off") {
+                    val_short = "DO";
+                    days_off++;
+                } else if (val === "Client Day Off") {
+                    val_short = "CDO";
+                    days_off++;
+                }
             }
 
             html += `<td style="background-color: ${bg_color}">${val_short}</td>`;
         }
 
-        html += `<td><strong>${working_days}</strong></td>`;
+        html += `<td><strong>${format_preview_total(working_total)}</strong></td>`;
         html += `<td><strong>${days_off}</strong></td>`;
         html += `</tr>`;
     }

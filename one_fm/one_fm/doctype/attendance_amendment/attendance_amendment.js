@@ -50,9 +50,11 @@ frappe.ui.form.on("Attendance Amendment", {
             doc: frm.doc,
             callback: function(r) {
                 frm.refresh_fields();
-                // trigger working days calc after fetch
-                let items = frm.doc.attendance_details || [];
-                items.forEach(d => calculate_working_days(frm, d.doctype, d.name));
+                // trigger working days calc after fetch only for Attendance Status mode
+                if (frm.doc.attendance_based_on === "Attendance Status") {
+                    let items = frm.doc.attendance_details || [];
+                    items.forEach(d => calculate_working_days(frm, d.doctype, d.name));
+                }
             },
             freeze: true,
             freeze_message: "Fetching Attendance Records..."

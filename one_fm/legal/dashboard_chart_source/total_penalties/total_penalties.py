@@ -77,7 +77,7 @@ def get(chart_name=None, chart=None,heatmap_year=None, no_cache=None, filters=No
 		d_total = 0
 		d_resolved = 0
 		for r in records:
-			if getdate(r.creation) <= getdate(date):
+			if getdate(r.issuance_date) <= getdate(date):
 				d_total += 1
 				if r.workflow_state in resolved_states:
 					d_resolved += 1

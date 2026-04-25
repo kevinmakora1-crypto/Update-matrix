@@ -177,7 +177,7 @@ def get_contract_invoice_items(contract, month, year):
                         ["income_account", "expense_account"], as_dict=True) or {}
                 
                 income_account = item_defaults.get("income_account") or frappe.db.get_value("Company", company, "default_income_account")
-                cost_center = item_defaults.get("cost_center") or frappe.db.get_value("Company", company, "cost_center")
+                cost_center = frappe.db.get_value("Company", company, "cost_center")
                 expense_account = item_defaults.get("expense_account") or frappe.db.get_value("Company", company, "default_expense_account")
 
                 si_items.append({

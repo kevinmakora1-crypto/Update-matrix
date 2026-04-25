@@ -38,7 +38,8 @@ def get_contract_invoice_items(contract, month, year):
     amendments = frappe.get_all("Attendance Amendment", filters={
         "contract": contract, 
         "month": month, 
-        "year": year
+        "year": year,
+        "workflow_state": "Approved"
     }, pluck="name")
 
     # sale_item -> site -> { actual_days, total_hours }

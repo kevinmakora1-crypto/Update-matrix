@@ -125,7 +125,7 @@ function hide_finance_fields_for_non_finance_users(frm) {
         const child_fields = [
             'rate', 'price_list_rate', 'base_rate', 'base_price_list_rate', 'net_rate', 'base_net_rate', 'amount', 'base_amount', 'net_amount', 
             'base_net_amount', 'discount_percentage', 'discount_amount', 'margin_type', 
-            'margin_rate_or_amount', 'rate_with_margin', 'base_rate_with_margin', 'base_amount'
+            'margin_rate_or_amount', 'rate_with_margin', 'base_rate_with_margin'
         ];
         
         child_fields.forEach(field => {

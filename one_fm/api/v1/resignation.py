@@ -331,3 +331,74 @@ def get_employee_supervisor(employee_id=None, **kwargs):
     if supervisor and supervisor.get("user_id"):
         return {"user_id": supervisor.get("user_id"), "full_name": supervisor.get("employee_name")}
     return {}
+
+@frappe.whitelist()
+def correct_resignation_date_app(
+    employee_id=None,
+    resignation_id=None,
+    new_date=None,
+    new_initiation_date=None,
+    attachment=None,
+    attachment_name=None,
+    data=None,
+    **kwargs
+):
+    """
+    Handles the 'Pending Relieving Date Correction' action from the mobile app.
+    Payload: employee_id, resignation_id, new_date (relieving), new_initiation_date, attachment (base64), attachment_name
+    """
+    try:
+        # Token auth: read from raw body (POST) — same pattern as create_resignation
+        if not resignation_id:
+            payload = get_request_data(data, **kwargs)
+            employee_id = employee_id or payload.get('employee_id')
+            resignation_id = payload.get('resignation_id')
+            new_date = new_date or payload.get('new_date')
+            new_initiation_date = new_initiation_date or payload.get('new_initiation_date')
+            attachment = attachment or payload.get('attachment')
+            attachment_name = attachment_name or payload.get('attachment_name', 'resignation_letter.png')
+
+        if not resignation_id:
+            frappe.throw("resignation_id is required", frappe.ValidationError)
+        if not new_date:
+            frappe.throw("new_date (relieving date) is required", frappe.ValidationError)
+
+        doc = frappe.get_doc("Employee Resignation", resignation_id)
+
+        if doc.workflow_state != "Pending Relieving Date Correction":
+            frappe.throw(
+                f"Cannot correct date. Current state: {doc.workflow_state}",
+                frappe.ValidationError
+            )
+
+        # Update dates
+        doc.relieving_date = new_date
+        if new_initiation_date:
+            doc.resignation_initiation_date = new_initiation_date
+
+        # Update dates in child table rows too
+        for row in doc.employees:
+            row.resignation_letter_date = new_date
+
+        # Handle attachment if provided
+        if attachment:
+            att_name = attachment_name or "corrected_resignation_letter.png"
+            handle_attachment_internal(doc, doc, {
+                "attachment_name": att_name,
+                "attachment": attachment
+            }, "resignation_letter")
+
+        # Save and advance workflow
+        doc.save(ignore_permissions=True)
+        doc.db_set("workflow_state", "Pending Supervisor")
+        frappe.db.commit()
+
+        return {
+            "status": "success",
+            "message": "Resignation date corrected and resubmitted to supervisor",
+            "name": doc.name
+        }
+
+    except Exception as e:
+        frappe.log_error("Correction Error", frappe.get_traceback())
+        frappe.throw(str(e), frappe.ValidationError)

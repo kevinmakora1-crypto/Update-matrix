@@ -71,8 +71,8 @@ class EmployeeResignation(Document):
 				if not row.employee:
 					continue
 				
-				# Supervisor / HR should attach letter for manually added resignation
-				if not row.resignation_letter and frappe.session.user != row.employee:
+				# Mandatory for EVERYONE (Employee, Supervisor, HR)
+				if not row.resignation_letter:
 					emp_name = frappe.db.get_value("Employee", row.employee, "employee_name") or row.employee
 					frappe.throw(_("Missing Resignation Letter for <b>{0}</b>. Please click the pencil edit icon ✏️ on their row and attach the file before submitting.").format(str(emp_name)), title=_("Missing Attachments"))
 
@@ -119,8 +119,8 @@ class EmployeeResignation(Document):
 				message += "</ul>"
 				
 		if self.relieving_date:
-			# Needs frappe.utils inside or we can just str format
-			message += "<br>" + _("<b>Approved Relieving Date:</b> {0}").format(frappe.utils.formatdate(self.relieving_date))
+			from frappe.utils import formatdate
+			message += "<br>" + _("<b>Approved Relieving Date:</b> {0}").format(formatdate(self.relieving_date))
 
 		if recipients:
 			from one_fm.processor import sendemail
@@ -145,7 +145,6 @@ class EmployeeResignation(Document):
 				)
 
 		# Enforce Operations Manager and Offboarding Officer only during Managerial stages
-		# EXPLICITLY ignore Draft and Empty states
 		state = self.get("workflow_state")
 		if state and state not in ("Draft", "Pending Relieving Date Correction"):
 			if state in ("Pending Operations Manager", "Approved"):
@@ -155,7 +154,7 @@ class EmployeeResignation(Document):
 					frappe.throw(_("Please specify the <b>Offboarding Officer</b> before saving or submitting."))
 
 		# Enforce replacement_required explicitly for Operations Manager
-		if self.get("workflow_state") == "Approved" and self.docstatus == 1:
+		if self.get("workflow_state") == "Approved":
 			if not self.replacement_required:
 				frappe.throw(
 					_("You must explicitly select Yes or No for 'Is a Replacement Required?' before you can save or approve."),
@@ -163,6 +162,10 @@ class EmployeeResignation(Document):
 				)
 
 	def set_supervisor(self):
+		# Only auto-resolve supervisor if it hasn't already been set manually
+		if self.get("supervisor"):
+			return
+		
 		# We base supervisor routing on the FIRST employee
 		if not self.get("employees"):
 			return
@@ -199,7 +202,6 @@ class EmployeeResignation(Document):
 					self.supervisor = user_id
 					return
 		
-		# Blank supervisor if ghost or completely empty
 		self.supervisor = None
 
 	def on_submit(self):
@@ -220,7 +222,6 @@ class EmployeeResignation(Document):
 					frappe.db.set_value("Employee", row.employee, {
 						"resignation_date": self.resignation_initiation_date,
 						"relieving_date": self.relieving_date,
-						"status": "Resigned",
 						"current_resignation": self.name
 					})
 
@@ -264,15 +265,9 @@ class EmployeeResignation(Document):
 					row_dict.pop(field, None)
 				new_row.update(row_dict)
 				
-			if not frappe.has_permission("Project Manpower Request", "create"):
-				frappe.throw(_("You do not have permission to create a Project Manpower Request. Please contact system administrator."))
+			pmr.workflow_state = "Draft"
 			pmr.insert(ignore_permissions=True)
-			
-			frappe.msgprint(
-				_("Project Manpower Request generated successfully: <a href='/app/project-manpower-request/{0}'><b>{0}</b></a> (Click to open)").format(pmr.name),
-				title=_("PMR Created"),
-				indicator="green"
-			)
+			frappe.db.set_value("Project Manpower Request", pmr.name, "workflow_state", "Draft")
 
 	def on_trash(self):
 		for row in self.get("employees", []):
@@ -286,4 +281,12 @@ class EmployeeResignation(Document):
 		status = self.workflow_state or _("Draft")
 		for row in self.get("employees", []):
 			if row.employee:
-				frappe.db.set_value("Employee", row.employee, "resignation_status", status, update_modified=False)
+				update_data = {
+					"resignation_status": status,
+					"current_resignation": self.name,
+					"resignation_date": self.resignation_initiation_date,
+					"relieving_date": self.relieving_date,
+				}
+				if row.resignation_letter:
+					update_data["resignation_letter_date"] = row.get("resignation_letter_date") or self.resignation_initiation_date
+				frappe.db.set_value("Employee", row.employee, update_data, update_modified=False)

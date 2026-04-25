@@ -242,9 +242,10 @@ def get_supervisor_dropdown():
 
 @frappe.whitelist()
 def get_my_active_resignation(employee_id=None, **kwargs):
-    payload = get_request_data(employee_id=employee_id, **kwargs)
-    employee_id = payload.get('employee_id')
-    employee_name = resolve_employee_name(employee_id)
+    # With token auth, query params are NOT in form_dict — read from request.args directly
+    input_id = (frappe.request.args.get('employee_id') if hasattr(frappe, 'request') else None) \
+        or frappe.form_dict.get('employee_id') or employee_id
+    employee_name = resolve_employee_name(input_id)
     if not employee_name: return []
 
     items = frappe.get_all("Employee Resignation Item", 
@@ -265,9 +266,10 @@ def get_my_active_resignation(employee_id=None, **kwargs):
 
 @frappe.whitelist()
 def get_all_my_resignations(employee_id=None, **kwargs):
-    payload = get_request_data(employee_id=employee_id, **kwargs)
-    employee_id = payload.get('employee_id')
-    employee_name = resolve_employee_name(employee_id)
+    # With token auth, query params are NOT in form_dict — read from request.args directly
+    input_id = (frappe.request.args.get('employee_id') if hasattr(frappe, 'request') else None) \
+        or frappe.form_dict.get('employee_id') or employee_id
+    employee_name = resolve_employee_name(input_id)
     if not employee_name: return []
 
     items = frappe.get_all("Employee Resignation Item", 
@@ -292,9 +294,10 @@ def get_all_my_resignations(employee_id=None, **kwargs):
 @frappe.whitelist()
 def get_employee_supervisor(employee_id=None, **kwargs):
     from one_fm.utils import get_approver
-    payload = get_request_data(employee_id=employee_id, **kwargs)
-    employee_id = payload.get('employee_id')
-    employee_name = resolve_employee_name(employee_id)
+    # With token auth, query params are NOT in form_dict — read from request.args directly
+    input_id = (frappe.request.args.get('employee_id') if hasattr(frappe, 'request') else None) \
+        or frappe.form_dict.get('employee_id') or employee_id
+    employee_name = resolve_employee_name(input_id)
     if not employee_name: return {}
 
     approver_name = get_approver(employee_name)

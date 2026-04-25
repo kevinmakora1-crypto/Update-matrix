@@ -169,7 +169,38 @@ curl -X POST "http://SERVER/api/method/one_fm.api.v1.MODULE.FUNCTION" \
 
 ---
 
-## Quick Debugging Checklist
+---
+
+## Rule 8: GET Request Query Params Are in `request.args`, NOT `form_dict` Under Token Auth
+
+### What Happens
+With token auth (`Authorization: token key:secret`), Frappe only puts `cmd` in `frappe.form_dict` for GET requests. Any other query string params (like `?employee_id=XXX`) are **silently stripped** from `form_dict`.
+
+`frappe.request.args` (the raw Werkzeug request object) always has all query string params regardless of auth method.
+
+### The Fix
+For all GET endpoints that accept query parameters:
+
+```python
+@frappe.whitelist()
+def get_all_my_resignations(employee_id=None, **kwargs):
+    # WRONG: form_dict only has 'cmd' with token auth
+    # input_id = frappe.form_dict.get('employee_id') or employee_id  ❌
+
+    # CORRECT: request.args always has the query string params
+    input_id = (frappe.request.args.get('employee_id') if hasattr(frappe, 'request') else None) \
+        or frappe.form_dict.get('employee_id') or employee_id  # ✅
+```
+
+### Summary: Where Each Auth Method Puts Data
+
+| Auth Method | POST body → | GET query → |
+|---|---|---|
+| Cookie/Session | `frappe.form_dict` | `frappe.form_dict` |
+| Token (`key:secret`) | **raw body only** (parse manually) | **`frappe.request.args` only** |
+
+> The mobile app ALWAYS uses token auth. Design all APIs accordingly.
+
 
 When a mobile API returns 417 or 500:
 

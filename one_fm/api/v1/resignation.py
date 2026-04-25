@@ -246,23 +246,47 @@ def get_my_active_resignation(employee_id=None, **kwargs):
     input_id = (frappe.request.args.get('employee_id') if hasattr(frappe, 'request') else None) \
         or frappe.form_dict.get('employee_id') or employee_id
     employee_name = resolve_employee_name(input_id)
-    if not employee_name: return []
+    if not employee_name: return None
 
-    items = frappe.get_all("Employee Resignation Item", 
+    # States where the employee must take action — show these first
+    EMPLOYEE_ACTION_STATES = [
+        "Pending Relieving Date Correction",
+        "Draft",
+    ]
+
+    seen = set()
+    items = frappe.get_all("Employee Resignation Item",
         filters={"employee": employee_name, "parenttype": "Employee Resignation"},
         fields=["parent"], order_by="creation desc")
-    
-    results = []
+
+    all_records = []
     for item in items:
+        if item.parent in seen:
+            continue
+        seen.add(item.parent)
         doc = frappe.get_doc("Employee Resignation", item.parent)
-        results.append({
+        # Skip terminal states
+        if doc.workflow_state in ("Resigned", "Cancelled", "Resignation Withdrawn"):
+            continue
+        all_records.append({
             "name": doc.name,
             "workflow_state": doc.workflow_state,
             "resignation_initiation_date": doc.resignation_initiation_date,
             "relieving_date": doc.relieving_date,
-            "creation": doc.creation
+            "creation": str(doc.creation)
         })
-    return results
+
+    if not all_records:
+        return None
+
+    # Prioritize records where employee needs to act
+    for record in all_records:
+        if record["workflow_state"] in EMPLOYEE_ACTION_STATES:
+            return record
+
+    # Fallback: most recent active record
+    return all_records[0]
+
 
 @frappe.whitelist()
 def get_all_my_resignations(employee_id=None, **kwargs):

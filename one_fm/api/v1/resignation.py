@@ -129,6 +129,97 @@ def create_resignation(
 
 
 @frappe.whitelist()
+def extend_resignation(
+    employee_id=None,
+    supervisor=None,
+    reason=None,
+    extended_date=None,
+    resignation_id=None,
+    attachment=None,
+    data=None,
+    **kwargs
+):
+    """Create an Employee Resignation Extension for the employee's active resignation."""
+    try:
+        p = get_all_params(
+            "reason", "extended_date", "attachment",
+            employee_id=employee_id,
+            supervisor=supervisor,
+            resignation_id=resignation_id,
+        )
+        input_id       = p["employee_id"]
+        supervisor     = p["supervisor"]
+        reason         = p["reason"]
+        extended_date  = p["extended_date"]
+        resignation_id = p["resignation_id"]
+        attachment     = p["attachment"]
+
+        employee_name = resolve_employee_name(input_id)
+        if not employee_name:
+            frappe.throw(f"Employee '{input_id}' not found", frappe.ValidationError)
+        if not extended_date:
+            frappe.throw("extended_date is required", frappe.ValidationError)
+
+        # Find active resignation if not supplied
+        if not resignation_id:
+            items = frappe.get_all(
+                "Employee Resignation Item",
+                filters={"employee": employee_name, "parenttype": "Employee Resignation"},
+                fields=["parent"], order_by="creation desc"
+            )
+            TERMINAL = {"Resigned", "Cancelled", "Resignation Withdrawn"}
+            for item in items:
+                d = frappe.get_doc("Employee Resignation", item.parent)
+                if d.workflow_state not in TERMINAL:
+                    resignation_id = item.parent
+                    break
+
+        if not resignation_id:
+            frappe.throw("No active resignation found to extend", frappe.ValidationError)
+
+        active_doc = frappe.get_doc("Employee Resignation", resignation_id)
+        employee_user = frappe.db.get_value("Employee", employee_name, "user_id")
+
+        ext = frappe.new_doc("Employee Resignation Extension")
+        ext.owner = employee_user or frappe.session.user
+        ext.employee_resignation = resignation_id
+        ext.supervisor = supervisor or active_doc.supervisor
+        ext.reason = reason or "Extension requested by employee"
+        ext.extended_relieving_date = extended_date
+        # Do NOT set workflow_state before insert — Frappe sets it to the
+        # workflow's initial state ('Pending Supervisor') automatically
+
+        for row in active_doc.employees:
+            ext.append("employees", {
+                "employee": row.employee,
+                "employee_name": row.employee_name,
+                "designation": row.designation,
+            })
+
+        ext.insert(ignore_permissions=True)
+
+        # Attach letter after insert so the row has a name
+        if attachment:
+            att_str = attachment if isinstance(attachment, str) else json.dumps(attachment)
+            try:
+                att_data = json.loads(att_str) if isinstance(att_str, str) else att_str
+            except Exception:
+                att_data = {"attachment_name": "extension_letter.png", "attachment": att_str}
+            handle_attachment_internal(ext, ext, att_data, "extension_letter")
+            frappe.db.commit()
+
+        return {
+            "status": "success",
+            "message": "Resignation extension submitted successfully",
+            "name": ext.name
+        }
+
+    except Exception as e:
+        frappe.log_error("Extension Error", frappe.get_traceback())
+        frappe.throw(str(e), frappe.ValidationError)
+
+
+@frappe.whitelist()
 def withdraw_resignation(
     employee_id=None,
     reason=None,
@@ -167,10 +258,13 @@ def withdraw_resignation(
         if not active_doc:
             frappe.throw("No active resignation found to withdraw", frappe.ValidationError)
 
+        employee_user = frappe.db.get_value("Employee", employee_name, "user_id")
         withdrawal = frappe.new_doc("Employee Resignation Withdrawal")
+        withdrawal.owner = employee_user or frappe.session.user
         withdrawal.employee_resignation = active_doc.name
         withdrawal.reason = reason or "Employee-initiated withdrawal"
-        withdrawal.workflow_state = "Draft"
+        # Do NOT set workflow_state before insert — Frappe sets it to the
+        # workflow's initial state ('Pending Supervisor') automatically
 
         for row in active_doc.employees:
             withdrawal.append("employees", {

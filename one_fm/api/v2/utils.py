@@ -226,4 +226,4 @@ def get_employee_by_id(employee_id):
             return frappe._dict({'status': True, 'message': employee})
         return frappe._dict({'status': False, 'message': f'Employee with ID {employee_id} does not exist', 'http_status_code':404})
     except Exception as e:
-        frappe._dict({'status': False, 'message': str(e), 'http_status_code':500})
+        return frappe._dict({'status': False, 'message': str(e), 'http_status_code':500})

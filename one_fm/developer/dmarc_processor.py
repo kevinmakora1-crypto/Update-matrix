@@ -277,5 +277,6 @@ def process_xml_report(xml_content):
 		return True
 		
 	except Exception as e:
+		print(f"  ERROR processing report: {e}")
 		frappe.log_error(frappe.get_traceback(), "DMARC XML Parsing Error")
 		return False

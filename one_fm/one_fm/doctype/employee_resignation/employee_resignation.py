@@ -217,7 +217,7 @@ class EmployeeResignation(Document):
 						if not frappe.db.exists("File", {"attached_to_doctype": "Employee", "attached_to_name": row.employee, "file_url": row.resignation_letter}):
 							try:
 								from frappe.utils.file_manager import save_url
-								save_url(row.resignation_letter, file_name, "Employee", row.employee, "Home/Attachments", 0)
+								save_url(row.resignation_letter, file_name, "Employee", row.employee, "Home/Attachments", 1)
 							except Exception as e:
 								frappe.log_error("Error attaching resignation file to Employee", str(e))
 					

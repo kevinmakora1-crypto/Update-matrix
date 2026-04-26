@@ -201,7 +201,6 @@ def extend_resignation(
         ext.supervisor = supervisor or active_doc.supervisor
         ext.reason = reason or "Extension requested by employee"
         # Ensure we only extract the date part (YYYY-MM-DD) if it's an ISO timestamp
-        frappe.log_error("Extension Received Date", str(extended_date))
         parsed_date = extended_date.split('T')[0] if isinstance(extended_date, str) else extended_date
         ext.extended_relieving_date = parsed_date
         # Do NOT set workflow_state before insert — Frappe sets it to the

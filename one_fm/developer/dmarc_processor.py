@@ -51,8 +51,8 @@ def fetch_and_process_dmarc_reports():
 		# Select Inbox
 		mail.select("INBOX")
 		
-		# Search for emails from the last 7 days
-		date_str = (datetime.now() - timedelta(days=7)).strftime("%d-%b-%Y")
+		# Search for emails from the last 30 days
+		date_str = (datetime.now() - timedelta(days=30)).strftime("%d-%b-%Y")
 		
 		result, data = mail.search(None, f'(SINCE "{date_str}")')
 		
@@ -62,6 +62,7 @@ def fetch_and_process_dmarc_reports():
 			return result_data
 
 		msg_ids = data[0].split()
+		print(f"DMARC: Found {len(msg_ids)} emails since {date_str}")
 		
 		for num in reversed(msg_ids):
 			result, msg_data = mail.fetch(num, '(RFC822)')
@@ -75,6 +76,8 @@ def fetch_and_process_dmarc_reports():
 			
 			if "report" not in subject_lower and "dmarc" not in subject_lower:
 				continue
+
+			print(f"  DMARC match: {subject[:80]}")
 				
 			for part in msg.walk():
 				if part.get_content_maintype() == "multipart":

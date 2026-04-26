@@ -111,8 +111,7 @@ class EmployeeResignationWithdrawal(Document):
 							# Recalculate remaining quantities automatically
 							if hasattr(pmr, 'calculate_remaining_qty'):
 								pmr.calculate_remaining_qty()
-								# Only do this if you are SURE it runs in a system/background context
-								frappe.only_for("System Manager")
+
 								pmr.save(ignore_permissions=True)
 								
 								# Auto-close/set status if entirely withdrawn

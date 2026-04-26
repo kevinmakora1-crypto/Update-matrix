@@ -33,10 +33,17 @@ def user_login(employee_id, password):
 		msg = {'status': 200, 'text': "Success", 'user': frappe.session.user}
 		user = frappe.get_doc('User', frappe.session.user)
 		
-		# Generate real API keys
-		api_secret = generate_keys(frappe.session.user)
-		user.reload() # Reload to get the new api_key
-		msg['token'] = f"token {user.api_key}:{api_secret}"
+		# Generate or retrieve API keys
+		if user.api_key and user.api_secret:
+			api_secret = user.get_password('api_secret')
+			msg['token'] = f"token {user.api_key}:{api_secret}"
+		else:
+			session_user = frappe.session.user
+			frappe.set_user('Administrator')
+			api_secret = generate_keys(user.name)
+			frappe.set_user(session_user)
+			user.reload()
+			msg['token'] = f"token {user.api_key}:{api_secret}"
 		
 		# Fetch details for the logged in user
 		u_user, u_roles, u_employee = get_current_user_details()

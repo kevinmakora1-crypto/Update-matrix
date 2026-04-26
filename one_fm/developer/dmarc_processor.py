@@ -196,18 +196,15 @@ def process_xml_report(xml_content):
 		doc.org_email = get_val(report_meta, "email")
 		doc.domain = get_val(policy_pub, "domain")
 		
-		# Handle Dates — parsedmarc may use different key names and formats
-		date_range = get_val(report_meta, "date_range", {})
+		# Dates: parsedmarc flattens date_range into begin_date/end_date strings
+		# directly on report_metadata (e.g. '2026-04-22 03:00:00')
+		begin_str = get_val(report_meta, "begin_date")
+		end_str = get_val(report_meta, "end_date")
 
-		# Log raw structure for debugging
-		frappe.logger().debug(f"DMARC date_range raw: {date_range}, type: {type(date_range)}")
-
-		# Try multiple key names
-		begin_raw = get_val(date_range, "begin") or get_val(date_range, "begin_date")
-		end_raw = get_val(date_range, "end") or get_val(date_range, "end_date")
-
-		doc.begin_date = parse_dmarc_date(begin_raw)
-		doc.end_date = parse_dmarc_date(end_raw)
+		if begin_str:
+			doc.begin_date = get_datetime(begin_str)
+		if end_str:
+			doc.end_date = get_datetime(end_str)
 
 		doc.published_policy = get_val(policy_pub, "p")
 		doc.published_spf_alignment = get_val(policy_pub, "aspf")

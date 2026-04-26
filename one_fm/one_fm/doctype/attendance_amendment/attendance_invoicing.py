@@ -13,6 +13,12 @@ MONTH_MAP = {
 @frappe.whitelist()
 def generate_invoice_from_amendment(amendment_name):
 	doc = frappe.get_doc("Attendance Amendment", amendment_name)
+	doc.check_permission("read")
+ 	
+	workflow_state = getattr(doc, "workflow_state", None)
+	if workflow_state and workflow_state != "Approved":
+ 		frappe.throw(_("Only Approved Attendance Amendments can be used to generate Sales Invoice."))
+
 
 	if not doc.contract:
 		frappe.throw(_("Please link a Contract before generating Sales Invoice."))
@@ -71,10 +77,10 @@ def generate_invoice_from_amendment(amendment_name):
 			item_data[sale_item].setdefault(site, {"actual_days": 0.0, "total_hours": 0.0})
 			item_data[sale_item][site]["actual_days"] += flt(row.working_days)
 			if use_hours:
-				# For hourly: use working_days which holds total shift hours when attendance_based_on=Shift Hours
-				item_data[sale_item][site]["total_hours"] += flt(row.working_days)
+				total_hrs = sum(flt(row.get(f"day_{i}_hour")) for i in range(1, 32))
+				item_data[sale_item][site]["total_hours"] += total_hrs
 
-	_accumulate(doc.get("attendance_details") or [])
+	_accumulate(doc.get("attendance_details") or [], use_hours=True)
 	_accumulate(doc.get("overtime_details") or [], use_hours=True)
 
 	# ------------------------------------------------------------------
@@ -88,16 +94,35 @@ def generate_invoice_from_amendment(amendment_name):
 				continue
 
 			item_code = c_item.item_code
-			ops_roles = frappe.get_all("Operations Role", filters={"sale_item": item_code}, pluck="name")
+			ops_roles = frappe.get_all("Operations Role", filters={"project": doc.project, "sale_item": item_code, "status": "Active"}, pluck="name")
 			if not ops_roles:
 				continue
 
+			# Get operation post names only
+			operation_post_names = frappe.get_all(
+				"Operations Post",
+				filters={
+					"project": doc.project,
+					"post_template": ["in", ops_roles],
+					"status": "Active"
+				},
+				pluck="name"
+			)
+
+			if not operation_post_names:
+				continue
+
 			# Required days from Post Schedule (Planned, within period)
-			post_schedules = frappe.get_all("Post Schedule", filters={
-				"operations_role": ["in", ops_roles],
+			ps_filters = {
+				"project": doc.project,
+				"post": ["in", operation_post_names],
 				"date": ["between", [start_date, end_date]],
 				"post_status": "Planned",
-			})
+			}
+			if scope_sites is not None:
+				ps_filters["site"] = ["in", scope_sites]
+
+			post_schedules = frappe.get_all("Post Schedule", filters=ps_filters)
 			required_days = len(post_schedules)
 
 			# Aggregate actuals across sites in scope
@@ -142,6 +167,8 @@ def generate_invoice_from_amendment(amendment_name):
 					"uom": c_item.uom,
 					"rate": c_item.rate or c_item.item_price,
 					"amount": qty * flt(c_item.rate or c_item.item_price),
+					"custom_contract": doc.contract,
+                	"custom_contract_item": c_item.name,
 				})
 
 		return si_items

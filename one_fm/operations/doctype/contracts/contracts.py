@@ -295,6 +295,17 @@ class Contracts(Document):
                 sales_invoice_doc.due_date = add_to_date(getdate(), days=1)
                 sales_invoice_doc.project = self.project
                 sales_invoice_doc.contracts = self.name
+                sales_invoice_doc.currency = self.currency_ or "KWD"
+                
+                if self.price_list:
+                    pl_currency = frappe.db.get_value("Price List", self.price_list, "currency")
+                    if pl_currency and pl_currency != sales_invoice_doc.currency:
+                        frappe.msgprint(
+                            _("Warning: Contract currency ({0}) does not match Price List currency ({1}). Please verify exchange rates.")
+                            .format(sales_invoice_doc.currency, pl_currency),
+                            indicator="orange",
+                            alert=True
+                        )
 
                 for item in self.items:
                     if item.item_type == "Service":
@@ -327,6 +338,8 @@ class Contracts(Document):
                                 'uom': item.uom,
                                 'rate': item.rate,
                                 'amount': quantity * item.rate,
+                                'custom_contract': self.name,
+                                'custom_contract_item': item.name,
                             })
 
                     elif item.item_type == "Items":
@@ -339,6 +352,8 @@ class Contracts(Document):
                             'uom': item.uom,
                             'rate': item_rate,
                             'amount': item_rate,
+                            'custom_contract': self.name,
+                            'custom_contract_item': item.name,
                         })
 
                 if not sales_invoice_doc.items:
@@ -389,6 +404,8 @@ class Contracts(Document):
                                 'uom': item.uom,
                                 'rate': item.rate,
                                 'amount': quantity * item.rate,
+                                'custom_contract': self.name,
+                                'custom_contract_item': item.name,
                             })
 
                             if sales_invoice_doc.items:
@@ -412,6 +429,8 @@ class Contracts(Document):
                             'uom': item.uom,
                             'rate': item_rate,
                             'amount': item_rate,
+                            'custom_contract': self.name,
+                            'custom_contract_item': item.name,
                         })
 
                         sales_invoice_doc.insert(ignore_permissions=True)
@@ -458,6 +477,8 @@ class Contracts(Document):
                                     'uom': item.uom,
                                     'rate': item.rate,
                                     'amount': quantity * item.rate,
+                                    'custom_contract': self.name,
+                                    'custom_contract_item': item.name,
                                 })
 
                     elif item.item_type == "Items":
@@ -470,6 +491,8 @@ class Contracts(Document):
                             'uom': item.uom,
                             'rate': item_rate,
                             'amount': item_rate,
+                            'custom_contract': self.name,
+                            'custom_contract_item': item.name,
                         })
 
                 invoices_created = []

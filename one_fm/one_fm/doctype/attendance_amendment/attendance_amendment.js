@@ -222,9 +222,7 @@ function show_attendance_preview_modal(frm) {
     const is_shift_hours = frm.doc.attendance_based_on === "Shift Hours";
     const format_preview_total = (value) => {
         let numeric_value = Number(value) || 0;
-        return Number.isInteger(numeric_value)
-            ? String(numeric_value)
-            : numeric_value.toFixed(2).replace(/\.?0+$/, "");
+        return String(numeric_value);
     };
 
     for (let row of items) {
@@ -259,8 +257,7 @@ function show_attendance_preview_modal(frm) {
                     val_short = "HD";
                     working_total += 0.5;
                 } else if (status_val === "Present") {
-                    val_short = "P";
-                    working_total++;
+                    val_short = "";
                 } else if (status_val === "Work From Home") {
                     val_short = "WFH";
                     working_total++;

@@ -94,7 +94,6 @@
   {
    "fieldname": "reports_to",
    "fieldtype": "Link",
-   "ignore_user_permissions": 1,
    "label": "Reports To",
    "options": "Employee",
    "read_only": 1

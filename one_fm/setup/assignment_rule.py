@@ -51,8 +51,6 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("action_fingerprint_appointment_transportation_supervisor.json"))
 	create_assignment_rule(get_assignment_rule_json_file("confirm_site_pickup_for_fingerprint_assignment.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_medical_appointment_pro.json"))
-	create_assignment_rule(get_assignment_rule_json_file("pathfinder_log_business_analyst.json"))
-	create_assignment_rule(get_assignment_rule_json_file("pathfinder_log_process_owner.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_medical_appointment_transportation_supervisor.json"))
 	create_assignment_rule(get_assignment_rule_json_file("action_medical_appointment_supervisor.json"))
 	create_assignment_rule(get_assignment_rule_json_file("confirm_site_pickup_for_medical_appointment_gr_operator.json"))
@@ -73,6 +71,9 @@ def create_assignment_rules():
 	create_assignment_rule(get_assignment_rule_json_file("formal_hearing_hr_manager.json"))
 	create_assignment_rule(get_assignment_rule_json_file("formal_hearing_general_manager.json"))
 	create_assignment_rule(get_assignment_rule_json_file("absence_case_hr_officer.json"))
+	create_assignment_rule(get_assignment_rule_json_file("groperator_visa_request.json"))
+	create_assignment_rule(get_assignment_rule_json_file("recruiter_visa_request.json"))
+	create_assignment_rule(get_assignment_rule_json_file("grd_manager_visa_request.json"))
 
 def delete_assignment_rules():
 	delete_assignment_rule(get_assignment_rule_json_file("roster_post_action_site_supervisor.json"))

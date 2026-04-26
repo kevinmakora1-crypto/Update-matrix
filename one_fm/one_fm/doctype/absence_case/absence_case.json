@@ -1,12 +1,6 @@
 {
  "actions": [
   {
-   "action": "/app/formal-hearing/new",
-   "action_type": "Route",
-   "group": "Create",
-   "label": "Formal Hearing"
-  },
-  {
    "action": "/app/leave-application/new",
    "action_type": "Route",
    "group": "Create",

@@ -38,6 +38,7 @@
   "column_break_obib",
   "price_list",
   "section_break_35",
+  "currency_",
   "items",
   "create_sales_invoice_as",
   "invoice_frequency",
@@ -319,10 +320,18 @@
    "label": "Password Management",
    "options": "Password Management",
    "read_only": 1
+  },
+  {
+   "default": "KWD",
+   "fieldname": "currency_",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "mandatory_depends_on": "eval:doc.__islocal",
+   "options": "Currency"
   }
  ],
  "links": [],
- "modified": "2026-04-13 09:11:42.736578",
+ "modified": "2026-04-25 10:03:35.969070",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Contracts",

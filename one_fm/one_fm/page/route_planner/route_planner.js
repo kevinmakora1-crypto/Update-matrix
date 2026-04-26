@@ -148,6 +148,9 @@ function renderPage(wrapper, data) {
     renderCardPool(data.shipment_cards);
     bindSearch(data.shipment_cards);
 
+    // ── Save Plan → open manifest ──
+    document.getElementById('rp-save-btn').addEventListener('click', openManifest);
+
     // ── Detail panel close ──
     document.getElementById('rp-detail-close').addEventListener('click', closeDetailPanel);
     document.getElementById('rp-detail-remove').addEventListener('click', function () {
@@ -512,7 +515,6 @@ function initTimeline(data) {
     function addDropListeners(el) {
         el.addEventListener('dragover', function (e) {
             e.preventDefault();
-            // ← removed stopPropagation here
             e.dataTransfer.dropEffect = 'move';
         });
         el.addEventListener('drop', function (e) {
@@ -923,6 +925,236 @@ function fmtTimeLocal(isoStr) {
     return new Date(isoStr).toLocaleTimeString("en-GB", {
         hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuwait"
     });
+}
+
+// ── Manifest generation ────────────────────────────────────────────
+//
+//  Builds a synthetic ROUTE_DATA object from the current planner state
+//  and opens the route_manifest_template.html in a new tab with the
+//  data injected.
+// ──────────────────────────────────────────────────────────────────
+
+function buildManifestData() {
+    // Slugify for use in shipment labels (the manifest engine splits on "_")
+    const slug = s => (s || '').replace(/[\s_]+/g, '-').replace(/[^a-zA-Z0-9\-]/g, '');
+
+    const shipments = [];
+    const vehiclesList = [];
+    const routes = [];
+    const shipmentEmployees = {};
+    const shipmentSiteLocations = {};
+    const shipmentShiftNames = {};
+    const vehicleMeta = {};
+
+    // ── 1. Build one OUTBOUND + one RETURN shipment per assigned card ──
+    //
+    //  Label format: {accSlug}_S_{siteSlug}_{DIRECTION}
+    //  parseLabel() in the manifest engine reads:
+    //    acc       = parts[0]               → accSlug (shown as sub-label)
+    //    direction = parts[last]            → OUTBOUND | RETURN
+    //    title     = shipmentSiteLocations  → real site name (overrides parseLabel location)
+    //
+    const cardInfoMap = {};
+    let shipIdx = 0;
+
+    Object.keys(assignedCards).forEach(cardId => {
+        const card = planData.shipment_cards.find(c => c.id === cardId);
+        if (!card) return;
+
+        const accSlug = slug(card.accommodation);
+        const siteSlug = slug(card.site_location);
+
+        // Make labels unique per card even if acc+site collide across cards
+        const uid = shipIdx;
+        const outLabel = `${accSlug}_${uid}_${siteSlug}_OUTBOUND`;
+        const retLabel = `${accSlug}_${uid}_${siteSlug}_RETURN`;
+
+        const outIdx = shipIdx++;
+        const retIdx = shipIdx++;
+
+        shipments.push({ label: outLabel, pickups: [{}], deliveries: [{}] });
+        shipments.push({ label: retLabel, pickups: [{}], deliveries: [{}] });
+
+        // Lookup maps used by the manifest renderer
+        shipmentEmployees[outLabel] = card.employees;
+        shipmentEmployees[retLabel] = card.employees;
+        shipmentSiteLocations[outLabel] = card.site_location;
+        shipmentSiteLocations[retLabel] = card.site_location;
+        shipmentShiftNames[outLabel] = card.shift_name;
+        shipmentShiftNames[retLabel] = card.shift_name;
+
+        cardInfoMap[cardId] = { outLabel, retLabel, outIdx, retIdx };
+    });
+
+    // ── 2. Build one route per vehicle that has at least one assignment ──
+    planData.vehicles.forEach((v, vidx) => {
+        vehiclesList.push({ label: v.label, startLocation: null });
+
+        vehicleMeta[v.label] = {
+            accommodation: v.accommodation,
+            driver: v.driver,
+            seats: v.seats,
+            location: v.accommodation
+        };
+
+        // Get all timeline items for this vehicle and sort chronologically
+        const vItems = timelineItems.get({ filter: i => i.group === v.id });
+        if (vItems.length === 0) return; // vehicle has no assignments — skip
+
+        vItems.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+        const visits = [];
+        const transitions = [];
+
+        // Transition[0]: depot start → first visit
+        transitions.push({ travelDuration: "0s", waitDuration: "0s", travelDistanceMeters: 0 });
+
+        vItems.forEach((item, idx) => {
+            const info = cardInfoMap[item.cardId];
+            if (!info) return;
+
+            const isOutbound = item.direction === "OUTBOUND";
+            const shipmentIndex = isOutbound ? info.outIdx : info.retIdx;
+            const headcount = item.headcount || 0;
+            const itemStartISO = new Date(item.start).toISOString();
+            const itemEndISO = new Date(item.end).toISOString();
+            const durationMs = new Date(item.end) - new Date(item.start);
+            const durationSec = Math.round(durationMs / 1000);
+
+            // ── Pickup visit (depart accommodation / depart site) ──
+            visits.push({
+                shipmentIndex,
+                isPickup: true,
+                startTime: itemStartISO,
+                loadDemands: { seats: { amount: String(headcount) } }
+            });
+
+            // Transition: pickup → dropoff (the driving portion of this leg)
+            transitions.push({
+                travelDuration: `${durationSec}s`,
+                waitDuration: "0s",
+                travelDistanceMeters: Math.round(durationSec * 10) // ~36 km/h estimate
+            });
+
+            // ── Dropoff visit (arrive at site / arrive at accommodation) ──
+            visits.push({
+                shipmentIndex,
+                isPickup: false,
+                startTime: itemEndISO,
+                loadDemands: { seats: { amount: String(-headcount) } } // negative = alighting
+            });
+
+            // Transition: dropoff → next pickup (gap between this item and the next)
+            const nextItem = vItems[idx + 1];
+            const gapMs = nextItem
+                ? Math.max(0, new Date(nextItem.start) - new Date(item.end))
+                : 0;
+            transitions.push({
+                travelDuration: `${Math.round(gapMs / 1000)}s`,
+                waitDuration: "0s",
+                travelDistanceMeters: Math.round(gapMs / 1000 * 8)
+            });
+        });
+
+        // Route window
+        const routeStartISO = new Date(vItems[0].start).toISOString();
+        const routeEndISO = new Date(vItems[vItems.length - 1].end).toISOString();
+        const totalMs = new Date(routeEndISO) - new Date(routeStartISO);
+
+        routes.push({
+            vehicleIndex: vidx,
+            vehicleLabel: v.label,
+            vehicleStartTime: routeStartISO,
+            vehicleEndTime: routeEndISO,
+            visits,
+            transitions,
+            metrics: {
+                travelDistanceMeters: 0,
+                totalDuration: `${Math.round(totalMs / 1000)}s`,
+                travelDuration: `${Math.round(totalMs / 1000)}s`
+            }
+        });
+    });
+
+    return {
+        request: {
+            model: {
+                shipments,
+                vehicles: vehiclesList,
+                globalStartTime: planData.global_start,
+                globalEndTime: planData.global_end
+            }
+        },
+        response: {
+            routes,
+            skippedShipments: [],
+            metrics: { totalCost: 0 }
+        },
+        shipmentEmployees,
+        shipmentSiteLocations,
+        shipmentShiftNames,
+        vehicleMeta
+    };
+}
+
+async function openManifest() {
+    const routeData = buildManifestData();
+
+    if (routeData.response.routes.length === 0) {
+        frappe.show_alert({
+            message: "No assigned shipments to generate a manifest from.",
+            indicator: "orange"
+        });
+        return;
+    }
+
+    const btn = document.getElementById('rp-save-btn');
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Generating...";
+
+    let templateHtml;
+    try {
+        const res = await fetch('/assets/one_fm/html/route_manifest_template.html');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        templateHtml = await res.text();
+    } catch (err) {
+        frappe.show_alert({
+            message: `Could not load manifest template (${err.message}).`,
+            indicator: "red"
+        }, 8);
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+        return;
+    }
+
+    const safeJson = JSON.stringify(routeData).replace(/<\//g, '<\\/');
+
+    const injection = `<script>
+    const ROUTE_DATA = ${safeJson};
+
+    // Show any JS error visibly — blob URLs suppress error reporting in some browsers
+    window.addEventListener('error', function(e) {
+        document.body.style.cssText = 'background:#fff;color:#c00;padding:40px;font-family:monospace;font-size:13px';
+        document.body.innerHTML = '<h2 style="margin-bottom:12px">Manifest Error</h2><pre>'
+            + e.message + '\\nat line ' + e.lineno + '</pre>';
+    });
+    <\/script>`;
+
+    const finalHtml = templateHtml.replace('</head>', injection + '\n</head>');
+
+    const blob = new Blob([finalHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+
+    frappe.show_alert({
+        message: `Manifest opened — ${routeData.response.routes.length} vehicles`,
+        indicator: "green"
+    }, 4);
 }
 
 function injectStyles() {

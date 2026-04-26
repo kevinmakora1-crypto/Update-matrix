@@ -123,7 +123,14 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Backlog\nPending Process Classification\nUpcoming\nActive\nOn Hold\nDeployed",
-   "read_only_depends_on": "eval: doc.process_is_generic || !doc.epic || !doc.process_folder_link"
+   "read_only": 1
+  },
+  {
+   "fieldname": "hd_ticket",
+   "fieldtype": "Link",
+   "label": "HD Ticket",
+   "options": "HD Ticket",
+   "read_only": 1
   },
   {
    "fieldname": "stakeholders_section",
@@ -224,8 +231,13 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-04-19 09:58:00.000000",
+ "links": [
+  {
+   "link_doctype": "BPMN Process Model",
+   "link_fieldname": "pathfinder_log"
+  }
+ ],
+ "modified": "2026-04-26 10:30:58.185714",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Pathfinder Log",

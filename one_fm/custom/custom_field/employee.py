@@ -70,7 +70,7 @@ def get_employee_custom_fields():
 				"read_only": 1,
 			},
 			{
-				"fieldname": "column_break_heye",
+				"fieldname": "column_break_after_bank_name",
 				"fieldtype": "Column Break",
 				"insert_after": "bank_name",
 			},

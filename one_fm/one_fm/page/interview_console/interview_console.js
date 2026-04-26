@@ -73,7 +73,43 @@ function init_interview_console(wrapper, page) {
 		matrix: [],
 		applicants: []
 	};
-	var save_timeout = null;
+	const SAVE_DEBOUNCE_MS = 500;
+	let saveTimeoutId = null;
+	let pendingSaveFn = null;
+	let save_in_flight = false;
+	let queued_save_fn = null;
+
+	function run_serialized_save(saveFn) {
+		if (!saveFn) return;
+		if (save_in_flight) {
+			queued_save_fn = saveFn;
+			return;
+		}
+		save_in_flight = true;
+		Promise.resolve(saveFn())
+			.catch(function (err) {
+				console.error("Interview score save failed:", err);
+			})
+			.finally(function () {
+				save_in_flight = false;
+				if (queued_save_fn) {
+					var nextFn = queued_save_fn;
+					queued_save_fn = null;
+					run_serialized_save(nextFn);
+				}
+			});
+	}
+
+	function flush_pending_save() {
+		if (saveTimeoutId !== null) {
+			clearTimeout(saveTimeoutId);
+			saveTimeoutId = null;
+			if (pendingSaveFn) {
+				run_serialized_save(pendingSaveFn);
+				pendingSaveFn = null;
+			}
+		}
+	}
 
 	function init() {
 		// Check for deep-link: if arriving from Job Applicant with applicant route_option
@@ -82,6 +118,17 @@ function init_interview_console(wrapper, page) {
 			auto_select_applicant = frappe.route_options.applicant;
 			frappe.route_options = null; // Consume the option
 		}
+		
+		if (!wrapper._ic_handlers_bound) {
+			window.addEventListener('visibilitychange', function() {
+				if (document.visibilityState === 'hidden') {
+					flush_pending_save();
+				}
+			});
+			if (frappe.router) frappe.router.on('change', flush_pending_save);
+			wrapper._ic_handlers_bound = true;
+		}
+
 		fetch_applicants(auto_select_applicant);
 		setup_handlers();
 
@@ -317,6 +364,7 @@ function init_interview_console(wrapper, page) {
 	}
 
 	function select_applicant(app) {
+		flush_pending_save();
 		state.selected_applicant = app;
         
         $w('#ic-root').addClass('has-selection');
@@ -751,10 +799,25 @@ function init_interview_console(wrapper, page) {
 		$w('#ic-score-pill').text(percentage + '/100').css({ 'background': '#e0f2fe', 'color': '#0369a1' });
 		if (percentage > 0 && status === "Open") status = "Replied";
 
-		if (save_timeout) clearTimeout(save_timeout);
-		save_timeout = setTimeout(function() {
-			save_to_db(percentage, status);
-		}, 500);
+		const currentApplicantName = state.selected_applicant && state.selected_applicant.name;
+		if (saveTimeoutId !== null) clearTimeout(saveTimeoutId);
+		
+		pendingSaveFn = function() {
+			return save_to_db(percentage, status);
+		};
+
+		saveTimeoutId = setTimeout(function() {
+			saveTimeoutId = null;
+			if (state.selected_applicant && state.selected_applicant.name === currentApplicantName) {
+				if (pendingSaveFn) {
+					run_serialized_save(pendingSaveFn);
+					pendingSaveFn = null;
+				}
+			} else {
+				pendingSaveFn = null;
+				queued_save_fn = null;
+			}
+		}, SAVE_DEBOUNCE_MS);
 
 		state.selected_applicant.interview_score = percentage;
 		state.selected_applicant.status = status;
@@ -810,7 +873,7 @@ function init_interview_console(wrapper, page) {
 				});
 			}
 		}
-		frappe.call({
+		return frappe.call({
 			method: "one_fm.one_fm.page.interview_console.interview_console.save_interview_data",
 			args: {
 				applicant: state.selected_applicant.name,
@@ -844,11 +907,22 @@ function init_interview_console(wrapper, page) {
 
 	function update_status(status) {
 		if (!state.selected_applicant) return frappe.msgprint("Select a candidate");
+		
+		// Cancel any pending debounced save to prevent it from overwriting this hard save in the future
+		if (saveTimeoutId !== null) {
+			clearTimeout(saveTimeoutId);
+			saveTimeoutId = null;
+			pendingSaveFn = null;
+		}
+
 		var score_text = $w('#ic-score-pill').text();
 		var score = parseInt(score_text) || 0;
 
 		state.selected_applicant.status = status;
-		save_to_db(score, status);
+		
+		run_serialized_save(function() {
+			return save_to_db(score, status);
+		});
 
 		// Immediate UI update
 		var display_status = status;

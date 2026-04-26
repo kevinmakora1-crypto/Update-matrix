@@ -5,7 +5,7 @@
 # days_off was hidden because it reset to 0 on save for no reason
 from __future__ import unicode_literals
 import frappe, json
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import calendar
 from frappe.model.document import Document
@@ -40,6 +40,96 @@ class Contracts(Document):
             and self.workflow_state == "Submit to Operations Admin"
         ):
             self.submit_to_operations_admin()
+
+
+        sync_contract_item_prices(self.name)
+
+    def sync_item_prices(self):
+        """
+        Creates or updates Item Price records for each Contract Item row.
+        Deduplicates processing by Item/Gender/Shift/DaysOff combination to prevent duplicate errors.
+        """
+        # 1. Gather unique combinations to process
+        sync_groups = {}
+        for row in self.items:
+            if not row.item_code:
+                continue
+
+            attrs = get_item_variant_attributes(row.item_code)
+            gender = attrs.get("gender")
+            shift_hours = attrs.get("working_hours") or 0
+            days_off = row.get("days_off") or 0
+            
+            uom = row.uom or frappe.db.get_value("Item", row.item_code, "stock_uom")
+            currency = self.currency_ or "KWD"
+
+            # Unique key for Item Price (matching the custom logic in one_fm/api/doc_methods/item_price.py)
+            group_key = (row.item_code, uom, currency, gender, shift_hours, days_off)
+            
+            if group_key not in sync_groups:
+                sync_groups[group_key] = {"rate": row.rate, "rows": []}
+            
+            # Prefer the latest rate if duplicates exist in contract rows
+            sync_groups[group_key]["rate"] = row.rate
+            sync_groups[group_key]["rows"].append(row)
+
+        price_list = "Standard Selling"
+        customer = self.client
+
+        # 2. Process each unique combination
+        for key, data in sync_groups.items():
+            item_code, uom, currency, gender, shift_hours, days_off = key
+            rate = data["rate"]
+
+            # Standard filters matching the custom check_duplicates logic
+            filters = {
+                "item_code": item_code,
+                "price_list": price_list,
+                "customer": customer,
+                "uom": uom,
+                "currency": currency,
+            }
+            if gender:
+                filters["gender"] = gender
+            if shift_hours:
+                filters["shift_hours"] = shift_hours
+            if days_off and str(days_off) != "0":
+                filters["days_off"] = days_off
+
+            # Search for existing record using standard get_value
+            # Note: We use name to get the doc later if update is needed
+            existing_item_price = frappe.db.get_value("Item Price", {k: v for k, v in filters.items() if v is not None and v != ""}, "name")
+
+            if existing_item_price:
+                ip_doc = frappe.get_doc("Item Price", existing_item_price)
+                if flt(ip_doc.price_list_rate) != flt(rate):
+                    ip_doc.price_list_rate = rate
+                    ip_doc.save(ignore_permissions=True)
+                item_price_name = ip_doc.name
+            else:
+                # Double check without attribute filters if it's a standard item? 
+                # No, we rely on the attribute filters for uniqueness.
+                new_ip = frappe.get_doc({
+                    "doctype": "Item Price",
+                    "item_code": item_code,
+                    "price_list": price_list,
+                    "customer": customer,
+                    "uom": uom,
+                    "currency": currency,
+                    "price_list_rate": rate,
+                    "gender": gender,
+                    "shift_hours": shift_hours,
+                    "days_off": days_off,
+                    "valid_from": today(),
+                    "selling": 1
+                })
+                new_ip.insert(ignore_permissions=True)
+                item_price_name = new_ip.name
+
+            # 3. Update all rows in this group with the Item Price reference
+            for row in data["rows"]:
+                if row.item_price != item_price_name:
+                    frappe.db.set_value("Contract Item", row.name, "item_price", item_price_name)
 
     
     def update_project_start_end_date(self):
@@ -147,27 +237,26 @@ class Contracts(Document):
     def calculate_contract_duration(self):
         start_date = getdate(self.start_date)
         end_date = getdate(self.end_date)
-        
-        # Duration in days (non-inclusive as per user feedback)
-        duration_in_days = date_diff(end_date, start_date)
+
+        duration_in_days = date_diff(end_date, start_date) + 1
         self.duration_in_days = cstr(duration_in_days)
-        
-        # Duration string (Years and Months)
-        # Use relativedelta for accurate calculation. 
-        diff = relativedelta(end_date, start_date)
-        
+
+        diff = relativedelta(end_date + timedelta(days=1), start_date)
+
         parts = []
         if diff.years > 0:
             parts.append(f"{diff.years} {'year' if diff.years == 1 else 'years'}")
-        
+
         if diff.months > 0:
             parts.append(f"{diff.months} {'month' if diff.months == 1 else 'months'}")
-            
+
         if diff.days > 0:
             parts.append(f"{diff.days} {'day' if diff.days == 1 else 'days'}")
 
-        if parts:
-            self.duration = " and ".join(parts)
+        if len(parts) > 1:
+            self.duration = ", ".join(parts[:-1]) + " and " + parts[-1]
+        elif parts:
+            self.duration = parts[0]
         else:
             self.duration = "0 days"
 
@@ -198,43 +287,261 @@ class Contracts(Document):
             selected_period_start_date = getdate(f"{year}-{month:02d}-01")
             selected_period_end_date = get_last_day(selected_period_start_date)
 
-            sales_invoice_doc = frappe.new_doc("Sales Invoice")
-            sales_invoice_doc.customer = self.client
-            sales_invoice_doc.due_date = add_to_date(getdate(), days=1)
-            sales_invoice_doc.project = self.project
-            sales_invoice_doc.contracts = self.name
+            mode = self.create_sales_invoice_as or "Single Invoice"
 
-            for item in self.items:
-                if item.item_type == "Service":
-                    post_schedules = get_post_schedules_for_item(item.item_code, self.project, selected_period_start_date, selected_period_end_date)
+            if mode == "Single Invoice":
+                sales_invoice_doc = frappe.new_doc("Sales Invoice")
+                sales_invoice_doc.customer = self.client
+                sales_invoice_doc.due_date = add_to_date(getdate(), days=1)
+                sales_invoice_doc.project = self.project
+                sales_invoice_doc.contracts = self.name
+                sales_invoice_doc.currency = self.currency_ or "KWD"
+                
+                if self.price_list:
+                    pl_currency = frappe.db.get_value("Price List", self.price_list, "currency")
+                    if pl_currency and pl_currency != sales_invoice_doc.currency:
+                        frappe.msgprint(
+                            _("Warning: Contract currency ({0}) does not match Price List currency ({1}). Please verify exchange rates.")
+                            .format(sales_invoice_doc.currency, pl_currency),
+                            indicator="orange",
+                            alert=True
+                        )
 
-                    if item.rate_type == "Monthly" and len(post_schedules) == 0:
-                        frappe.throw(f"Post Schedules are missing for {item.item_code}")
+                for item in self.items:
+                    if item.item_type == "Service":
+                        post_schedules = get_post_schedules_for_item(item.item_code, self.project, selected_period_start_date, selected_period_end_date)
 
-                    quantity = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project,
-                                                               selected_period_start_date, selected_period_end_date)
-                    
+                        if item.rate_type == "Monthly" and len(post_schedules) == 0:
+                            post_name = get_post_name_for_item(item.item_code, self.project)
+                            frappe.throw(_(f"Post Schedule missing for {post_name}"))
 
-                    if item.rate_type == "Monthly" and quantity > item.count:
-                        frappe.throw("Can not bill more than Contract's mentioned count for each Operations Role.")
+                        quantity = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project,
+                                                                   selected_period_start_date, selected_period_end_date)
 
-                    if post_schedules:
+                        if item.rate_type == "Monthly" and quantity > item.count:
+                            frappe.msgprint(
+                                _(f"Warning: Calculated Qty ({quantity}) exceeds the Contract Item Count ({item.count}) for {item.item_code}."),
+                                indicator="orange",
+                                alert=True
+                            )
+                            frappe.throw(
+                                _(f"Cannot create Sales Invoice: Calculated Qty ({quantity}) for '{item.item_code}' exceeds the contracted count of {item.count}."),
+                                title=_("Invoice Quantity Exceeded")
+                            )
+
+                        if post_schedules:
+                            sales_invoice_doc.append('items', {
+                                'item_code': item.item_code,
+                                'item_name': item.item_code,
+                                'description': item.item_name or item.item_code or "",
+                                'qty': quantity,
+                                'uom': item.uom,
+                                'rate': item.rate,
+                                'amount': quantity * item.rate,
+                                'custom_contract': self.name,
+                                'custom_contract_item': item.name,
+                            })
+
+                    elif item.item_type == "Items":
+                        item_rate = flt(item.amount) if item.is_fixed_fee else flt(item.rate)
                         sales_invoice_doc.append('items', {
                             'item_code': item.item_code,
                             'item_name': item.item_code,
                             'description': item.item_name or item.item_code or "",
-                            'qty': quantity,
+                            'qty': 1,
                             'uom': item.uom,
-                            'rate': item.rate,
-                            'amount': quantity * item.rate,
+                            'rate': item_rate,
+                            'amount': item_rate,
+                            'custom_contract': self.name,
+                            'custom_contract_item': item.name,
                         })
-            if not sales_invoice_doc.items:
-                frappe.throw("No billable items found for the selected period.")
 
-            sales_invoice_doc.insert(ignore_permissions=True)
-            sales_invoice_doc.save()
+                if not sales_invoice_doc.items:
+                    frappe.throw("No billable items found for the selected period.")
 
-            return sales_invoice_doc
+                sales_invoice_doc.insert(ignore_permissions=True)
+                sales_invoice_doc.save()
+
+                return sales_invoice_doc
+
+            elif mode == "Separate Item Line for Each Site":
+                invoices_created = []
+
+                for item in self.items:
+                    if item.item_type == "Service":
+                        post_schedules = get_post_schedules_for_item(item.item_code, self.project, selected_period_start_date, selected_period_end_date)
+
+                        if item.rate_type == "Monthly" and len(post_schedules) == 0:
+                            post_name = get_post_name_for_item(item.item_code, self.project)
+                            frappe.throw(_(f"Post Schedule missing for {post_name}"))
+
+                        quantity = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project,
+                                                                   selected_period_start_date, selected_period_end_date)
+
+                        if item.rate_type == "Monthly" and quantity > item.count:
+                            frappe.msgprint(
+                                _(f"Warning: Calculated Qty ({quantity}) exceeds the Contract Item Count ({item.count}) for {item.item_code}."),
+                                indicator="orange",
+                                alert=True
+                            )
+                            frappe.throw(
+                                _(f"Cannot create Sales Invoice: Calculated Qty ({quantity}) for '{item.item_code}' exceeds the contracted count of {item.count}."),
+                                title=_("Invoice Quantity Exceeded")
+                            )
+
+                        if post_schedules and quantity > 0:
+                            sales_invoice_doc = frappe.new_doc("Sales Invoice")
+                            sales_invoice_doc.customer = self.client
+                            sales_invoice_doc.due_date = add_to_date(getdate(), days=1)
+                            sales_invoice_doc.project = self.project
+                            sales_invoice_doc.contracts = self.name
+
+                            sales_invoice_doc.append('items', {
+                                'item_code': item.item_code,
+                                'item_name': item.item_code,
+                                'description': item.item_name or item.item_code or "",
+                                'qty': quantity,
+                                'uom': item.uom,
+                                'rate': item.rate,
+                                'amount': quantity * item.rate,
+                                'custom_contract': self.name,
+                                'custom_contract_item': item.name,
+                            })
+
+                            if sales_invoice_doc.items:
+                                sales_invoice_doc.insert(ignore_permissions=True)
+                                sales_invoice_doc.save()
+                                invoices_created.append(sales_invoice_doc)
+
+                    elif item.item_type == "Items":
+                        item_rate = flt(item.amount) if item.is_fixed_fee else flt(item.rate)
+                        sales_invoice_doc = frappe.new_doc("Sales Invoice")
+                        sales_invoice_doc.customer = self.client
+                        sales_invoice_doc.due_date = add_to_date(getdate(), days=1)
+                        sales_invoice_doc.project = self.project
+                        sales_invoice_doc.contracts = self.name
+
+                        sales_invoice_doc.append('items', {
+                            'item_code': item.item_code,
+                            'item_name': item.item_code,
+                            'description': item.item_name or item.item_code or "",
+                            'qty': 1,
+                            'uom': item.uom,
+                            'rate': item_rate,
+                            'amount': item_rate,
+                            'custom_contract': self.name,
+                            'custom_contract_item': item.name,
+                        })
+
+                        sales_invoice_doc.insert(ignore_permissions=True)
+                        sales_invoice_doc.save()
+                        invoices_created.append(sales_invoice_doc)
+
+                if not invoices_created:
+                    frappe.throw("No billable items found for the selected period.")
+
+                return invoices_created[0] if len(invoices_created) == 1 else invoices_created
+
+            elif mode == "Separate Invoice for Each Site":
+                site_invoices_data = {}
+                # Collect item-type rows outside of site grouping (they get added to every invoice)
+                flat_item_rows = []
+
+                for item in self.items:
+                    if item.item_type == "Service":
+                        post_schedules = get_post_schedules_for_item(item.item_code, self.project, selected_period_start_date, selected_period_end_date)
+
+                        if item.rate_type == "Monthly" and len(post_schedules) == 0:
+                            post_name = get_post_name_for_item(item.item_code, self.project)
+                            frappe.throw(_(f"Post Schedule missing for {post_name}"))
+
+                        site_quantities = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project,
+                                                                   selected_period_start_date, selected_period_end_date, group_by_site=True)
+
+                        if item.rate_type == "Monthly" and sum(site_quantities.values()) > item.count:
+                            frappe.throw(
+                                _("Total billed quantity across all sites for {0} cannot exceed the contract count of {1}.").format(
+                                    item.item_code, item.count
+                                )
+                            )
+                        for site, quantity in site_quantities.items():
+                            if quantity > 0:
+                                if site not in site_invoices_data:
+                                    site_invoices_data[site] = []
+
+                                site_invoices_data[site].append({
+                                    'item_code': item.item_code,
+                                    'item_name': item.item_code,
+                                    'description': item.item_name or item.item_code or "",
+                                    'qty': quantity,
+                                    'uom': item.uom,
+                                    'rate': item.rate,
+                                    'amount': quantity * item.rate,
+                                    'custom_contract': self.name,
+                                    'custom_contract_item': item.name,
+                                })
+
+                    elif item.item_type == "Items":
+                        item_rate = flt(item.amount) if item.is_fixed_fee else flt(item.rate)
+                        flat_item_rows.append({
+                            'item_code': item.item_code,
+                            'item_name': item.item_code,
+                            'description': item.item_name or item.item_code or "",
+                            'qty': 1,
+                            'uom': item.uom,
+                            'rate': item_rate,
+                            'amount': item_rate,
+                            'custom_contract': self.name,
+                            'custom_contract_item': item.name,
+                        })
+
+                invoices_created = []
+
+                for site, invoice_items in site_invoices_data.items():
+                    combined_items = invoice_items + flat_item_rows
+                    if combined_items:
+                        # Validate the Customer and Project linked to those sites match the Contract
+                        project_for_site = frappe.db.get_value("Operations Site", site, "project")
+                        if project_for_site != self.project:
+                            frappe.throw(f"Project for Site {site} does not match Contract Project")
+
+                        customer_for_project = frappe.db.get_value("Project", project_for_site, "customer")
+                        if customer_for_project != self.client:
+                            frappe.throw(f"Customer for Project linked to Site {site} does not match Contract Client")
+
+                        sales_invoice_doc = frappe.new_doc("Sales Invoice")
+                        sales_invoice_doc.customer = self.client
+                        sales_invoice_doc.due_date = add_to_date(getdate(), days=1)
+                        sales_invoice_doc.project = self.project
+                        sales_invoice_doc.contracts = self.name
+
+                        for ext_item in combined_items:
+                            sales_invoice_doc.append('items', ext_item)
+
+                        if sales_invoice_doc.items:
+                            sales_invoice_doc.insert(ignore_permissions=True)
+                            sales_invoice_doc.save()
+                            invoices_created.append(sales_invoice_doc)
+
+                # If there were only flat_item_rows (no service items with sites), create a single invoice
+                if not site_invoices_data and flat_item_rows:
+                    sales_invoice_doc = frappe.new_doc("Sales Invoice")
+                    sales_invoice_doc.customer = self.client
+                    sales_invoice_doc.due_date = add_to_date(getdate(), days=1)
+                    sales_invoice_doc.project = self.project
+                    sales_invoice_doc.contracts = self.name
+
+                    for ext_item in flat_item_rows:
+                        sales_invoice_doc.append('items', ext_item)
+
+                    sales_invoice_doc.insert(ignore_permissions=True)
+                    sales_invoice_doc.save()
+                    invoices_created.append(sales_invoice_doc)
+
+                if not invoices_created:
+                    frappe.throw("No billable items found for the selected period.")
+
+                return invoices_created[0] if len(invoices_created) == 1 else invoices_created
 
         except Exception as error:
             frappe.throw(_(str(error)))
@@ -1263,11 +1570,35 @@ def get_post_schedules_for_item(item_code, project, start_date, end_date):
         fields=["name", "project", "site"]
     )
 
-def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, project, start_date, end_date):
-    """Get billable quantity for a given item code, rate type, count, post schedules, project, and date range."""
+def get_post_name_for_item(item_code, project):
+    """Return a human-readable post identifier for error messages.
+    Finds the first active Operations Post linked to this item's Operations Role."""
+    operation_roles = frappe.db.get_list(
+        "Operations Role",
+        filters={"sale_item": item_code, "status": "Active", "project": project},
+        pluck="name"
+    )
+    if not operation_roles:
+        return item_code
 
+    post_name = frappe.db.get_value(
+        "Operations Post",
+        filters={"project": project, "post_template": ["in", operation_roles], "status": "Active"},
+        fieldname="name"
+    )
+    return post_name or item_code
+
+def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, project, start_date, end_date, group_by_site=False):
+    """Get billable quantity for a given item code and date range.
+
+    Returns the total billable quantity as a number by default. When
+    ``group_by_site=True``, returns a dict mapping each site name to its
+    billable quantity instead. If there are no matching post schedules or
+    sites, the function returns ``0`` for the default case or ``{}`` when
+    grouping by site.
+    """
     if not post_schedules:
-        return 0
+        return {} if group_by_site else 0
 
     site_names = list(set([
         post_schedule.get("site") 
@@ -1275,18 +1606,17 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
         if post_schedule.get("site")
     ]))
 
-    
     if not site_names:
-        return 0
+        return {} if group_by_site else 0
 
     # Convert start_date to "October" and "2025" format
     month, year = start_date.strftime("%B %Y").split(" ")
     is_hourly = rate_type == "Hourly"
 
-
-    quantity = 0
+    site_quantities = {}
 
     for site in site_names:
+        site_quantity = 0
         existing_attendance_amendment = frappe.db.get_all("Attendance Amendment", {"month": month, "year": year, "project": project, "site": site, "attendance_based_on": "Shift Hours" if is_hourly else "Attendance Status", "workflow_state": "Approved"}, pluck="name")
         
         if existing_attendance_amendment:
@@ -1328,7 +1658,7 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                     for day in days_in_range
                 )
                 
-                quantity += flt(billable_basic_hours + billable_overtime_hours)
+                site_quantity += flt(billable_basic_hours + billable_overtime_hours)
 
             else:
                 billable_basic_days = sum(
@@ -1345,7 +1675,7 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                     if record.get(f"day_{day}") == "Present"
                 )
                 
-                quantity += billable_basic_days + billable_overtime_days
+                site_quantity += billable_basic_days + billable_overtime_days
 
         else:
             # Case: No Approved Attendance Amendment - query all Operation Posts to sum from Attendance doctype
@@ -1376,7 +1706,6 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                     "docstatus": 1
                 }
                 
-                
                 if is_hourly:
                     hourly_attendance = frappe.get_list(
                         "Attendance",
@@ -1384,15 +1713,21 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                         fields=["working_hours"]
                     )
 
-                    quantity += sum(flt(att.get("working_hours") or 0) for att in hourly_attendance)
+                    site_quantity += sum(flt(att.get("working_hours") or 0) for att in hourly_attendance)
                 else:
-                    quantity += frappe.db.count("Attendance", attendance_filters)
+                    site_quantity += frappe.db.count("Attendance", attendance_filters)
 
-    # Pro-rata calculation for Monthly rate type
-    if rate_type == "Monthly":
-        quantity = (quantity / len(post_schedules)) * count
+        # For Monthly rate type: Required Days = count of Planned Post Schedule rows for this site.
+        # The attendance-based site_quantity is only used for Daily/Hourly.
+        if rate_type == "Monthly":
+            site_quantity = len([ps for ps in post_schedules if ps.get("site") == site])
 
-    return quantity
+        site_quantities[site] = site_quantity
+        
+    if group_by_site:
+        return site_quantities
+
+    return sum(site_quantities.values())
 
 
 
@@ -1478,3 +1813,16 @@ def cancel_unselected_day_schedules(contract_doc):
                 [now(), frappe.session.user] + names_to_cancel
             )
             frappe.db.commit()
+
+@frappe.whitelist()
+def sync_contract_item_prices(contract_name):
+	"""Background task to sync item prices for a contract."""
+	if not contract_name:
+		return
+	
+	try:
+		doc = frappe.get_doc("Contracts", contract_name)
+		doc.sync_item_prices()
+		frappe.db.commit()
+	except Exception as e:
+		frappe.log_error("Item Price Sync Error", f"Error in sync_contract_item_prices for {contract_name}: {str(e)}")

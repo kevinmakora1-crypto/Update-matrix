@@ -1375,7 +1375,7 @@ function render_roster(res, page) {
 			if (employees_data[employee_key][date_key] && employees_data[employee_key][date_key].length > 0) {
 				for (let k = 0; k < employees_data[employee_key][date_key].length; k++) {
 					let record = employees_data[employee_key][date_key][k];
-					let { employee, date, operations_role, post_abbrv, employee_availability, shift, start_datetime, end_datetime, start_time, end_time, roster_type, attendance, day_off_ot, leave_type, leave_application, event_location, actual_site } = record;
+					let { employee, date, operations_role, post_abbrv, employee_availability, shift, start_datetime, end_datetime, start_time, end_time, roster_type, attendance, day_off_ot, leave_type, leave_application, event_location, actual_site, client_event } = record;
 					let shift_start = start_time ? moment(start_time, "HH:mm").format("LT") : moment(start_datetime, "YYYY-MM-DD HH:mm:ss").format("LT");
 					let shift_end = end_time ? moment(end_time, "HH:mm").format("LT") : moment(end_datetime, "YYYY-MM-DD HH:mm:ss").format("LT");
 
@@ -1483,7 +1483,11 @@ function render_roster(res, page) {
 							tooltiptext += `${leave_application}<br>${leave_type}`;
 							abbrv += `${abbr_map[attendance]}<br>`;
 						} else if (attendance && !employee_availability) {
-							tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}`;
+							if (!shift && client_event) {
+								tooltiptext += `${roster_type}:<br>${client_event}<br>Start: ${shift_start}<br>End: ${shift_end}`;
+							} else {
+								tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}`;
+							}
 							abbrv += `${abbr_map[attendance]}<br>`;
 						} else if (employee_availability && !post_abbrv) {
 							tooltiptext = ``;
@@ -1492,7 +1496,11 @@ function render_roster(res, page) {
 								tooltiptext += `Client Event<br>Event Location: ${event_location}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
 							}
 						} else {
-							tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
+							if (!shift && client_event) {
+								tooltiptext += `${roster_type}:<br>${client_event}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
+							} else {
+								tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
+							}
 							abbrv += `${post_abbrv}<br>`;
 						}
 					} else {
@@ -1503,7 +1511,11 @@ function render_roster(res, page) {
 						} else {
 							abbrv += `${post_abbrv}<br>`;
 						}
-						tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
+						if (!shift && client_event) {
+							tooltiptext += `${roster_type}:<br>${client_event}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
+						} else {
+							tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
+						}
 					}
 				}
 			}

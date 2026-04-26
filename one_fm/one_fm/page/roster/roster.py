@@ -1947,7 +1947,7 @@ def dayoff(employees, client_day_off=0, selected_dates=0, selected_reliever=None
 		is_weekend_reliever = False
 		if selected_reliever:
 			if selected_reliever in [e["employee"] for e in employees_list]:
-				frappe.throw("Validation Error: An employee cannot be assigned as their own reliever.")
+				frappe.throw(_("An employee cannot be assigned as their own reliever."))
 			reliever_is_wknd, reliever_is_glbl = frappe.db.get_value("Employee", selected_reliever, ["custom_is_weekend_reliever", "custom_is_reliever"])
 			is_weekend_reliever = cint(reliever_is_wknd) and not cint(reliever_is_glbl)
 

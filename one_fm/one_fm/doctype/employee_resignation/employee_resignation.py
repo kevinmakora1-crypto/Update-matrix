@@ -280,7 +280,7 @@ class EmployeeResignation(Document):
 				})
 
 	def sync_status_to_employees(self):
-		status = self.workflow_state or _("Draft")
+		status = self.workflow_state or "Draft"
 		for row in self.get("employees", []):
 			if row.employee:
 				update_data = {

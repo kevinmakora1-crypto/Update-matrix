@@ -215,7 +215,7 @@ function setup_status_indicator(frm) {
 		"Completed": "green",
 		"Rejected": "red",
 		"Cancelled": "red",
-		"Resignation Withdrawn": "yellow"
+		"Withdrawn": "yellow"
 	};
 	if (frm.doc.workflow_state) {
 		frm.page.set_indicator(__(frm.doc.workflow_state), status_colors[frm.doc.workflow_state] || "gray");

@@ -18,9 +18,10 @@ class EmployeeResignationExtension(Document):
             if not getattr(self, "__notified_offboarding", False):
                 recipients = set()
                 from frappe.utils.user import get_users_with_role
+                from one_fm.api.v1.utils import resolve_active_user
                 offboarding_officers = get_users_with_role("Offboarding Officer")
                 for user in offboarding_officers:
-                    recipients.add(user)
+                    recipients.add(resolve_active_user(user))
                 
                 if recipients:
                     self.__notified_offboarding = True

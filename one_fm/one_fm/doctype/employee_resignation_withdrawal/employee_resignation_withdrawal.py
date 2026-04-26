@@ -32,9 +32,10 @@ class EmployeeResignationWithdrawal(Document):
 			if not getattr(self, "__notified_offboarding", False):
 				recipients = set()
 				from frappe.utils.user import get_users_with_role
+				from one_fm.api.v1.utils import resolve_active_user
 				offboarding_officers = get_users_with_role("Offboarding Officer")
 				for user in offboarding_officers:
-					recipients.add(user)
+					recipients.add(resolve_active_user(user))
 				
 				if recipients:
 					self.__notified_offboarding = True
@@ -134,9 +135,9 @@ class EmployeeResignationWithdrawal(Document):
 					
 					# Step 4: Flag Parent Resignation if entirely withdrawn
 					if total_withdrawn_count >= total_in_batch:
-						# All employees withdrawn, mark parent workflow state as Withdrawn
+						# All employees withdrawn, mark parent workflow state as Resignation Withdrawn
 						if frappe.db.has_column("Employee Resignation", "workflow_state"):
-							resignation.db_set("workflow_state", "Withdrawn")
+							resignation.db_set("workflow_state", "Resignation Withdrawn")
 
 	def validate(self):
 		self.set_approver()

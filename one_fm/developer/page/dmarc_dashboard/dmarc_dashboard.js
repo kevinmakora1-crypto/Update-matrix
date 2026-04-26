@@ -5,60 +5,97 @@ frappe.pages['dmarc_dashboard'].on_page_load = function(wrapper) {
 		single_column: true
 	});
 
-	// Add Filters
-	const from_date_field = page.add_field({
-		label: 'From Date',
-		fieldtype: 'Date',
-		fieldname: 'from_date',
-		change() {
-			fetch_and_render(page, wrapper);
-		}
-	});
-
-	const to_date_field = page.add_field({
-		label: 'To Date',
-		fieldtype: 'Date',
-		fieldname: 'to_date',
-		change() {
-			fetch_and_render(page, wrapper);
-		}
-	});
-
-	// Default filter: Last 30 days
-	from_date_field.set_value(frappe.datetime.add_days(frappe.datetime.nowdate(), -30));
-	to_date_field.set_value(frappe.datetime.nowdate());
-
 	page.set_primary_action('Refresh', () => {
 		fetch_and_render(page, wrapper);
 	}, 'refresh');
 
+	// Initial render
 	fetch_and_render(page, wrapper);
 }
 
 function fetch_and_render(page, wrapper) {
-	const filters = page.get_values();
 	const $body = $(wrapper).find('.layout-main-section, .page-content, .frappe-page-content').first();
-	
 	if (!$body.length) return;
 
-	$body.html('<div class="text-muted p-5 text-center dmarc-loading">Fetching DMARC statistics...</div>');
+	// Ensure filter container exists
+	if ($body.find('.dmarc-filter-bar').length === 0) {
+		render_standard_filter_bar($body, page, wrapper);
+	}
+
+	const from_date = wrapper.from_date_field ? wrapper.from_date_field.get_value() : null;
+	const to_date = wrapper.to_date_field ? wrapper.to_date_field.get_value() : null;
+
+	let $stats_area = $body.find('.dmarc-stats-area');
+	if (!$stats_area.length) {
+		$stats_area = $('<div class="dmarc-stats-area"></div>').appendTo($body);
+	}
+	$stats_area.html('<div class="text-muted p-5 text-center dmarc-loading">Updating DMARC statistics...</div>');
 
 	frappe.call({
 		method: 'one_fm.developer.page.dmarc_dashboard.dmarc_dashboard.get_dashboard_data',
 		args: {
-			from_date: filters.from_date,
-			to_date: filters.to_date
+			from_date: from_date,
+			to_date: to_date
 		},
 		callback: function(r) {
-			$body.empty();
+			$stats_area.empty();
 			if (r.message && !r.message.error) {
-				render_content($body, r.message);
+				render_content($stats_area, r.message);
 			} else {
 				const err_msg = r.message ? r.message.error : 'No response from server';
-				$body.html('<div class="alert alert-danger">Error: ' + err_msg + '</div>');
+				$stats_area.html('<div class="alert alert-danger">Error: ' + err_msg + '</div>');
 			}
 		}
 	});
+}
+
+function render_standard_filter_bar($container, page, wrapper) {
+	// Frappe Standard Filter Bar Style
+	const $filter_bar = $(`
+		<div class="dmarc-filter-bar mb-4 p-3 d-flex align-items-center justify-content-between" 
+			 style="background: #fff; border-bottom: 1px solid #d1d8dd; margin: -15px -15px 30px -15px;">
+			<div class="d-flex align-items-center">
+				<div class="filter-field-wrapper mr-2" style="width: 180px;"></div>
+				<div class="mx-2 text-muted small">to</div>
+				<div class="filter-field-wrapper mr-2" style="width: 180px;"></div>
+			</div>
+			<div class="small text-muted">
+				<span class="indicator-pill orange">30 Day Window</span>
+			</div>
+		</div>
+	`).prependTo($container);
+
+	const $wrappers = $filter_bar.find('.filter-field-wrapper');
+
+	wrapper.from_date_field = frappe.ui.form.make_control({
+		parent: $wrappers.get(0),
+		df: {
+			label: 'From Date',
+			fieldtype: 'Date',
+			fieldname: 'from_date',
+			placeholder: 'From Date',
+			only_input: true, // Standard Frappe look (no label)
+			change() { fetch_and_render(page, wrapper); }
+		},
+		render_input: true
+	});
+
+	wrapper.to_date_field = frappe.ui.form.make_control({
+		parent: $wrappers.get(1),
+		df: {
+			label: 'To Date',
+			fieldtype: 'Date',
+			fieldname: 'to_date',
+			placeholder: 'To Date',
+			only_input: true, // Standard Frappe look (no label)
+			change() { fetch_and_render(page, wrapper); }
+		},
+		render_input: true
+	});
+
+	// Default to last 30 days
+	wrapper.from_date_field.set_value(frappe.datetime.add_days(frappe.datetime.nowdate(), -30));
+	wrapper.to_date_field.set_value(frappe.datetime.nowdate());
 }
 
 function format_num(v) {
@@ -196,7 +233,7 @@ function render_content($container, data) {
 		} catch (err) {
 			console.error("DMARC Dashboard: Chart Render Error", err);
 		}
-	}, 200);
+	}, 300);
 
 	const $rows = $container.find('.alert-rows');
 	if (data.alerts && data.alerts.length) {

@@ -139,9 +139,9 @@ def process_xml_report(xml_content):
 		end_ts = get_val(date_range, "end")
 		
 		if begin_ts:
-			doc.begin_date = from_timestamp(begin_ts)
+			doc.begin_date = from_timestamp(cint(begin_ts))
 		if end_ts:
-			doc.end_date = from_timestamp(end_ts)
+			doc.end_date = from_timestamp(cint(end_ts))
 			
 		doc.published_policy = get_val(policy_pub, "p")
 		doc.published_spf_alignment = get_val(policy_pub, "aspf")

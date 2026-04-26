@@ -16,18 +16,7 @@ from twilio.rest import Client as TwilioClient
 from one_fm.api.v1.utils import response, get_current_user_details
 from one_fm.processor import sendemail, send_whatsapp
 
-# MONKEY PATCH: Bypass broken system encryption
-import frappe.auth
-original_validate = frappe.auth.validate_auth_via_api_keys
 
-def bypassed_validate(authorization_header):
-	# TOTAL BYPASS for test account to handle broken site encryption
-	if authorization_header and ("y.thapa@one-fm.com" in str(authorization_header) or "key12345" in str(authorization_header)):
-		frappe.set_user("y.thapa@one-fm.com")
-		return
-	return original_validate(authorization_header)
-
-frappe.auth.validate_auth_via_api_keys = bypassed_validate
 
 @frappe.whitelist(allow_guest=True)
 def user_login(employee_id, password):
@@ -44,8 +33,10 @@ def user_login(employee_id, password):
 		msg = {'status': 200, 'text': "Success", 'user': frappe.session.user}
 		user = frappe.get_doc('User', frappe.session.user)
 		
-		# BYPASS: Using fixed token because system encryption is broken
-		msg['token'] = f"token key12345:secret12345"
+		# Generate real API keys
+		api_secret = generate_keys(frappe.session.user)
+		user.reload() # Reload to get the new api_key
+		msg['token'] = f"token {user.api_key}:{api_secret}"
 		
 		# Fetch details for the logged in user
 		u_user, u_roles, u_employee = get_current_user_details()

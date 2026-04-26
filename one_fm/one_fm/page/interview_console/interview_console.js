@@ -73,6 +73,7 @@ function init_interview_console(wrapper, page) {
 		matrix: [],
 		applicants: []
 	};
+	var save_timeout = null;
 
 	function init() {
 		// Check for deep-link: if arriving from Job Applicant with applicant route_option
@@ -750,7 +751,10 @@ function init_interview_console(wrapper, page) {
 		$w('#ic-score-pill').text(percentage + '/100').css({ 'background': '#e0f2fe', 'color': '#0369a1' });
 		if (percentage > 0 && status === "Open") status = "Replied";
 
-		save_to_db(percentage, status);
+		if (save_timeout) clearTimeout(save_timeout);
+		save_timeout = setTimeout(function() {
+			save_to_db(percentage, status);
+		}, 500);
 
 		state.selected_applicant.interview_score = percentage;
 		state.selected_applicant.status = status;

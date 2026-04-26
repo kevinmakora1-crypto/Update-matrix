@@ -254,6 +254,7 @@
    "label": "Replacement Priority",
    "options": "\nHigh\nMedium\nLow"
   },
+
   {
    "depends_on": "eval: doc.replacement_required == \"Yes\"",
    "fieldname": "section_break_tdav",

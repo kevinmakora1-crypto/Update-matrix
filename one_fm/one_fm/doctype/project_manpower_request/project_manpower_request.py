@@ -41,7 +41,17 @@ class ProjectManpowerRequest(Document):
 		self.calculate_remaining_qty()
 		self.check_status_lock()
 		self.validate_erf_presence()
+		self.validate_recruiter_presence()
 		self.validate_completion()
+
+	def validate_recruiter_presence(self):
+		if getattr(self, "workflow_state", None) not in (None, "Draft"):
+			if not self.recruiter:
+				frappe.throw(
+					_("Please assign a <b>Recruiter</b> before moving this Project Manpower Request past Draft."),
+					title=_("Missing Recruiter")
+				)
+
 
 	def validate_erf_presence(self):
 		if getattr(self, "workflow_state", None) in ["Awaiting Recruiter Approval", "In Process", "Completed"]:
@@ -104,15 +114,17 @@ class ProjectManpowerRequest(Document):
 		self.assign_recruiter()
 
 	def assign_recruiter(self):
-		if not self.recruiter:
+		recruiter = self.get("recruiter")
+		if not recruiter:
 			return
 
 		if not self.is_new():
 			old_doc = self.get_doc_before_save()
-			if old_doc and old_doc.recruiter and old_doc.recruiter != self.recruiter:
+			old_recruiter = old_doc.get("recruiter") if old_doc else None
+			if old_recruiter and old_recruiter != recruiter:
 				try:
 					from frappe.desk.form.assign_to import remove as remove_assignment
-					remove_assignment(self.doctype, self.name, old_doc.recruiter)
+					remove_assignment(self.doctype, self.name, old_recruiter)
 				except Exception:
 					pass
 
@@ -120,7 +132,7 @@ class ProjectManpowerRequest(Document):
 		is_assigned = frappe.db.exists("ToDo", {
 			"reference_type": self.doctype,
 			"reference_name": self.name,
-			"allocated_to": self.recruiter,
+			"allocated_to": recruiter,
 			"status": "Open"
 		})
 		
@@ -129,7 +141,7 @@ class ProjectManpowerRequest(Document):
 				add_assignment({
 					"doctype": self.doctype,
 					"name": self.name,
-					"assign_to": [self.recruiter],
+					"assign_to": [recruiter],
 					"description": _("Assigned for Recruitment processing"),
 				})
 			except Exception as e:

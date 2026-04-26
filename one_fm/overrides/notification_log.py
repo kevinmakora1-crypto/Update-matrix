@@ -13,8 +13,9 @@ class NotificationLogOverride(NotificationLog):
         if is_email_notifications_enabled_for_type(self.for_user, self.type):
             try:
                 custom_send_notification_email(self)
-            except frappe.OutgoingEmailError:
-                self.log_error(_("Failed to send notification email"))
+            except Exception:
+                # Never let email failures block workflow transitions
+                frappe.log_error(frappe.get_traceback(), "Notification Email Failed (non-blocking)")
                 
                 
 

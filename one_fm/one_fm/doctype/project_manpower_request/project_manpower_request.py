@@ -45,7 +45,7 @@ class ProjectManpowerRequest(Document):
 		self.validate_completion()
 
 	def validate_recruiter_presence(self):
-		if getattr(self, "workflow_state", None) not in (None, "Draft"):
+		if (getattr(self, "workflow_state", None) or "Draft") != "Draft":
 			if not self.recruiter:
 				frappe.throw(
 					_("Please assign a <b>Recruiter</b> before moving this Project Manpower Request past Draft."),

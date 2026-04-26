@@ -382,7 +382,10 @@ def correct_resignation_date_app(
                 handle_attachment_internal(doc, doc.employees[0], att_data, "resignation_letter")
 
         doc.save(ignore_permissions=True)
-        doc.db_set("workflow_state", "Pending Supervisor")
+        
+        from frappe.model.workflow import apply_workflow
+        apply_workflow(doc, "Resubmit Date")
+        
         frappe.db.commit()
 
         return {

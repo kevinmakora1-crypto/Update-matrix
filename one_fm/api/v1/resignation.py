@@ -37,8 +37,9 @@ def handle_attachment_internal(doc, row, attachment_data, field_name):
     if isinstance(attachment_data, str):
         try:
             attachment_data = json.loads(attachment_data)
-        except Exception:
-            return
+        except Exception as e:
+            frappe.log_error(f"Attachment JSON Decode Error for {doc.doctype} {doc.name}", str(e))
+            frappe.throw(f"Failed to parse attachment data: {str(e)}", frappe.ValidationError)
 
     file_name = attachment_data.get("attachment_name")
     file_base64 = attachment_data.get("attachment")
@@ -51,8 +52,9 @@ def handle_attachment_internal(doc, row, attachment_data, field_name):
                 is_private=1, folder="Home/Attachments"
             )
             frappe.db.set_value(row.doctype, row.name, field_name, saved_file.file_url)
-        except Exception:
-            pass
+        except Exception as e:
+            frappe.log_error(f"Attachment Save Error for {doc.doctype} {doc.name}", frappe.get_traceback())
+            frappe.throw(f"Failed to save attachment {file_name}: {str(e)}", frappe.ValidationError)
 
 
 # ---------------------------------------------------------------------------

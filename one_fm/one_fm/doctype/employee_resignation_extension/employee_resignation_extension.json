@@ -54,7 +54,7 @@
    "reqd": 1
   },
   {
-   "fetch_from": "employee.date_of_joining",
+   "fetch_from": "employee_resignation.relieving_date",
    "fieldname": "current_relieving_date",
    "fieldtype": "Date",
    "label": "Current Relieving Date",

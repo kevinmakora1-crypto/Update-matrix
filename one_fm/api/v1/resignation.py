@@ -22,6 +22,15 @@ def resolve_employee_name(employee_id):
         return employee_id
     return None
 
+def verify_employee_authorization(employee_name):
+    """Ensure the logged-in user is authorized to act on behalf of the employee."""
+    if frappe.session.user == "Administrator" or "HR Manager" in frappe.get_roles(frappe.session.user):
+        return
+
+    employee_user = frappe.db.get_value("Employee", employee_name, "user_id")
+    if frappe.session.user != employee_user:
+        frappe.throw("Not authorized to perform this action for this employee.", frappe.PermissionError)
+
 
 def handle_attachment_internal(doc, row, attachment_data, field_name):
     """Saves a base64 attachment and links it to field_name on row."""
@@ -75,6 +84,8 @@ def create_resignation(
         employee_name = resolve_employee_name(input_id)
         if not employee_name:
             frappe.throw(f"Employee '{input_id}' not found", frappe.ValidationError)
+            
+        verify_employee_authorization(employee_name)
 
         emp = frappe.db.get_value(
             "Employee", employee_name,
@@ -160,6 +171,7 @@ def extend_resignation(
         employee_name = resolve_employee_name(input_id)
         if not employee_name:
             frappe.throw(f"Employee '{input_id}' not found", frappe.ValidationError)
+        verify_employee_authorization(employee_name)
         if not extended_date:
             frappe.throw("extended_date is required", frappe.ValidationError)
 
@@ -248,6 +260,7 @@ def withdraw_resignation(
         employee_name = resolve_employee_name(input_id)
         if not employee_name:
             frappe.throw(f"Employee '{input_id}' not found", frappe.ValidationError)
+        verify_employee_authorization(employee_name)
 
         # Find the most recent active resignation
         items = frappe.get_all(

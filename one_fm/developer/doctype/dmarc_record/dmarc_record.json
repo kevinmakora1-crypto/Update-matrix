@@ -12,15 +12,20 @@
     "source_country",
     "source_reverse_dns",
     "source_base_domain",
+    "column_break_row",
     "message_count",
+    "disposition",
+    "section_break_auth",
     "spf_aligned",
     "dkim_aligned",
     "dmarc_aligned",
-    "disposition",
+    "column_break_auth",
     "spf_result",
     "dkim_result",
+    "section_break_ids",
     "header_from",
     "envelope_from",
+    "column_break_ids",
     "policy_override_reasons"
   ],
   "fields": [
@@ -48,10 +53,25 @@
       "in_list_view": 1
     },
     {
+      "fieldname": "column_break_row",
+      "fieldtype": "Column Break"
+    },
+    {
       "fieldname": "message_count",
       "fieldtype": "Int",
       "label": "Message Count",
       "in_list_view": 1
+    },
+    {
+      "fieldname": "disposition",
+      "fieldtype": "Data",
+      "label": "Disposition",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "section_break_auth",
+      "fieldtype": "Section Break",
+      "label": "Authentication Results"
     },
     {
       "fieldname": "spf_aligned",
@@ -70,10 +90,8 @@
       "in_list_view": 1
     },
     {
-      "fieldname": "disposition",
-      "fieldtype": "Data",
-      "label": "Disposition",
-      "in_list_view": 1
+      "fieldname": "column_break_auth",
+      "fieldtype": "Column Break"
     },
     {
       "fieldname": "spf_result",
@@ -86,6 +104,11 @@
       "label": "DKIM Result"
     },
     {
+      "fieldname": "section_break_ids",
+      "fieldtype": "Section Break",
+      "label": "Identifiers"
+    },
+    {
       "fieldname": "header_from",
       "fieldtype": "Data",
       "label": "Header From"
@@ -96,6 +119,10 @@
       "label": "Envelope From"
     },
     {
+      "fieldname": "column_break_ids",
+      "fieldtype": "Column Break"
+    },
+    {
       "fieldname": "policy_override_reasons",
       "fieldtype": "Small Text",
       "label": "Policy Override Reasons"
@@ -103,7 +130,7 @@
   ],
   "index_web_pages_for_search": 0,
   "istable": 1,
-  "modified": "2026-04-23 16:50:00.000000",
+  "modified": "2026-04-25 16:30:00.000000",
   "modified_by": "Administrator",
   "module": "Developer",
   "name": "DMARC Record",

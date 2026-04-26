@@ -1,11 +1,32 @@
 frappe.pages['dmarc_dashboard'].on_page_load = function(wrapper) {
-	console.log("DMARC Dashboard: on_page_load started");
-	
 	var page = frappe.ui.make_app_page({
 		parent: wrapper,
 		title: 'DMARC Monitoring Dashboard',
 		single_column: true
 	});
+
+	// Add Filters
+	const from_date_field = page.add_field({
+		label: 'From Date',
+		fieldtype: 'Date',
+		fieldname: 'from_date',
+		change() {
+			fetch_and_render(page, wrapper);
+		}
+	});
+
+	const to_date_field = page.add_field({
+		label: 'To Date',
+		fieldtype: 'Date',
+		fieldname: 'to_date',
+		change() {
+			fetch_and_render(page, wrapper);
+		}
+	});
+
+	// Default filter: Last 30 days
+	from_date_field.set_value(frappe.datetime.add_days(frappe.datetime.nowdate(), -30));
+	to_date_field.set_value(frappe.datetime.nowdate());
 
 	page.set_primary_action('Refresh', () => {
 		fetch_and_render(page, wrapper);
@@ -15,33 +36,26 @@ frappe.pages['dmarc_dashboard'].on_page_load = function(wrapper) {
 }
 
 function fetch_and_render(page, wrapper) {
-	console.log("DMARC Dashboard: fetch_and_render called");
-	
-	// Try multiple common Frappe page content selectors
+	const filters = page.get_values();
 	const $body = $(wrapper).find('.layout-main-section, .page-content, .frappe-page-content').first();
 	
-	if (!$body.length) {
-		console.error("DMARC Dashboard: Could not find main content section in page wrapper");
-		return;
-	}
+	if (!$body.length) return;
 
 	$body.html('<div class="text-muted p-5 text-center dmarc-loading">Fetching DMARC statistics...</div>');
 
 	frappe.call({
 		method: 'one_fm.developer.page.dmarc_dashboard.dmarc_dashboard.get_dashboard_data',
+		args: {
+			from_date: filters.from_date,
+			to_date: filters.to_date
+		},
 		callback: function(r) {
-			console.log("DMARC Dashboard: API response received", r);
-			
-			// Remove loading indicator
-			$body.find('.dmarc-loading').remove();
 			$body.empty();
-
 			if (r.message && !r.message.error) {
 				render_content($body, r.message);
 			} else {
 				const err_msg = r.message ? r.message.error : 'No response from server';
 				$body.html('<div class="alert alert-danger">Error: ' + err_msg + '</div>');
-				console.error("DMARC Dashboard Error:", err_msg);
 			}
 		}
 	});
@@ -52,11 +66,13 @@ function format_num(v) {
 }
 
 function render_content($container, data) {
-	console.log("DMARC Dashboard: Rendering content started");
-	
+	if (data.total_reports === 0) {
+		$container.html('<div class="text-muted p-5 text-center">No reports found for the selected period.</div>');
+		return;
+	}
+
 	const pass_rate_color = data.pass_rate >= 95 ? 'text-success' : 'text-danger';
 	
-	// Create the layout
 	$container.append(`
 		<div class="row mb-4">
 			<div class="col-sm-3">
@@ -135,11 +151,8 @@ function render_content($container, data) {
 		</div>
 	`);
 
-	// Use setTimeout to ensure the browser has parsed the new HTML
 	setTimeout(() => {
 		try {
-			console.log("DMARC Dashboard: Initializing charts");
-			
 			const daily_el = $container.find('.chart-daily-area').get(0);
 			const breakdown_el = $container.find('.chart-breakdown-area').get(0);
 			const ips_el = $container.find('.chart-ips-area').get(0);
@@ -180,13 +193,11 @@ function render_content($container, data) {
 					colors: ['#17a2b8']
 				});
 			}
-			console.log("DMARC Dashboard: Charts initialized successfully");
 		} catch (err) {
 			console.error("DMARC Dashboard: Chart Render Error", err);
 		}
-	}, 300);
+	}, 200);
 
-	// Alerts Table
 	const $rows = $container.find('.alert-rows');
 	if (data.alerts && data.alerts.length) {
 		data.alerts.forEach(a => {

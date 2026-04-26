@@ -5,7 +5,7 @@ import gzip
 import zipfile
 import io
 import parsedmarc
-from frappe.utils import get_datetime, now_datetime
+from frappe.utils import get_datetime, now_datetime, from_timestamp
 
 @frappe.whitelist()
 def fetch_and_process_dmarc_reports():
@@ -32,9 +32,9 @@ def fetch_and_process_dmarc_reports():
 		# Select Inbox
 		mail.select("INBOX")
 		
-		# Robust search: Search for ALL emails from the last 2 days
+		# Search for emails from the last 7 days to ensure we don't miss any
 		from datetime import datetime, timedelta
-		date_str = (datetime.now() - timedelta(days=2)).strftime("%d-%b-%Y")
+		date_str = (datetime.now() - timedelta(days=7)).strftime("%d-%b-%Y")
 		
 		result, data = mail.search(None, f'(SINCE "{date_str}")')
 		
@@ -59,7 +59,6 @@ def fetch_and_process_dmarc_reports():
 				continue
 				
 			# Process attachments
-			report_processed = False
 			for part in msg.walk():
 				if part.get_content_maintype() == "multipart":
 					continue
@@ -88,19 +87,7 @@ def fetch_and_process_dmarc_reports():
 					
 					if xml_content:
 						if process_xml_report(xml_content):
-							report_processed = True
-			
-			if report_processed:
-				processed_count += 1
-				if settings.archive_folder:
-					try:
-						mail.copy(num, settings.archive_folder)
-						mail.store(num, '+FLAGS', '\\Deleted')
-					except Exception as archive_err:
-						frappe.log_error(f"Archive Error: {str(archive_err)}", "DMARC Processor")
-
-		if settings.archive_folder:
-			mail.expunge()
+							processed_count += 1
 
 		mail.logout()
 		
@@ -133,8 +120,8 @@ def process_xml_report(xml_content):
 		if not report_id:
 			return False
 			
-		# Deduplication (If we already have this report, skip)
-		if frappe.db.exists("DMARC Report", report_id):
+		# Deduplication based on report_id (fast check)
+		if frappe.db.exists("DMARC Report", {"report_id": report_id}):
 			return False
 			
 		policy_pub = get_val(report, "policy_published", {})
@@ -146,10 +133,15 @@ def process_xml_report(xml_content):
 		doc.org_email = get_val(report_meta, "email")
 		doc.domain = get_val(policy_pub, "domain")
 		
-		# Dates
+		# Dates (Handle Unix timestamps correctly)
 		date_range = get_val(report_meta, "date_range", {})
-		doc.begin_date = get_datetime(get_val(date_range, "begin"))
-		doc.end_date = get_datetime(get_val(date_range, "end"))
+		begin_ts = get_val(date_range, "begin")
+		end_ts = get_val(date_range, "end")
+		
+		if begin_ts:
+			doc.begin_date = from_timestamp(begin_ts)
+		if end_ts:
+			doc.end_date = from_timestamp(end_ts)
 			
 		doc.published_policy = get_val(policy_pub, "p")
 		doc.published_spf_alignment = get_val(policy_pub, "aspf")
@@ -167,7 +159,6 @@ def process_xml_report(xml_content):
 		for r in records:
 			row = doc.append("records", {})
 			
-			# Nested structures in parsedmarc
 			source = get_val(r, "source", {})
 			alignment = get_val(r, "alignment", {})
 			policy_eval = get_val(r, "policy_evaluated", {})
@@ -181,19 +172,16 @@ def process_xml_report(xml_content):
 			row.message_count = get_val(r, "count", 0)
 			row.disposition = get_val(policy_eval, "disposition")
 			
-			# Alignment from the alignment dict
 			row.dkim_aligned = 1 if get_val(alignment, "dkim") else 0
 			row.spf_aligned = 1 if get_val(alignment, "spf") else 0
 			row.dmarc_aligned = 1 if get_val(alignment, "dmarc") else 0
 			
-			# Raw results
 			row.dkim_result = get_val(policy_eval, "dkim")
 			row.spf_result = get_val(policy_eval, "spf")
 			
 			row.header_from = get_val(identifiers, "header_from")
 			row.envelope_from = get_val(identifiers, "envelope_from")
 			
-			# Overrides
 			overrides = get_val(policy_eval, "policy_override_reasons", [])
 			if overrides:
 				row.policy_override_reasons = ", ".join(overrides)

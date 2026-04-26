@@ -2,15 +2,27 @@ import frappe
 from frappe.utils import flt, getdate, add_days, today
 
 @frappe.whitelist()
-def get_dashboard_data():
+def get_dashboard_data(from_date=None, to_date=None):
 	"""
-	Fetches all data required for the DMARC Dashboard.
+	Fetches all data required for the DMARC Dashboard with optional date filters.
 	"""
 	data = {}
 	
 	try:
+		# Build filters
+		filters = {}
+		if from_date and to_date:
+			filters["begin_date"] = ["between", [from_date, to_date]]
+		elif from_date:
+			filters["begin_date"] = [">=", from_date]
+		elif to_date:
+			filters["begin_date"] = ["<=", to_date]
+
 		# 1. Summary Cards
-		reports = frappe.get_all("DMARC Report", fields=["total_messages", "total_pass", "total_fail", "pass_rate", "org_name", "begin_date"])
+		reports = frappe.get_all("DMARC Report", 
+			filters=filters,
+			fields=["name", "total_messages", "total_pass", "total_fail", "pass_rate", "org_name", "begin_date"]
+		)
 		
 		data["total_reports"] = len(reports)
 		data["total_messages"] = sum(r.total_messages for r in reports)
@@ -21,7 +33,7 @@ def get_dashboard_data():
 		else:
 			data["pass_rate"] = 0
 			
-		# 2. Daily Email Volume (Pass vs Fail over time)
+		# 2. Daily Email Volume
 		daily_data = {}
 		for r in reports:
 			date_str = str(getdate(r.begin_date))
@@ -40,13 +52,18 @@ def get_dashboard_data():
 		}
 		
 		# 3. Top 10 Source IPs
-		top_ips = frappe.db.sql("""
-			SELECT source_ip, SUM(message_count) as total_count
-			FROM `tabDMARC Record`
-			GROUP BY source_ip
-			ORDER BY total_count DESC
-			LIMIT 10
-		""", as_dict=True)
+		report_names = [r.name for r in reports]
+		if report_names:
+			top_ips = frappe.db.sql(f"""
+				SELECT source_ip, SUM(message_count) as total_count
+				FROM `tabDMARC Record`
+				WHERE parent IN ({', '.join(['%s'] * len(report_names))})
+				GROUP BY source_ip
+				ORDER BY total_count DESC
+				LIMIT 10
+			""", tuple(report_names), as_dict=True)
+		else:
+			top_ips = []
 		
 		data["top_ips"] = {
 			"labels": [r.source_ip for r in top_ips],
@@ -73,16 +90,19 @@ def get_dashboard_data():
 		}
 		
 		# 6. Spoofing Alert Table
-		alerts = frappe.get_all("DMARC Record",
-			filters={"dmarc_aligned": 0},
-			fields=["parent", "source_ip", "source_country", "source_reverse_dns", "message_count", "disposition"],
-			order_by="message_count desc",
-			limit=20
-		)
-		
-		report_dates = {r.name: r.begin_date for r in frappe.get_all("DMARC Report", fields=["name", "begin_date"])}
-		for a in alerts:
-			a["date"] = report_dates.get(a.parent)
+		if report_names:
+			alerts = frappe.get_all("DMARC Record",
+				filters={"dmarc_aligned": 0, "parent": ["in", report_names]},
+				fields=["parent", "source_ip", "source_country", "source_reverse_dns", "message_count", "disposition"],
+				order_by="message_count desc",
+				limit=20
+			)
+			
+			report_dates = {r.name: r.begin_date for r in reports}
+			for a in alerts:
+				a["date"] = report_dates.get(a.parent)
+		else:
+			alerts = []
 			
 		data["alerts"] = alerts
 		

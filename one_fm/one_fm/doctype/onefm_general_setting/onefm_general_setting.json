@@ -50,7 +50,6 @@
   "email_account",
   "email_password",
   "archive_folder",
-  "last_fetch_time"
  ],
  "fields": [
   {
@@ -309,12 +308,6 @@
   },
   {
    "description": "Timestamp of last successful fetch",
-   "fieldname": "last_fetch_time",
-   "fieldtype": "Datetime",
-   "label": "Last Fetch Time",
-   "read_only": 1
-  }
- ],
  "grid_page_length": 50,
  "issingle": 1,
  "links": [],

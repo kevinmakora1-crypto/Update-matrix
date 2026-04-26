@@ -94,7 +94,7 @@ function setup_process_map_action(frm) {
 			__("Process Map"),
 			function () {
 				const url = frappe.urllib.get_full_url(
-					`/app/bpmn-process-model/new?process_name=${encodeURIComponent(frm.doc.process_name)}`
+					`/app/bpmn-process-model/new?process_name=${encodeURIComponent(frm.doc.process_name)}&pathfinder_log=${encodeURIComponent(frm.doc.name)}`
 				);
 				window.open(url, "_blank");
 			},

@@ -6,6 +6,9 @@ def get_dashboard_data(from_date=None, to_date=None):
 	"""
 	Fetches all data required for the DMARC Dashboard with optional date filters.
 	"""
+	# Security check
+	frappe.only_for("System Manager")
+	
 	data = {}
 	
 	try:
@@ -24,12 +27,17 @@ def get_dashboard_data(from_date=None, to_date=None):
 			fields=["name", "total_messages", "total_pass", "total_fail", "pass_rate", "org_name", "begin_date"]
 		)
 		
-		data["total_reports"] = len(reports)
-		data["total_messages"] = sum(r.total_messages for r in reports)
-		data["spoofing_attempts"] = sum(r.total_fail for r in reports)
+		total_messages = sum(r.total_messages for r in reports)
+		total_pass = sum(r.total_pass for r in reports)
+		total_fail = sum(r.total_fail for r in reports)
 		
-		if data["total_reports"] > 0:
-			data["pass_rate"] = sum(r.pass_rate for r in reports) / data["total_reports"]
+		data["total_reports"] = len(reports)
+		data["total_messages"] = total_messages
+		data["spoofing_attempts"] = total_fail
+		
+		# Point 10: Weighted pass rate
+		if total_messages > 0:
+			data["pass_rate"] = (total_pass / total_messages) * 100
 		else:
 			data["pass_rate"] = 0
 			
@@ -71,8 +79,6 @@ def get_dashboard_data(from_date=None, to_date=None):
 		}
 		
 		# 4. Pass/Fail Breakdown
-		total_pass = sum(r.total_pass for r in reports)
-		total_fail = sum(r.total_fail for r in reports)
 		data["breakdown"] = {
 			"labels": ["Pass", "Fail"],
 			"datasets": [{"values": [total_pass, total_fail]}]

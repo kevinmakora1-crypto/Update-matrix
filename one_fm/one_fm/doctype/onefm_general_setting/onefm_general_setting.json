@@ -287,7 +287,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "notifications@one-fm.com",
    "description": "Email address to fetch reports from",
    "fieldname": "email_account",
    "fieldtype": "Data",

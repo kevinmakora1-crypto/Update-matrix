@@ -403,7 +403,7 @@ def get_my_active_resignation(employee_id=None, **kwargs):
         return None
 
     EMPLOYEE_ACTION_STATES = ["Pending Relieving Date Correction", "Draft"]
-    TERMINAL_STATES = {"Resigned", "Cancelled", "Resignation Withdrawn", "Withdrawn"}
+    TERMINAL_STATES = {"Resigned", "Cancelled", "Withdrawn"}
 
     seen = set()
     items = frappe.get_all(

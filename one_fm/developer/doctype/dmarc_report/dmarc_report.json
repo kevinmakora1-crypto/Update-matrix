@@ -3,7 +3,7 @@
   "allow_copy": 1,
   "allow_import": 1,
   "allow_rename": 0,
-  "autoname": "hash",
+  "autoname": "Python",
   "creation": "2026-04-23 16:39:00.000000",
   "doctype": "DocType",
   "editable_grid": 1,
@@ -183,7 +183,7 @@
   "modified_by": "Administrator",
   "module": "Developer",
   "name": "DMARC Report",
-  "naming_rule": "Random",
+  "naming_rule": "Python",
   "show_title_field_in_link": 1,
   "owner": "Administrator",
   "permissions": [

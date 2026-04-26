@@ -20,5 +20,7 @@ class DMARCReport(Document):
 		else:
 			self.name = self.report_id
 
-		# Title is just the org name
-		self.title = self.org_name or self.report_id
+	def before_save(self):
+		# Set title only if not already set by the caller
+		if not self.title:
+			self.title = self.org_name or self.report_id

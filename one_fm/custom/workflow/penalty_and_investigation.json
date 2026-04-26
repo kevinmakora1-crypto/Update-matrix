@@ -128,6 +128,17 @@
       "allow_edit": "HR Supervisor",
       "send_email": 1,
       "doctype": "Workflow Document State"
+    },
+    {
+      "state": "Cancelled",
+      "doc_status": "0",
+      "style": "Danger",
+      "is_optional_state": 0,
+      "avoid_status_override": 0,
+      "allow_edit": "System Manager",
+      "send_email": 1,
+      "doctype": "Workflow Document State",
+      "__unsaved": 1
     }
   ],
   "transitions": [
@@ -158,6 +169,20 @@
       "doctype": "Workflow Transition"
     },
     {
+      "doctype": "Workflow Transition",
+      "__unsaved": 1,
+      "allow_self_approval": 1,
+      "send_email_to_creator": 0,
+      "state": "Pending Employee Response",
+      "action": "Cancel",
+      "next_state": "Cancelled",
+      "allowed": "HR Supervisor",
+      "skip_multiple_action": 0,
+      "skip_creation_of_workflow_action": 0,
+      "custom_confirm_transition": 0,
+      "custom_requires_frontend_input": 0
+    },
+    {
       "state": "Pending Employee Response",
       "action": "Rejected by Employee",
       "next_state": "Pending Supervisor Review",
@@ -182,6 +207,20 @@
       "custom_confirm_transition": 0,
       "custom_requires_frontend_input": 0,
       "doctype": "Workflow Transition"
+    },
+    {
+      "doctype": "Workflow Transition",
+      "__unsaved": 1,
+      "allow_self_approval": 1,
+      "send_email_to_creator": 0,
+      "state": "Pending Supervisor Review",
+      "action": "Cancel",
+      "allowed": "HR Supervisor",
+      "next_state": "Cancelled",
+      "skip_multiple_action": 0,
+      "skip_creation_of_workflow_action": 0,
+      "custom_confirm_transition": 0,
+      "custom_requires_frontend_input": 0
     },
     {
       "state": "Pending HR Review",
@@ -221,6 +260,76 @@
       "custom_confirm_transition": 0,
       "custom_requires_frontend_input": 0,
       "doctype": "Workflow Transition"
+    },
+    {
+      "doctype": "Workflow Transition",
+      "__unsaved": 1,
+      "allow_self_approval": 1,
+      "send_email_to_creator": 0,
+      "state": "Mark as Completed",
+      "action": "Cancel",
+      "next_state": "Cancelled by Supervisor",
+      "allowed": "HR Supervisor",
+      "skip_multiple_action": 0,
+      "skip_creation_of_workflow_action": 0,
+      "custom_confirm_transition": 0,
+      "custom_requires_frontend_input": 0
+    },
+    {
+      "doctype": "Workflow Transition",
+      "__unsaved": 1,
+      "allow_self_approval": 1,
+      "send_email_to_creator": 0,
+      "state": "Mark as Completed",
+      "action": "Cancel",
+      "next_state": "Cancelled by GM",
+      "allowed": "General Manager",
+      "skip_multiple_action": 0,
+      "skip_creation_of_workflow_action": 0,
+      "custom_confirm_transition": 0,
+      "custom_requires_frontend_input": 0
+    },
+    {
+      "doctype": "Workflow Transition",
+      "__unsaved": 1,
+      "allow_self_approval": 1,
+      "send_email_to_creator": 0,
+      "state": "Pending HR Review",
+      "action": "Cancel",
+      "next_state": "Cancelled",
+      "allowed": "HR Supervisor",
+      "skip_multiple_action": 0,
+      "skip_creation_of_workflow_action": 0,
+      "custom_confirm_transition": 0,
+      "custom_requires_frontend_input": 0
+    },
+    {
+      "doctype": "Workflow Transition",
+      "__unsaved": 1,
+      "allow_self_approval": 1,
+      "send_email_to_creator": 0,
+      "state": "Pending GM Decision",
+      "action": "Cancel",
+      "next_state": "Cancelled",
+      "allowed": "General Manager",
+      "skip_multiple_action": 0,
+      "skip_creation_of_workflow_action": 0,
+      "custom_confirm_transition": 0,
+      "custom_requires_frontend_input": 0
+    },
+    {
+      "doctype": "Workflow Transition",
+      "__unsaved": 1,
+      "allow_self_approval": 1,
+      "send_email_to_creator": 0,
+      "state": "Pending Legal Investigation",
+      "action": "Cancel",
+      "next_state": "Cancelled",
+      "allowed": "HR Supervisor",
+      "skip_multiple_action": 0,
+      "skip_creation_of_workflow_action": 0,
+      "custom_confirm_transition": 0,
+      "custom_requires_frontend_input": 0
     }
   ]
 }

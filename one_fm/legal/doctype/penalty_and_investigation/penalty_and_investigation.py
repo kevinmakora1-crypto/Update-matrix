@@ -30,6 +30,10 @@ class PenaltyAndInvestigation(Document):
 			if not self.hr_remarks:
 				frappe.throw(_("HR Remarks are required before moving to Pending GM Decision"))
 
+		if old_state_trimmed == "Pending Legal Investigation" and curr_state_trimmed == "Pending HR Review":
+			if not self.employee_rejection_remarks:
+				frappe.throw(_("Employee Rejection Remarks are required when moving from Pending Legal Investigation to Pending HR Review"))
+
 	def validate_duplicate_penalty(self):
 		if not self.employee or not self.applied_penalty_code or not self.incident_date:
 			return
@@ -82,6 +86,30 @@ class PenaltyAndInvestigation(Document):
 			level = 5
 
 		self.applied_level = str(level)
+
+		# Set deduction_type and salary_deduction_days based on offence level
+		level_map = {
+			1: "1st",
+			2: "2nd",
+			3: "3rd",
+			4: "4th",
+			5: "5th"
+		}
+		target_level = level_map.get(level)
+		
+		penalty_code_doc = frappe.get_doc("Penalty Code", self.applied_penalty_code)
+		
+		found_level = False
+		for row in penalty_code_doc.get("penalty_level") or []:
+			if row.offence_level == target_level:
+				self.deduction_type = row.deduction_type
+				self.salary_deduction_days = row.salary_deduction_days
+				found_level = True
+				break
+				
+		if not found_level:
+			self.deduction_type = None
+			self.salary_deduction_days = 0
 
 
 @frappe.whitelist()

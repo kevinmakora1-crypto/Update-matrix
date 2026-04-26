@@ -8,6 +8,18 @@ frappe.ui.form.on("Penalty And Investigation", {
 	refresh: function (frm) {
 		frm.trigger("toggle_visibility");
 	},
+	validate: function (frm) {
+		if (frm.doc.workflow_state === "Pending Supervisor Review") {
+			if (!frm.doc.employee_rejection_remarks) {
+				frappe.throw(__("Employee Rejection Remarks are required when moving to Pending Supervisor Review."));
+			}
+		}
+		if (frm.doc.workflow_state === "Pending HR Review") {
+			if (!frm.doc.supervisor_remarks || !frm.doc.evidence) {
+				frappe.throw(__("Both Supervisor Remarks and Evidence are required for Pending HR Review."));
+			}
+		}
+	},
 	workflow_state: function (frm) {
 		frm.trigger("toggle_visibility");
 	},
@@ -56,6 +68,33 @@ frappe.ui.form.on("Penalty And Investigation", {
 		} else {
 			frm.set_df_property("hr_remarks", "read_only", 0);
 		}
+
+		// 4. supervisor_remarks and evidence read-only logic
+		const supervisor_read_only_states = ["Pending HR Review", "Pending GM Decision", "Pending Legal Investigation"];
+		if (supervisor_read_only_states.includes(current_state)) {
+			frm.set_df_property("supervisor_remarks", "read_only", 1);
+			frm.set_df_property("evidence", "read_only", 1);
+		} else {
+			frm.set_df_property("supervisor_remarks", "read_only", 0);
+			frm.set_df_property("evidence", "read_only", 0);
+		}
+
+		// 5. salary_deduction_amount read-only logic based on damages
+		const has_damage = frm.doc.company_damage || frm.doc.asset_damage || frm.doc.customer_property_damage || frm.doc.other_damages;
+		frm.set_df_property("salary_deduction_amount", "read_only", !has_damage);
+
+		// 6. employee_rejection_remarks read-only logic
+		const employee_rejection_read_only_states = [
+			"Pending Supervisor Review",
+			"Pending HR Review",
+			"Pending GM Decision",
+			"Pending Legal Investigation"
+		];
+		if (employee_rejection_read_only_states.includes(current_state)) {
+			frm.set_df_property("employee_rejection_remarks", "read_only", 1);
+		} else {
+			frm.set_df_property("employee_rejection_remarks", "read_only", 0);
+		}
 	},
 	applied_penalty_code: function (frm) {
 		frm.trigger("fetch_penalty_details");
@@ -68,6 +107,18 @@ frappe.ui.form.on("Penalty And Investigation", {
 	},
 	incident_date: function (frm) {
 		frm.trigger("fetch_employee_details");
+	},
+	company_damage: function (frm) {
+		frm.trigger("toggle_visibility");
+	},
+	asset_damage: function (frm) {
+		frm.trigger("toggle_visibility");
+	},
+	customer_property_damage: function (frm) {
+		frm.trigger("toggle_visibility");
+	},
+	other_damages: function (frm) {
+		frm.trigger("toggle_visibility");
 	},
 	fetch_employee_details: function (frm) {
 		if (!frm.doc.employee) return;

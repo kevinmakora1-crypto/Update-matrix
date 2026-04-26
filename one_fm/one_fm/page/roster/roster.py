@@ -763,30 +763,6 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 	can_create = False
 	omitted_days = set()
 
-	# Before scheduling, clear Client Event fields on any existing Client Event schedules
-	# that will be overwritten. These records have auto-generated names (e.g. ES-XXXX),
-	# so they won't match the name pattern used by schedule_staff and ON DUPLICATE KEY
-	# UPDATE won't reach them — we must update them explicitly first.
-	for emp_iter, date_values_iter in employees_date_dict.items():
-		for dv_iter in date_values_iter:
-			frappe.db.set_value(
-				"Employee Schedule",
-				{
-					"employee": emp_iter,
-					"date": dv_iter["date"],
-					"roster_type": roster_type,
-					"employee_availability": "Client Event"
-				},
-				{
-					"reference_doctype": None,
-					"reference_docname": None,
-					"client_event": None,
-					"event_staff": None,
-					"event_location": None,
-					"is_event_schedule": 0
-				}
-			)
-
 	# Create a temporary structure to count new schedules per day from the current batch
 	daily_add_count = defaultdict(int)
 	for emp, date_values in employees_date_dict.items():
@@ -868,19 +844,19 @@ def extreme_schedule(employees, shift, operations_role, otRoster, start_date, en
 			shift = VALUES(shift),
 			project = VALUES(project),
 			site = VALUES(site),
+			reference_doctype = IF(employee_availability = 'Client Event', NULL, reference_doctype),
+			reference_docname = IF(employee_availability = 'Client Event', NULL, reference_docname),
+			client_event = IF(employee_availability = 'Client Event', NULL, client_event),
+			event_staff = IF(employee_availability = 'Client Event', NULL, event_staff),
+			event_location = IF(employee_availability = 'Client Event', NULL, event_location),
+			is_event_schedule = IF(employee_availability = 'Client Event', 0, is_event_schedule),
 			shift_type = VALUES(shift_type),
 			day_off_ot = VALUES(day_off_ot),
 			employee_availability = "Working",
 			start_datetime= VALUES(start_datetime),
 			end_datetime= VALUES(end_datetime),
 			is_relieving_schedule = 0,
-			relieving_employee_schedule = NULL,
-			reference_doctype = IF(employee_availability = 'Client Event', NULL, reference_doctype),
-			reference_docname = IF(employee_availability = 'Client Event', NULL, reference_docname),
-			client_event = IF(employee_availability = 'Client Event', NULL, client_event),
-			event_staff = IF(employee_availability = 'Client Event', NULL, event_staff),
-			event_location = IF(employee_availability = 'Client Event', NULL, event_location),
-			is_event_schedule = IF(employee_availability = 'Client Event', 0, is_event_schedule)
+			relieving_employee_schedule = NULL
 		"""
 		if can_create:
 			frappe.db.sql(query, values=[])

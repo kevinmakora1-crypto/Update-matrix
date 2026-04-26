@@ -83,6 +83,9 @@ def create_resignation(
         rel_date   = p["relieving_date"] or get_param("resignation_date")
         attachment = p["attachment"]
 
+        if not attachment:
+            frappe.throw("A resignation letter attachment is mandatory.", frappe.ValidationError)
+
         employee_name = resolve_employee_name(input_id)
         if not employee_name:
             frappe.throw(f"Employee '{input_id}' not found", frappe.ValidationError)
@@ -135,7 +138,8 @@ def create_resignation(
             handle_attachment_internal(doc, row, att_data, "resignation_letter")
 
         # Step 3: Advance to Pending Supervisor now that the letter is saved
-        doc.db_set("workflow_state", "Pending Supervisor")
+        from frappe.model.workflow import apply_workflow
+        apply_workflow(doc, "Submit to Supervisor")
         frappe.db.commit()
         return {"status": "success", "message": "Resignation submitted successfully", "name": doc.name}
 

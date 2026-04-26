@@ -83,7 +83,11 @@ def create_resignation(
             as_dict=True
         )
 
+        # Fetch the employee's linked user_id so the record is owned by them on the desk
+        employee_user = frappe.db.get_value("Employee", employee_name, "user_id")
+
         doc = frappe.new_doc("Employee Resignation")
+        doc.owner = employee_user or frappe.session.user
         doc.resignation_initiation_date = init_date
         doc.relieving_date = rel_date
         doc.supervisor = supervisor
@@ -91,7 +95,8 @@ def create_resignation(
         doc.employment_type = emp.get("employment_type")
         doc.project_allocation = emp.get("project")
         doc.designation = emp.get("designation")
-        doc.workflow_state = "Pending Supervisor"
+        # Insert as Draft first so validate() doesn't block on missing letter
+        doc.workflow_state = "Draft"
 
         doc.append("employees", {
             "employee": employee_name,
@@ -104,6 +109,7 @@ def create_resignation(
 
         doc.insert(ignore_permissions=True)
 
+        # Step 2: Attach the letter (must happen after insert so the row has a name)
         if attachment:
             att_data = attachment if isinstance(attachment, dict) else {
                 "attachment_name": get_param("attachment_name", explicit_value=None) or "resignation_letter.png",
@@ -112,6 +118,8 @@ def create_resignation(
             for row in doc.employees:
                 handle_attachment_internal(doc, row, att_data, "resignation_letter")
 
+        # Step 3: Advance to Pending Supervisor now that the letter is saved
+        doc.db_set("workflow_state", "Pending Supervisor")
         frappe.db.commit()
         return {"status": "success", "message": "Resignation submitted successfully", "name": doc.name}
 

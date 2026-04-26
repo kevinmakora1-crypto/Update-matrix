@@ -51,8 +51,8 @@ def fetch_and_process_dmarc_reports():
 		# Select Inbox
 		mail.select("INBOX")
 		
-		# Search for emails from the last 7 days
-		date_str = (datetime.now() - timedelta(days=7)).strftime("%d-%b-%Y")
+		# Search for emails from the last 30 days
+		date_str = (datetime.now() - timedelta(days=30)).strftime("%d-%b-%Y")
 		
 		result, data = mail.search(None, f'(SINCE "{date_str}")')
 		
@@ -136,37 +136,6 @@ def fetch_and_process_dmarc_reports():
 	
 	return result_data
 
-def parse_dmarc_date(value):
-	"""Convert a DMARC date value to a datetime object.
-	Handles: Unix timestamps (int/str), datetime objects, ISO date strings.
-	"""
-	if not value:
-		return None
-
-	# Already a datetime object
-	if isinstance(value, datetime):
-		return value
-
-	# Try as a Unix timestamp (integer or numeric string)
-	if isinstance(value, (int, float)):
-		return datetime.fromtimestamp(int(value))
-
-	if isinstance(value, str):
-		# Pure numeric string = Unix timestamp
-		stripped = value.strip()
-		if stripped.isdigit():
-			return datetime.fromtimestamp(int(stripped))
-
-		# Try ISO format parsing
-		for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-			try:
-				return datetime.strptime(stripped, fmt)
-			except ValueError:
-				continue
-
-	frappe.logger().warning(f"DMARC: Could not parse date value: {value} (type: {type(value)})")
-	return None
-
 def process_xml_report(xml_content):
 	"""
 	Parses the XML content and creates DMARC Report records.
@@ -212,15 +181,6 @@ def process_xml_report(xml_content):
 		doc.published_pct = get_val(policy_pub, "pct")
 		doc.raw_xml = xml_content
 		doc.status = "Processed"
-
-		# Set human-readable title
-		if doc.org_name and doc.begin_date:
-			from frappe.utils import formatdate
-			doc.title = f"{doc.org_name} - {formatdate(doc.begin_date, 'dd-MM-yyyy')}"
-		elif doc.org_name:
-			doc.title = doc.org_name
-		else:
-			doc.title = report_id
 		
 		total_msgs = 0
 		total_pass = 0

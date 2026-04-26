@@ -28,8 +28,8 @@ class EmployeeResignationWithdrawal(Document):
 	def notify_offboarding_on_submission(self):
 		# Notify Offboarding Officer when state hits 'Pending Supervisor'
 		if self.workflow_state == "Pending Supervisor":
-			# Use a flag to avoid double-sending in the same session
-			if not getattr(self, "__notified_offboarding", False):
+			old_doc = self.get_doc_before_save()
+			if not old_doc or old_doc.workflow_state != "Pending Supervisor":
 				recipients = set()
 				from frappe.utils.user import get_users_with_role
 				from one_fm.api.v1.utils import resolve_active_user
@@ -38,7 +38,6 @@ class EmployeeResignationWithdrawal(Document):
 					recipients.add(resolve_active_user(user))
 				
 				if recipients:
-					self.__notified_offboarding = True
 					subject = _("Attention: Resignation Withdrawal Initiated - {0}").format(self.name)
 					message = _("A resignation withdrawal request <b>{0}</b> has been submitted to the supervisor. Please hold any offboarding processing for the involved employees.").format(self.name)
 					

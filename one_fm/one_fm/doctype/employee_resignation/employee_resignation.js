@@ -128,12 +128,14 @@ frappe.ui.form.on("Employee Resignation", {
 			};
 
 			if (frm.doc.employees.length === 1) {
+				frm.remove_custom_button(__('Employee Exit Tab'), __('Employee Profiles'));
 				frm.add_custom_button(__('Employee Exit Tab'), function() {
 					view_exit_tab(frm.doc.employees[0].employee);
 				}, __('Employee Profiles'));
 			} else {
 				frm.doc.employees.forEach(row => {
 					let btn_label = row.employee_name || row.employee;
+					frm.remove_custom_button(btn_label, __('Employee Profiles'));
 					frm.add_custom_button(btn_label, function() {
 						view_exit_tab(row.employee);
 					}, __('Employee Profiles'));

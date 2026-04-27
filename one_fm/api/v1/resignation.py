@@ -153,7 +153,7 @@ def create_resignation(
         return {"status": "success", "message": "Resignation submitted successfully", "name": doc.name}
 
     except Exception as e:
-        frappe.log_error("Create Resignation Error", frappe.get_traceback())
+        frappe.log_error(frappe.get_traceback(), "Create Resignation Error")
         frappe.throw(str(e), frappe.ValidationError)
 
 

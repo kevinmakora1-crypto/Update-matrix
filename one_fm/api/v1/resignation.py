@@ -41,27 +41,36 @@ def handle_attachment_internal(doc, row, attachment_data, field_name):
             frappe.log_error(str(e), f"Attachment JSON Decode Error for {doc.doctype} {doc.name}")
             frappe.throw(f"Failed to parse attachment data: {str(e)}", frappe.ValidationError)
 
+    from frappe import _
+    if not isinstance(attachment_data, dict):
+        frappe.throw(_("Attachment payload must be a JSON object."), frappe.ValidationError)
+
     file_name = attachment_data.get("attachment_name")
     file_base64 = attachment_data.get("attachment")
 
-    if file_name and file_base64:
-        try:
-            content = base64.b64decode(file_base64)
-            saved_file = save_file(
-                file_name, content, doc.doctype, doc.name,
-                is_private=1, folder="Home/Attachments"
-            )
-            file_url = saved_file.file_url
-            frappe.db.set_value(row.doctype, row.name, field_name, file_url)
-            # Keep the in-memory row in sync with the DB so any subsequent
-            # validations/workflow actions using the current doc see the attachment.
-            if hasattr(row, "set"):
-                row.set(field_name, file_url)
-            else:
-                setattr(row, field_name, file_url)
-        except Exception as e:
-            frappe.log_error(frappe.get_traceback(), f"Attachment Save Error for {doc.doctype} {doc.name}")
-            frappe.throw(f"Failed to save attachment {file_name}: {str(e)}", frappe.ValidationError)
+    if not file_name or not file_base64:
+        frappe.throw(
+            _("Attachment payload must include both 'attachment_name' and 'attachment'."),
+            frappe.ValidationError
+        )
+
+    try:
+        content = base64.b64decode(file_base64, validate=True)
+        saved_file = save_file(
+            file_name, content, doc.doctype, doc.name,
+            is_private=1, folder="Home/Attachments"
+        )
+        file_url = saved_file.file_url
+        frappe.db.set_value(row.doctype, row.name, field_name, file_url)
+        # Keep the in-memory row in sync with the DB so any subsequent
+        # validations/workflow actions using the current doc see the attachment.
+        if hasattr(row, "set"):
+            row.set(field_name, file_url)
+        else:
+            setattr(row, field_name, file_url)
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), f"Attachment Save Error for {doc.doctype} {doc.name}")
+        frappe.throw(f"Failed to save attachment {file_name}: {str(e)}", frappe.ValidationError)
 
 
 # ---------------------------------------------------------------------------
@@ -174,7 +183,10 @@ def extend_resignation(
             "reason", "extended_date", "attachment",
             employee_id=employee_id,
             supervisor=supervisor,
+            reason=reason,
+            extended_date=extended_date,
             resignation_id=resignation_id,
+            attachment=attachment,
         )
         input_id       = p["employee_id"]
         supervisor     = p["supervisor"]

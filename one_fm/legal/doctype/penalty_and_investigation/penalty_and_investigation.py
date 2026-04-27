@@ -22,6 +22,12 @@ class PenaltyAndInvestigation(Document):
 		curr_state_trimmed = self.workflow_state.strip()
 		old_state_trimmed = old_state.strip()
 
+		if old_state_trimmed == "Pending Employee Response" and curr_state_trimmed == "Pending Supervisor Review":
+			self._validate_employee_to_supervisor_transition()
+
+		if old_state_trimmed == "Pending Supervisor Review" and curr_state_trimmed == "Pending HR Review":
+			self._validate_supervisor_to_hr_transition()
+
 		if old_state_trimmed == "Pending GM Decision" and curr_state_trimmed == "Pending Legal Investigation":
 			if not self.general_manager_decision:
 				frappe.throw(_("General Manager Decision is required before moving to Pending Legal Investigation"))
@@ -29,6 +35,14 @@ class PenaltyAndInvestigation(Document):
 		if old_state_trimmed == "Pending HR Review" and curr_state_trimmed == "Pending GM Decision":
 			if not self.hr_remarks:
 				frappe.throw(_("HR Remarks are required before moving to Pending GM Decision"))
+
+	def _validate_employee_to_supervisor_transition(self):
+		if not self.employee_rejection_remarks:
+			frappe.throw(_("Employee Rejection Remarks are required before moving to Pending Supervisor Review"))
+
+	def _validate_supervisor_to_hr_transition(self):
+		if not self.supervisor_remarks or not self.evidence:
+			frappe.throw(_("Both Supervisor Remarks and Evidence are required before moving to Pending HR Review"))
 
 	def validate_duplicate_penalty(self):
 		if not self.employee or not self.applied_penalty_code or not self.incident_date:

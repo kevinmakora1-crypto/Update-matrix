@@ -8,18 +8,6 @@ frappe.ui.form.on("Penalty And Investigation", {
 	refresh: function (frm) {
 		frm.trigger("toggle_visibility");
 	},
-	validate: function (frm) {
-		if (frm.doc.workflow_state === "Pending Supervisor Review") {
-			if (!frm.doc.employee_rejection_remarks) {
-				frappe.throw(__("Employee Rejection Remarks are required when moving to Pending Supervisor Review."));
-			}
-		}
-		if (frm.doc.workflow_state === "Pending HR Review") {
-			if (!frm.doc.supervisor_remarks || !frm.doc.evidence) {
-				frappe.throw(__("Both Supervisor Remarks and Evidence are required for Pending HR Review."));
-			}
-		}
-	},
 	workflow_state: function (frm) {
 		frm.trigger("toggle_visibility");
 	},

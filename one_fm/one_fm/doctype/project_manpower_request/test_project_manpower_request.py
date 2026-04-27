@@ -16,7 +16,9 @@ class TestProjectManpowerRequest(FrappeTestCase):
 			"reason": "New Position",
 			"count": 1,
 			"recruiter": self.recruiter
-		}).insert(ignore_permissions=True)
+		})
+		self.pmr.flags.ignore_mandatory = True
+		self.pmr.insert(ignore_permissions=True)
 
 	def tearDown(self):
 		frappe.db.rollback()

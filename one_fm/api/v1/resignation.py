@@ -168,6 +168,8 @@ def create_resignation(
         frappe.db.commit()
         return {"status": "success", "message": "Resignation submitted successfully", "name": doc.name}
 
+    except (frappe.PermissionError, frappe.ValidationError):
+        raise
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Create Resignation Error")
         frappe.throw(str(e), frappe.ValidationError)
@@ -267,6 +269,8 @@ def extend_resignation(
             "name": ext.name
         }
 
+    except (frappe.PermissionError, frappe.ValidationError):
+        raise
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Extension Error")
         frappe.throw(str(e), frappe.ValidationError)
@@ -356,6 +360,8 @@ def withdraw_resignation(
 
         return {"status": "success", "message": "Withdrawal submitted", "name": withdrawal.name}
 
+    except (frappe.PermissionError, frappe.ValidationError):
+        raise
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Withdrawal Error")
         frappe.throw(str(e), frappe.ValidationError)
@@ -430,6 +436,8 @@ def correct_resignation_date_app(
             "name": doc.name
         }
 
+    except (frappe.PermissionError, frappe.ValidationError):
+        raise
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Correction Error")
         frappe.throw(str(e), frappe.ValidationError)

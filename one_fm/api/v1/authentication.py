@@ -213,7 +213,7 @@ def get_otp(employee_user_id: str=None, otp_source: str=None):
 
 	return response("Success", 201, result)
 @frappe.whitelist(allow_guest=True)
-def set_password(employee_user_id, new_password, tmp_id=None):
+def set_password(employee_user_id, new_password, tmp_id=None, otp=None):
 	"""
 	used to set the new password
 
@@ -221,6 +221,7 @@ def set_password(employee_user_id, new_password, tmp_id=None):
 	new_password
 	employee_user_id
 	tmp_id
+	otp
 
 	returns
 	success message
@@ -230,8 +231,18 @@ def set_password(employee_user_id, new_password, tmp_id=None):
 		if not tmp_id or frappe.cache().get_value(f"otp_reset_{tmp_id}") != employee_user_id:
 			return response("error", 401, None, "Invalid or expired OTP session token.")
 
+		if not otp:
+			return response("error", 400, None, "OTP is required.")
+
+		import pyotp
+		otp_secret = get_otpsecret_for_(employee_user_id)
+		if not pyotp.TOTP(otp_secret).verify(otp, valid_window=10):
+			return response("error", 401, None, "Invalid or expired OTP.")
+
+		frappe.cache().delete_value(f"otp_reset_{tmp_id}")
+
 		_update_password(employee_user_id, new_password)
-		frappe.db.set_value("Employee", {'employee_id':employee_user_id}, "registered", 1)
+		frappe.db.set_value("Employee", {'user_id': employee_user_id}, "registered", 1)
 		message =  {
 				'message': _('Password Updated!')
 			}

@@ -381,8 +381,9 @@ def correct_resignation_date_app(
         if new_initiation:
             doc.resignation_initiation_date = new_initiation
 
-        for row in doc.employees:
-            row.resignation_letter_date = new_date
+        if new_initiation:
+            for row in doc.employees:
+                row.resignation_letter_date = new_initiation
 
         if attachment:
             att_str = attachment if isinstance(attachment, str) else json.dumps(attachment)

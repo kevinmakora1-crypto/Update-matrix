@@ -7,7 +7,8 @@ from frappe.tests.utils import FrappeTestCase
 
 class TestProjectManpowerRequest(FrappeTestCase):
 	def setUp(self):
-		self.recruiter = _make_user("test_recruiter@example.com", "Recruiter")
+		self.test_email = f"test_recruiter_{frappe.generate_hash(length=8)}@example.com"
+		self.recruiter = _make_user(self.test_email, "Recruiter")
 		
 		self.pmr = frappe.get_doc({
 			"doctype": "Project Manpower Request",

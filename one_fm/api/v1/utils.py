@@ -139,7 +139,7 @@ def get_mobile_version():
         return response(message='Failed', status_code=500, data={}, error=str(e))
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def enrollment_status(employee_id: str = None) -> dict:
     """
         Check if an employee is enrolled on the mobile app

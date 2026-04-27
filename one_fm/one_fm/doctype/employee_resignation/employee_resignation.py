@@ -219,7 +219,7 @@ class EmployeeResignation(Document):
 								from frappe.utils.file_manager import save_url
 								save_url(row.resignation_letter, file_name, "Employee", row.employee, "Home/Attachments", 1)
 							except Exception as e:
-								frappe.log_error("Error attaching resignation file to Employee", str(e))
+								frappe.log_error(frappe.get_traceback(), "Error attaching resignation file to Employee")
 					
 					frappe.db.set_value("Employee", row.employee, {
 						"resignation_date": self.resignation_initiation_date,

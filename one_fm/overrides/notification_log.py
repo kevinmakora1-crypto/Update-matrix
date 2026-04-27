@@ -16,7 +16,7 @@ class NotificationLogOverride(NotificationLog):
             except frappe.OutgoingEmailError:
                 frappe.log_error(frappe.get_traceback(), _("Failed to send notification email"))
             except Exception:
-                # Never let email failures block workflow transitions, but distinct log them
+                # Never let email failures block workflow transitions, but distinctly log them
                 frappe.log_error(frappe.get_traceback(), "Notification Email Failed (non-blocking)")
                 
                 

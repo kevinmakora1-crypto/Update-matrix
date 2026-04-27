@@ -290,6 +290,8 @@ def withdraw_resignation(
         p = get_all_params(
             "reason", "attachment",
             employee_id=employee_id,
+            reason=reason,
+            attachment=attachment,
         )
         input_id   = p["employee_id"]
         reason     = p["reason"]
@@ -385,6 +387,10 @@ def correct_resignation_date_app(
             "new_date", "new_initiation_date", "attachment", "attachment_name",
             employee_id=employee_id,
             resignation_id=resignation_id,
+            new_date=new_date,
+            new_initiation_date=new_initiation_date,
+            attachment=attachment,
+            attachment_name=attachment_name,
         )
         input_id         = p["employee_id"]
         resignation_id   = p["resignation_id"]

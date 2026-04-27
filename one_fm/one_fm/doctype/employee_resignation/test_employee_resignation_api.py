@@ -8,6 +8,7 @@ class TestEmployeeResignation(FrappeTestCase):
         if not frappe.db.exists("Employee", "HR-EMP-TEST-99"):
             doc = frappe.get_doc({
                 "doctype": "Employee",
+                "name": "HR-EMP-TEST-99",
                 "employee": "HR-EMP-TEST-99",
                 "first_name": "Test Resignation",
                 "status": "Active"

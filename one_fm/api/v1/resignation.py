@@ -98,7 +98,14 @@ def create_resignation(
         input_id   = p["employee_id"]
         supervisor = p["supervisor"]
         init_date  = p["resignation_initiation_date"]
-        rel_date   = p["relieving_date"] or get_param("resignation_date")
+        legacy_relieving_date = get_param("resignation_date")
+        if p["relieving_date"] and legacy_relieving_date and p["relieving_date"] != legacy_relieving_date:
+            from frappe import _
+            frappe.throw(
+                _("Conflicting values provided for relieving_date and resignation_date. Please use relieving_date."),
+                frappe.ValidationError
+            )
+        rel_date   = p["relieving_date"] or legacy_relieving_date
         attachment = p["attachment"]
 
         if not attachment:

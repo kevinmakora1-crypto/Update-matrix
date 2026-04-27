@@ -171,4 +171,4 @@ class TestEmployeeResignation(FrappeTestCase):
 				attachment=None
 			)
 		
-		self.assertTrue("Missing resignation letter" in str(context.exception))
+		self.assertTrue("A resignation letter attachment is mandatory." in str(context.exception))

@@ -231,7 +231,6 @@ def verify_via_face_recogniton_service(url: str, data: dict, files: dict) -> tup
         return True, ""
     return False, "Facial Recogniton Service is currently available"
 
-@frappe.whitelist()
 def resolve_active_user(user_id, max_depth=5):
     """
     Resolves the target user. If the user is on leave today, transparently routes

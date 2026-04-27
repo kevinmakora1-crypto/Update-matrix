@@ -265,67 +265,7 @@ class JobOfferOverride(JobOffer):
         if self.amended_from and self.status == "Rejected":
             self.status = "Awaiting Response"
 
-    def create_candidate_country_process(self):
-        if frappe.db.exists('Candidate Country Process', {'job_offer': self.name}):
-            return
 
-        job_applicant = frappe.get_doc('Job Applicant', self.job_applicant)
-        if not job_applicant.job_title:
-            return
-
-        # Fetch Agency from Job Opening
-        agency = frappe.db.get_value('Job Opening', job_applicant.job_title, 'agency')
-        if not agency:
-            return
-
-        agency_country_process = frappe.db.get_value('Agency Country Process', {'agency': agency}, 'name')
-        if not agency_country_process:
-            return
-
-        ccp = frappe.new_doc('Candidate Country Process')
-        ccp.job_offer = self.name
-        ccp.job_applicant = self.job_applicant
-        ccp.agency = agency
-        ccp.agency_country_process = agency_country_process
-        ccp.start_date = self.one_fm_offer_accepted_date or frappe.utils.nowdate()
-
-        acp_doc = frappe.get_doc('Agency Country Process', agency_country_process)
-
-        cumulative_days = 0
-        start = frappe.utils.getdate(ccp.start_date)
-        for row in acp_doc.agency_process_details:
-            d = ccp.append("agency_process_details", {})
-            d.process_name = row.process_name
-            d.responsible = row.responsible
-            d.duration_in_days = row.duration_in_days
-            d.parallel_group = frappe.utils.cint(row.get("parallel_group") or 0)
-            d.before_task = row.before_task
-            d.after_task = row.after_task
-            d.attachment_required = row.attachment_required
-            d.notes_required = row.notes_required
-            d.reference_type = row.reference_type
-            d.reference_complete_status_field = row.reference_complete_status_field
-            d.reference_complete_status_value = row.reference_complete_status_value
-
-            if row.process_name == "Job Offer Issuance":
-                # Retroactive evaluation: Job Offer is already created and accepted
-                created_date = frappe.utils.getdate(self.creation)
-                d.planned_date = frappe.utils.add_days(created_date, row.duration_in_days)
-                d.live_plan_date = d.planned_date
-                d.status = 'Offer Accepted'
-                d.actual_date = ccp.start_date
-                d.reference_name = self.name
-            else:
-                cumulative_days += row.duration_in_days
-                d.planned_date = frappe.utils.add_days(start, cumulative_days)
-                d.live_plan_date = d.planned_date
-
-        if ccp.agency_process_details:
-            last_step = ccp.agency_process_details[-1]
-            ccp.planned_eta = last_step.planned_date
-            ccp.live_plan_eta = last_step.planned_date
-
-        ccp.save(ignore_permissions=True)
 
 def assign_to_onboarding_officer(self):
 	try:

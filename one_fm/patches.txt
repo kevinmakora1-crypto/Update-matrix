@@ -287,6 +287,8 @@ one_fm.patches.v15_0.add_leave_application_outcome_custom_field
 one_fm.patches.v15_0.update_subcontract_staff_attendance_web_form
 one_fm.patches.v15_0.fix_contract_currency
 one_fm.patches.v15_0.remove_pathfinder_log_assignment_rules
+one_fm.patches.v15_0.add_workflow_states_penalty_and_investigation
+one_fm.patches.v15_0.add_workflow_actions_penalty_and_investigation
 one_fm.patches.v15_0.add_sales_invoice_contract_fields #3
 one_fm.patches.v15_0.add_sales_taxes_charges_add_or_deduct_field
 

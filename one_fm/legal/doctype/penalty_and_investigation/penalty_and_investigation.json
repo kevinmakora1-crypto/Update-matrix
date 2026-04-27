@@ -7,8 +7,11 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_pekz",
+  "naming_series",
+  "issuer",
   "issuance_date",
   "employee",
+  "employee_name",
   "employee_user",
   "penalty_name",
   "applied_penalty_code",
@@ -18,6 +21,7 @@
   "reported_by",
   "series",
   "department",
+  "penalty_status",
   "location",
   "project",
   "penalty",
@@ -27,19 +31,24 @@
   "deduction_type",
   "salary_deduction_days",
   "salary_deduction_amount",
-  "section_break_ezlt",
-  "employee_rejection_remark",
+  "section_break_waiv",
+  "employee_rejection_remarks",
   "incident_file",
   "investigation_requiref",
   "description",
   "evidence",
   "witness",
   "supervisor_remarks",
-  "supervisor_rejection_reason",
   "decision",
   "hr_remarks",
   "general_manager_decision",
-  "legal_findings"
+  "legal_findings",
+  "additional",
+  "company_damage",
+  "asset_damage",
+  "column_break_rjfg",
+  "customer_property_damage",
+  "other_damages"
  ],
  "fields": [
   {
@@ -107,13 +116,15 @@
   {
    "fieldname": "offence_count",
    "fieldtype": "Int",
-   "label": "Offence Count"
+   "label": "Offence Count",
+   "read_only": 1
   },
   {
    "fieldname": "applied_level",
    "fieldtype": "Select",
    "label": "Applied Level",
-   "options": "1\n2\n3\n4\n5"
+   "options": "1\n2\n3\n4\n5",
+   "read_only": 1
   },
   {
    "fieldname": "salary_deduction_days",
@@ -222,25 +233,79 @@
    "label": "Salary Deduction Amount"
   },
   {
-   "fieldname": "section_break_ezlt",
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "PEN-.MM-.YYYY-.#####"
+  },
+  {
+   "fieldname": "issuer",
+   "fieldtype": "Link",
+   "label": "Issuer",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "workflow_state",
+   "fieldname": "penalty_status",
+   "fieldtype": "Data",
+   "label": "Penalty Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_waiv",
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "employee_rejection_remark",
+   "fieldname": "employee_rejection_remarks",
    "fieldtype": "Small Text",
    "label": "Employee Rejection Remark"
   },
   {
-   "fieldname": "supervisor_rejection_reason",
-   "fieldtype": "Small Text",
-   "label": "Supervisor Rejection Reason"
+   "fieldname": "additional",
+   "fieldtype": "Section Break",
+   "label": "Additional"
+  },
+  {
+   "default": "0",
+   "fieldname": "company_damage",
+   "fieldtype": "Check",
+   "label": "Company Damage"
+  },
+  {
+   "default": "0",
+   "fieldname": "asset_damage",
+   "fieldtype": "Check",
+   "label": "Asset Damage"
+  },
+  {
+   "fieldname": "column_break_rjfg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "customer_property_damage",
+   "fieldtype": "Check",
+   "label": "Customer Property Damage"
+  },
+  {
+   "default": "0",
+   "fieldname": "other_damages",
+   "fieldtype": "Check",
+   "label": "Other Damages"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-24 17:19:38.311482",
+ "modified": "2026-04-26 14:07:13.578820",
  "modified_by": "c.akeru@one-fm.com",
  "module": "Legal",
  "name": "Penalty And Investigation",

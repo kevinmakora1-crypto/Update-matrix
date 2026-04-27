@@ -201,10 +201,16 @@ def get_otp(employee_user_id: str=None, otp_source: str=None):
 	tmp_id = frappe.generate_hash(length=8)
 	frappe.cache().set_value(f"otp_reset_{tmp_id}", employee_user_id, expires_in_sec=600)
 
+	from one_fm.api.v2.authentication import process_2fa_for_email, process_2fa_for_whatsapp
+	
 	if otp_source.lower() == "sms":
 		verification_obj = process_2fa_for_sms(employee_user_id, token, otp_secret)
+	elif otp_source.lower() == "email":
+		verification_obj = process_2fa_for_email(employee_user_id, token, otp_secret)
+	elif otp_source.lower() == "whatsapp":
+		verification_obj = process_2fa_for_whatsapp(employee_user_id, token, otp_secret)
 	else:
-		return response("Bad Request", 400, None, f"Unsupported OTP source: {otp_source}. Only SMS is supported.")
+		return response("Bad Request", 400, None, f"Unsupported OTP source: {otp_source}. Supported sources are: sms, email, whatsapp.")
 
 	result = {
 		"message": "Password reset instructions sent via {otp_source}".format(otp_source=otp_source),

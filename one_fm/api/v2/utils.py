@@ -214,6 +214,7 @@ def update_employee(employee_id, field, value):
         return response(message=str(e), status_code=200, data={'status':False}, error=str(e))
 
 
+@frappe.whitelist()
 def get_employee_by_id(employee_id):
     """
     Get employee pk by employee id

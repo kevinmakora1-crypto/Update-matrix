@@ -268,7 +268,7 @@ def extend_resignation(
         }
 
     except Exception as e:
-        frappe.log_error("Extension Error", frappe.get_traceback())
+        frappe.log_error(frappe.get_traceback(), "Extension Error")
         frappe.throw(str(e), frappe.ValidationError)
 
 
@@ -357,7 +357,7 @@ def withdraw_resignation(
         return {"status": "success", "message": "Withdrawal submitted", "name": withdrawal.name}
 
     except Exception as e:
-        frappe.log_error("Withdrawal Error", frappe.get_traceback())
+        frappe.log_error(frappe.get_traceback(), "Withdrawal Error")
         frappe.throw(str(e), frappe.ValidationError)
 
 
@@ -431,7 +431,7 @@ def correct_resignation_date_app(
         }
 
     except Exception as e:
-        frappe.log_error("Correction Error", frappe.get_traceback())
+        frappe.log_error(frappe.get_traceback(), "Correction Error")
         frappe.throw(str(e), frappe.ValidationError)
 
 

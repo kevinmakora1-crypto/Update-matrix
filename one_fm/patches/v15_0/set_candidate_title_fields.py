@@ -19,7 +19,7 @@ def execute():
             "search_fields": "candidate_name,passport_number",
             "show_title_field_in_link": 1
         })
-        frappe.clear_cache(doctype=dt)
-        print(f"Updated DB schema for {dt}: title_field=candidate_name, search_fields=candidate_name,passport_number")
+            frappe.clear_cache(doctype=dt)
+            print(f"Updated DB schema for {dt}: title_field=candidate_name, search_fields=candidate_name,passport_number")
     
     frappe.db.commit()

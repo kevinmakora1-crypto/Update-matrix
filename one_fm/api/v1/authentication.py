@@ -40,8 +40,10 @@ def user_login(employee_id, password):
 		else:
 			session_user = frappe.session.user
 			frappe.set_user('Administrator')
-			api_secret = generate_keys(user.name)
-			frappe.set_user(session_user)
+			try:
+				api_secret = generate_keys(user.name)
+			finally:
+				frappe.set_user(session_user)
 			user.reload()
 			msg['token'] = f"token {user.api_key}:{api_secret}"
 		

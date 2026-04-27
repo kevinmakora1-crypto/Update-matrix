@@ -18,10 +18,13 @@ class TestEmployeeResignation(FrappeTestCase):
 
     def test_create_resignation_invalid_attachment(self):
         # Testing invalid base64 attachment parsing
-        with self.assertRaises(Exception):
+        with self.assertRaises(frappe.ValidationError):
             create_resignation(
                 employee_id="HR-EMP-TEST-99",
                 resignation_initiation_date="2026-04-27",
                 relieving_date="2026-05-27",
-                attachment={"attachment": "not_a_valid_base64_string"}
+                attachment={
+                    "attachment_name": "invalid_attachment.png",
+                    "attachment": "not_a_valid_base64_string"
+                }
             )

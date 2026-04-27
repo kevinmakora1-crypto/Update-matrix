@@ -14,8 +14,7 @@ def execute():
 			}
 		]
 	})
-	# 2. Update Employee Resignation Module logically (Removed, breaks system)
-	
+
 	# 3. Update Workflow for Employee Resignation
 	workflow_name = "Employee Resignation"
 	

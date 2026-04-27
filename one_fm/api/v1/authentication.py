@@ -197,6 +197,7 @@ def get_otp(employee_user_id: str=None, otp_source: str=None):
 	otp_secret = get_otpsecret_for_(employee_user_id)
 	token = int(pyotp.TOTP(otp_secret).now())
 	tmp_id = frappe.generate_hash(length=8)
+	frappe.cache().set_value(f"otp_reset_{tmp_id}", employee_user_id, expires_in_sec=600)
 
 	if otp_source.lower() == "sms":
 		verification_obj = process_2fa_for_sms(employee_user_id, token, otp_secret)
@@ -210,19 +211,23 @@ def get_otp(employee_user_id: str=None, otp_source: str=None):
 
 	return response("Success", 201, result)
 @frappe.whitelist(allow_guest=True)
-def set_password(employee_user_id, new_password):
+def set_password(employee_user_id, new_password, tmp_id=None):
 	"""
 	used to set the new password
 
 	params
 	new_password
 	employee_user_id
+	tmp_id
 
 	returns
 	success message
 	
 	"""
 	try:
+		if not tmp_id or frappe.cache().get_value(f"otp_reset_{tmp_id}") != employee_user_id:
+			return response("error", 401, None, "Invalid or expired OTP session token.")
+
 		_update_password(employee_user_id, new_password)
 		frappe.db.set_value("Employee", {'employee_id':employee_user_id}, "registered", 1)
 		message =  {

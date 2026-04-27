@@ -25,7 +25,7 @@ def execute():
             print(f"Created App Service: {s['name']}")
             
     # Assign to Demo Worker 1
-    uas_list = frappe.get_all("User App Service")
+    uas_list = frappe.get_all("User App Service", filters={"user": ["like", "%demo%"]})
     for u in uas_list:
         doc = frappe.get_doc("User App Service", u.name)
         existing = [x.service for x in doc.service_detail]

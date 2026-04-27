@@ -63,12 +63,12 @@
   {
    "fieldname": "table_section",
    "fieldtype": "Section Break",
-   "label": "Candidates"
+   "label": "Extension Request Details"
   },
   {
    "fieldname": "employees",
    "fieldtype": "Table",
-   "label": "Withdrawing Employees",
+   "label": "Employees",
    "options": "Employee Resignation Extension Item",
    "reqd": 1
   },

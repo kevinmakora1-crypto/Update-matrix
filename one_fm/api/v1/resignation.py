@@ -38,7 +38,7 @@ def handle_attachment_internal(doc, row, attachment_data, field_name):
         try:
             attachment_data = json.loads(attachment_data)
         except Exception as e:
-            frappe.log_error(f"Attachment JSON Decode Error for {doc.doctype} {doc.name}", str(e))
+            frappe.log_error(str(e), f"Attachment JSON Decode Error for {doc.doctype} {doc.name}")
             frappe.throw(f"Failed to parse attachment data: {str(e)}", frappe.ValidationError)
 
     file_name = attachment_data.get("attachment_name")
@@ -60,7 +60,7 @@ def handle_attachment_internal(doc, row, attachment_data, field_name):
             else:
                 setattr(row, field_name, file_url)
         except Exception as e:
-            frappe.log_error(f"Attachment Save Error for {doc.doctype} {doc.name}", frappe.get_traceback())
+            frappe.log_error(frappe.get_traceback(), f"Attachment Save Error for {doc.doctype} {doc.name}")
             frappe.throw(f"Failed to save attachment {file_name}: {str(e)}", frappe.ValidationError)
 
 

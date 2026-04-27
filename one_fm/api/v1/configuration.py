@@ -17,27 +17,23 @@ from one_fm.processor import sendemail, send_whatsapp
 
 
 def get_user_app_service():
-	name = frappe.db.get_value("User App Service", {"user": frappe.session.user}, "name")
-	if not name:
-		return None
-	service_detail = frappe.get_all(
-		"User App Service Detail",
-		filters={"parent": name},
-		fields=["service", "service_status", "service_icon", "auto_assign",
-			"service_group", "service_group_status", "service_group_icon"],
-		order_by="idx asc"
-	)
-	for item in service_detail:
-		item["service_ar"] = frappe.db.get_value(
-			"Translation",
-			{"source_text": item["service"], "language": "ar"},
-			"translated_text"
-		) or _(item["service"])
-	return {
-		"name": name,
-		"employee": frappe.db.get_value("User App Service", name, "employee"),
-		"service_detail": service_detail
-	}
+	user_app_service =  frappe.get_doc("User App Service", {'user':frappe.session.user})
+	return  {
+		"name": user_app_service.name,
+		"employee": user_app_service.employee,
+		"service_detail": [{
+			"service":i.service,
+			"service_ar": frappe.get_value("Translation", 
+                                               {"source_text": i.service, "language": 'ar'}, 
+                                               "translated_text") or _(i.service),
+			"service_status":i.service_status,
+			"service_icon":i.service_icon,
+			"auto_assign":i.auto_assign,
+			"service_group":i.service_group,
+			"service_group_status": i.service_group_status,
+			"service_group_icon": i.service_group_icon,
+		} for i in user_app_service.service_detail]
+    }
 
 @frappe.whitelist()
 def app_service_group() -> dict:
@@ -86,7 +82,7 @@ def app_service() -> dict:
 	try:
 		employee_id = frappe.db.get_value("Employee", {"user_id":frappe.session.user}, ["name", "attendance_by_timesheet"], as_dict=1)
 		filters = {}
-		if employee_id and employee_id.attendance_by_timesheet:
+		if employee_id.attendance_by_timesheet:
 			filters["assign_to_timesheet_employees"] = 1
 		else:
 			filters["assign_to_non_timesheet_employees"] = 1
@@ -123,18 +119,18 @@ def user_app_service() -> dict:
 		if not frappe.db.exists("User App Service", {"user":frappe.session.user}):
 			employee_id = frappe.db.get_value("Employee", {"user_id":frappe.session.user}, ["name", "attendance_by_timesheet"], as_dict=1)
 			filters = {"auto_assign": 1}
-			if employee_id and employee_id.attendance_by_timesheet:
+			if employee_id.attendance_by_timesheet:
 				filters["assign_to_timesheet_employees"] = 1
 			else:
 				filters["assign_to_non_timesheet_employees"] = 1
 
-			auto_assign_services = frappe.get_all("App Service", 
+			auto_assign_services = frappe.db.get_list("App Service", 
 				filters=filters,
 			)
 
 			frappe.get_doc({
 				"doctype": "User App Service",
-				"employee": employee_id.name if employee_id else None,
+				"employee": employee_id.name,
 				"user":frappe.session.user,
 				"service_detail": [{"service":i.name} for i in auto_assign_services]
             }).insert(ignore_permissions=True)

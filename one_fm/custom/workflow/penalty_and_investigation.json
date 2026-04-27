@@ -137,8 +137,7 @@
       "avoid_status_override": 0,
       "allow_edit": "System Manager",
       "send_email": 1,
-      "doctype": "Workflow Document State",
-      "__unsaved": 1
+      "doctype": "Workflow Document State"
     }
   ],
   "transitions": [
@@ -170,7 +169,6 @@
     },
     {
       "doctype": "Workflow Transition",
-      "__unsaved": 1,
       "allow_self_approval": 1,
       "send_email_to_creator": 0,
       "state": "Pending Employee Response",
@@ -210,7 +208,6 @@
     },
     {
       "doctype": "Workflow Transition",
-      "__unsaved": 1,
       "allow_self_approval": 1,
       "send_email_to_creator": 0,
       "state": "Pending Supervisor Review",
@@ -263,7 +260,6 @@
     },
     {
       "doctype": "Workflow Transition",
-      "__unsaved": 1,
       "allow_self_approval": 1,
       "send_email_to_creator": 0,
       "state": "Mark as Completed",
@@ -277,7 +273,6 @@
     },
     {
       "doctype": "Workflow Transition",
-      "__unsaved": 1,
       "allow_self_approval": 1,
       "send_email_to_creator": 0,
       "state": "Mark as Completed",
@@ -291,7 +286,6 @@
     },
     {
       "doctype": "Workflow Transition",
-      "__unsaved": 1,
       "allow_self_approval": 1,
       "send_email_to_creator": 0,
       "state": "Pending HR Review",
@@ -305,7 +299,6 @@
     },
     {
       "doctype": "Workflow Transition",
-      "__unsaved": 1,
       "allow_self_approval": 1,
       "send_email_to_creator": 0,
       "state": "Pending GM Decision",
@@ -319,7 +312,6 @@
     },
     {
       "doctype": "Workflow Transition",
-      "__unsaved": 1,
       "allow_self_approval": 1,
       "send_email_to_creator": 0,
       "state": "Pending Legal Investigation",

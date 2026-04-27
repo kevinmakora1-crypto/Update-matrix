@@ -12,14 +12,13 @@ def execute():
     
     for dt in doctypes:
         doc = frappe.get_doc("DocType", dt)
-        if not doc.title_field:
-            doc.title_field = "candidate_name"
-        
-        doc.search_fields = "candidate_name,passport_number"
-        doc.show_title_field_in_link = 1
-        
-        # Saving the DocType automatically updates both the database and the JSON files
-        doc.save(ignore_permissions=True)
-        print(f"Updated {dt}: title_field=candidate_name, search_fields=candidate_name,passport_number")
+        # Use db.set_value to avoid writing JSON files to disk during production migrations
+        frappe.db.set_value("DocType", dt, {
+            "title_field": "candidate_name" if not doc.title_field else doc.title_field,
+            "search_fields": "candidate_name,passport_number",
+            "show_title_field_in_link": 1
+        })
+        frappe.clear_cache(doctype=dt)
+        print(f"Updated DB schema for {dt}: title_field=candidate_name, search_fields=candidate_name,passport_number")
     
     frappe.db.commit()

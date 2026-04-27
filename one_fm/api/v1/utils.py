@@ -151,8 +151,8 @@ def enrollment_status(employee_id: str = None) -> dict:
         if get_employee.status:
             employee = frappe.get_doc("Employee", get_employee.message.name)
             if employee.enrolled:
-                return response(message=f"Employee <b>{employee.employee_name}</b> is enrolled on the mobile app.", status_code=200, data={'enrolled':True}, error=None)
-            return response(message=f"Employee <b>{employee.employee_name}</b> is not enrolled.", status_code=200, data={'enrolled':False}, error=None)
+                return response(message="Employee is enrolled on the mobile app.", status_code=200, data={'enrolled':True}, error=None)
+            return response(message="Employee is not enrolled.", status_code=200, data={'enrolled':False}, error=None)
         else:
             return response(message=get_employee.message, status_code=get_employee.http_status_code, data={'status':False}, error=None)
     except Exception as e:
@@ -186,7 +186,7 @@ def update_employee(employee_id, field, value):
     except Exception as e:
         return response(message=str(e), status_code=200, data={'status':False}, error=str(e))
 
-@frappe.whitelist(allow_guest=True)
+
 def get_employee_by_id(employee_id):
     """
     Get employee pk by employee id

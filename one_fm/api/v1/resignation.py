@@ -127,7 +127,7 @@ def create_resignation(
             "designation": emp.get("designation"),
             "project_allocation": emp.get("project"),
             "employment_type": emp.get("employment_type"),
-            "resignation_letter_date": rel_date,
+            "resignation_letter_date": init_date,
         })
 
         doc.insert(ignore_permissions=True)

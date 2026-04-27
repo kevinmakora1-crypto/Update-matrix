@@ -255,3 +255,148 @@ def set_password(employee_user_id, new_password, tmp_id=None, otp=None):
 		return response("Success", 200, message)
 	except Exception as e:
 		return response("Error", 500, {}, str(e))
+
+@frappe.whitelist(allow_guest=True)
+def forgot_password(employee_id: str = None, otp_source: str = None, is_new: int = 0) -> dict:
+	"""Sends an OTP to mobile number assosciated with user.	
+
+	Args:
+		employee_id (str, optional): Employee ID of the user.
+		otp_source (str, optional): OTP method to be used => sms/email/whatsapp.
+
+	Returns:
+		response (dict): {
+			message (str): Brief message indicating the response.
+			data (str): Password reset instructions sent via the otp source.
+			error (str)[Optional]: Any error response provided by server. 
+		}
+	"""
+
+	if not employee_id:
+		return response("Bad Request", 400, None, "Please enter your Employee ID.")
+
+	if not otp_source:
+		return response("Bad Request", 400, None, "Please select an OTP source (SMS, Email, or WhatsApp).")
+
+	if not isinstance(employee_id, str):
+		return response("Bad Request", 400, None, "Invalid Employee ID format. Please enter a valid value.")
+
+	if not isinstance(otp_source, str):
+		return response("Bad Request", 400, None, "Invalid OTP source format. Please select a valid option.")
+	
+	formatted_otp_source = otp_source.lower()
+
+	if formatted_otp_source not in ["sms", "email", "whatsapp"]:
+		return response("Bad Request", 400, None, "Invalid OTP source. OTP source must be either 'sms', 'email' or 'whatsapp'.")
+	
+	try:
+		employee_user_id =  frappe.get_value("Employee", {'employee_id': employee_id}, 'user_id')
+		
+		if not employee_user_id:
+			return response("Bad Request", 404, None, "No account found for employee ID {employee_id}. Please check and try again.".format(employee_id=employee_id))
+		
+		# Check for phone number if otp source is 'sms' or 'whatsapp'
+		if formatted_otp_source in ("sms", "whatsapp"):
+			target_user = frappe.db.get_value('User', employee_user_id, ['phone', 'mobile_no'], as_dict=1)
+			phone = target_user.mobile_no or target_user.phone
+
+			if not phone:
+				return response("Bad Request", 400, None, "No phone number found for user {user}.".format(user=employee_user_id))
+		
+		otp_secret = get_otpsecret_for_(employee_user_id)
+		token = int(pyotp.TOTP(otp_secret).now())
+		tmp_id = frappe.generate_hash(length=8)
+		cache_2fa_data(employee_user_id, token, otp_secret, tmp_id)
+		
+		if formatted_otp_source == "sms":
+			verification_obj = process_2fa_for_sms(employee_user_id, token, otp_secret)
+			
+		elif formatted_otp_source == "email":
+			verification_obj = process_2fa_for_email(employee_user_id, token, otp_secret)
+			
+		elif formatted_otp_source == "whatsapp":
+			verification_obj = process_2fa_for_whatsapp(employee_user_id, token, otp_secret)
+		
+		password_token = frappe.get_doc({
+			"doctype":"Password Reset Token",
+			"user":employee_user_id,
+			"status": 'Inactive',
+			"temp_id":tmp_id,
+			"new_password": 1 if is_new else 0
+		}).insert(ignore_permissions=True)
+
+		result = {
+			"message": "Password reset instructions sent via {otp_source}".format(otp_source=otp_source),
+			"temp_id": tmp_id
+		}
+
+		return response("Success", 201, result)
+	
+	except Exception as error:
+		frappe.log_error(title="API Forgot password", message=frappe.get_traceback())
+		return response("Internal Server Error", 500, None, error)
+
+@frappe.whitelist(allow_guest=True)
+def verify_otp(otp, temp_id):
+	"""
+	verifies the OTP entered by the employee
+
+	params
+	otp
+	temp_id
+
+
+	returns
+	status of the OTP entered 
+	"""
+	try:
+		login_manager = frappe.local.login_manager
+		check_otp = confirm_otp_token(login_manager, otp, temp_id)
+		#  get password reset
+		password_token = frappe.db.get_value(
+			"Password Reset Token",
+			{"temp_id":temp_id}, 
+			['name', 'status', 'expiration_time'],
+			as_dict=1
+		)
+		if check_otp:
+			frappe.db.set_value("Password Reset Token", {"temp_id":temp_id}, "status", "Active")
+			return response ("success", 200, {
+				"password_token":password_token.name,
+				"message":"OTP verified successfully!"})
+		frappe.db.set_value("Password Reset Token", {"temp_id":temp_id}, "status", "Revoked")
+		return response("Error", 400, {}, "Incorrect OTP. Please check and enter the correct code.")
+	except Exception as e:
+		response("Error", 500, {}, str(e) or "OTP verification failed!")
+
+@frappe.whitelist(allow_guest=True)
+def change_password(employee_id, new_password, password_token):
+	"""
+	Params: 
+	Employee ID: The ID of the employee
+	new_password: new password to update
+	password_token: will be used to verify the password reset and user
+	"""
+	try:
+		employee_user = frappe.get_value("Employee", {'employee_id':employee_id}, ["user_id"])
+		password_token_info = frappe.db.get_value(
+			"Password Reset Token",
+			{"name":password_token}, 
+			['name', 'status', 'expiration_time', 'user', 'new_password'],
+			as_dict=1
+		)
+		if (employee_user!=password_token_info.user):
+			return response ("Error", 400, {}, "Password reset failed. The user details do not match.")
+		elif password_token_info.status != "Active":
+			return response ("Error", 400, {}, "Your password reset token has expired. Please request a new one.")
+
+		_update_password(employee_user, new_password)
+		frappe.db.set_value("Password Reset Token", password_token, "status", "Revoked")
+		if password_token_info.new_password:
+			frappe.db.set_value("Employee", {"employee_id":employee_id}, "registered", 1)
+		return response ("Success", 200, {
+			"message": "Password reset successful! Please login with your new password."
+		}, "")
+	except Exception as e:
+		frappe.log_error(title="API Change password", message=frappe.get_traceback())
+		return response ("Error", 500, {}, str(e))

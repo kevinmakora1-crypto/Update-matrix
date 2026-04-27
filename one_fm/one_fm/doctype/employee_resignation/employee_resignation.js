@@ -274,8 +274,8 @@ frappe.ui.form.on('Employee Resignation Item', {
         let row = locals[cdt][cdn];
         
         if (row.employee) {
-            frappe.db.get_value('Employee', row.employee, ['project', 'department', 'designation', 'site', 'employment_type', 'shift', 'custom_operations_role_allocation', 'employee_name'])
-                .then(r => {
+            frappe.db.get_value('Employee', row.employee, ['project', 'department', 'designation', 'site', 'employment_type', 'shift', 'custom_operations_role_allocation', 'employee_name', 'reports_to'])
+                .then(async r => {
                     let d = r.message;
                     if (d) {
                     	// Validation: Profile completeness check
@@ -310,37 +310,31 @@ frappe.ui.form.on('Employee Resignation Item', {
                         // Automatically fetch Supervisor (Priority: Line Manager -> Site Supervisor)
                         let supervisor_found = false;
                         if (d.reports_to) {
-                            frappe.db.get_value('Employee', d.reports_to, 'user_id')
-                                .then(user_data => {
-                                    if (user_data && user_data.message && user_data.message.user_id) {
-                                        frm.set_value('supervisor', user_data.message.user_id);
-                                        supervisor_found = true;
-                                    }
-                                });
+                            let user_data = await frappe.db.get_value('Employee', d.reports_to, 'user_id');
+                            if (user_data && user_data.message && user_data.message.user_id) {
+                                frm.set_value('supervisor', user_data.message.user_id);
+                                supervisor_found = true;
+                            }
                         }
 
                         if (d.site) {
-                            frappe.db.get_value('Operations Site', d.site, ['site_supervisor', 'operations_manager'])
-                                .then(site_data => {
-                                    if (site_data && site_data.message) {
-                                        let ops_mgr = site_data.message.operations_manager;
-                                        let site_sup_emp = site_data.message.site_supervisor;
-                                        
-                                        if (ops_mgr) {
-                                            frm.set_value('operations_manager', ops_mgr);
-                                        }
-                                        
-                                        // Only set site supervisor if line manager (reports_to) was not found
-                                        if (site_sup_emp && !supervisor_found) {
-                                            frappe.db.get_value('Employee', site_sup_emp, 'user_id')
-                                                .then(user_data => {
-                                                    if (user_data && user_data.message && user_data.message.user_id) {
-                                                        frm.set_value('supervisor', user_data.message.user_id);
-                                                    }
-                                                });
-                                        }
+                            let site_data = await frappe.db.get_value('Operations Site', d.site, ['site_supervisor', 'operations_manager']);
+                            if (site_data && site_data.message) {
+                                let ops_mgr = site_data.message.operations_manager;
+                                let site_sup_emp = site_data.message.site_supervisor;
+                                
+                                if (ops_mgr) {
+                                    frm.set_value('operations_manager', ops_mgr);
+                                }
+                                
+                                // Only set site supervisor if line manager (reports_to) was not found
+                                if (site_sup_emp && !supervisor_found) {
+                                    let user_data = await frappe.db.get_value('Employee', site_sup_emp, 'user_id');
+                                    if (user_data && user_data.message && user_data.message.user_id) {
+                                        frm.set_value('supervisor', user_data.message.user_id);
                                     }
-                                });
+                                }
+                            }
                         }
                         
                         // Validate live Project AND Designation mismatch

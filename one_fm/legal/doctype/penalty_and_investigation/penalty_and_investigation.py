@@ -30,10 +30,6 @@ class PenaltyAndInvestigation(Document):
 			if not self.hr_remarks:
 				frappe.throw(_("HR Remarks are required before moving to Pending GM Decision"))
 
-		if old_state_trimmed == "Pending Legal Investigation" and curr_state_trimmed == "Pending HR Review":
-			if not self.employee_rejection_remarks:
-				frappe.throw(_("Employee Rejection Remarks are required when moving from Pending Legal Investigation to Pending HR Review"))
-
 	def validate_duplicate_penalty(self):
 		if not self.employee or not self.applied_penalty_code or not self.incident_date:
 			return

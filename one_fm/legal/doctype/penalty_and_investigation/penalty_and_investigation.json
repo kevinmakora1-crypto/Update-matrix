@@ -252,10 +252,11 @@
    "options": "Employee"
   },
   {
+   "fetch_from": "workflow_state",
    "fieldname": "penalty_status",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "label": "Penalty Status",
-   "options": "workflow state"
+   "read_only": 1
   },
   {
    "fieldname": "section_break_waiv",

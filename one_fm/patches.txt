@@ -364,12 +364,12 @@ one_fm.patches.v15_0.add_assignment_rule_client_interview_shortlist_pending_oper
 one_fm.patches.v15_0.add_hd_ticket_type_custom_field #2026-04-05
 one_fm.patches.v15_0.add_assignment_rule_process_change_request_business_analyst #2026-04-05
 one_fm.patches.v15_0.setup_scaffold_matrix #2026-04-08
-one_fm.patches.v15_0.add_subcontract_staff_attendance_workflow
+one_fm.patches.v15_0.add_subcontract_staff_attendance_workflow #2026-04-27 #2
 one_fm.patches.v15_0.add_employee_subcontractor_name
 one_fm.patches.v15_0.resync_matrix_layout #2026-04-09
 one_fm.patches.v15_0.remove_pathfinder_log_workflow #2026-04-09
-one_fm.patches.v15_0.add_assignment_rule_subcontract_ops_supervisor #2026-04-12
-one_fm.patches.v15_0.add_assignment_rule_subcontract_ops_manager #2026-04-12
+one_fm.patches.v15_0.add_assignment_rule_subcontract_ops_supervisor #2026-04-27 #2
+one_fm.patches.v15_0.add_assignment_rule_subcontract_project_manager #2026-04-27 #2
 one_fm.patches.v15_0.add_assignment_rule_subcontract_finance_manager #2026-04-12
 one_fm.patches.v15_0.add_assignment_rule_subcontract_subcontractor #2026-04-12
 one_fm.patches.v15_0.add_subcontractor_contracts_workflow #2026-04-12
@@ -383,3 +383,4 @@ one_fm.patches.v15_0.add_assignment_rule_recruiter_visa_request
 one_fm.patches.v15_0.add_assignment_rule_groperator_visa_request
 one_fm.patches.v15_0.add_assignment_rule_grdmanager_visa_request
 one_fm.patches.v15_0.setup_dmarc_process_task #2026-04-26
+one_fm.patches.v15_0.update_purchase_invoice_property_setter #3

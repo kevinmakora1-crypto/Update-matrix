@@ -144,9 +144,9 @@ def create_resignation(
             row = doc.employees[0]
             handle_attachment_internal(doc, row, att_data, "resignation_letter")
 
-        # Step 3: Advance to Pending Supervisor now that the letter is saved
+        # Step 3: Advance using the configured workflow transition now that the letter is saved
         from frappe.model.workflow import apply_workflow
-        apply_workflow(doc, "Submit to Supervisor")
+        apply_workflow(doc, "Submit to Offboarding Officer")
         frappe.db.commit()
         return {"status": "success", "message": "Resignation submitted successfully", "name": doc.name}
 

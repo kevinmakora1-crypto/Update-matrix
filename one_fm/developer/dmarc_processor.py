@@ -51,30 +51,27 @@ def fetch_and_process_dmarc_reports():
 		# Select Inbox
 		mail.select("INBOX")
 		
-		# Search for emails from the last 30 days
-		date_str = (datetime.now() - timedelta(days=30)).strftime("%d-%b-%Y")
+		# Search for DMARC emails from the last 7 days using server-side SUBJECT filter
+		date_str = (datetime.now() - timedelta(days=7)).strftime("%d-%b-%Y")
 		
-		result, data = mail.search(None, f'(SINCE "{date_str}")')
-		
-		if result != "OK":
-			result_data["status"] = "Error"
-			result_data["error"] = "Failed to search emails."
+		# IMAP server-side search: only fetch emails with "report" or "dmarc" in subject
+		dmarc_ids = set()
+		for keyword in ("report", "dmarc"):
+			result, data = mail.search(None, f'(SINCE "{date_str}" SUBJECT "{keyword}")')
+			if result == "OK" and data[0]:
+				dmarc_ids.update(data[0].split())
+
+		if not dmarc_ids:
 			return result_data
 
-		msg_ids = data[0].split()
-		
-		for num in reversed(msg_ids):
+		for num in sorted(dmarc_ids, reverse=True):
 			result, msg_data = mail.fetch(num, '(RFC822)')
 			if result != "OK":
 				continue
 				
 			raw_email = msg_data[0][1]
 			msg = email.message_from_bytes(raw_email)
-			subject = msg.get("Subject", "")
-			subject_lower = subject.lower()
-			
-			if "report" not in subject_lower and "dmarc" not in subject_lower:
-				continue
+
 				
 			for part in msg.walk():
 				if part.get_content_maintype() == "multipart":

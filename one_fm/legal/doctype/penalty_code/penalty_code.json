@@ -79,7 +79,7 @@
  "module": "Legal",
  "name": "Penalty Code",
  "naming_rule": "By \"Naming Series\" field",
- "owner": "c.chukwu@one-fm.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,

@@ -188,7 +188,7 @@ def extend_resignation(
                 filters={"employee": employee_name, "parenttype": "Employee Resignation"},
                 fields=["parent"], order_by="creation desc"
             )
-            TERMINAL = {"Resigned", "Cancelled", "Resignation Withdrawn"}
+            TERMINAL = {"Resigned", "Cancelled", "Resignation Withdrawn", "Withdrawn"}
             for item in items:
                 d = frappe.get_doc("Employee Resignation", item.parent)
                 if d.workflow_state not in TERMINAL:
@@ -278,7 +278,7 @@ def withdraw_resignation(
         active_doc = None
         for item in items:
             d = frappe.get_doc("Employee Resignation", item.parent)
-            if d.workflow_state not in ("Resigned", "Cancelled", "Resignation Withdrawn"):
+            if d.workflow_state not in ("Resigned", "Cancelled", "Resignation Withdrawn", "Withdrawn"):
                 active_doc = d
                 break
 

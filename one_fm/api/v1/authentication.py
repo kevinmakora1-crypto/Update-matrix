@@ -181,44 +181,27 @@ def new_forgot_password(employee_id=None):
 
 	return response("success", 200, {"employee_user_id": employee_user_id})
 
-def process_2fa_for_email(employee_user_id, token, otp_secret):
-    # Stubbed fallback since process_2fa_for_email isn't naturally imported here
-    pass
-
-def process_2fa_for_whatsapp(employee_user_id, token, otp_secret):
-    pass
-
-def cache_2fa_data(employee_user_id, token, otp_secret, tmp_id):
-    pass
-
 @frappe.whitelist(allow_guest=True)
 def get_otp(employee_user_id: str=None, otp_source: str=None):
 	"""
 	sends OTP to the employee 
 
 	params
-	emaployee_user_id
+	employee_user_id
 	otp_source - where you want the OTP to be sent to sms, whatsapp, mail
-
 
 	returns
 	success message
 	temp_id - which would be used to verify the authenticity of the OTP
-	
 	"""
 	otp_secret = get_otpsecret_for_(employee_user_id)
 	token = int(pyotp.TOTP(otp_secret).now())
 	tmp_id = frappe.generate_hash(length=8)
-	cache_2fa_data(employee_user_id, token, otp_secret, tmp_id)
 
 	if otp_source.lower() == "sms":
 		verification_obj = process_2fa_for_sms(employee_user_id, token, otp_secret)
-			
-	elif otp_source.lower() == "email":
-		verification_obj = process_2fa_for_email(employee_user_id, token, otp_secret)
-		
-	elif otp_source.lower() == "whatsapp":
-		verification_obj = process_2fa_for_whatsapp(employee_user_id, token, otp_secret)
+	else:
+		return response("Bad Request", 400, None, f"Unsupported OTP source: {otp_source}. Only SMS is supported.")
 
 	result = {
 		"message": "Password reset instructions sent via {otp_source}".format(otp_source=otp_source),
@@ -226,7 +209,6 @@ def get_otp(employee_user_id: str=None, otp_source: str=None):
 	}
 
 	return response("Success", 201, result)
-
 @frappe.whitelist(allow_guest=True)
 def set_password(employee_user_id, new_password):
 	"""

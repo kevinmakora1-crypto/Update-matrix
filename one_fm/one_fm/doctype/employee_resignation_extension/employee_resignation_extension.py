@@ -57,7 +57,11 @@ class EmployeeResignationExtension(Document):
                 and self.workflow_state == "Approved"
             ):
                 if not self.extended_relieving_date:
-                    frappe.throw("Extended Relieving Date is mandatory")
+                    from frappe import _
+                    frappe.throw(
+                        _("Extended Relieving Date is mandatory."),
+                        title=_("Missing Extended Relieving Date")
+                    )
                     
                 # 1. Update Employee Resignation parent Doc
                 if self.employee_resignation:

@@ -372,6 +372,8 @@ def correct_resignation_date_app(
             frappe.throw("new_date (relieving date) is required", frappe.ValidationError)
 
         doc = frappe.get_doc("Employee Resignation", resignation_id)
+        if doc.employees:
+            verify_employee_authorization(doc.employees[0].employee)
 
         if doc.workflow_state != "Pending Relieving Date Correction":
             frappe.throw(
@@ -431,6 +433,7 @@ def get_my_active_resignation(employee_id=None, **kwargs):
     employee_name = resolve_employee_name(input_id)
     if not employee_name:
         return None
+    verify_employee_authorization(employee_name)
 
     EMPLOYEE_ACTION_STATES = ["Pending Relieving Date Correction", "Draft"]
     TERMINAL_STATES = {"Resigned", "Cancelled", "Withdrawn", "Resignation Withdrawn"}
@@ -478,6 +481,7 @@ def get_all_my_resignations(employee_id=None, **kwargs):
     employee_name = resolve_employee_name(input_id)
     if not employee_name:
         return []
+    verify_employee_authorization(employee_name)
 
     seen = set()
     items = frappe.get_all(
@@ -512,6 +516,7 @@ def get_employee_supervisor(employee_id=None, **kwargs):
     employee_name = resolve_employee_name(input_id)
     if not employee_name:
         return {}
+    verify_employee_authorization(employee_name)
 
     approver_name = get_approver(employee_name)
     if not approver_name:

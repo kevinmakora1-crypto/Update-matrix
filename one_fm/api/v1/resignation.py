@@ -29,6 +29,7 @@ def verify_employee_authorization(employee_name):
 
     employee_user = frappe.db.get_value("Employee", employee_name, "user_id")
     if frappe.session.user != employee_user:
+        frappe.log_error(f"AUTH FAIL: session_user={frappe.session.user}, employee_user={employee_user}", "AUTH_DEBUG")
         frappe.throw("Not authorized to perform this action for this employee.", frappe.PermissionError)
 
 
@@ -166,7 +167,7 @@ def create_resignation(
 
         # Step 3: Advance using the configured workflow transition now that the letter is saved
         from frappe.model.workflow import apply_workflow
-        apply_workflow(doc, "Submit to Offboarding Officer")
+        apply_workflow(doc, "Submit to Supervisor")
         frappe.db.commit()
         return {"status": "success", "message": "Resignation submitted successfully", "name": doc.name}
 

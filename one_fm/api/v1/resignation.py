@@ -51,7 +51,14 @@ def handle_attachment_internal(doc, row, attachment_data, field_name):
                 file_name, content, doc.doctype, doc.name,
                 is_private=1, folder="Home/Attachments"
             )
-            frappe.db.set_value(row.doctype, row.name, field_name, saved_file.file_url)
+            file_url = saved_file.file_url
+            frappe.db.set_value(row.doctype, row.name, field_name, file_url)
+            # Keep the in-memory row in sync with the DB so any subsequent
+            # validations/workflow actions using the current doc see the attachment.
+            if hasattr(row, "set"):
+                row.set(field_name, file_url)
+            else:
+                setattr(row, field_name, file_url)
         except Exception as e:
             frappe.log_error(f"Attachment Save Error for {doc.doctype} {doc.name}", frappe.get_traceback())
             frappe.throw(f"Failed to save attachment {file_name}: {str(e)}", frappe.ValidationError)

@@ -1344,6 +1344,23 @@ function render_roster(res, page) {
 		let is_client_event = false;
 		let is_medical_appointment = false;
 
+		// Pre-scan employee's records to determine actual_shift and if they have any relieving days
+		let employee_actual_shift = null;
+		let employee_has_relieving_days = false;
+		for (let date_key_scan in employees_data[employee_key]) {
+			let scan_records = employees_data[employee_key][date_key_scan];
+			if (scan_records && scan_records[0]) {
+				if (!employee_actual_shift && scan_records[0].actual_shift) {
+					employee_actual_shift = scan_records[0].actual_shift;
+				}
+				if (scan_records[0].actual_shift && scan_records[0].shift &&
+					scan_records[0].actual_shift !== scan_records[0].shift) {
+					employee_has_relieving_days = true;
+				}
+			}
+			if (employee_actual_shift && employee_has_relieving_days) break;
+		}
+
 		while (current_day_iter <= end_moment_iter) {
 			let sch = ``;
 			let date_key = current_day_iter.format("YYYY-MM-DD");
@@ -1358,7 +1375,7 @@ function render_roster(res, page) {
 			if (employees_data[employee_key][date_key] && employees_data[employee_key][date_key].length > 0) {
 				for (let k = 0; k < employees_data[employee_key][date_key].length; k++) {
 					let record = employees_data[employee_key][date_key][k];
-					let { employee, date, operations_role, post_abbrv, employee_availability, shift, start_datetime, end_datetime, start_time, end_time, roster_type, attendance, day_off_ot, leave_type, leave_application, event_location } = record;
+					let { employee, date, operations_role, post_abbrv, employee_availability, shift, start_datetime, end_datetime, start_time, end_time, roster_type, attendance, day_off_ot, leave_type, leave_application, event_location, actual_site, client_event } = record;
 					let shift_start = start_time ? moment(start_time, "HH:mm").format("LT") : moment(start_datetime, "YYYY-MM-DD HH:mm:ss").format("LT");
 					let shift_end = end_time ? moment(end_time, "HH:mm").format("LT") : moment(end_datetime, "YYYY-MM-DD HH:mm:ss").format("LT");
 
@@ -1466,7 +1483,11 @@ function render_roster(res, page) {
 							tooltiptext += `${leave_application}<br>${leave_type}`;
 							abbrv += `${abbr_map[attendance]}<br>`;
 						} else if (attendance && !employee_availability) {
-							tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}`;
+							if (!shift && client_event) {
+								tooltiptext += `${roster_type}:<br>${client_event}<br>Start: ${shift_start}<br>End: ${shift_end}`;
+							} else {
+								tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}`;
+							}
 							abbrv += `${abbr_map[attendance]}<br>`;
 						} else if (employee_availability && !post_abbrv) {
 							tooltiptext = ``;
@@ -1475,7 +1496,11 @@ function render_roster(res, page) {
 								tooltiptext += `Client Event<br>Event Location: ${event_location}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
 							}
 						} else {
-							tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
+							if (!shift && client_event) {
+								tooltiptext += `${roster_type}:<br>${client_event}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
+							} else {
+								tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
+							}
 							abbrv += `${post_abbrv}<br>`;
 						}
 					} else {
@@ -1486,7 +1511,11 @@ function render_roster(res, page) {
 						} else {
 							abbrv += `${post_abbrv}<br>`;
 						}
-						tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
+						if (!shift && client_event) {
+							tooltiptext += `${roster_type}:<br>${client_event}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
+						} else {
+							tooltiptext += `${roster_type}:<br>${shift}<br>Start: ${shift_start}<br>End: ${shift_end}<br>`;
+						}
 					}
 				}
 			}
@@ -1502,11 +1531,29 @@ function render_roster(res, page) {
 							data-selectid="${data_selectid}">EX<span class="customtooltiptext">Exited</span></div>
 					</td>`;
 			} else if (!data_selectid && !data_ot) {
-				sch = `
-					<td class="${todayClass}">
-						<div class="${moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden"} tablebox borderbox d-flex justify-content-center align-items-center so"
-							data-selectid="${employee}|${date_key}"></div>
-					</td>`;
+				let current_view_shift = page.filters ? page.filters.shift : null;
+				let is_relieving_grid = false;
+				if (current_view_shift && employee_actual_shift && employee_actual_shift !== current_view_shift) {
+					// Viewing by shift: employee's home shift differs from the filtered shift
+					is_relieving_grid = true;
+				} else if (!current_view_shift && employee_has_relieving_days) {
+					// Viewing by site (no shift filter): employee has relieving days this month
+					is_relieving_grid = true;
+				}
+				if (is_relieving_grid) {
+					sch = `
+						<td class="${todayClass}">
+							<div class="tablebox d-flex justify-content-center align-items-center so"
+								style="background-color: #EAEAEA;"
+								data-selectid="${employee}|${date_key}">NR</div>
+						</td>`;
+				} else {
+					sch = `
+						<td class="${todayClass}">
+							<div class="${moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden"} tablebox borderbox d-flex justify-content-center align-items-center so"
+								data-selectid="${employee}|${date_key}"></div>
+						</td>`;
+				}
 			} else if (is_medical_appointment) {
 				let tooltip_html = tooltiptext ? `<span class="customtooltiptext ${bgclass}">${tooltiptext}</span>` : "";
 				let hoverClass = is_medical_appointment ? "forbidden" : (moment().isBefore(current_day_iter) ? "hoverselectclass" : "forbidden");
@@ -2995,12 +3042,12 @@ function dayoff(page) {
 			{
 				"label": "Reliever", "fieldname": "reliever", "fieldtype": "Link", "options": "Employee",
 				get_query: function () {
+					let excluded = employees.map(e => e.employee);
 					return {
+						"query": "one_fm.one_fm.page.roster.roster.get_relievers_query",
 						"filters": {
-							"custom_is_reliever": 1,
-							"status": ["in", ["Active"]]
-						},
-						"page_length": 9999
+							"excluded_employees": JSON.stringify(excluded)
+						}
 					};
 				},
 				onchange: function () {

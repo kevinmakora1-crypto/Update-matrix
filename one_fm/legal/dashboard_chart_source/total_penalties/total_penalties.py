@@ -28,7 +28,7 @@ def get(chart_name=None, chart=None,heatmap_year=None, no_cache=None, filters=No
 
 	# Define states
 	cancelled_states = ["Cancelled by GM", "Cancelled by Supervisor"]
-	resolved_states = ["Rejected by Employee", "Marked as Completed"]
+	resolved_states = ["Employee Rejected", "Mark as Completed"]
 
 	# Base filters for current user and not cancelled
 	base_filters = [
@@ -77,7 +77,7 @@ def get(chart_name=None, chart=None,heatmap_year=None, no_cache=None, filters=No
 		d_total = 0
 		d_resolved = 0
 		for r in records:
-			if getdate(r.creation) <= getdate(date):
+			if getdate(r.issuance_date) <= getdate(date):
 				d_total += 1
 				if r.workflow_state in resolved_states:
 					d_resolved += 1

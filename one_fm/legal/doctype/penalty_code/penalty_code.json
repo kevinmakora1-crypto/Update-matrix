@@ -23,7 +23,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Penalty Code",
-   "options": "HR-PEN-.####\nHR-PEN-.####",
+   "options": "HR-PEN-.####",
    "reqd": 1
   },
   {

@@ -12,16 +12,10 @@ class TestApiUtils(FrappeTestCase):
                 "first_name": "Test",
                 "status": "Active"
             })
+            doc.flags.ignore_mandatory = True
             doc.insert(ignore_permissions=True)
             
     def test_resolve_active_user_no_leave(self):
         # User is not on leave, should return the same user
         user = resolve_active_user("Administrator")
         self.assertEqual(user, "Administrator")
-        
-    def test_resolve_active_user_cycle_prevention(self):
-        # Testing max depth / cycle
-        # We can mock frappe.db.exists and get_value but it's easier to just pass a non-existent user
-        # that doesn't trigger leave logic. 
-        # For actual leave routing, a more complex setup is required.
-        pass

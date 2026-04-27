@@ -384,9 +384,4 @@ one_fm.patches.v15_0.add_assignment_rule_recruiter_visa_request
 one_fm.patches.v15_0.add_assignment_rule_groperator_visa_request
 one_fm.patches.v15_0.add_assignment_rule_grdmanager_visa_request
 one_fm.patches.v15_0.setup_dmarc_process_task #2026-04-26
-one_fm.patches.v15_0.seed_app_services
-one_fm.patches.v15_0.set_candidate_title_fields
-one_fm.patches.v15_0.hide_ccp_columns
-one_fm.patches.v15_0.fix_sequence_type_list_view
-one_fm.patches.v15_0.adjust_ccp_column_widths
 one_fm.patches.v15_0.add_resignation_buttons

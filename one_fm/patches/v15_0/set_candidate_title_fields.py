@@ -11,9 +11,10 @@ def execute():
     ]
     
     for dt in doctypes:
-        doc = frappe.get_doc("DocType", dt)
-        # Use db.set_value to avoid writing JSON files to disk during production migrations
-        frappe.db.set_value("DocType", dt, {
+        if frappe.db.exists("DocType", dt):
+            doc = frappe.get_doc("DocType", dt)
+            # Use db.set_value to avoid writing JSON files to disk during production migrations
+            frappe.db.set_value("DocType", dt, {
             "title_field": "candidate_name" if not doc.title_field else doc.title_field,
             "search_fields": "candidate_name,passport_number",
             "show_title_field_in_link": 1

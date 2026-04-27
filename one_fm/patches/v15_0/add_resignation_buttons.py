@@ -24,18 +24,6 @@ def execute():
             d.insert(ignore_permissions=True)
             print(f"Created App Service: {s['name']}")
             
-    # Assign to Demo Worker 1
-    uas_list = frappe.get_all("User App Service", filters={"user": ["like", "%demo%"]})
-    for u in uas_list:
-        doc = frappe.get_doc("User App Service", u.name)
-        existing = [x.service for x in doc.service_detail]
-        changed = False
-        for s in services:
-            if s["name"] not in existing:
-                doc.append("service_detail", {"service": s["name"]})
-                changed = True
-        if changed:
-            doc.save()
-            print(f"Updated User App Service for {doc.user}")
+    # Removed demo assignment loop per PR review
     
     frappe.db.commit()

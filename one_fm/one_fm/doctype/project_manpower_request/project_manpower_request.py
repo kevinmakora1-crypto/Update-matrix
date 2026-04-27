@@ -143,7 +143,7 @@ class ProjectManpowerRequest(Document):
 					"name": self.name,
 					"assign_to": [recruiter],
 					"description": _("Assigned for Recruitment processing"),
-				})
+				}, ignore_permissions=True)
 			except Exception as e:
 				frappe.log_error(
 					message=f"Error assigning recruiter for {self.name}: {str(e)}",

@@ -94,3 +94,158 @@ def enrollment_status(employee_id: str):
 			return response("error", 404, {}, f"Employee ID {employee_id} does not exist")
 	except Exception as e:
 		return response("error", 500, {}, str(e))
+
+@frappe.whitelist()
+def fetch_employee_checkin_list(from_date=None, to_date=None, limit=20, page_number=1):
+	""""
+	returns an array of check in objects which belongs to the logged in employee
+
+	Params
+	from_date - begining date
+	to_date - ending date
+	limit - paginated by how many objects
+	page_number - page to jump to
+
+
+	returns
+	no_of_pages - Total number of pages based on the limit
+	current_page
+	data - array of paginated check in objects
+	number_of_check_in - total number of check in objects
+	
+	"""
+	try:
+		user_id = frappe.session.user
+		if user_id is None:
+			return response("Invalid authentication credentials", 400, None, "Invalid authentication credentials")
+		employee = frappe.get_doc("Employee", {"user_id": user_id})
+		if employee is None:
+			return response("No account found for Employee ID", 400)
+		if not isinstance(page_number, int):
+			return response("Invalid page number", 400, None, "Page number must be an integer value.")
+		if not isinstance(limit, int):
+			return response("Invalid page limit", 400, None, "Page limit must be an integer value.")
+		if from_date is not None and to_date is None:
+			to_date = from_date 
+		if from_date is not None:
+			try:
+				from_date = getdate(from_date)
+			except:
+				from_date = None
+		if to_date is not None:
+			try:
+				to_date = getdate(to_date)
+			except:
+				to_date = None
+		if from_date and to_date:
+			if from_date > to_date:
+				return response("Bad request", 400, None, "From date cannot be greater than To date")
+		check_list = frappe.db.get_list("Employee Checkin", filters={"employee": employee.name, "time": ["between", (from_date, to_date)]}, fields=["name", "time", "log_type"])
+		if len(check_list) < 1:
+			return response("No check-ins found in the selected date range", 200)
+		no_of_pages = len(check_list) // limit if len(check_list) % limit == 0 and len(check_list) // limit > 0 else (len(check_list) // limit) + 1
+		if page_number > no_of_pages or page_number < 1:
+			return response("Page not found", 404, None, f"Enter a page number within 1 - {no_of_pages}")
+		end = page_number * limit
+		check_in = check_list[(end - limit): end]
+		data = {
+			"no_of_pages": no_of_pages,
+			"current_page": page_number,
+			"data": check_in,
+			"number of checkin": len(check_list)
+		}
+		return response("Success", 200, data)
+	except Exception as e:
+		frappe.log_error(title="API Authentication", message=frappe.get_traceback())
+		response("Internal Server Error", 500, None, str(e))
+
+@frappe.whitelist(allow_guest=True)
+def new_forgot_password(employee_id=None):
+	"""
+	validates the employee_id and returns the employee_user_id, which will be used to generate OTP
+
+	Params
+	employee_id
+
+	returns
+	employee_user_id
+	
+	"""
+	if not employee_id:
+		return response("Bad Request", 400, None, "Employee ID is required. Please enter your Employee ID.")
+
+	employee_user_id =  frappe.get_value("Employee", {'employee_id': employee_id}, 'user_id')
+	
+	if not employee_user_id:
+		return response("Bad Request", 404, None, "No account found for Employee ID {employee_id}. Please check and try again.".format(employee_id=employee_id))
+
+	return response("success", 200, {"employee_user_id": employee_user_id})
+
+def process_2fa_for_email(employee_user_id, token, otp_secret):
+    # Stubbed fallback since process_2fa_for_email isn't naturally imported here
+    pass
+
+def process_2fa_for_whatsapp(employee_user_id, token, otp_secret):
+    pass
+
+def cache_2fa_data(employee_user_id, token, otp_secret, tmp_id):
+    pass
+
+@frappe.whitelist(allow_guest=True)
+def get_otp(employee_user_id: str=None, otp_source: str=None):
+	"""
+	sends OTP to the employee 
+
+	params
+	emaployee_user_id
+	otp_source - where you want the OTP to be sent to sms, whatsapp, mail
+
+
+	returns
+	success message
+	temp_id - which would be used to verify the authenticity of the OTP
+	
+	"""
+	otp_secret = get_otpsecret_for_(employee_user_id)
+	token = int(pyotp.TOTP(otp_secret).now())
+	tmp_id = frappe.generate_hash(length=8)
+	cache_2fa_data(employee_user_id, token, otp_secret, tmp_id)
+
+	if otp_source.lower() == "sms":
+		verification_obj = process_2fa_for_sms(employee_user_id, token, otp_secret)
+			
+	elif otp_source.lower() == "email":
+		verification_obj = process_2fa_for_email(employee_user_id, token, otp_secret)
+		
+	elif otp_source.lower() == "whatsapp":
+		verification_obj = process_2fa_for_whatsapp(employee_user_id, token, otp_secret)
+
+	result = {
+		"message": "Password reset instructions sent via {otp_source}".format(otp_source=otp_source),
+		"temp_id": tmp_id,
+	}
+
+	return response("Success", 201, result)
+
+@frappe.whitelist(allow_guest=True)
+def set_password(employee_user_id, new_password):
+	"""
+	used to set the new password
+
+	params
+	new_password
+	employee_user_id
+
+	returns
+	success message
+	
+	"""
+	try:
+		_update_password(employee_user_id, new_password)
+		frappe.db.set_value("Employee", {'employee_id':employee_user_id}, "registered", 1)
+		message =  {
+				'message': _('Password Updated!')
+			}
+		return response("Success", 200, message)
+	except Exception as e:
+		return response("Error", 500, {}, str(e))

@@ -1,6 +1,6 @@
 {
  "based_on": "incident_date",
- "chart_name": "Penaltie Applied This Year",
+ "chart_name": "Penalty Applied This Year",
  "chart_type": "Count",
  "creation": "2026-04-25 11:21:30.020813",
  "currency": "",
@@ -17,7 +17,7 @@
  "modified": "2026-04-26 11:21:22.714533",
  "modified_by": "c.akeru@one-fm.com",
  "module": "Legal",
- "name": "Penaltie Applied This Year",
+ "name": "Penalty Applied This Year",
  "number_of_groups": 0,
  "owner": "c.akeru@one-fm.com",
  "parent_document_type": "",

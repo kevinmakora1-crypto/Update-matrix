@@ -212,7 +212,6 @@ def extend_resignation(
         ext.owner = employee_user or frappe.session.user
         ext.employee_resignation = resignation_id
         ext.supervisor = supervisor or active_doc.supervisor
-        ext.reason = reason or "Extension requested by employee"
         # Ensure we only extract the date part (YYYY-MM-DD) if it's an ISO timestamp
         parsed_date = extended_date.split('T')[0] if isinstance(extended_date, str) else extended_date
         ext.extended_relieving_date = parsed_date

@@ -75,7 +75,7 @@ def user_login(employee_id, password):
 def enrollment_status(employee_id: str):
 	try:
 		if not employee_id:
-			return response("error", 404, "Employee ID is required")
+			return response("error", 404, None, "Employee ID is required")
 		employee = frappe.db.get_value(
 			'Employee', 
 			{'employee_id':employee_id} 

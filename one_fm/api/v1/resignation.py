@@ -148,7 +148,9 @@ def create_resignation(
             "resignation_letter_date": init_date,
         })
 
+        doc.flags.ignore_validate = True
         doc.insert(ignore_permissions=True)
+        doc.flags.ignore_validate = False
 
         # Step 2: Attach the letter (must happen after insert so the row has a name)
         if attachment:

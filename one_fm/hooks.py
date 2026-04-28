@@ -34,7 +34,6 @@ app_include_js = [
 		"/assets/one_fm/js/desk.js",
         "/assets/one_fm/js/showdown.min.js",
 		"/assets/one_fm/js/form_overrides/workflow_override.js",
-		"/assets/one_fm/js/form_overrides/form_save_toggle.js",
         "text_editor.bundle.js",
         "/assets/one_fm/js/workflow_banner.js"
 ]

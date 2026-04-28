@@ -30,25 +30,10 @@ class EmployeeResignationWithdrawal(Document):
 		if self.workflow_state == "Pending Supervisor":
 			old_doc = self.get_doc_before_save()
 			if not old_doc or old_doc.workflow_state != "Pending Supervisor":
-				recipients = set()
-				from frappe.utils.user import get_users_with_role
-				from one_fm.api.v1.utils import resolve_active_user
-				offboarding_officers = get_users_with_role("Offboarding Officer")
-				for user in offboarding_officers:
-					recipients.add(resolve_active_user(user))
-				
-				if recipients:
-					subject = _("Attention: Resignation Withdrawal Initiated - {0}").format(self.name)
-					message = _("A resignation withdrawal request <b>{0}</b> has been submitted to the supervisor. Please hold any offboarding processing for the involved employees.").format(self.name)
-					
-					from one_fm.processor import sendemail
-					sendemail(
-						recipients=list(recipients),
-						subject=subject,
-						message=message,
-						reference_doctype=self.doctype,
-						reference_name=self.name
-					)
+				subject = _("Attention: Resignation Withdrawal Initiated - {0}").format(self.name)
+				message = _("A resignation withdrawal request <b>{0}</b> has been submitted to the supervisor. Please hold any offboarding processing for the involved employees.").format(self.name)
+				from one_fm.one_fm.utils import notify_offboarding_officer
+				notify_offboarding_officer(self, subject, message)
 
 	def process_withdrawal_approval(self):
 		if not self.is_new():
@@ -134,8 +119,7 @@ class EmployeeResignationWithdrawal(Document):
 					# Step 4: Flag Parent Resignation if entirely withdrawn
 					if total_withdrawn_count >= total_in_batch:
 						# All employees withdrawn, mark parent workflow state as Resignation Withdrawn
-						if frappe.db.has_column("Employee Resignation", "workflow_state"):
-							resignation.db_set("workflow_state", "Withdrawn")
+						resignation.db_set("workflow_state", "Withdrawn")
 
 	def validate(self):
 		self.set_approver()

@@ -562,3 +562,77 @@ def delete_linked_schedules(field,value):
    
     frappe.db.sql(query)
     frappe.db.commit()
+
+
+def notify_offboarding_officer(doc, subject, message):
+    recipients = set()
+    from frappe.utils.user import get_users_with_role
+    from one_fm.one_fm.utils import resolve_active_user
+    offboarding_officers = get_users_with_role("Offboarding Officer")
+    for user in offboarding_officers:
+        recipients.add(resolve_active_user(user))
+    
+    if recipients:
+        from one_fm.processor import sendemail
+        sendemail(
+            recipients=list(recipients),
+            subject=subject,
+            message=message,
+            reference_doctype=doc.doctype,
+            reference_name=doc.name
+        )
+
+def clear_supervisor_assignment(doc):
+    if not doc.is_new():
+        old_doc = doc.get_doc_before_save()
+        if old_doc and old_doc.workflow_state == "Pending Supervisor" and doc.workflow_state != "Pending Supervisor":
+            if getattr(doc, "supervisor", None):
+                from frappe.desk.form.assign_to import remove
+                try:
+                    remove(doc.doctype, doc.name, doc.supervisor)
+                except Exception as e:
+                    frappe.log_error(str(e), "Clear Supervisor Assignment Error")
+
+def resolve_active_user(user_id, max_depth=5):
+    """
+    Resolves the target user. If the user is on leave today, transparently routes
+    to their designated Leave Application 'reliever'. Recursively handles chained leaves.
+    """
+    if not user_id:
+        return user_id
+
+    current_user = user_id
+    seen_users = {current_user}
+
+    for _ in range(max_depth):
+        employee = frappe.db.get_value("Employee", {"user_id": current_user, "status": "Active"}, "name")
+        if not employee:
+            break
+
+        today = frappe.utils.today()
+        active_leave = frappe.get_all(
+            "Leave Application",
+            filters={
+                "docstatus": 1,
+                "status": "Approved",
+                "employee": employee,
+                "from_date": ("<=", today),
+                "to_date": (">=", today)
+            },
+            fields=["custom_reliever_"],
+            limit=1
+        )
+
+        if not active_leave or not active_leave[0].custom_reliever_:
+            break
+
+        reliever_user = frappe.db.get_value("Employee", active_leave[0].custom_reliever_, "user_id")
+
+        if not reliever_user or reliever_user in seen_users:
+            break
+        
+        current_user = reliever_user
+        seen_users.add(current_user)
+
+    return current_user
+

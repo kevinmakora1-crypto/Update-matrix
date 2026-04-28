@@ -232,45 +232,4 @@ def verify_via_face_recogniton_service(url: str, data: dict, files: dict) -> tup
         return True, ""
     return False, "Facial Recogniton Service is currently available"
 
-def resolve_active_user(user_id, max_depth=5):
-    """
-    Resolves the target user. If the user is on leave today, transparently routes
-    to their designated Leave Application 'reliever'. Recursively handles chained leaves.
-    """
-    if not user_id:
-        return user_id
 
-    current_user = user_id
-    seen_users = {current_user}
-
-    for _ in range(max_depth):
-        employee = frappe.db.get_value("Employee", {"user_id": current_user, "status": "Active"}, "name")
-        if not employee:
-            break
-
-        today = frappe.utils.today()
-        active_leave = frappe.get_all(
-            "Leave Application",
-            filters={
-                "docstatus": 1,
-                "status": "Approved",
-                "employee": employee,
-                "from_date": ("<=", today),
-                "to_date": (">=", today)
-            },
-            fields=["custom_reliever_"],
-            limit=1
-        )
-
-        if not active_leave or not active_leave[0].custom_reliever_:
-            break
-
-        reliever_user = frappe.db.get_value("Employee", active_leave[0].custom_reliever_, "user_id")
-
-        if not reliever_user or reliever_user in seen_users:
-            break
-        
-        current_user = reliever_user
-        seen_users.add(current_user)
-
-    return current_user

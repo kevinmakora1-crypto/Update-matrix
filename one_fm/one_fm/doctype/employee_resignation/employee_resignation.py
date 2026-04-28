@@ -94,7 +94,7 @@ class EmployeeResignation(Document):
 			recipients.add(self.owner)
 			
 		from frappe.utils.user import get_users_with_role
-		from one_fm.api.v1.utils import resolve_active_user
+		from one_fm.one_fm.utils import resolve_active_user
 		
 		offboarding_officers = get_users_with_role("Offboarding Officer")
 		for user in offboarding_officers:
@@ -137,14 +137,6 @@ class EmployeeResignation(Document):
 
 	def before_save(self):
 		self.set_supervisor()
-		
-		# Enforce relieving_date explicitly for Supervisor before forwarding
-		if self.get("workflow_state") in ("Pending Operations Manager", "Approved"):
-			if not self.relieving_date:
-				frappe.throw(
-					_("Relieving Date is mandatory at this stage. The Supervisor must specify the final date before pushing to Operations Manager."),
-					title=_("Missing Relieving Date")
-				)
 
 		# Enforce Operations Manager and Offboarding Officer only during Managerial stages
 		state = self.get("workflow_state")

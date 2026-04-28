@@ -12,41 +12,17 @@ class EmployeeResignationExtension(Document):
         self.notify_offboarding_on_submission()
         
     def notify_offboarding_on_submission(self):
-        # Notify Offboarding Officer when state hits 'Pending Supervisor'
         if self.workflow_state == "Pending Supervisor":
             old_doc = self.get_doc_before_save()
             if not old_doc or old_doc.workflow_state != "Pending Supervisor":
-                recipients = set()
-                from frappe.utils.user import get_users_with_role
-                from one_fm.api.v1.utils import resolve_active_user
-                offboarding_officers = get_users_with_role("Offboarding Officer")
-                for user in offboarding_officers:
-                    recipients.add(resolve_active_user(user))
-                
-                if recipients:
-                    subject = _("Attention: Resignation Extension Initiated - {0}").format(self.name)
-                    message = _("A resignation extension request <b>{0}</b> has been submitted to the supervisor. Please hold any offboarding processing for the involved employees until this is finalized.").format(self.name)
-                    
-                    from one_fm.processor import sendemail
-                    sendemail(
-                        recipients=list(recipients),
-                        subject=subject,
-                        message=message,
-                        reference_doctype=self.doctype,
-                        reference_name=self.name
-                    )
+                subject = _("Attention: Resignation Extension Initiated - {0}").format(self.name)
+                message = _("A resignation extension request <b>{0}</b> has been submitted to the supervisor. Please hold any offboarding processing for the involved employees until this is finalized.").format(self.name)
+                from one_fm.one_fm.utils import notify_offboarding_officer
+                notify_offboarding_officer(self, subject, message)
 
     def clear_manual_assignments(self):
-        if not self.is_new():
-            old_doc = self.get_doc_before_save()
-            # Only remove the manually attached supervisor when moving out of the Supervisor state
-            if old_doc and old_doc.workflow_state == "Pending Supervisor" and self.workflow_state != "Pending Supervisor":
-                if self.supervisor:
-                    from frappe.desk.form.assign_to import remove
-                    try:
-                        remove(self.doctype, self.name, self.supervisor, ignore_permissions=True)
-                    except Exception:
-                        pass
+        from one_fm.one_fm.utils import clear_supervisor_assignment
+        clear_supervisor_assignment(self)
         
     def process_extension_approval(self):
         if not self.is_new():
@@ -57,7 +33,6 @@ class EmployeeResignationExtension(Document):
                 and self.workflow_state == "Approved"
             ):
                 if not self.extended_relieving_date:
-                    from frappe import _
                     frappe.throw(
                         _("Extended Relieving Date is mandatory."),
                         title=_("Missing Extended Relieving Date")
@@ -111,20 +86,18 @@ class EmployeeResignationExtension(Document):
         if approver_employee:
             approver_user = frappe.db.get_value("Employee", approver_employee, "user_id")
             if approver_user and frappe.db.exists("User", approver_user):
-                if frappe.db.has_column("Employee Resignation Extension", "supervisor"):
-                    self.supervisor = approver_user
+                self.supervisor = approver_user
             else:
-                if frappe.db.has_column("Employee Resignation Extension", "supervisor"):
-                    self.supervisor = None
+                self.supervisor = None
 
         # Set Operations Manager from the resignation document
         if self.employee_resignation:
             rsgn_om = frappe.db.get_value("Employee Resignation", self.employee_resignation, "operations_manager")
-            if rsgn_om and frappe.db.has_column("Employee Resignation Extension", "operations_manager"):
+            if rsgn_om:
                 self.operations_manager = rsgn_om
 
         # Set Offboarding Officer — first user with that role
-        if not self.get("offboarding_officer") and frappe.db.has_column("Employee Resignation Extension", "offboarding_officer"):
+        if not self.get("offboarding_officer"):
             from frappe.utils.user import get_users_with_role
             om_users = get_users_with_role("Offboarding Officer")
             if om_users:

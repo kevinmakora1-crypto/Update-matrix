@@ -84,3 +84,33 @@ const show_quotes = () => {
     }
   });
 }
+
+frappe.provide('one_fm.resignation');
+
+one_fm.resignation.view_exit_tab = function(employee_id) {
+    frappe.route_options = {"scroll_to": "exit"};
+    frappe.set_route('Form', 'Employee', employee_id).then(() => {
+        let ticks = 0;
+        let focus_tab = setInterval(() => {
+            ticks++;
+            if (frappe.get_route()[0] === "Form" && frappe.get_route()[1] === "Employee" && cur_frm && cur_frm.docname === employee_id && cur_frm.layout) {
+                try {
+                    cur_frm.scroll_to_field("exit");
+                } catch(e) {}
+                
+                if (cur_frm.fields_dict.exit && cur_frm.fields_dict.exit.$tab) {
+                    let $tab = cur_frm.fields_dict.exit.$tab;
+                    if (!$tab.hasClass("active") || !$tab.parent().hasClass("active")) {
+                        if (typeof $tab.tab === "function") {
+                            $tab.tab("show");
+                        }
+                        $tab[0].click();
+                    }
+                }
+            }
+            if (ticks > 15) {
+                clearInterval(focus_tab);
+            }
+        }, 100);
+    });
+};

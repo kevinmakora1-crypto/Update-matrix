@@ -4,7 +4,6 @@
 frappe.ui.form.on("Employee Resignation", {
 	onload: function(frm) {
 		let show_header = !frm.doc.__islocal && frm.doc.workflow_state && (!["Draft", ""].includes(frm.doc.workflow_state));
-		// frm.toggle_display("relieving_date", show_header);
 		
 		// Hide Operational Impact until Operations Manager stage
 		let show_ops_impact = ["Pending Operations Manager", "Approved"].includes(frm.doc.workflow_state);
@@ -13,7 +12,6 @@ frappe.ui.form.on("Employee Resignation", {
 
 	refresh: function (frm) {
 		let show_header = !frm.doc.__islocal && frm.doc.workflow_state && (!["Draft", ""].includes(frm.doc.workflow_state));
-		// frm.toggle_display("relieving_date", show_header);
 		
 		let show_ops_impact = ["Pending Operations Manager", "Approved"].includes(frm.doc.workflow_state);
 		frm.toggle_display("operational_impact_section", show_ops_impact);
@@ -95,49 +93,17 @@ frappe.ui.form.on("Employee Resignation", {
 		}
 
 		if (!frm.doc.__islocal && frm.doc.employees && frm.doc.employees.length > 0) {
-			let view_exit_tab = function(employee_id) {
-				frappe.route_options = {"scroll_to": "exit"};
-				frappe.set_route('Form', 'Employee', employee_id).then(() => {
-					let ticks = 0;
-					let focus_tab = setInterval(() => {
-						ticks++;
-						if (frappe.get_route()[0] === "Form" && frappe.get_route()[1] === "Employee" && cur_frm && cur_frm.docname === employee_id && cur_frm.layout) {
-							
-							// Trigger standard scroll mechanism which natively maps and activates Tab Breaks
-							try {
-								cur_frm.scroll_to_field("exit");
-							} catch(e) {}
-							
-							// Directly target the framework's internal tab link reference for Bulletproof v14/v15 Bootstrap triggering
-							if (cur_frm.fields_dict.exit && cur_frm.fields_dict.exit.$tab) {
-								let $tab = cur_frm.fields_dict.exit.$tab;
-								if (!$tab.hasClass("active") || !$tab.parent().hasClass("active")) {
-									if (typeof $tab.tab === "function") {
-										$tab.tab("show");
-									}
-									$tab[0].click();
-								}
-							}
-						}
-						// Secure the transition against Frappe's post-render jitter over 1.5 seconds
-						if (ticks > 15) {
-							clearInterval(focus_tab);
-						}
-					}, 100);
-				});
-			};
-
 			if (frm.doc.employees.length === 1) {
 				frm.remove_custom_button(__('Employee Exit Tab'), __('Employee Profiles'));
 				frm.add_custom_button(__('Employee Exit Tab'), function() {
-					view_exit_tab(frm.doc.employees[0].employee);
+					one_fm.resignation.view_exit_tab(frm.doc.employees[0].employee);
 				}, __('Employee Profiles'));
 			} else {
 				frm.doc.employees.forEach(row => {
 					let btn_label = row.employee_name || row.employee;
 					frm.remove_custom_button(btn_label, __('Employee Profiles'));
 					frm.add_custom_button(btn_label, function() {
-						view_exit_tab(row.employee);
+						one_fm.resignation.view_exit_tab(row.employee);
 					}, __('Employee Profiles'));
 				});
 			}

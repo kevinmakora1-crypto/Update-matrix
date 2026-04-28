@@ -122,8 +122,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Backlog\nPending Process Classification\nUpcoming\nActive\nOn Hold\nDeployed",
-   "read_only": 1
+   "options": "Backlog\nPending Process Classification\nUpcoming\nActive\nOn Hold\nDeployed"
   },
   {
    "fieldname": "hd_ticket",
@@ -237,7 +236,7 @@
    "link_fieldname": "pathfinder_log"
   }
  ],
- "modified": "2026-04-26 10:30:58.185714",
+ "modified": "2026-04-28 11:05:58.501850",
  "modified_by": "Administrator",
  "module": "One Fm",
  "name": "Pathfinder Log",

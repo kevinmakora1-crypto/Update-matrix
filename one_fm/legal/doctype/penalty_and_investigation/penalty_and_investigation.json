@@ -7,7 +7,6 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_pekz",
-  "naming_series",
   "issuer",
   "issuance_date",
   "employee",
@@ -96,9 +95,8 @@
   },
   {
    "fieldname": "reported_by",
-   "fieldtype": "Link",
-   "label": "Reported By",
-   "options": "User"
+   "fieldtype": "Data",
+   "label": "Reported By"
   },
   {
    "fetch_from": "employee.department",
@@ -240,12 +238,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "naming_series",
-   "fieldtype": "Select",
-   "label": "Series",
-   "options": "PEN-.MM-.YYYY-.#####"
-  },
-  {
    "fieldname": "issuer",
    "fieldtype": "Link",
    "label": "Issuer",
@@ -305,8 +297,8 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-26 14:07:13.578820",
- "modified_by": "c.akeru@one-fm.com",
+ "modified": "2026-04-27 20:30:34.195024",
+ "modified_by": "Administrator",
  "module": "Legal",
  "name": "Penalty And Investigation",
  "naming_rule": "Expression (old style)",

@@ -96,8 +96,7 @@
   {
    "fieldname": "reported_by",
    "fieldtype": "Data",
-   "label": "Reported By",
-   "options": "User"
+   "label": "Reported By"
   },
   {
    "fetch_from": "employee.department",

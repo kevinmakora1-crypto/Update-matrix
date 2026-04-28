@@ -3,6 +3,7 @@ frappe.ui.form.on("Penalty And Investigation", {
 		if (frm.is_new()) {
 			frm.set_value("issuance_date", frappe.datetime.get_today());
 			frm.set_value("incident_date", frappe.datetime.get_today());
+			frm.set_value("issuer", frappe.session.user);
 		}
 	},
 	refresh: function (frm) {

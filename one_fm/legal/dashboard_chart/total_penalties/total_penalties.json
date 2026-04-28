@@ -14,14 +14,18 @@
  "is_public": 1,
  "is_standard": 1,
  "last_synced_on": "2026-04-26 11:15:54.570377",
- "modified": "2026-04-26 11:20:30.071775",
- "modified_by": "c.akeru@one-fm.com",
+ "modified": "2026-04-28 09:11:02.413206",
+ "modified_by": "Administrator",
  "module": "Legal",
  "name": "Total Penalties",
  "number_of_groups": 0,
  "owner": "Administrator",
  "parent_document_type": "",
- "roles": [],
+ "roles": [
+  {
+   "role": "Employee"
+  }
+ ],
  "show_values_over_chart": 0,
  "source": "Total Penalties",
  "time_interval": "Yearly",

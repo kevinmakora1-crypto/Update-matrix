@@ -6,8 +6,7 @@ def run():
     # Update existing transition condition
     for t in doc.transitions:
         if t.action == "Accept and Forward to OM":
-            t.condition = 'frappe.db.get_value("Employee", doc.employee, "site") or frappe.db.get_value("Employee", doc.employee, "shift")'
-
+            t.condition = 'doc.project_allocation != "ONE FM - Head Office"'
     # Check if the corporate transition already exists
     exists = any(t.action == "Approve" and t.state == "Pending Supervisor" for t in doc.transitions)
     
@@ -18,7 +17,7 @@ def run():
             "next_state": "Approved",
             "allowed": "System Manager",
             "allowed_user_field": "supervisor",
-            "condition": 'not frappe.db.get_value("Employee", doc.employee, "site") and not frappe.db.get_value("Employee", doc.employee, "shift")'
+            "condition": 'doc.project_allocation == "ONE FM - Head Office"'
         })
         doc.save()
         frappe.db.commit()
@@ -39,7 +38,8 @@ def run():
             "state": "Pending Supervisor",
             "action": "Approve",
             "next_state": "Approved",
-            "allowed": "Employee",
+            "allowed": "System Manager",
+            "allowed_user_field": "supervisor",
             "condition": 'frappe.db.get_value("Employee Resignation", doc.employee_resignation, "project_allocation") == "ONE FM - Head Office"'
         })
     ext_wf.save()
@@ -55,7 +55,8 @@ def run():
             "state": "Pending Supervisor",
             "action": "Approve",
             "next_state": "Approved",
-            "allowed": "Employee",
+            "allowed": "System Manager",
+            "allowed_user_field": "supervisor",
             "condition": 'frappe.db.get_value("Employee Resignation", doc.employee_resignation, "project_allocation") == "ONE FM - Head Office"'
         })
     wdl_wf.save()

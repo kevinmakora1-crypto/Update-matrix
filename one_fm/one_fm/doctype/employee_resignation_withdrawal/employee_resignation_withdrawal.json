@@ -117,8 +117,8 @@
    "label": "Operations Manager",
    "options": "User",
    "reqd": 0,
-   "depends_on": "eval:!doc.is_corporate && !doc.__islocal && doc.workflow_state && doc.workflow_state !== 'Draft'",
-   "mandatory_depends_on": "eval:!doc.is_corporate && !doc.__islocal && doc.workflow_state && doc.workflow_state !== 'Draft'"
+   "depends_on": "eval:!doc.is_corporate && doc.workflow_state && (doc.workflow_state == 'Pending Operations Manager' || doc.workflow_state == 'Approved')",
+   "mandatory_depends_on": "eval:!doc.is_corporate && doc.workflow_state && (doc.workflow_state == 'Pending Operations Manager' || doc.workflow_state == 'Approved')"
   },
   {
    "fieldname": "offboarding_officer",

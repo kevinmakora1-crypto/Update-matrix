@@ -217,7 +217,7 @@ class EmployeeResignation(Document):
 						if not frappe.db.exists("File", {"attached_to_doctype": "Employee", "attached_to_name": row.employee, "file_url": row.resignation_letter}):
 							try:
 								from frappe.utils.file_manager import save_url
-								save_url(row.resignation_letter, file_name, "Employee", row.employee, "Home/Attachments", 0)
+								save_url(row.resignation_letter, file_name, "Employee", row.employee, "Home/Attachments", is_private=1)
 							except Exception as e:
 								frappe.log_error("Error attaching resignation file to Employee", str(e))
 					
@@ -279,7 +279,7 @@ class EmployeeResignation(Document):
 				})
 
 	def sync_status_to_employees(self):
-		status = self.workflow_state or _("Draft")
+		status = self.workflow_state or "Draft"
 		for row in self.get("employees", []):
 			if row.employee:
 				update_data = {

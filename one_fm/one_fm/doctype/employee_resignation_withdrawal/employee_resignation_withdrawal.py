@@ -15,8 +15,8 @@ class EmployeeResignationWithdrawal(Document):
 	def notify_offboarding_on_submission(self):
 		# Notify Offboarding Officer when state hits 'Pending Supervisor'
 		if self.workflow_state == "Pending Supervisor":
-			# Use a flag to avoid double-sending in the same session
-			if not getattr(self, "__notified_offboarding", False):
+			old_doc = self.get_doc_before_save()
+			if not old_doc or old_doc.workflow_state != "Pending Supervisor":
 				recipients = set()
 				from frappe.utils.user import get_users_with_role
 				offboarding_officers = get_users_with_role("Offboarding Officer")
@@ -24,7 +24,6 @@ class EmployeeResignationWithdrawal(Document):
 					recipients.add(user)
 				
 				if recipients:
-					self.__notified_offboarding = True
 					subject = _("Attention: Resignation Withdrawal Initiated - {0}").format(self.name)
 					message = _("A resignation withdrawal request <b>{0}</b> has been submitted to the supervisor. Please hold any offboarding processing for the involved employees.").format(self.name)
 					
@@ -55,7 +54,12 @@ class EmployeeResignationWithdrawal(Document):
 							
 							# A. Clear Relieving Date on the actual Employee profile
 							if row.employee:
-								frappe.db.set_value("Employee", row.employee, "relieving_date", None)
+								frappe.db.set_value("Employee", row.employee, {
+									"relieving_date": None,
+									"resignation_date": None,
+									"resignation_status": None,
+									"current_resignation": None
+								}, update_modified=False)
 								
 							# B. Mark the original Resignation row as Approved
 							if self.employee_resignation:
@@ -91,17 +95,15 @@ class EmployeeResignationWithdrawal(Document):
 							# Recalculate remaining quantities automatically
 							if hasattr(pmr, 'calculate_remaining_qty'):
 								pmr.calculate_remaining_qty()
-								# Only do this if you are SURE it runs in a system/background context
-								frappe.only_for("System Manager")
 								pmr.save(ignore_permissions=True)
 								
 								# Auto-close/set status if entirely withdrawn
 								if (pmr.remaining_qty or 0) == 0:
 									withdrawal_qty = sum((row.qty or 0) for row in pmr.get("fulfillment_actions", []) if row.action_type == "Resignation Withdrawal")
 									if withdrawal_qty >= (pmr.count or 0):
-										pmr.db_set("workflow_state", "Resignation Withdrawn")
+										pmr.db_set("workflow_state", "Withdrawn")
 										if frappe.db.has_column("Project Manpower Request", "status"):
-											pmr.db_set("status", "Resignation Withdrawn") # Sync legacy status if it exists
+											pmr.db_set("status", "Withdrawn") # Sync legacy status if it exists
 							
 							# Step 3: Simply notify the recruiter that a withdrawal occurred.
 							# We do NOT cancel the PMR here; the Recruiter will handle closure manually.

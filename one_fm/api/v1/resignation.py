@@ -29,12 +29,10 @@ def handle_attachment_internal(doc, row, attachment_data, field_name):
         try:
             attachment_data = json.loads(attachment_data)
         except Exception:
-            return
+            raise frappe.ValidationError(_("Invalid attachment payload. Expected valid JSON data."))
 
     file_name = attachment_data.get("attachment_name")
     file_base64 = attachment_data.get("attachment")
-
-    frappe.log_error("Attachment Debug", f"File Name: {file_name}, Base64 exists: {bool(file_base64)}")
 
     if file_name and file_base64:
         try:
@@ -49,8 +47,6 @@ def handle_attachment_internal(doc, row, attachment_data, field_name):
             missing_padding = len(file_base64) % 4
             if missing_padding:
                 file_base64 += '=' * (4 - missing_padding)
-                
-            frappe.log_error("Base64 Prefix Debug", f"Length: {len(file_base64)}, Prefix: {file_base64[:100]}")
             
             # Try to decode safely, replacing URL-safe chars if necessary
             # URL safe base64 uses - and _ instead of + and /
@@ -100,6 +96,10 @@ def create_resignation(
         if not employee_name:
             frappe.throw(f"Employee '{input_id}' not found", frappe.ValidationError)
 
+        employee_user = frappe.db.get_value("Employee", employee_name, "user_id")
+        if employee_user != frappe.session.user and not frappe.has_permission("Employee Resignation", ptype="create"):
+            frappe.throw(_("Not authorized to submit a resignation for this employee"), frappe.PermissionError)
+
         emp = frappe.db.get_value(
             "Employee", employee_name,
             ["employee_name", "designation", "project", "department",
@@ -133,8 +133,6 @@ def create_resignation(
 
         doc.insert(ignore_permissions=True)
 
-        frappe.log_error("Create Resig Debug", f"Attachment is: {repr(attachment)}")
-
         # Step 2: Attach the letter (must happen after insert so the row has a name)
         if attachment:
             if isinstance(attachment, str):
@@ -147,7 +145,6 @@ def create_resignation(
                 "attachment_name": get_param("attachment_name", explicit_value=None) or "resignation_letter.png",
                 "attachment": attachment,
             }
-            frappe.log_error("Create Resig AttData", str(att_data))
             for row in doc.employees:
                 handle_attachment_internal(doc, row, att_data, "resignation_letter")
 
@@ -408,7 +405,7 @@ def correct_resignation_date_app(
             doc.resignation_initiation_date = new_initiation
 
         for row in doc.employees:
-            row.resignation_letter_date = new_date
+            pass
 
         if attachment:
             if isinstance(attachment, str):
@@ -456,6 +453,10 @@ def get_my_active_resignation(employee_id=None, **kwargs):
     employee_name = resolve_employee_name(input_id)
     if not employee_name:
         return None
+
+    employee_user = frappe.db.get_value("Employee", employee_name, "user_id")
+    if employee_user != frappe.session.user and not frappe.has_permission("Employee Resignation", ptype="read"):
+        frappe.throw(_("Not authorized to view this employee's active resignation"), frappe.PermissionError)
 
     EMPLOYEE_ACTION_STATES = ["Pending Relieving Date Correction", "Draft"]
     TERMINAL_STATES = {"Resigned", "Cancelled", "Resignation Withdrawn", "Withdrawn"}

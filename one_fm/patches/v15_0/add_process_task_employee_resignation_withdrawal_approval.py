@@ -78,7 +78,8 @@ def create_process_task():
 			"description": process_name,
 			"doctype": "Process",
 			"process_owner_name": "Administrator",
-			"process_owner": "Administrator"
+			"process_owner": "Administrator",
+			"business_analyst": "Administrator"
 		}).insert(ignore_permissions=True)
 
 	task_type = "Repetitive"

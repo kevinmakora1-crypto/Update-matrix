@@ -6,6 +6,7 @@
 from __future__ import unicode_literals
 import frappe, json
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 import calendar
 from frappe.model.document import Document
 
@@ -23,6 +24,11 @@ class Contracts(Document):
         self.validate_no_of_days_off()
         self.validate_off_type_with_daily_operations()
         self.update_contract_dates()
+        self.validate_items_on_active_transition()
+
+    def validate_items_on_active_transition(self):
+        if self.workflow_state == "Active" and not self.items:
+            frappe.throw(_("At least one Contract Item is required to set the contract as Active."))
 
 
     def on_update(self):
@@ -139,17 +145,31 @@ class Contracts(Document):
             frappe.throw(_("Contracts Items and POC must be set before document is submitted"))
 
     def calculate_contract_duration(self):
-        duration_in_days = date_diff(self.end_date, self.start_date)
+        start_date = getdate(self.start_date)
+        end_date = getdate(self.end_date)
+        
+        # Duration in days (non-inclusive as per user feedback)
+        duration_in_days = date_diff(end_date, start_date)
         self.duration_in_days = cstr(duration_in_days)
-        full_months = month_diff(self.end_date, self.start_date)
-        years = int(full_months / 12)
-        months = int(full_months % 12)
-        if(years > 0):
-            self.duration = cstr(years) + ' year'
-        if(years > 0 and months > 0):
-            self.duration += ' and ' + cstr(months) + ' month'
-        if(years < 1 and months > 0):
-            self.duration = cstr(months) + ' month'
+        
+        # Duration string (Years and Months)
+        # Use relativedelta for accurate calculation. 
+        diff = relativedelta(end_date, start_date)
+        
+        parts = []
+        if diff.years > 0:
+            parts.append(f"{diff.years} {'year' if diff.years == 1 else 'years'}")
+        
+        if diff.months > 0:
+            parts.append(f"{diff.months} {'month' if diff.months == 1 else 'months'}")
+            
+        if diff.days > 0:
+            parts.append(f"{diff.days} {'day' if diff.days == 1 else 'days'}")
+
+        if parts:
+            self.duration = " and ".join(parts)
+        else:
+            self.duration = "0 days"
 
     @frappe.whitelist()
     def generate_sales_invoice(self, month, year):
@@ -193,6 +213,7 @@ class Contracts(Document):
 
                     quantity = get_billable_quantity_for_item(item.item_code, item.rate_type, item.count, post_schedules, self.project,
                                                                selected_period_start_date, selected_period_end_date)
+                    
 
                     if item.rate_type == "Monthly" and quantity > item.count:
                         frappe.throw("Can not bill more than Contract's mentioned count for each Operations Role.")
@@ -433,6 +454,33 @@ def get_contracts_items(contracts):
         and ca.docstatus = 0 and ca.parent = %s order by ca.idx asc
     """, (contracts), as_dict=1)
     return contracts_item_list
+
+@frappe.whitelist()
+def get_item_variant_attributes(item_code: str) -> dict:
+    """Fetch Gender, Working Days, and Working Hours from Item Variant Attribute table."""
+    attributes = frappe.get_all("Item Variant Attribute",
+        filters={
+            "parent": item_code,
+            "attribute": ["in", ["Gender", "Working Days", "Working Hours"]]
+        },
+        fields=["attribute", "attribute_value"]
+    )
+
+    result = {
+        "gender": None,
+        "working_days": None,
+        "working_hours": None
+    }
+
+    for attr in attributes:
+        if attr.attribute == "Gender":
+            result["gender"] = attr.attribute_value
+        elif attr.attribute == "Working Days":
+            result["working_days"] = attr.attribute_value
+        elif attr.attribute == "Working Hours":
+            result["working_hours"] = attr.attribute_value
+
+    return result
 
 @frappe.whitelist()
 def insert_login_credential(url, user_name, password, client):
@@ -1239,19 +1287,16 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
     quantity = 0
 
     for site in site_names:
-        existing_attendance_amendment = frappe.db.get_all("Attendance Amendment", {"month": month, "year": year, "project": project, "site": site, "attendance_based_on": "Shift Hours" if is_hourly else "Attendance Status", "docstatus": 1}, pluck="name")
+        existing_attendance_amendment = frappe.db.get_all("Attendance Amendment", {"month": month, "year": year, "project": project, "site": site, "attendance_based_on": "Shift Hours" if is_hourly else "Attendance Status", "workflow_state": "Approved"}, pluck="name")
         
         if existing_attendance_amendment:
-            # Get day numbers within the date range
+            # Case: Approved Attendance Amendment exists - fetch EXCLUSIVELY from Amendment
             start_day = start_date.day
             end_day = end_date.day
             days_in_range = list(range(start_day, end_day + 1))
             
-            # Build field list - only fetch fields for days in range plus all day fields (needed for both status and hours)
-            # Note: We fetch all day fields because we need both day_X (status) and day_X_hour (hours) fields
             day_fields = [f"day_{i}_hour" for i in range(1, end_day + 1)] if is_hourly else [f"day_{i}" for i in range(1, end_day + 1)]
             
-            # Fetch all attendance amendment items in one query with shift filter
             basic_attendance_records = frappe.db.get_all(
                 "Attendance Amendment Item",
                 filters={
@@ -1303,37 +1348,52 @@ def get_billable_quantity_for_item(item_code, rate_type, count, post_schedules, 
                 quantity += billable_basic_days + billable_overtime_days
 
         else:
-            # Build attendance filters
-            attendance_filters = {
-                "attendance_date": ["between", [start_date, end_date]],
-                "project": project,
-                "site": site,
-                "sale_item": item_code,
-                "status": "Present",
-                "docstatus": 1
-            }
+            # Case: No Approved Attendance Amendment - query all Operation Posts to sum from Attendance doctype
+            # Verify active Operation Posts exist for this site/item
+            operation_roles = frappe.db.get_list(
+                "Operations Role",
+                filters={"sale_item": item_code, "status": "Active", "project": project},
+                pluck="name"
+            )
             
-            if is_hourly:
-                # Sum the working hours for the attendance
-                hourly_attendance = frappe.get_list(
-                    "Attendance",
-                    filters=attendance_filters,
-                    fields=["working_hours"]
-                )
-                total_working_hours = sum(
-                    flt(att.get("working_hours") or 0) for att in hourly_attendance
-                )
-                quantity += total_working_hours
+            active_posts = frappe.db.count(
+                "Operations Post",
+                filters={
+                    "project": project,
+                    "site": site,
+                    "post_template": ["in", operation_roles],
+                    "status": "Active"
+                }
+            )
 
-            else:
-                quantity += frappe.db.count("Attendance", attendance_filters)
+            if active_posts > 0:
+                attendance_filters = {
+                    "attendance_date": ["between", [start_date, end_date]],
+                    "project": project,
+                    "site": site,
+                    "sale_item": item_code,
+                    "status": "Present",
+                    "docstatus": 1
+                }
+                
+                
+                if is_hourly:
+                    hourly_attendance = frappe.get_list(
+                        "Attendance",
+                        filters=attendance_filters,
+                        fields=["working_hours"]
+                    )
 
+                    quantity += sum(flt(att.get("working_hours") or 0) for att in hourly_attendance)
+                else:
+                    quantity += frappe.db.count("Attendance", attendance_filters)
 
     # Pro-rata calculation for Monthly rate type
     if rate_type == "Monthly":
-        quantity = quantity / len(post_schedules) * count
+        quantity = (quantity / len(post_schedules)) * count
 
     return quantity
+
 
 
 

@@ -119,26 +119,15 @@ class JobOfferOverride(JobOffer):
                 'company': self.company
             })
 
-    def on_submit(self):
-        self.evaluate_tracker_pipeline()
-        
     def on_update_after_submit(self):
         # update terms if applicant name changes
         if self.has_value_changed("applicant_name"):
             self.update_terms_and_conditions()
             self.db_set("terms", self.terms)
 
-        self.evaluate_tracker_pipeline()
-        
-    def evaluate_tracker_pipeline(self):
         self.onload()
         self.validate_job_offer_mandatory_fields()
         
-        # Ensure offer accepted date is definitively populated before tracking cascade triggers
-        if self.workflow_state == 'Submit to Onboarding Officer' and not self.one_fm_offer_accepted_date:
-            self.one_fm_offer_accepted_date = frappe.utils.nowdate()
-            self.db_set('one_fm_offer_accepted_date', self.one_fm_offer_accepted_date)
-            
         if self.workflow_state == 'Submit to Onboarding Officer':
             msg = "Please select {0} to Accept the Offer and Process Onboard"
             if not self.estimated_date_of_joining and not self.onboarding_officer:
@@ -148,11 +137,13 @@ class JobOfferOverride(JobOffer):
             elif not self.onboarding_officer:
                 frappe.throw(_(msg.format("<b>Onboarding Officer</b>")))
             assign_to_onboarding_officer(self)
-            self.create_candidate_country_process()
+        if self.workflow_state == 'Accepted' and self.get_onload('onboard_employee'):
+            close_all_assignments(self.doctype, self.name)
 
-        if self.workflow_state == 'Accepted':
-            if self.get_onload('onboard_employee'):
-                close_all_assignments(self.doctype, self.name)
+        # Set offer accepted date
+        if self.workflow_state == 'Submit to Onboarding Officer' and not self.one_fm_offer_accepted_date:
+            self.one_fm_offer_accepted_date = nowdate()
+            self.save(ignore_permissions=True)
 
     def validate_job_offer_mandatory_fields(self):
         if self.workflow_state == 'Submit for Candidate Response':
@@ -308,6 +299,8 @@ class JobOfferOverride(JobOffer):
             d.responsible = row.responsible
             d.duration_in_days = row.duration_in_days
             d.parallel_group = frappe.utils.cint(row.get("parallel_group") or 0)
+            d.before_task = row.before_task
+            d.after_task = row.after_task
             d.attachment_required = row.attachment_required
             d.notes_required = row.notes_required
             d.reference_type = row.reference_type

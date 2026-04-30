@@ -76,6 +76,16 @@ class EmployeeResignationDateAdjustment(Document):
                         revised_deployment_date = add_days(self.extended_relieving_date, -ojt)
                         pmr.db_set("deployment_date", revised_deployment_date)
 
+                        # Step 4: Notify the Recruiter
+                        if getattr(pmr, "recruiter", None):
+                            from one_fm.processor import sendemail
+                            sendemail(
+                                recipients=[pmr.recruiter],
+                                subject=_("Action Required: Deployment Date Adjusted for PR {0}").format(pmr.name),
+                                message=_("An employee involved in PR <b>{0}</b> has had their resignation date adjusted. The new deployment date for the replacement has been automatically updated to <b>{1}</b>. Please adjust your hiring schedules accordingly.").format(pmr.name, revised_deployment_date),
+                                reference_doctype="Project Manpower Request",
+                                reference_name=pmr.name
+                            )
 
     def set_approver(self):
         if not self.get("employees"):

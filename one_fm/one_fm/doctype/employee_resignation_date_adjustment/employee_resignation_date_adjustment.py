@@ -2,7 +2,7 @@ import frappe
 from frappe.model.document import Document
 from frappe import _
 
-class EmployeeResignationExtension(Document):
+class EmployeeResignationDateAdjustment(Document):
     def validate(self):
         self.set_approver()
 
@@ -17,12 +17,30 @@ class EmployeeResignationExtension(Document):
             if not old_doc or old_doc.workflow_state != "Pending Supervisor":
                 subject = _("Attention: Resignation Extension Initiated - {0}").format(self.name)
                 message = _("A resignation extension request <b>{0}</b> has been submitted to the supervisor. Please hold any offboarding processing for the involved employees until this is finalized.").format(self.name)
-                from one_fm.one_fm.utils import notify_offboarding_officer
-                notify_offboarding_officer(self, subject, message)
+                
+                recipients = set()
+                from frappe.utils.user import get_users_with_role
+                offboarding_officers = get_users_with_role("Offboarding Officer")
+                for user in offboarding_officers:
+                    recipients.add(user)
+                    
+                if recipients:
+                    from one_fm.processor import sendemail
+                    sendemail(
+                        recipients=list(recipients),
+                        subject=subject,
+                        message=message,
+                        reference_doctype=self.doctype,
+                        reference_name=self.name
+                    )
 
     def clear_manual_assignments(self):
-        from one_fm.one_fm.utils import clear_supervisor_assignment
-        clear_supervisor_assignment(self)
+        from frappe.desk.form.assign_to import remove
+        if getattr(self, "supervisor", None):
+            try:
+                remove(self.doctype, self.name, self.supervisor)
+            except Exception:
+                pass
         
     def process_extension_approval(self):
         if not self.is_new():

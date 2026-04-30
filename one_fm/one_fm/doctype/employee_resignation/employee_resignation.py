@@ -20,6 +20,33 @@ class EmployeeResignation(Document):
 					title=_("Missing Required Fields")
 				)
 
+		# Check if Corporate (works in Head Office)
+		is_corporate = False
+		if self.get("employees") and len(self.employees) > 0:
+			emp_id = self.employees[0].employee
+			emp_data = frappe.db.get_value("Employee", emp_id, ["project", "site", "department"], as_dict=True) or {}
+			if "Head Office" in (emp_data.get("project") or "") or \
+			   "Head Office" in (emp_data.get("site") or "") or \
+			   "Head Office" in (emp_data.get("department") or ""):
+				is_corporate = True
+
+		# Enforce Operations Manager and Offboarding Officer only during Managerial stages
+		state = self.get("workflow_state")
+		if state and state not in ("Draft", "Pending Relieving Date Correction"):
+			if state in ("Pending Operations Manager", "Approved"):
+				if not self.operations_manager and not is_corporate:
+					frappe.throw(_("Please specify the <b>Operations Manager</b> before saving or submitting."))
+				if not self.offboarding_officer:
+					frappe.throw(_("Please specify the <b>Offboarding Officer</b> before saving or submitting."))
+
+		# Enforce replacement_required explicitly for Operations Manager / Approved
+		if self.get("workflow_state") == "Approved":
+			if not self.replacement_required:
+				frappe.throw(
+					_("You must explicitly select Yes or No for 'Is a Replacement Required?' before you can approve and spawn a PMR."),
+					title=_("Replacement Required")
+				)
+
 		self.validate_dates()
 
 	def validate_dates(self):
@@ -135,31 +162,6 @@ class EmployeeResignation(Document):
 
 	def before_save(self):
 		self.set_supervisor()
-		
-		# Enforce relieving_date explicitly for Supervisor before forwarding
-		if self.get("workflow_state") in ("Pending Operations Manager", "Approved"):
-			if not self.relieving_date:
-				frappe.throw(
-					_("Relieving Date is mandatory at this stage. The Supervisor must specify the final date before pushing to Operations Manager."),
-					title=_("Missing Relieving Date")
-				)
-
-		# Enforce Operations Manager and Offboarding Officer only during Managerial stages
-		state = self.get("workflow_state")
-		if state and state not in ("Draft", "Pending Relieving Date Correction"):
-			if state in ("Pending Operations Manager", "Approved"):
-				if not self.operations_manager:
-					frappe.throw(_("Please specify the <b>Operations Manager</b> before saving or submitting."))
-				if not self.offboarding_officer:
-					frappe.throw(_("Please specify the <b>Offboarding Officer</b> before saving or submitting."))
-
-		# Enforce replacement_required explicitly for Operations Manager
-		if self.get("workflow_state") == "Approved":
-			if not self.replacement_required:
-				frappe.throw(
-					_("You must explicitly select Yes or No for 'Is a Replacement Required?' before you can save or approve."),
-					title=_("Replacement Required")
-				)
 
 	def set_supervisor(self):
 		# Only auto-resolve supervisor if it hasn't already been set manually
@@ -243,7 +245,6 @@ class EmployeeResignation(Document):
 			pmr.nationality = self.replacement_nationality
 			pmr.salary = self.replacement_salary
 			pmr.deployment_date = self.relieving_date
-			
 			for row in self.get("language_requirements"):
 				new_row = pmr.append("language_requirements", {})
 				row_dict = row.as_dict().copy()
@@ -266,7 +267,7 @@ class EmployeeResignation(Document):
 				new_row.update(row_dict)
 				
 			pmr.workflow_state = "Draft"
-			pmr.insert(ignore_permissions=True)
+			pmr.insert(ignore_permissions=True, ignore_mandatory=True)
 			frappe.db.set_value("Project Manpower Request", pmr.name, "workflow_state", "Draft")
 
 	def on_trash(self):

@@ -34,16 +34,40 @@ def handle_attachment_internal(doc, row, attachment_data, field_name):
     file_name = attachment_data.get("attachment_name")
     file_base64 = attachment_data.get("attachment")
 
+    frappe.log_error("Attachment Debug", f"File Name: {file_name}, Base64 exists: {bool(file_base64)}")
+
     if file_name and file_base64:
         try:
+            if "," in file_base64:
+                file_base64 = file_base64.split(",", 1)[1]
+            
+            # If sent via form data, '+' might be converted to ' '
+            file_base64 = file_base64.replace(" ", "+")
+            file_base64 = file_base64.replace("\n", "").replace("\r", "")
+            
+            # Add padding if missing (Base64 length must be a multiple of 4)
+            missing_padding = len(file_base64) % 4
+            if missing_padding:
+                file_base64 += '=' * (4 - missing_padding)
+                
+            frappe.log_error("Base64 Prefix Debug", f"Length: {len(file_base64)}, Prefix: {file_base64[:100]}")
+            
+            # Try to decode safely, replacing URL-safe chars if necessary
+            # URL safe base64 uses - and _ instead of + and /
+            file_base64 = file_base64.replace("-", "+").replace("_", "/")
             content = base64.b64decode(file_base64)
-            saved_file = save_file(
-                file_name, content, doc.doctype, doc.name,
-                is_private=1, folder="Home/Attachments"
-            )
-            frappe.db.set_value(row.doctype, row.name, field_name, saved_file.file_url)
-        except Exception:
-            pass
+            file_doc = frappe.get_doc({
+                "doctype": "File",
+                "file_name": file_name,
+                "attached_to_doctype": doc.doctype,
+                "attached_to_name": doc.name,
+                "content": content,
+                "is_private": 1
+            })
+            file_doc.save(ignore_permissions=True)
+            frappe.db.set_value(row.doctype, row.name, field_name, file_doc.file_url)
+        except Exception as e:
+            frappe.log_error(f"Attachment failed for {file_name}", str(e))
 
 
 # ---------------------------------------------------------------------------
@@ -109,17 +133,28 @@ def create_resignation(
 
         doc.insert(ignore_permissions=True)
 
+        frappe.log_error("Create Resig Debug", f"Attachment is: {repr(attachment)}")
+
         # Step 2: Attach the letter (must happen after insert so the row has a name)
         if attachment:
+            if isinstance(attachment, str):
+                import json
+                try:
+                    attachment = json.loads(attachment)
+                except Exception:
+                    pass
             att_data = attachment if isinstance(attachment, dict) else {
                 "attachment_name": get_param("attachment_name", explicit_value=None) or "resignation_letter.png",
                 "attachment": attachment,
             }
+            frappe.log_error("Create Resig AttData", str(att_data))
             for row in doc.employees:
                 handle_attachment_internal(doc, row, att_data, "resignation_letter")
 
         # Step 3: Advance to Pending Supervisor now that the letter is saved
-        doc.db_set("workflow_state", "Pending Supervisor")
+        doc.reload()
+        doc.workflow_state = "Pending Supervisor"
+        doc.save(ignore_permissions=True)
         frappe.db.commit()
         return {"status": "success", "message": "Resignation submitted successfully", "name": doc.name}
 
@@ -139,13 +174,15 @@ def extend_resignation(
     data=None,
     **kwargs
 ):
-    """Create an Employee Resignation Extension for the employee's active resignation."""
+    """Create an Employee Resignation Date Adjustment for the employee's active resignation."""
     try:
         p = get_all_params(
-            "reason", "extended_date", "attachment",
+            "attachment",
             employee_id=employee_id,
             supervisor=supervisor,
             resignation_id=resignation_id,
+            reason=reason,
+            extended_date=extended_date,
         )
         input_id       = p["employee_id"]
         supervisor     = p["supervisor"]
@@ -165,7 +202,8 @@ def extend_resignation(
             items = frappe.get_all(
                 "Employee Resignation Item",
                 filters={"employee": employee_name, "parenttype": "Employee Resignation"},
-                fields=["parent"], order_by="creation desc"
+                fields=["parent"], order_by="creation desc",
+                ignore_permissions=True
             )
             TERMINAL = {"Resigned", "Cancelled", "Resignation Withdrawn"}
             for item in items:
@@ -180,11 +218,10 @@ def extend_resignation(
         active_doc = frappe.get_doc("Employee Resignation", resignation_id)
         employee_user = frappe.db.get_value("Employee", employee_name, "user_id")
 
-        ext = frappe.new_doc("Employee Resignation Extension")
+        ext = frappe.new_doc("Employee Resignation Date Adjustment")
         ext.owner = employee_user or frappe.session.user
         ext.employee_resignation = resignation_id
         ext.supervisor = supervisor or active_doc.supervisor
-        ext.reason = reason or "Extension requested by employee"
         ext.extended_relieving_date = extended_date
         # Do NOT set workflow_state before insert — Frappe sets it to the
         # workflow's initial state ('Pending Supervisor') automatically
@@ -194,23 +231,31 @@ def extend_resignation(
                 "employee": row.employee,
                 "employee_name": row.employee_name,
                 "designation": row.designation,
+                "reason": reason or "Adjustment requested by employee"
             })
 
         ext.insert(ignore_permissions=True)
 
         # Attach letter after insert so the row has a name
-        if attachment:
-            att_str = attachment if isinstance(attachment, str) else json.dumps(attachment)
-            try:
-                att_data = json.loads(att_str) if isinstance(att_str, str) else att_str
-            except Exception:
-                att_data = {"attachment_name": "extension_letter.png", "attachment": att_str}
-            handle_attachment_internal(ext, ext, att_data, "extension_letter")
+        if attachment and ext.get("employees"):
+            if isinstance(attachment, dict):
+                att_data = attachment
+            else:
+                try:
+                    att_json = json.loads(attachment)
+                    if isinstance(att_json, list):
+                        att_json = att_json[0]
+                    att_data = att_json if isinstance(att_json, dict) else {"attachment_name": "extension_letter.png", "attachment": attachment}
+                except Exception:
+                    att_data = {"attachment_name": "extension_letter.png", "attachment": attachment}
+
+            first_row = ext.employees[0]
+            handle_attachment_internal(ext, first_row, att_data, "extension_letter")
             frappe.db.commit()
 
         return {
             "status": "success",
-            "message": "Resignation extension submitted successfully",
+            "message": "Resignation adjustment submitted successfully",
             "name": ext.name
         }
 
@@ -224,17 +269,24 @@ def withdraw_resignation(
     employee_id=None,
     reason=None,
     attachment=None,
+    employee_resignation=None,
+    supervisor=None,
     data=None,
     **kwargs
 ):
     try:
         p = get_all_params(
-            "reason", "attachment",
+            "attachment",
             employee_id=employee_id,
+            reason=reason,
+            employee_resignation=employee_resignation,
+            supervisor=supervisor,
         )
         input_id   = p["employee_id"]
         reason     = p["reason"]
         attachment = p["attachment"]
+        employee_resignation_id = p["employee_resignation"]
+        supervisor_id = p["supervisor"]
 
         employee_name = resolve_employee_name(input_id)
         if not employee_name:
@@ -245,7 +297,8 @@ def withdraw_resignation(
             "Employee Resignation Item",
             filters={"employee": employee_name, "parenttype": "Employee Resignation"},
             fields=["parent"],
-            order_by="creation desc"
+            order_by="creation desc",
+            ignore_permissions=True
         )
 
         active_doc = None
@@ -262,7 +315,6 @@ def withdraw_resignation(
         withdrawal = frappe.new_doc("Employee Resignation Withdrawal")
         withdrawal.owner = employee_user or frappe.session.user
         withdrawal.employee_resignation = active_doc.name
-        withdrawal.reason = reason or "Employee-initiated withdrawal"
         # Do NOT set workflow_state before insert — Frappe sets it to the
         # workflow's initial state ('Pending Supervisor') automatically
 
@@ -271,16 +323,26 @@ def withdraw_resignation(
                 "employee": row.employee,
                 "employee_name": row.employee_name,
                 "designation": row.designation,
+                "reason": reason or "Employee-initiated withdrawal"
             })
 
         withdrawal.insert(ignore_permissions=True)
 
-        if attachment:
-            att_data = attachment if isinstance(attachment, dict) else {
-                "attachment_name": "withdrawal_letter.png",
-                "attachment": attachment,
-            }
-            handle_attachment_internal(withdrawal, withdrawal, att_data, "withdrawal_letter")
+        if attachment and withdrawal.get("employees"):
+            if isinstance(attachment, dict):
+                att_data = attachment
+            else:
+                try:
+                    att_json = json.loads(attachment)
+                    if isinstance(att_json, list):
+                        att_json = att_json[0]
+                    att_data = att_json if isinstance(att_json, dict) else {"attachment_name": "withdrawal_letter.png", "attachment": attachment}
+                except Exception:
+                    att_data = {"attachment_name": "withdrawal_letter.png", "attachment": attachment}
+
+            # Attach to the first child row on the 'attachment' field
+            first_row = withdrawal.employees[0]
+            handle_attachment_internal(withdrawal, first_row, att_data, "attachment")
             frappe.db.commit()
 
         # Notify offboarding officer
@@ -349,10 +411,18 @@ def correct_resignation_date_app(
             row.resignation_letter_date = new_date
 
         if attachment:
-            handle_attachment_internal(doc, doc, {
+            if isinstance(attachment, str):
+                import json
+                try:
+                    attachment = json.loads(attachment)
+                except Exception:
+                    pass
+            att_data = attachment if isinstance(attachment, dict) else {
                 "attachment_name": att_name,
                 "attachment": attachment,
-            }, "resignation_letter")
+            }
+            for row in doc.employees:
+                handle_attachment_internal(doc, row, att_data, "resignation_letter")
 
         doc.save(ignore_permissions=True)
         doc.db_set("workflow_state", "Pending Supervisor")
@@ -388,40 +458,50 @@ def get_my_active_resignation(employee_id=None, **kwargs):
         return None
 
     EMPLOYEE_ACTION_STATES = ["Pending Relieving Date Correction", "Draft"]
-    TERMINAL_STATES = {"Resigned", "Cancelled", "Resignation Withdrawn"}
+    TERMINAL_STATES = {"Resigned", "Cancelled", "Resignation Withdrawn", "Withdrawn"}
 
-    seen = set()
-    items = frappe.get_all(
+    # Check if corporate (works in Head Office)
+    emp_data = frappe.db.get_value("Employee", employee_name, ["project", "site", "department"], as_dict=True) or {}
+    
+    is_corporate = False
+    if "Head Office" in (emp_data.get("project") or "") or \
+       "Head Office" in (emp_data.get("site") or "") or \
+       "Head Office" in (emp_data.get("department") or ""):
+        is_corporate = True
+
+    items = frappe.get_list(
         "Employee Resignation Item",
         filters={"employee": employee_name, "parenttype": "Employee Resignation"},
         fields=["parent"],
-        order_by="creation desc"
+        order_by="creation desc",
+        ignore_permissions=True
     )
 
-    all_records = []
-    for item in items:
-        if item.parent in seen:
-            continue
-        seen.add(item.parent)
-        doc = frappe.get_doc("Employee Resignation", item.parent)
-        if doc.workflow_state in TERMINAL_STATES:
-            continue
-        all_records.append({
-            "name": doc.name,
-            "workflow_state": doc.workflow_state,
-            "resignation_initiation_date": doc.resignation_initiation_date,
-            "relieving_date": doc.relieving_date,
-            "creation": str(doc.creation),
-        })
-
-    if not all_records:
+    if not items:
         return None
 
-    for record in all_records:
+    parents = list(set(i.parent for i in items))
+    
+    resignations = frappe.get_list(
+        "Employee Resignation",
+        filters={"name": ["in", parents], "workflow_state": ["not in", list(TERMINAL_STATES)]},
+        fields=["name", "workflow_state", "resignation_initiation_date", "relieving_date", "creation"],
+        order_by="creation desc",
+        ignore_permissions=True
+    )
+
+    if not resignations:
+        return None
+
+    # Attach the is_corporate flag to all records
+    for record in resignations:
+        record["is_corporate"] = is_corporate
+
+    for record in resignations:
         if record["workflow_state"] in EMPLOYEE_ACTION_STATES:
             return record
 
-    return all_records[0]
+    return resignations[0]
 
 
 @frappe.whitelist()
@@ -432,33 +512,41 @@ def get_all_my_resignations(employee_id=None, **kwargs):
     if not employee_name:
         return []
 
-    TERMINAL_STATES = {"Resigned", "Cancelled", "Resignation Withdrawn"}
+    TERMINAL_STATES = {"Resigned", "Cancelled", "Resignation Withdrawn", "Withdrawn"}
 
-    seen = set()
-    items = frappe.get_all(
+    items = frappe.get_list(
         "Employee Resignation Item",
         filters={"employee": employee_name, "parenttype": "Employee Resignation"},
         fields=["parent"],
-        order_by="creation desc"
+        order_by="creation desc",
+        ignore_permissions=True
     )
 
-    results = []
-    for item in items:
-        if item.parent in seen:
-            continue
-        seen.add(item.parent)
-        doc = frappe.get_doc("Employee Resignation", item.parent)
-        if doc.workflow_state in TERMINAL_STATES:
-            continue
-        results.append({
-            "name": doc.name,
-            "workflow_state": doc.workflow_state,
-            "resignation_initiation_date": doc.resignation_initiation_date,
-            "relieving_date": doc.relieving_date,
-            "creation": str(doc.creation),
-        })
+    if not items:
+        return []
 
-    return results
+    parents = list(set(i.parent for i in items))
+    
+    resignations = frappe.get_list(
+        "Employee Resignation",
+        filters={"name": ["in", parents]},
+        fields=["name", "workflow_state", "resignation_initiation_date", "relieving_date", "creation"],
+        order_by="creation desc",
+        ignore_permissions=True
+    )
+
+    # Check if corporate (works in Head Office)
+    emp_data = frappe.db.get_value("Employee", employee_name, ["project", "site", "department"], as_dict=True) or {}
+    is_corporate = False
+    if "Head Office" in (emp_data.get("project") or "") or \
+       "Head Office" in (emp_data.get("site") or "") or \
+       "Head Office" in (emp_data.get("department") or ""):
+        is_corporate = True
+
+    for record in resignations:
+        record["is_corporate"] = is_corporate
+
+    return resignations
 
 
 @frappe.whitelist()

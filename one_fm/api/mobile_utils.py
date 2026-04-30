@@ -63,17 +63,22 @@ def _get_raw_body_params():
                     for k, v in parsed_qs.items():
                         result[k] = v[0] if len(v) == 1 else v
 
-                # Handle nested 'data' JSON string (e.g. data={"key":"val"})
-                if 'data' in result and isinstance(result['data'], str):
-                    try:
-                        nested = json.loads(result['data'])
-                        if isinstance(nested, dict):
-                            # Nested data fills in missing keys only
-                            for k, v in nested.items():
-                                if k not in result or result[k] is None:
-                                    result[k] = v
-                    except (json.JSONDecodeError, ValueError):
-                        pass
+                # Handle nested 'data' (e.g. data={"key":"val"} or data: {"key":"val"})
+                if 'data' in result:
+                    nested = None
+                    if isinstance(result['data'], str):
+                        try:
+                            nested = json.loads(result['data'])
+                        except (json.JSONDecodeError, ValueError):
+                            pass
+                    elif isinstance(result['data'], dict):
+                        nested = result['data']
+
+                    if isinstance(nested, dict):
+                        # Nested data fills in missing keys only
+                        for k, v in nested.items():
+                            if k not in result or result[k] is None:
+                                result[k] = v
     except Exception:
         pass
 
@@ -112,11 +117,26 @@ def get_param(key, explicit_value=None, default=None):
     if form_val is not None:
         return form_val
 
-    # 3. request.args (GET query string under token auth)
-    if hasattr(frappe, 'request') and hasattr(frappe.request, 'args'):
-        args_val = frappe.request.args.get(key)
-        if args_val is not None:
-            return args_val
+    data_val = frappe.form_dict.get("data")
+    if data_val:
+        if isinstance(data_val, dict) and key in data_val:
+            return data_val[key]
+        elif isinstance(data_val, str):
+            try:
+                import json
+                parsed = json.loads(data_val)
+                if isinstance(parsed, dict) and key in parsed:
+                    return parsed[key]
+            except Exception:
+                pass
+
+    try:
+        if hasattr(frappe, 'request') and hasattr(frappe.request, 'args'):
+            args_val = frappe.request.args.get(key)
+            if args_val is not None:
+                return args_val
+    except RuntimeError:
+        pass
 
     # 4. Raw body (POST under token auth)
     body_params = _get_raw_body_params()

@@ -69,7 +69,7 @@
    "fieldname": "employees",
    "fieldtype": "Table",
    "label": "Employees",
-   "options": "Employee Resignation Extension Item",
+   "options": "Employee Resignation Date Adjustment Item",
    "reqd": 1
   },
   {
@@ -93,7 +93,7 @@
    "fieldtype": "Link",
    "label": "Amended From",
    "no_copy": 1,
-   "options": "Employee Resignation Extension",
+   "options": "Employee Resignation Date Adjustment",
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
@@ -129,7 +129,8 @@
    "fieldname": "operations_manager",
    "fieldtype": "Link",
    "label": "Operations Manager",
-   "mandatory_depends_on": "eval:!doc.__islocal && ['Pending Operations Manager', 'Accepted by Supervisor', 'Approved'].includes(doc.workflow_state)",
+   "depends_on": "eval:!doc.is_corporate",
+   "mandatory_depends_on": "eval:!doc.is_corporate && !doc.__islocal && ['Pending Operations Manager', 'Accepted by Supervisor', 'Approved'].includes(doc.workflow_state)",
    "options": "User"
   },
   {
@@ -147,7 +148,7 @@
  "modified": "2026-04-21 16:30:35.050528",
  "modified_by": "Administrator",
  "module": "one_fm",
- "name": "Employee Resignation Extension",
+ "name": "Employee Resignation Date Adjustment",
  "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [

@@ -100,7 +100,8 @@ class EmployeeResignationWithdrawal(Document):
 									withdrawal_qty = sum((row.qty or 0) for row in pmr.get("fulfillment_actions", []) if row.action_type == "Resignation Withdrawal")
 									if withdrawal_qty >= (pmr.count or 0):
 										pmr.db_set("workflow_state", "Resignation Withdrawn")
-										pmr.db_set("status", "Resignation Withdrawn") # Sync legacy status if it exists
+										if frappe.db.has_column("Project Manpower Request", "status"):
+											pmr.db_set("status", "Resignation Withdrawn") # Sync legacy status if it exists
 							
 							# Step 3: Simply notify the recruiter that a withdrawal occurred.
 							# We do NOT cancel the PMR here; the Recruiter will handle closure manually.
@@ -117,7 +118,8 @@ class EmployeeResignationWithdrawal(Document):
 					# Step 4: Flag Parent Resignation if entirely withdrawn
 					if total_withdrawn_count >= total_in_batch:
 						# All employees withdrawn, mark parent as Withdrawn
-						resignation.db_set("status", "Withdrawn")
+						if frappe.db.has_column("Employee Resignation", "status"):
+							resignation.db_set("status", "Withdrawn")
 						if frappe.db.has_column("Employee Resignation", "workflow_state"):
 							resignation.db_set("workflow_state", "Withdrawn")
 

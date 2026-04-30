@@ -99,19 +99,35 @@ frappe.ui.form.on("Employee Resignation Withdrawal", {
 			};
 
 			if (frm.doc.employees.length === 1) {
-				frm.remove_custom_button(__('Employee Exit Tab'), __('Employee Profiles'));
 				frm.add_custom_button(__('Employee Exit Tab'), function() {
 					view_exit_tab(frm.doc.employees[0].employee);
 				}, __('Employee Profiles'));
 			} else {
 				frm.doc.employees.forEach(row => {
 					let btn_label = row.employee_name || row.employee;
-					frm.remove_custom_button(btn_label, __('Employee Profiles'));
 					frm.add_custom_button(btn_label, function() {
 						view_exit_tab(row.employee);
 					}, __('Employee Profiles'));
 				});
 			}
+		}
+
+		if (frm.doc.employee_resignation) {
+			frappe.db.get_value('Employee Resignation', frm.doc.employee_resignation, ['project_allocation', 'site_allocation', 'department'])
+			.then(r => {
+				if (r && r.message) {
+					let project = r.message.project_allocation || "";
+					let site = r.message.site_allocation || "";
+					let dept = r.message.department || "";
+					let is_corporate = (project.includes("Head Office") || site.includes("Head Office") || dept.includes("Head Office"));
+					
+					// Set dynamic property for Frappe's native Depends On engine
+					frm.doc.is_corporate = is_corporate ? 1 : 0;
+					
+					// Force native re-evaluation
+                    frm.refresh_fields();
+				}
+			});
 		}
 	},
 

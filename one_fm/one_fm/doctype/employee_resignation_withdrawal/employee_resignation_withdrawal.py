@@ -8,36 +8,23 @@ from frappe.model.document import Document
 
 class EmployeeResignationWithdrawal(Document):
 	def on_update(self):
-		self.clear_manual_assignments()
 		self.validate_rejection_reason()
 		self.process_withdrawal_approval()
 		self.notify_offboarding_on_submission()
 
-	def clear_manual_assignments(self):
-		if not self.is_new():
-			old_doc = self.get_doc_before_save()
-			# Only remove the manually explicitly mapped supervisor Assignment
-			if old_doc and old_doc.workflow_state == "Pending Supervisor" and self.workflow_state != "Pending Supervisor":
-				if self.supervisor:
-					from frappe.desk.form.assign_to import remove
-					try:
-						remove(self.doctype, self.name, self.supervisor, ignore_permissions=True)
-					except Exception:
-						pass
-
 	def notify_offboarding_on_submission(self):
 		# Notify Offboarding Officer when state hits 'Pending Supervisor'
 		if self.workflow_state == "Pending Supervisor":
-			old_doc = self.get_doc_before_save()
-			if not old_doc or old_doc.workflow_state != "Pending Supervisor":
+			# Use a flag to avoid double-sending in the same session
+			if not getattr(self, "__notified_offboarding", False):
 				recipients = set()
 				from frappe.utils.user import get_users_with_role
-				from one_fm.api.v1.utils import resolve_active_user
 				offboarding_officers = get_users_with_role("Offboarding Officer")
 				for user in offboarding_officers:
-					recipients.add(resolve_active_user(user))
+					recipients.add(user)
 				
 				if recipients:
+					self.__notified_offboarding = True
 					subject = _("Attention: Resignation Withdrawal Initiated - {0}").format(self.name)
 					message = _("A resignation withdrawal request <b>{0}</b> has been submitted to the supervisor. Please hold any offboarding processing for the involved employees.").format(self.name)
 					
@@ -66,15 +53,9 @@ class EmployeeResignationWithdrawal(Document):
 						if row.reason and row.attachment:
 							approved_count += 1
 							
-							# A. Fully reset Employee resignation fields — withdrawal reverses the resignation
+							# A. Clear Relieving Date on the actual Employee profile
 							if row.employee:
-								frappe.db.set_value("Employee", row.employee, {
-									"relieving_date": None,
-									"resignation_date": None,
-									"resignation_letter_date": None,
-									"resignation_status": None,
-									"current_resignation": None
-								}, update_modified=False)
+								frappe.db.set_value("Employee", row.employee, "relieving_date", None)
 								
 							# B. Mark the original Resignation row as Approved
 							if self.employee_resignation:
@@ -110,14 +91,17 @@ class EmployeeResignationWithdrawal(Document):
 							# Recalculate remaining quantities automatically
 							if hasattr(pmr, 'calculate_remaining_qty'):
 								pmr.calculate_remaining_qty()
-
+								# Only do this if you are SURE it runs in a system/background context
+								frappe.only_for("System Manager")
 								pmr.save(ignore_permissions=True)
 								
 								# Auto-close/set status if entirely withdrawn
 								if (pmr.remaining_qty or 0) == 0:
 									withdrawal_qty = sum((row.qty or 0) for row in pmr.get("fulfillment_actions", []) if row.action_type == "Resignation Withdrawal")
 									if withdrawal_qty >= (pmr.count or 0):
-										pmr.db_set("workflow_state", "Withdrawn")
+										pmr.db_set("workflow_state", "Resignation Withdrawn")
+										if frappe.db.has_column("Project Manpower Request", "status"):
+											pmr.db_set("status", "Resignation Withdrawn") # Sync legacy status if it exists
 							
 							# Step 3: Simply notify the recruiter that a withdrawal occurred.
 							# We do NOT cancel the PMR here; the Recruiter will handle closure manually.
@@ -133,7 +117,9 @@ class EmployeeResignationWithdrawal(Document):
 					
 					# Step 4: Flag Parent Resignation if entirely withdrawn
 					if total_withdrawn_count >= total_in_batch:
-						# All employees withdrawn, mark parent workflow state as Resignation Withdrawn
+						# All employees withdrawn, mark parent as Withdrawn
+						if frappe.db.has_column("Employee Resignation", "status"):
+							resignation.db_set("status", "Withdrawn")
 						if frappe.db.has_column("Employee Resignation", "workflow_state"):
 							resignation.db_set("workflow_state", "Withdrawn")
 
@@ -192,22 +178,11 @@ class EmployeeResignationWithdrawal(Document):
 		if approver_employee:
 			approver_user = frappe.db.get_value("Employee", approver_employee, "user_id")
 			if approver_user and frappe.db.exists("User", approver_user):
-				self.supervisor = approver_user
+				if frappe.db.has_column("Employee Resignation Withdrawal", "supervisor"):
+				    self.supervisor = approver_user
 			else:
-				self.supervisor = None
-
-		# Set Operations Manager from the resignation document
-		if self.employee_resignation:
-			rsgn_om = frappe.db.get_value("Employee Resignation", self.employee_resignation, "operations_manager")
-			if rsgn_om:
-				self.operations_manager = rsgn_om
-
-		# Set Offboarding Officer — first user with that role
-		if not self.get("offboarding_officer"):
-			from frappe.utils.user import get_users_with_role
-			om_users = get_users_with_role("Offboarding Officer")
-			if om_users:
-				self.offboarding_officer = om_users[0]
+			    if frappe.db.has_column("Employee Resignation Withdrawal", "supervisor"):
+			        self.supervisor = None
 
 
 @frappe.whitelist()
